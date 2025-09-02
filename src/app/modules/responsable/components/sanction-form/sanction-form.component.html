@@ -1,0 +1,289 @@
+<div class="sanction-container">
+  <h1 class="page-title">Gestion des Sanctions</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Liste des Sanctions</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Gérez les sanctions des membres pour les matchs</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données...</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <!-- Filtre par date -->
+        <div class="filter-row">
+          <mat-form-field appearance="outline" class="date-filter">
+            <mat-label>Filtrer par date</mat-label>
+            <input matInput [matDatepicker]="dateFilterPicker" [(ngModel)]="dateFilter" (ngModelChange)="filterMatchesByDate($event)" placeholder="Sélectionnez une date" />
+            <mat-datepicker-toggle matSuffix [for]="dateFilterPicker"></mat-datepicker-toggle>
+            <mat-datepicker #dateFilterPicker></mat-datepicker>
+          </mat-form-field>
+          <button mat-icon-button color="primary" (click)="dateFilter = null" *ngIf="dateFilter" class="clear-filter-btn" title="Effacer le filtre">
+            <mat-icon>clear</mat-icon>
+          </button>
+        </div>
+        <!-- Boutons d'action -->
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
+            <mat-icon>add</mat-icon> Ajouter une sanction
+          </button>
+        </div>
+        <!-- Formulaire de création -->
+        <div *ngIf="showCreateRow" class="create-row">
+          <div class="create-row-form">
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Membre</mat-label>
+              <mat-select [(ngModel)]="newSanction.membre" (ngModelChange)="onMembreChange(newSanction)" required>
+                <mat-option *ngFor="let membre of membres" [value]="membre.id">
+                  {{ getMembreName(membre.id) }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="!newSanction.membre">Le membre est requis</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Type de Sanction</mat-label>
+              <mat-select [(ngModel)]="newSanction.typeSanction" (ngModelChange)="onTypeSanctionChange(newSanction)" required>
+                <mat-option *ngFor="let type of typeSanctions" [value]="type.id">
+                  {{ type.nom }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="!newSanction.typeSanction">Le type de sanction est requis</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Date du Match</mat-label>
+              <mat-select [(ngModel)]="newSanction.selectedDate" (ngModelChange)="onMatchDateChange(newSanction, $event)" required>
+                <mat-option *ngFor="let matchDate of filteredMatchDates" [value]="matchDate.date">
+                  {{ matchDate.date }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="!newSanction.selectedDate">La date du match est requise</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field" *ngIf="newSanction.selectedDate">
+              <mat-label>Match</mat-label>
+              <mat-select [(ngModel)]="newSanction.match" (ngModelChange)="onMatchChange(newSanction)" required>
+                <mat-option *ngFor="let match of newSanctionMatches" [value]="match.id">
+                  {{ match.typeMatch }} {{ match.adversaire ? 'vs ' + match.adversaire : '' }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="!newSanction.match">Le match est requis</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Date</mat-label>
+              <input matInput [matDatepicker]="picker" [(ngModel)]="newSanction.dateSanction" required />
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-error *ngIf="!newSanction.dateSanction">La date est requise</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Montant</mat-label>
+              <input matInput type="number" [(ngModel)]="newSanction.montant" min="0" required />
+              <mat-error *ngIf="!newSanction.montant || newSanction.montant < 0">Le montant est requis et doit être positif</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Commentaire</mat-label>
+              <input matInput [(ngModel)]="newSanction.commentaire" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>État</mat-label>
+              <mat-select [(ngModel)]="newSanction.etat" required>
+                <mat-option value="NON_PAYEE">Non Payée</mat-option>
+                <mat-option value="PAYEE">Payée</mat-option>
+              </mat-select>
+              <mat-error *ngIf="!newSanction.etat">L'état est requis</mat-error>
+            </mat-form-field>
+            <div class="action-buttons-horizontal">
+              <button mat-raised-button color="primary" (click)="saveSanction()" [disabled]="!isCreateFormValid()" class="save-button">
+                <mat-icon>save</mat-icon> Enregistrer
+              </button>
+              <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">
+                <mat-icon>cancel</mat-icon> Annuler
+              </button>
+            </div>
+          </div>
+          <div class="equipe-info">
+            <p><strong>Équipe du membre :</strong> {{ newSanction.equipeMatch || 'N/A' }}</p>
+          </div>
+        </div>
+        <!-- Tableau des sanctions -->
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" matSort class="data-table">
+            <ng-container matColumnDef="membre">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-membre">Membre</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-membre" [attr.data-label]="'Membre'">
+                <ng-container *ngIf="!editingRows[i]; else editMembre">
+                  {{ getMembreName(sanction.membre) }}
+                </ng-container>
+                <ng-template #editMembre>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Membre</mat-label>
+                    <mat-select [(ngModel)]="editSanction.membre" (ngModelChange)="onMembreChange(editSanction)" required>
+                      <mat-option *ngFor="let membre of membres" [value]="membre.id">
+                        {{ getMembreName(membre.id) }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="typeSanction">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-typeSanction">Type de Sanction</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-typeSanction" [attr.data-label]="'Type de Sanction'">
+                <ng-container *ngIf="!editingRows[i]; else editTypeSanction">
+                  {{ getTypeSanctionName(sanction.typeSanction) }}
+                </ng-container>
+                <ng-template #editTypeSanction>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Type de Sanction</mat-label>
+                    <mat-select [(ngModel)]="editSanction.typeSanction" (ngModelChange)="onTypeSanctionChange(editSanction)" required>
+                      <mat-option *ngFor="let type of typeSanctions" [value]="type.id">
+                        {{ type.nom }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="match">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-match">Match</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-match" [attr.data-label]="'Match'">
+                <ng-container *ngIf="!editingRows[i]; else editMatch">
+                  {{ getMatchName(sanction.match) }}
+                </ng-container>
+                <ng-template #editMatch>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Date du Match</mat-label>
+                    <mat-select [(ngModel)]="editSanction.selectedDate" (ngModelChange)="onMatchDateChange(editSanction, $event)" required>
+                      <mat-option *ngFor="let matchDate of filteredMatchDates" [value]="matchDate.date">
+                        {{ matchDate.date }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" *ngIf="editSanction.selectedDate">
+                    <mat-label>Match</mat-label>
+                    <mat-select [(ngModel)]="editSanction.match" (ngModelChange)="onMatchChange(editSanction)" required>
+                      <mat-option *ngFor="let match of editSanctionMatches" [value]="match.id">
+                        {{ match.typeMatch }} {{ match.adversaire ? 'vs ' + match.adversaire : '' }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="dateSanction">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-dateSanction">Date</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-dateSanction" [attr.data-label]="'Date'">
+                <ng-container *ngIf="!editingRows[i]; else editDateSanction">
+                  {{ sanction.dateSanction | date:'dd/MM/yyyy' }}
+                </ng-container>
+                <ng-template #editDateSanction>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Date</mat-label>
+                    <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editSanction.dateSanction" required />
+                    <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerEdit></mat-datepicker>
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="montant">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-montant">Montant</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-montant" [attr.data-label]="'Montant'">
+                <ng-container *ngIf="!editingRows[i]; else editMontant">
+                  {{ sanction.montant | currency:'XAF' }}
+                </ng-container>
+                <ng-template #editMontant>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Montant</mat-label>
+                    <input matInput type="number" [(ngModel)]="editSanction.montant" min="0" required />
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="commentaire">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-commentaire">Commentaire</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-commentaire" [attr.data-label]="'Commentaire'">
+                <ng-container *ngIf="!editingRows[i]; else editCommentaire">
+                  {{ sanction.commentaire || 'N/A' }}
+                </ng-container>
+                <ng-template #editCommentaire>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Commentaire</mat-label>
+                    <input matInput [(ngModel)]="editSanction.commentaire" />
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="etat">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-etat">État</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-etat" [attr.data-label]="'État'">
+                <ng-container *ngIf="!editingRows[i]; else editEtat">
+                  {{ sanction.etat }}
+                </ng-container>
+                <ng-template #editEtat>
+                  <mat-form-field appearance="outline">
+                    <mat-label>État</mat-label>
+                    <mat-select [(ngModel)]="editSanction.etat" required>
+                      <mat-option value="NON_PAYEE">Non Payée</mat-option>
+                      <mat-option value="PAYEE">Payée</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container>
+            <!-- <ng-container matColumnDef="totalPaiements">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-totalPaiements">Total Paiements</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-totalPaiements" [attr.data-label]="'Total Paiements'">
+                <ng-container *ngIf="!editingRows[i]; else editTotalPaiements">
+                  {{ sanction.totalPaiements | currency:'XAF' }}
+                </ng-container>
+                <ng-template #editTotalPaiements>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Total Paiements</mat-label>
+                    <input matInput type="number" [(ngModel)]="editSanction.totalPaiements" min="0" required />
+                  </mat-form-field>
+                </ng-template>
+              </td>
+            </ng-container> -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+              <td mat-cell *matCellDef="let sanction; let i = index" class="col-actions" [attr.data-label]="'Actions'">
+                <ng-container *ngIf="!editingRows[i]; else editActions">
+                  <div class="action-buttons-horizontal">
+                    <button mat-icon-button color="primary" (click)="editRow(i, sanction)" [disabled]="sanction.etat === 'PAYEE'" title="Modifier">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="primary" (click)="openPayDialog(sanction)" [disabled]="sanction.etat === 'PAYEE'" title="Payer">
+                       <mat-icon *ngIf="sanction.etat === 'PAYEE'" class="text-green-600">check_circle</mat-icon>
+                    <mat-icon *ngIf="sanction.etat !== 'PAYEE'">monetization_on</mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button color="warn" (click)="openDeleteDialog(sanction)" [disabled]="sanction.etat === 'PAYEE'" title="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </ng-container>
+                <ng-template #editActions>
+                  <div class="action-buttons-horizontal">
+                    <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" title="Enregistrer">
+                      <mat-icon>save</mat-icon> Enregistrer
+                    </button>
+                    <button mat-raised-button color="warn" (click)="cancelEdit(i)" title="Annuler">
+                      <mat-icon>cancel</mat-icon> Annuler
+                    </button>
+                  </div>
+                </ng-template>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+        <div *ngIf="isEditing" class="equipe-info">
+          <p><strong>Équipe du membre :</strong> {{ editSanction.equipeMatch || 'N/A' }}</p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

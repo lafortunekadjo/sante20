@@ -1,0 +1,164 @@
+<div class="match-container">
+  <h1 class="page-title">Gestion des Matchs</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Liste des Matchs</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Ajoutez ou modifiez les matchs ci-dessous</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données...</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <div class="filter-row">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
+            <mat-icon>add</mat-icon> Créer un Match
+          </button>
+          <button mat-raised-button color="accent" (click)="viewCalendar()" class="view-button">
+            <mat-icon>calendar_today</mat-icon> Voir le calendrier des matchs
+          </button>
+          <button mat-raised-button color="primary" (click)="generateAndSaveMatches()" class="generate-button">
+            <mat-icon>playlist_add</mat-icon> Générer le calendrier des matchs
+          </button>
+        </div>
+        <div *ngIf="showCreateRow" class="create-row">
+          <h3 class="create-title">{{ editingMatch ? 'Modifier Match' : 'Nouveau Match' }}</h3>
+          <div class="form-info">
+            <!-- <strong>Groupe actuel :</strong> {{ groupes?.nom || 'Aucun groupe' }} -->
+          </div>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Type de match</mat-label>
+            <mat-select [(ngModel)]="newMatch.typeMatch" required (selectionChange)="onTypeChange()" class="select-field">
+              <mat-option value="AMICAL">Amical</mat-option>
+              <mat-option value="INTERNE">Interne</mat-option>
+              <mat-option value="ANNIVERSAIRE">Anniversaire</mat-option>
+              <mat-option value="DUEL">Duel</mat-option>
+            </mat-select>
+            <mat-error *ngIf="!newMatch.typeMatch">Le type est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.typeMatch === 'AMICAL'">
+            <mat-label>Équipe adverse</mat-label>
+            <input matInput [(ngModel)]="newMatch.adversaire" required class="input-field">
+            <mat-error *ngIf="!newMatch.adversaire">L'équipe adverse est requise</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.typeMatch === 'DUEL'">
+            <mat-label>Commentaire du duel</mat-label>
+            <input matInput [(ngModel)]="newMatch.commentaire" required class="input-field">
+            <mat-error *ngIf="!newMatch.commentaire">Le commentaire est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.typeMatch === 'ANNIVERSAIRE'">
+            <mat-label>Membre fêtant l'anniversaire</mat-label>
+            <mat-select [(ngModel)]="newMatch.membreAnniversaire" required class="select-field">
+              <mat-option *ngFor="let membre of membres" [value]="membre.id">{{ getMembreName(membre) }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="!newMatch.membreAnniversaire">Le membre est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Date du match</mat-label>
+            <input matInput type="date" [(ngModel)]="newMatch.dateMatch" required class="input-field">
+            <mat-error *ngIf="!isDateValid(newMatch.dateMatch)">Date invalide</mat-error>
+          </mat-form-field>
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" (click)="saveMatch()" [disabled]="!isCreateFormValid()" class="save-button">Enregistrer</button>
+            <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">Annuler</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" matSort class="data-table">
+            <ng-container matColumnDef="dateMatch">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-dateMatch">Date</th>
+              <td mat-cell *matCellDef="let match" class="col-dateMatch" data-label="Date">
+                {{ match.dateMatch }}
+                <span *ngIf="isMatchPlayed(match)" class="status-icon" style="color: green;">✔️</span>
+                <span *ngIf="isMatchMissed(match)" class="status-icon" style="color: red;">❌</span>
+                <span *ngIf="isMatchFuture(match)" class="status-icon">○</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="typeMatch">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-typeMatch">Type</th>
+              <td mat-cell *matCellDef="let match" class="col-typeMatch" data-label="Type">
+                {{ match.typeMatch }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="adversaire">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-adversaire">Adversaire / Info</th>
+              <td mat-cell *matCellDef="let match" class="col-adversaire" data-label="Adversaire / Info">
+                <span *ngIf="match.typeMatch === 'ANNIVERSAIRE'">
+                  {{ getMembreName(match.membreAnniversaire) }} (Anniversaire)
+                </span>
+                <span *ngIf="match.typeMatch === 'DUEL'">
+                  {{ match.commentaire }}
+                </span>
+                <span *ngIf="match.typeMatch === 'AMICAL' || match.typeMatch === 'INTERNE'">
+                  {{ match.adversaire }}
+                </span>
+                <span *ngIf="match.typeMatch === 'ANNIVERSAIRE' || match.typeMatch === 'INTERNE'">
+                  {{ match.membre }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+              <td mat-cell *matCellDef="let match" class="col-actions" data-label="Actions">
+                <div class="action-buttons-horizontal">
+                  <button mat-icon-button color="primary" (click)="editMatch(match)" title="Modifier">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="accent" [routerLink]="['/presence', match.id]" title="Gérer la Présence">
+                    <mat-icon>group</mat-icon>
+                  </button>
+                  <button mat-icon-button color="accent" (click)="printFeuilleMatch(match)" title="Imprimer Feuille de Match">
+                    <mat-icon>print</mat-icon>
+                  </button>
+                  <button mat-icon-button color="primary" (click)="openMediaUploadDialog(match)" title="Charger Médias">
+                    <mat-icon>cloud_upload</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="openDeleteDialog(match)" title="Supprimer">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <div class="print-section" *ngIf="matchToPrint">
+    <div class="feuille-match-print">
+      <h2>Feuille de Match</h2>
+      <p><strong>Date :</strong> {{ matchToPrint?.dateMatch }}</p>
+      <p><strong>Type :</strong> {{ matchToPrint?.typeMatch }}</p>
+      <!-- <p><strong>Groupe :</strong> {{ matchToPrint?.groupe?.nom }}</p> -->
+      <p><strong>Adversaire :</strong> {{ matchToPrint?.adversaire }}</p>
+      <!-- <p><strong>Lieu :</strong> {{ matchToPrint?.lieu }}</p> -->
+      <h3>Fiche de Présence</h3>
+      <div class="equipe-print">
+        <h4>Équipe {{ ['INTERNE', 'ANNIVERSAIRE', 'DUEL', 'AMICAL'].includes(matchToPrint?.typeMatch ?? '') ? getEquipeNames(matchToPrint.adversaire)[0] : 'Locale' }}</h4>
+        <ul>
+          <li *ngFor="let presence of presencesToPrint | equipeFilter:'LOCALE':matchToPrint.typeMatch">
+            {{ getMembreName(presence.membre) }} {{ presence.estCapitaine ? '(Capitaine)' : '' }} {{ presence.buts > 0 ? '(' + presence.buts + ' but(s))' : '' }}
+          </li>
+        </ul>
+      </div>
+      <div class="equipe-print">
+        <h4>Équipe {{ ['INTERNE', 'ANNIVERSAIRE', 'DUEL', 'AMICAL'].includes(matchToPrint?.typeMatch ?? '') ? getEquipeNames(matchToPrint.adversaire)[1] : 'Adverse' }}</h4>
+        <ul>
+          <li *ngFor="let presence of presencesToPrint | equipeFilter:'ADVERSE':matchToPrint.typeMatch">
+            {{ getMembreName(presence.membre) }} {{ presence.estCapitaine ? '(Capitaine)' : '' }} {{ presence.buts > 0 ? '(' + presence.buts + ' but(s))' : '' }}
+          </li>
+        </ul>
+      </div>
+      <h3>Sanctions</h3>
+      <ul>
+        <li *ngFor="let sanction of sanctionsToPrint">
+          {{ getMembreName(sanction.membre) }} - {{ getTypeSanctionName(sanction.typeSanction) }} ({{ sanction.montant }} - {{ sanction.etat }})
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

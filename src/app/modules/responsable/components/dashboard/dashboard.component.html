@@ -1,0 +1,186 @@
+<!-- dashboard.component.html -->
+<div class="dashboard-container">
+  <!-- Conteneur des filtres avec une disposition flexible pour le mobile -->
+  <div class="filter-container">
+    <form [formGroup]="dateRangeForm" class="date-filter-form">
+      <mat-form-field appearance="outline" class="flex-grow">
+        <mat-label>Plage de dates</mat-label>
+        <mat-date-range-input [rangePicker]="picker">
+          <input matStartDate formControlName="start" placeholder="Date de début" (click)="picker.open()">
+          <input matEndDate formControlName="end" placeholder="Date de fin" (click)="picker.open()">
+        </mat-date-range-input>
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-date-range-picker #picker></mat-date-range-picker>
+        <mat-error *ngIf="dateRangeForm.errors?.['rangeInvalid']">
+          La date de fin doit être postérieure à la date de début
+        </mat-error>
+      </mat-form-field>
+      <div class="button-group">
+        <button mat-raised-button color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid" class="apply-button">
+          Appliquer
+        </button>
+        <button mat-stroked-button color="warn" (click)="resetDateFilter()" class="reset-button">
+          Réinitialiser
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Grille responsive avec gestion des colonnes et valeur par défaut -->
+  <mat-grid-list [cols]="(gridCols | async) || 4" rowHeight="200px" gutterSize="16px" class="grid-container">
+    <!-- Tuile pour les membres du groupe -->
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">groups</mat-icon>
+          </div>
+          <mat-card-title>Membres du groupe</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <h2>{{ stats.memberCount || 0 }}</h2>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+
+    <!-- Tuile pour les contributions totales -->
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">monetization_on</mat-icon>
+          </div>
+          <mat-card-title>Contributions totales</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <h2>{{ stats.totalContributions | number }} FCFA</h2>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+
+    <!-- Tuile pour les sanctions payées -->
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">check_circle</mat-icon>
+          </div>
+          <mat-card-title>Sanctions payées</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <h2>{{ stats.paidSanctions?.amount | number }} FCFA ({{ stats.paidSanctions?.count }})</h2>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+
+    <!-- Tuile pour les sanctions non payées -->
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">warning</mat-icon>
+          </div>
+          <mat-card-title>Sanctions non payées</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <h2>{{ stats.unpaidSanctions?.amount | number }} FCFA ({{ stats.unpaidSanctions?.count }})</h2>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+
+    <!-- Tuiles pour les graphiques avec colspan dynamique -->
+    <mat-grid-tile [colspan]="((gridCols | async) || 4) > 1 ? 2 : 1" [rowspan]="((gridCols | async) || 4) > 1 ? 2 : 1">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Répartition des sanctions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="donutChartData" [options]="donutChartOptions" [type]="donutChartType"></canvas>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="((gridCols | async) || 4) > 1 ? 2 : 1" [rowspan]="((gridCols | async) || 4) > 1 ? 2 : 1">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Contributions par mois</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+    
+    <!-- Tuiles pour les listes avec colspan dynamique -->
+    <mat-grid-tile [colspan]="((gridCols | async) || 4) > 1 ? 2 : 1" [rowspan]="1">
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">sports_soccer</mat-icon>
+          </div>
+          <mat-card-title>Meilleurs Buteurs</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list>
+            <mat-list-item *ngFor="let scorer of stats.topScorers | slice:0:3; let i = index">
+              <span>{{ i + 1 }}. {{ scorer.name }} ({{ scorer.team }}) - {{ scorer.goals }} buts</span>
+            </mat-list-item>
+            <mat-list-item *ngIf="stats.topScorers?.length === 0">Aucun buteur</mat-list-item>
+          </mat-list>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="((gridCols | async) || 4) > 1 ? 2 : 1" [rowspan]="1">
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">swap_horiz</mat-icon>
+          </div>
+          <mat-card-title>Meilleurs Passeurs</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list>
+            <mat-list-item *ngFor="let assister of stats.topAssists | slice:0:3; let i = index">
+              <span>{{ i + 1 }}. {{ assister.name }} ({{ assister.team }}) - {{ assister.assists }} passes</span>
+            </mat-list-item>
+            <mat-list-item *ngIf="stats.topAssists?.length === 0">Aucun passeur</mat-list-item>
+          </mat-list>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="(gridCols | async) || 4" [rowspan]="1">
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div class="card-icon-container">
+            <mat-icon class="card-icon">person_pin</mat-icon>
+          </div>
+          <mat-card-title>Membres les plus Présents</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list>
+            <mat-list-item *ngFor="let attendance of stats.topAttendance | slice:0:3; let i = index">
+              <span>{{ i + 1 }}. {{ attendance.name }} ({{ attendance.team }}) - {{ attendance.appearances }} présences</span>
+            </mat-list-item>
+            <mat-list-item *ngIf="stats.topAttendance?.length === 0">Aucune présence</mat-list-item>
+          </mat-list>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile [colspan]="(gridCols | async) || 4" [rowspan]="1">
+      <mat-card class="list-card">
+        <mat-card-header>
+          <mat-card-title>Matchs à venir</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list>
+            <mat-list-item *ngFor="let match of stats.upcomingMatches">
+              <mat-icon matListIcon>event</mat-icon>
+              <span>{{ match.date | date:'dd/MM/yyyy' }} - {{ match.opponent }}</span>
+            </mat-list-item>
+            <mat-list-item *ngIf="stats.upcomingMatches?.length === 0">Aucun match à venir</mat-list-item>
+          </mat-list>
+        </mat-card-content>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+</div>
+

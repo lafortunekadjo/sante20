@@ -1,0 +1,48 @@
+<mat-toolbar color="primary" class="toolbar">
+  
+  <span class="app-title">SportApp</span>
+  <span class="spacer"></span>
+  <mat-form-field *ngIf="roles.length > 1" class="role-select">
+    <mat-label>Rôle</mat-label>
+    <mat-select [(value)]="selectedRole" (selectionChange)="changeRole($event.value)" panelClass="role-panel">
+      <mat-option *ngFor="let role of roles" [value]="role">
+        {{ role === 'ADMIN' ? 'Administrateur' : role === 'RESPONSABLE' ? 'Responsable' : 'Membre' }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <button mat-button class="check-in-button" (click)="checkIn()" [disabled]="isChecking">
+    <mat-icon>check_circle</mat-icon>
+    Check-in
+  </button>
+  <button mat-button [matMenuTriggerFor]="profileMenu" class="profile-button" *ngIf="authService.isLoggedIn()">
+    <img [src]="userProfileImage || '../assets/default-profile.jpg'" class="profile-image" alt="Profil" />
+    <span class="username">{{ user?.username || 'Utilisateur' }}</span>
+  </button>
+  <mat-menu #profileMenu="matMenu" class="profile-menu">
+    <button mat-menu-item (click)="openProfileEdit()">
+      <mat-icon>edit</mat-icon>
+      Modifier le profil
+    </button>
+    <button mat-menu-item (click)="openProfileImageEdit()">
+        <mat-icon>camera_alt</mat-icon>
+        Modifier la photo
+    </button>
+        <button mat-menu-item (click)="openPasswordEdit()">
+        <mat-icon>camera_alt</mat-icon>
+        Modifier le mot de passe
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>exit_to_app</mat-icon>
+      Déconnexion
+    </button>
+    <button mat-menu-item (click)="viewNotifications()">
+      <mat-icon>notifications</mat-icon>
+      Notifications
+    </button>
+    <button mat-menu-item (click)="viewSettings()">
+      <mat-icon>settings</mat-icon>
+      Paramètres
+    </button>
+  </mat-menu>
+   <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*">
+</mat-toolbar>

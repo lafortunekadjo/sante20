@@ -1,0 +1,256 @@
+<div class="membres-container">
+  <h1 class="page-title">Fiche de Présence - Match du {{ match?.dateMatch | date:'shortDate' }}</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Fiche de Présence</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Gérez la présence, les joueurs, les capitaines et les statistiques pour le match</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données... (isLoading: {{ isLoading }})</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <div class="filter-row">
+          <p class="filter-info"><strong>Type :</strong> {{ match?.typeMatch || 'N/A' }}</p>
+          <p class="filter-info"><strong>Adversaire :</strong> {{ match?.adversaire || 'N/A' }}</p>
+          <p class="filter-info"><strong>Lieu :</strong> {{ match?.lieu || 'N/A' }}</p>
+        </div>
+        <div class="card-list">
+          <mat-accordion>
+            <mat-expansion-panel *ngFor="let presence of dataSource.data; let i = index" class="member-card">
+              <mat-expansion-panel-header>
+                <mat-panel-title>{{ getMembreName(presence.membre.id) }}</mat-panel-title>
+                <mat-panel-description>
+                  {{ presence.present ? 'Présent' : 'Absent' }}
+                  {{ presence.aJoue ? ' - A joué' : '' }}
+                  {{ presence.estCapitaine ? ' - Capitaine' : '' }}
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              <div class="card-content">
+                <div class="form-field">
+                  <mat-checkbox [(ngModel)]="presence.present" (ngModelChange)="onPresenceChange(presence)">Présent</mat-checkbox>
+                </div>
+                <div class="form-field">
+                  <mat-checkbox [(ngModel)]="presence.aJoue" (ngModelChange)="onAJoueChange(presence)">A joué</mat-checkbox>
+                </div>
+                <mat-form-field appearance="outline" class="form-field" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Équipe</mat-label>
+                  <mat-select [(ngModel)]="presence.equipeMatch" required>
+                    <mat-option *ngFor="let equipe of equipeNames" [value]="equipe">{{ equipe }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <div class="form-field" *ngIf="presence.present && presence.aJoue">
+                  <mat-checkbox [(ngModel)]="presence.estCapitaine" (change)="setCapitaine(presence)">Capitaine</mat-checkbox>
+                </div>
+                <div class="form-field" *ngIf="presence.present && presence.aJoue">
+                  <mat-checkbox [(ngModel)]="presence.estHommeDuMatchEq" (change)="setMvpEquipe(presence)">MVP Équipe</mat-checkbox>
+                </div>
+                <div class="form-field" *ngIf="presence.present && presence.aJoue">
+                  <mat-checkbox [(ngModel)]="presence.estHommeDuMatch" (change)="setHommeDuMatch(presence)">MVP Match</mat-checkbox>
+                </div>
+                <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Buts</mat-label>
+                  <input matInput type="number" [(ngModel)]="presence.buts" min="0" class="text-center">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Passes</mat-label>
+                  <input matInput type="number" [(ngModel)]="presence.passes" min="0" class="text-center">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Cartons Jaunes</mat-label>
+                  <input matInput type="number" [(ngModel)]="presence.cartonsJaunes" min="0" max="2" class="text-center">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Cartons Rouges</mat-label>
+                  <input matInput type="number" [(ngModel)]="presence.cartonsRouges" min="0" max="1" class="text-center">
+                </mat-form-field>
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="savePresences()" [disabled]="!isPresenceValid()" class="save-button">Enregistrer</button>
+          <button mat-raised-button color="accent" (click)="printMatchSheet()" class="print-button">Imprimer la feuille de match</button>
+          <button mat-raised-button color="accent" (click)="printPresenceSheet()" class="print-button">Imprimer la feuille de présence</button>
+          <button mat-raised-button color="warn" [routerLink]="['/match']" class="cancel-button">Retour</button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Section pour l'impression de la feuille de match -->
+<div id="print-section" class="print-section">
+  <h1 class="print-title">FEUILLE DE MATCH <span class="text-primary">{{ groupeActif?.nom }}</span></h1>
+  <h2 class="print-subtitle">MATCH CONTRE {{ match?.adversaire }} - DATE : {{ match?.dateMatch | date:'dd/MM/yyyy' }}</h2>
+  <div class="print-team-layout">
+    <div class="club-section">
+      <h3 class="section-title">ÉQUIPE {{ equipeNames[0] || 'JAUNE' }}</h3>
+      <h4 class="captain-title">Capitaine : {{ getCapitaine(equipeNames[0]) || '_______________________' }}</h4>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Joueur</th>
+            <th>B</th>
+            <th>P</th>
+            <th>CJ</th>
+            <th>CR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let presence of dataSource.data | filterByEquipe:equipeNames[0]; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ getMembreName(presence.membre.id) }}</td>
+            <td>{{ presence.buts }}</td>
+            <td>{{ presence.passes }}</td>
+            <td>{{ presence.cartonsJaunes }}</td>
+            <td>{{ presence.cartonsRouges }}</td>
+          </tr>
+          <tr *ngIf="(dataSource.data | filterByEquipe:equipeNames[0]).length === 0">
+            <td colspan="6" class="text-center">Aucun joueur</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="club-section">
+      <h3 class="section-title">ÉQUIPE {{ equipeNames[1] || 'ROUGE' }}</h3>
+      <h4 class="captain-title">Capitaine : {{ getCapitaine(equipeNames[1]) || '_______________________' }}</h4>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Joueur</th>
+            <th>B</th>
+            <th>P</th>
+            <th>CJ</th>
+            <th>CR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let presence of dataSource.data | filterByEquipe:equipeNames[1]; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ getMembreName(presence.membre.id) }}</td>
+            <td>{{ presence.buts }}</td>
+            <td>{{ presence.passes }}</td>
+            <td>{{ presence.cartonsJaunes }}</td>
+            <td>{{ presence.cartonsRouges }}</td>
+          </tr>
+          <tr *ngIf="(dataSource.data | filterByEquipe:equipeNames[1]).length === 0">
+            <td colspan="6" class="text-center">Aucun joueur</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="print-details">
+    <div class="disciplinary-section">
+      <h3 class="section-title">SANCTIONS DISCIPLINAIRES</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Équipe</th>
+            <th>Joueur</th>
+            <th>Type</th>
+            <th>Nombre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let presence of dataSource.data">
+            <tr *ngIf="presence.cartonsJaunes > 0">
+              <td>{{ presence.equipeMatch }}</td>
+              <td>{{ getMembreName(presence.membre.id) }}</td>
+              <td>Carton Jaune</td>
+              <td>{{ presence.cartonsJaunes }}</td>
+            </tr>
+            <tr *ngIf="presence.cartonsRouges > 0">
+              <td>{{ presence.equipeMatch }}</td>
+              <td>{{ getMembreName(presence.membre.id) }}</td>
+              <td>Carton Rouge</td>
+              <td>{{ presence.cartonsRouges }}</td>
+            </tr>
+          </ng-container>
+          <tr *ngIf="getTotalCartons(equipeNames[0], 'JAUNES') === 0 && getTotalCartons(equipeNames[1], 'JAUNES') === 0 && getTotalCartons(equipeNames[0], 'ROUGES') === 0 && getTotalCartons(equipeNames[1], 'ROUGES') === 0">
+            <td colspan="4" class="text-center">Aucun carton</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="match-stats-section">
+      <h3 class="section-title">STATISTIQUES</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Catégorie</th>
+            <th>{{ equipeNames[0] || 'JAUNE' }}</th>
+            <th>{{ equipeNames[1] || 'ROUGE' }}</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Score</td>
+            <td>{{ getScore(equipeNames[0]) }}</td>
+            <td>{{ getScore(equipeNames[1]) }}</td>
+            <td>{{ getScore(equipeNames[0]) + getScore(equipeNames[1]) }}</td>
+          </tr>
+          <tr>
+            <td>Buteurs</td>
+            <td colspan="3">
+              <ul class="list-none">
+                <li *ngFor="let presence of dataSource.data | filterByButs; let last = last">
+                  {{ getMembreName(presence.membre.id) }} ({{ presence.buts }}){{ last ? '' : ', ' }}
+                </li>
+                <li *ngIf="(dataSource.data | filterByButs).length === 0">Aucun buteur</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td>Passeurs</td>
+            <td colspan="3">
+              <ul class="list-none">
+                <li *ngFor="let presence of dataSource.data | filterByPasses; let last = last">
+                  {{ getMembreName(presence.membre.id) }} ({{ presence.passes }}){{ last ? '' : ', ' }}
+                </li>
+                <li *ngIf="(dataSource.data | filterByPasses).length === 0">Aucun passeur</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td>MVP Équipe</td>
+            <td colspan="3">{{ getMvpEquipe() || 'Aucun' }}</td>
+          </tr>
+          <tr>
+            <td>MVP Match</td>
+            <td colspan="3">{{ getHommeDuMatch() || 'Aucun' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+  <!-- Section pour l'impression de la feuille de présence -->
+  <div id="print-presence-section" class="print-section">
+    <h1 class="print-title">FICHE DE PRÉSENCE <span class="text-primary">{{ groupeActif?.nom }}</span></h1>
+    <h2 class="print-subtitle">Date : {{ match?.dateMatch | date:'dd/MM/yyyy' }}</h2>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>NOMS ET PRÉNOMS</th>
+          <th>OBSERVATION</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let presence of (dataSource.data); let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ getMembreName(presence.membre.id) }}</td>
+          <td></td>
+        </tr>
+        <tr *ngIf="(dataSource.data).length === 0">
+          <td colspan="3" class="text-center">Aucun membre présent</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

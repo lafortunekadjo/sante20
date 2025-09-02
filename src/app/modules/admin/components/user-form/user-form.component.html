@@ -1,0 +1,152 @@
+<div class="user-container">
+  <h1 class="page-title">Gestion des Utilisateurs</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Liste des Utilisateurs</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Filtrez, ajoutez ou modifiez les utilisateurs ci-dessous</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données...</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <div class="filter-row">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
+            <mat-icon>add</mat-icon> Créer un Utilisateur
+          </button>
+        </div>
+        <div *ngIf="showCreateRow" class="create-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Nom d'utilisateur</mat-label>
+            <input matInput [(ngModel)]="newUser.username" required>
+            <mat-error *ngIf="!newUser.username">Le nom d'utilisateur est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" [(ngModel)]="newUser.email" required>
+            <mat-error *ngIf="!newUser.email">L'email est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Mot de passe</mat-label>
+            <input matInput type="password" [(ngModel)]="newUser.motDePasse" required>
+            <mat-error *ngIf="!newUser.motDePasse">Le mot de passe est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Rôles</mat-label>
+            <mat-select 
+              [(ngModel)]="selectedRolesArray" 
+              multiple 
+              required
+              (selectionChange)="onRoleSelectionChange()">
+              <mat-option value="ADMIN">ADMIN</mat-option>
+              <mat-option value="RESPONSABLE">RESPONSABLE</mat-option>
+              <mat-option value="MEMBRE">MEMBRE</mat-option>
+            </mat-select>
+            <mat-error *ngIf="!newUser.roles">Les rôles sont requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Groupe</mat-label>
+            <mat-select [(ngModel)]="newUser.groupe">
+              <mat-option value="0">Aucun</mat-option>
+              <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-checkbox class="form-field" [(ngModel)]="newUser.active">Actif</mat-checkbox>
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" (click)="saveUser()" [disabled]="!isCreateFormValid()" class="save-button">
+              Enregistrer
+            </button>
+            <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">
+              Annuler
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" matSort class="data-table">
+            <ng-container matColumnDef="username">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-username">Nom d'utilisateur</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-username">
+                <span *ngIf="!editingRows[i]">{{ user.username }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <input matInput [(ngModel)]="editUser.username" required>
+                  <mat-error *ngIf="!editUser.username">Le nom d'utilisateur est requis</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-email">Email</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-email">
+                <span *ngIf="!editingRows[i]">{{ user.email }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <input matInput type="email" [(ngModel)]="editUser.email" required>
+                  <mat-error *ngIf="!editUser.email">L'email est requis</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="roles">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-roles">Rôles</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-roles">
+                <span *ngIf="!editingRows[i]">{{ user.roles.nom }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <input matInput [(ngModel)]="editUser.roles" required>
+                  <mat-error *ngIf="!editUser.roles">Les rôles sont requis</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="groupe">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-groupe">Groupe</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-groupe">
+                <span *ngIf="!editingRows[i]">{{ getGroupeName(user.membre) }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <mat-select [(ngModel)]="editUser.membre">
+                    <mat-option value="0">Aucun</mat-option>
+                    <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="active">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-active">Actif</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-active">
+                <span *ngIf="!editingRows[i]">{{ user.active ? 'Oui' : 'Non' }}</span>
+                <mat-checkbox *ngIf="editingRows[i]" [(ngModel)]="editUser.active"></mat-checkbox>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+              <td mat-cell *matCellDef="let user; let i = index" class="col-actions">
+                <ng-container *ngIf="!editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-icon-button color="primary" (click)="editRow(i, user)" title="Modifier">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="accent" (click)="openToggleActiveDialog(user)" [title]="user.active ? 'Désactiver' : 'Activer'">
+                      <mat-icon>{{ user.active ? 'block' : 'check_circle' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="openDeleteDialog(user)" title="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" class="save-button">
+                      Enregistrer
+                    </button>
+                    <button mat-raised-button color="warn" (click)="cancelEdit(i)" class="cancel-button">
+                      Annuler
+                    </button>
+                  </div>
+                </ng-container>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

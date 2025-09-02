@@ -1,0 +1,90 @@
+<div class="equipe-manager-container">
+  <h1 class="page-title">Gestion des Équipes</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Liste des Équipes</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Ajoutez, modifiez ou désactivez les équipes</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des équipes...</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <div class="filter-row">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
+            <mat-icon>add</mat-icon> Créer une équipe
+          </button>
+        </div>
+        <div *ngIf="showCreateRow" class="create-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Nom de l'équipe</mat-label>
+            <input matInput [(ngModel)]="newEquipe.nom" required />
+            <mat-error *ngIf="!newEquipe.nom">Le nom est requis</mat-error>
+          </mat-form-field>
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" (click)="saveEquipe()" [disabled]="!isCreateFormValid()" class="save-button">
+              Enregistrer
+            </button>
+            <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">
+              Annuler
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" matSort class="data-table">
+            <!-- Colonne ID -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-id">ID</th>
+              <td mat-cell *matCellDef="let equipe" class="col-id" [attr.data-label]="'ID'">{{ equipe.id }}</td>
+            </ng-container>
+            
+            <!-- Colonne Nom -->
+            <ng-container matColumnDef="nom">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-nom">Nom de l'équipe</th>
+              <td mat-cell *matCellDef="let equipe; let i = index" class="col-nom" [attr.data-label]="'Nom de l\'équipe'">
+                <span *ngIf="!editingRows[i]">{{ equipe.nom }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <mat-label>Nom</mat-label>
+                  <input matInput [(ngModel)]="editEquipe.nom" required />
+                  <mat-error *ngIf="!editEquipe.nom">Le nom est requis</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+
+            <!-- Colonne Actions -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+              <td mat-cell *matCellDef="let equipe; let i = index" class="col-actions" [attr.data-label]="'Actions'">
+                <ng-container *ngIf="!editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-icon-button color="primary" (click)="editRow(i, equipe)" title="Modifier">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="openDeleteDialog(equipe)" title="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" title="Enregistrer">
+                      Enregistrer
+                    </button>
+                    <button mat-raised-button color="warn" (click)="cancelEdit(i)" title="Annuler">
+                      Annuler
+                    </button>
+                  </div>
+                </ng-container>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

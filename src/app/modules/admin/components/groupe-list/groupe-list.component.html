@@ -1,0 +1,170 @@
+<div class="groupe-container">
+  <h1 class="page-title">Gestion des Groupes</h1>
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Liste des Groupes</mat-card-title>
+      <mat-card-subtitle class="card-subtitle">Filtrez, ajoutez ou modifiez les groupes ci-dessous</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données...</p>
+      </div>
+      <div *ngIf="!isLoading" class="content-wrapper">
+        <div class="filter-row">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
+            <mat-icon>add</mat-icon> Créer un Groupe
+          </button>
+        </div>
+        <div *ngIf="showCreateRow" class="create-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Nom</mat-label>
+            <input matInput [(ngModel)]="newGroupe.nom" required>
+            <mat-error *ngIf="!newGroupe.nom">Le nom est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Discipline</mat-label>
+            <input matInput [(ngModel)]="newGroupe.discipline" required>
+            <mat-error *ngIf="!newGroupe.discipline">La discipline est requise</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Ville</mat-label>
+            <mat-select [(ngModel)]="newGroupe.ville" required>
+              <mat-option *ngFor="let ville of villes" [value]="ville.id">{{ ville.nom }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="!newGroupe.ville">La ville est requise</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Stade</mat-label>
+            <mat-select [(ngModel)]="newGroupe.stade" required>
+              <mat-option *ngFor="let stade of stades" [value]="stade.id">{{ stade.nom }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="!newGroupe.stade">Le stade est requis</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Jour de match</mat-label>
+            <mat-select [(ngModel)]="newGroupe.jourMatch">
+              <mat-option value="Lundi">Lundi</mat-option>
+              <mat-option value="Mardi">Mardi</mat-option>
+              <mat-option value="Mercredi">Mercredi</mat-option>
+              <mat-option value="Jeudi">Jeudi</mat-option>
+              <mat-option value="Vendredi">Vendredi</mat-option>
+              <mat-option value="Samedi">Samedi</mat-option>
+              <mat-option value="Dimanche">Dimanche</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Type d'équipe</mat-label>
+            <input matInput [(ngModel)]="newGroupe.typeEquipe">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Mode d'équipe</mat-label>
+            <mat-select [(ngModel)]="newGroupe.modeEquipe">
+              <mat-option value="STATIQUE">Statique</mat-option>
+              <mat-option value="DYNAMIQUE">Dynamique</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Frais d'adhésion</mat-label>
+            <input matInput type="number" [(ngModel)]="newGroupe.fraisAdhesion">
+          </mat-form-field>
+          <mat-checkbox class="form-field" [(ngModel)]="newGroupe.isActive">Actif</mat-checkbox>
+          <div class="action-buttons">
+            <button mat-raised-button color="primary" (click)="saveGroupe()" [disabled]="!isCreateFormValid()" class="save-button">
+              Enregistrer
+            </button>
+            <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">
+              Annuler
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="dataSource" matSort class="data-table">
+            <ng-container matColumnDef="nom">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-nom">Nom</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-nom">
+                <span *ngIf="!editingRows[i]">{{ groupe.nom }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <input matInput [(ngModel)]="editGroupe.nom" required>
+                  <mat-error *ngIf="!editGroupe.nom">Le nom est requis</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="discipline">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-discipline">Discipline</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-discipline">
+                <span *ngIf="!editingRows[i]">{{ groupe.discipline }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <input matInput [(ngModel)]="editGroupe.discipline" required>
+                  <mat-error *ngIf="!editGroupe.discipline">La discipline est requise</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="ville">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-ville">Ville</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-ville">
+                <span *ngIf="!editingRows[i]">{{ getVilleName(groupe.ville) }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <mat-select [(ngModel)]="editGroupe.ville" required>
+                    <mat-option *ngFor="let ville of villes" [value]="ville.id">{{ ville.nom }}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="!editGroupe.ville">La ville est requise</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="stade">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-stade">Stade</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-stade">
+                <span *ngIf="!editingRows[i]">{{ getStadeName(groupe.stade) }}</span>
+                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
+                  <mat-select [(ngModel)]="editGroupe.stade" required>
+                    <mat-option *ngFor="let stade of stades" [value]="stade.id">{{ stade.nom }}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="!editGroupe.stade">Le stade est requise</mat-error>
+                </mat-form-field>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="isActive">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-isActive">Actif</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-isActive">
+                <span *ngIf="!editingRows[i]">{{ groupe.isActive ? 'Oui' : 'Non' }}</span>
+                <mat-checkbox *ngIf="editingRows[i]" [(ngModel)]="editGroupe.isActive"></mat-checkbox>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+              <td mat-cell *matCellDef="let groupe; let i = index" class="col-actions">
+                <ng-container *ngIf="!editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-icon-button color="primary" (click)="editRow(i, groupe)" title="Modifier">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="accent" (click)="openToggleActiveDialog(groupe)" [title]="groupe.isActive ? 'Désactiver' : 'Activer'">
+                      <mat-icon>{{ groupe.isActive ? 'block' : 'check_circle' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="openDeleteDialog(groupe)" title="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="editingRows[i]">
+                  <div class="action-buttons-horizontal">
+                    <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" class="save-button">
+                      Enregistrer
+                    </button>
+                    <button mat-raised-button color="warn" (click)="cancelEdit(i)" class="cancel-button">
+                      Annuler
+                    </button>
+                  </div>
+                </ng-container>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

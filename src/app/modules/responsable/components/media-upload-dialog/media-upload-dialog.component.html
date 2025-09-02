@@ -1,0 +1,24 @@
+<div mat-dialog-content class="dialog-content">
+  <h2 class="dialog-title">Uploader des Médias pour le Match</h2>
+  <p class="dialog-subtitle">Sélectionnez des images ou vidéos (formats acceptés : jpg, png, mp4).</p>
+  <label class="file-input" for="file-upload">
+    <mat-icon>cloud_upload</mat-icon> Cliquez ou déposez des fichiers ici
+    <input type="file" id="file-upload" (change)="onFileSelected($event)" multiple accept="image/*,video/mp4" class="hidden-input" />
+  </label>
+  <div class="file-list" *ngIf="selectedFiles.length > 0">
+    <div class="file-preview">
+      <ng-container *ngFor="let preview of previews; let i = index">
+        <img *ngIf="preview" [src]="preview" alt="Aperçu" />
+        <div *ngIf="!preview" class="video-placeholder">
+          <mat-icon>videocam</mat-icon> Vidéo
+        </div>
+      </ng-container>
+    </div>
+    <p *ngFor="let file of selectedFiles; let i = index">{{ file.name }} <span *ngIf="previews[i]"> (Aperçu disponible)</span></p>
+  </div>
+  <p class="upload-progress" *ngIf="uploadProgress" [ngClass]="{'error': uploadProgress.includes('Erreur')}">{{ uploadProgress }}</p>
+</div>
+<div mat-dialog-actions class="dialog-actions">
+  <button mat-button (click)="uploadFiles()" color="primary" [disabled]="selectedFiles.length === 0">Uploader</button>
+  <button mat-button (click)="closeDialog()" color="warn">Annuler</button>
+</div>
