@@ -31,7 +31,9 @@ export class AuthService {
 
  login(username: string, password: string): Observable<any> {
   // 1. Appel pour obtenir le token
-  return this.http.post<any>(this.apiUrl, { username, password }).pipe(
+  return this.http.post<any>(this.apiUrl, { username, password }, {
+  withCredentials: true // 👈 Ajout ici
+}).pipe(
     // Récupérer et stocker le token
     tap(response => {
       if (response && response.token) {
