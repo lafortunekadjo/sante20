@@ -34,7 +34,10 @@ login(username: string, password: string): Observable<any> {
   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
   // Étape 1 : Authentification et récupération du token
-  return this.http.post<any>(this.apiUrl, loginPayload, { headers }).pipe(
+  return this.http.post<any>(this.apiUrl, loginPayload, {
+    headers,
+    withCredentials: true // Important si backend autorise les credentials
+  }).pipe(
     tap(response => {
       if (response?.token) {
         this.token = response.token;
@@ -53,7 +56,10 @@ login(username: string, password: string): Observable<any> {
         'Content-Type': 'application/json'
       });
 
-      return this.http.get<any>(this.userInfoUrl, { headers: authHeaders });
+      return this.http.get<any>(this.userInfoUrl, {
+        headers: authHeaders,
+        withCredentials: true
+      });
     }),
 
     // Étape 3 : Traitement des infos utilisateur
@@ -74,6 +80,7 @@ login(username: string, password: string): Observable<any> {
     })
   );
 }
+
 
 
   // Vérifier si l'utilisateur a besoin de réinitialiser son mot de passe
