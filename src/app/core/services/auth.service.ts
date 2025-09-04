@@ -29,40 +29,43 @@ export class AuthService {
 
   constructor(private http: HttpClient,private sanitizer: DomSanitizer) {}
 
- login(username: string, password: string): Observable<any> {
-  // 1. Appel pour obtenir le token
-  return this.http.post<any>(this.apiUrl, { username, password }, {
-  withCredentials: true // 👈 Ajout ici
-}).pipe(
-    // Récupérer et stocker le token
+login(username: string, password: string): Observable<any> {
+  const loginPayload = { username, password };
+  const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+  // Étape 1 : Authentification et récupération du token
+  return this.http.post<any>(this.apiUrl, loginPayload, { headers }).pipe(
     tap(response => {
-      if (response && response.token) {
+      if (response?.token) {
         this.token = response.token;
         localStorage.setItem('token', response.token);
       }
     }),
-    // 2. Utiliser le token pour obtenir les informations de l'utilisateur
+
+    // Étape 2 : Utilisation du token pour récupérer les infos utilisateur
     switchMap(response => {
-      // Vérifier si le token a bien été reçu avant de continuer
-      if (!response || !response.token) {
+      if (!response?.token) {
         return throwError(() => new Error('Connexion échouée : pas de token reçu.'));
       }
 
-      const headers = new HttpHeaders({
-        Authorization: `Bearer ${response.token}`
+      const authHeaders = new HttpHeaders({
+        'Authorization': `Bearer ${response.token}`,
+        'Content-Type': 'application/json'
       });
-      return this.http.get<any>(this.userInfoUrl, { headers });
+
+      return this.http.get<any>(this.userInfoUrl, { headers: authHeaders });
     }),
-    // 3. Traiter les informations utilisateur
+
+    // Étape 3 : Traitement des infos utilisateur
     tap(userInfo => {
       console.log('Informations utilisateur:', userInfo);
-      // S'assurer que les propriétés existent avant de les assigner
+
       this.userId = userInfo.id || null;
-      this.passwordResetRequired = userInfo.passwordResetRequired
+      this.passwordResetRequired = userInfo.passwordResetRequired || false;
       this.roles = userInfo.roles || [];
       this.username = userInfo.username || null;
       this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
-      // Stocker toutes les informations en une seule fois dans le localStorage
+
       localStorage.setItem('userInfo', JSON.stringify({
         userId: this.userId,
         roles: this.roles,
@@ -71,6 +74,7 @@ export class AuthService {
     })
   );
 }
+
 
   // Vérifier si l'utilisateur a besoin de réinitialiser son mot de passe
   isPasswordResetRequired(): boolean {
