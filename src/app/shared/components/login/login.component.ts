@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -28,8 +28,13 @@ export class LoginComponent implements OnInit{
       password: ['', Validators.required]
     });
   }
-    ngOnInit(): void {
+  ngOnInit(): void {
+    console.log("apres")
     this.isLoading = false;
+     this.loginForm = this.fb.group({
+      username: ['', [Validators.required]],
+      password: ['', Validators.required]
+    });
   }
 
 submit() {
