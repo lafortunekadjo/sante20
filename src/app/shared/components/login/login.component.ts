@@ -46,13 +46,16 @@ export class LoginComponent {
             const roles = this.authService.getRoles();
             console.log(roles);
             if (roles.includes('ADMIN')) {
+              this.isLoading = false;
               this.router.navigate(['/admin']);
             } else if (roles.includes('RESPONSABLE')) {
+              this.isLoading = false;
               this.router.navigate(['/responsable']);
             } else if (roles.includes('USER')) {
-              console.log('Connexion réussie');
+              this.isLoading = false;
               this.router.navigate(['/membre']);
             } else {
+              this.isLoading = false;
               this.router.navigate(['/login']);
             }
           }
