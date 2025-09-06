@@ -172,7 +172,7 @@ export class ObjectifsComponent implements OnInit {
     }
   }
 
-<<<<<<< HEAD
+
 // Après
 getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
   // Votre logique de retour reste la même, mais le type est plus précis
