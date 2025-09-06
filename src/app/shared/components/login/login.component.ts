@@ -58,6 +58,7 @@ export class LoginComponent {
           }
         },
         error: (err) => {
+           this.isLoading = true;
           console.error('Erreur de connexion:', err);
           // Utilisez une boîte de dialogue personnalisée au lieu d'alert()
           // Exemple: this.dialogService.openErrorDialog('Échec de la connexion. Vérifiez vos identifiants.');
