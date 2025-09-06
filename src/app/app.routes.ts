@@ -20,6 +20,8 @@ import { PasswordResetDialogComponent } from "./shared/components/password-reset
 import { NewsFeedComponent } from "./modules/membre/components/news-feed/news-feed.component";
 import { SuggestionsComponent } from "./modules/membre/components/suggestions/suggestions.component";
 import { ObjectifsComponent } from "./modules/membre/components/objectifs/objectifs.component";
+import { ContributionComponent } from "./modules/responsable/components/contribution/contribution.component";
+import { TypeSortieComponent } from "./modules/responsable/components/type-sortie/type-sortie.component";
 
 
 export const routes: Routes = [
@@ -72,6 +74,17 @@ export const routes: Routes = [
   component: UserFormComponent,
   canActivate: [RoleGuard],
   data: { roles: ['ADMIN', 'RESPONSABLE'] }
+  }, 
+     {
+  path: 'contribution2',
+  component: ContributionComponent,
+  canActivate: [RoleGuard],
+  data: { roles: [ 'RESPONSABLE'] }
+  }, 
+    {path: 'depense',
+  component: TypeSortieComponent,
+  canActivate: [RoleGuard],
+  data: { roles: [ 'RESPONSABLE'] }
   }, 
 
    {

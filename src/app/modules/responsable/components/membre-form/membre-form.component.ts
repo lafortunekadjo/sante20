@@ -144,6 +144,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
 
   loadData() {
     this.isLoading = true;
+    console.log("la2")
     forkJoin([
       this.adminService.getGroupMembers().pipe(
         map(data => data || [])
@@ -160,13 +161,16 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     ]).subscribe({
       next: ([membres, groupeResponse, users, equipes]) => {
         this.dataSource.data = membres || [];
+        console.log("la")
         this.groupe = groupeResponse || null;
         const membreUserIds = new Set(membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []);
         this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
         this.equipes = equipes || [];
         this.editingRows = new Array(membres?.length || 0).fill(false);
-        this.isLoading = false;
+  
         this.newMembre.groupe = this.groupe;
+              this.isLoading = false;
+              console.log("la2")
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);
@@ -174,6 +178,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
         this.dataSource.data = [];
       }
     });
+    
   }
 
   applyFilter(event: Event) {

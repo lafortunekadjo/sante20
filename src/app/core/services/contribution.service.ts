@@ -94,4 +94,17 @@ export class ContributionService {
   getOngoingContributions(): Observable<Contribution[]> {
     return this.getAllContributions();
   }
+
+    getAllContributionsIndividuelle(): Observable<ContributionIndividuelle[]> {
+    return this.http.get<ContributionIndividuelle[]>(`${environment.apiUrl}/contributions/individuelles`);
+  }
+
+    deleteContributionIndividuelle(id: number): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/contributions/individuelles/${id}`);
+  }
+
+    updateContribution1(id: number, editContribution: Contribution) {
+    return this.http.put<Contribution>(`${environment.apiUrl}/contributions/${id}`, editContribution);
+  }
+   
 }

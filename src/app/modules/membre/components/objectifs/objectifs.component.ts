@@ -20,12 +20,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-objectifs',
@@ -46,6 +45,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatDialogModule,
     MatDatepickerModule,
     MatExpansionModule, // Ajouté,
+    MatProgressBarModule,
     MatListModule],
   templateUrl: './objectifs.component.html',
   styleUrl: './objectifs.component.scss'
@@ -172,9 +172,11 @@ export class ObjectifsComponent implements OnInit {
     }
   }
 
-  getProgressBarMode(objectif: any): string {
-    return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'determinate';
-  }
+// Après
+getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
+  // Votre logique de retour reste la même, mais le type est plus précis
+  return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'indeterminate'; 
+}
 
   getProgressBarValue(objectif: any): number {
     return Math.min(100, (objectif.valeurActuelle / objectif.valeurCible) * 100);

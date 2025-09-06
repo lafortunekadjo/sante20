@@ -1,0 +1,208 @@
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { FormGroup, FormBuilder, Validators, FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ContributionService } from '../../../../core/services/contribution.service';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { forkJoin, of, switchMap } from 'rxjs';
+import { Contribution } from '../../../../core/models/contribution.model';
+import { Evenement } from '../../../../core/models/evenement.model';
+import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { GeneralService } from '../../../../core/services/general.service';
+
+@Component({
+  selector: 'app-contribution',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTableModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatProgressSpinnerModule,
+    MatDialogModule,
+    FormsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    CurrencyPipe,
+    DatePipe
+  ],
+  templateUrl: './contribution.component.html',
+  styleUrl: './contribution.component.scss'
+})
+export class ContributionComponent implements OnInit, AfterViewInit {
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+  
+  // Le type du dataSource est maintenant `Contribution[]` car le modèle est mis à jour
+  dataSource = new MatTableDataSource<Contribution>([]);
+  // La colonne groupe est supprimée car gérée au backend
+  displayedColumns: string[] = ['commentaire', 'idEvenement', 'delaiContribution', 'montantMin', 'montantCible', 'montantCollecteActuel', 'active', 'actions'];
+  
+  showCreateRow: boolean = false;
+  
+  newContribution: Contribution = {
+    idEvenement: {} as Evenement, // Initialisation avec un Evenement vide
+    commentaire: '',
+    description: '',
+    delaiContribution: new Date(),
+    montantMin: 0,
+    montantCible: 0,
+    groupe: 0,
+    montantCollecteActuel: 0,
+    active: false,
+  };
+  
+  editingRows: boolean[] = [];
+  editContribution: Contribution = {} as Contribution;
+  
+  isLoading: boolean = true;
+  evenements: Evenement[] = [];
+
+  constructor(
+    private contributionService: ContributionService,
+    private evenementService: GeneralService,
+    private dialog: MatDialog
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAllData();
+  }
+
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+  }
+
+  loadAllData(): void {
+    this.isLoading = true;
+    forkJoin({
+      contributions: this.contributionService.getAllContributions(),
+      evenements: this.evenementService.getAllEvenements(),
+    }).pipe(
+      switchMap(({ contributions, evenements }) => {
+        const evenementMap = new Map(evenements.map(e => [e.idEvenement, e]));
+
+        const contributionsWithDetails: Contribution[] = contributions.map(c => ({
+          ...c,
+          idEvenement: evenementMap.get(c.idEvenement?.idEvenement) as Evenement,
+        }));
+
+        this.dataSource.data = contributionsWithDetails;
+        this.evenements = evenements;
+        this.editingRows = new Array(contributionsWithDetails.length).fill(false);
+        this.isLoading = false;
+        return of(null);
+      })
+    ).subscribe({
+      error: (err) => {
+        console.error('Erreur lors du chargement des données:', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  toggleCreateRow(): void {
+    this.showCreateRow = !this.showCreateRow;
+    if (!this.showCreateRow) {
+      this.resetNewContribution();
+    }
+  }
+
+  isCreateFormValid(): boolean {
+    return !!this.newContribution.description;
+  }
+
+  saveContribution(): void {
+    if (this.isCreateFormValid()) {
+      this.contributionService.addContribution(this.newContribution).subscribe({
+        next: () => {
+          this.loadAllData();
+          this.toggleCreateRow();
+        },
+        error: (err) => console.error('Erreur lors de la création de la contribution:', err),
+      });
+    }
+  }
+
+  cancelCreate(): void {
+    this.toggleCreateRow();
+  }
+
+  resetNewContribution(): void {
+    this.newContribution = {
+      idEvenement: {} as Evenement,
+      commentaire: '',
+      description: '',
+      delaiContribution: new Date(),
+      montantMin: 0,
+      montantCible: 0,
+      groupe: 0,
+      montantCollecteActuel: 0,
+      active: false,
+    };
+  }
+
+  editRow(index: number, contribution: Contribution): void {
+    this.editingRows[index] = true;
+    this.editContribution = { ...contribution };
+  }
+
+  isEditFormValid(): boolean {
+    return true;
+  }
+
+  saveEdit(index: number): void {
+    if (this.isEditFormValid()) {
+      this.contributionService.updateContribution1(this.editContribution.id!, this.editContribution).subscribe({
+        next: () => {
+          this.loadAllData();
+          this.editingRows[index] = false;
+        },
+        error: (err) => console.error('Erreur lors de la mise à jour de la contribution:', err),
+      });
+    }
+  }
+
+  cancelEdit(index: number): void {
+    this.editingRows[index] = false;
+    this.editContribution = {} as Contribution;
+  }
+
+  openDeleteDialog(contribution: Contribution): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: { message: `Voulez-vous supprimer la contribution "${contribution.commentaire}" ?` },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.deleteContribution(contribution.id!);
+      }
+    });
+  }
+
+  deleteContribution(id: number): void {
+    this.contributionService.deleteContribution(id).subscribe({
+      next: () => this.loadAllData(),
+      error: (err) => console.error('Erreur lors de la suppression de la contribution:', err),
+    });
+  }
+}

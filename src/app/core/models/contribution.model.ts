@@ -1,14 +1,17 @@
+import { Evenement } from "./evenement.model";
 import { Membre } from "./membre.model";
 
 export interface Contribution {
-  idContribution?: number;
-  idEvenement: number;
-  titre: string;
+  id?: number;
+  idEvenement: Evenement;
+  commentaire: string;
   description: string;
   delaiContribution: Date;
   montantMin?: number;
   montantCible?: number;
+  groupe: number;
   montantCollecteActuel: number;
+  active:boolean
 }
 
 export interface ContributionIndividuelle {

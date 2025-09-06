@@ -1,0 +1,211 @@
+<div class="contribution-container">
+    <h1>Gestion des Contributions</h1>
+    <mat-card class="table-card">
+        <mat-card-header>
+            <mat-card-title>Liste des Contributions</mat-card-title>
+            <mat-card-subtitle>Gérez les contributions ci-dessous</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <div *ngIf="isLoading" class="loading-container">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Chargement des données...</p>
+            </div>
+            <div *ngIf="!isLoading">
+                <div class="action-buttons">
+                    <button mat-raised-button color="primary" (click)="toggleCreateRow()">Créer une Contribution</button>
+                </div>
+                
+                <!-- Formulaire de création -->
+                <div *ngIf="showCreateRow" class="create-row">
+                    <div class="create-row-form">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Commentaire</mat-label>
+                            <input matInput [(ngModel)]="newContribution.commentaire">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Description</mat-label>
+                            <input matInput [(ngModel)]="newContribution.description" required>
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Événement</mat-label>
+                            <mat-select [(ngModel)]="newContribution.idEvenement">
+                                <mat-option *ngFor="let evenement of evenements" [value]="evenement">
+                                    {{ evenement.description }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Montant Minimum</mat-label>
+                            <input matInput type="number" [(ngModel)]="newContribution.montantMin" min="0">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Montant Cible</mat-label>
+                            <input matInput type="number" [(ngModel)]="newContribution.montantCible" min="0">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Délai de contribution</mat-label>
+                            <input matInput [matDatepicker]="datePicker" [(ngModel)]="newContribution.delaiContribution">
+                            <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+                            <mat-datepicker #datePicker></mat-datepicker>
+                        </mat-form-field>
+                        <mat-checkbox [(ngModel)]="newContribution.active">Active</mat-checkbox>
+
+                        <div class="action-buttons-horizontal">
+                            <button mat-icon-button color="primary" (click)="saveContribution()"
+                                [disabled]="!isCreateFormValid()">
+                                <mat-icon>save</mat-icon>
+                            </button>
+                            <button mat-icon-button color="warn" (click)="cancelCreate()">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau des contributions -->
+                <div class="table-wrapper">
+                    <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+                        <!-- Commentaire Column -->
+                        <ng-container matColumnDef="commentaire">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Commentaire</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editCommentaire">
+                                    {{ contribution.commentaire }}
+                                </ng-container>
+                                <ng-template #editCommentaire>
+                                    <mat-form-field appearance="outline">
+                                        <input matInput [(ngModel)]="editContribution.commentaire">
+                                    </mat-form-field>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <!-- Evenement Column -->
+                        <ng-container matColumnDef="idEvenement">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Événement</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editEvenement">
+                                    {{ contribution.idEvenement?.nom || 'N/A' }}
+                                </ng-container>
+                                <ng-template #editEvenement>
+                                    <mat-form-field appearance="outline">
+                                        <mat-select [(ngModel)]="editContribution.idEvenement">
+                                            <mat-option *ngFor="let evenement of evenements" [value]="evenement">
+                                                {{ evenement.nomEvenement }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <!-- Delai Contribution Column -->
+                        <ng-container matColumnDef="delaiContribution">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Délai</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editDelai">
+                                    {{ contribution.delaiContribution | date:'dd/MM/yyyy' }}
+                                </ng-container>
+                                <ng-template #editDelai>
+                                    <mat-form-field appearance="outline">
+                                        <input matInput [matDatepicker]="editDatePicker" [(ngModel)]="editContribution.delaiContribution">
+                                        <mat-datepicker-toggle matSuffix [for]="editDatePicker"></mat-datepicker-toggle>
+                                        <mat-datepicker #editDatePicker></mat-datepicker>
+                                    </mat-form-field>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <!-- Montant Min Column -->
+                        <ng-container matColumnDef="montantMin">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant Min</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editMontantMin">
+                                    {{ contribution.montantMin | currency:'FCFA' }}
+                                </ng-container>
+                                <ng-template #editMontantMin>
+                                    <mat-form-field appearance="outline">
+                                        <input matInput type="number" [(ngModel)]="editContribution.montantMin" min="0">
+                                    </mat-form-field>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <!-- Montant Cible Column -->
+                        <ng-container matColumnDef="montantCible">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant Cible</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editMontantCible">
+                                    {{ contribution.montantCible | currency:'FCFA' }}
+                                </ng-container>
+                                <ng-template #editMontantCible>
+                                    <mat-form-field appearance="outline">
+                                        <input matInput type="number" [(ngModel)]="editContribution.montantCible" min="0">
+                                    </mat-form-field>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <!-- Montant Collecte Actuel Column -->
+                        <ng-container matColumnDef="montantCollecteActuel">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant Collecté</th>
+                            <td mat-cell *matCellDef="let contribution">{{ contribution.montantCollecteActuel | currency:'FCFA' }}</td>
+                        </ng-container>
+
+                        <!-- Active Column -->
+                        <ng-container matColumnDef="active">
+                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Active</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editActive">
+                                    <mat-icon [color]="contribution.active ? 'primary' : 'warn'">
+                                        {{ contribution.active ? 'check_circle' : 'cancel' }}
+                                    </mat-icon>
+                                </ng-container>
+                                <ng-template #editActive>
+                                    <mat-checkbox [(ngModel)]="editContribution.active">Active</mat-checkbox>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+                        
+                        <!-- Actions Column -->
+                        <ng-container matColumnDef="actions">
+                            <th mat-header-cell *matHeaderCellDef>Actions</th>
+                            <td mat-cell *matCellDef="let contribution; let i = index">
+                                <ng-container *ngIf="!editingRows[i]; else editActions">
+                                    <div class="action-buttons-horizontal">
+                                        <button mat-icon-button color="primary" (click)="editRow(i, contribution)">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                        <button mat-icon-button color="warn" (click)="openDeleteDialog(contribution)">
+                                            <mat-icon>delete</mat-icon>
+                                        </button>
+                                    </div>
+                                </ng-container>
+                                <ng-template #editActions>
+                                    <div class="action-buttons-horizontal">
+                                        <button mat-icon-button color="primary" (click)="saveEdit(i)"
+                                            [disabled]="!isEditFormValid()">
+                                            <mat-icon>save</mat-icon>
+                                        </button>
+                                        <button mat-icon-button color="warn" (click)="cancelEdit(i)">
+                                            <mat-icon>cancel</mat-icon>
+                                        </button>
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                        <tr class="mat-row" *matNoDataRow>
+                            <td class="mat-cell" colspan="999">
+                                Aucune contribution trouvée
+                            </td>
+                        </tr>
+                    </table>
+                    <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+</div>

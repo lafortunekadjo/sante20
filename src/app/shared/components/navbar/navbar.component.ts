@@ -164,10 +164,11 @@ async checkIn() {
     this.isChecking = false;
 
     // Ouvrir le dialogue de confirmation avec le message
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '300px',
-      data: { message: result.message }
-    });
+const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+  width: '90vw',
+  panelClass: 'scrollable-dialog',
+  data: { message: result.message }
+});
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {

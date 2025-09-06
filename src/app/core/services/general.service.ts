@@ -6,10 +6,12 @@ import { environment } from '../../environment';
 import { TypeSanction } from '../models/typeSanction.model';
 import { Equipe } from '../models/groupe.model copy';
 import { Evenement } from '../models/evenement.model';
-import { Contribution } from '../models/contribution.model';
+import { Contribution, ContributionIndividuelle } from '../models/contribution.model';
 import { Membre } from '../models/membre.model';
 import { Presence } from '../models/presence.model';
 import { Announcement } from '../models/announcement.model';
+import { SortieDeCaisse } from '../models/sortieDeCaisse';
+import { TypeDepense } from '../models/typeDepense';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +28,8 @@ export class GeneralService {
   private typeSanctionUrl = `${environment.apiUrl}/type-sanctions`;
   private equipeUrl = `${environment.apiUrl}/equipes`;
     private evenementUrl = `${environment.apiUrl}/evenements`;
+      private sortieCaisseUrl = `${environment.apiUrl}/sorties-de-caisse`;
+  private typeSortieUrl = `${environment.apiUrl}/types-depenses`;
 
   createStade(stade: any): Observable<Stade> {
     return this.http.post<Stade>(this.stadeUrl, stade);
@@ -164,5 +168,50 @@ export class GeneralService {
   getCurrentEvents(): Observable<Evenement[]> {
     return this.getAllEvenements();
   }
+
+
+  //sortie
+
+  //depenses
+
+   getAllTypesDepenses(): Observable<TypeDepense[]> {
+    return this.http.get<TypeDepense[]>(this.typeSortieUrl);
+  }
+
+  createTypeDepense(typeDepense: TypeDepense): Observable<TypeDepense> {
+    return this.http.post<TypeDepense>(this.typeSortieUrl, typeDepense);
+  }
+
+  updateTypeDepense(id: number, typeDepense: TypeDepense): Observable<TypeDepense> {
+    return this.http.put<TypeDepense>(`${this.typeSortieUrl}/${id}`, typeDepense);
+  }
+
+  deleteTypeDepense(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.typeSortieUrl}/${id}`);
+  }
+
+   getAllSortiesDeCaisse(): Observable<SortieDeCaisse[]> {
+    return this.http.get<SortieDeCaisse[]>(this.sortieCaisseUrl);
+  }
+
+  createSortieDeCaisse(sortieDeCaisse: SortieDeCaisse): Observable<SortieDeCaisse> {
+    return this.http.post<SortieDeCaisse>(this.sortieCaisseUrl, sortieDeCaisse);
+  }
+
+  updateSortieDeCaisse(id: number, sortieDeCaisse: SortieDeCaisse): Observable<SortieDeCaisse> {
+    return this.http.put<SortieDeCaisse>(`${this.sortieCaisseUrl}/${id}`, sortieDeCaisse);
+  }
+
+  deleteSortieDeCaisse(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.sortieCaisseUrl}/${id}`);
+  }
+
+getContributionByEvenementId(idEvenement: number): Observable<ContributionIndividuelle[]> {
+  // Endpoint REST pour récupérer les contributions liées à un événement
+  return this.http.get<ContributionIndividuelle[]>(
+    `${environment.apiUrl}/contributions/byEvenement/${idEvenement}`
+  );
+}
+
   
 }

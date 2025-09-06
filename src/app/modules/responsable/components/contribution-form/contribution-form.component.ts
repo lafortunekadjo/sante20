@@ -18,17 +18,20 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSort, MatSortModule } from '@angular/material/sort';
-import { switchMap , forkJoin, of} from 'rxjs';
+import { switchMap , forkJoin, of, Observable} from 'rxjs';
 import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
 import { Membre } from '../../../../core/models/membre.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { MembreService } from '../../../../core/services/membre.service';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { GeneralService } from '../../../../core/services/general.service';
+import { Evenement } from '../../../../core/models/evenement.model';
 
 @Component({
   selector: 'app-contribution-form',
   standalone: true,
   imports: [
-       CommonModule,
+    CommonModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -36,112 +39,98 @@ import { MembreService } from '../../../../core/services/membre.service';
     MatInputModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatCheckboxModule,
     MatPaginatorModule,
     MatSortModule,
     MatProgressSpinnerModule,
     MatDialogModule,
     FormsModule,
-    RouterModule
+    MatDatepickerModule,
+    MatNativeDateModule,
   ],
   templateUrl: './contribution-form.component.html',
   styleUrl: './contribution-form.component.scss'
 })
 export class ContributionFormComponent implements OnInit, AfterViewInit{
- @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   dataSource = new MatTableDataSource<ContributionIndividuelle>([]);
-  displayedColumns: string[] = ['membre', 'montant', 'dateContribution', 'actions'];
-  isLoading: boolean = true;
+  displayedColumns: string[] = ['contribution', 'membre', 'montant', 'dateContribution', 'actions'];
   showCreateRow: boolean = false;
-
-  nouvelleContributionIndividuelle: ContributionIndividuelle = {
-    idContribution: 0, // Sera défini en ngOnInit
-    idMembre: 1, // Remplacez par l'ID du membre connecté
+  newContribution: ContributionIndividuelle = {
+    id: 0,
+    idContribution: 0,
+    idMembre: 0,
     montant: 0,
     dateContribution: new Date(),
   };
-  membres: Membre[] = [];
-  contributionCampagne: Contribution | undefined;
-  contributions: Contribution | undefined;
+  editingRows: boolean[] = [];
+  editContribution: ContributionIndividuelle = {} as ContributionIndividuelle;
+  isLoading: boolean = true;
+  contributions$: Contribution[] = [];
+  membres: any[] = [];
 
   constructor(
+    private contributionIndividuelleService: ContributionService,
     private contributionService: ContributionService,
     private membreService: MembreService,
-    private route: ActivatedRoute,
     private dialog: MatDialog
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadData();
+    this.loadContributions();
+    console.log(this.contributions$)
+    this.loadMembres();
   }
 
-  ngAfterViewInit() {
+  ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
     this.dataSource.sortingDataAccessor = (item, property) => {
       switch (property) {
-        case 'membre':
-          return this.getMembreName(item.idMembre);
-        case 'dateContribution':
-          return new Date(item.dateContribution).getTime();
-        default:
-          return (item as any)[property];
+        default: return (item as any)[property];
       }
     };
   }
 
-  loadData() {
+  loadData(): void {
     this.isLoading = true;
-    const evenementIdParam = this.route.snapshot.paramMap.get('evenementId');
-
-    if (!evenementIdParam) {
-      console.error('ID d\'événement non trouvé dans l\'URL.');
-      this.isLoading = false;
-      return;
-    }
-    const evenementId = parseInt(evenementIdParam, 10);
-    if (isNaN(evenementId)) {
-      console.error('ID d\'événement non valide.');
-      this.isLoading = false;
-      return;
-    }
-
-    this.contributionService.getContributionByEvenementId(evenementId).pipe(
-      switchMap((contribution) => {
-        this.contributionCampagne = contribution;
-        if (contribution) {
-          this.contributions = contribution
-          this.nouvelleContributionIndividuelle.idContribution =
-            contribution.idContribution!;
-          return forkJoin([
-            this.contributionService.getContributionsIndividuellesByContributionId(
-              contribution.idContribution!
-            ),
-            this.membreService.getGroupMembers(),
-          ]);
-        } else {
-          return forkJoin([of([]), this.membreService.getGroupMembers()]);
-        }
-      })
-    ).subscribe({
-      next: ([contributions, membres]) => {
-        this.dataSource.data = contributions;
-        this.membres = membres;
+    this.contributionIndividuelleService.getAllContributionsIndividuelle().subscribe({
+      next: (data) => {
+          console.log(data)
+        this.dataSource.data = data;
+        this.editingRows = new Array(data.length).fill(false);
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
+        console.error('Erreur lors du chargement des contributions individuelles:', err);
         this.isLoading = false;
       },
     });
   }
 
-  getMembreName(membreId: number): string {
-    const found = this.membres.find((m) => m.id === membreId);
-    return found ? `${found.nom} ${found.prenom}` : 'Inconnu';
+  loadContributions(): void {
+     this.contributionService.getAllContributions().subscribe({
+      next: (data) => {
+      
+        this.contributions$ = data;
+      },
+      error: (err) => console.error('Erreur lors du chargement des contributions:', err),
+    });
+   
   }
 
-  toggleCreateRow() {
+  loadMembres(): void {
+    this.membreService.getGroupMembers().subscribe({
+      next: (data) => {
+        this.membres = data;
+      },
+      error: (err) => console.error('Erreur lors du chargement des membres:', err),
+    });
+  }
+
+  toggleCreateRow(): void {
     this.showCreateRow = !this.showCreateRow;
     if (!this.showCreateRow) {
       this.resetNewContribution();
@@ -149,56 +138,76 @@ export class ContributionFormComponent implements OnInit, AfterViewInit{
   }
 
   isCreateFormValid(): boolean {
-    return (
-      !!this.nouvelleContributionIndividuelle.idMembre &&
-      this.nouvelleContributionIndividuelle.montant > 0
-    );
+    return !!this.newContribution.idContribution && !!this.newContribution.idMembre && !!this.newContribution.montant;
   }
 
-  saveContributionIndividuelle() {
+  saveContribution(): void {
     if (this.isCreateFormValid()) {
-      this.isLoading = true;
-      this.contributionService.createIndividuelleContribution(this.nouvelleContributionIndividuelle).subscribe({
+      this.contributionIndividuelleService.createIndividuelleContribution(this.newContribution).subscribe({
         next: () => {
           this.loadData();
           this.toggleCreateRow();
         },
-        error: (err) => {
-          console.error('Erreur lors de la création de la contribution:', err);
-          this.isLoading = false;
-        },
+        error: (err) => console.error('Erreur lors de la création de la contribution individuelle:', err),
       });
     }
   }
 
-  cancelCreate() {
+  cancelCreate(): void {
     this.toggleCreateRow();
   }
 
-  resetNewContribution() {
-    this.nouvelleContributionIndividuelle = {
-      idContribution: this.contributionCampagne?.idContribution!,
-      idMembre: 1,
+  resetNewContribution(): void {
+    this.newContribution = {
+      id: 0,
+      idContribution: 0,
+      idMembre: 0,
       montant: 0,
       dateContribution: new Date(),
     };
   }
 
-  openDeleteDialog(id: number) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: { message: `Voulez-vous supprimer cette contribution ?` },
-    });
+  editRow(index: number, contribution: ContributionIndividuelle): void {
+    this.editingRows[index] = true;
+    this.editContribution = { ...contribution };
+  }
 
-    dialogRef.afterClosed().subscribe((result) => {
+  isEditFormValid(): boolean {
+    return !!this.editContribution.idContribution && !!this.editContribution.idMembre && !!this.editContribution.montant;
+  }
+
+  saveEdit(index: number): void {
+    if (this.isEditFormValid()) {
+      this.contributionIndividuelleService.updateIndividuelleContribution(this.editContribution.id!, this.editContribution).subscribe({
+        next: () => {
+          this.loadData();
+          this.editingRows[index] = false;
+        },
+        error: (err) => console.error('Erreur lors de la mise à jour de la contribution individuelle:', err),
+      });
+    }
+  }
+
+  cancelEdit(index: number): void {
+    this.editingRows[index] = false;
+    this.editContribution = {} as ContributionIndividuelle;
+  }
+
+  openDeleteDialog(contribution: ContributionIndividuelle): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: { message: `Voulez-vous supprimer la contribution individuelle de ${contribution.idMembre} ?` },
+    });
+    dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.contributionService.deleteIndividuelleContribution(id).subscribe({
-          next: () => this.loadData(),
-          error: (err) =>
-            console.error('Erreur lors de la suppression de la contribution:', err),
-        });
+        this.deleteContribution(contribution.id!);
       }
     });
   }
 
-
+  deleteContribution(id: number): void {
+    this.contributionIndividuelleService.deleteContributionIndividuelle(id).subscribe({
+      next: () => this.loadData(),
+      error: (err) => console.error('Erreur lors de la suppression de la contribution individuelle:', err),
+    });
+  }
 }

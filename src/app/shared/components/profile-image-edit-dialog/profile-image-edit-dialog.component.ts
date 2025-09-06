@@ -5,8 +5,9 @@ import { SafeUrl, DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-profile-image-edit-dialog',
-  imports: [MatIconModule],
   encapsulation: ViewEncapsulation.None,
+  imports: [MatIconModule],
+  
   templateUrl: './profile-image-edit-dialog.component.html',
   styleUrl: './profile-image-edit-dialog.component.scss'
 })

@@ -38,6 +38,7 @@ export class LayoutComponent {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   isAdmin: boolean = true;
   isResponsable: boolean = true;
+  isMembre: boolean = true;
   roles: string[] = []; // Exemple de rôles, à remplir via authService
   selectedRole: string = '';
   authService: any; // Remplacez par le type correct de votre AuthService
@@ -47,8 +48,13 @@ export class LayoutComponent {
   constructor(authService: AuthService, private router: Router, private dialog: MatDialog) {
     this.authService = authService;
     // Simuler la récupération des rôles (à remplacer par la logique réelle)
-    this.roles = this.authService.getRoles() || ['ADMIN', 'RESPONSABLE'];
-    this.selectedRole = this.roles[0] || '';
+    this.roles = this.authService.getRoles() ;
+     if (this.roles.includes('RESPONSABLE')) {
+      this.selectedRole = 'RESPONSABLE';
+    } else {
+      this.selectedRole = this.roles[0] || '';
+    }
+    console.log(this.selectedRole)
        this.navigateToRole(this.selectedRole);
     this.updateRoleVisibility();
   }
@@ -84,6 +90,7 @@ export class LayoutComponent {
   private updateRoleVisibility(): void {
     this.isAdmin = this.selectedRole === 'ADMIN';
     this.isResponsable = this.selectedRole === 'RESPONSABLE';
+    this.isMembre = this.selectedRole === 'MEMBRE';
   }
 
     loadUserData() {

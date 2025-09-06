@@ -98,7 +98,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         this.ongoingContributions = typedContributions
           .map(contrib => ({
             contribution: contrib,
-            individuelles: this.contributionService.getContributionsIndividuellesById(contrib.idContribution || 0) || []
+            individuelles: this.contributionService.getContributionsIndividuellesById(contrib.id || 0) || []
           }))
           .filter(c => new Date(c.contribution.delaiContribution) >= today);
         this.upcomingBirthdays = typedMembres
@@ -197,7 +197,7 @@ getPasseurs(match: Match): string {
   }
 
   getTotalContributions(contribution: Contribution): number {
-    const individuelles = this.contributionService.getContributionsIndividuellesById(contribution.idContribution || 0) || [];
+    const individuelles = this.contributionService.getContributionsIndividuellesById(contribution.id || 0) || [];
     return individuelles.reduce((sum: number, c: { montant: any; }) => sum + (c.montant || 0), 0);
   }
 
