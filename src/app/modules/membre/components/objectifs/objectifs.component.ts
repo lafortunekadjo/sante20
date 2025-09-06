@@ -174,7 +174,7 @@ export class ObjectifsComponent implements OnInit {
   }
 
   getProgressBarMode(objectif: any): string {
-    return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'determinate';
+    return 'determinate' ;
   }
 
   getProgressBarValue(objectif: any): number {
