@@ -54,7 +54,7 @@ submit() {
               this.router.navigate(['/admin']);
             } else if (roles.includes('RESPONSABLE')) {
               this.router.navigate(['/responsable']);
-            } else if (roles.includes('USER')) {
+            } else if (roles.includes('MEMBRE')) {
               console.log('Connexion réussie');
               this.router.navigate(['/membre']);
             } else {
