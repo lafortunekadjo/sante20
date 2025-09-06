@@ -46,6 +46,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatDialogModule,
     MatDatepickerModule,
     MatExpansionModule, // Ajouté,
+    MatProgressBarModule
     MatListModule],
   templateUrl: './objectifs.component.html',
   styleUrl: './objectifs.component.scss'
