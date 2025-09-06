@@ -173,9 +173,10 @@ export class ObjectifsComponent implements OnInit {
     }
   }
 
-  getProgressBarMode(objectif: any): string {
-    return 'determinate' ;
-  }
+  getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
+  // Votre logique de retour reste la même, mais le type est plus précis
+  return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'indeterminate'; 
+}
 
   getProgressBarValue(objectif: any): number {
     return Math.min(100, (objectif.valeurActuelle / objectif.valeurCible) * 100);
