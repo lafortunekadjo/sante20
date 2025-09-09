@@ -104,10 +104,12 @@ export class GeneralService {
   }
 
   createEvenement(evenement: Evenement): Observable<Evenement> {
+     console.log(evenement)
     return this.http.post<Evenement>(this.evenementUrl, evenement);
   }
 
   updateEvenement(id: number, evenement: Evenement): Observable<Evenement> {
+    console.log(id +''+ evenement)
     return this.http.put<Evenement>(`${this.evenementUrl}/${id}`, evenement);
   }
 
@@ -195,10 +197,21 @@ export class GeneralService {
   }
 
   createSortieDeCaisse(sortieDeCaisse: SortieDeCaisse): Observable<SortieDeCaisse> {
-    return this.http.post<SortieDeCaisse>(this.sortieCaisseUrl, sortieDeCaisse);
+     const payload = {
+
+      description: sortieDeCaisse.description,
+      montant: sortieDeCaisse.montant,
+      utilisateurId: sortieDeCaisse.utilisateur.id,
+      dateSortie: sortieDeCaisse.dateSortie,
+      typeDepenseId:sortieDeCaisse.typeDepense.id
+      
+         };
+         console.log(payload)
+    return this.http.post<SortieDeCaisse>(this.sortieCaisseUrl, payload);
   }
 
   updateSortieDeCaisse(id: number, sortieDeCaisse: SortieDeCaisse): Observable<SortieDeCaisse> {
+    console.log(sortieDeCaisse)
     return this.http.put<SortieDeCaisse>(`${this.sortieCaisseUrl}/${id}`, sortieDeCaisse);
   }
 

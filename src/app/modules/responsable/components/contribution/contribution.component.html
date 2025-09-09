@@ -48,7 +48,7 @@
                             <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
                             <mat-datepicker #datePicker></mat-datepicker>
                         </mat-form-field>
-                        <mat-checkbox [(ngModel)]="newContribution.active">Active</mat-checkbox>
+                        <mat-checkbox [(ngModel)]="newContribution.open">Active</mat-checkbox>
 
                         <div class="action-buttons-horizontal">
                             <button mat-icon-button color="primary" (click)="saveContribution()"
@@ -80,24 +80,34 @@
                             </td>
                         </ng-container>
 
-                        <!-- Evenement Column -->
-                        <ng-container matColumnDef="idEvenement">
-                            <th mat-header-cell *matHeaderCellDef mat-sort-header>Événement</th>
-                            <td mat-cell *matCellDef="let contribution; let i = index">
-                                <ng-container *ngIf="!editingRows[i]; else editEvenement">
-                                    {{ contribution.idEvenement?.nom || 'N/A' }}
-                                </ng-container>
-                                <ng-template #editEvenement>
-                                    <mat-form-field appearance="outline">
-                                        <mat-select [(ngModel)]="editContribution.idEvenement">
-                                            <mat-option *ngFor="let evenement of evenements" [value]="evenement">
-                                                {{ evenement.nomEvenement }}
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-                                </ng-template>
-                            </td>
-                        </ng-container>
+                     <!-- Evenement Column -->
+<ng-container matColumnDef="idEvenement">
+  <th mat-header-cell *matHeaderCellDef mat-sort-header>Événement</th>
+  <td mat-cell *matCellDef="let contribution; let i = index">
+    
+    <!-- Mode affichage -->
+    <ng-container *ngIf="!editingRows[i]; else editEvenement">
+      {{ contribution.idEvenement?.nomEvenement || 'Aucun événement' }}
+    </ng-container>
+
+    <!-- Mode édition -->
+    <ng-template #editEvenement>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select [(ngModel)]="editContribution.idEvenement" placeholder="Sélectionner un événement">
+          <!-- Option pour aucun événement -->
+          <mat-option [value]="null">Aucun événement</mat-option>
+
+          <!-- Liste des événements -->
+          <mat-option *ngFor="let evenement of evenements" [value]="evenement">
+            {{ evenement.nomEvenement }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </ng-template>
+
+  </td>
+</ng-container>
+
 
                         <!-- Delai Contribution Column -->
                         <ng-container matColumnDef="delaiContribution">
@@ -157,12 +167,12 @@
                             <th mat-header-cell *matHeaderCellDef mat-sort-header>Active</th>
                             <td mat-cell *matCellDef="let contribution; let i = index">
                                 <ng-container *ngIf="!editingRows[i]; else editActive">
-                                    <mat-icon [color]="contribution.active ? 'primary' : 'warn'">
-                                        {{ contribution.active ? 'check_circle' : 'cancel' }}
+                                    <mat-icon [color]="contribution.open ? 'primary' : 'warn'">
+                                        {{ contribution.open ? 'check_circle' : 'cancel' }}
                                     </mat-icon>
                                 </ng-container>
                                 <ng-template #editActive>
-                                    <mat-checkbox [(ngModel)]="editContribution.active">Active</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="editContribution.open">Active</mat-checkbox>
                                 </ng-template>
                             </td>
                         </ng-container>

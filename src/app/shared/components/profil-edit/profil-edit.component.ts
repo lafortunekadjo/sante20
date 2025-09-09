@@ -19,6 +19,8 @@ import { PasswordResetDialogComponent } from '../password-reset-dialog/password-
 import { User } from '../../../core/models/user';
 import { Membre } from '../../../core/models/membre.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
   selector: 'app-profil-edit',
@@ -36,7 +38,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
       MatProgressSpinnerModule,
       MatDialogModule,
       FormsModule, 
-      ReactiveFormsModule
+      ReactiveFormsModule,
+      MatDatepickerModule,
+    MatNativeDateModule
     ],
   templateUrl: './profil-edit.component.html',
   styleUrl: './profil-edit.component.scss'
@@ -61,7 +65,11 @@ export class ProfilEditComponent implements OnInit{
       date_naissance: [''],
       poste: [''],
       roleCo: [''],
-      sexe: ['', Validators.required]
+      sexe: ['', Validators.required],
+      cni:[''],
+      adresse:[''],
+      tel:[''],
+      assurance:[true]
     });
   }
 
@@ -85,7 +93,11 @@ export class ProfilEditComponent implements OnInit{
             date_naissance: member.dateNaissance ? new Date(member.dateNaissance).toISOString().split('T')[0] : '',
             poste: member.poste || '',
             roleCo: member.roleCO || '',
-            sexe: member.sexe || ''
+            sexe: member.sexe || '',
+            cni: member.cni || '',
+            adresse: member.adresse || '',
+            tel: member.tel || '',
+            assurance : member.assurance || ''
           });
           this.isLoading = false;
         },
@@ -118,7 +130,11 @@ export class ProfilEditComponent implements OnInit{
         prenom: formData.prenom,
         dateNaissance: formData.date_naissance,
         poste: formData.poste,
-        sexe: formData.sexe
+        sexe: formData.sexe,
+        cni: formData.cni,
+        adresse: formData.adresse ,
+        tel: formData.tel ,
+        assurance : formData.assurance 
       };
 
       this.authService.updateUserProfileAndMember(userData, memberData).subscribe({

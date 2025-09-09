@@ -22,4 +22,8 @@ export interface Membre {
   user: User;
   active: boolean;
   sexe: string;
+  cni: string;
+  adresse:string;
+  tel:string;
+  assurance:boolean;
 }

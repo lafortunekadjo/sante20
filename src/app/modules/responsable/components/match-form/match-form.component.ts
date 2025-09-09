@@ -72,8 +72,8 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       typeEquipe: '',
       modeEquipe: 'STATIQUE',
       fraisAdhesion: 0,
-      ville1: {id: 0, nom: ''},
-      stade2: {id: 0, nom: ''},
+      ville1: { id: 0, nom: '' },
+      stade2: { id: 0, nom: '' },
     },
     typeMatch: 'AMICAL',
     dateMatch: new Date().toISOString().split('T')[0],
@@ -82,6 +82,15 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     commentaire: '',
     membreAnniversaire: '',
     mediaUrls: [] // Initialisation du champ mediaUrls
+    ,
+    forfait: false,
+    equipeForfait: '',
+    arbitrePrincipal: null,
+    arbitrePrincipalNomOccasionnel: null,
+    arbitreAssistant: null,
+    arbitreAssistantNomOccasionnel: null,
+    rapporteur: null,
+    rapporteurNomOccasionnel: null
   };
   groupes: Groupe | null = null;
   membres: Membre[] = [];
@@ -136,10 +145,35 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
         this.typeSanctions = typeSanctions;
         this.isLoading = false;
             // Crée une copie du tableau et la trie par date de match croissante
-      const sortedMatches = [...this.dataSource.data].sort((a, b) => {
-        return new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime();
-      });
-      this.dataSource.data = sortedMatches
+const today = new Date();
+
+// Dimanche de cette semaine
+const thisSunday = new Date(today);
+thisSunday.setDate(today.getDate() - today.getDay() + 7 - 7); // ou today - today.getDay()
+
+const sortedMatches = [...this.dataSource.data].sort((a, b) => {
+  const dateA = new Date(a.dateMatch);
+  const dateB = new Date(b.dateMatch);
+
+  const isPastA = dateA < thisSunday;
+  const isPastB = dateB < thisSunday;
+
+  // Les deux passés → du plus ancien au plus récent
+  if (isPastA && isPastB) {
+    return dateA.getTime() - dateB.getTime();
+  }
+
+  // Les deux à venir → du plus proche au plus lointain
+  if (!isPastA && !isPastB) {
+    return dateA.getTime() - dateB.getTime();
+  }
+
+  // Un passé et un futur → passé en bas
+  return isPastA ? 1 : -1;
+});
+
+this.dataSource.data = sortedMatches;
+
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);
@@ -218,9 +252,18 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
   saveMatch() {
     if (this.isCreateFormValid()) {
       this.isLoading = true;
+      const payload: any = {
+        ...this.newMatch,
+        arbitrePrincipalId: this.newMatch.arbitrePrincipal?.id || null,
+        arbitrePrincipalNom: this.newMatch.arbitrePrincipalNomOccasionnel || null,
+        arbitreAssistantId: this.newMatch.arbitreAssistant?.id || null,
+        arbitreAssistantNom: this.newMatch.arbitreAssistantNomOccasionnel || null,
+        rapporteurId: this.newMatch.rapporteur?.id || null,
+        rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null
+      };
       const saveObservable = this.editingMatch
-        ? this.matchService.updateMatch(this.editingMatch.id, this.newMatch)
-        : this.matchService.createMatch(this.newMatch);
+        ? this.matchService.updateMatch(this.editingMatch.id, payload)
+        : this.matchService.createMatch(payload);
       saveObservable.subscribe({
         next: () => {
           this.loadData();
@@ -257,6 +300,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
           fraisAdhesion: 0,
           ville1: {id: 0, nom: ''},
           stade2: {id: 0, nom: ''},
+        
         },
         typeMatch: 'AMICAL',
         dateMatch: new Date().toISOString().split('T')[0],
@@ -264,7 +308,16 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
         lieu: '',
         commentaire: '',
         membreAnniversaire: '',
-        mediaUrls: []
+        mediaUrls: [],
+          forfait: false,
+          equipeForfait:'',
+           arbitrePrincipal: null,
+        arbitrePrincipalNomOccasionnel: null,
+        arbitreAssistant: null,
+        arbitreAssistantNomOccasionnel: null,
+        rapporteur: null,
+        rapporteurNomOccasionnel: null
+          
       };
     }
   }

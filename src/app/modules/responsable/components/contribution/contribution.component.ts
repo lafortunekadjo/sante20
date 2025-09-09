@@ -69,7 +69,7 @@ export class ContributionComponent implements OnInit, AfterViewInit {
     montantCible: 0,
     groupe: 0,
     montantCollecteActuel: 0,
-    active: false,
+    open: false,
   };
   
   editingRows: boolean[] = [];
@@ -94,32 +94,42 @@ export class ContributionComponent implements OnInit, AfterViewInit {
   }
 
   loadAllData(): void {
-    this.isLoading = true;
-    forkJoin({
-      contributions: this.contributionService.getAllContributions(),
-      evenements: this.evenementService.getAllEvenements(),
-    }).pipe(
-      switchMap(({ contributions, evenements }) => {
-        const evenementMap = new Map(evenements.map(e => [e.idEvenement, e]));
+  this.isLoading = true;
 
-        const contributionsWithDetails: Contribution[] = contributions.map(c => ({
+  forkJoin({
+    contributions: this.contributionService.getAllContributions(),
+    evenements: this.evenementService.getAllEvenements(),
+  }).pipe(
+    switchMap(({ contributions, evenements }) => {
+      const evenementMap = new Map(evenements.map(e => [e.id, e]));
+      console.log(contributions)
+      const contributionsWithDetails: Contribution[] = contributions.map(c => {
+        let evenementAssocie: Evenement | null = null;
+
+        if (c.idEvenement && c.idEvenement.id) {
+          evenementAssocie = evenementMap.get(c.idEvenement.id) || null;
+        }
+
+        return {
           ...c,
-          idEvenement: evenementMap.get(c.idEvenement?.idEvenement) as Evenement,
-        }));
+          idEvenement: evenementAssocie // null si pas d'événement lié
+        };
+      });
 
-        this.dataSource.data = contributionsWithDetails;
-        this.evenements = evenements;
-        this.editingRows = new Array(contributionsWithDetails.length).fill(false);
-        this.isLoading = false;
-        return of(null);
-      })
-    ).subscribe({
-      error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
-        this.isLoading = false;
-      }
-    });
-  }
+      this.dataSource.data = contributionsWithDetails;
+      this.evenements = evenements;
+      this.editingRows = new Array(contributionsWithDetails.length).fill(false);
+      this.isLoading = false;
+
+      return of(null);
+    })
+  ).subscribe({
+    error: (err) => {
+      console.error('Erreur lors du chargement des données:', err);
+      this.isLoading = false;
+    }
+  });
+}
 
   toggleCreateRow(): void {
     this.showCreateRow = !this.showCreateRow;
@@ -158,7 +168,7 @@ export class ContributionComponent implements OnInit, AfterViewInit {
       montantCible: 0,
       groupe: 0,
       montantCollecteActuel: 0,
-      active: false,
+      open: false,
     };
   }
 

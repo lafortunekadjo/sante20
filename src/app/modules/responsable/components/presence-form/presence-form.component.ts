@@ -72,7 +72,9 @@ dataSource = new MatTableDataSource<any>([]);
   equipeNames: [string, string] = ['',''];
   membresNonPresents: Membre[] = [];
   selectedMembreIdToAdd: number | null = null;
-  occasionalPlayerName:string = ''
+  occasionalPlayerName:string = '';
+  membreSearch: string = '';
+  
 
   constructor(
     private matchService: MatchService,
@@ -161,8 +163,17 @@ dataSource = new MatTableDataSource<any>([]);
       });
 
       const membresPresentsIds = presences.map(p => p.membre?.id);
-        this.membresNonPresents = this.membres2.filter(membre => !membresPresentsIds.includes(membre?.id));
-        console.log('Membres non présents:', this.membresNonPresents);
+      const safeLower = (val?: string) => (val ?? '').toLowerCase();
+
+      this.membresNonPresents = this.membres2
+        .filter(m => !membresPresentsIds.includes(m?.id))
+        .sort((a, b) => {
+          const nomA = safeLower(a.nom);
+          const nomB = safeLower(b.nom);
+          if (nomA < nomB) return -1;
+          if (nomA > nomB) return 1;
+          return safeLower(a.prenom).localeCompare(safeLower(b.prenom));
+        });
 
       this.isLoading = false;
 
@@ -174,6 +185,23 @@ dataSource = new MatTableDataSource<any>([]);
       console.error('Erreur de souscription:', err);
     }
   });
+}
+
+filteredMembres() {
+  const searchLower = (this.membreSearch || '').toLowerCase();
+
+  return [...this.membresNonPresents]
+    .sort((a, b) => {
+      const nomA = (a.nom || '').toLowerCase();
+      const nomB = (b.nom || '').toLowerCase();
+      if (nomA < nomB) return -1;
+      if (nomA > nomB) return 1;
+      return (a.prenom || '').toLowerCase().localeCompare((b.prenom || '').toLowerCase());
+    })
+    .filter(m =>
+      (m.nom || '').toLowerCase().includes(searchLower) ||
+      (m.prenom || '').toLowerCase().includes(searchLower)
+    );
 }
 
    getCapitaine(equipe: string): string {

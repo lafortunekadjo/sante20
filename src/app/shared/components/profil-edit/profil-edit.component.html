@@ -1,82 +1,98 @@
-    <div class="main-container">
-      <div class="form-card">
-        <div class="card-header">
-          <h1 class="card-title">Mise à jour du Profil</h1>
-          <p class="card-subtitle">Modifiez vos détails personnels et sauvegardez les changements.</p>
-        </div>
-        <div class="card-body">
-          <div *ngIf="isLoading" class="loading-container">
-            <svg class="loading-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="loading-path" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="loading-path-fill" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p class="loading-text">Chargement des données...</p>
+<div class="main-container">
+  <div class="form-card">
+    <div class="card-header">
+      <h1 class="card-title">Mise à jour du Profil</h1>
+    </div>
+
+    <div class="card-body">
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Chargement des données...</p>
+      </div>
+
+      <div *ngIf="!isLoading">
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+
+          <!-- Section Informations Utilisateur -->
+          <h2 class="section-title">Informations Utilisateur</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="username" class="form-label">Nom d'utilisateur</label>
+              <input id="username" type="text" formControlName="username" class="form-input" placeholder="Nom d'utilisateur">
+              <p *ngIf="profileForm.get('username')?.hasError('required') && profileForm.get('username')?.touched" class="error-message">
+                Le nom d'utilisateur est requis
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="email" class="form-label">Email</label>
+              <input id="email" type="email" formControlName="email" class="form-input" placeholder="exemple@domaine.com">
+              <p *ngIf="profileForm.get('email')?.hasError('required') && profileForm.get('email')?.touched" class="error-message">
+                L'email est requis
+              </p>
+              <p *ngIf="profileForm.get('email')?.hasError('email') && profileForm.get('email')?.touched" class="error-message">
+                Email invalide
+              </p>
+            </div>
           </div>
-          <div *ngIf="!isLoading">
-            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
-              <!-- La nouvelle grille pour les sections -->
-              <div class="section-grid">
-                <!-- Section 1: Informations Utilisateur -->
-                <div class="section">
-                  <h2 class="section-title">Informations Utilisateur</h2>
-                  <div class="form-group">
-                    <label for="username" class="form-label">Nom d'utilisateur</label>
-                    <input id="username" type="text" formControlName="username" class="form-input" placeholder="Nom d'utilisateur">
-                    <p *ngIf="profileForm.get('username')?.hasError('required') && profileForm.get('username')?.touched" class="error-message">Le nom d'utilisateur est requis</p>
-                  </div>
-                  <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <input id="email" type="email" formControlName="email" class="form-input" placeholder="exemple@domaine.com">
-                    <p *ngIf="profileForm.get('email')?.hasError('required') && profileForm.get('email')?.touched" class="error-message">L'email est requis</p>
-                    <p *ngIf="profileForm.get('email')?.hasError('email') && profileForm.get('email')?.touched" class="error-message">Email invalide</p>
-                  </div>
-                </div>
-  
-                <!-- Section 2: Informations Membre -->
-                <div class="section">
-                  <h2 class="section-title">Informations Membre</h2>
-                  <div class="form-group">
-                    <label for="nom" class="form-label">Nom</label>
-                    <input id="nom" type="text" formControlName="nom" class="form-input" placeholder="Nom">
-                    <p *ngIf="profileForm.get('nom')?.hasError('required') && profileForm.get('nom')?.touched" class="error-message">Le nom est requis</p>
-                  </div>
-                  <div class="form-group">
-                    <label for="prenom" class="form-label">Prénom</label>
-                    <input id="prenom" type="text" formControlName="prenom" class="form-input" placeholder="Prénom">
-                    <p *ngIf="profileForm.get('prenom')?.hasError('required') && profileForm.get('prenom')?.touched" class="error-message">Le prénom est requis</p>
-                  </div>
-                  <div class="form-group">
-                    <label for="date_naissance" class="form-label">Date de naissance</label>
-                    <input id="date_naissance" type="date" formControlName="date_naissance" class="form-input">
-                    <p *ngIf="profileForm.get('date_naissance')?.hasError('required') && profileForm.get('date_naissance')?.touched" class="error-message">La date de naissance est requise</p>
-                  </div>
-                  <div class="form-group">
-                    <label for="poste" class="form-label">Poste</label>
-                    <input id="poste" type="text" formControlName="poste" class="form-input" placeholder="Poste">
-                  </div>
-                  <div class="form-group">
-                    <label for="sexe" class="form-label">Sexe</label>
-                    <select id="sexe" formControlName="sexe" class="form-input">
-                      <option value="" disabled>Sélectionner...</option>
-                      <option value="feminin">Féminin</option>
-                      <option value="masculin">Masculin</option>
-                    </select>
-                    <p *ngIf="profileForm.get('sexe')?.hasError('required') && profileForm.get('sexe')?.touched" class="error-message">Le sexe est requis</p>
-                  </div>
-                </div>
-              </div>
-  
-              <!-- Boutons d'action -->
-              <div class="action-buttons">
-                <button type="button" (click)="cancelEdit()" class="button cancel-button">
-                  Annuler
-                </button>
-                <button type="submit" [disabled]="profileForm.invalid" class="button save-button">
-                  Enregistrer
-                </button>
-              </div>
-            </form>
+
+          <!-- Séparateur -->
+          <hr class="section-divider">
+
+          <!-- Section Informations Membre -->
+          <h2 class="section-title">Informations Membre</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nom" class="form-label">Nom</label>
+              <input id="nom" type="text" formControlName="nom" class="form-input" placeholder="Nom">
+            </div>
+            <div class="form-group">
+              <label for="prenom" class="form-label">Prénom</label>
+              <input id="prenom" type="text" formControlName="prenom" class="form-input" placeholder="Prénom">
+            </div>
+            <div class="form-group">
+              <label for="date_naissance" class="form-label">Date de naissance</label>
+              <input id="date_naissance" type="date" formControlName="date_naissance" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="poste" class="form-label">Poste</label>
+              <input id="poste" type="text" formControlName="poste" class="form-input" placeholder="Poste">
+            </div>
+            <div class="form-group">
+              <label for="cni" class="form-label">CNI</label>
+              <input id="cni" type="text" formControlName="cni" class="form-input" placeholder="CNI">
+            </div>
+            <div class="form-group">
+              <label for="adresse" class="form-label">Adresse</label>
+              <input id="adresse" type="text" formControlName="adresse" class="form-input" placeholder="Adresse">
+            </div>
+            <div class="form-group">
+              <label for="tel" class="form-label">Tel</label>
+              <input id="tel" type="text" formControlName="tel" class="form-input" placeholder="Tel">
+            </div>
+            <div class="form-group">
+              <label for="sexe" class="form-label">Sexe</label>
+              <select id="sexe" formControlName="sexe" class="form-input">
+                <option value="" disabled>Sélectionner...</option>
+                <option value="feminin">Féminin</option>
+                <option value="masculin">Masculin</option>
+              </select>
+            </div>
+            <div class="form-group checkbox-group">
+              <label>
+                <input id="assurance" type="checkbox" formControlName="assurance" class="form-checkbox">
+                Assurance
+              </label>
+            </div>
           </div>
-        </div>
+
+          <!-- Boutons -->
+          <div class="action-buttons">
+            <button type="button" (click)="cancelEdit()" class="button cancel-button">Annuler</button>
+            <button type="submit" [disabled]="profileForm.invalid" class="button save-button">Enregistrer</button>
+          </div>
+
+        </form>
       </div>
     </div>
+  </div>
+</div>

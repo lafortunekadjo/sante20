@@ -44,6 +44,15 @@
                   <mat-error *ngIf="!newEvenement.description">La description est requise</mat-error>
                 </mat-form-field>
                 <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>Date de l'événement</mat-label>
+                  <input matInput [(ngModel)]="newEvenement.dateEvenement" [matDatepicker]="picker" required>
+                  <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                  <mat-error *ngIf="!newEvenement.dateEvenement">La date est requise</mat-error>
+                </mat-form-field>
+
+          
+                <mat-form-field appearance="outline" class="form-field">
                   <mat-label>Type d'événement</mat-label>
                   <mat-select [(ngModel)]="newEvenement.typeEvenement">
                     <mat-option value="Heureux">Heureux</mat-option>
@@ -52,15 +61,16 @@
                   </mat-select>
                   <mat-error *ngIf="!newEvenement.typeEvenement">Le type est requis</mat-error>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
-                  <mat-label>Membre lié</mat-label>
-                  <mat-select [(ngModel)]="newEvenement.idMembreLie">
-                    <mat-option [value]="null">Aucun</mat-option>
-                    <mat-option *ngFor="let membre of membres" [value]="membre.id">
-                      {{ membre.prenom }} {{ membre.nom }}
-                    </mat-option>
-                  </mat-select>
-                </mat-form-field>
+               <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Membre lié</mat-label>
+                <mat-select [(ngModel)]="newEvenement.idMembreLie">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let membre of membres" [value]="membre.id">
+                    {{ membre.nom }} {{ membre.prenom }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
                 <mat-checkbox class="form-field" [(ngModel)]="newEvenement.estContributionOuverte">
                   Contributions ouvertes
                 </mat-checkbox>
@@ -104,10 +114,24 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="membre">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Membre</th>
+              <td mat-cell *matCellDef="let evenement" data-label="Type">
+                {{ evenement.membreLie?.nom }}
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="dateCreation">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Date de création</th>
               <td mat-cell *matCellDef="let evenement" data-label="Date de création">
                 {{ evenement.dateCreation | date: 'dd/MM/yyyy' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dateEvenement">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date de l'evenement</th>
+              <td mat-cell *matCellDef="let evenement" data-label="Date de l'evenement">
+                {{ evenement.dateEvenement | date: 'dd/MM/yyyy' }}
               </td>
             </ng-container>
 
@@ -131,6 +155,9 @@
                     title="Voir les contributions"
                   >
                     <mat-icon>group</mat-icon>
+                  </button>
+                  <button mat-icon-button color="primary" (click)="editEvenement(evenement)">
+                    <mat-icon>edit</mat-icon>
                   </button>
                   <button
                     mat-icon-button

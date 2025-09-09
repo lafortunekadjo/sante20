@@ -58,7 +58,7 @@ export const routes: Routes = [
     path: 'groupes',
     component: GroupeListComponent,
     canActivate: [RoleGuard],
-    data: { roles: ['ADMIN', 'RESPONSABLE', 'USER'] }
+    data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE'] }
   },
 
   
@@ -155,7 +155,7 @@ export const routes: Routes = [
     path: 'membre',
     component: MDashboardComponent, // Remplace par MembreDashboardComponent
     canActivate: [RoleGuard],
-    data: { roles: ['USER'] } // Correspond à roles: ["ROLE_USER"]
+    data: { roles: ['MEMBRE'] } // Correspond à roles: ["ROLE_USER"]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' },

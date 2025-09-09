@@ -21,6 +21,8 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { MatSelectModule } from '@angular/material/select';
 import { Contribution } from '../../../../core/models/contribution.model'; // Ajouté
 import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 
 @Component({
   selector: 'app-evenement',
@@ -39,7 +41,9 @@ import { ContributionDialogComponent } from '../contribution-dialog/contribution
     MatProgressSpinnerModule,
     MatDialogModule,
     FormsModule,
-    RouterModule
+    RouterModule,
+         MatDatepickerModule,
+    MatNativeDateModule
   ],
   templateUrl: './evenement.component.html',
   styleUrl: './evenement.component.scss'
@@ -48,9 +52,11 @@ export class EvenementComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   dataSource = new MatTableDataSource<Evenement>([]);
-  displayedColumns: string[] = ['nomEvenement', 'typeEvenement', 'dateCreation', 'estContributionOuverte', 'actions'];
+  displayedColumns: string[] = ['nomEvenement', 'typeEvenement', 'membre', 'dateCreation', 'dateEvenement', 'estContributionOuverte', 'actions'];
   isLoading: boolean = true;
   showCreateRow: boolean = false;
+  editingEvenementId: number | null = null;
+
 
   newEvenement: Evenement = {
     idGroupe: 1, // Remplacez par l'ID de groupe réel
@@ -60,9 +66,12 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     dateCreation: new Date(),
     estContributionOuverte: false,
     idMembreLie: 0,
+    dateEvenement: new Date(),
+    id: 0
   };
 
   membres: Membre[] = [];
+  
 
   constructor(
     private evenementService: GeneralService,
@@ -85,6 +94,7 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     this.isLoading = true;
     this.evenementService.getAllEvenements().subscribe({
       next: (data) => {
+        console.log(data)
         this.dataSource.data = data;
         this.isLoading = false;
       },
@@ -122,6 +132,8 @@ export class EvenementComponent implements OnInit, AfterViewInit {
       dateCreation: new Date(),
       estContributionOuverte: false,
       idMembreLie: 0,
+      dateEvenement: new Date(),
+      id:0
     };
   }
 
@@ -130,12 +142,27 @@ export class EvenementComponent implements OnInit, AfterViewInit {
   }
 
   saveEvenement() {
-    if (this.isCreateFormValid()) {
-      this.isLoading = true;
+  if (this.isCreateFormValid()) {
+    this.isLoading = true;
+
+    if (this.editingEvenementId) {
+        console.log(this.newEvenement)
+      this.evenementService.updateEvenement(this.editingEvenementId, this.newEvenement).subscribe({
+        next: () => {
+          this.loadEvenements();
+          this.cancelCreate();
+        },
+        error: (err) => {
+          console.error('Erreur lors de la modification de l\'événement:', err);
+          this.isLoading = false;
+        },
+      });
+    } else {
+      // Mode création
       this.evenementService.createEvenement(this.newEvenement).subscribe({
         next: () => {
           this.loadEvenements();
-          this.toggleCreateRow();
+          this.cancelCreate();
         },
         error: (err) => {
           console.error('Erreur lors de la création de l\'événement:', err);
@@ -144,6 +171,17 @@ export class EvenementComponent implements OnInit, AfterViewInit {
       });
     }
   }
+}
+
+editEvenement(evenement: any) {
+  console.log(evenement)
+  this.newEvenement = { ...evenement }; // copie des données
+  this.newEvenement.idMembreLie = evenement.membreLie?.id ?? null;
+  this.editingEvenementId = evenement.id;
+  this.showCreateRow = true;
+  
+}
+
 
   openDeleteDialog(id: number) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
@@ -180,7 +218,9 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     });
   }
 
-  cancelCreate() {
-    this.toggleCreateRow();
-  }
+cancelCreate() {
+  this.toggleCreateRow();
+  this.editingEvenementId = null;
+}
+
 }

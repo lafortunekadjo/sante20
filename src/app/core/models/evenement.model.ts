@@ -1,5 +1,5 @@
 export interface Evenement {
-  idEvenement?: number;
+  id: number;
   idGroupe: number;
   nomEvenement: string;
   description: string;
@@ -7,6 +7,7 @@ export interface Evenement {
   dateCreation: Date;
   estContributionOuverte: boolean;
   idMembreLie?: number;
+  dateEvenement: Date;
 }
 
 

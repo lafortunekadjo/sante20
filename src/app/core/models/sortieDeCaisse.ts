@@ -1,3 +1,4 @@
+import { Membre } from "./membre.model";
 import { TypeDepense } from "./typeDepense";
 import { User } from "./user";
 
@@ -6,6 +7,6 @@ export interface SortieDeCaisse {
   description: string;
   montant: number;
   dateSortie: Date;
-  utilisateur: User;
+  utilisateur: Membre;
   typeDepense: TypeDepense;
 }

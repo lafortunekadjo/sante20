@@ -88,13 +88,16 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         const typedMembres: Membre[] = membres;
         const typedPresences: Presence[] = presences;
 
-        this.currentEvents = typedEvents.filter(e => e.estContributionOuverte && new Date(e.dateCreation) <= today);
-        this.recentMatches = typedMatches.filter(m => {
-          const matchDate = new Date(m.dateMatch);
-          const thirtyDaysAgo = new Date(today);
-          thirtyDaysAgo.setDate(today.getDate() - 30);
-          return matchDate >= thirtyDaysAgo && matchDate <= today;
-        });
+        this.currentEvents = typedEvents.filter(e => e.estContributionOuverte && new Date(e.dateEvenement) <= today);
+        this.recentMatches = typedMatches
+          .filter(m => {
+            const matchDate = new Date(m.dateMatch);
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            return matchDate >= thirtyDaysAgo && matchDate <= today;
+          })
+          .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
+
         this.ongoingContributions = typedContributions
           .map(contrib => ({
             contribution: contrib,

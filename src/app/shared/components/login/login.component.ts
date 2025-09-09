@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,7 +16,7 @@ import { MatDialog } from '@angular/material/dialog';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit{
 
   loginForm: FormGroup;
   isLoading = false;
@@ -28,28 +28,33 @@ export class LoginComponent {
       password: ['', Validators.required]
     });
   }
+  ngOnInit(): void {
+    console.log("apres")
+    this.isLoading = false;
+     this.loginForm = this.fb.group({
+      username: ['', [Validators.required]],
+      password: ['', Validators.required]
+    });
+  }
 
- submit() {
+submit() {
     if (this.loginForm.valid) {
       this.isLoading = true;
       const { username, password } = this.loginForm.value;
       this.authService.login(username, password).subscribe({
         next: (response) => {
-          // Logique de redirection après la connexion réussie
-          // 1. D'abord, vérifiez si le mot de passe doit être réinitialisé
           if (this.authService.isPasswordResetRequired()) {
-            console.log("Le mot de passe doit être réinitialisé. Redirection vers la page de réinitialisation.");
-            this.dialog.open(PasswordResetDialogComponent)
-            // this.router.navigate(['/reset-password']); // Rediriger vers un nouveau chemin de composant
+            this.dialog.open(PasswordResetDialogComponent);
+            this.isLoading = false;
           } else {
-            // 2. Si le mot de passe n'a pas besoin d'être réinitialisé, redirigez en fonction des rôles
             const roles = this.authService.getRoles();
-            console.log(roles);
+            console.log('Rôles de l\'utilisateur:', roles);
+            this.isLoading = false;
             if (roles.includes('ADMIN')) {
               this.router.navigate(['/admin']);
             } else if (roles.includes('RESPONSABLE')) {
               this.router.navigate(['/responsable']);
-            } else if (roles.includes('USER')) {
+            } else if (roles.includes('MEMBRE')) {
               console.log('Connexion réussie');
               this.router.navigate(['/membre']);
             } else {
@@ -59,6 +64,7 @@ export class LoginComponent {
         },
         error: (err) => {
           console.error('Erreur de connexion:', err);
+           this.isLoading = false;
           // Utilisez une boîte de dialogue personnalisée au lieu d'alert()
           // Exemple: this.dialogService.openErrorDialog('Échec de la connexion. Vérifiez vos identifiants.');
           alert('Échec de la connexion. Vérifiez vos identifiants.');

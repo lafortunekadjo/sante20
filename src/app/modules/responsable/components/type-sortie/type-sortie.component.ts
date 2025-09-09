@@ -24,6 +24,8 @@ import { TypeDepense } from '../../../../core/models/typeDepense';
 import { GeneralService } from '../../../../core/services/general.service';
 import { UserService } from '../../../../core/services/user.service';
 import { User } from '../../../../core/models/user';
+import { MembreService } from '../../../../core/services/membre.service';
+import { Membre } from '../../../../core/models/membre.model';
 
 @Component({
   selector: 'app-type-sortie',
@@ -74,7 +76,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
     description: '',
     montant: 0,
     dateSortie: new Date(),
-    utilisateur: {} as User,
+    utilisateur: {} as Membre,
     typeDepense: {} as TypeDepense
   };
 
@@ -87,7 +89,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
 
   // Data for selects
   typesDepenses: TypeDepense[] = [];
-  utilisateurs: User[] = [];
+  utilisateurs: Membre[] = [];
   groupes: Groupe[] = [];
   
   // Editing state
@@ -100,7 +102,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
     private sortieDeCaisseService: GeneralService,
     private typeDepenseService: GeneralService,
     private groupeService: GroupeService,
-    private utilisateurService: UserService,
+    private utilisateurService: MembreService,
     private dialog: MatDialog
   ) {}
 
@@ -124,7 +126,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
       sorties: this.sortieDeCaisseService.getAllSortiesDeCaisse(),
       types: this.typeDepenseService.getAllTypesDepenses(),
       groupes: this.groupeService.getAllGroupes(),
-      utilisateurs: this.utilisateurService.getAllUsers()
+      utilisateurs: this.utilisateurService.getGroupMembers()
     }).pipe(
       switchMap(({ sorties, types, groupes, utilisateurs }) => {
         this.utilisateurs = utilisateurs;
@@ -138,7 +140,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
         const sortiesWithDetails = sorties.map(s => ({
           ...s,
           typeDepense: typeMap.get(s.typeDepense?.id) as TypeDepense,
-          utilisateur: utilisateurMap.get(s.utilisateur?.id) as User
+          utilisateur: utilisateurMap.get(s.utilisateur?.id) as Membre
         }));
 
         this.sortiesDataSource.data = sortiesWithDetails;
@@ -193,7 +195,7 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
       description: '',
       montant: 0,
       dateSortie: new Date(),
-      utilisateur: {} as User,
+      utilisateur: {} as Membre,
       typeDepense: {} as TypeDepense
     };
   }

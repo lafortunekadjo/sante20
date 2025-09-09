@@ -86,7 +86,11 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     soldeSanctionsRestant: 0,
     user: { id: 0, username: '', email: '', roles: '', active: true, membre: 0, motDePasse: '', groupe: 0 },
     active: true,
-    sexe: ''
+    sexe: '',
+    cni: '',
+    adresse: '',
+    tel: '',
+    assurance: false
   };
   groupe: Groupe | null = null;
   users: User[] = [];
@@ -111,7 +115,11 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     soldeSanctionsRestant: 0,
     user: { id: 0, username: '', email: '', roles: '', active: true, membre: 0, motDePasse: '', groupe: 0 },
     active: true,
-    sexe: ''
+    sexe: '',
+    cni: '',
+    adresse: '',
+    tel: '',
+    assurance: false
   };
   selectedGroupeId: string = '';
   createUserForMembre: boolean = false;
@@ -258,7 +266,11 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       soldeSanctionsRestant: 0,
       user: { id: 0, username: '', email: '', roles: '', active: true, membre: 0, motDePasse: '', groupe: 0 },
       active: true,
-      sexe: ''
+      sexe: '',
+      cni:'',
+      adresse:'',
+      tel:'',
+      assurance: true,
     };
   }
 
@@ -306,7 +318,11 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       soldeSanctionsRestant: 0,
       user: { id: 0, username: '', email: '', roles: '', active: true, membre: 0, motDePasse: '', groupe: 0 },
       active: true,
-      sexe: ''
+      sexe: '',
+       cni:'',
+      adresse:'',
+      tel:'',
+      assurance: true,
     };
   }
 

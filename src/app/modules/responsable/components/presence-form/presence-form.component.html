@@ -6,14 +6,19 @@
               <mat-card-content>
                 <h3 class="text-xl font-semibold text-white mb-4">Ajouter un membre à la liste</h3>
                 <div class="flex flex-col sm:flex-row items-center gap-4">
-                  <mat-form-field class="flex-grow w-full">
-                    <mat-label>Sélectionner un membre</mat-label>
-                    <mat-select [(ngModel)]="selectedMembreIdToAdd">
-                      <mat-option *ngFor="let membre of membresNonPresents" [value]="membre.id">
-                        {{ membre.nom }} {{ membre.prenom }}
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
+                            <mat-form-field class="w-full">
+  <mat-label>Rechercher un membre</mat-label>
+  <input matInput placeholder="Nom ou prénom..." [(ngModel)]="membreSearch">
+</mat-form-field>
+
+<mat-form-field class="w-full">
+  <mat-label>Sélectionner un membre</mat-label>
+  <mat-select [(ngModel)]="selectedMembreIdToAdd">
+    <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
+      {{ membre.nom }} {{ membre.prenom }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
                   <button mat-raised-button color="primary" [disabled]="!selectedMembreIdToAdd" (click)="addMembreToPresenceList()" class="w-full sm:w-auto mt-4 sm:mt-0">
                     Ajouter
                   </button>
@@ -117,7 +122,38 @@
   <!-- Section pour l'impression de la feuille de match -->
 <div id="print-section" class="print-section">
   <h1 class="print-title">FEUILLE DE MATCH <span class="text-primary">{{ groupeActif?.nom }}</span></h1>
-  <h2 class="print-subtitle">MATCH CONTRE {{ match?.adversaire }} - DATE : {{ match?.dateMatch | date:'dd/MM/yyyy' }}</h2>
+  <h2 class="print-subtitle">MATCH {{ match?.adversaire }} - DATE : {{ match?.dateMatch | date:'dd/MM/yyyy' }}</h2>
+  
+   <!-- AJOUT : Arbitres -->
+<!-- AJOUT : Arbitres -->
+<div class="print-officials"
+     *ngIf="(match?.arbitrePrincipal || match?.arbitrePrincipalNomOccasionnel) 
+         || (match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel)">
+  <p *ngIf="match?.arbitrePrincipal || match?.arbitrePrincipalNomOccasionnel">
+    <strong>Arbitre principal :</strong>
+    {{ match?.arbitrePrincipal?.nom && match?.arbitrePrincipal?.prenom
+        ? (match?.arbitrePrincipal?.nom + ' ' + match?.arbitrePrincipal?.prenom)
+        : match?.arbitrePrincipalNomOccasionnel }}
+  </p>
+
+  <p *ngIf="match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel">
+    <strong>Arbitre assistant :</strong>
+    {{ match?.arbitreAssistant?.nom && match?.arbitreAssistant?.prenom
+        ? (match?.arbitreAssistant?.nom + ' ' + match?.arbitreAssistant?.prenom)
+        : match?.arbitreAssistantNomOccasionnel }}
+  </p>
+
+    <p *ngIf="match?.rapporteur || match?.rapporteurNomOccasionnel">
+    <strong>Rapporteur :</strong>
+    {{ match?.rapporteur?.nom && match?.rapporteur?.prenom
+        ? (match?.rapporteur?.nom + ' ' + match?.rapporteur?.prenom)
+        : match?.rapporteurNomOccasionnel }}
+  </p>
+</div>
+
+
+  <!-- FIN AJOUT -->
+  
   <div class="print-team-layout">
     <div class="club-section">
       <h3 class="section-title">ÉQUIPE {{ equipeNames[0] || 'JAUNE' }}</h3>

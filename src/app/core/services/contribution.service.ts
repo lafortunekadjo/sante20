@@ -15,6 +15,16 @@ export class ContributionService {
 
 
   updateContribution(id: number, editContribution: Contribution) {
+    const payload = {
+    commentaire: editContribution.commentaire,
+      description: editContribution.description,
+      idEvenement: editContribution.idEvenement?.id,
+      delaiContribution: editContribution.delaiContribution,
+      montantMin: editContribution.montantMin,
+      montantCible: editContribution.montantCible || null,
+      open: editContribution.open
+         };
+         
     return this.http.put<Contribution>(`${environment.apiUrl}/contributions/${id}`, editContribution);
   }
   deleteContribution(id: number): Observable<void> {
@@ -27,7 +37,16 @@ export class ContributionService {
 
 
   addContribution(contribution: any): Observable<Contribution> {
-    return this.http.post<Contribution>(`${environment.apiUrl}/contributions`, contribution);
+    const payload = {
+      commentaire: contribution.commentaire,
+      description: contribution.description,
+      idEvenement: contribution.idContribution?.id,
+      delaiContribution: contribution.delaiContribution,
+      montantMin: contribution.montantMin,
+      montantCible: contribution.montantCible || null,
+      open: contribution.open
+    };
+    return this.http.post<Contribution>(`${environment.apiUrl}/contributions`, payload);
   }
 
   getContributionsByMembre(groupeId: number, membreId: number): Observable<Contribution[]> {
@@ -64,9 +83,9 @@ export class ContributionService {
   createIndividuelleContribution(
     contributionData: ContributionIndividuelle
   ): Observable<ContributionIndividuelle> {
-    // Endpoint REST pour créer une contribution individuelle
+   console.log(contributionData)
     return this.http.post<ContributionIndividuelle>(
-      `${environment.apiUrl}/contributions/individuelles`,
+      `${environment.apiUrl}/contributions/contribuer`,
       contributionData
     );
   }
@@ -87,7 +106,7 @@ export class ContributionService {
 
   // Récupère toutes les contributions individuelles
   getAllContributionsIndividuelles(): Observable<ContributionIndividuelle[]> {
-    return this.http.get<ContributionIndividuelle[]>(`${environment.apiUrl}/contributions-individuelles`);
+    return this.http.get<ContributionIndividuelle[]>(`${environment.apiUrl}/contributions/individuelles`);
   }
 
   // Récupère les contributions en cours (filtré côté client)

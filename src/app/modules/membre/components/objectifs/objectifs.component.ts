@@ -172,12 +172,8 @@ export class ObjectifsComponent implements OnInit {
     }
   }
 
-<<<<<<< HEAD
 // Après
 getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
-=======
-  getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
->>>>>>> 8cbf74c465de4322df1c820fa51c94bb678e3e0b
   // Votre logique de retour reste la même, mais le type est plus précis
   return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'indeterminate'; 
 }
