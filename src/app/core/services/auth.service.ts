@@ -18,6 +18,7 @@ export class AuthService {
    private token: string | null = null;
   private roles: string[] = [];
   private userId: number | null = null;
+    // private memberId: number | null = null;
   private apiUrl = `${environment.apiUrl}/auth/login`; 
   private apiCheck = `${environment.apiUrl}/presences/check-in`; 
   private userInfoUrl = `${environment.apiUrl}/auth/me`;
@@ -67,6 +68,7 @@ login(username: string, password: string): Observable<any> {
       console.log('Informations utilisateur:', userInfo);
 
       this.userId = userInfo.id || null;
+      // this.memberId = userInfo.member.id || null;
       this.passwordResetRequired = userInfo.passwordResetRequired || false;
       this.roles = userInfo.roles || [];
       this.username = userInfo.username || null;
@@ -292,12 +294,13 @@ getRoles(): string[] {
     return this.http.patch(passwordUpdateUrl, { oldPassword, newPassword });
   }
 
-  async checkIn(): Promise<{ success: boolean; message: string }> {
+  async checkIn(id:number): Promise<{ success: boolean; message: string }> {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       const data = {
         latitude: coordinates.coords.latitude,
         longitude: coordinates.coords.longitude,
+        equipe: id,
       };
       console.log('Données envoyées:', data);
 

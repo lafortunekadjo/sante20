@@ -17,11 +17,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { forkJoin, of, switchMap } from 'rxjs';
-import { Contribution } from '../../../../core/models/contribution.model';
+import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { GeneralService } from '../../../../core/services/general.service';
+import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
 
 @Component({
   selector: 'app-contribution',
@@ -214,5 +215,73 @@ export class ContributionComponent implements OnInit, AfterViewInit {
       next: () => this.loadAllData(),
       error: (err) => console.error('Erreur lors de la suppression de la contribution:', err),
     });
-  }
+  
+}
+viewContributions(contributionId: number) {
+  this.evenementService.getContributionIndividuellesByContributionId(contributionId).subscribe({
+    next: (contributions: any[]) => {
+      const groupedMap = new Map<number, {
+        montant: number,
+        membre: {
+          id: number,
+          nom: string,
+          prenom: string,
+          tel?: string,
+          adresse?: string,
+          email?: string,
+          poste?: string
+        }
+      }>();
+
+      for (const c of contributions) {
+        const membre = c.membre;
+        if (!membre?.id) continue;
+
+        const montant = c.montant ?? 0;
+
+        if (!groupedMap.has(membre.id)) {
+          groupedMap.set(membre.id, {
+            montant,
+            membre: {
+              id: membre.id,
+              nom: membre.nom?.trim() ?? '',
+              prenom: membre.prenom?.trim() ?? '',
+              tel: membre.tel,
+              adresse: membre.adresse,
+              email: membre.email,
+              poste: membre.poste
+            }
+          });
+        } else {
+          const existing = groupedMap.get(membre.id)!;
+          existing.montant += montant;
+        }
+      }
+
+      const formattedContributions = Array.from(groupedMap.values());
+      const total = formattedContributions.reduce((sum, c) => sum + c.montant, 0);
+
+      this.dialog.open(ContributionDialogComponent, {
+        width: '600px',
+        data: {
+          contributions: formattedContributions,
+          total
+        }
+      });
+    },
+
+    error: (err) => {
+      console.error('Erreur lors du chargement des contributions:', err);
+      this.dialog.open(ContributionDialogComponent, {
+        width: '600px',
+        data: {
+          contributions: [],
+          total: 0
+        }
+      });
+    }
+  });
+}
+
+
 }

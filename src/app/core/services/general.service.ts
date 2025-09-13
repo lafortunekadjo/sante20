@@ -226,5 +226,12 @@ getContributionByEvenementId(idEvenement: number): Observable<ContributionIndivi
   );
 }
 
+getContributionIndividuellesByContributionId(idContribution: number): Observable<ContributionIndividuelle[]> {
+  // Endpoint REST pour récupérer les contributions liées à un événement
+  return this.http.get<ContributionIndividuelle[]>(
+    `${environment.apiUrl}/contributions/individuelles/contribution/${idContribution}`
+  );
+}
+
   
 }

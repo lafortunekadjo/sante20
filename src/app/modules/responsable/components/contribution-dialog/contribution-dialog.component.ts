@@ -1,6 +1,6 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { Contribution } from '../../../../core/models/contribution.model';
+import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -10,9 +10,13 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './contribution-dialog.component.html',
   styleUrl: './contribution-dialog.component.scss'
 })
-export class ContributionDialogComponent {
+export class ContributionDialogComponent implements OnInit{
 constructor(
     public dialogRef: MatDialogRef<ContributionDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { contributions: Contribution[], total: number }
+    @Inject(MAT_DIALOG_DATA) public data: { contributions: any[], total: number }
   ) {}
+
+    ngOnInit(): void {
+    console.log(this.data);
+  }
 }

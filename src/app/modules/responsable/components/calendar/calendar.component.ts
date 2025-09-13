@@ -40,19 +40,30 @@ export class CalendarComponent {
     this.dialogRef.close();
   }
 
-  isMatchPlayed(matchDate: string): boolean {
-    const matchDateObj = new Date(matchDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return matchDateObj < today;
-  }
 
-  isMatchMissed(matchDate: string): boolean {
-    const matchDateObj = new Date(matchDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return matchDateObj < today && !this.isMatchPlayed(matchDate); // À ajuster si "non joué" a une définition différente
-  }
+  isMatchPlayed(match: Match): boolean {
+  const matchDate = new Date(match.dateMatch);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const hasRapporteur =
+    !!match.rapporteur ||
+    !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+
+  return matchDate < today && hasRapporteur;
+}
+
+isMatchMissed(match: Match): boolean {
+  const matchDate = new Date(match.dateMatch);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const hasRapporteur =
+    !!match.rapporteur ||
+    (match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+
+  return matchDate < today && !hasRapporteur;
+}
 
   isMatchFuture(matchDate: string): boolean {
     const matchDateObj = new Date(matchDate);

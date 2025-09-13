@@ -466,19 +466,29 @@ viewCalendar() {
     return dates;
   }
 
-  isMatchPlayed(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return matchDate < today;
-  }
+isMatchPlayed(match: Match): boolean {
+  const matchDate = new Date(match.dateMatch);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  isMatchMissed(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return matchDate < today && !this.isMatchPlayed(match);
-  }
+  const hasRapporteur =
+    !!match.rapporteur ||
+    !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+
+  return matchDate < today && hasRapporteur;
+}
+
+isMatchMissed(match: Match): boolean {
+  const matchDate = new Date(match.dateMatch);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const hasRapporteur =
+    !!match.rapporteur ||
+    (match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+
+  return matchDate < today && !hasRapporteur;
+}
 
   isMatchFuture(match: Match): boolean {
     const matchDate = new Date(match.dateMatch);

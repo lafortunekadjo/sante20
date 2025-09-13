@@ -15,11 +15,15 @@ import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/pr
 import { PasswordResetDialogComponent } from '../password-reset-dialog/password-reset-dialog.component';
 import { Geolocation } from '@capacitor/geolocation';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
+import { EquipeSelectionDialogComponent } from '../equipe-selection-dialog/equipe-selection-dialog.component';
+import { GeneralService } from '../../../core/services/general.service';
+import { MembreService } from '../../../core/services/membre.service';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [MatToolbarModule, MatButtonModule, MatFormFieldModule, MatSelectModule,CommonModule, MatIconModule, MatMenuModule],
+  imports: [MatToolbarModule,MatProgressSpinnerModule, MatButtonModule, MatFormFieldModule, MatSelectModule,CommonModule, MatIconModule, MatMenuModule],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
 })
@@ -67,7 +71,7 @@ export class NavbarComponent {
 
   openProfileEdit() {
     const dialogRef = this.dialog.open(ProfilEditComponent, {
-      width: '400px',
+      width: '600px',
       data: { user: this.user },
     });
 
@@ -127,7 +131,7 @@ export class NavbarComponent {
     this.router.navigate(['/settings']); // Rediriger vers la page des paramètres
   }
 
-  constructor(public authService: AuthService, private router: Router, private dialog: MatDialog,) {
+  constructor(public authService: AuthService,public memberService: MembreService, private router: Router, private dialog: MatDialog, private equipeService: GeneralService) {
     this.roles = this.authService.getRoles();
     if (this.roles.length > 0) {
       this.selectedRole = this.roles[0];
@@ -156,28 +160,74 @@ export class NavbarComponent {
   }
 
 async checkIn() {
-    this.isChecking = true;
-    this.error = '';
-    this.success = false;
+  this.isChecking = true;
+  this.error = '';
+  this.success = false;
 
-    const result = await this.authService.checkIn();
+  try {
+    // 1. Récupérer les équipes
+    const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
+
+    // 2. Récupérer l'équipe du membre (par défaut)
+    const userId: number | null = this.authService.getUserId();
+
+if (userId === null) {
+  this.isChecking = false;
+  this.error = 'Utilisateur non authentifié ou ID introuvable.';
+  return;
+}
+
+const membre = await this.memberService.getMembreByUserId(userId).toPromise();
+
+    const membreEquipeId = membre?.equipe?.id ?? null;
+
+    // 3. Ouvrir le dialog de sélection d’équipe
+    const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
+      width: '500px',
+      data: {
+        equipes,
+        defaultEquipeId: membreEquipeId,
+        joueur: {
+          id: membre?.id,
+          nom: membre?.nom,
+          prenom: membre?.prenom
+        }
+      }
+    });
+
+    const selectedEquipe = await dialogRef.afterClosed().toPromise();
+
+    if (!selectedEquipe) {
+      this.isChecking = false;
+      this.error = 'Check-in annulé : aucune équipe sélectionnée.';
+      return;
+    }
+
+    // 4. Appeler le checkIn avec l’équipe choisie
+    const result = await this.authService.checkIn(selectedEquipe.id);
     this.isChecking = false;
 
-    // Ouvrir le dialogue de confirmation avec le message
-const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-  width: '90vw',
-  panelClass: 'scrollable-dialog',
-  data: { message: result.message }
-});
+    // 5. Afficher le message de confirmation
+    const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '90vw',
+      panelClass: 'scrollable-dialog',
+      data: { message: result.message }
+    });
 
-    dialogRef.afterClosed().subscribe(confirmed => {
+    confirmRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        // Action si l'utilisateur confirme (ex. succès)
         this.success = result.success;
       } else {
-        // Action si l'utilisateur annule (ex. erreur ou rien)
         this.error = result.success ? '' : result.message;
       }
     });
+
+  } catch (err:any) {
+    this.isChecking = false;
+    this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+    console.error(err);
   }
+}
+
+
 }

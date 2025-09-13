@@ -199,24 +199,24 @@ editEvenement(evenement: any) {
     });
   }
 
-  viewContributions(evenementId: number) {
-    this.evenementService.getContributionsByEvenement(evenementId).subscribe({
-      next: (contributions: Contribution[]) => {
-        const total = contributions.reduce((sum, c) => sum + 0, 0);
-        this.dialog.open(ContributionDialogComponent, {
-          width: '400px',
-          data: { contributions, total }
-        });
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des contributions:', err);
-        this.dialog.open(ContributionDialogComponent, {
-          width: '400px',
-          data: { contributions: [], total: 0 }
-        });
-      }
-    });
-  }
+  // viewContributions(evenementId: number) {
+  //   this.evenementService.getContributionsByEvenement(evenementId).subscribe({
+  //     next: (contributions: Contribution[]) => {
+  //       const total = contributions.reduce((sum, c) => sum + 0, 0);
+  //       this.dialog.open(ContributionDialogComponent, {
+  //         width: '400px',
+  //         data: { contributions, total }
+  //       });
+  //     },
+  //     error: (err) => {
+  //       console.error('Erreur lors du chargement des contributions:', err);
+  //       this.dialog.open(ContributionDialogComponent, {
+  //         width: '400px',
+  //         data: { contributions: [], total: 0 }
+  //       });
+  //     }
+  //   });
+  // }
 
 cancelCreate() {
   this.toggleCreateRow();
