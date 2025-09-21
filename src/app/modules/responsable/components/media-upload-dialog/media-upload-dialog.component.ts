@@ -19,6 +19,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
+import { environment } from '../../../../environment';
 
 @Component({
   selector: 'app-media-upload-dialog',
@@ -91,7 +92,7 @@ export class MediaUploadDialogComponent {
       formData.append('matchMedia', file);
     });
 
-    this.http.post(`http://localhost:8082/api/matches/${this.matchId}/media`, formData, { responseType: 'text' })
+    this.http.post(`${environment.apiUrl}/matches/${this.matchId}/media`, formData, { responseType: 'text' })
       .pipe(catchError(error => {
         this.uploadProgress = `Erreur : ${error.message}`;
         return of(null);

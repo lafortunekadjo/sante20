@@ -120,9 +120,10 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
         const scorerMap = new Map<number, number>();
         const passerMap = new Map<number, number>();
+        console.log(typedPresences)
         typedPresences.forEach(p => {
-          scorerMap.set(p.membre.id, (scorerMap.get(p.membre.id) || 0) + p.buts);
-          passerMap.set(p.membre.id, (passerMap.get(p.membre.id) || 0) + p.passes);
+          scorerMap.set(p.membre?.id, (scorerMap.get(p.membre?.id) || 0) + p.buts);
+          passerMap.set(p.membre?.id, (passerMap.get(p.membre?.id) || 0) + p.passes);
         });
         this.topScorers = Array.from(scorerMap.entries())
           .map(([id, buts]) => ({ membre: typedMembres.find(m => m.id === id)!, buts }))

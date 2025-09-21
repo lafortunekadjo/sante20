@@ -13,6 +13,7 @@ export interface Match {
   mediaUrls: string[];
     forfait: boolean;
   equipeForfait: string
+  scoreAdversaire?: number | 0;
 
   // Nouveaux champs pour arbitres et rapporteur
   arbitrePrincipal?: Membre | null;              // si membre existant

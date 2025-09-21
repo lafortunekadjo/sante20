@@ -31,6 +31,7 @@ import { CalendarComponent } from '../calendar/calendar.component';
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { GeneralService } from '../../../../core/services/general.service';
 import { MediaUploadDialogComponent } from '../media-upload-dialog/media-upload-dialog.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-match-form',
@@ -43,6 +44,7 @@ import { MediaUploadDialogComponent } from '../media-upload-dialog/media-upload-
     MatInputModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatCheckboxModule,
     MatPaginatorModule,
     MatSortModule,
     MatProgressSpinnerModule,
@@ -100,6 +102,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
   presencesToPrint: Presence[] = [];
   sanctionsToPrint: Sanction[] = [];
   typeSanctions: TypeSanction[] = [];
+   equipes: string[] = [];
 
   constructor(
     private matchService: MatchService,
@@ -259,8 +262,10 @@ this.dataSource.data = sortedMatches;
         arbitreAssistantId: this.newMatch.arbitreAssistant?.id || null,
         arbitreAssistantNom: this.newMatch.arbitreAssistantNomOccasionnel || null,
         rapporteurId: this.newMatch.rapporteur?.id || null,
-        rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null
+        rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null,
+        scoreAdversaire: this.newMatch.scoreAdversaire || null
       };
+      console.log(payload)
       const saveObservable = this.editingMatch
         ? this.matchService.updateMatch(this.editingMatch.id, payload)
         : this.matchService.createMatch(payload);
@@ -516,5 +521,26 @@ isMatchMissed(match: Match): boolean {
       }
     });
   }
+
+    onForfaitChange() {
+    // Si la case forfait est cochée, on parse le champ adversaire
+    if (this.newMatch.forfait && this.newMatch.adversaire) {
+      this.equipes = this.getEquipeNames(this.newMatch.adversaire);
+    } else {
+      // Sinon, on réinitialise l'équipe forfait
+      this.newMatch.equipeForfait = "";
+      this.equipes = [];
+    }
+  }
+
+  onAdversaireInput() {
+    if (this.newMatch.forfait && this.newMatch.adversaire) {
+      this.equipes = this.getEquipeNames(this.newMatch.adversaire);
+    } else {
+      this.equipes = [];
+    }
+  }
+
+
 
 }

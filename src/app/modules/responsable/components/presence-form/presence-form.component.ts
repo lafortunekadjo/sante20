@@ -89,6 +89,7 @@ dataSource = new MatTableDataSource<any>([]);
   ngOnInit() {
     const matchId = Number(this.route.snapshot.paramMap.get('matchId'));
     this.loadData(matchId);
+        console.log(this.dataSource.data)
     
   }
 
@@ -131,50 +132,41 @@ dataSource = new MatTableDataSource<any>([]);
       this.match = match;
       this.membres = membres;
       this.membres2 = membres2;
+      
+ 
 
-      this.dataSource.data = membres.map(membre => {
-        const existingPresence = presences.find(p => p.membre?.id === membre?.id);
+        // Maintenant, nous avons la liste complète des présences, y compris les joueurs occasionnels.
+        // Nous peuplons simplement `dataSource.data` avec ces présences.
+         //const updatedPresences = presences.map(p => ({ ...p, present: true }));
+        this.dataSource.data = presences.map(p => ({ ...p, present: true }));
         
-        if (existingPresence) {
-          return {
-            ...existingPresence,
-            match: match,
-            present: true,
-            cartonsJaunes: existingPresence.cartonsJaunes || 0,
-            cartonsRouges: existingPresence.cartonsRouges || 0
-          };
-        }
-        return {
-          id:0,
-          match: match,
-          membre: membre,
-          present: false,
-          aJoue: false,
-          estCapitaine: false,
-          buts: 0,
-          passes: 0,
-          estHommeDuMatch: false,
-          estHommeDuMatchEq: false,
-          equipeMatch: match.typeMatch === 'INTERNE' ? membre?.equipe?.nom : 'LOCALE',
-          cartonsJaunes: 0,
-          cartonsRouges: 0,
-          nomOccasionnel:0,
-        };
-      });
+        // Et nous peuplons la liste des membres non présents en filtrant à partir de tous les membres.
+        const membresPresentsIds = presences.map(p => p.membre?.id).filter(id => id !== undefined);
+        const membresOccasionnels = presences.filter(p => p.nomOccasionnel).map(p => p.nomOccasionnel);
 
-      const membresPresentsIds = presences.map(p => p.membre?.id);
-      const safeLower = (val?: string) => (val ?? '').toLowerCase();
+        const safeLower = (val?: string) => (val ?? '').toLowerCase();
+        
+        // J'ai renommé `membres` en `allMembres` pour éviter la confusion
+        this.membres = membres
+          .filter(m => !membresPresentsIds.includes(m?.id))
+          .sort((a, b) => {
+            const nomA = safeLower(a?.nom);
+            const nomB = safeLower(b?.nom);
+            if (nomA < nomB) return -1;
+            if (nomA > nomB) return 1;
+            return safeLower(a?.prenom).localeCompare(safeLower(b?.prenom));
+          });
+          this.membresNonPresents = this.membres2
+              .filter(m => !membresPresentsIds.includes(m?.id))
+              .sort((a, b) => {
+                const nomA = safeLower(a.nom);
+                const nomB = safeLower(b.nom);
+                if (nomA < nomB) return -1;
+                if (nomA > nomB) return 1;
+                return safeLower(a.prenom).localeCompare(safeLower(b.prenom));
 
-      this.membresNonPresents = this.membres2
-        .filter(m => !membresPresentsIds.includes(m?.id))
-        .sort((a, b) => {
-          const nomA = safeLower(a.nom);
-          const nomB = safeLower(b.nom);
-          if (nomA < nomB) return -1;
-          if (nomA > nomB) return 1;
-          return safeLower(a.prenom).localeCompare(safeLower(b.prenom));
-        });
-
+              });
+          
       this.isLoading = false;
 
       console.log(this.match?.adversaire)
@@ -254,6 +246,10 @@ filteredMembres() {
       .reduce((sum, p) => sum + p.buts, 0);
   }
 
+  getScore2(equipe: string): number {
+     return this.match?.scoreAdversaire || 0;
+  
+  }
   // getHommeDuMatch(): string {
   //   const hommeDuMatch = this.dataSource.data.find(p => p.present && p.aJoue && p.estHommeDuMatch);
   //   return hommeDuMatch ? this.getMembreName(hommeDuMatch.membre.id) : 'Aucun';
@@ -352,6 +348,10 @@ isPresenceValid(): boolean {
 
   if (presentPlayers.length === 0) {
     return false;
+  }
+
+  if (this.match?.typeMatch === 'AMICAL') {
+    return true; // La présence est toujours considérée comme valide pour ce critère.
   }
 
   // Utiliser la fonction getEquipeNames pour obtenir les noms d'équipes dynamiquement

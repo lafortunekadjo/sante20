@@ -145,7 +145,7 @@ export class ContributionFormComponent implements OnInit, AfterViewInit{
     if (this.isCreateFormValid()) {
       this.contributionIndividuelleService.createIndividuelleContribution(this.newContribution).subscribe({
         next: () => {
-          this.loadData();
+          // this.loadData();
           this.toggleCreateRow();
         },
         error: (err) => console.error('Erreur lors de la création de la contribution individuelle:', err),

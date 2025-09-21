@@ -42,6 +42,38 @@
             <input matInput [(ngModel)]="newMatch.adversaire" required class="input-field">
             <mat-error *ngIf="!newMatch.adversaire">L'équipe adverse est requise</mat-error>
           </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.typeMatch === 'AMICAL'" >
+          <mat-label>But de l'adversaire</mat-label>
+          <input matInput type="number" [(ngModel)]="newMatch.scoreAdversaire">
+        </mat-form-field>
+
+        
+       <!-- DÉBUT : AJOUT DE LA LOGIQUE DE FORFAIT -->
+              <!-- La case à cocher pour "Match déclaré forfait" -->
+              <mat-checkbox
+                name="forfait"
+                class="forfait-checkbox"
+                [(ngModel)]="newMatch.forfait"
+                class="form-field"
+                (change)="onForfaitChange()"
+               >
+                Match déclaré forfait
+              </mat-checkbox>
+
+              <!-- Le sélecteur d'équipe s'affiche si la case "forfait" est cochée -->
+              <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.forfait">
+                <mat-label>Équipe ayant déclaré forfait</mat-label>
+                <mat-select name="equipeForfait" [(ngModel)]="newMatch.equipeForfait" required>
+                  <mat-option *ngFor="let equipe of equipes" [value]="equipe">
+                    {{ equipe }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="newMatch.forfait && !newMatch.equipeForfait">
+                  L'équipe est requise en cas de forfait
+                </mat-error>
+              </mat-form-field>
+              <!-- FIN : AJOUT DE LA LOGIQUE DE FORFAIT -->
+
 
                    <!-- AJOUT : Sélection arbitre principal -->
   <div class="role-section">
@@ -97,28 +129,6 @@
     </mat-form-field>
   </div>
 
-         <!-- Case à cocher pour indiquer le forfait -->
-            <!-- <mat-checkbox
-              *ngIf="newMatch.typeMatch === 'INTERNE'"
-              name="forfait"
-              [(ngModel)]="newMatch.forfait"
-              class="form-field">
-              Match déclaré forfait
-            </mat-checkbox> -->
-
-            <!-- Sélecteur d'équipe, affiché uniquement si forfait === true -->
-            <!-- <mat-form-field appearance="outline" class="form-field" *ngIf="newMatch.forfait">
-              <mat-label>Équipe ayant déclaré forfait</mat-label>
-              <mat-select name="equipeForfait" [(ngModel)]="newMatch.equipeForfait" required>
-                <mat-option *ngFor="let equipe1 of equipe" [value]="equipe1">
-                  {{ equipe1 }}
-                </mat-option>
-              </mat-select>
-              <mat-error *ngIf="!newMatch.equipeForfait">
-                L'équipe est requise en cas de forfait
-              </mat-error>
-            </mat-form-field> -->
-
 
 
           
@@ -162,6 +172,8 @@
                 {{ match.typeMatch }}
               </td>
             </ng-container>
+            
+            
             <ng-container matColumnDef="adversaire">
               <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-adversaire">Adversaire / Info</th>
               <td mat-cell *matCellDef="let match" class="col-adversaire" data-label="Adversaire / Info">
