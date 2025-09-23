@@ -315,9 +315,10 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onMatchChange(sanction: Sanction & { equipeMatch?: string; selectedDate?: string }) {
+  onMatchChange(sanction: any & { equipeMatch?: string; selectedDate?: string }) {
     if (sanction.match && sanction.membre) {
-      this.presenceService.getPresenceByMatchAndMembre(sanction.match, sanction.membre).subscribe({
+      
+      this.presenceService.getPresenceByMatchAndMembre(sanction.match.id, sanction.membre.id).subscribe({
         next: (presence) => {
           sanction.equipeMatch = presence.membre.equipe.nom || 'Non défini';
           console.log('Présence pour membre', sanction.membre, 'et match', sanction.match, ':', presence);

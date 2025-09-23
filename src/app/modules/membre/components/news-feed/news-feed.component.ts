@@ -172,7 +172,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   const [team1, team2] = match.adversaire.split(' vs ').map(team => team.trim());
   return presences
     .filter(p => p.match.id === match.id && p.buts > 0)
-    .map(p => `${p.membre.prenom} ${p.membre.nom} (${p.buts}) - ${p.equipeMatch}`)
+    .map(p => `${p.membre?.prenom} ${p.membre?.nom} (${p.buts}) - ${p.equipeMatch}`)
     .join(', ') || 'Aucun buteur';
 }
 
@@ -181,7 +181,7 @@ getPasseurs(match: Match): string {
   const [team1, team2] = match.adversaire.split(' vs ').map(team => team.trim());
   return presences
     .filter(p => p.match.id === match.id && p.passes > 0)
-    .map(p => `${p.membre.prenom} ${p.membre.nom} (${p.passes}) - ${p.equipeMatch}`)
+    .map(p => `${p.membre?.prenom} ${p.membre?.nom} (${p.passes}) - ${p.equipeMatch}`)
     .join(', ') || 'Aucun passeur';
 }
   getHommeDuMatch(match: Match): string {

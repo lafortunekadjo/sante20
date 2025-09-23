@@ -16,4 +16,5 @@ export interface Presence {
   cartonsRouges: number;
   estHommeDuMatchEq:boolean;
   nomOccasionnel: string;
+  butsContreSonCamp : number;
 }

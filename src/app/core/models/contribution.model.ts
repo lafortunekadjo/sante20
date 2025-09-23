@@ -17,7 +17,9 @@ export interface Contribution {
 export interface ContributionIndividuelle {
   id?: number;
   idContribution: number;
+  // contribution: Contribution;
   idMembre: number;
+  // membre: Membre;
   montant: number;
   dateContribution: Date;
 }

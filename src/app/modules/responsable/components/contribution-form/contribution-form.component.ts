@@ -65,10 +65,10 @@ export class ContributionFormComponent implements OnInit, AfterViewInit{
     dateContribution: new Date(),
   };
   editingRows: boolean[] = [];
-  editContribution: ContributionIndividuelle = {} as ContributionIndividuelle;
+  editContribution: any = {} as any;
   isLoading: boolean = true;
   contributions$: Contribution[] = [];
-  membres: any[] = [];
+  membres: Membre[] = [];
 
   constructor(
     private contributionIndividuelleService: ContributionService,
@@ -167,17 +167,21 @@ export class ContributionFormComponent implements OnInit, AfterViewInit{
     };
   }
 
-  editRow(index: number, contribution: ContributionIndividuelle): void {
+  editRow(index: number, contribution: any): void {
+    console.log(contribution)
     this.editingRows[index] = true;
     this.editContribution = { ...contribution };
+    this.editContribution.idContribution = contribution.contribution.id
+        console.log(this.editContribution)
   }
 
   isEditFormValid(): boolean {
-    return !!this.editContribution.idContribution && !!this.editContribution.idMembre && !!this.editContribution.montant;
+    return !!this.editContribution.montant;
   }
 
   saveEdit(index: number): void {
     if (this.isEditFormValid()) {
+       console.log(this.editContribution)
       this.contributionIndividuelleService.updateIndividuelleContribution(this.editContribution.id!, this.editContribution).subscribe({
         next: () => {
           this.loadData();

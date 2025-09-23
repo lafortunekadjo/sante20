@@ -63,7 +63,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 })
 export class PresenceFormComponent implements OnInit{
 dataSource = new MatTableDataSource<any>([]);
-    displayedColumns: string[] = ['membre', 'present', 'aJoue', 'equipe', 'capitaine', 'mvpEquipe', 'mvpMatch' ,'buts', 'passes', 'cartonsJaunes', 'cartonsRouges'];
+    displayedColumns: string[] = ['membre', 'present', 'aJoue', 'equipe', 'capitaine', 'mvpEquipe', 'mvpMatch' ,'buts' ,'bCSC', 'passes', 'cartonsJaunes', 'cartonsRouges'];
   isLoading: boolean = true;
   match: Match | null = null;
   membres: Membre[] = [];
@@ -401,6 +401,7 @@ isPresenceValid(): boolean {
       document.body.innerHTML = printContent.innerHTML;
 
       // Attendre que le DOM soit mis à jour
+       window.print();
       setTimeout(() => {
         window.print();
         document.body.innerHTML = originalContent;
@@ -411,34 +412,83 @@ isPresenceValid(): boolean {
       console.error('Section d\'impression non trouvée');
       this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
     }
+      if (printContent) {
+    printContent.style.display = 'none';
+  }
   }
 
   printPresenceSheet() {
-    if (!this.match || !this.dataSource.data.length) {
-      this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
-      return;
-    }
+
+    if (!this.match || !this.dataSource.data.length) {
+
+      this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
+
+      return;
+
+    }
 
 
-    const printContent = document.getElementById('print-presence-section');
-    if (printContent) {
-      // Forcer le rendu de la section d'impression
-      printContent.style.display = 'block';
-      const originalContent = document.body.innerHTML;
-      document.body.innerHTML = printContent.innerHTML;
 
-      // Attendre que le DOM soit mis à jour
-      setTimeout(() => {
-        window.print();
-        document.body.innerHTML = originalContent;
-        window.location.reload(); // Restaurer l'état de la page
-        this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
-      }, 100);
-    } else {
-      console.error('Section d\'impression non trouvée');
-      this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
-    }
-  }
+
+
+    const printContent = document.getElementById('print-presence-section');
+
+    if (printContent) {
+
+      // Forcer le rendu de la section d'impression
+
+      printContent.style.display = 'block';
+
+      const originalContent = document.body.innerHTML;
+
+      document.body.innerHTML = printContent.innerHTML;
+
+
+
+      // Attendre que le DOM soit mis à jour
+
+      setTimeout(() => {
+
+        window.print();
+
+        document.body.innerHTML = originalContent;
+
+         window.location.reload(); // Restaurer l'état de la page
+
+        this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
+
+      }, 100);
+
+    } else {
+
+      console.error('Section d\'impression non trouvée');
+
+      this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
+
+    }}
+
+
+
+//   printPresenceSheet() {
+//   if (!this.match || !this.dataSource.data.length) {
+//     this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
+//     return;
+//   }
+
+//   // Affiche la section à imprimer pour la rendre visible au moment de l'impression
+//   const printSection = document.getElementById('print-presence-section');
+//   if (printSection) {
+//     printSection.style.display = 'block';
+//   }
+
+//   // Déclenche l'impression
+//   window.print();
+
+//   // Masque à nouveau la section après l'impression (si nécessaire)
+//   if (printSection) {
+//     printSection.style.display = 'none';
+//   }
+// }
 
   //   getEquipeNames(adversaire: string | undefined): [string, string] {
   //   if (this.match?.typeMatch === 'INTERNE' && adversaire) {
