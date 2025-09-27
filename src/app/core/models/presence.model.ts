@@ -17,4 +17,5 @@ export interface Presence {
   estHommeDuMatchEq:boolean;
   nomOccasionnel: string;
   butsContreSonCamp : number;
+  penalti : number;
 }

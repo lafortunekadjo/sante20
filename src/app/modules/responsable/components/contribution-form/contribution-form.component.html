@@ -10,11 +10,76 @@
         <mat-spinner diameter="40"></mat-spinner>
         <p>Chargement des données...</p>
       </div>
-      <div *ngIf="!isLoading">
-        <div class="filter-row">
-          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
-            <mat-icon>add</mat-icon> Créer une Contribution Individuelle
-          </button>
+        <div *ngIf="!isLoading">
+            <div class="filter-controls">
+              <!-- Bouton de création -->
+              <div class="filter-section">
+                <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+                  <mat-icon>add</mat-icon> Créer une Contribution
+                </button>
+              </div>
+
+              <!-- Filtres de texte et de sélection -->
+              <div class="filter-section filter-fields">
+                <mat-form-field appearance="outline" class="filter-input">
+                  <mat-label>Rechercher par nom/prénom</mat-label>
+                  <input matInput (keyup)="applySearchFilter($event)" placeholder="Ex: Jean Dupont">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="filter-input">
+                <mat-label>Filtrer par type</mat-label>
+                <mat-select [(ngModel)]="selectedType" (selectionChange)="applyTypeFilter($event.value)">
+                  <mat-option value="">-- Tous --</mat-option>
+                  <mat-option *ngFor="let type of contributions$" [value]="type.id">
+                    {{ type.commentaire }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              </div>
+
+              <!-- Filtres de montant -->
+              <div class="filter-section filter-amounts">
+                <mat-form-field appearance="outline" class="filter-input">
+                  <mat-label>Montant min</mat-label>
+                  <input matInput type="number" [(ngModel)]="minAmount" (input)="applyAmountFilter()">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="filter-input">
+                  <mat-label>Montant max</mat-label>
+                  <input matInput type="number" [(ngModel)]="maxAmount" (input)="applyAmountFilter()">
+                </mat-form-field>
+              </div>
+
+            <!-- Filtres de date -->
+              <div class="filter-container">
+              <form [formGroup]="dateRangeForm" class="date-filter-form">
+                <mat-form-field appearance="outline" class="flex-grow">
+                  <mat-label>Plage de dates</mat-label>
+                  <mat-date-range-input [rangePicker]="picker">
+                    <input matStartDate formControlName="start" placeholder="Date de début" (click)="picker.open()">
+                    <input matEndDate formControlName="end" placeholder="Date de fin" (click)="picker.open()">
+                  </mat-date-range-input>
+                  <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                  <mat-date-range-picker #picker></mat-date-range-picker>
+                  <mat-error *ngIf="dateRangeForm.errors?.['rangeInvalid']">
+                    La date de fin doit être postérieure à la date de début
+                  </mat-error>
+                </mat-form-field>
+                <div class="button-group">
+                  <button mat-raised-button color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid" class="apply-button">
+                    Appliquer
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="resetDateFilter()" class="reset-button">
+                    Réinitialiser
+                  </button>
+                </div>
+              </form>
+              <!-- Ajoute ce bouton dans ta section filter-controls, après les autres filtres -->
+              <div class="filter-section">
+                <button mat-stroked-button color="accent" (click)="clearAllFilters()" class="clear-all-button">
+                  <mat-icon>clear_all</mat-icon> Effacer tous les filtres
+                </button>
+              </div>
+      </div>
+
         </div>
         <div *ngIf="showCreateRow" class="create-row">
           <mat-form-field appearance="outline">
@@ -144,7 +209,7 @@
             <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
           </table>
-          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+           <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
         </div>
       </div>
     </mat-card-content>

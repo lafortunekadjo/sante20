@@ -19,6 +19,7 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MediaPreviewDialogComponent } from '../media-preview-dialog/media-preview-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { environment } from '../../../../environment';
 
 @Component({
   selector: 'app-news-feed',
@@ -44,7 +45,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   topPassers: { membre: Membre; passes: number }[] = [];
   allMembres$: Observable<Membre[]>;
   allPresences$: BehaviorSubject<Presence[]> = new BehaviorSubject<Presence[]>([]);
-  apiBaseUrl = 'http://localhost:8082';
+  apiBaseUrl = environment.apiUrl;
   mediaBlobUrls: { [key: string]: { url: string; type: string } } = {};
     mediaLoadingErrors: { [key: string]: boolean } = {};
 
@@ -97,6 +98,35 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
             return matchDate >= thirtyDaysAgo && matchDate <= today;
           })
           .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
+           const token = this.authService.getToken();
+     console.log(this.recentMatches)
+    if (token && this.recentMatches) {
+     
+      this.recentMatches.forEach(match => {
+        match.mediaUrls?.forEach(mediaUrl => {
+          const fullMediaUrl = `${this.apiBaseUrl}${mediaUrl}`;
+          if (!this.mediaBlobUrls[fullMediaUrl] && !this.mediaLoadingErrors[fullMediaUrl]) {
+            console.log(`Préchargement de ${fullMediaUrl}`);
+            fetch(fullMediaUrl, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.blob();
+              })
+              .then(blob => {
+                const contentType = blob.type || this.getMediaTypeFromUrl(mediaUrl);
+                this.mediaBlobUrls[fullMediaUrl] = { url: window.URL.createObjectURL(blob), type: contentType };
+                console.log(`Préchargé avec succès: ${fullMediaUrl}`);
+              })
+              .catch(err => {
+                console.error(`Erreur de préchargement pour ${fullMediaUrl}:`, err);
+                this.mediaLoadingErrors[fullMediaUrl] = true;
+              });
+          }
+        });
+      });
+    }
 
         this.ongoingContributions = typedContributions
           .map(contrib => ({
@@ -120,7 +150,6 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
         const scorerMap = new Map<number, number>();
         const passerMap = new Map<number, number>();
-        console.log(typedPresences)
         typedPresences.forEach(p => {
           scorerMap.set(p.membre?.id, (scorerMap.get(p.membre?.id) || 0) + p.buts);
           passerMap.set(p.membre?.id, (passerMap.get(p.membre?.id) || 0) + p.passes);
@@ -129,7 +158,6 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
           .map(([id, buts]) => ({ membre: typedMembres.find(m => m.id === id)!, buts }))
           .sort((a, b) => b.buts - a.buts)
           .slice(0, 5);
-          console.log(this.topScorers)
         this.topPassers = Array.from(passerMap.entries())
           .map(([id, passes]) => ({ membre: typedMembres.find(m => m.id === id)!, passes }))
           .sort((a, b) => b.passes - a.passes)
@@ -188,7 +216,7 @@ getPasseurs(match: Match): string {
     const presences = this.allPresences$.value;
     const found = presences.find(p => p.match.id === match.id && p.estHommeDuMatch);
     const [team1] = match.adversaire.split(' vs ').map(team => team.trim()); // Simplifié, à ajuster si besoin
-    return found ? `${found.membre.prenom} ${found.membre.nom} - ${found.equipeMatch === team1 }` : 'Non défini';
+    return found ? `${found.membre.prenom} ${found.membre.nom} ` : 'Non défini';
   }
 
   getMembreName(id: number): Observable<string> {
@@ -287,7 +315,9 @@ openMediaPreview(match: Match, mediaUrl: string): void {
 
   private preloadMediaUrls(): void {
     const token = this.authService.getToken();
+     console.log(this.recentMatches)
     if (token && this.recentMatches) {
+     
       this.recentMatches.forEach(match => {
         match.mediaUrls?.forEach(mediaUrl => {
           const fullMediaUrl = `${this.apiBaseUrl}${mediaUrl}`;

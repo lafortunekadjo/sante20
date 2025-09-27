@@ -10,7 +10,7 @@ export class FilterByButsPipe implements PipeTransform {
       return [];
     }
 
-    // Filtre les présences qui ont marqué au moins un but
-    return presences.filter(presence => presence.buts > 0);
+     // Filtre les présences qui ont marqué au moins un but, penalti ou bcsc
+    return presences.filter(presence => presence.buts > 0 || presence.penalti > 0 || presence.butsContreSonCamp > 0);
   }
 }

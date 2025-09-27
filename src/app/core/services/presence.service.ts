@@ -78,7 +78,8 @@ savePresences(matchId: number, presences: any[]): Observable<void> {
         equipeMatch: presence.equipeMatch,
         cartonsJaunes: presence.cartonsJaunes || 0,
         cartonsRouges: presence.cartonsRouges || 0,
-        butsContreSonCamp: presence.butsContreSonCamp || 0
+        butsContreSonCamp: presence.butsContreSonCamp || 0,
+        penalti: presence.penalti || 0
       }));
     console.log('Payload envoyé:', payload);
     return this.http.post<void>(`${this.presenceUrl}/match/${matchId}`, payload);

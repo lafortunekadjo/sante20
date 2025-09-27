@@ -79,6 +79,7 @@ stats: MemberStats = {
     sanctions: { paid: { amount: 0, count: 0 }, unpaid: { amount: 0, count: 0 }, yellowCards: 0, redCards: 0 },
     totalPlayingTime: 0,
   };
+  currentDate: Date = new Date();
   dateRangeForm: FormGroup;
   donutChartData: ChartData<'doughnut'> = {
     labels: ['Sanctions Payées', 'Sanctions Non Payées'],

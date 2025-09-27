@@ -97,6 +97,10 @@
                   <mat-label>Bcsc</mat-label>
                   <input matInput type="number" [(ngModel)]="presence.butsContreSonCamp" min="0" class="text-center">
                 </mat-form-field>
+                  <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
+                  <mat-label>Penalti</mat-label>
+                  <input matInput type="number" [(ngModel)]="presence.penalti" min="0" class="text-center">
+                </mat-form-field>
                 <mat-form-field appearance="outline" class="form-field number-input" *ngIf="presence.present && presence.aJoue">
                   <mat-label>Passes</mat-label>
                   <input matInput type="number" [(ngModel)]="presence.passes" min="0" class="text-center">
@@ -130,30 +134,34 @@
   
    <!-- AJOUT : Arbitres -->
 <!-- AJOUT : Arbitres -->
-<div class="print-officials"
+<!-- Utilisation de Flexbox pour aligner les officiels sur une ligne -->
+<div class="print-officials flex flex-wrap gap-4"
      *ngIf="(match?.arbitrePrincipal || match?.arbitrePrincipalNomOccasionnel) 
-         || (match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel)">
-  <p *ngIf="match?.arbitrePrincipal || match?.arbitrePrincipalNomOccasionnel">
-    <strong>Arbitre principal :</strong>
-    {{ match?.arbitrePrincipal?.nom && match?.arbitrePrincipal?.prenom
-        ? (match?.arbitrePrincipal?.nom + ' ' + match?.arbitrePrincipal?.prenom)
-        : match?.arbitrePrincipalNomOccasionnel }}
-  </p>
+           || (match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel)
+           || (match?.rapporteur || match?.rapporteurNomOccasionnel)">
 
-  <p *ngIf="match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel">
-    <strong>Arbitre assistant :</strong>
-    {{ match?.arbitreAssistant?.nom && match?.arbitreAssistant?.prenom
-        ? (match?.arbitreAssistant?.nom + ' ' + match?.arbitreAssistant?.prenom)
-        : match?.arbitreAssistantNomOccasionnel }}
-  </p>
+    <span *ngIf="match?.arbitrePrincipal || match?.arbitrePrincipalNomOccasionnel">
+        <strong>Arbitre principal :</strong>
+        {{ match?.arbitrePrincipal?.nom && match?.arbitrePrincipal?.prenom
+            ? (match?.arbitrePrincipal?.nom + ' ' + match?.arbitrePrincipal?.prenom)
+            : match?.arbitrePrincipalNomOccasionnel }}
+    </span>
 
-    <p *ngIf="match?.rapporteur || match?.rapporteurNomOccasionnel">
-    <strong>Rapporteur :</strong>
-    {{ match?.rapporteur?.nom && match?.rapporteur?.prenom
-        ? (match?.rapporteur?.nom + ' ' + match?.rapporteur?.prenom)
-        : match?.rapporteurNomOccasionnel }}
-  </p>
+    <span *ngIf="match?.arbitreAssistant || match?.arbitreAssistantNomOccasionnel">
+        <strong>Arbitre assistant :</strong>
+        {{ match?.arbitreAssistant?.nom && match?.arbitreAssistant?.prenom
+            ? (match?.arbitreAssistant?.nom + ' ' + match?.arbitreAssistant?.prenom)
+            : match?.arbitreAssistantNomOccasionnel }}
+    </span>
+
+    <span *ngIf="match?.rapporteur || match?.rapporteurNomOccasionnel">
+        <strong>Rapporteur :</strong>
+        {{ match?.rapporteur?.nom && match?.rapporteur?.prenom
+            ? (match?.rapporteur?.nom + ' ' + match?.rapporteur?.prenom)
+            : match?.rapporteurNomOccasionnel }}
+    </span>
 </div>
+
 
 
   <!-- FIN AJOUT -->
@@ -168,6 +176,8 @@
             <th>N°</th>
             <th>Joueur</th>
             <th>B</th>
+            <th>CSC</th>
+            <th>PE</th>
             <th>P</th>
             <th>CJ</th>
             <th>CR</th>
@@ -178,6 +188,8 @@
             <td>{{ i + 1 }}</td>
             <td>{{ getMembreName(presence) }}</td>
             <td>{{ presence.buts }}</td>
+            <td>{{ presence.butsContreSonCamp }}</td>
+            <td>{{ presence.penalti }}</td>
             <td>{{ presence.passes }}</td>
             <td>{{ presence.cartonsJaunes }}</td>
             <td>{{ presence.cartonsRouges }}</td>
@@ -197,7 +209,8 @@
             <th>N°</th>
             <th>Joueur</th>
             <th>B</th>
-            <th>BC</th>
+            <th>CSC</th>
+            <th>PE</th>
             <th>P</th>
             <th>CJ</th>
             <th>CR</th>
@@ -209,6 +222,7 @@
             <td>{{ getMembreName(presence) }}</td>
             <td>{{ presence.buts }}</td>
             <td>{{ presence.butsContreSonCamp }}</td>
+              <td>{{ presence.penalti }}</td>
             <td>{{ presence.passes }}</td>
             <td>{{ presence.cartonsJaunes }}</td>
             <td>{{ presence.cartonsRouges }}</td>
@@ -267,21 +281,22 @@
         <tbody>
           <tr>
             <td>Score</td>
-            <td>{{ getScore(equipeNames[0]) }}</td>
-            <td>{{ getScore(equipeNames[1]) }}</td>
-            <td>{{ getScore(equipeNames[0]) + getScore(equipeNames[1]) }}</td>
+            <td>{{ getMatchScore(equipeNames[0]) }}</td>
+            <td>{{ getMatchScore(equipeNames[1]) }}</td>
+            <td>{{ getMatchScore(equipeNames[0]) + getMatchScore(equipeNames[1]) }}</td>
           </tr>
-          <tr>
-            <td>Buteurs</td>
-            <td colspan="3">
-              <ul class="list-none">
-                <li *ngFor="let presence of dataSource.data | filterByButs; let last = last">
-                  {{ getMembreName(presence) }} ({{ presence.buts }}){{ last ? '' : ', ' }}
-                </li>
-                <li *ngIf="(dataSource.data | filterByButs).length === 0">Aucun buteur</li>
-              </ul>
-            </td>
-          </tr>
+           <tr>
+                    <td class="p-3 border-b border-gray-200 font-medium">Buteurs</td>
+                    <td class="p-3 border-b border-gray-200" colspan="2">
+                        <!-- Utilisation de Flexbox pour optimiser l'espace -->
+                        <ul class="flex flex-wrap items-center gap-1.5 p-0 m-0">
+                            <li *ngFor="let presence of dataSource.data | filterByButs; let last = last" class="inline-block">
+                                {{ getButsDisplay(presence) }}<span *ngIf="!last">,</span>
+                            </li>
+                            <li *ngIf="(dataSource.data | filterByButs).length === 0">Aucun buteur</li>
+                        </ul>
+                    </td>
+                </tr>
           <tr>
             <td>Passeurs</td>
             <td colspan="3">

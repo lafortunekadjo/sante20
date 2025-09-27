@@ -63,7 +63,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 })
 export class PresenceFormComponent implements OnInit{
 dataSource = new MatTableDataSource<any>([]);
-    displayedColumns: string[] = ['membre', 'present', 'aJoue', 'equipe', 'capitaine', 'mvpEquipe', 'mvpMatch' ,'buts' ,'bCSC', 'passes', 'cartonsJaunes', 'cartonsRouges'];
+    displayedColumns: string[] = ['membre', 'present', 'aJoue', 'equipe', 'capitaine', 'mvpEquipe', 'mvpMatch' ,'buts' ,'bcsc' ,'penalti', 'passes', 'cartonsJaunes', 'cartonsRouges'];
   isLoading: boolean = true;
   match: Match | null = null;
   membres: Membre[] = [];
@@ -246,6 +246,25 @@ filteredMembres() {
       .reduce((sum, p) => sum + p.buts, 0);
   }
 
+ getMatchScore(equipe: string): number {
+    let score = 0;
+    const equipeAdverse = this.equipeNames.find(name => name !== equipe);
+
+    // Calcul des buts et des penaltis de l'équipe actuelle
+    score += this.dataSource.data
+      .filter(p => p.present && p.aJoue && p.equipeMatch === equipe)
+      .reduce((sum, p) => sum + (Number(p.buts) || 0) + (Number(p.penalti) || 0), 0);
+
+    // Ajout des buts contre son camp (bcsc) de l'équipe adverse
+    if (equipeAdverse) {
+      score += this.dataSource.data
+        .filter(p => p.present && p.aJoue && p.equipeMatch === equipeAdverse)
+        .reduce((sum, p) => sum + (Number(p.butsContreSonCamp) || 0), 0);
+    }
+
+    return score;
+  }
+
   getScore2(equipe: string): number {
      return this.match?.scoreAdversaire || 0;
   
@@ -280,6 +299,28 @@ filteredMembres() {
         return presence.nomOccasionnel;
     }
     return 'Nom inconnu';
+}
+
+getButsDisplay(presence: any): string {
+  const nomMembre = this.getMembreName(presence);
+  let display = `${nomMembre}`;
+
+  // Affichage des buts
+  if (presence.buts > 0) {
+    display += ` (${presence.buts})`;
+  }
+
+  // Ajout de la mention (P) pour les penalties
+  if (presence.penalti > 0) {
+    display += ` (${presence.penalti}P)`;
+  }
+
+  // Ajout de la mention (CSC) pour les buts contre son camp
+  if (presence.butsContreSonCamp > 0) {
+    display += ` (${presence.butsContreSonCamp}CSC)`;
+  }
+  
+  return display;
 }
 
   setCapitaine(presence: Presence) {

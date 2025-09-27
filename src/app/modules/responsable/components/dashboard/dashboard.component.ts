@@ -57,7 +57,6 @@ Chart.register(
     ReactiveFormsModule,
     BaseChartDirective, 
     MatCardModule,
-    CommonModule,
     MatCardModule,
     MatIconModule,
     MatGridListModule,
@@ -81,6 +80,7 @@ stats: Stats = {
     topAssists: [],
     topAttendance: [],
   };
+  currentDate: Date = new Date();
   dateRangeForm: FormGroup;
   donutChartData: ChartData<'doughnut'> = {
     labels: ['Sanctions Payées', 'Sanctions Non Payées'],
@@ -155,7 +155,7 @@ stats: Stats = {
         ...this.stats,
         ...data,
         contributionsByMonth: data.contributionsByMonth || [],
-        upcomingMatches: data.upcomingMatches || [],
+        upcomingMatches: this.sortAndLimitUpcomingMatches(data.upcomingMatches || []),
         topScorers: data.topScorers || [],
         topAssists: data.topAssists || [],
         topAttendance: data.topAttendance || [],
@@ -168,5 +168,30 @@ stats: Stats = {
       this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
     });
   }
+
+  /**
+ * Trie et limite les matchs à venir aux 3 plus proches
+ */
+private sortAndLimitUpcomingMatches(matches: any[]): any[] {
+  if (!matches || matches.length === 0) {
+    return [];
+  }
+  
+  const now = new Date();
+  
+  return matches
+    .filter(match => {
+      // Ne garder que les matchs futurs (y compris ceux d'aujourd'hui mais pas encore passés)
+      const matchDate = new Date(match.date);
+      return matchDate >= now;
+    })
+    .sort((a, b) => {
+      // Trier du plus proche au plus éloigné
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA.getTime() - dateB.getTime();
+    })
+    .slice(0, 3); // Limiter aux 3 premiers
+}
 
 }
