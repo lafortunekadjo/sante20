@@ -427,86 +427,389 @@ isPresenceValid(): boolean {
   }
 
 
-  printMatchSheet() {
-    if (!this.match || !this.dataSource.data.length) {
-      this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
-      return;
+  // --- DANS VOTRE COMPOSANT .ts ---
+
+// Fonction utilitaire pour imprimer un contenu spécifique
+private printContent(contentId: string): void {
+    const printContent = document.getElementById(contentId);
+    if (!printContent) {
+        this.snackBar.open(`Erreur : Section d\'impression (${contentId}) non trouvée`, 'Fermer', { duration: 3000 });
+        return;
     }
 
+    // Créer une nouvelle fenêtre d'impression
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
+    
+    if (printWindow) {
+        // Définition des variables de couleur pour un style unifié
+        const colorVariables = `
+            :root {
+                --primary-color: #1976d2; /* Bleu principal */
+                --header-bg: #424242; /* Fond d'en-tête (gris foncé) */
+                --team1-color: #fdd835; /* Jaune équipe 1 */
+                --team2-color: #f44336; /* Rouge équipe 2 */
+                --captain-color: #007bff; /* Bleu Capitaine */
+                --mvp-match-color: #ffc107; /* Jaune/Or pour Homme du Match */
+                --mvp-equipe-color: #28a745; /* Vert pour MVP Équipe */
+                --buteur-color: #dc3545; /* Rouge pour Buteurs/Statistiques */
+            }
+        `;
 
-    const printContent = document.getElementById('print-section');
-    if (printContent) {
-      // Forcer le rendu de la section d'impression
-      printContent.style.display = 'block';
-      const originalContent = document.body.innerHTML;
-      document.body.innerHTML = printContent.innerHTML;
+        // Blocs de style fusionnés et corrigés
+        const printStyles = `
+            /* Styles généraux du document d'impression */
+            body {
+                font-family: 'Roboto', sans-serif;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                font-size: 10pt; /* Police de base pour A4 */
+            }
 
-      // Attendre que le DOM soit mis à jour
-       window.print();
-      setTimeout(() => {
-        window.print();
-        document.body.innerHTML = originalContent;
-        window.location.reload(); // Restaurer l'état de la page
+            /* Section principale (contenu à imprimer) */
+            .print-section {
+                display: block !important;
+                width: 210mm; /* Largeur A4 */
+                min-height: 297mm; /* Hauteur A4 */
+                margin: 10mm auto; /* Marges */
+                padding: 0;
+                box-sizing: border-box;
+                page-break-after: always; /* Nouvelle page après cette section */
+            }
+
+            /* Titres */
+            .print-title { 
+                font-size: 12pt;
+                color: var(--primary-color);
+                text-align: center;
+                margin-bottom: 4px;
+                font-weight: 700;
+            }
+            .print-subtitle { 
+                font-size: 10pt;
+                background-color: var(--header-bg);
+                color: #ffffff;
+                padding: 3px;
+                margin-bottom: 6px;
+                text-align: center;
+            }
+
+            /* Mise en page des équipes */
+            .print-team-layout { 
+                display: flex;
+                flex-wrap: nowrap;
+                justify-content: space-between;
+                gap: 4mm;
+                margin-bottom: 6px;
+            }
+            .club-section { 
+                flex: 1;
+                border: 1px solid #000;
+                padding: 2mm;
+            }
+            .section-title {
+                font-size: 10pt;
+                font-weight: 600;
+                text-align: center;
+                margin-bottom: 2mm;
+            }
+            .captain-title {
+                font-size: 8pt;
+                font-style: italic;
+                text-align: center;
+                margin-bottom: 2mm;
+            }
+
+            /* Couleurs d'équipe pour les en-têtes */
+            .team1-header { background-color: var(--team1-color); color: #000; }
+            .team2-header { background-color: var(--team2-color); color: #fff; }
+
+            /* Styles de tableau */
+            .print-table { 
+                width: 100%;
+                font-size: 9pt; /* Taille de police unifiée */
+                border-collapse: collapse;
+            }
+            .print-table th, .print-table td { 
+                border: 1px solid #000;
+                padding: 1mm 2mm;
+                vertical-align: middle;
+            }
+            .print-table th {
+                background-color: #e2e8f0; /* Fond des en-têtes */
+                font-weight: 700;
+                text-align: center;
+                font-size: 9pt;
+            }
+
+            /* LARGEURS DE COLONNE POUR LA FEUILLE DE MATCH (Générique .club-section) */
+            .club-section .print-table th:nth-child(1),
+            .club-section .print-table td:nth-child(1) { 
+                width: 6%; /* N° */
+                text-align: center;
+            }
+            .club-section .print-table th:nth-child(2),
+            .club-section .print-table td:nth-child(2) { 
+                width: 45%; /* Joueur (augmenté pour le nom abrégé) */
+                text-align: left;
+                white-space: nowrap; /* EMPÊCHE le retour à la ligne du nom */
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+            }
+            .club-section .print-table th:nth-child(n+3),
+            .club-section .print-table td:nth-child(n+3) { 
+                width: 7.33%; /* (100 - 6 - 45) / 6 colonnes restantes */
+                text-align: center;
+            }
+
+            /* LARGEURS DE COLONNE POUR LA FEUILLE DE PRÉSENCE (Spécifique) */
+            #print-presence-section .print-table th:nth-child(1),
+            #print-presence-section .print-table td:nth-child(1) {
+                width: 6%; /* N° */
+            }
+            #print-presence-section .print-table th:nth-child(2),
+            #print-presence-section .print-table td:nth-child(2) {
+                width: 45%; /* NOMS ET PRÉNOMS */
+            }
+            #print-presence-section .print-table th:nth-child(3),
+            #print-presence-section .print-table td:nth-child(3) {
+                width: 49%; /* OBSERVATION */
+            }
+            #print-presence-section .print-table td { 
+                text-align: left; /* Aligner les noms et observations à gauche */
+            }
+            #print-presence-section .print-table td:nth-child(1) {
+                text-align: center;
+            }
+
+
+            /* Styles d'accentuation (Capitaine, MVP, Cartons) */
+
+            /* Ligne Capitaine */
+            .print-table tr.highlight-captain td {
+                background-color: #e0f7fa !important;
+                font-weight: 700;
+                color: var(--captain-color);
+            }
+
+            /* Mise en évidence des joueurs avec un Carton Rouge (CR > 0) */
+            .print-table tr:has(td:last-child:not(:empty)) td { 
+                background-color: #ffffff !important;
+                font-style: italic;
+            }
+            
+            /* Styles pour la section STATISTIQUES */
+            .match-stats-section .print-table td:first-child {
+                font-weight: 600;
+            }
+            .match-stats-section .print-table td.highlight-mvp {
+                background-color: #0d700dff;
+                font-weight: 700;
+                color: var(--mvp-equipe-color);
+            }
+            .match-stats-section .print-table td.highlight-hommematch {
+                background-color: #fffbe6;
+                font-weight: 700;
+                color: var(--mvp-match-color);
+            }
+            .match-stats-section .print-table tr:nth-child(2) td {
+                color: var(--buteur-color); /* Ligne Buteurs */
+            }
+
+            /* Autres sections */
+            .print-officials, .print-reporter {
+                margin: 12px 0;
+                padding: 8px 12px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                background-color: #f9fafb;
+            }
+            .print-officials p, .print-reporter p {
+                margin: 4px 0;
+                font-size: 0.95rem;
+            }
+        `;
+
+        // Le HTML final à injecter
+        const htmlToPrint = `
+            <html>
+            <head>
+                <title>Feuille de Match</title>
+                <style>
+                    ${colorVariables}
+                    ${printStyles}
+                </style>
+            </head>
+            <body>
+                ${printContent.innerHTML}
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlToPrint);
+        printWindow.document.close();
+        
+        // Attendre que le contenu soit chargé et rendre les styles
+        printWindow.onload = () => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        };
+
         this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
-      }, 100);
     } else {
-      console.error('Section d\'impression non trouvée');
-      this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
+         this.snackBar.open('Erreur : Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les bloqueurs de pop-up.', 'Fermer', { duration: 5000 });
     }
-      if (printContent) {
-    printContent.style.display = 'none';
-  }
-  }
+}
+// Mettre à jour les appels publics
+printMatchSheet() {
+    this.printContent('print-section');
+}
 
-  printPresenceSheet() {
+printPresenceSheet() {
+    this.printContent('print-presence-section');
+}
 
-    if (!this.match || !this.dataSource.data.length) {
+// --- DANS VOTRE COMPOSANT TS (ou service) ---
 
-      this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
+getMembreNameAbbreviated(presence: any): string {
+    const prenom = presence.membre?.prenom || '';
+    const nom = presence.membre?.nom || '';
+    const nomMaj = nom.toUpperCase(); // Nom toujours en majuscules
+    
+    // Concaténation Nom + Prénoms (version complète)
+    let fullName = `${nomMaj} ${prenom}`;
+    const maxLength = 22; // Longueur cible pour tenir sur une ligne (ajustable)
 
-      return;
+    // 1. Si la longueur est acceptable, on la garde
+    if (fullName.length <= maxLength) {
+        return fullName.trim();
+    }
 
-    }
+    // --- STRATÉGIE D'ABBRÉVIATION DES PRÉNOMS ---
+    
+    // Sépare les prénoms (par espace ou trait d'union)
+    const prenomParts = prenom.split(/[\s-]/).filter((p: string | any[]) => p.length > 0);
+    
+    if (prenomParts.length === 0) {
+        // Pas de prénom, on retourne juste le nom
+        return nomMaj;
+    }
+
+    let abbreviatedPrenoms = '';
+
+    // Tenter de garder le premier prénom en entier
+    let currentLength = nomMaj.length + 1 + prenomParts[0].length; // Nom + ' ' + PremierPrénom
+    
+    if (currentLength <= maxLength) {
+        // Premier prénom tient, on l'ajoute
+        abbreviatedPrenoms += prenomParts[0];
+        
+        // Abréger les prénoms suivants
+        for (let i = 1; i < prenomParts.length; i++) {
+            abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
+        }
+    } else {
+        // Le premier prénom est déjà trop long avec le nom, on abrège TOUS les prénoms
+        // Ex: Jean-Christophe Marie -> J. C. M.
+        abbreviatedPrenoms = prenomParts.map((p: string) => p.charAt(0) + '.').join(' ');
+    }
+    
+    fullName = `${nomMaj} ${abbreviatedPrenoms}`;
+
+    // --- Dernière Vérification (Ne JAMAIS tronquer le nom) ---
+    if (fullName.length > maxLength) {
+        // Si le résultat avec les prénoms abrégés est encore trop long (nom de famille long)
+        // on ne garde que l'initiale du PREMIER prénom.
+        fullName = `${nomMaj} ${prenomParts[0].charAt(0)}.`;
+    }
+    
+    // On conserve le nom dans tous les cas, même si le texte final dépasse légèrement
+    // la limite idéale de 22 (le CSS gèrera l'overflow).
+    return fullName.trim();
+}
+
+//   printMatchSheet() {
+//     if (!this.match || !this.dataSource.data.length) {
+//       this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
+//       return;
+//     }
+
+
+//     const printContent = document.getElementById('print-section');
+//     if (printContent) {
+//       // Forcer le rendu de la section d'impression
+//       printContent.style.display = 'block';
+//       const originalContent = document.body.innerHTML;
+//       document.body.innerHTML = printContent.innerHTML;
+
+//       // Attendre que le DOM soit mis à jour
+//        window.print();
+//       setTimeout(() => {
+//         window.print();
+//         document.body.innerHTML = originalContent;
+//         window.location.reload(); // Restaurer l'état de la page
+//         this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
+//       }, 100);
+//     } else {
+//       console.error('Section d\'impression non trouvée');
+//       this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
+//     }
+//       if (printContent) {
+//     printContent.style.display = 'none';
+//   }
+//   }
+
+//   printPresenceSheet() {
+
+//     if (!this.match || !this.dataSource.data.length) {
+
+//       this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
+
+//       return;
+
+//     }
 
 
 
 
 
-    const printContent = document.getElementById('print-presence-section');
+//     const printContent = document.getElementById('print-presence-section');
 
-    if (printContent) {
+//     if (printContent) {
 
-      // Forcer le rendu de la section d'impression
+//       // Forcer le rendu de la section d'impression
 
-      printContent.style.display = 'block';
+//       printContent.style.display = 'block';
 
-      const originalContent = document.body.innerHTML;
+//       const originalContent = document.body.innerHTML;
 
-      document.body.innerHTML = printContent.innerHTML;
+//       document.body.innerHTML = printContent.innerHTML;
 
 
 
-      // Attendre que le DOM soit mis à jour
+//       // Attendre que le DOM soit mis à jour
 
-      setTimeout(() => {
+//       setTimeout(() => {
 
-        window.print();
+//         window.print();
 
-        document.body.innerHTML = originalContent;
+//         document.body.innerHTML = originalContent;
 
-         window.location.reload(); // Restaurer l'état de la page
+//          window.location.reload(); // Restaurer l'état de la page
 
-        this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
+//         this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
 
-      }, 100);
+//       }, 100);
 
-    } else {
+//     } else {
 
-      console.error('Section d\'impression non trouvée');
+//       console.error('Section d\'impression non trouvée');
 
-      this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
+//       this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
 
-    }}
+//     }}
 
 
 

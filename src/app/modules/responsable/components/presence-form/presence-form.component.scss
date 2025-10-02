@@ -12,6 +12,13 @@
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
+    --team1-color: #fdd835; /* Jaune */
+  --team2-color: #f44336; /* Rouge */
+  --header-bg: #424242; /* Fond pour les titres de match */
+    --captain-color: #007bff; /* Bleu Capitaine */
+  --mvp-match-color: #ffc107; /* Jaune/Or pour Homme du Match */
+  --mvp-equipe-color: #28a745; /* Vert pour MVP Équipe */
+  --buteur-color: #dc3545; /* Rouge pour Buteurs/Statistiques */
 }
 
 :host {
@@ -130,6 +137,7 @@
 }
 
 .save-button,
+.download-button,
 .print-button,
 .cancel-button {
   padding: var(--spacing-sm) var(--spacing-md);
@@ -246,7 +254,7 @@
   }
 
   .club-section {
-    flex: 1;
+     flex: 1;
     border: 1px solid #000;
     padding: 2mm;
     margin: 0;
@@ -267,7 +275,9 @@
   }
 
   .print-table {
+     padding: 0.5mm 1mm;
     width: 100%;
+    font-size: 7.5pt; /* Taille de police réduite */
     border-collapse: collapse;
     margin: 0;
   }
@@ -287,6 +297,22 @@
     padding: 1mm 2mm;
     vertical-align: middle;
     font-size: 9pt;
+  }
+  .club-section .print-table th:nth-child(1),
+  .club-section .print-table td:nth-child(1) { 
+  width: 6%;
+    text-align: center;
+  }
+  .club-section .print-table th:nth-child(2),
+  .club-section .print-table td:nth-child(2) { 
+  width: 6%;
+    text-align: left;
+  }
+
+  .club-section .print-table th:nth-child(n+3),
+  .club-section .print-table td:nth-child(n+3) { 
+  width: 8.16%; /* (100 - 6 - 45) / 6 ≈ 8.16% */
+    text-align: center;
   }
 
   .print-table td:nth-child(2) { /* Colonne "Joueur" alignée à gauche */
@@ -356,22 +382,212 @@
   font-size: 0.95rem;
 }
 
+// @media print {
+//   /* Masque tous les éléments qui ne sont pas l'ID de la section d'impression */
+//   body > *:not(#print-section):not(#print-presence-section) {
+//     display: none !important;
+//   }
+
+//   /* Affiche la section d'impression et la rend visible */
+//   #print-section, #print-presence-section {
+//     display: block !important;
+//   }
+
+//   /* Vous pouvez ajouter ici d'autres styles spécifiques pour l'impression, comme
+//   la suppression des ombres, la modification des marges, etc. */
+//   .print-section {
+//     width: 100%;
+//     margin: 0;
+//     padding: 0;
+//   }
+//   /* Cache tout sauf la section de match si la classe est présente */
+//     body.printing-match-sheet > *:not(#print-section) { 
+//         display: none !important; 
+//     }
+    
+//     /* Cache tout sauf la section de présence si la classe est présente */
+//     body.printing-presence-sheet > *:not(#print-presence-section) { 
+//         display: none !important; 
+//     }
+    
+//     /* Assurez-vous que seule la section active est affichée */
+//     body.printing-match-sheet #print-section {
+//         display: block !important;
+//     }
+//     body.printing-presence-sheet #print-presence-section {
+//         display: block !important;
+//     }
+// }
+
+
+
 @media print {
-  /* Masque tous les éléments qui ne sont pas l'ID de la section d'impression */
-  body > *:not(#print-section):not(#print-presence-section) {
-    display: none !important;
-  }
+    /* ... Styles existants ... */
+    
+    /* --- NOUVEAU : Correction du mode d'affichage pour mobile --- */
+    /* Assurez-vous que seule la section active est affichée (utilise la nouvelle logique TS) */
+    body.printing-match-sheet > *:not(#print-section) { display: none !important; }
+    body.printing-presence-sheet > *:not(#print-presence-section) { display: none !important; }
+    #print-section, #print-presence-section { display: block !important; }
+    /* FIN NOUVEAU */
+    
+    .print-title {
+      font-size: 14pt;
+      color: var(--primary-color);
+      /* ... autres styles ... */
+    }
+    
+    .print-subtitle {
+      background-color: var(--header-bg); /* Fond gris foncé */
+      color: #ffffff;
+      padding: 3px;
+      margin-bottom: 8px;
+    }
 
-  /* Affiche la section d'impression et la rend visible */
-  #print-section, #print-presence-section {
-    display: block !important;
-  }
+    .club-section {
+      flex: 1;
+      border: 1px solid #000;
+      padding: 2mm;
+      margin: 0;
+      /* Ajout de couleur d'arrière-plan pour distinguer les équipes (optionnel, mais visuel) */
+    }
+    
+    /* Couleur pour l'en-tête de l'ÉQUIPE 1 (Jaune) */
+    .print-team-layout > .club-section:first-child .section-title {
+        background-color: var(--team1-color);
+        color: #000;
+    }
+    
+    /* Couleur pour l'en-tête de l'ÉQUIPE 2 (Rouge) */
+    .print-team-layout > .club-section:last-child .section-title {
+        background-color: var(--team2-color);
+        color: #fff;
+    }
+    
+    .print-table {
+        /* ... autres styles ... */
+    }
+    
+    .print-table th {
+      background-color: #ccc !important; /* En-têtes de tableau plus neutres */
+      color: #000;
+      font-weight: bold;
+    }
 
-  /* Vous pouvez ajouter ici d'autres styles spécifiques pour l'impression, comme
-  la suppression des ombres, la modification des marges, etc. */
-  .print-section {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
+    /* Ligne Capitaine (basé sur la classe ajoutée dans le HTML) */
+.print-table tr.highlight-captain td {
+    background-color: #e0f7fa !important; /* Très léger cyan */
+    font-weight: 700;
+    color: var(--captain-color);
+}
+
+/* Mise en évidence des joueurs avec un Carton Rouge */
+.print-table tr:has(td:last-child:not(:empty)) td { /* Cibler les lignes où CR > 0 */
+    background-color: #fcebeb !important; /* Très léger rouge pour CR */
+    font-style: italic;
+}
+
+/* --- Styles pour la section STATISTIQUES --- */
+
+/* Mise en évidence des titres de catégorie */
+.match-stats-section .print-table td:first-child {
+    font-weight: 600;
+}
+
+/* Mise en évidence de la ligne Buteurs */
+.match-stats-section .print-table tr:nth-child(2) td {
+    color: var(--buteur-color);
+}
+
+/* Style pour MVP Équipe */
+.match-stats-section .print-table td.highlight-mvp {
+    background-color: #e6ffe6; /* Très léger vert */
+    font-weight: 700;
+    color: var(--mvp-equipe-color);
+}
+
+/* Style pour MVP Match (Homme du Match) */
+.match-stats-section .print-table td.highlight-hommematch {
+    background-color: #fffbe6; /* Très léger jaune/crème */
+    font-weight: 700;
+    color: var(--mvp-match-color);
+}
+
+/* --- Correction Finale des largeurs de colonne pour les Noms --- */
+
+.club-section .print-table th:nth-child(2),
+.club-section .print-table td:nth-child(2) { 
+  width: 45%; /* Augmenter la place pour le nom/prénom abrégé */
+  max-width: 45%;
+  text-align: left;
+  /* IMPORTANT : S'assurer que le texte ne peut pas déborder */
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
+
+/* Réajustement des autres colonnes */
+.club-section .print-table th:nth-child(n+3),
+.club-section .print-table td:nth-child(n+3) { 
+  width: 7.5%; /* (100 - 6 - 45) / 6 = 8.16% -> 7.5% pour être sûr */
+  text-align: center;
+}
+
+    /* Ajustement des largeurs de colonne pour gagner de l'espace */
+    .club-section .print-table th:nth-child(1),
+    .club-section .print-table td:nth-child(1) { 
+      width: 6%; /* N° */
+      text-align: center;
+    }
+    
+    .club-section .print-table th:nth-child(2) { 
+      width: 40%; /* Joueur (augmenté) */
+      text-align: left;
+    }
+    .club-section .print-table td:nth-child(2) { 
+      width: 40%; 
+      text-align: left;
+      /* Permettre à la police de s'adapter si nécessaire, surtout sur mobile */
+      overflow-wrap: break-word; 
+    }
+    
+    /* Colonnes B, CSC, PE, P, CJ, CR */
+    .club-section .print-table th:nth-child(n+3),
+    .club-section .print-table td:nth-child(n+3) { 
+      width: 9%; /* (100 - 6 - 40) / 6 = 9% */
+      text-align: center;
+    }
+    
+    /* Style pour les cartons dans la section disciplinaire */
+    .disciplinary-section tr:has(td:nth-child(3):contains('Jaune')) {
+        background-color: #fffac8 !important; /* Très léger jaune */
+    }
+    .disciplinary-section tr:has(td:nth-child(3):contains('Rouge')) {
+        background-color: #ffcccc !important; /* Très léger rouge */
+    }
+    
+    /* ... Reste de vos styles print ... */
+
+    /* --- Styles pour la Fiche de Présence (id="print-presence-section") --- */
+
+#print-presence-section .print-table th:nth-child(1),
+#print-presence-section .print-table td:nth-child(1) {
+    /* N° (Numéro) */
+    width: 6%; /* Réduit à 6% ou même 5% */
+    text-align: center;
+}
+
+#print-presence-section .print-table th:nth-child(2),
+#print-presence-section .print-table td:nth-child(2) {
+    /* NOMS ET PRÉNOMS */
+    width: 45%; /* Garde une bonne place pour le nom */
+    text-align: left;
+}
+
+#print-presence-section .print-table th:nth-child(3),
+#print-presence-section .print-presence-section .print-table td:nth-child(3) {
+    /* OBSERVATION */
+    width: 49%; /* Utilise l'espace restant */
+    text-align: left;
+}
 }

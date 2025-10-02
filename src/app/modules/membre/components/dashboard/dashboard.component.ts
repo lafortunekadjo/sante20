@@ -22,6 +22,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MemberStats } from '../../../../core/models/stats.model';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 // Enregistrer les contrôleurs localement
 Chart.register(
@@ -58,6 +59,7 @@ Chart.register(
     MatGridListModule,
     MatListModule,
     MatTabsModule,
+    MatProgressSpinnerModule,
      
     
   ],
@@ -81,6 +83,7 @@ stats: MemberStats = {
   };
   currentDate: Date = new Date();
   dateRangeForm: FormGroup;
+  isLoading = true; 
   donutChartData: ChartData<'doughnut'> = {
     labels: ['Sanctions Payées', 'Sanctions Non Payées'],
     datasets: [{ data: [], backgroundColor: ['#50c4b7', '#ff6b6b'] }],
@@ -126,7 +129,10 @@ stats: MemberStats = {
   }
 
   private loadStats(startDate?: Date, endDate?: Date): void {
-    this.dashboardService.getMembreStats(startDate, endDate).subscribe(data => {
+  this.isLoading = true; 
+  console.log(this.isLoading)
+    this.dashboardService.getResponsableStats(startDate, endDate).subscribe({
+      next: (data) => {
       this.stats = {
         ...this.stats,
         ...data,
@@ -142,6 +148,13 @@ stats: MemberStats = {
       ];
       this.barChartData.labels = this.stats.passesByMatch.map(item => item.match);
       this.barChartData.datasets[0].data = this.stats.passesByMatch.map(item => item.passes);
+       this.isLoading = false; 
+    },
+      error: (err) => {
+        console.error('Erreur lors du chargement des statistiques:', err);
+        this.isLoading = false; // Arrêter le loader même en cas d'erreur
+      }
     });
+   
   }
 }

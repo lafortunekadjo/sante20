@@ -24,6 +24,7 @@ import { MatListModule } from '@angular/material/list';
 import { Stats } from '../../../../core/models/stats.model';
 import { BreakpointObserver, Breakpoints, LayoutModule } from '@angular/cdk/layout';
 import { map, Observable } from 'rxjs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 
 // Enregistrer les contrôleurs localement
@@ -61,7 +62,8 @@ Chart.register(
     MatIconModule,
     MatGridListModule,
     MatListModule, 
-    LayoutModule
+    LayoutModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -81,6 +83,7 @@ stats: Stats = {
     topAttendance: [],
   };
   currentDate: Date = new Date();
+  isLoading = true;
   dateRangeForm: FormGroup;
   donutChartData: ChartData<'doughnut'> = {
     labels: ['Sanctions Payées', 'Sanctions Non Payées'],
@@ -149,23 +152,32 @@ stats: Stats = {
   }
 
   private loadStats(startDate?: Date, endDate?: Date): void {
+     this.isLoading = true;
     const groupeId = 1; // Remplacez par l'ID du groupe actuel (à récupérer dynamiquement)
-    this.statsService.getResponsableStats(startDate, endDate).subscribe(data => {
-      this.stats = {
-        ...this.stats,
-        ...data,
-        contributionsByMonth: data.contributionsByMonth || [],
-        upcomingMatches: this.sortAndLimitUpcomingMatches(data.upcomingMatches || []),
-        topScorers: data.topScorers || [],
-        topAssists: data.topAssists || [],
-        topAttendance: data.topAttendance || [],
-      };
-      this.donutChartData.datasets[0].data = [
-        this.stats.paidSanctions.count,
-        this.stats.unpaidSanctions.count,
-      ];
-      this.barChartData.labels = this.stats.contributionsByMonth.map(item => item.month);
-      this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
+   this.statsService.getResponsableStats(startDate, endDate).subscribe({
+      next: (data) => {
+        this.stats = {
+          ...this.stats,
+          ...data,
+          contributionsByMonth: data.contributionsByMonth || [],
+          upcomingMatches: this.sortAndLimitUpcomingMatches(data.upcomingMatches || []),
+          topScorers: data.topScorers || [],
+          topAssists: data.topAssists || [],
+          topAttendance: data.topAttendance || [],
+        };
+        this.donutChartData.datasets[0].data = [
+          this.stats.paidSanctions.count,
+          this.stats.unpaidSanctions.count,
+        ];
+        this.barChartData.labels = this.stats.contributionsByMonth.map(item => item.month);
+        this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
+        
+        this.isLoading = false; // Arrêter le loader
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des statistiques:', err);
+        this.isLoading = false; // Arrêter le loader même en cas d'erreur
+      }
     });
   }
 

@@ -91,7 +91,7 @@ export const routes: Routes = [
   path: 'membre',
   component: MembreFormComponent,
   canActivate: [RoleGuard],
-  data: { roles: [ 'RESPONSABLE'] }
+  data: { roles: [ 'MEMBRE'] }
   }, 
   
   {
