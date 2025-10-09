@@ -50,4 +50,42 @@ export interface MemberStats {
   goalsScored: number;
   sanctions: Sanctions;
   totalPlayingTime: number;
+
+    // Nouvelles propriétés pour les stats mensuelles
+  monthlyStats?: MonthlyStats;
+  availableMonths?: Array<{ value: string; label: string }>; // Liste des mois disponibles
 }
+
+// Interface pour les statistiques mensuelles d'une équipe
+export interface MonthlyTeamStats {
+  teamName: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  goalsScored: number;
+  goalsConceded: number;
+  matchesPlayed: number;
+  winRate: number;
+}
+
+// Interface pour le meilleur joueur du mois
+export interface MonthlyPlayerStats {
+  playerName: string;
+  teamName: string;
+  goals: number;
+  assists: number;
+  appearances: number;
+  manOfTheMatchCount: number;
+}
+
+// Interface pour les stats mensuelles globales
+export interface MonthlyStats {
+  month: string; // Format: "YYYY-MM"
+  monthLabel: string; // Format: "Janvier 2025"
+  bestTeam: MonthlyTeamStats;
+  topScorer: MonthlyPlayerStats;
+  topAssister: MonthlyPlayerStats;
+  mostAppearances: MonthlyPlayerStats;
+  mostManOfTheMatch: MonthlyPlayerStats;
+}
+

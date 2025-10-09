@@ -173,17 +173,44 @@ export class ObjectifsComponent implements OnInit {
   }
 
 // Après
-getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
-  // Votre logique de retour reste la même, mais le type est plus précis
-  return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'indeterminate'; 
+// getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
+//   // Votre logique de retour reste la même, mais le type est plus précis
+//   return objectif.valeurActuelle >= objectif.valeurCible ? 'determinate' : 'indeterminate'; 
+// }
+
+  // getProgressBarValue(objectif: any): number {
+  //   return Math.min(100, (objectif.valeurActuelle / objectif.valeurCible) * 100);
+  // }
+
+  // getProgressBarColor(objectif: any): string {
+  //   return objectif.valeurActuelle >= objectif.valeurCible ? 'primary' : 'warn';
+  // }
+
+  scrollToForm(): void {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-  getProgressBarValue(objectif: any): number {
-    return Math.min(100, (objectif.valeurActuelle / objectif.valeurCible) * 100);
-  }
+// Et modifiez cette méthode :
+getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
+  return 'determinate'; // Toujours determinate pour afficher la progression
+}
 
-  getProgressBarColor(objectif: any): string {
-    return objectif.valeurActuelle >= objectif.valeurCible ? 'primary' : 'warn';
+getProgressBarValue(objectif: any): number {
+  if (!objectif || !objectif.valeurCible || objectif.valeurCible === 0) {
+    return 0;
   }
+  const valeurActuelle = objectif.valeurActuelle ?? 0;
+  return Math.min(100, (valeurActuelle / objectif.valeurCible) * 100);
+}
+
+getProgressBarColor(objectif: any): string {
+  if (!objectif) {
+    return 'warn';
+  }
+  const valeurActuelle = objectif.valeurActuelle ?? 0;
+  const valeurCible = objectif.valeurCible ?? 0;
+  return valeurActuelle >= valeurCible ? 'primary' : 'warn';
+}
+
 
 }

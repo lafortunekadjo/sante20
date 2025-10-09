@@ -1,92 +1,202 @@
-<div class="min-h-screen bg-gray-50 flex flex-col">
- <div class="container">
-  <button mat-icon-button class="mr-2 text-white" (click)="toggleSidenav()">
-    <mat-icon>{{ sidenav?.opened ? 'menu_open' : 'menu' }}</mat-icon>
-  </button>
-  <app-navbar></app-navbar>
-</div>
+<div class="app-container">
+  <!-- Navbar -->
+   <app-navbar (toggleMenu)="toggleSidebar()"></app-navbar>
 
+  <!-- Layout principal -->
+  <div class="main-layout">
+    <!-- Bouton toggle sidebar (mobile) -->
+    <!-- <button 
+      mat-icon-button 
+      class="sidebar-toggle"
+      (click)="toggleSidebar()"
+      *ngIf="isMobile">
+      <mat-icon>{{ sidebarOpen ? 'close' : 'menu' }}</mat-icon>
+    </button> -->
 
-  <mat-sidenav-container class="flex-1 mt-[64px]">
-    <mat-sidenav #sidenav mode="over" opened="true" class="sidenav">
-      <div class="sidenav-header bg-primary text-white p-4 flex items-center justify-between shadow-sm">
-        <h2 class="text-lg font-bold">Menu</h2>
-        <button mat-icon-button class="text-white" (click)="toggleSidenav()">
-          <mat-icon>close</mat-icon>
-        </button>
+    <!-- Overlay pour mobile -->
+    <div 
+      class="sidebar-overlay" 
+      [class.active]="sidebarOpen && isMobile"
+      (click)="closeSidebar()">
+    </div>
+
+    <!-- Sidebar -->
+    <aside 
+      class="sidebar"
+      [class.open]="sidebarOpen"
+      [class.mobile]="isMobile">
+      
+      <!-- Header sidebar -->
+      <div class="sidebar-header">
+        <mat-icon>dashboard</mat-icon>
+        <span>Navigation</span>
       </div>
-      <mat-nav-list class="p-0">
-         <ng-container>
-           <a mat-list-item [routerLink]="['/news-feed']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">newspaper</mat-icon>
+
+      <!-- Menu navigation -->
+      <nav class="sidebar-nav">
+        
+        <!-- Section: Général -->
+        <div class="nav-section">
+          <div class="section-title">Général</div>
+          
+          <a 
+            routerLink="/news-feed" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>newspaper</mat-icon>
             <span>Actualités</span>
           </a>
-               <a mat-list-item [routerLink]="['/objectifs']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">payment</mat-icon> <!-- Remplacé monetization_on par payment pour plus de clarté -->
+
+          <a 
+            routerLink="/objectifs" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>flag</mat-icon>
             <span>Objectifs</span>
           </a>
-                <a mat-list-item [routerLink]="['/suggestions']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-                  <mat-icon class="mr-4">payment</mat-icon> <!-- Remplacé monetization_on par payment pour plus de clarté -->
-                  <span>suggestions</span>
-                </a>
-        </ng-container>
-        <ng-container *ngIf="isAdmin">
-          <a mat-list-item [routerLink]="['/groupes']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">group</mat-icon>
+
+          <a 
+            routerLink="/suggestions" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>lightbulb</mat-icon>
+            <span>Suggestions</span>
+          </a>
+        </div>
+
+        <!-- Section: Administration (si admin) -->
+        <div class="nav-section" *ngIf="isAdmin">
+          <div class="section-divider"></div>
+          <div class="section-title">Administration</div>
+          
+          <a 
+            routerLink="/groupes" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>group</mat-icon>
             <span>Groupes</span>
           </a>
-          <a mat-list-item [routerLink]="['/user']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">person</mat-icon>
+
+          <a 
+            routerLink="/user" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>person</mat-icon>
             <span>Utilisateurs</span>
           </a>
-        </ng-container>
-        <ng-container *ngIf="isResponsable">
-         
-          <a mat-list-item [routerLink]="['/equipe']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">groups</mat-icon> <!-- Remplacé sports_soccer par groups pour plus de neutralité -->
+        </div>
+
+        <!-- Section: Gestion (si responsable) -->
+        <div class="nav-section" *ngIf="isResponsable">
+          <div class="section-divider"></div>
+          <div class="section-title">Gestion</div>
+
+          <a 
+            routerLink="/equipe" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>groups</mat-icon>
             <span>Équipes</span>
           </a>
-          <a mat-list-item [routerLink]="['/typesanction']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">gavel</mat-icon> <!-- Remplacé warning par gavel pour plus de spécificité -->
-            <span>Type sanction</span>
-          </a>
-          <a mat-list-item [routerLink]="['/membre']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">groups</mat-icon>
+
+          <a 
+            routerLink="/membre" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>people</mat-icon>
             <span>Membres du groupe</span>
           </a>
-          <a mat-list-item [routerLink]="['/match']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">sports_soccer</mat-icon> <!-- Ajouté pour refléter les matchs -->
+
+          <div class="section-divider"></div>
+          <div class="section-title">Activités</div>
+
+          <a 
+            routerLink="/match" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>sports_soccer</mat-icon>
             <span>Matchs</span>
           </a>
-          <a mat-list-item [routerLink]="['/sanction']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">gavel</mat-icon> <!-- Remplacé warning par gavel pour cohérence -->
-            <span>Sanctions</span>
-          </a>
-          <a mat-list-item [routerLink]="['/evenement']" routerLinkActive="active" class="flex items-center py-3 px-4 hover:bg-primary-light transition-colors">
-            <mat-icon class="mr-4">calendar_today</mat-icon> <!-- Remplacé event par calendar_today pour un focus calendrier -->
+
+          <a 
+            routerLink="/evenement" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>event</mat-icon>
             <span>Événements</span>
           </a>
-                          <a mat-list-item [routerLink]="['/contribution2']" routerLinkActive="active" (click)="sidenav.close()">
-          <mat-icon>monetization_on</mat-icon>
-          <span>Contribution</span>
-        </a>
-        <a mat-list-item [routerLink]="['/contribution']" routerLinkActive="active" (click)="sidenav.close()">
-          <mat-icon>Payement</mat-icon>
-          <span>Cotisations</span>
-        </a>
-          <a mat-list-item [routerLink]="['/depense']" routerLinkActive="active" (click)="sidenav.close()">
-          <mat-icon>monetization_on</mat-icon>
-          <span>Sortie en Caisse</span>
-        </a>
-          
 
-        </ng-container>
+          <div class="section-divider"></div>
+          <div class="section-title">Discipline</div>
 
-       
-      </mat-nav-list>
-    </mat-sidenav>
-    <mat-sidenav-content class="flex-1 bg-gray-50 p-4">
+          <a 
+            routerLink="/typesanction" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>category</mat-icon>
+            <span>Types de sanction</span>
+          </a>
+
+          <a 
+            routerLink="/sanction" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>gavel</mat-icon>
+            <span>Sanctions</span>
+          </a>
+
+          <div class="section-divider"></div>
+          <div class="section-title">Finances</div>
+
+          <a 
+            routerLink="/contribution2" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>monetization_on</mat-icon>
+            <span>Contributions</span>
+          </a>
+
+          <a 
+            routerLink="/contribution" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>payment</mat-icon>
+            <span>Cotisations</span>
+          </a>
+
+          <a 
+            routerLink="/depense" 
+            routerLinkActive="active"
+            (click)="onNavClick()"
+            class="nav-item">
+            <mat-icon>money_off</mat-icon>
+            <span>Sorties en caisse</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Footer sidebar -->
+      <div class="sidebar-footer">
+        <span>My2-0 © 2025</span>
+      </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="main-content">
       <router-outlet></router-outlet>
-    </mat-sidenav-content>
-  </mat-sidenav-container>
+    </main>
+  </div>
 </div>

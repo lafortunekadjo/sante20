@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { Membre } from '../../../../core/models/membre.model';
@@ -27,6 +27,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatListModule } from '@angular/material/list';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-membre-form',
@@ -49,17 +50,24 @@ import { MatListModule } from '@angular/material/list';
     FormsModule,
     MatDatepickerModule,
     MatExpansionModule, // Ajouté,
-    MatListModule
+    MatListModule,
+    MatSnackBarModule
   ],
+  
   templateUrl: './membre-form.component.html',
   styleUrls: ['./membre-form.component.scss'],
-  animations: [
-    trigger('detailExpand', [
-      state('collapsed', style({ height: '0px', minHeight: '0', visibility: 'hidden' })),
-      state('expanded', style({ height: '*', visibility: 'visible' })),
-      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+ // Ajoutez ces animations dans le décorateur @Component
+animations: [
+  trigger('slideDown', [
+    transition(':enter', [
+      style({ opacity: 0, height: 0, overflow: 'hidden' }),
+      animate('300ms ease-out', style({ opacity: 1, height: '*' }))
     ]),
-  ],
+    transition(':leave', [
+      animate('300ms ease-in', style({ opacity: 0, height: 0, overflow: 'hidden' }))
+    ])
+  ])
+]
 })
 export class MembreFormComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -124,14 +132,39 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   selectedGroupeId: string = '';
   createUserForMembre: boolean = false;
   isLoading: boolean = true;
+  showFilters = false;
+filters = {
+  equipe: null as number | null,
+  active: null as boolean | null,
+  sexe: null as string | null,
+  roleCO: null as string | null,
+  cotisation: null as boolean | null,
+  poste: '' as string
+};
+filteredMembers: Membre[] = [];
+paginatedMembers: Membre[] = [];
+filteredCount = 0;
+activeFiltersCount = 0;
+pageSize = 10;
+pageIndex = 0;
+isSaving = false;
+
+// Couleurs pour les avatars
+private avatarColors = [
+  '#1976d2', '#388e3c', '#f57c00', '#d32f2f',
+  '#7b1fa2', '#0097a7', '#689f38', '#fbc02d'
+];
 
   constructor(
     private adminService: MembreService,
     private equipeService: GeneralService,
     private dialog: MatDialog,
     private groupService: GroupeService,
-    private userService: UserService
+    private userService: UserService,
+    private snackBar: MatSnackBar
   ) {}
+
+
 
   ngOnInit() {
     this.loadData();
@@ -150,49 +183,87 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     };
   }
 
-  loadData() {
-    this.isLoading = true;
-    console.log("la2")
-    forkJoin([
-      this.adminService.getGroupMembers().pipe(
-        map(data => data || [])
-      ),
-      this.groupService.getAllGroupesMembre().pipe(
-        map(data => data || null)
-      ),
-      this.userService.getAllUsers().pipe(
-        map(data => data || [])
-      ),
-      this.equipeService.getEquipesByGroupe().pipe(
-        map(data => data || [])
-      )
-    ]).subscribe({
-      next: ([membres, groupeResponse, users, equipes]) => {
-        this.dataSource.data = membres || [];
-        console.log("la")
-        this.groupe = groupeResponse || null;
-        const membreUserIds = new Set(membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []);
-        this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
-        this.equipes = equipes || [];
-        this.editingRows = new Array(membres?.length || 0).fill(false);
-  
-        this.newMembre.groupe = this.groupe;
-              this.isLoading = false;
-              console.log("la2")
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
-        this.isLoading = false;
-        this.dataSource.data = [];
-      }
-    });
-    
-  }
+  // Méthode pour obtenir l'index global depuis l'index paginé
+getGlobalIndex(paginatedIndex: number): number {
+  const membre = this.paginatedMembers[paginatedIndex];
+  return this.dataSource.data.findIndex(m => m.id === membre?.id);
+}
 
-  applyFilter(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
-  }
+  // Modifiez loadData pour appliquer les filtres après chargement
+loadData() {
+  this.isLoading = true;
+  forkJoin([
+    this.adminService.getGroupMembers().pipe(map(data => data || [])),
+    this.groupService.getAllGroupesMembre().pipe(map(data => data || null)),
+    this.userService.getAllUsers().pipe(map(data => data || [])),
+    this.equipeService.getEquipesByGroupe().pipe(map(data => data || []))
+  ]).subscribe({
+    next: ([membres, groupeResponse, users, equipes]) => {
+      this.dataSource.data = membres || [];
+      this.groupe = groupeResponse || null;
+      const membreUserIds = new Set(membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []);
+      this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
+      this.equipes = equipes || [];
+      this.editingRows = new Array(membres?.length || 0).fill(false);
+      this.newMembre.groupe = this.groupe;
+      
+      // Appliquer les filtres après chargement
+      this.applyFilters();
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement des données:', err);
+      this.isLoading = false;
+      this.dataSource.data = [];
+      this.filteredMembers = [];
+      this.paginatedMembers = [];
+    }
+  });
+}
+
+  // loadData() {
+  //   this.isLoading = true;
+  //   console.log("la2")
+  //   forkJoin([
+  //     this.adminService.getGroupMembers().pipe(
+  //       map(data => data || [])
+  //     ),
+  //     this.groupService.getAllGroupesMembre().pipe(
+  //       map(data => data || null)
+  //     ),
+  //     this.userService.getAllUsers().pipe(
+  //       map(data => data || [])
+  //     ),
+  //     this.equipeService.getEquipesByGroupe().pipe(
+  //       map(data => data || [])
+  //     )
+  //   ]).subscribe({
+  //     next: ([membres, groupeResponse, users, equipes]) => {
+  //       this.dataSource.data = membres || [];
+  //       console.log("la")
+  //       this.groupe = groupeResponse || null;
+  //       const membreUserIds = new Set(membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []);
+  //       this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
+  //       this.equipes = equipes || [];
+  //       this.editingRows = new Array(membres?.length || 0).fill(false);
+  
+  //       this.newMembre.groupe = this.groupe;
+  //             this.isLoading = false;
+  //             console.log("la2")
+  //     },
+  //     error: (err) => {
+  //       console.error('Erreur lors du chargement des données:', err);
+  //       this.isLoading = false;
+  //       this.dataSource.data = [];
+  //     }
+  //   });
+    
+  // }
+
+  // applyFilter(event: Event) {
+  //   const filterValue = (event.target as HTMLInputElement).value;
+  //   this.dataSource.filter = filterValue.trim().toLowerCase();
+  // }
 
   toggleCreateRow() {
     this.showCreateRow = !this.showCreateRow;
@@ -285,17 +356,50 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     return !!this.editMembre.nom && !!this.editMembre.sexe;
   }
 
-  saveEdit(index: number) {
-    if (this.isEditFormValid() && this.dataSource.data[index]) {
-      this.adminService.updateMembre(this.editMembre.id, this.editMembre).subscribe({
-        next: () => {
-          this.loadData(); // Recharge les données
-          this.editingRows[index] = false;
-        },
-        error: (err) => console.error('Erreur lors de la mise à jour du membre:', err)
-      });
-    }
+// Méthode saveEdit modifiée avec loading et messages
+saveEdit(index: number) {
+  const membre = this.paginatedMembers[index];
+  const globalIndex = this.dataSource.data.findIndex(m => m.id === membre?.id);
+  
+  if (!this.isEditFormValid() || globalIndex === -1) {
+    return;
   }
+
+  this.isSaving = true;
+
+  this.adminService.updateMembre(this.editMembre.id, this.editMembre).subscribe({
+    next: () => {
+      this.isSaving = false;
+      this.showSuccessMessage('Membre modifié avec succès');
+      this.editingRows[globalIndex] = false;
+      this.loadData();
+    },
+    error: (err) => {
+      this.isSaving = false;
+      console.error('Erreur lors de la mise à jour du membre:', err);
+      this.showErrorMessage('Erreur lors de la modification du membre');
+    }
+  });
+}
+
+  // Méthodes pour afficher les messages
+showSuccessMessage(message: string) {
+  this.snackBar.open(message, 'Fermer', {
+    duration: 4000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['message-snackbar', 'success']
+  });
+}
+
+showErrorMessage(message: string) {
+  this.snackBar.open(message, 'Fermer', {
+    duration: 5000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['message-snackbar', 'error']
+  });
+}
 
   cancelEdit(index: number) {
     this.editingRows[index] = false;
@@ -386,13 +490,13 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  expandPanel(index: number) {
-    this.expandedRowIndex = index;
-    if (this.dataSource.data[index]) {
-      this.editMembre = { ...this.dataSource.data[index] };
-      console.log('Expanded row:', index, this.editMembre);
-    }
-  }
+  // expandPanel(index: number) {
+  //   this.expandedRowIndex = index;
+  //   if (this.dataSource.data[index]) {
+  //     this.editMembre = { ...this.dataSource.data[index] };
+  //     console.log('Expanded row:', index, this.editMembre);
+  //   }
+  // }
 
   collapsePanel(index: number) {
     this.expandedRowIndex = null;
@@ -416,4 +520,180 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       return false;
     }
   }
+
+  // Méthode pour appliquer tous les filtres
+applyFilters() {
+  let filtered = [...this.dataSource.data];
+
+  // Filtre par équipe
+  if (this.filters.equipe !== null) {
+    filtered = filtered.filter(m => m.equipe?.id === this.filters.equipe);
+  }
+
+  // Filtre par statut actif
+  if (this.filters.active !== null) {
+    filtered = filtered.filter(m => m.active === this.filters.active);
+  }
+
+  // Filtre par sexe
+  if (this.filters.sexe) {
+    filtered = filtered.filter(m => m.sexe === this.filters.sexe);
+  }
+
+  // Filtre par rôle CO
+  if (this.filters.roleCO !== null) {
+    if (this.filters.roleCO === '') {
+      filtered = filtered.filter(m => !m.roleCO);
+    } else {
+      filtered = filtered.filter(m => m.roleCO === this.filters.roleCO);
+    }
+  }
+
+  // Filtre par cotisation
+  if (this.filters.cotisation !== null) {
+    filtered = filtered.filter(m => m.cotisationPayee === this.filters.cotisation);
+  }
+
+  // Filtre par poste
+  if (this.filters.poste) {
+    const posteSearch = this.filters.poste.toLowerCase();
+    filtered = filtered.filter(m => 
+      m.poste?.toLowerCase().includes(posteSearch)
+    );
+  }
+
+  // Appliquer le filtre de recherche si présent
+  const searchFilter = this.dataSource.filter;
+  if (searchFilter) {
+    filtered = filtered.filter(m => {
+      const searchStr = `${m.nom} ${m.prenom} ${m.email} ${m.poste}`.toLowerCase();
+      return searchStr.includes(searchFilter);
+    });
+  }
+
+  this.filteredMembers = filtered;
+  this.filteredCount = filtered.length;
+  this.activeFiltersCount = this.calculateActiveFilters();
+  this.pageIndex = 0; // Reset à la première page
+  this.updatePaginatedMembers();
+}
+
+// Calculer le nombre de filtres actifs
+calculateActiveFilters(): number {
+  let count = 0;
+  if (this.filters.equipe !== null) count++;
+  if (this.filters.active !== null) count++;
+  if (this.filters.sexe !== null) count++;
+  if (this.filters.roleCO !== null) count++;
+  if (this.filters.cotisation !== null) count++;
+  if (this.filters.poste) count++;
+  return count;
+}
+
+// Effacer tous les filtres
+clearAllFilters() {
+  this.filters = {
+    equipe: null,
+    active: null,
+    sexe: null,
+    roleCO: null,
+    cotisation: null,
+    poste: ''
+  };
+  this.applyFilters();
+}
+
+// Mise à jour du filtre de recherche
+applyFilter(event: Event) {
+  const filterValue = (event.target as HTMLInputElement).value;
+  this.dataSource.filter = filterValue.trim().toLowerCase();
+  this.applyFilters();
+}
+
+// Effacer la recherche
+clearSearch(input: HTMLInputElement) {
+  input.value = '';
+  this.dataSource.filter = '';
+  this.applyFilters();
+}
+
+// Mise à jour des membres paginés
+updatePaginatedMembers() {
+  const startIndex = this.pageIndex * this.pageSize;
+  const endIndex = startIndex + this.pageSize;
+  this.paginatedMembers = this.filteredMembers.slice(startIndex, endIndex);
+}
+
+// Gestion de la pagination
+onPageChange(event: PageEvent) {
+  this.pageSize = event.pageSize;
+  this.pageIndex = event.pageIndex;
+  this.updatePaginatedMembers();
+}
+
+// Obtenir les initiales
+getInitials(prenom: string, nom: string): string {
+  const prenomInitial = prenom ? prenom.charAt(0).toUpperCase() : '';
+  const nomInitial = nom ? nom.charAt(0).toUpperCase() : '';
+  return `${prenomInitial}${nomInitial}`;
+}
+
+// Obtenir une couleur d'avatar
+getAvatarColor(index: number): string {
+  return this.avatarColors[index % this.avatarColors.length];
+}
+
+// Modifiez expandPanel pour utiliser l'index de la liste paginée
+expandPanel(index: number) {
+  const globalIndex = this.dataSource.data.findIndex(
+    m => m.id === this.paginatedMembers[index].id
+  );
+  this.expandedRowIndex = globalIndex;
+  if (this.dataSource.data[globalIndex]) {
+    this.editMembre = { ...this.dataSource.data[globalIndex] };
+  }
+}
+
+// Modifiez les autres méthodes pour gérer correctement les index
+// editRow(index: number, membre: Membre) {
+//   const globalIndex = this.dataSource.data.findIndex(m => m.id === membre.id);
+//   if (globalIndex !== -1 && this.dataSource.data[globalIndex]) {
+//     this.editingRows[globalIndex] = true;
+//     this.editMembre = { ...membre };
+//   }
+// }
+
+// saveEdit(index: number) {
+//   const membre = this.paginatedMembers[index];
+//   const globalIndex = this.dataSource.data.findIndex(m => m.id === membre.id);
+  
+//   if (this.isEditFormValid() && globalIndex !== -1) {
+//     this.adminService.updateMembre(this.editMembre.id, this.editMembre).subscribe({
+//       next: () => {
+//         this.loadData();
+//         this.editingRows[globalIndex] = false;
+//       },
+//       error: (err) => console.error('Erreur lors de la mise à jour du membre:', err)
+//     });
+//   }
+// }
+
+// cancelEdit(index: number) {
+//   const membre = this.paginatedMembers[index];
+//   const globalIndex = this.dataSource.data.findIndex(m => m.id === membre.id);
+  
+//   if (globalIndex !== -1) {
+//     this.editingRows[globalIndex] = false;
+//     this.editMembre = {
+//       id: 0, nom: '', prenom: '', dateNaissance: '', poste: '', email: '',
+//       cotisationPayee: false, roleCO: '', equipe: { id: 0, nom: '' },
+//       groupe: { id: 0, nom: '', discipline: '', ville: 0, stade: 0, isActive: true, 
+//                 jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0,
+//                 ville1: { id: 0, nom: '' }, stade2: { id: 0, nom: '' } },
+//       buts: 0, passes: 0, cartons: 0, totalContributions: 0, soldeRestant: 0,
+//       soldeSanctionsRestant: 0, user: { id: 0, username: '', email: '', roles: '',
+//       active: true, membre: 0, motDePasse: '', groupe: 0 }, active: true,
+//       sexe: '', cni: '', adresse: '', tel: '', assurance: true
+//     };
+//   }
 }

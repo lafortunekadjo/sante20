@@ -20,7 +20,7 @@ import { StatsService } from '../../../../core/services/stats.service';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MemberStats } from '../../../../core/models/stats.model';
+import { MemberStats, MonthlyStats } from '../../../../core/models/stats.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -40,8 +40,8 @@ Chart.register(
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-    imports: [
-   CommonModule,
+  imports: [
+    CommonModule,
     RouterModule,
     MatTableModule,
     MatPaginatorModule,
@@ -60,15 +60,13 @@ Chart.register(
     MatListModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-     
-    
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 
-export class MDashboardComponent implements OnInit{
-stats: MemberStats = {
+export class MDashboardComponent implements OnInit {
+  stats: MemberStats = {
     matchesPlayed: 0,
     topScorers: [],
     topAttendance: [],
@@ -80,38 +78,56 @@ stats: MemberStats = {
     goalsScored: 0,
     sanctions: { paid: { amount: 0, count: 0 }, unpaid: { amount: 0, count: 0 }, yellowCards: 0, redCards: 0 },
     totalPlayingTime: 0,
+    monthlyStats: undefined,
+    availableMonths: [],
   };
+  
   currentDate: Date = new Date();
   dateRangeForm: FormGroup;
-  isLoading = true; 
+  monthFilterForm: FormGroup;
+  isLoading = true;
+  selectedMonth: string = '';
+  
   donutChartData: ChartData<'doughnut'> = {
     labels: ['Sanctions Payées', 'Sanctions Non Payées'],
     datasets: [{ data: [], backgroundColor: ['#50c4b7', '#ff6b6b'] }],
   };
+  
   barChartData: ChartData<'bar'> = {
     labels: [],
     datasets: [{ data: [], label: 'Passes par match', backgroundColor: '#1a3c6d' }],
   };
+  
   donutChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     plugins: { legend: { position: 'top' } },
   };
+  
   barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     plugins: { legend: { display: false } },
   };
+  
   donutChartType: ChartType = 'doughnut';
   barChartType: ChartType = 'bar';
 
-  constructor(private dashboardService: StatsService, private fb: FormBuilder) {
+  constructor(
+    private dashboardService: StatsService, 
+    private fb: FormBuilder
+  ) {
     this.dateRangeForm = this.fb.group({
       start: [null],
       end: [null],
+    });
+    
+    this.monthFilterForm = this.fb.group({
+      selectedMonth: [null],
     });
   }
 
   ngOnInit(): void {
     this.loadStats();
+    this.loadAvailableMonths();
   }
 
   applyDateFilter(): void {
@@ -128,33 +144,82 @@ stats: MemberStats = {
     this.loadStats();
   }
 
-  private loadStats(startDate?: Date, endDate?: Date): void {
-  this.isLoading = true; 
-  console.log(this.isLoading)
-    this.dashboardService.getResponsableStats(startDate, endDate).subscribe({
-      next: (data) => {
-      this.stats = {
-        ...this.stats,
-        ...data,
-        passesByMatch: data.passesByMatch || [],
-        recentMatches: data.recentMatches || [],
-        topScorers: data.topScorers || [],
-        topAssists: data.topAssists || [],
-        topAttendance: data.topAttendance || [],
-      };
-      this.donutChartData.datasets[0].data = [
-        this.stats.sanctions.paid.count,
-        this.stats.sanctions.unpaid.count,
-      ];
-      this.barChartData.labels = this.stats.passesByMatch.map(item => item.match);
-      this.barChartData.datasets[0].data = this.stats.passesByMatch.map(item => item.passes);
-       this.isLoading = false; 
-    },
+  onMonthChange(month: string): void {
+    this.selectedMonth = month;
+    this.loadMonthlyStats(month);
+  }
+
+  private loadAvailableMonths(): void {
+    this.dashboardService.getAvailableMonths().subscribe({
+      next: (months) => {
+        this.stats.availableMonths = months;
+        // Sélectionner le mois le plus récent par défaut
+        if (months.length > 0) {
+          this.selectedMonth = months[0].value;
+          this.monthFilterForm.patchValue({ selectedMonth: this.selectedMonth });
+          this.loadMonthlyStats(this.selectedMonth);
+        }
+      },
       error: (err) => {
-        console.error('Erreur lors du chargement des statistiques:', err);
-        this.isLoading = false; // Arrêter le loader même en cas d'erreur
+        console.error('Erreur lors du chargement des mois disponibles:', err);
       }
     });
-   
+  }
+
+  private loadMonthlyStats(month: string): void {
+    if (!month) return;
+    
+    this.dashboardService.getMonthlyStats(month).subscribe({
+      next: (monthlyStats) => {
+        this.stats.monthlyStats = monthlyStats;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des stats mensuelles:', err);
+      }
+    });
+  }
+
+  private loadStats(startDate?: Date, endDate?: Date): void {
+    this.isLoading = true;
+    console.log(this.isLoading);
+    
+    this.dashboardService.getResponsableStats2(startDate, endDate).subscribe({
+      next: (data) => {
+        this.stats = {
+          ...this.stats,
+          ...data,
+          passesByMatch: data.passesByMatch || [],
+          recentMatches: data.recentMatches || [],
+          topScorers: data.topScorers || [],
+          topAssists: data.topAssists || [],
+          topAttendance: data.topAttendance || [],
+        };
+        
+        this.donutChartData.datasets[0].data = [
+          this.stats.sanctions.paid.count,
+          this.stats.sanctions.unpaid.count,
+        ];
+        
+        this.barChartData.labels = this.stats.passesByMatch.map(item => item.match);
+        this.barChartData.datasets[0].data = this.stats.passesByMatch.map(item => item.passes);
+        
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des statistiques:', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Méthode helper pour déterminer si les stats mensuelles sont disponibles
+  hasMonthlyStats(): boolean {
+    return !!this.stats.monthlyStats;
+  }
+
+  // Méthode helper pour obtenir le taux de victoire formaté
+  getWinRateFormatted(): string {
+    if (!this.stats.monthlyStats?.bestTeam) return '0%';
+    return this.stats.monthlyStats.bestTeam.winRate.toFixed(1) + '%';
   }
 }

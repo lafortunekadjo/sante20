@@ -27,6 +27,12 @@ import { PresenceService } from '../../../../core/services/presence.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { TypeSanction } from '../../../../core/models/typeSanction.model';
+import { jsPDF } from 'jspdf';
+import { applyPlugin, autoTable} from 'jspdf-autotable';
+import { trigger, transition, style, animate } from '@angular/animations';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatChipsModule } from '@angular/material/chips';
+applyPlugin(jsPDF)
 
 @Component({
   selector: 'app-sanction-form',
@@ -48,12 +54,35 @@ import { TypeSanction } from '../../../../core/models/typeSanction.model';
     RouterModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatButtonToggleModule,
+    MatChipsModule
+  ],
+   animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-20px)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-20px)' }))
+      ])
+    ])
   ],
   templateUrl: './sanction-form.component.html',
   styleUrls: ['./sanction-form.component.scss']
 })
 export class SanctionFormComponent implements OnInit, AfterViewInit {
+  viewMode: 'card' | 'list' = 'card'; // Mode d'affichage par défaut
+  displayedColumnsTable: string[] = [
+    'membre',
+    'typeSanction',
+    'dateSanction',
+    'match',
+    'montant',
+    'etat',
+    'actions'
+  ];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   dataSource = new MatTableDataSource<Sanction>([]);
@@ -90,6 +119,10 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
   matchDates: { date: string; matches: Match[] }[] = [];
   filteredMatchDates: { date: string; matches: Match[] }[] = [];
   dateFilter: Date | null = null;
+  searchTerm: string = '';
+  statusFilter: string = 'ALL'; // 'ALL', 'PAYEE', 'NON_PAYEE'
+  allSanctions: any[] = []; // Pour stocker toutes les sanctions
+  typeFilter: string = 'ALL';
 
   get newSanctionMatches(): Match[] {
     if (!this.newSanction.selectedDate) return [];
@@ -105,7 +138,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
 
   constructor(
     private sanctionService: SanctionService,
-    private matchService: MatchService,
+    // private matchService: MatchService,
     private presenceService: PresenceService,
     private membreService: MembreService,
     private dialog: MatDialog,
@@ -115,45 +148,72 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
   get isEditing(): boolean {
     return this.editingRows.some(row => row);
   }
-
+   /**
+   * Gestion du changement de mode de vue
+   */
+ onViewModeChange(): void {
+  console.log('View mode changed to:', this.viewMode);
+  console.log('DataSource data:', this.dataSource.data);
+  
+  // Optionnel : forcer la détection des changements
+  setTimeout(() => {
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
+  }, 100);
+  
+  localStorage.setItem('sanctionsViewMode', this.viewMode);
+}
+  
+  // Dans ngOnInit, restaurer la préférence sauvegardée
   ngOnInit() {
+    // Restaurer le mode de vue sauvegardé
+    const savedViewMode = localStorage.getItem('sanctionsViewMode');
+    if (savedViewMode === 'card' || savedViewMode === 'list') {
+      this.viewMode = savedViewMode;
+    }
+    
     this.loadData();
   }
 
+
+
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-    this.dataSource.sortingDataAccessor = (item, property) => {
-      switch (property) {
-        case 'membre': return this.getMembreName(item.membre);
-        case 'typeSanction': return this.getTypeSanctionName(item.typeSanction);
-        case 'match': return this.getMatchName(item.match);
-        case 'dateSanction': return new Date(item.dateSanction).getTime();
-        case 'etat': return item.etat;
-        default: return (item as any)[property];
-      }
-    };
-  }
+  // Lier le paginator et le sort après l'initialisation de la vue
+  this.dataSource.paginator = this.paginator;
+  this.dataSource.sort = this.sort;
+  
+  this.dataSource.sortingDataAccessor = (item, property) => {
+    switch (property) {
+      case 'membre': return this.getMembreName(item.membre);
+      case 'typeSanction': return this.getTypeSanctionName(item.typeSanction);
+      case 'match': return this.getMatchName(item.match);
+      case 'dateSanction': return new Date(item.dateSanction).getTime();
+      case 'etat': return item.etat;
+      case 'montant': return item.montant;
+      default: return (item as any)[property];
+    }
+  };
+}
 
   loadData() {
     this.isLoading = true;
     forkJoin([
       this.sanctionService.getSanctionsAll(),
       this.membreService.getGroupMembers(),
-      this.matchService.getAllMatch(),
       this.sanctionService.getTypeSanctions()
     ]).subscribe({
-      next: ([sanctions, membres, matches, typeSanctions]) => {
-        console.log('Sanctions chargées:', sanctions);
-        console.log('Membres chargés:', membres);
-        console.log('Matches chargés:', matches);
-        console.log('TypeSanctions chargés:', typeSanctions);
+      next: ([sanctions, membres, typeSanctions]) => {
+        this.allSanctions = sanctions; // Stocker toutes les sanctions
         this.dataSource.data = sanctions;
         this.membres = membres;
-        this.matches = matches;
         this.typeSanctions = typeSanctions;
         this.editingRows = new Array(sanctions.length).fill(false);
         this.updateMatchDates();
+        console.log(this.matchDates)
         this.isLoading = false;
       },
       error: (err) => {
@@ -179,26 +239,57 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
     console.log('MatchDates:', this.matchDates);
   }
 
-  filterMatchesByDate(date: Date | null) {
-    console.log('Filtre par date:', date);
-    if (!date) {
-      this.filteredMatchDates = [...this.matchDates];
-      this.newSanction.match = 0;
-      this.newSanction.selectedDate = '';
-      return;
-    }
-    const formattedDate = new Date(date).toLocaleDateString('fr-FR');
-    this.filteredMatchDates = this.matchDates.filter(md => md.date === formattedDate);
-    if (this.filteredMatchDates.length > 0) {
-      this.newSanction.selectedDate = formattedDate;
-      this.newSanction.match = this.filteredMatchDates[0].matches[0].id;
-      this.onMatchChange(this.newSanction);
-    } else {
-      this.newSanction.match = 0;
-      this.newSanction.selectedDate = '';
-      this.snackBar.open('Aucun match trouvé pour cette date', 'Fermer', { duration: 3000 });
-    }
+  // Assurez-vous que votre dataSource est défini (ex: dataSource = new MatTableDataSource<any>();)
+// et que this.allSanctions contient toutes les données.
+
+filterMatchesByDate(date: Date | null) {
+  console.log('Filtre par date:', date);
+
+  if (!date) {
+    // 1. Si aucune date n'est sélectionnée, réinitialiser la source de données à la liste complète
+    this.dataSource.data = [...this.allSanctions];
+    
+    // Réinitialisation de vos champs
+    this.newSanction.match = 0;
+    this.newSanction.selectedDate = '';
+    return;
   }
+
+  const selectedDate = new Date(date);
+  
+  // 2. Formatage rigoureux de la date sélectionnée au format DD/MM/YYYY
+  const day = selectedDate.getDate().toString().padStart(2, '0');
+  const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0'); // +1 car getMonth() est basé sur 0
+  const year = selectedDate.getFullYear();
+  const formattedDate = `${year}-${month}-${day}`; // Ex: "2025-09-28"
+
+  console.log('Date formatée pour comparaison:', formattedDate);
+console.log(this.dataSource.data)
+  // 3. Filtrage : on itère sur la liste complète (this.allSanctions)
+  const filteredSanctions = this.allSanctions.filter(sanction => {
+    // On compare la date du match de la sanction avec la date formatée
+    // On ajoute une vérification pour s'assurer que 'match' et 'dateMatch' existent
+    return sanction && sanction.dateSanction === formattedDate;
+  });
+
+  // 4. Mettre à jour la source de données avec les résultats filtrés
+  this.dataSource.data = filteredSanctions;
+
+  // --- Logique post-filtrage (ajustée pour la sanction) ---
+  if (filteredSanctions.length > 0) {
+    this.newSanction.selectedDate = formattedDate;
+    
+    // Assurez-vous que l'accès à l'ID de match est correct sur l'objet sanction
+    this.newSanction.match = filteredSanctions[0].match.id; 
+    
+    // La fonction onMatchChange devrait maintenant être appelée avec la nouvelle sanction
+    this.onMatchChange(this.newSanction); 
+  } else {
+    this.newSanction.match = 0;
+    this.newSanction.selectedDate = '';
+    this.snackBar.open('Aucune sanction trouvée pour cette date de match', 'Fermer', { duration: 3000 });
+  }
+}
 
   loadSanctions() {
     this.isLoading = true;
@@ -543,4 +634,229 @@ export class SanctionFormComponent implements OnInit, AfterViewInit {
       }
     });
   }
+
+
+  /**
+   * Applique tous les filtres combinés
+   */
+  applyFilters(): void {
+    let filtered = [...this.allSanctions];
+
+    // Filtre par recherche de joueur
+    if (this.searchTerm) {
+      const search = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(s => 
+        this.getMembreName(s.membre).toLowerCase().includes(search)
+      );
+    }
+
+    // Filtre par statut
+    if (this.statusFilter !== 'ALL') {
+      filtered = filtered.filter(s => s.etat === this.statusFilter);
+    }
+
+     if (this.typeFilter !== 'ALL') {
+      filtered = filtered.filter(s => {
+        const sanctionTypeId = typeof s.typeSanction === 'number' 
+          ? s.typeSanction 
+          : (s.typeSanction as TypeSanction)?.id;
+        return sanctionTypeId?.toString() === this.typeFilter.toString();
+      });
+    }
+
+    // Filtre par date (si dateFilter est actif, c'est géré séparément)
+    // On garde la logique existante
+
+    this.dataSource.data = filtered;
+    
+    if (this.paginator) {
+      this.paginator.firstPage();
+    }
+  }
+
+  /**
+   * Vérifie si des filtres sont actifs
+   */
+  hasActiveFilters(): boolean {
+    return !!this.searchTerm || 
+           this.statusFilter !== 'ALL' || 
+             this.typeFilter !== 'ALL' ||
+           !!this.dateFilter;
+  }
+
+  /**
+   * Réinitialise tous les filtres
+   */
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.statusFilter = 'ALL';
+     this.typeFilter = 'ALL';
+    this.dateFilter = null;
+    this.filteredMatchDates = [...this.matchDates];
+    this.dataSource.data = [...this.allSanctions];
+    
+    if (this.paginator) {
+      this.paginator.firstPage();
+    }
+    
+    this.snackBar.open('Filtres réinitialisés', 'OK', { duration: 2000 });
+  }
+
+  /**
+   * Compte total de sanctions
+   */
+  getTotalCount(): number {
+    return this.dataSource.data.length;
+  }
+
+  /**
+   * Export PDF des sanctions
+   */
+  exportToPDF(): void {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Titre
+    doc.setFontSize(20);
+    doc.setTextColor(102, 126, 234);
+    doc.text('Liste des Sanctions', pageWidth / 2, 20, { align: 'center' });
+    
+    // Date d'export
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    const today = new Date().toLocaleDateString('fr-FR');
+    doc.text(`Généré le ${today}`, pageWidth / 2, 28, { align: 'center' });
+    
+    // Statistiques
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    const stats = [
+      `Total: ${this.getTotalCount()} sanctions`,
+      `Payées: ${this.getPaidCount()}`,
+      `Non payées: ${this.getUnpaidCount()}`,
+      `Montant total: ${this.getTotalAmount().toLocaleString()} FCFA`
+    ];
+    doc.text(stats.join(' | '), pageWidth / 2, 36, { align: 'right' });
+    
+    // Préparation des données du tableau
+    const tableData = this.dataSource.data.map(s => [
+      this.getMembreName(s.membre),
+      this.getTypeSanctionName(s.typeSanction),
+      new Date(s.dateSanction).toLocaleDateString('fr-FR'),
+      // this.getMatchName(s.match),
+      `${s.montant} FCFA`,
+      s.etat === 'PAYEE' ? 'Payée' : 'Non payée',
+      s.commentaire || '-'
+    ]);
+    
+    // Génération du tableau
+    (doc as any).autoTable({
+      startY: 45,
+      head: [['Membre', 'Type', 'Match', 'Montant', 'Statut', 'Commentaire']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [102, 126, 234],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 35 , halign: 'right'},
+        3: { cellWidth: 25, halign: 'right' },
+        4: { cellWidth: 20, halign: 'center' },
+        5: { cellWidth: 35 }
+      },
+      bodyStyles: {
+        fontSize: 9
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250]
+      },
+      didParseCell: function(data: any) {
+        // Colorer les statuts
+        if (data.column.index === 5 && data.cell.section === 'body') {
+          if (data.cell.raw === 'Payée') {
+            data.cell.styles.textColor = [76, 175, 80];
+            data.cell.styles.fontStyle = 'bold';
+          } else {
+            data.cell.styles.textColor = [255, 152, 0];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      }
+    });
+    
+    // Footer avec numéro de page
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(
+        `Page ${i} sur ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+    
+    // Téléchargement
+    const filename = `sanctions_${today.replace(/\//g, '-')}.pdf`;
+    doc.save(filename);
+    
+    this.snackBar.open('PDF exporté avec succès', 'OK', { duration: 3000 });
+  }
+
+  // Ajoutez ces méthodes dans votre composant SanctionFormComponent
+
+/**
+ * Récupère les initiales d'un membre
+ */
+getMemberInitials(membre: number | Membre | undefined): string {
+  const name = this.getMembreName(membre);
+  if (name === 'Inconnu') return '?';
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+/**
+ * Compte les sanctions non payées
+ */
+getUnpaidCount(): number {
+  return this.dataSource.data.filter(s => s.etat === 'NON_PAYEE').length;
+}
+
+/**
+ * Compte les sanctions payées
+ */
+getPaidCount(): number {
+  return this.dataSource.data.filter(s => s.etat === 'PAYEE').length;
+}
+
+/**
+ * Calcule le montant total des sanctions
+ */
+getTotalAmount(): number {
+  return this.dataSource.data.reduce((sum, s) => sum + (s.montant || 0), 0);
+}
+
+ /**
+   * Compte le nombre de sanctions par type
+   */
+  getCountByType(typeId: number): number {
+    return this.allSanctions.filter(s => {
+      const sanctionTypeId = typeof s.typeSanction === 'number' 
+        ? s.typeSanction 
+        : (s.typeSanction as TypeSanction)?.id;
+      return sanctionTypeId === typeId;
+    }).length;
+  }
+
+  
 }

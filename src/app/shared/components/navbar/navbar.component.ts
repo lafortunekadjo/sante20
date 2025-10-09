@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, EventEmitter, Output } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,15 +19,24 @@ import { EquipeSelectionDialogComponent } from '../equipe-selection-dialog/equip
 import { GeneralService } from '../../../core/services/general.service';
 import { MembreService } from '../../../core/services/membre.service';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatListModule } from '@angular/material/list';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [MatToolbarModule,MatProgressSpinnerModule, MatButtonModule, MatFormFieldModule, MatSelectModule,CommonModule, MatIconModule, MatMenuModule],
+  imports: [MatToolbarModule,MatProgressSpinnerModule, MatButtonModule, MatFormFieldModule, MatSelectModule,CommonModule, MatIconModule, MatMenuModule, CommonModule,
+
+    MatSidenavModule,
+ 
+    MatListModule,
+    RouterModule,
+ ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
 })
 export class NavbarComponent {
+  @Output() toggleMenu = new EventEmitter<void>();
   
   roles: string[] = [];
   selectedRole: string | null = null;
@@ -36,6 +45,7 @@ export class NavbarComponent {
   isChecking = false;
   success = false;
   error = '';
+  isMobile = false;
 
 
   ngOnInit() {
@@ -56,12 +66,12 @@ export class NavbarComponent {
         // En cas d'erreur (par exemple, photo non trouvée), on peut utiliser une image par défaut
         (error) => {
           console.error('Erreur lors du chargement de la photo de profil:', error);
-          this.userProfileImage = '../assets/default-profile.jpg';
+          this.userProfileImage = null;
         }
       );
     } else {
       // Si l'utilisateur n'est pas connecté ou n'a pas d'ID, on affiche l'image par défaut
-      this.userProfileImage = '../assets/default-profile.jpg';
+      this.userProfileImage = null;
     }
   }
   
@@ -154,6 +164,12 @@ export class NavbarComponent {
     }
   }
 
+  //   toggleSidenav() {
+  //   if (this.sidenav) {
+  //     this.sidenav.toggle();
+  //   }
+  // }
+
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
@@ -228,6 +244,8 @@ const membre = await this.memberService.getMembreByUserId(userId).toPromise();
     console.error(err);
   }
 }
+
+
 
 
 }

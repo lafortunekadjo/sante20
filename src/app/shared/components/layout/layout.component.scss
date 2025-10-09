@@ -1,189 +1,332 @@
-/* Styles for the main sidenav container */
-.my-app-sidenav-container {
-  height: 100vh;
+// layout.component.scss
+
+// Variables
+$sidebar-width: 260px;
+$navbar-height: 64px;
+$navbar-height-mobile: 56px;
+$primary-color: #1976d2;
+$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Container principal
+.app-container {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8f9fa;
 }
 
-/* Styles for the toolbar */
-.toolbar {
-  background-color: #1976d2;
-  color: white;
-  height: 64px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 0 16px;
+// Layout principal (sidebar + contenu)
+.main-layout {
   display: flex;
-  align-items: center;
+  margin-top: $navbar-height;
+  min-height: calc(100vh - #{$navbar-height});
+  position: relative;
+
+  @media (max-width: 640px) {
+    margin-top: $navbar-height-mobile;
+    min-height: calc(100vh - #{$navbar-height-mobile});
+  }
+}
+
+// Bouton toggle sidebar (mobile)
+.sidebar-toggle {
   position: fixed;
-  top: 0;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background-color: $primary-color;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background-color: darken($primary-color, 10%);
+    transform: scale(1.1);
+  }
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+// Overlay pour mobile
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: $navbar-height-mobile;
   left: 0;
   right: 0;
-  z-index: 50;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  @media (max-width: 1023px) {
+    display: block;
+    pointer-events: none;
+
+    &.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+  }
 }
 
-.app-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-left: 8px;
-  letter-spacing: 0.5px;
-}
-
-.spacer {
-  flex: 1 1 auto;
-}
-
-.role-select {
-  margin-right: 16px;
-  min-width: 150px;
-}
-
-.role-select .mat-mdc-form-field {
-  font-size: 0.95rem;
-  color: white;
-}
-
-.role-select .mat-mdc-select-arrow {
-  color: white;
-}
-
-.role-panel {
-  background-color: #ffffff;
-  color: #333;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.logout-button {
-  color: white;
-  padding: 0 16px;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.logout-button:hover {
-  background-color: #e3f2fd;
-  color: #1976d2;
-}
-
-/* Styles for the sidenav itself */
-.sidenav {
-  width: 280px;
+// Sidebar
+.sidebar {
+  width: $sidebar-width;
   background-color: white;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-in-out;
-}
-
-/* Styles for the sidenav header */
-.sidenav-header {
-  background-color: #1976d2;
-  color: white;
-  padding: 16px;
-  font-size: 1.5rem;
-  font-weight: 600;
+  border-right: 1px solid #e9ecef;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  flex-direction: column;
+  position: sticky;
+  top: $navbar-height;
+  height: calc(100vh - #{$navbar-height});
+  overflow-y: auto;
+  transition: $transition;
 
-/* Styles for the navigation list items */
-mat-nav-list a {
-  color: #333;
-  padding: 12px 16px;
-  transition: background-color 0.2s;
-}
-
-mat-nav-list a:hover {
-  background-color: #f0f0f0;
-}
-
-mat-nav-list a.active {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border-left: 4px solid #1976d2;
-  font-weight: bold;
-}
-
-mat-nav-list mat-icon {
-  margin-right: 16px;
-  color: #757575;
-}
-
-mat-nav-list a.active mat-icon {
-  color: #1976d2;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .toolbar {
-    padding: 0 8px;
+  // Scroll personnalisé
+  &::-webkit-scrollbar {
+    width: 6px;
   }
 
-  .app-title {
-    font-size: 1.2rem;
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
   }
 
-  .role-select {
-    min-width: 120px;
-    margin-right: 8px;
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #a1a1a1;
+    }
   }
 
-  .role-select .mat-mdc-form-field {
-    font-size: 0.9rem;
-  }
-
-  .logout-button {
-    padding: 0 8px;
-    font-size: 0.9rem;
-  }
-
-  .sidenav {
-    width: 100%;
+  // Mode mobile
+  @media (max-width: 1023px) {
     position: fixed;
-    top: 64px;
+    top: $navbar-height-mobile;
     left: 0;
     bottom: 0;
+    z-index: 999;
     transform: translateX(-100%);
+    box-shadow: none;
+
+    &.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
   }
 
-  .sidenav.opened {
-    transform: translateX(0);
-  }
-
-  mat-sidenav-content {
-    margin-left: 0 !important;
+  @media (max-width: 640px) {
+    top: $navbar-height-mobile;
+    height: calc(100vh - #{$navbar-height-mobile});
   }
 }
 
-@media (max-width: 480px) {
-  .role-select {
-    display: none; /* Hide role select on very small screens */
-  }
-
-  .logout-button {
-    padding: 0 4px;
-    font-size: 0.85rem;
-  }
-}
-.container {
+// Header sidebar
+.sidebar-header {
   display: flex;
-  align-items: center; /* Aligne les éléments verticalement au centre */
-  justify-content: flex-start; /* Aligne les éléments horizontalement au début */
-  padding: 6px; /* Ajoute un peu de marge intérieure pour l'esthétique */
-  background-color: #1976d2; /* Exemple de couleur de fond, à ajuster */
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  background: linear-gradient(135deg, $primary-color 0%, #1565c0 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
 }
 
-/* Assure que la barre de navigation occupe l'espace restant */
-app-navbar {
-  flex-grow: 1; 
+// Navigation
+.sidebar-nav {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
 }
 
-/* Style de base pour les boutons Material */
-.mr-2 {
-  margin-right: 8px;
+// Section de navigation
+.nav-section {
+  margin-bottom: 8px;
+
+  .section-title {
+    padding: 12px 12px 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+  }
+
+  .section-divider {
+    height: 1px;
+    background-color: #e9ecef;
+    margin: 12px 0;
+  }
 }
 
-.login-logo {
-  display: block;
-  margin: 0 auto 1.5rem auto;
+// Items de navigation
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 2px 0;
+  border-radius: 8px;
+  color: #495057;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 450;
+  transition: $transition;
+  cursor: pointer;
+  position: relative;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #6c757d;
+    transition: $transition;
+  }
+
+  span {
+    flex: 1;
+    transition: $transition;
+  }
+
+  // Hover
+  &:hover:not(.active) {
+    background-color: #f8f9fa;
+    color: #212529;
+
+    mat-icon {
+      color: $primary-color;
+      transform: translateX(4px);
+    }
+
+    span {
+      font-weight: 500;
+    }
+  }
+
+  // Active
+  &.active {
+    background-color: rgba(25, 118, 210, 0.1);
+    color: $primary-color;
+    font-weight: 600;
+
+    mat-icon {
+      color: $primary-color;
+      transform: scale(1.1);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 60%;
+      background-color: $primary-color;
+      border-radius: 0 4px 4px 0;
+    }
+  }
+
+  // Focus
+  &:focus-visible {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
 }
 
+// Footer sidebar
+.sidebar-footer {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #6c757d;
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
 
+  span {
+    display: block;
+  }
+}
+
+// Contenu principal
+.main-content {
+  flex: 1;
+  padding: 24px;
+  min-height: calc(100vh - #{$navbar-height});
+  background-color: #f8f9fa;
+  overflow-x: hidden;
+
+  @media (max-width: 1023px) {
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 640px) {
+    padding: 12px;
+    min-height: calc(100vh - #{$navbar-height-mobile});
+  }
+}
+
+// Animation d'entrée
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-content > * {
+  animation: fadeIn 0.4s ease-out;
+}
+
+// Responsive adjustments
+@media (min-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+  }
+}
+
+// Print styles
+@media print {
+  .sidebar,
+  .sidebar-toggle {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+// Amélioration accessibilité
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// États de chargement (optionnel)
+.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}

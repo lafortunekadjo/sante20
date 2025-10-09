@@ -1,183 +1,516 @@
 <div class="membres-container">
-  <h1 class="page-title">Gestion des Membres</h1>
-  <mat-card class="table-card">
-    <mat-card-header>
-      <mat-card-title class="card-title">Liste des Membres du Groupe</mat-card-title>
-      <mat-card-subtitle class="card-subtitle">Filtrez, ajoutez ou modifiez les membres ci-dessous</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p class="loading-text">Chargement des données...</p>
+  <!-- En-tête -->
+  <div class="page-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">people</mat-icon>
+      <div>
+        <h1 class="page-title">Gestion des Membres</h1>
+        <p class="page-subtitle">Gérez les membres de {{ groupe?.nom || 'votre groupe' }}</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <mat-card class="main-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">
+        <mat-icon>list</mat-icon>
+        Liste des Membres
+        <span class="member-count" *ngIf="!isLoading">({{ filteredCount }} / {{ dataSource.data.length }})</span>
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- État de chargement -->
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p class="loading-text">Chargement des membres...</p>
+      </div>
+
+      <!-- Contenu -->
       <div *ngIf="!isLoading" class="content-wrapper">
-        <div class="filter-row">
-          <span class="filter-info"><strong>Groupe actuel :</strong> {{ groupe?.nom || 'Aucun groupe' }}</span>
+        
+        <!-- Barre d'actions -->
+        <div class="action-bar">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            (click)="toggleCreateRow()"
+            class="create-btn">
+            <mat-icon>{{ showCreateRow ? 'close' : 'person_add' }}</mat-icon>
+            {{ showCreateRow ? 'Annuler' : 'Ajouter un membre' }}
+          </button>
+
+          <button 
+            mat-stroked-button 
+            (click)="showFilters = !showFilters"
+            class="filter-toggle-btn"
+            [class.active]="showFilters">
+            <mat-icon>{{ showFilters ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+            Filtres
+            <span class="filter-badge" *ngIf="activeFiltersCount > 0">{{ activeFiltersCount }}</span>
+          </button>
+
+          <div class="spacer"></div>
+
           <mat-form-field appearance="outline" class="search-field">
             <mat-label>Rechercher</mat-label>
-            <input matInput (keyup)="applyFilter($event)" placeholder="Nom, prénom, rôle..." />
-            <mat-icon matSuffix>search</mat-icon>
+            <input 
+              matInput 
+              (keyup)="applyFilter($event)" 
+              placeholder="Nom, prénom, email..."
+              #searchInput>
+            <mat-icon matPrefix>search</mat-icon>
+            <button mat-icon-button matSuffix *ngIf="searchInput.value" (click)="clearSearch(searchInput)">
+              <mat-icon>close</mat-icon>
+            </button>
           </mat-form-field>
-          <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="create-button">
-            <mat-icon>add</mat-icon> Créer un Membre
-          </button>
         </div>
-        <div *ngIf="showCreateRow" class="create-row">
-          <mat-card class="create-card">
-            <mat-card-content>
-              <div class="form-grid">
-                <mat-form-field appearance="outline" class="form-field">
+
+        <!-- Panneau de filtres -->
+        <div *ngIf="showFilters" class="filters-panel" [@slideDown]>
+          <div class="filters-header">
+            <h3>
+              <mat-icon>tune</mat-icon>
+              Filtres avancés
+            </h3>
+            <button mat-button (click)="clearAllFilters()" *ngIf="activeFiltersCount > 0">
+              <mat-icon>clear_all</mat-icon>
+              Effacer tout
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <!-- Filtre Équipe -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Équipe</mat-label>
+              <mat-select [(ngModel)]="filters.equipe" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">Toutes les équipes</mat-option>
+                <mat-option *ngFor="let equipe of equipes" [value]="equipe.id">
+                  {{ equipe.nom }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>shield</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre Statut -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Statut</mat-label>
+              <mat-select [(ngModel)]="filters.active" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">Tous</mat-option>
+                <mat-option [value]="true">Actifs</mat-option>
+                <mat-option [value]="false">Inactifs</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>verified_user</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre Sexe -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Sexe</mat-label>
+              <mat-select [(ngModel)]="filters.sexe" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">Tous</mat-option>
+                <mat-option value="masculin">Masculin</mat-option>
+                <mat-option value="feminin">Féminin</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>wc</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre Rôle CO -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Rôle CO</mat-label>
+              <mat-select [(ngModel)]="filters.roleCO" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">Tous les rôles</mat-option>
+                <mat-option value="PRESI">Président</mat-option>
+                <mat-option value="CAISSIER">Caissier</mat-option>
+                <mat-option value="COMM">Communicateur</mat-option>
+                <mat-option value="RESP">Responsable</mat-option>
+                <mat-option value="">Sans rôle</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>badge</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre Cotisation -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Cotisation</mat-label>
+              <mat-select [(ngModel)]="filters.cotisation" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">Tous</mat-option>
+                <mat-option [value]="true">Payée</mat-option>
+                <mat-option [value]="false">Non payée</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>payment</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre Poste -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Poste</mat-label>
+              <input matInput [(ngModel)]="filters.poste" (keyup)="applyFilters()" placeholder="Ex: Attaquant">
+              <mat-icon matPrefix>sports</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="filters-summary" *ngIf="activeFiltersCount > 0">
+            <span class="summary-text">
+              <mat-icon>info</mat-icon>
+              {{ activeFiltersCount }} filtre(s) actif(s) • {{ filteredCount }} résultat(s)
+            </span>
+          </div>
+        </div>
+
+        <!-- Formulaire de création -->
+        <div *ngIf="showCreateRow" class="create-form" [@slideDown]>
+          <div class="form-header">
+            <mat-icon>person_add</mat-icon>
+            <h3>Nouveau membre</h3>
+          </div>
+
+          <div class="form-grid">
+            <!-- Informations de base -->
+            <div class="form-section">
+              <h4 class="section-title">Informations personnelles</h4>
+              
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Nom *</mat-label>
+                <input matInput [(ngModel)]="newMembre.nom" required>
+                <mat-icon matPrefix>person</mat-icon>
+                <mat-error>Le nom est requis</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Prénom *</mat-label>
+                <input matInput [(ngModel)]="newMembre.prenom" required>
+                <mat-icon matPrefix>person</mat-icon>
+                <mat-error>Le prénom est requis</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Sexe *</mat-label>
+                <mat-select [(ngModel)]="newMembre.sexe" required>
+                  <mat-option value="masculin">Masculin</mat-option>
+                  <mat-option value="feminin">Féminin</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>wc</mat-icon>
+                <mat-error>Le sexe est requis</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Date de naissance</mat-label>
+                <input matInput [matDatepicker]="picker" [(ngModel)]="newMembre.dateNaissance">
+                <mat-datepicker-toggle matIconPrefix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" [(ngModel)]="newMembre.email">
+                <mat-icon matPrefix>email</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [(ngModel)]="newMembre.tel">
+                <mat-icon matPrefix>phone</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Informations sportives -->
+            <div class="form-section">
+              <h4 class="section-title">Informations sportives</h4>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Poste</mat-label>
+                <input matInput [(ngModel)]="newMembre.poste">
+                <mat-icon matPrefix>sports_soccer</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Équipe</mat-label>
+                <mat-select [(ngModel)]="newMembre.equipe" [compareWith]="compareEquipes">
+                  <mat-option [value]="null">Aucune équipe</mat-option>
+                  <mat-option *ngFor="let equipe of equipes" [value]="equipe">
+                    {{ equipe.nom }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>shield</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Rôle CO</mat-label>
+                <mat-select [(ngModel)]="newMembre.roleCO">
+                  <mat-option value="">Aucun rôle</mat-option>
+                  <mat-option value="PRESI">Président</mat-option>
+                  <mat-option value="CAISSIER">Caissier</mat-option>
+                  <mat-option value="COMM">Communicateur</mat-option>
+                  <mat-option value="RESP">Responsable</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>badge</mat-icon>
+              </mat-form-field>
+
+              <div class="checkbox-group">
+                <mat-checkbox [(ngModel)]="newMembre.cotisationPayee">
+                  Cotisation payée
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="newMembre.active">
+                  Membre actif
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="newMembre.assurance">
+                  Assurance
+                </mat-checkbox>
+              </div>
+            </div>
+
+            <!-- Compte utilisateur -->
+            <div class="form-section full-width">
+              <h4 class="section-title">Compte utilisateur</h4>
+
+              <mat-checkbox 
+                [(ngModel)]="createUserForMembre" 
+                (ngModelChange)="toggleUserCreation()"
+                class="user-checkbox">
+                Créer automatiquement un compte utilisateur
+              </mat-checkbox>
+
+              <mat-form-field 
+                *ngIf="!createUserForMembre" 
+                appearance="outline" 
+                class="form-field">
+                <mat-label>Utilisateur existant</mat-label>
+                <mat-select [(ngModel)]="newMembre.user">
+                  <mat-option [value]="null">Aucun utilisateur</mat-option>
+                  <mat-option *ngFor="let user of users" [value]="user">
+                    {{ user.username }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>account_circle</mat-icon>
+              </mat-form-field>
+
+              <div *ngIf="createUserForMembre" class="user-info">
+                <mat-icon>info</mat-icon>
+                <p>Un compte sera créé automatiquement avec le nom d'utilisateur : <strong>{{ newMembre.nom?.toLowerCase() }}_{{ newMembre.prenom?.toLowerCase() }}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button 
+              mat-raised-button 
+              color="primary" 
+              (click)="saveMembre()" 
+              [disabled]="!isCreateFormValid()">
+              <mat-icon>save</mat-icon>
+              Enregistrer
+            </button>
+            <button 
+              mat-stroked-button 
+              (click)="cancelCreate()">
+              <mat-icon>close</mat-icon>
+              Annuler
+            </button>
+          </div>
+        </div>
+
+        <!-- Liste des membres -->
+        <div class="members-list">
+          <mat-expansion-panel 
+            *ngFor="let membre of paginatedMembers; let i = index" 
+            [expanded]="expandedRowIndex === i"
+            (opened)="expandPanel(i)"
+            (closed)="collapsePanel(i)"
+            class="member-panel">
+            
+            <mat-expansion-panel-header>
+              <mat-panel-title class="panel-title">
+                <div class="member-avatar" [style.background-color]="getAvatarColor(i)">
+                  {{ getInitials(membre.prenom, membre.nom) }}
+                </div>
+                <div class="member-basic-info">
+                  <span class="member-name">{{ membre.nom }} {{ membre.prenom }}</span>
+                  <span class="member-meta">
+                    <mat-icon class="meta-icon">shield</mat-icon>
+                    {{ membre.equipe?.nom || 'Sans équipe' }}
+                  </span>
+                </div>
+              </mat-panel-title>
+              
+              <mat-panel-description class="panel-description">
+                <span class="status-badge" [class.active]="membre.active">
+                  <mat-icon>{{ membre.active ? 'check_circle' : 'cancel' }}</mat-icon>
+                  {{ membre.active ? 'Actif' : 'Inactif' }}
+                </span>
+                <span class="cotisation-badge" [class.paid]="membre.cotisationPayee">
+                  <mat-icon>{{ membre.cotisationPayee ? 'paid' : 'money_off' }}</mat-icon>
+                  {{ membre.cotisationPayee ? 'Payé' : 'Non payé' }}
+                </span>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <!-- Détails du membre -->
+            <div class="panel-content">
+              <div class="detail-grid">
+                <!-- Nom et Prénom modifiables -->
+                <mat-form-field appearance="outline">
                   <mat-label>Nom</mat-label>
-                  <input matInput [(ngModel)]="newMembre.nom" required />
-                  <mat-error *ngIf="!newMembre.nom">Le nom est requis</mat-error>
+                  <input matInput [(ngModel)]="editMembre.nom" [disabled]="!editingRows[getGlobalIndex(i)]">
+                  <mat-icon matPrefix>person</mat-icon>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
                   <mat-label>Prénom</mat-label>
-                  <input matInput [(ngModel)]="newMembre.prenom" required />
-                  <mat-error *ngIf="!newMembre.prenom">Le prénom est requis</mat-error>
+                  <input matInput [(ngModel)]="editMembre.prenom" [disabled]="!editingRows[getGlobalIndex(i)]">
+                  <mat-icon matPrefix>person</mat-icon>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
-                  <mat-label>Date de naissance</mat-label>
-                  <input matInput [matDatepicker]="picker" [(ngModel)]="newMembre.dateNaissance" required />
-                  <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                  <mat-datepicker #picker></mat-datepicker>
-                  <mat-error *ngIf="!isDateValid(newMembre.dateNaissance)">Date invalide</mat-error>
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
                   <mat-label>Poste</mat-label>
-                  <input matInput [(ngModel)]="newMembre.poste" />
+                  <input matInput [(ngModel)]="editMembre.poste" [disabled]="!editingRows[getGlobalIndex(i)]">
+                  <mat-icon matPrefix>sports_soccer</mat-icon>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
                   <mat-label>Sexe</mat-label>
-                  <mat-select [(ngModel)]="newMembre.sexe" required>
-                    <mat-option value="feminin">Féminin</mat-option>
+                  <mat-select [(ngModel)]="editMembre.sexe" [disabled]="!editingRows[getGlobalIndex(i)]">
                     <mat-option value="masculin">Masculin</mat-option>
+                    <mat-option value="feminin">Féminin</mat-option>
                   </mat-select>
-                  <mat-error *ngIf="!newMembre.sexe">Le sexe est requis</mat-error>
+                  <mat-icon matPrefix>wc</mat-icon>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
                   <mat-label>Email</mat-label>
-                  <input matInput type="email" [(ngModel)]="newMembre.email" />
+                  <input matInput type="email" [(ngModel)]="editMembre.email" [disabled]="!editingRows[getGlobalIndex(i)]">
+                  <mat-icon matPrefix>email</mat-icon>
                 </mat-form-field>
-                <mat-checkbox class="form-field" [(ngModel)]="newMembre.cotisationPayee">Cotisation payée</mat-checkbox>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Téléphone</mat-label>
+                  <input matInput [(ngModel)]="editMembre.tel" [disabled]="!editingRows[getGlobalIndex(i)]">
+                  <mat-icon matPrefix>phone</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
                   <mat-label>Rôle CO</mat-label>
-                  <mat-select [(ngModel)]="newMembre.roleCO">
+                  <mat-select [(ngModel)]="editMembre.roleCO" [disabled]="!editingRows[getGlobalIndex(i)]">
+                    <mat-option value="">Aucun</mat-option>
                     <mat-option value="PRESI">Président</mat-option>
                     <mat-option value="CAISSIER">Caissier</mat-option>
                     <mat-option value="COMM">Communicateur</mat-option>
                     <mat-option value="RESP">Responsable</mat-option>
                   </mat-select>
+                  <mat-icon matPrefix>badge</mat-icon>
                 </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field">
+
+                <mat-form-field appearance="outline">
                   <mat-label>Équipe</mat-label>
-                  <mat-select [(ngModel)]="newMembre.equipe" [compareWith]="compareEquipes">
+                  <mat-select [(ngModel)]="editMembre.equipe" [compareWith]="compareEquipes" [disabled]="!editingRows[getGlobalIndex(i)]">
                     <mat-option [value]="null">Aucune équipe</mat-option>
-                    <mat-option *ngFor="let equipe of equipes" [value]="equipe">{{ equipe.nom }}</mat-option>
+                    <mat-option *ngFor="let equipe of equipes" [value]="equipe">
+                      {{ equipe.nom }}
+                    </mat-option>
                   </mat-select>
+                  <mat-icon matPrefix>shield</mat-icon>
                 </mat-form-field>
-                <div class="form-info">
-                  <strong>Groupe :</strong> {{ groupe?.nom || 'Aucun groupe' }}
-                  <input type="hidden" [(ngModel)]="newMembre.groupe" name="groupe" />
+
+                <!-- Statistiques (NON modifiables) -->
+                <div class="stats-section full-width">
+                  <h4 class="section-title">Statistiques (lecture seule)</h4>
+                  <div class="stats-grid">
+                    <div class="stat-card">
+                      <mat-icon class="stat-icon">sports_soccer</mat-icon>
+                      <div class="stat-content">
+                        <span class="stat-label">Buts</span>
+                        <span class="stat-value">{{ membre.buts || 0 }}</span>
+                      </div>
+                    </div>
+
+                    <div class="stat-card">
+                      <mat-icon class="stat-icon">arrow_forward</mat-icon>
+                      <div class="stat-content">
+                        <span class="stat-label">Passes</span>
+                        <span class="stat-value">{{ membre.passes || 0 }}</span>
+                      </div>
+                    </div>
+
+                    <div class="stat-card">
+                      <mat-icon class="stat-icon">warning</mat-icon>
+                      <div class="stat-content">
+                        <span class="stat-label">Cartons</span>
+                        <span class="stat-value">{{ membre.cartons || 0 }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <mat-checkbox class="form-field" [(ngModel)]="createUserForMembre" (ngModelChange)="toggleUserCreation()">
-                  Créer un utilisateur associé
-                </mat-checkbox>
-                <mat-form-field appearance="outline" class="form-field" *ngIf="!createUserForMembre">
-                  <mat-label>Utilisateur</mat-label>
-                  <mat-select [(ngModel)]="newMembre.user" required>
-                    <mat-option [value]="null">Aucun utilisateur</mat-option>
-                    <mat-option *ngFor="let user of users" [value]="user">{{ user.username }}</mat-option>
-                  </mat-select>
-                  <mat-error *ngIf="!newMembre.user?.id && !createUserForMembre">L'utilisateur est requis</mat-error>
-                </mat-form-field>
-                <mat-checkbox class="form-field" [(ngModel)]="newMembre.active">Actif</mat-checkbox>
-                <div class="action-buttons">
-                  <button mat-raised-button color="primary" (click)="saveMembre()" [disabled]="!isCreateFormValid()" class="save-button">
-                    Enregistrer
-                  </button>
-                  <button mat-raised-button color="warn" (click)="cancelCreate()" class="cancel-button">Annuler</button>
+
+                <!-- Checkboxes -->
+                <div class="checkbox-group full-width">
+                  <mat-checkbox [(ngModel)]="editMembre.cotisationPayee" disabled>
+                    Cotisation payée (non modifiable)
+                  </mat-checkbox>
+                  <mat-checkbox [(ngModel)]="editMembre.active" [disabled]="!editingRows[getGlobalIndex(i)]">
+                    Membre actif
+                  </mat-checkbox>
+                  <mat-checkbox [(ngModel)]="editMembre.assurance" [disabled]="!editingRows[getGlobalIndex(i)]">
+                    Assurance
+                  </mat-checkbox>
                 </div>
               </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-        <div class="list-wrapper">
-          <mat-list *ngIf="!isLoading" class="membre-list">
-            <mat-expansion-panel *ngFor="let membre of dataSource.data; let i = index" [expanded]="expandedRowIndex === i" (opened)="expandPanel(i)" (closed)="collapsePanel(i)">
-              <mat-expansion-panel-header>
-                <mat-panel-title>
-                  {{ membre.nom }} {{ membre.prenom }}
-                </mat-panel-title>
-                <mat-panel-description>
-                  Poste: {{ membre.poste || '-' }} | Actif: {{ membre.active ? 'Oui' : 'Non' }}
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-              <div class="panel-content">
-                <div class="detail-grid">
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Poste</mat-label>
-                    <input matInput [(ngModel)]="editMembre.poste" [disabled]="!editingRows[i]" (blur)="saveEdit(i)" (keyup.enter)="saveEdit(i)" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Sexe</mat-label>
-                    <mat-select [(ngModel)]="editMembre.sexe" [disabled]="!editingRows[i]" (selectionChange)="saveEdit(i)">
-                      <mat-option value="feminin">Féminin</mat-option>
-                      <mat-option value="masculin">Masculin</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Rôle CO</mat-label>
-                    <mat-select [(ngModel)]="editMembre.roleCO" [disabled]="!editingRows[i]" (selectionChange)="saveEdit(i)">
-                      <mat-option value="PRESI">Président</mat-option>
-                      <mat-option value="CAISSIER">Caissier</mat-option>
-                      <mat-option value="COMM">Communicateur</mat-option>
-                      <mat-option value="RESP">Responsable</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Équipe</mat-label>
-                    <mat-select [(ngModel)]="editMembre.equipe" [compareWith]="compareEquipes" [disabled]="!editingRows[i]" (selectionChange)="saveEdit(i)">
-                      <mat-option [value]="null">Aucune équipe</mat-option>
-                      <mat-option *ngFor="let equipe of equipes" [value]="equipe">{{ equipe.nom }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-checkbox class="detail-field" [(ngModel)]="editMembre.active" [disabled]="!editingRows[i]" (change)="saveEdit(i)">Actif</mat-checkbox>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Buts</mat-label>
-                    <input matInput type="number" [(ngModel)]="editMembre.buts" [disabled]="!editingRows[i]" (blur)="saveEdit(i)" (keyup.enter)="saveEdit(i)" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Passes</mat-label>
-                    <input matInput type="number" [(ngModel)]="editMembre.passes" [disabled]="!editingRows[i]" (blur)="saveEdit(i)" (keyup.enter)="saveEdit(i)" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="detail-field">
-                    <mat-label>Cartons</mat-label>
-                    <input matInput type="number" [(ngModel)]="editMembre.cartons" [disabled]="!editingRows[i]" (blur)="saveEdit(i)" (keyup.enter)="saveEdit(i)" />
-                  </mat-form-field>
-                </div>
-                <div class="action-buttons">
-                  <button mat-raised-button color="primary" (click)="editRow(i, membre)" *ngIf="!editingRows[i]" title="Modifier">
+
+              <!-- Loading indicator -->
+              <div *ngIf="isSaving" class="saving-overlay">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Enregistrement en cours...</p>
+              </div>
+
+              <!-- Actions -->
+              <div class="detail-actions">
+                <ng-container *ngIf="!editingRows[getGlobalIndex(i)]">
+                  <button mat-raised-button color="primary" (click)="editRow(i, membre)">
                     <mat-icon>edit</mat-icon>
+                    Modifier
                   </button>
-                  <button mat-raised-button color="primary" (click)="saveEdit(i)" *ngIf="editingRows[i]" title="Enregistrer" [disabled]="!isEditFormValid()">
-                    <mat-icon>save</mat-icon>
-                  </button>
-                  <button mat-raised-button color="warn" (click)="cancelEdit(i)" *ngIf="editingRows[i]" title="Annuler">
-                    <mat-icon>cancel</mat-icon>
-                  </button>
-                  <button mat-raised-button color="accent" (click)="openToggleActiveDialog(membre)" title="{{ membre.active ? 'Désactiver' : 'Activer' }}">
+                  <button mat-stroked-button color="accent" (click)="openToggleActiveDialog(membre)">
                     <mat-icon>{{ membre.active ? 'block' : 'check_circle' }}</mat-icon>
+                    {{ membre.active ? 'Désactiver' : 'Activer' }}
                   </button>
-                  <button mat-raised-button color="warn" (click)="openDeleteDialog(membre)" title="Supprimer">
+                  <button mat-stroked-button color="warn" (click)="openDeleteDialog(membre)">
                     <mat-icon>delete</mat-icon>
+                    Supprimer
                   </button>
-                </div>
+                </ng-container>
+
+                <ng-container *ngIf="editingRows[getGlobalIndex(i)]">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    (click)="saveEdit(i)" 
+                    [disabled]="!isEditFormValid() || isSaving">
+                    <mat-spinner *ngIf="isSaving" diameter="20" class="button-spinner"></mat-spinner>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
+                  </button>
+                  <button mat-stroked-button (click)="cancelEdit(i)" [disabled]="isSaving">
+                    <mat-icon>close</mat-icon>
+                    Annuler
+                  </button>
+                </ng-container>
               </div>
-            </mat-expansion-panel>
-          </mat-list>
+            </div>
+          </mat-expansion-panel>
+
+          <!-- État vide -->
+          <div *ngIf="paginatedMembers.length === 0" class="empty-state">
+            <mat-icon>person_off</mat-icon>
+            <h3>Aucun membre trouvé</h3>
+            <p>{{ searchInput.value || activeFiltersCount > 0 ? 'Essayez de modifier vos filtres' : 'Ajoutez votre premier membre' }}</p>
+          </div>
         </div>
-        <mat-paginator *ngIf="!isLoading" [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons class="paginator"></mat-paginator>
+
+        <!-- Pagination -->
+        <mat-paginator 
+          [length]="filteredCount"
+          [pageSize]="pageSize"
+          [pageSizeOptions]="[5, 10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
       </div>
     </mat-card-content>
   </mat-card>

@@ -7,10 +7,11 @@ import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { NavbarComponent } from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, MatSidenavModule, MatToolbarModule, MatListModule, MatIconModule, MatButtonModule, RouterModule],
+  imports: [CommonModule,NavbarComponent, MatSidenavModule, MatToolbarModule, MatListModule, MatIconModule, MatButtonModule, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
@@ -19,6 +20,7 @@ export class SidebarComponent implements AfterViewInit{
   isAdmin: boolean = false;
   isResponsable: boolean = false;
   isSidenavOpen: boolean = true;
+  isMobile = false;
 
   constructor(private authService: AuthService, private cdr: ChangeDetectorRef) {
     const roles = authService.getRoles() || [];
@@ -34,6 +36,12 @@ export class SidebarComponent implements AfterViewInit{
   toggleSidenav(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
     this.sidenav.toggle();
+  }
+
+    closeSidenav() {
+    if (this.sidenav) {
+      this.sidenav.close();
+    }
   }
 
 }

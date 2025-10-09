@@ -23,6 +23,8 @@ import { ConfirmationDialogComponent } from '../../../../shared/components/confi
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { trigger, transition, style, animate } from '@angular/animations';
+import { EquipeMembersDialogComponent } from '../equipe-members-dialog/equipe-members-dialog.component';
 
 @Component({
   selector: 'app-paiement-sanction-form',
@@ -40,6 +42,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatSortModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    MatToolbarModule
+  ],
+   animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-20px)', maxHeight: 0 }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)', maxHeight: '500px' }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-in', style({ opacity: 0, transform: 'translateY(-20px)', maxHeight: 0 }))
+      ])
+    ])
   ],
   templateUrl: './paiement-sanction-form.component.html',
   styleUrl: './paiement-sanction-form.component.scss'
@@ -159,5 +173,25 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
       error: (err) => console.error('Erreur lors de la suppression de l\'équipe:', err)
     });
   }
+
+  // Ajoutez cette méthode pour le filtre de recherche
+applyFilter(event: Event) {
+  const filterValue = (event.target as HTMLInputElement).value;
+  this.dataSource.filter = filterValue.trim().toLowerCase();
+
+  if (this.dataSource.paginator) {
+    this.dataSource.paginator.firstPage();
+  }
+}
+
+// Ajoutez cette méthode pour afficher les membres
+viewMembers(equipe: Equipe): void {
+  const dialogRef = this.dialog.open(EquipeMembersDialogComponent, {
+    width: '700px',
+    maxWidth: '90vw',
+    data: { equipe: equipe },
+    panelClass: 'members-dialog-container'
+  });
+}
 }
 

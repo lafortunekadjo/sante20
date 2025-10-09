@@ -1,51 +1,129 @@
-<mat-toolbar color="primary" class="toolbar">
-  
-  <span class="app-title">My2-0</span>
-  <span class="spacer"></span>
-  <mat-form-field *ngIf="roles.length > 1" class="role-select">
-    <mat-label>Rôle</mat-label>
-    <mat-select [(value)]="selectedRole" (selectionChange)="changeRole($event.value)" panelClass="role-panel">
-      <mat-option *ngFor="let role of roles" [value]="role">
-        {{ role === 'ADMIN' ? 'Administrateur' : role === 'RESPONSABLE' ? 'Responsable' : 'Membre' }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <!-- Bouton Check-in -->
-<button mat-button class="check-in-button" (click)="checkIn()" [disabled]="isChecking">
-  <mat-spinner *ngIf="isChecking" diameter="20"></mat-spinner>
-  <span *ngIf="!isChecking">Check-in</span>
-   <mat-icon>check_circle</mat-icon>
-</button>
+<mat-toolbar color="primary" class="navbar-container">
+  <div class="navbar-content">
+    <!-- Menu toggle + Logo -->
+    <div class="navbar-brand">
+      <button 
+        mat-icon-button 
+        class="menu-toggle-btn"
+        (click)="toggleMenu.emit()"
+        matTooltip="Menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="app-title">My2-0</span>
+    </div>
 
-  <button mat-button [matMenuTriggerFor]="profileMenu" class="profile-button" *ngIf="authService.isLoggedIn()">
-    <img [src]="userProfileImage || '../assets/default-profile.jpg'" class="profile-image" alt="Profil" />
-    <span class="username">{{ user?.username || 'Utilisateur' }}</span>
-  </button>
-  <mat-menu #profileMenu="matMenu" class="profile-menu">
+    <!-- Sélecteur de rôle -->
+    <div class="navbar-center">
+      <mat-form-field 
+        *ngIf="roles.length > 1" 
+        appearance="outline" 
+        class="role-select">
+        <mat-label>Rôle</mat-label>
+        <mat-select 
+          [(value)]="selectedRole" 
+          (selectionChange)="changeRole($event.value)">
+          <mat-option *ngFor="let role of roles" [value]="role">
+            <div class="role-option">
+              <mat-icon>
+                {{ role === 'ADMIN' ? 'admin_panel_settings' : role === 'RESPONSABLE' ? 'supervisor_account' : 'person' }}
+              </mat-icon>
+              <span>{{ role === 'ADMIN' ? 'Administrateur' : role === 'RESPONSABLE' ? 'Responsable' : 'Membre' }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Actions droite -->
+    <div class="navbar-actions">
+      <!-- Bouton Check-in -->
+      <button 
+        mat-mini-fab 
+        color="accent"
+        (click)="checkIn()" 
+        [disabled]="isChecking"
+        class="check-in-btn"
+        matTooltip="Check-in">
+        <mat-spinner *ngIf="isChecking" diameter="24"></mat-spinner>
+        <mat-icon *ngIf="!isChecking">check_circle</mat-icon>
+      </button>
+
+      <!-- Menu profil -->
+      <button 
+        mat-button 
+        [matMenuTriggerFor]="profileMenu" 
+        *ngIf="authService.isLoggedIn()"
+        class="profile-btn">
+        <!-- Image ou icône selon disponibilité -->
+        <div class="profile-avatar-container">
+          <img 
+            *ngIf="userProfileImage"
+            [src]="userProfileImage" 
+            class="profile-avatar" 
+            alt="Profil" />
+          <div *ngIf="!userProfileImage" class="profile-avatar-icon">
+            <mat-icon>account_circle</mat-icon>
+          </div>
+        </div>
+        <span class="profile-name">{{ user?.username || 'Utilisateur' }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+    </div>
+  </div>
+  <!-- Menu déroulant profil -->
+   <mat-menu #profileMenu="matMenu" xPosition="before">
+    <div class="profile-menu-header">
+      <!-- Image ou icône dans le header du menu -->
+      <div class="profile-menu-avatar-container">
+        <img 
+          *ngIf="userProfileImage"
+          [src]="userProfileImage" 
+          class="profile-menu-avatar" 
+          alt="Profil" />
+        <div *ngIf="!userProfileImage" class="profile-menu-avatar-icon">
+          <mat-icon>account_circle</mat-icon>
+        </div>
+      </div>
+      <div class="profile-menu-info">
+        <p class="profile-menu-name">{{ user?.username || 'Utilisateur' }}</p>
+        <p class="profile-menu-email">{{ user?.email || '' }}</p>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
     <button mat-menu-item (click)="openProfileEdit()">
       <mat-icon>edit</mat-icon>
-      Modifier le profil
+      <span>Modifier le profil</span>
     </button>
+
     <button mat-menu-item (click)="openProfileImageEdit()">
-        <mat-icon>camera_alt</mat-icon>
-        Modifier la photo
+      <mat-icon>photo_camera</mat-icon>
+      <span>Changer la photo</span>
     </button>
-        <button mat-menu-item (click)="openPasswordEdit()">
-        <mat-icon>camera_alt</mat-icon>
-        Modifier le mot de passe
+
+    <button mat-menu-item (click)="openPasswordEdit()">
+      <mat-icon>lock</mat-icon>
+      <span>Modifier le mot de passe</span>
     </button>
-    <button mat-menu-item (click)="logout()">
-      <mat-icon>exit_to_app</mat-icon>
-      Déconnexion
-    </button>
+
+    <mat-divider></mat-divider>
+
     <button mat-menu-item (click)="viewNotifications()">
       <mat-icon>notifications</mat-icon>
-      Notifications
+      <span>Notifications</span>
     </button>
+
     <button mat-menu-item (click)="viewSettings()">
       <mat-icon>settings</mat-icon>
-      Paramètres
+      <span>Paramètres</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button mat-menu-item (click)="logout()" class="logout-btn">
+      <mat-icon>exit_to_app</mat-icon>
+      <span>Déconnexion</span>
     </button>
   </mat-menu>
-   <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*">
 </mat-toolbar>

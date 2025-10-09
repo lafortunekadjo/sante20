@@ -14,6 +14,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { MatDialog } from '@angular/material/dialog';
 import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
 import { MatMenuModule } from '@angular/material/menu';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-layout',
@@ -44,8 +45,10 @@ export class LayoutComponent {
   authService: any; // Remplacez par le type correct de votre AuthService
   userProfileImage: string | null = null;
   user: any = null;
+  isMobile = false;
+  sidebarOpen = true;
 
-  constructor(authService: AuthService, private router: Router, private dialog: MatDialog) {
+  constructor(authService: AuthService, private router: Router, private dialog: MatDialog, private breakpointObserver: BreakpointObserver) {
     this.authService = authService;
     // Simuler la récupération des rôles (à remplacer par la logique réelle)
     this.roles = this.authService.getRoles() ;
@@ -57,6 +60,19 @@ export class LayoutComponent {
     console.log(this.selectedRole)
        this.navigateToRole(this.selectedRole);
     this.updateRoleVisibility();
+  }
+
+   setupResponsiveLayout() {
+    this.breakpointObserver
+      .observe([Breakpoints.Handset, Breakpoints.Tablet])
+      .subscribe(result => {
+        this.isMobile = result.matches;
+        
+        // Fermer automatiquement le sidenav sur mobile
+        if (this.isMobile && this.sidenav) {
+          this.sidenav.close();
+        }
+      });
   }
   
 
@@ -119,6 +135,26 @@ export class LayoutComponent {
     this.router.navigate(['/settings']); // Rediriger vers la page des paramètres
   }
 
+    closeSidenav() {
+    if (this.sidenav && this.isMobile) {
+      this.sidenav.close();
+    }
+  }
+
+    closeSidebar() {
+    if (this.isMobile) {
+      this.sidebarOpen = false;
+    }
+  }
+
+    onNavClick() {
+    // Fermer le sidebar sur mobile après navigation
+    this.closeSidenav();
+  }
+
+    toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
 
 
 }

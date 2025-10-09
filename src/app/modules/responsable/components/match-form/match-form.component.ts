@@ -32,6 +32,7 @@ import { Equipe } from '../../../../core/models/groupe.model copy';
 import { GeneralService } from '../../../../core/services/general.service';
 import { MediaUploadDialogComponent } from '../media-upload-dialog/media-upload-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-match-form',
@@ -52,6 +53,17 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     FormsModule,
     RouterModule,
   EquipeFilterPipe],
+  animations: [
+  trigger('slideDown', [
+    transition(':enter', [
+      style({ opacity: 0, height: 0, overflow: 'hidden' }),
+      animate('300ms ease-out', style({ opacity: 1, height: '*' }))
+    ]),
+    transition(':leave', [
+      animate('300ms ease-in', style({ opacity: 0, height: 0, overflow: 'hidden' }))
+    ])
+  ])
+],
   templateUrl: './match-form.component.html',
   styleUrl: './match-form.component.scss'
 })
@@ -540,6 +552,63 @@ isMatchMissed(match: Match): boolean {
       this.equipes = [];
     }
   }
+
+  getMatchStatusClass(match: Match): string {
+  if (this.isMatchPlayed(match)) {
+    return 'status-played';
+  } else if (this.isMatchMissed(match)) {
+    return 'status-missed';
+  } else {
+    return 'status-future';
+  }
+}
+
+getMatchStatusIcon(match: Match): string {
+  if (this.isMatchPlayed(match)) {
+    return 'check_circle';
+  } else if (this.isMatchMissed(match)) {
+    return 'cancel';
+  } else {
+    return 'schedule';
+  }
+}
+
+// Méthode pour obtenir les infos du match ${this.getMembreName(match.membreAnniversaire)}
+getMatchInfo(match: Match): string {
+  switch (match.typeMatch) {
+    case 'ANNIVERSAIRE':
+      return `Anniversaire de `;
+    case 'DUEL':
+      return match.commentaire || 'Duel';
+    case 'AMICAL':
+    case 'INTERNE':
+      return match.adversaire || 'Match interne';
+    default:
+      return match.adversaire || '';
+  }
+}
+
+// Méthode pour ouvrir le dialog des médias (version améliorée)
+openMediaDialog(match: Match): void {
+  const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
+    width: '90vw',
+    maxWidth: '900px',
+    data: { matchId: match.id },
+    panelClass: 'media-dialog-container'
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      // Recharger les données si des médias ont été uploadés
+      this.loadData();
+    }
+  });
+}
+
+// // Garde la compatibilité avec l'ancienne méthode
+// openMediaUploadDialog(match: Match): void {
+//   this.openMediaDialog(match);
+// }
 
 
 

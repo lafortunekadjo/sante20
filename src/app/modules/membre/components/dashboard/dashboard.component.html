@@ -36,7 +36,8 @@
       </form>
     </div>
   </div>
-    <!-- Loader principal -->
+  
+  <!-- Loader principal -->
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loader-content">
       <div class="spinner-container">
@@ -49,7 +50,237 @@
     </div>
   </div>
 
-  <!-- Grille principale des statistiques -->
+  <!-- NOUVELLE SECTION: Stats Mensuelles -->
+  <div class="monthly-stats-section" *ngIf="!isLoading && hasMonthlyStats()">
+    <div class="section-title">
+      <mat-icon>emoji_events</mat-icon>
+      <span>Palmarès du Mois</span>
+      <div class="title-underline"></div>
+    </div>
+
+    <!-- Sélecteur de mois -->
+    <div class="month-selector-card">
+      <form [formGroup]="monthFilterForm">
+        <mat-form-field appearance="outline" class="month-select">
+          <mat-label>Sélectionner un mois</mat-label>
+          <mat-select formControlName="selectedMonth" (selectionChange)="onMonthChange($event.value)">
+            <mat-option *ngFor="let month of stats.availableMonths" [value]="month.value">
+              {{ month.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </div>
+
+    <!-- Meilleure équipe du mois -->
+    <div class="monthly-highlight-card best-team-card">
+      <div class="highlight-header">
+        <div class="header-icon trophy-icon">
+          <mat-icon>emoji_events</mat-icon>
+        </div>
+        <div class="header-content">
+          <h2>Meilleure Équipe</h2>
+          <p class="month-label">{{ stats.monthlyStats?.monthLabel }}</p>
+        </div>
+        <div class="trophy-badge">
+          <mat-icon>workspace_premium</mat-icon>
+        </div>
+      </div>
+      
+      <div class="highlight-body">
+        <div class="team-showcase">
+          <div class="team-name-display">
+            <mat-icon class="team-icon">groups</mat-icon>
+            <h3>{{ stats.monthlyStats?.bestTeam?.teamName }}</h3>
+          </div>
+          
+          <div class="team-stats-grid">
+            <div class="stat-item victories">
+              <div class="stat-icon">
+                <mat-icon>military_tech</mat-icon>
+              </div>
+              <div class="stat-content">
+                <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.wins }}</span>
+                <span class="stat-label">Victoires</span>
+              </div>
+            </div>
+            
+            <div class="stat-item matches">
+              <div class="stat-icon">
+                <mat-icon>event</mat-icon>
+              </div>
+              <div class="stat-content">
+                <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.matchesPlayed }}</span>
+                <span class="stat-label">Matches</span>
+              </div>
+            </div>
+            
+            <div class="stat-item win-rate">
+              <div class="stat-icon">
+                <mat-icon>percent</mat-icon>
+              </div>
+              <div class="stat-content">
+                <span class="stat-value">{{ getWinRateFormatted() }}</span>
+                <span class="stat-label">Taux victoire</span>
+              </div>
+            </div>
+            
+            <div class="stat-item goals">
+              <div class="stat-icon">
+                <mat-icon>sports_soccer</mat-icon>
+              </div>
+              <div class="stat-content">
+                <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.goalsScored }}</span>
+                <span class="stat-label">Buts marqués</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="record-display">
+            <div class="record-item win">
+              <span class="record-count">{{ stats.monthlyStats?.bestTeam?.wins }}</span>
+              <span class="record-label">V</span>
+            </div>
+            <div class="record-separator">-</div>
+            <div class="record-item draw">
+              <span class="record-count">{{ stats.monthlyStats?.bestTeam?.draws }}</span>
+              <span class="record-label">N</span>
+            </div>
+            <div class="record-separator">-</div>
+            <div class="record-item loss">
+              <span class="record-count">{{ stats.monthlyStats?.bestTeam?.losses }}</span>
+              <span class="record-label">D</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meilleurs joueurs du mois -->
+    <div class="monthly-players-grid">
+      <!-- Meilleur buteur -->
+      <div class="player-award-card scorer-card">
+        <div class="award-ribbon">
+          <mat-icon>sports_soccer</mat-icon>
+        </div>
+        <div class="card-header-award">
+          <h3>Meilleur Buteur</h3>
+          <p>{{ stats.monthlyStats?.monthLabel }}</p>
+        </div>
+        <div class="card-body-award">
+          <div class="player-avatar gold">
+            <span>{{ stats.monthlyStats?.topScorer?.playerName?.charAt(0) || 'N' }}</span>
+          </div>
+          <div class="player-details">
+            <h4 class="player-name">{{ stats.monthlyStats?.topScorer?.playerName }}</h4>
+            <p class="player-team">{{ stats.monthlyStats?.topScorer?.teamName }}</p>
+          </div>
+          <div class="achievement-stats">
+            <div class="achievement-number">
+              <span class="number">{{ stats.monthlyStats?.topScorer?.goals }}</span>
+              <span class="label">Buts</span>
+            </div>
+            <div class="achievement-detail">
+              <mat-icon>event</mat-icon>
+              <span>{{ stats.monthlyStats?.topScorer?.appearances }} matches</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meilleur passeur -->
+      <div class="player-award-card assister-card">
+        <div class="award-ribbon">
+          <mat-icon>swap_horiz</mat-icon>
+        </div>
+        <div class="card-header-award">
+          <h3>Meilleur Passeur</h3>
+          <p>{{ stats.monthlyStats?.monthLabel }}</p>
+        </div>
+        <div class="card-body-award">
+          <div class="player-avatar silver">
+            <span>{{ stats.monthlyStats?.topAssister?.playerName?.charAt(0) || 'N' }}</span>
+          </div>
+          <div class="player-details">
+            <h4 class="player-name">{{ stats.monthlyStats?.topAssister?.playerName }}</h4>
+            <p class="player-team">{{ stats.monthlyStats?.topAssister?.teamName }}</p>
+          </div>
+          <div class="achievement-stats">
+            <div class="achievement-number">
+              <span class="number">{{ stats.monthlyStats?.topAssister?.assists }}</span>
+              <span class="label">Passes</span>
+            </div>
+            <div class="achievement-detail">
+              <mat-icon>event</mat-icon>
+              <span>{{ stats.monthlyStats?.topAssister?.appearances }} matches</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plus de présences -->
+      <div class="player-award-card attendance-card">
+        <div class="award-ribbon">
+          <mat-icon>verified</mat-icon>
+        </div>
+        <div class="card-header-award">
+          <h3>Plus Présent</h3>
+          <p>{{ stats.monthlyStats?.monthLabel }}</p>
+        </div>
+        <div class="card-body-award">
+          <div class="player-avatar bronze">
+            <span>{{ stats.monthlyStats?.mostAppearances?.playerName?.charAt(0) || 'N' }}</span>
+          </div>
+          <div class="player-details">
+            <h4 class="player-name">{{ stats.monthlyStats?.mostAppearances?.playerName }}</h4>
+            <p class="player-team">{{ stats.monthlyStats?.mostAppearances?.teamName }}</p>
+          </div>
+          <div class="achievement-stats">
+            <div class="achievement-number">
+              <span class="number">{{ stats.monthlyStats?.mostAppearances?.appearances }}</span>
+              <span class="label">Présences</span>
+            </div>
+            <div class="achievement-detail">
+              <mat-icon>sports_soccer</mat-icon>
+              <span>{{ stats.monthlyStats?.mostAppearances?.goals }} buts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plus d'hommes du match -->
+      <div class="player-award-card motm-card">
+        <div class="award-ribbon">
+          <mat-icon>star</mat-icon>
+        </div>
+        <div class="card-header-award">
+          <h3>Homme du Match</h3>
+          <p>{{ stats.monthlyStats?.monthLabel }}</p>
+        </div>
+        <div class="card-body-award">
+          <div class="player-avatar star">
+            <span>{{ stats.monthlyStats?.mostManOfTheMatch?.playerName?.charAt(0) || 'N' }}</span>
+          </div>
+          <div class="player-details">
+            <h4 class="player-name">{{ stats.monthlyStats?.mostManOfTheMatch?.playerName }}</h4>
+            <p class="player-team">{{ stats.monthlyStats?.mostManOfTheMatch?.teamName }}</p>
+          </div>
+          <div class="achievement-stats">
+            <div class="achievement-number">
+              <span class="number">{{ stats.monthlyStats?.mostManOfTheMatch?.manOfTheMatchCount }}</span>
+              <span class="label">Titres</span>
+            </div>
+            <div class="achievement-detail">
+              <mat-icon>sports_soccer</mat-icon>
+              <span>{{ stats.monthlyStats?.mostManOfTheMatch?.goals }}B / {{ stats.monthlyStats?.mostManOfTheMatch?.assists }}P</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grille principale des statistiques (code existant) -->
   <div class="stats-main-grid">
     <!-- Section des métriques de performance -->
     <div class="metrics-section">
@@ -139,275 +370,9 @@
       </div>
     </div>
 
-    <!-- Section des sanctions -->
-    <div class="sanctions-section">
-      <div class="section-title">
-        <mat-icon>gavel</mat-icon>
-        <span>Sanctions & Discipline</span>
-        <div class="title-underline"></div>
-      </div>
-      
-      <div class="sanctions-grid">
-        <div class="sanction-card paid-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>check_circle</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Sanctions Payées</h3>
-              <p>{{ stats.sanctions?.paid?.count || 0 }} sanctions</p>
-            </div>
-            <div class="amount-badge success">
-              {{ (stats.sanctions?.paid?.amount || 0) | number:'1.0-0' }} FCFA
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="status-indicator positive">
-              <mat-icon>verified</mat-icon>
-              <span>Situation régulière</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="sanction-card unpaid-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>warning</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Sanctions Impayées</h3>
-              <p>{{ stats.sanctions?.unpaid?.count || 0 }} en attente</p>
-            </div>
-            <div class="amount-badge alert">
-              {{ (stats.sanctions?.unpaid?.amount || 0) | number:'1.0-0' }} FCFA
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="status-indicator negative" *ngIf="(stats.sanctions?.unpaid?.count || 0) > 0">
-              <mat-icon>priority_high</mat-icon>
-              <span>Action requise</span>
-            </div>
-            <div class="status-indicator positive" *ngIf="(stats.sanctions?.unpaid?.count || 0) === 0">
-              <mat-icon>done_all</mat-icon>
-              <span>Aucune dette</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="sanction-card cards-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>report</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Cartons</h3>
-              <p>Discipline sur le terrain</p>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="cards-summary">
-              <div class="card-stat yellow">
-                <div class="card-icon">
-                  <mat-icon>crop_square</mat-icon>
-                </div>
-                <div class="card-info">
-                  <span class="card-count">{{ stats.sanctions?.yellowCards || 0 }}</span>
-                  <span class="card-label">Jaunes</span>
-                </div>
-              </div>
-              <div class="card-stat red">
-                <div class="card-icon">
-                  <mat-icon>crop_square</mat-icon>
-                </div>
-                <div class="card-info">
-                  <span class="card-count">{{ stats.sanctions?.redCards || 0 }}</span>
-                  <span class="card-label">Rouges</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section des performances et classements -->
-    <div class="performance-analytics-section">
-      <div class="analytics-grid">
-        <!-- Leaderboards -->
-        <div class="analytics-card leaderboards-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>emoji_events</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Classements</h3>
-              <p>Ma position dans l'équipe</p>
-            </div>
-            <div class="header-action">
-              <mat-icon>keyboard_arrow_right</mat-icon>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="leaderboard-tabs">
-              <mat-tab-group animationDuration="300ms" class="custom-tabs">
-                <mat-tab label="Buteurs">
-                  <div class="tab-content">
-                    <div class="leaderboard-list">
-                      <div class="leader-item compact" *ngFor="let scorer of stats.topScorers | slice:0:5; let i = index"
-                           [class.first]="i === 0" [class.second]="i === 1" [class.third]="i === 2">
-                        <div class="position-indicator">
-                          <span class="position-number">{{ i + 1 }}</span>
-                          <mat-icon *ngIf="i === 0" class="crown">military_tech</mat-icon>
-                        </div>
-                        <div class="player-info">
-                          <div class="player-name">{{ scorer.name }}</div>
-                          <div class="player-team">{{ scorer.team }}</div>
-                        </div>
-                        <div class="score-badge compact">
-                          <span>{{ scorer.goals }}</span>
-                        </div>
-                      </div>
-                      <div class="empty-state compact" *ngIf="!stats.topScorers || stats.topScorers.length === 0">
-                        <span>Aucun buteur</span>
-                      </div>
-                    </div>
-                  </div>
-                </mat-tab>
-                <mat-tab label="Passeurs">
-                  <div class="tab-content">
-                    <div class="leaderboard-list">
-                      <div class="leader-item compact" *ngFor="let assister of stats.topAssists | slice:0:5; let i = index"
-                           [class.first]="i === 0" [class.second]="i === 1" [class.third]="i === 2">
-                        <div class="position-indicator">
-                          <span class="position-number">{{ i + 1 }}</span>
-                          <mat-icon *ngIf="i === 0" class="crown">military_tech</mat-icon>
-                        </div>
-                        <div class="player-info">
-                          <div class="player-name">{{ assister.name }}</div>
-                          <div class="player-team">{{ assister.team }}</div>
-                        </div>
-                        <div class="score-badge compact">
-                          <span>{{ assister.assists }}</span>
-                        </div>
-                      </div>
-                      <div class="empty-state compact" *ngIf="!stats.topAssists || stats.topAssists.length === 0">
-                        <span>Aucun passeur</span>
-                      </div>
-                    </div>
-                  </div>
-                </mat-tab>
-                <mat-tab label="Présences">
-                  <div class="tab-content">
-                    <div class="leaderboard-list">
-                      <div class="leader-item compact" *ngFor="let attendance of stats.topAttendance | slice:0:5; let i = index"
-                           [class.first]="i === 0" [class.second]="i === 1" [class.third]="i === 2">
-                        <div class="position-indicator">
-                          <span class="position-number">{{ i + 1 }}</span>
-                          <mat-icon *ngIf="i === 0" class="crown">military_tech</mat-icon>
-                        </div>
-                        <div class="player-info">
-                          <div class="player-name">{{ attendance.name }}</div>
-                          <div class="player-team">{{ attendance.team }}</div>
-                        </div>
-                        <div class="score-badge compact">
-                          <span>{{ attendance.appearances }}</span>
-                        </div>
-                      </div>
-                      <div class="empty-state compact" *ngIf="!stats.topAttendance || stats.topAttendance.length === 0">
-                        <span>Aucune présence</span>
-                      </div>
-                    </div>
-                  </div>
-                </mat-tab>
-              </mat-tab-group>
-            </div>
-          </div>
-        </div>
-
-        <!-- Graphiques -->
-        <div class="analytics-card charts-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>bar_chart</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Visualisations</h3>
-              <p>Analyse graphique</p>
-            </div>
-            <div class="header-action">
-              <mat-icon>fullscreen</mat-icon>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="charts-container">
-              <mat-tab-group animationDuration="300ms" class="custom-tabs">
-                <mat-tab label="Sanctions">
-                  <div class="tab-content chart-tab">
-                    <div class="chart-wrapper">
-                      <canvas baseChart [data]="donutChartData" [options]="donutChartOptions" [type]="donutChartType"></canvas>
-                    </div>
-                  </div>
-                </mat-tab>
-                <mat-tab label="Évolution">
-                  <div class="tab-content chart-tab">
-                    <div class="chart-wrapper">
-                      <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
-                    </div>
-                  </div>
-                </mat-tab>
-              </mat-tab-group>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section historique -->
-    <div class="history-section">
-      <div class="section-title">
-        <mat-icon>history</mat-icon>
-        <span>Historique des Matches</span>
-        <div class="title-underline"></div>
-      </div>
-      
-      <div class="history-card">
-        <div class="card-header-modern">
-          <div class="header-icon">
-            <mat-icon>event_note</mat-icon>
-          </div>
-          <div class="header-content">
-            <h3>Matches Récents</h3>
-            <p>Dernières performances</p>
-          </div>
-          <div class="stats-bubble">
-            <span>{{ stats.recentMatches?.length || 0 }}</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="matches-timeline">
-            <div class="timeline-item" *ngFor="let match of stats.recentMatches; let isLast = last">
-              <div class="timeline-marker">
-                <mat-icon>sports_soccer</mat-icon>
-              </div>
-              <div class="timeline-content">
-                <div class="match-date">
-                  {{ match.date | date:'EEEE d MMM' }}
-                </div>
-                <div class="match-opponent">vs {{ match.opponent }}</div>
-                <div class="match-result">
-                  <span class="result-badge">Joué</span>
-                </div>
-              </div>
-              <div class="timeline-line" *ngIf="!isLast"></div>
-            </div>
-            <div class="empty-timeline" *ngIf="!stats.recentMatches || stats.recentMatches.length === 0">
-              <mat-icon>event_busy</mat-icon>
-              <span>Aucun match récent</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Reste du code existant: sections sanctions, performances, historique... -->
+    <!-- (Gardez tout le code existant des autres sections) -->
+    
   </div>
 
   <!-- Footer -->
