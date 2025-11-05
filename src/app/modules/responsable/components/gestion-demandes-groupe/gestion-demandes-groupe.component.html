@@ -1,0 +1,597 @@
+<!-- src/app/modules/responsable/components/gestion-demandes-groupe/gestion-demandes-groupe.component.html -->
+
+<div class="gestion-demandes-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <button mat-icon-button (click)="retourGroupe()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="header-title">
+        <h1>{{ 'demands.management' | translate }}</h1>
+        <p class="subtitle" *ngIf="groupe">{{ groupe.nom }}</p>
+      </div>
+      <button 
+        mat-stroked-button 
+        (click)="exporterDemandes()"
+        class="export-button">
+        <mat-icon>download</mat-icon>
+        {{ 'common.export' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>{{ 'common.loading' | translate }}...</p>
+  </div>
+
+  <!-- Content avec onglets -->
+  <div *ngIf="!isLoading" class="content">
+    
+    <mat-tab-group [(selectedIndex)]="activeTab" class="demands-tabs">
+      
+      <!-- ==================== ONGLET 1 : DEMANDES D'ADHÉSION ==================== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>person_add</mat-icon>
+          <span>{{ 'demands.membership' | translate }}</span>
+          <span class="tab-badge" *ngIf="getCountAdhesionByStatus('EN_ATTENTE') > 0">
+            {{ getCountAdhesionByStatus('EN_ATTENTE') }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Stats Adhésion -->
+          <div class="stats-container">
+            <div class="stat-card">
+              <mat-icon>inbox</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountAdhesionByStatus('TOUS') }}</span>
+                <span class="stat-label">{{ 'demands.total' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card pending">
+              <mat-icon>hourglass_empty</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountAdhesionByStatus('EN_ATTENTE') }}</span>
+                <span class="stat-label">{{ 'demands.pending' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card approved">
+              <mat-icon>check_circle</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountAdhesionByStatus('ACCEPTE') }}</span>
+                <span class="stat-label">{{ 'demands.accepted' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card rejected">
+              <mat-icon>cancel</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountAdhesionByStatus('REFUSE') }}</span>
+                <span class="stat-label">{{ 'demands.rejected' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtres Adhésion -->
+          <div class="filters-container">
+            <div class="filter-chips">
+              <mat-chip 
+                [class.active]="filtreAdhesion === 'TOUS'"
+                (click)="filtreAdhesion = 'TOUS'">
+                {{ 'demands.all' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreAdhesion === 'EN_ATTENTE'"
+                (click)="filtreAdhesion = 'EN_ATTENTE'">
+                {{ 'demands.pending' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreAdhesion === 'ACCEPTE'"
+                (click)="filtreAdhesion = 'ACCEPTE'">
+                {{ 'demands.accepted' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreAdhesion === 'REFUSE'"
+                (click)="filtreAdhesion = 'REFUSE'">
+                {{ 'demands.rejected' | translate }}
+              </mat-chip>
+            </div>
+          </div>
+
+          <!-- Liste des demandes d'adhésion -->
+          <div class="demandes-list" *ngIf="demandesAdhesionFiltrees.length > 0">
+            <mat-card class="demande-card" *ngFor="let demande of demandesAdhesionFiltrees">
+              
+              <div class="demande-header">
+                <div class="candidat-info">
+                  <div class="avatar-container">
+                    <img 
+                       *ngIf="demande.candidat?.photoUrl"
+                      [src]="demande.candidat?.photoUrl"
+                      class="candidat-avatar">
+                    <div *ngIf="!demande.candidat?.photoUrl" class="candidat-avatar-icon">
+                      <mat-icon>account_circle</mat-icon>
+                    </div>
+                  </div>
+                  <div class="candidat-details">
+                    <h3 class="candidat-nom">
+                      {{ demande.candidat?.prenom }} {{ demande.candidat?.nom }}
+                    </h3>
+                    <p class="candidat-email">{{ demande.candidat?.email }}</p>
+                    <p class="date-demande">
+                      <mat-icon>calendar_today</mat-icon>
+                      {{ demande.dateCreation | date:'dd/MM/yyyy à HH:mm' }}
+                    </p>
+                  </div>
+                </div>
+                
+                <mat-chip class="statut-chip" [class]="'statut-' + demande.statut.toLowerCase()">
+                  <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
+                  {{ getStatutLabel(demande.statut) }}
+                </mat-chip>
+              </div>
+
+              <mat-card-content>
+                <!-- Réponses au questionnaire -->
+                <mat-accordion *ngIf="demande.reponsesDetaillees && demande.reponsesDetaillees.length > 0">
+                  <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>
+                        <mat-icon>question_answer</mat-icon>
+                        {{ 'demands.questionnaire' | translate }} ({{ demande.reponsesDetaillees.length }})
+                      </mat-panel-title>
+                    </mat-expansion-panel-header>
+
+                    <div class="reponses-list">
+                      <div class="reponse-item" *ngFor="let reponse of demande.reponsesDetaillees; let i = index">
+                        <div class="reponse-header">
+                          <mat-icon class="type-icon">{{ getTypeChampIcon(reponse.typeChamp) }}</mat-icon>
+                          <span class="question-number">{{ i + 1 }}.</span>
+                          <span class="question-text">{{ reponse.texteQuestion }}</span>
+                        </div>
+                        <div class="reponse-content">
+                          <mat-icon>subdirectory_arrow_right</mat-icon>
+                          <span>{{ reponse.reponse || '(Pas de réponse)' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+
+                <div class="no-reponses" *ngIf="!demande.reponsesDetaillees || demande.reponsesDetaillees.length === 0">
+                  <mat-icon>info</mat-icon>
+                  <p>{{ 'demands.noQuestionnaire' | translate }}</p>
+                </div>
+
+                <div class="traitement-info" *ngIf="demande.dateReponse && demande.statut !== 'EN_ATTENTE'">
+                  <mat-icon>event_available</mat-icon>
+                  <span>
+                    {{ 'demands.processedOn' | translate }} {{ demande.dateReponse | date:'dd/MM/yyyy à HH:mm' }}
+                  </span>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <button 
+                  mat-button 
+                  (click)="voirProfilCandidat(demande.candidat!.id)"
+                  color="primary"
+                  *ngIf="demande.candidat">
+                  <mat-icon>person</mat-icon>
+                  {{ 'demands.viewProfile' | translate }}
+                </button>
+
+                <div class="action-buttons" *ngIf="demande.statut === 'EN_ATTENTE'">
+                  <button 
+                    mat-raised-button 
+                    color="primary"
+                    (click)="accepterDemandeAdhesion(demande)"
+                    [disabled]="processingDemandeId === demande.id">
+                    <mat-spinner diameter="20" *ngIf="processingDemandeId === demande.id"></mat-spinner>
+                    <mat-icon *ngIf="processingDemandeId !== demande.id">check_circle</mat-icon>
+                    {{ 'demands.accept' | translate }}
+                  </button>
+
+                  <button 
+                    mat-raised-button 
+                    color="warn"
+                    (click)="refuserDemandeAdhesion(demande)"
+                    [disabled]="processingDemandeId === demande.id">
+                    <mat-icon>cancel</mat-icon>
+                    {{ 'demands.reject' | translate }}
+                  </button>
+                </div>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="demandesAdhesionFiltrees.length === 0">
+            <mat-icon>inbox</mat-icon>
+            <h2>{{ 'demands.noDemands' | translate }}</h2>
+            <p>{{ 'demands.noMembershipDemands' | translate }}</p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==================== ONGLET 2 : MATCHS ENVOYÉS ==================== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>send</mat-icon>
+          <span>{{ 'matchRequest.sent' | translate }}</span>
+          <span class="tab-badge" *ngIf="getCountMatchEnvoyesByStatus('EN_ATTENTE') > 0">
+            {{ getCountMatchEnvoyesByStatus('EN_ATTENTE') }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Stats Matchs Envoyés -->
+          <div class="stats-container">
+            <div class="stat-card">
+              <mat-icon>inbox</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchEnvoyesByStatus('TOUS') }}</span>
+                <span class="stat-label">{{ 'demands.total' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card pending">
+              <mat-icon>hourglass_empty</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchEnvoyesByStatus('EN_ATTENTE') }}</span>
+                <span class="stat-label">{{ 'demands.pending' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card approved">
+              <mat-icon>check_circle</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchEnvoyesByStatus('ACCEPTE') }}</span>
+                <span class="stat-label">{{ 'demands.accepted' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card rejected">
+              <mat-icon>cancel</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchEnvoyesByStatus('REFUSE') }}</span>
+                <span class="stat-label">{{ 'demands.rejected' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtres Matchs Envoyés -->
+          <div class="filters-container">
+            <div class="filter-chips">
+              <mat-chip 
+                [class.active]="filtreMatchEnvoyes === 'TOUS'"
+                (click)="filtreMatchEnvoyes = 'TOUS'">
+                {{ 'demands.all' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchEnvoyes === 'EN_ATTENTE'"
+                (click)="filtreMatchEnvoyes = 'EN_ATTENTE'">
+                {{ 'demands.pending' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchEnvoyes === 'ACCEPTE'"
+                (click)="filtreMatchEnvoyes = 'ACCEPTE'">
+                {{ 'demands.accepted' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchEnvoyes === 'REFUSE'"
+                (click)="filtreMatchEnvoyes = 'REFUSE'">
+                {{ 'demands.rejected' | translate }}
+              </mat-chip>
+            </div>
+          </div>
+
+          <!-- Liste des demandes de match envoyées -->
+          <div class="demandes-list" *ngIf="demandesMatchEnvoyeesFiltrees.length > 0">
+            <mat-card class="demande-card match-card" *ngFor="let demande of demandesMatchEnvoyeesFiltrees">
+              
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <img 
+                      *ngIf="demande.groupeCible?.imageUrl"
+                      [src]="demande.groupeCible.imageUrl"
+                      class="groupe-image">
+                    <mat-icon *ngIf="!demande.groupeCible?.imageUrl">groups</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ demande.groupeCible?.nom }}</h3>
+                    <p class="groupe-discipline">
+                      <mat-icon>sports_soccer</mat-icon>
+                      {{ demande.groupeCible?.discipline }}
+                    </p>
+                    <p class="date-demande">
+                      <mat-icon>calendar_today</mat-icon>
+                      {{ 'matchRequest.requestedOn' | translate }} {{ demande.createdAt | date:'dd/MM/yyyy' }}
+                    </p>
+                  </div>
+                </div>
+                
+                <mat-chip class="statut-chip" [class]="'statut-' + demande.statut.toLowerCase()">
+                  <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
+                  {{ getStatutLabel(demande.statut) }}
+                </mat-chip>
+              </div>
+
+              <mat-card-content>
+                <div class="match-details">
+                  <div class="detail-item">
+                    <mat-icon>event</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.proposedDate' | translate }}</span>
+                      <span class="detail-value">{{ demande.dateProposee | date:'dd/MM/yyyy à HH:mm' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item">
+                    <mat-icon>place</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.proposedPlace' | translate }}</span>
+                      <span class="detail-value">{{ demande.lieuPropose }}</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item message-item" *ngIf="demande.descriptionMessage">
+                    <mat-icon>message</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.message' | translate }}</span>
+                      <span class="detail-value message-text">{{ demande.descriptionMessage }}</span>
+                    </div>
+                  </div>
+
+                  <div class="traitement-info" *ngIf="demande.dateReponse && demande.statut !== 'EN_ATTENTE'">
+                    <mat-icon>event_available</mat-icon>
+                    <span>
+                      {{ 'demands.processedOn' | translate }} {{ demande.dateReponse | date:'dd/MM/yyyy à HH:mm' }}
+                    </span>
+                  </div>
+
+                  <div class="refus-info" *ngIf="demande.statut === 'REFUSEE' && demande.motifRefus">
+                    <mat-icon>info</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'demands.refusalReason' | translate }}</span>
+                      <span class="detail-value">{{ demande.motifRefus }}</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <button 
+                  mat-button 
+                  (click)="voirDetailsGroupe(demande.groupeCible!.id)"
+                  color="primary">
+                  <mat-icon>info</mat-icon>
+                  {{ 'demands.viewGroup' | translate }}
+                </button>
+                  <button 
+                    mat-button 
+                    (click)="ouvrirDiscussion(demande)"
+                    color="accent"
+                    matTooltip="Discuter avec les responsables de {{ demande.groupeCible}}">
+                    <mat-icon>chat</mat-icon>
+                    {{ 'matchRequest.discuss' | translate }}
+                  </button>
+
+                <div class="action-buttons" *ngIf="demande.statut === 'EN_ATTENTE'">
+                  <button 
+                    mat-raised-button 
+                    color="warn"
+                    (click)="annulerDemandeMatch(demande)"
+                    [disabled]="processingDemandeId === demande.id">
+                    <mat-spinner diameter="20" *ngIf="processingDemandeId === demande.id"></mat-spinner>
+                    <mat-icon *ngIf="processingDemandeId !== demande.id">cancel</mat-icon>
+                    {{ 'demands.cancel' | translate }}
+                  </button>
+                </div>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="demandesMatchEnvoyeesFiltrees.length === 0">
+            <mat-icon>send</mat-icon>
+            <h2>{{ 'demands.noDemands' | translate }}</h2>
+            <p>{{ 'matchRequest.noSentRequests' | translate }}</p>
+            <button mat-raised-button color="primary" routerLink="/explorer">
+              <mat-icon>explore</mat-icon>
+              {{ 'matchRequest.findGroups' | translate }}
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ==================== ONGLET 3 : MATCHS REÇUS ==================== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>inbox</mat-icon>
+          <span>{{ 'matchRequest.received' | translate }}</span>
+          <span class="tab-badge" *ngIf="getCountMatchRecusByStatus('EN_ATTENTE') > 0">
+            {{ getCountMatchRecusByStatus('EN_ATTENTE') }}
+          </span>
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Stats Matchs Reçus -->
+          <div class="stats-container">
+            <div class="stat-card">
+              <mat-icon>inbox</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchRecusByStatus('TOUS') }}</span>
+                <span class="stat-label">{{ 'demands.total' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card pending">
+              <mat-icon>hourglass_empty</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchRecusByStatus('EN_ATTENTE') }}</span>
+                <span class="stat-label">{{ 'demands.pending' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card approved">
+              <mat-icon>check_circle</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchRecusByStatus('ACCEPTE') }}</span>
+                <span class="stat-label">{{ 'demands.accepted' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat-card rejected">
+              <mat-icon>cancel</mat-icon>
+              <div class="stat-info">
+                <span class="stat-number">{{ getCountMatchRecusByStatus('REFUSE') }}</span>
+                <span class="stat-label">{{ 'demands.rejected' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtres Matchs Reçus -->
+          <div class="filters-container">
+            <div class="filter-chips">
+              <mat-chip 
+                [class.active]="filtreMatchRecus === 'TOUS'"
+                (click)="filtreMatchRecus = 'TOUS'">
+                {{ 'demands.all' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchRecus === 'EN_ATTENTE'"
+                (click)="filtreMatchRecus = 'EN_ATTENTE'">
+                {{ 'demands.pending' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchRecus === 'ACCEPTE'"
+                (click)="filtreMatchRecus = 'ACCEPTE'">
+                {{ 'demands.accepted' | translate }}
+              </mat-chip>
+              <mat-chip 
+                [class.active]="filtreMatchRecus === 'REFUSE'"
+                (click)="filtreMatchRecus = 'REFUSE'">
+                {{ 'demands.rejected' | translate }}
+              </mat-chip>
+            </div>
+          </div>
+
+          <!-- Liste des demandes de match reçues -->
+          <div class="demandes-list" *ngIf="demandesMatchRecuesFiltrees.length > 0">
+            <mat-card class="demande-card match-card" *ngFor="let demande of demandesMatchRecuesFiltrees">
+              
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <img 
+                      *ngIf="demande.groupeDemandeur?.imageUrl"
+                      [src]="demande.groupeDemandeur.imageUrl"
+                      class="groupe-image">
+                    <mat-icon *ngIf="!demande.groupeDemandeur?.imageUrl">groups</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ demande.groupeDemandeur?.nom }}</h3>
+                    <p class="groupe-discipline">
+                      <mat-icon>sports_soccer</mat-icon>
+                      {{ demande.groupeDemandeur?.discipline }}
+                    </p>
+                    <p class="date-demande">
+                      <mat-icon>calendar_today</mat-icon>
+                      {{ 'matchRequest.receivedOn' | translate }} {{ demande.createdAt | date:'dd/MM/yyyy' }}
+                    </p>
+                  </div>
+                </div>
+                
+                <mat-chip class="statut-chip" [class]="'statut-' + demande.statut.toLowerCase()">
+                  <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
+                  {{ getStatutLabel(demande.statut) }}
+                </mat-chip>
+              </div>
+
+              <mat-card-content>
+                <div class="match-details">
+                  <div class="detail-item">
+                    <mat-icon>event</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.proposedDate' | translate }}</span>
+                      <span class="detail-value">{{ demande.dateProposee | date:'dd/MM/yyyy à HH:mm' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item">
+                    <mat-icon>place</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.proposedPlace' | translate }}</span>
+                      <span class="detail-value">{{ demande.lieuPropose }}</span>
+                    </div>
+                  </div>
+
+                  <div class="detail-item message-item" *ngIf="demande.descriptionMessage">
+                    <mat-icon>message</mat-icon>
+                    <div>
+                      <span class="detail-label">{{ 'matchRequest.message' | translate }}</span>
+                      <span class="detail-value message-text">{{ demande.descriptionMessage }}</span>
+                    </div>
+                  </div>
+
+                  <div class="traitement-info" *ngIf="demande.dateReponse && demande.statut !== 'EN_ATTENTE'">
+                    <mat-icon>event_available</mat-icon>
+                    <span>
+                      {{ 'demands.processedOn' | translate }} {{ demande.dateReponse | date:'dd/MM/yyyy à HH:mm' }}
+                    </span>
+                  </div>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <button 
+                  mat-button 
+                  (click)="viewGroupeDetails(demande.groupeDemandeur)"
+                  color="primary">
+                  <mat-icon>info</mat-icon>
+                </button>
+
+                  <button 
+                    mat-button 
+                    (click)="ouvrirDiscussion(demande)"
+                    color="accent"
+                    matTooltip="Discuter avec les responsables de {{ demande.groupeDemandeur}}">
+                    <mat-icon>chat</mat-icon>
+                    {{ 'matchRequest.discuss' | translate }}
+                  </button>
+
+                <div class="action-buttons" *ngIf="demande.statut === 'EN_ATTENTE'">
+                  <button 
+                    mat-raised-button 
+                    color="primary"
+                    (click)="accepterDemandeMatch(demande)"
+                    [disabled]="processingDemandeId === demande.id">
+                    <mat-spinner diameter="20" *ngIf="processingDemandeId === demande.id"></mat-spinner>
+                    <mat-icon *ngIf="processingDemandeId !== demande.id">check_circle</mat-icon>
+                    {{ 'demands.accept' | translate }}
+                  </button>
+
+                  <button 
+                    mat-raised-button 
+                    color="warn"
+                    (click)="refuserDemandeMatch(demande)"
+                    [disabled]="processingDemandeId === demande.id">
+                    <mat-icon>cancel</mat-icon>
+                    {{ 'demands.reject' | translate }}
+                  </button>
+                </div>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="demandesMatchRecuesFiltrees.length === 0">
+            <mat-icon>inbox</mat-icon>
+            <h2>{{ 'demands.noDemands' | translate }}</h2>
+            <p>{{ 'matchRequest.noReceivedRequests' | translate }}</p>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  </div>
+</div>

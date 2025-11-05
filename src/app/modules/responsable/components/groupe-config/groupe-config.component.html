@@ -1,0 +1,595 @@
+<div class="config-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">settings</mat-icon>
+      <div>
+        <h1 class="page-title">Configuration du Groupe</h1>
+        <p class="page-subtitle">Gérez les paramètres et questions de candidature</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p class="loading-text">Chargement de la configuration...</p>
+  </div>
+  @if (isDialogOpen()) {
+      <div class="modal-backdrop" (click)="closeDialog()">
+        
+        <!-- Contenu du Modal -->
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          
+          <!-- En-tête -->
+          <h3 class="modal-header">Nouveau Stade</h3>
+          
+          <!-- Formulaire -->
+          <form (ngSubmit)="submitStade()">
+            
+            <div class="form-group">
+              <label for="stadeName">Nom du Stade</label>
+              <input 
+                id="stadeName" 
+                type="text" 
+                   name="stadeNameInput"
+                 [(ngModel)]="stadeNom" 
+                required
+                maxlength="50"
+                class="text-input"
+                placeholder="Ex: Stade Marion"
+              />
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="btn-group">
+              <!-- Annuler (Secondaire) -->
+              <button 
+                type="button" 
+                (click)="closeDialog()" 
+                class="btn-base btn-secondary">
+                Annuler
+              </button>
+              
+              <!-- Enregistrer (Primaire) -->
+              <button 
+                type="submit" 
+                [disabled]="!isFormValid()"
+                class="btn-base btn-primary"
+                [style.opacity]="!isFormValid() ? '0.6' : '1'"
+                >
+                Enregistrer
+              </button>
+            </div>
+            
+          </form>
+
+        </div>
+      </div>}
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && groupe" class="config-content">
+    
+    <mat-tab-group class="config-tabs" animationDuration="300ms">
+      
+      <!-- Tab 1: Informations du groupe -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">info</mat-icon>
+          Informations générales
+        </ng-template>
+
+        <div class="tab-content">
+          <mat-card class="config-card">
+            <mat-card-header>
+              <mat-card-title class="card-title">
+                <mat-icon>groups</mat-icon>
+                Informations du groupe
+              </mat-card-title>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="groupeForm" (ngSubmit)="saveGroupe()">
+                
+                <!-- Nom et statut -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>badge</mat-icon>
+                    Identification
+                  </h3>
+
+                  <div class="form-grid">
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Nom du groupe</mat-label>
+                      <input matInput formControlName="nom" placeholder="Ex: FC Lions">
+                      <mat-icon matPrefix>groups</mat-icon>
+                      <mat-error *ngIf="groupeForm.get('nom')?.hasError('required')">
+                        Le nom est requis
+                      </mat-error>
+                      <mat-error *ngIf="groupeForm.get('nom')?.hasError('minlength')">
+                        Minimum 3 caractères
+                      </mat-error>
+                    </mat-form-field>
+
+                    <div class="toggle-field">
+                      <mat-slide-toggle formControlName="isPublic" color="primary">
+                        <span class="toggle-label">
+                          <mat-icon>{{ groupeForm.get('isPublic')?.value ? 'check_circle' : 'cancel' }}</mat-icon>
+                          Groupe {{ groupeForm.get('isPublic')?.value ? 'public' : 'prive' }}
+                        </span>
+                      </mat-slide-toggle>
+                    </div>
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <!-- Sport et équipe -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>sports_soccer</mat-icon>
+                    Sport et type d'équipe
+                  </h3>
+
+                  <div class="form-grid">
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Discipline</mat-label>
+                      <mat-select formControlName="discipline">
+                        <mat-option *ngFor="let disc of disciplines" [value]="disc">
+                          {{ disc }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>sports</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Type d'équipe</mat-label>
+                      <mat-select formControlName="typeEquipe">
+                        <mat-option *ngFor="let type of typesEquipe" [value]="type">
+                          {{ type }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>category</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Mode d'équipe</mat-label>
+                      <mat-select formControlName="modeEquipe">
+                        <mat-option value="STATIQUE">
+                          <mat-icon class="option-icon">lock</mat-icon>
+                          Statique (équipes fixes)
+                        </mat-option>
+                        <mat-option value="DYNAMIQUE">
+                          <mat-icon class="option-icon">shuffle</mat-icon>
+                          Dynamique (équipes variables)
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>tune</mat-icon>
+                      <mat-hint>Le mode statique maintient des équipes fixes, le dynamique permet des changements</mat-hint>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <!-- Lieu et horaire -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>place</mat-icon>
+                    Lieu et horaire
+                  </h3>
+
+                  <div class="form-grid">
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Ville</mat-label>
+                      <mat-select formControlName="ville">
+                        <mat-option *ngFor="let ville of villes" [value]="ville.id">
+                          {{ ville.nom }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>location_city</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Stade</mat-label>
+                      <mat-select formControlName="stade">
+                        <mat-option *ngFor="let stade of stades" [value]="stade.id">
+                          {{ stade.nom }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>stadium</mat-icon>
+                    </mat-form-field>
+                     <button 
+                        mat-mini-fab 
+                        color="accent" 
+                        type="button" 
+                        (click)="openNewStadeDialog()"
+                        aria-label="Ajouter un nouveau stade">
+                        <mat-icon>add</mat-icon>
+                      </button>
+
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Jour de match</mat-label>
+                      <mat-select formControlName="jourMatch">
+                        <mat-option *ngFor="let jour of joursMatch" [value]="jour">
+                          {{ jour }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>today</mat-icon>
+                    </mat-form-field>
+
+                     <!-- NOUVEAU: Heure de match -->
+                    <mat-form-field appearance="outline" class="form-field">
+                        <mat-label>Heure de match</mat-label>
+                        <input matInput type="time" formControlName="heureMatch">
+                        <mat-icon matPrefix>schedule</mat-icon>
+                        <mat-hint>Heure habituelle du début du match</mat-hint>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+               
+
+
+                <!-- Frais -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>payments</mat-icon>
+                    Cotisation
+                  </h3>
+
+                  <div class="form-grid">
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Frais d'adhésion</mat-label>
+                      <input matInput type="number" formControlName="fraisAdhesion" min="0" step="100">
+                      <span matPrefix>FCFA&nbsp;</span>
+                      <mat-icon matSuffix>attach_money</mat-icon>
+                      <mat-hint>Montant de la cotisation annuelle</mat-hint>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    type="submit"
+                    [disabled]="groupeForm.invalid || isSaving">
+                    <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
+                    <mat-icon *ngIf="!isSaving">save</mat-icon>
+                    <span>{{ isSaving ? 'Enregistrement...' : 'Enregistrer les modifications' }}</span>
+                  </button>
+                </div>
+
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      
+
+      <!-- Tab 2: Questions de candidature -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">quiz</mat-icon>
+          Questions de candidature
+          <span class="badge" *ngIf="questions.length > 0">{{ questions.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          
+          <!-- Bouton ajouter -->
+          <div class="action-bar">
+            <button 
+              mat-raised-button 
+              color="primary" 
+              (click)="toggleQuestionForm()"
+              class="add-question-btn">
+              <mat-icon>{{ showQuestionForm ? 'close' : 'add' }}</mat-icon>
+              {{ showQuestionForm ? 'Annuler' : 'Ajouter une question' }}
+            </button>
+
+            <div class="info-box" *ngIf="questions.length > 0">
+              <mat-icon>info</mat-icon>
+              <span>Glissez-déposez les questions pour réorganiser</span>
+            </div>
+          </div>
+
+          <!-- Formulaire question -->
+          <mat-card *ngIf="showQuestionForm" class="question-form-card">
+            <mat-card-header>
+              <mat-card-title class="card-title">
+                <mat-icon>{{ editingQuestion ? 'edit' : 'add_circle' }}</mat-icon>
+                {{ editingQuestion ? 'Modifier la question' : 'Nouvelle question' }}
+              </mat-card-title>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="questionForm" (ngSubmit)="saveQuestion()">
+                
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Texte de la question</mat-label>
+                  <textarea 
+                    matInput 
+                    formControlName="texteQuestion" 
+                    rows="3"
+                    placeholder="Ex: Quel poste préférez-vous jouer ?"></textarea>
+                  <mat-icon matPrefix>help_outline</mat-icon>
+                  <mat-error *ngIf="questionForm.get('texteQuestion')?.hasError('required')">
+                    La question est requise
+                  </mat-error>
+                  <mat-error *ngIf="questionForm.get('texteQuestion')?.hasError('minlength')">
+                    Minimum 5 caractères
+                  </mat-error>
+                </mat-form-field>
+
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Type de réponse</mat-label>
+                    <mat-select 
+                      formControlName="typeChamp"
+                      (selectionChange)="onTypeChampChange($event.value)">
+                      <mat-option *ngFor="let type of typeChampConfig" [value]="type.value">
+                        <mat-icon class="option-icon">{{ type.icon }}</mat-icon>
+                        {{ type.label }}
+                      </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>dynamic_form</mat-icon>
+                  </mat-form-field>
+
+                  <mat-slide-toggle formControlName="obligatoire" color="accent" class="obligatoire-toggle">
+                    <span class="toggle-label">
+                      <mat-icon>{{ questionForm.get('obligatoire')?.value ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+                      Question obligatoire
+                    </span>
+                  </mat-slide-toggle>
+                </div>
+
+                <mat-form-field 
+                  *ngIf="needsOptions()" 
+                  appearance="outline" 
+                  class="full-width">
+                  <mat-label>Options de choix</mat-label>
+                  <textarea 
+                    matInput 
+                    formControlName="optionsChoix" 
+                    rows="3"
+                    placeholder="Séparez les options par des points-virgules (;)&#10;Ex: Attaquant;Milieu;Défenseur;Gardien"></textarea>
+                  <mat-icon matPrefix>list</mat-icon>
+                  <mat-hint>Exemple: Option 1;Option 2;Option 3</mat-hint>
+                </mat-form-field>
+
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    type="submit"
+                    [disabled]="questionForm.invalid">
+                    <mat-icon>{{ editingQuestion ? 'save' : 'add' }}</mat-icon>
+                    {{ editingQuestion ? 'Enregistrer' : 'Ajouter' }}
+                  </button>
+                  <button 
+                    mat-stroked-button 
+                    type="button"
+                    (click)="toggleQuestionForm()">
+                    <mat-icon>close</mat-icon>
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Liste des questions -->
+          <div class="questions-container">
+            
+            <!-- État vide -->
+            <div *ngIf="questions.length === 0" class="empty-state">
+              <mat-icon class="empty-icon">quiz</mat-icon>
+              <h3 class="empty-title">Aucune question configurée</h3>
+              <p class="empty-text">Ajoutez des questions pour personnaliser votre formulaire de candidature</p>
+            </div>
+
+            <!-- Liste drag & drop -->
+            <div 
+              *ngIf="questions.length > 0"
+              cdkDropList 
+              class="questions-list"
+              (cdkDropListDropped)="drop($event)">
+              
+              <mat-card 
+                *ngFor="let question of questions; let i = index"
+                class="question-card"
+                cdkDrag>
+                
+                <div class="drag-handle" cdkDragHandle>
+                  <mat-icon>drag_indicator</mat-icon>
+                </div>
+
+                <div class="question-content">
+                  <div class="question-header">
+                    <div class="question-number">Q{{ i + 1 }}</div>
+                    <mat-icon class="type-icon">{{ getTypeChampIcon(question.typeChamp) }}</mat-icon>
+                    <span class="type-label">{{ getTypeChampLabel(question.typeChamp) }}</span>
+                    <mat-chip *ngIf="question.obligatoire" class="required-chip" color="accent">
+                      <mat-icon>star</mat-icon>
+                      Obligatoire
+                    </mat-chip>
+                  </div>
+
+                  <div class="question-text">{{ question.texteQuestion }}</div>
+
+                  <div *ngIf="question.optionsChoix" class="question-options">
+                    <mat-icon class="options-icon">list</mat-icon>
+                    <mat-chip-set class="options-chips">
+                      <mat-chip *ngFor="let option of getOptionsArray(question.optionsChoix)">
+                        {{ option }}
+                      </mat-chip>
+                    </mat-chip-set>
+                  </div>
+                </div>
+
+                <div class="question-actions">
+                  <button 
+                    mat-icon-button 
+                    matTooltip="Modifier"
+                    (click)="editQuestion(question)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button 
+                    mat-icon-button 
+                    matTooltip="Dupliquer"
+                    (click)="duplicateQuestion(question)">
+                    <mat-icon>content_copy</mat-icon>
+                  </button>
+                  <button 
+                    mat-icon-button 
+                    matTooltip="Supprimer"
+                    color="warn"
+                    (click)="deleteQuestion(question)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Placeholder pendant le drag -->
+                <div class="drag-placeholder" *cdkDragPlaceholder></div>
+              </mat-card>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab 3: Aperçu -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">visibility</mat-icon>
+          Aperçu du formulaire
+        </ng-template>
+
+        <div class="tab-content">
+          <mat-card class="preview-card">
+            <mat-card-header>
+              <mat-card-title class="card-title">
+                <mat-icon>preview</mat-icon>
+                Aperçu du formulaire de candidature
+              </mat-card-title>
+            </mat-card-header>
+
+            <mat-card-content>
+              <div class="preview-container">
+                <div class="preview-header">
+                  <h2>Formulaire de candidature - {{ groupe.nom }}</h2>
+                  <p class="preview-subtitle">Voici comment les candidats verront le formulaire</p>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <div *ngIf="questions.length === 0" class="preview-empty">
+                  <mat-icon>info</mat-icon>
+                  <p>Aucune question configurée. Ajoutez des questions pour voir l'aperçu.</p>
+                </div>
+
+                <div *ngIf="questions.length > 0" class="preview-form">
+                  <div *ngFor="let question of questions; let i = index" class="preview-question">
+                    <label class="preview-label">
+                      {{ i + 1 }}. {{ question.texteQuestion }}
+                      <span *ngIf="question.obligatoire" class="required-mark">*</span>
+                    </label>
+
+                    <!-- Aperçu selon le type -->
+                    <div [ngSwitch]="question.typeChamp" class="preview-input">
+                      
+                      <!-- Texte court -->
+                      <input 
+                        *ngSwitchCase="'TEXTE_COURT'" 
+                        type="text" 
+                        class="preview-text-input"
+                        placeholder="Votre réponse"
+                        disabled>
+
+                      <!-- Texte long -->
+                      <textarea 
+                        *ngSwitchCase="'TEXTE_LONG'"
+                        class="preview-textarea"
+                        rows="4"
+                        placeholder="Votre réponse détaillée"
+                        disabled></textarea>
+
+                      <!-- Nombre -->
+                      <input 
+                        *ngSwitchCase="'NOMBRE'" 
+                        type="number" 
+                        class="preview-text-input"
+                        placeholder="0"
+                        disabled>
+
+                      <!-- Date -->
+                      <input 
+                        *ngSwitchCase="'DATE'" 
+                        type="date" 
+                        class="preview-text-input"
+                        disabled>
+
+                      <!-- Email -->
+                      <input 
+                        *ngSwitchCase="'EMAIL'" 
+                        type="email" 
+                        class="preview-text-input"
+                        placeholder="exemple@email.com"
+                        disabled>
+
+                      <!-- Téléphone -->
+                      <input 
+                        *ngSwitchCase="'TELEPHONE'" 
+                        type="tel" 
+                        class="preview-text-input"
+                        placeholder="6XX XX XX XX"
+                        disabled>
+
+                      <!-- Choix unique -->
+                      <div *ngSwitchCase="'CHOIX_UNIQUE'" class="preview-radio-group">
+                        <label *ngFor="let option of getOptionsArray(question.optionsChoix)" class="preview-radio">
+                          <input type="radio" [name]="'q' + i" disabled>
+                          <span>{{ option }}</span>
+                        </label>
+                      </div>
+
+                      <!-- Choix multiple -->
+                      <div *ngSwitchCase="'CHOIX_MULTIPLE'" class="preview-checkbox-group">
+                        <label *ngFor="let option of getOptionsArray(question.optionsChoix)" class="preview-checkbox">
+                          <input type="checkbox" disabled>
+                          <span>{{ option }}</span>
+                        </label>
+                      </div>
+
+                      <!-- Oui/Non -->
+                      <div *ngSwitchCase="'OUI_NON'" class="preview-radio-group">
+                        <label class="preview-radio">
+                          <input type="radio" [name]="'q' + i" disabled>
+                          <span>Oui</span>
+                        </label>
+                        <label class="preview-radio">
+                          <input type="radio" [name]="'q' + i" disabled>
+                          <span>Non</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="preview-actions">
+                    <button class="preview-button" disabled>Soumettre ma candidature</button>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  </div>
+</div>

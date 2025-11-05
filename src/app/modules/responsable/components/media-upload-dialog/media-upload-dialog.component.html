@@ -1,0 +1,151 @@
+<div class="media-dialog">
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">perm_media</mat-icon>
+      <div>
+        <h2 mat-dialog-title>Médias du match</h2>
+        <p class="dialog-subtitle">Téléchargez et gérez les photos et vidéos</p>
+      </div>
+    </div>
+    <button mat-icon-button mat-dialog-close class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    
+    <!-- Zone d'upload -->
+    <div class="upload-zone" (click)="fileInput.click()" 
+         (dragover)="onDragOver($event)" 
+         (dragleave)="onDragLeave($event)" 
+         (drop)="onDrop($event)"
+         [class.drag-over]="isDragOver">
+      <mat-icon class="upload-icon">cloud_upload</mat-icon>
+      <h3>Glissez-déposez vos fichiers ici</h3>
+      <p>ou cliquez pour parcourir</p>
+      <span class="file-types">Images (JPG, PNG) et Vidéos (MP4) acceptés</span>
+      <input 
+        #fileInput
+        type="file" 
+        (change)="onFileSelected($event)" 
+        multiple 
+        accept="image/*,video/mp4"
+        style="display: none">
+    </div>
+
+    <!-- Prévisualisation des fichiers sélectionnés -->
+    <div *ngIf="selectedFiles.length > 0" class="selected-files-section">
+      <div class="section-header">
+        <h3>
+          <mat-icon>attach_file</mat-icon>
+          Fichiers sélectionnés ({{ selectedFiles.length }})
+        </h3>
+        <button mat-button color="warn" (click)="clearAllFiles()">
+          <mat-icon>delete_sweep</mat-icon>
+          Tout effacer
+        </button>
+      </div>
+
+      <div class="preview-grid">
+        <div *ngFor="let file of selectedFiles; let i = index" class="preview-item">
+          <div class="preview-content">
+            <!-- Image preview -->
+            <img 
+              *ngIf="previews[i] && isImage(file)" 
+              [src]="previews[i]" 
+              alt="Aperçu"
+              class="preview-image">
+            
+            <!-- Video preview -->
+            <div *ngIf="isVideo(file)" class="video-preview">
+              <mat-icon class="video-icon">videocam</mat-icon>
+              <span>Vidéo</span>
+            </div>
+
+            <!-- Bouton de suppression -->
+            <button mat-icon-button class="remove-btn" (click)="removeFile(i)" matTooltip="Retirer">
+              <mat-icon>close</mat-icon>
+            </button>
+
+            <!-- Info du fichier -->
+            <div class="file-info">
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-size">{{ formatFileSize(file.size) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Médias existants -->
+    <div *ngIf="existingMedias && existingMedias.length > 0" class="existing-medias-section">
+      <div class="section-header">
+        <h3>
+          <mat-icon>photo_library</mat-icon>
+          Médias du match ({{ existingMedias.length }})
+        </h3>
+      </div>
+
+      <div class="media-grid">
+        <div *ngFor="let media of existingMedias; let i = index" class="media-item">
+          <div class="media-content" (click)="openMediaPreview(media)">
+            <!-- Image -->
+            <img 
+              *ngIf="isMediaImage(media)" 
+              [src]="imageUrl + media" 
+              alt="Media"
+              class="media-image">
+            
+            <!-- Video thumbnail -->
+            <div *ngIf="isMediaVideo(media)" class="video-thumbnail">
+              <mat-icon class="video-play-icon">play_circle_filled</mat-icon>
+              <video [src]="imageUrl + media" class="video-element"></video>
+            </div>
+
+            <!-- Actions -->
+            <div class="media-actions">
+              <button mat-icon-button class="download-btn" (click)="downloadMedia(media); $event.stopPropagation()" matTooltip="Télécharger">
+                <mat-icon>download</mat-icon>
+              </button>
+              <button mat-icon-button class="delete-btn" (click)="deleteMedia(media.id); $event.stopPropagation()" matTooltip="Supprimer">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message de progression -->
+    <div *ngIf="uploadProgress" class="progress-section">
+      <mat-progress-bar 
+        mode="determinate" 
+        [value]="uploadProgressValue"
+        [color]="uploadProgressValue === 100 ? 'primary' : 'accent'">
+      </mat-progress-bar>
+      <p class="progress-text" [class.error]="isError">{{ uploadProgress }}</p>
+    </div>
+
+    <!-- État vide -->
+    <div *ngIf="!selectedFiles.length && (!existingMedias || existingMedias.length === 0)" class="empty-state">
+      <mat-icon>photo</mat-icon>
+      <p>Aucun média pour ce match</p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-stroked-button mat-dialog-close [disabled]="isUploading">
+      <mat-icon>close</mat-icon>
+      Fermer
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="uploadFiles()" 
+      [disabled]="selectedFiles.length === 0 || isUploading">
+      <mat-spinner *ngIf="isUploading" diameter="20" class="button-spinner"></mat-spinner>
+      <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
+      {{ isUploading ? 'Upload en cours...' : 'Télécharger (' + selectedFiles.length + ')' }}
+    </button>
+  </mat-dialog-actions>
+</div>

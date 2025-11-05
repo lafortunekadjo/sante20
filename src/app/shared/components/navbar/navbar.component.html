@@ -1,0 +1,186 @@
+<mat-toolbar color="primary" class="navbar-container">
+  <div class="navbar-content">
+    <!-- Menu toggle + Logo -->
+    <div class="navbar-brand">
+      <button 
+        mat-icon-button 
+        class="menu-toggle-btn"
+        (click)="toggleMenu.emit()"
+        [matTooltip]="'nav.home' | translate"
+        *ngIf="authService.isLoggedIn()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="app-title">{{ 'app.title' | translate }}</span>
+    </div>
+
+    <!-- Sélecteur de rôle (uniquement si connecté) -->
+    <div class="navbar-center" *ngIf="authService.isLoggedIn()">
+      <mat-form-field 
+        *ngIf="roles.length > 1" 
+        appearance="outline" 
+        class="role-select">
+        <mat-label>Rôle</mat-label>
+        <mat-select 
+          [(value)]="selectedRole" 
+          (selectionChange)="changeRole($event.value)">
+          <mat-option *ngFor="let role of roles" [value]="role">
+            <div class="role-option">
+              <mat-icon>
+                {{ role === 'ADMIN' ? 'admin_panel_settings' : role === 'RESPONSABLE' ? 'supervisor_account' : 'person' }}
+              </mat-icon>
+              <span>{{ role === 'ADMIN' ? 'Administrateur' : role === 'RESPONSABLE' ? 'Responsable' : 'Membre' }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Actions droite -->
+    <div class="navbar-actions">
+      <!-- Boutons pour utilisateur NON connecté -->
+      <ng-container *ngIf="!authService.isLoggedIn()">
+        <!-- Bouton changement de langue -->
+        <button 
+          mat-icon-button 
+          (click)="toggleLanguage()"
+          [matTooltip]="getLanguageTooltip()"
+          class="settings-btn">
+          <span class="flag-icon">{{ getLanguageLabel() }}</span>
+        </button>
+
+        <!-- Bouton changement de thème -->
+        <button 
+          mat-icon-button 
+          (click)="toggleTheme()"
+          [matTooltip]="getThemeTooltip()"
+          class="settings-btn">
+          <mat-icon>{{ getThemeIcon() }}</mat-icon>
+        </button>
+
+        <button 
+          mat-stroked-button 
+          (click)="goToLogin()"
+          class="auth-btn login-btn">
+          <mat-icon>login</mat-icon>
+          <span>{{ 'auth.login' | translate }}</span>
+        </button>
+        <button 
+          mat-flat-button 
+          color="accent"
+          (click)="goToRegister()"
+          class="auth-btn register-btn">
+          <mat-icon>person_add</mat-icon>
+          <span>{{ 'auth.register' | translate }}</span>
+        </button>
+      </ng-container>
+
+      <!-- Boutons pour utilisateur connecté -->
+      <ng-container *ngIf="authService.isLoggedIn()">
+        <!-- Bouton changement de langue -->
+        <button 
+          mat-icon-button 
+          (click)="toggleLanguage()"
+          [matTooltip]="getLanguageTooltip()"
+          class="settings-btn">
+          <span class="flag-icon">{{ getLanguageLabel() }}</span>
+        </button>
+
+        <!-- Bouton changement de thème -->
+        <button 
+          mat-icon-button 
+          (click)="toggleTheme()"
+          [matTooltip]="getThemeTooltip()"
+          class="settings-btn">
+          <mat-icon>{{ getThemeIcon() }}</mat-icon>
+        </button>
+
+        <!-- Bouton Check-in -->
+        <button 
+          mat-mini-fab 
+          color="accent"
+          (click)="checkIn()" 
+          [disabled]="isChecking"
+          class="check-in-btn"
+          [matTooltip]="'nav.checkIn' | translate">
+          <mat-spinner *ngIf="isChecking" diameter="24"></mat-spinner>
+          <mat-icon *ngIf="!isChecking">check_circle</mat-icon>
+        </button>
+
+        <!-- Menu profil -->
+        <button 
+          mat-button 
+          [matMenuTriggerFor]="profileMenu"
+          class="profile-btn">
+          <div class="profile-avatar-container">
+            <img 
+              *ngIf="userProfileImage"
+              [src]="userProfileImage" 
+              class="profile-avatar" 
+              alt="Profil" />
+            <div *ngIf="!userProfileImage" class="profile-avatar-icon">
+              <mat-icon>account_circle</mat-icon>
+            </div>
+          </div>
+          <span class="profile-name">{{ user?.username || ('nav.profile' | translate) }}</span>
+          <mat-icon>arrow_drop_down</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Menu déroulant profil -->
+  <mat-menu #profileMenu="matMenu" xPosition="before">
+    <div class="profile-menu-header">
+      <div class="profile-menu-avatar-container">
+        <img 
+          *ngIf="userProfileImage"
+          [src]="userProfileImage" 
+          class="profile-menu-avatar" 
+          alt="Profil" />
+        <div *ngIf="!userProfileImage" class="profile-menu-avatar-icon">
+          <mat-icon>account_circle</mat-icon>
+        </div>
+      </div>
+      <div class="profile-menu-info">
+        <p class="profile-menu-name">{{ user?.username || 'Utilisateur' }}</p>
+        <p class="profile-menu-email">{{ user?.email || '' }}</p>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <button mat-menu-item (click)="openProfileEdit()">
+      <mat-icon>edit</mat-icon>
+      <span>{{ 'common.edit' | translate }} profil</span>
+    </button>
+
+    <button mat-menu-item (click)="openProfileImageEdit()">
+      <mat-icon>photo_camera</mat-icon>
+      <span>Changer la photo</span>
+    </button>
+
+    <button mat-menu-item (click)="openPasswordEdit()">
+      <mat-icon>lock</mat-icon>
+      <span>Modifier le mot de passe</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button mat-menu-item (click)="viewNotifications()">
+      <mat-icon>notifications</mat-icon>
+      <span>{{ 'settings.notifications' | translate }}</span>
+    </button>
+
+    <button mat-menu-item (click)="viewSettings()">
+      <mat-icon>settings</mat-icon>
+      <span>{{ 'nav.settings' | translate }}</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button mat-menu-item (click)="logout()" class="logout-btn">
+      <mat-icon>exit_to_app</mat-icon>
+      <span>{{ 'nav.logout' | translate }}</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>

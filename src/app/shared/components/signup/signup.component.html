@@ -1,0 +1,185 @@
+<div class="signup-container">
+  <!-- Header -->
+  <div class="signup-header">
+    <mat-icon class="header-icon">person_add</mat-icon>
+    <h1 class="header-title">Créer un compte</h1>
+    <p class="header-subtitle">Rejoignez la communauté sportive</p>
+  </div>
+
+  <!-- Card -->
+  <mat-card class="signup-card">
+    <mat-stepper [linear]="true" #stepper>
+      
+      <!-- Étape 1: Compte -->
+      <mat-step [stepControl]="accountForm">
+        <ng-template matStepLabel>Informations de compte</ng-template>
+        
+        <form [formGroup]="accountForm" class="step-form">
+          <h3 class="step-title">
+            <mat-icon>account_circle</mat-icon>
+            Créez votre compte
+          </h3>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nom d'utilisateur</mat-label>
+            <input matInput formControlName="username" placeholder="Choisissez un nom d'utilisateur">
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error>{{ getErrorMessage('account', 'username') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="votre@email.com">
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error>{{ getErrorMessage('account', 'email') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mot de passe</mat-label>
+            <input 
+              matInput 
+              [type]="hidePassword ? 'password' : 'text'" 
+              formControlName="password"
+              placeholder="Minimum 6 caractères">
+            <mat-icon matPrefix>lock</mat-icon>
+            <button 
+              mat-icon-button 
+              matSuffix 
+              type="button"
+              (click)="hidePassword = !hidePassword">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error>{{ getErrorMessage('account', 'password') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Confirmer le mot de passe</mat-label>
+            <input 
+              matInput 
+              [type]="hideConfirmPassword ? 'password' : 'text'" 
+              formControlName="confirmPassword"
+              placeholder="Répétez votre mot de passe">
+            <mat-icon matPrefix>lock</mat-icon>
+            <button 
+              mat-icon-button 
+              matSuffix 
+              type="button"
+              (click)="hideConfirmPassword = !hideConfirmPassword">
+              <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error>{{ getErrorMessage('account', 'confirmPassword') }}</mat-error>
+          </mat-form-field>
+
+          <div class="step-actions">
+            <button mat-raised-button color="primary" matStepperNext [disabled]="accountForm.invalid">
+              <span>Suivant</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </form>
+      </mat-step>
+
+      <!-- Étape 2: Profil -->
+      <mat-step [stepControl]="profileForm">
+        <ng-template matStepLabel>Informations personnelles</ng-template>
+        
+        <form [formGroup]="profileForm" class="step-form">
+          <h3 class="step-title">
+            <mat-icon>badge</mat-icon>
+            Complétez votre profil
+          </h3>
+
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Nom</mat-label>
+              <input matInput formControlName="nom" placeholder="Votre nom">
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-error>{{ getErrorMessage('profile', 'nom') }}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Prénom</mat-label>
+              <input matInput formControlName="prenom" placeholder="Votre prénom">
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-error>{{ getErrorMessage('profile', 'prenom') }}</mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Date de naissance</mat-label>
+              <input 
+                matInput 
+                [matDatepicker]="picker" 
+                formControlName="dateNaissance"
+                [max]="maxDate">
+              <mat-icon matPrefix>cake</mat-icon>
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-error>{{ getErrorMessage('profile', 'dateNaissance') }}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Sexe</mat-label>
+              <mat-select formControlName="sexe">
+                <mat-option value="masculin">
+                  <mat-icon class="option-icon">male</mat-icon>
+                  Masculin
+                </mat-option>
+                <mat-option value="feminin">
+                  <mat-icon class="option-icon">female</mat-icon>
+                  Féminin
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>wc</mat-icon>
+              <mat-error>{{ getErrorMessage('profile', 'sexe') }}</mat-error>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Téléphone</mat-label>
+            <input matInput formControlName="tel" placeholder="6XX XX XX XX">
+            <mat-icon matPrefix>phone</mat-icon>
+            <mat-hint>Format: 9 à 15 chiffres</mat-hint>
+            <mat-error>{{ getErrorMessage('profile', 'tel') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Adresse</mat-label>
+            <textarea matInput formControlName="adresse" rows="2" placeholder="Votre adresse"></textarea>
+            <mat-icon matPrefix>home</mat-icon>
+          </mat-form-field>
+
+          <div class="conditions-box">
+            <mat-checkbox formControlName="accepteConditions" color="primary">
+              J'accepte les <a href="/conditions" target="_blank">conditions d'utilisation</a> 
+              et la <a href="/privacy" target="_blank">politique de confidentialité</a>
+            </mat-checkbox>
+          </div>
+
+          <div class="step-actions">
+            <button mat-stroked-button matStepperPrevious type="button">
+              <mat-icon>arrow_back</mat-icon>
+              <span>Précédent</span>
+            </button>
+            <button 
+              mat-raised-button 
+              color="primary" 
+              type="button"
+              (click)="onSubmit()"
+              [disabled]="profileForm.invalid || isLoading">
+              <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+              <span *ngIf="!isLoading">Créer mon compte</span>
+              <span *ngIf="isLoading">Création...</span>
+            </button>
+          </div>
+        </form>
+      </mat-step>
+    </mat-stepper>
+  </mat-card>
+
+  <!-- Link to login -->
+  <div class="login-link">
+    <p>Vous avez déjà un compte ? <a routerLink="/login">Se connecter</a></p>
+  </div>
+</div>

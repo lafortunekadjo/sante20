@@ -1,0 +1,226 @@
+<div class="image-edit-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">photo_camera</mat-icon>
+      <div>
+        <h2 class="dialog-title">Modifier la photo de profil</h2>
+        <p class="dialog-subtitle">Ajustez votre photo selon vos préférences</p>
+      </div>
+    </div>
+    <button mat-icon-button class="close-button" (click)="onCancel()" matTooltip="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+    
+    <!-- Loading -->
+    <div *ngIf="isProcessing" class="loading-overlay">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Traitement en cours...</p>
+    </div>
+
+    <!-- Preview Area -->
+    <div class="preview-section">
+      <div class="preview-container">
+        <div class="canvas-wrapper">
+          <canvas 
+            #canvas 
+            class="preview-canvas"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp()"
+            (mouseleave)="onMouseUp()">
+          </canvas>
+          
+          <!-- Placeholder si pas d'image -->
+          <div *ngIf="!originalImage" class="placeholder">
+            <mat-icon class="placeholder-icon">add_photo_alternate</mat-icon>
+            <p class="placeholder-text">Aucune image sélectionnée</p>
+            <p class="placeholder-hint">Cliquez sur "Choisir une photo" pour commencer</p>
+          </div>
+        </div>
+
+        <!-- Info fichier -->
+        <div *ngIf="selectedFile" class="file-info">
+          <mat-icon class="info-icon">info</mat-icon>
+          <span>{{ getFileInfo() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section" *ngIf="originalImage">
+      
+      <!-- Actions rapides -->
+      <div class="quick-actions">
+        <button 
+          mat-mini-fab 
+          color="primary" 
+          (click)="rotateLeft()"
+          matTooltip="Rotation gauche"
+          class="action-btn">
+          <mat-icon>rotate_left</mat-icon>
+        </button>
+        
+        <button 
+          mat-mini-fab 
+          color="primary" 
+          (click)="rotateRight()"
+          matTooltip="Rotation droite"
+          class="action-btn">
+          <mat-icon>rotate_right</mat-icon>
+        </button>
+        
+        <button 
+          mat-mini-fab 
+          color="primary" 
+          (click)="flipHorizontal()"
+          matTooltip="Retourner horizontalement"
+          class="action-btn">
+          <mat-icon>flip</mat-icon>
+        </button>
+        
+        <button 
+          mat-mini-fab 
+          color="accent" 
+          (click)="resetControls()"
+          matTooltip="Réinitialiser"
+          class="action-btn">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+
+      <!-- Sliders de contrôle -->
+      <div class="sliders-container">
+        
+        <!-- Zoom -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <mat-icon class="slider-icon">zoom_in</mat-icon>
+            <span class="slider-label">Zoom</span>
+            <span class="slider-value">{{ (scale * 100) | number:'1.0-0' }}%</span>
+          </div>
+          <mat-slider 
+            min="0.5" 
+            max="3" 
+            step="0.1" 
+            [(ngModel)]="scale"
+            (input)="onScaleChange()"
+            class="custom-slider">
+            <input matSliderThumb>
+          </mat-slider>
+        </div>
+
+        <!-- Luminosité -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <mat-icon class="slider-icon">brightness_6</mat-icon>
+            <span class="slider-label">Luminosité</span>
+            <span class="slider-value">{{ brightness }}%</span>
+          </div>
+          <mat-slider 
+            min="50" 
+            max="150" 
+            step="5" 
+            [(ngModel)]="brightness"
+            (input)="onBrightnessChange()"
+            class="custom-slider">
+            <input matSliderThumb>
+          </mat-slider>
+        </div>
+
+        <!-- Contraste -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <mat-icon class="slider-icon">contrast</mat-icon>
+            <span class="slider-label">Contraste</span>
+            <span class="slider-value">{{ contrast }}%</span>
+          </div>
+          <mat-slider 
+            min="50" 
+            max="150" 
+            step="5" 
+            [(ngModel)]="contrast"
+            (input)="onContrastChange()"
+            class="custom-slider">
+            <input matSliderThumb>
+          </mat-slider>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- File input actions -->
+    <div class="file-actions">
+      <input 
+        type="file" 
+        #fileInput 
+        hidden 
+        (change)="onFileSelected($event)" 
+        accept="image/*">
+      
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="openFileSelector()"
+        class="action-button">
+        <mat-icon>folder_open</mat-icon>
+        <span>{{ selectedFile ? 'Changer de photo' : 'Choisir une photo' }}</span>
+      </button>
+
+      <button 
+        mat-stroked-button 
+        (click)="loadFromUrl()"
+        class="action-button"
+        matTooltip="Charger depuis une URL">
+        <mat-icon>link</mat-icon>
+        <span>URL</span>
+      </button>
+
+      <button 
+        *ngIf="selectedFile"
+        mat-stroked-button 
+        color="warn"
+        (click)="removeImage()"
+        class="action-button"
+        matTooltip="Supprimer l'image">
+        <mat-icon>delete</mat-icon>
+        <span>Supprimer</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Actions -->
+  <div class="dialog-actions">
+    <div class="actions-info">
+      <mat-icon class="info-icon">info</mat-icon>
+      <span class="info-text">Glissez l'image pour la repositionner</span>
+    </div>
+    
+    <div class="actions-buttons">
+      <button 
+        mat-stroked-button 
+        (click)="onCancel()"
+        [disabled]="isProcessing"
+        class="cancel-btn">
+        <mat-icon>close</mat-icon>
+        Annuler
+      </button>
+      
+      <button 
+        mat-raised-button 
+        color="primary" 
+        [disabled]="!selectedFile || isProcessing" 
+        (click)="onSave()"
+        class="save-btn">
+        <mat-spinner diameter="20" *ngIf="isProcessing"></mat-spinner>
+        <mat-icon *ngIf="!isProcessing">save</mat-icon>
+        <span>{{ isProcessing ? 'Enregistrement...' : 'Enregistrer' }}</span>
+      </button>
+    </div>
+  </div>
+</div>

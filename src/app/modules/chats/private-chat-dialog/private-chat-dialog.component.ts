@@ -1,0 +1,108 @@
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { Observable, startWith, map } from 'rxjs';
+import { User } from '../../../core/models/user';
+import { MatDivider, MatDividerModule } from "@angular/material/divider";
+import { MatIconModule } from "@angular/material/icon";
+import { MatCardModule } from "@angular/material/card";
+import { MatInputModule } from "@angular/material/input";
+import { Component, Inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
+
+
+export interface PrivateChatDialogData {
+  groupMembers: User[];
+}
+
+@Component({
+  selector: 'app-private-chat-dialog',
+  
+  templateUrl: './private-chat-dialog.component.html',
+  styleUrls: ['./private-chat-dialog.component.scss'],
+  imports: [CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    // Material
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatListModule,
+    MatBadgeModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
+    TranslateModule,
+    MatDividerModule, MatCardModule],
+})
+export class PrivateChatDialogComponent implements OnInit {
+  searchControl = new FormControl('');
+  filteredUsers$!: Observable<User[]>;
+  selectedUser: User | null = null;
+  allMembers: User[] = [];
+
+  constructor(
+    private dialogRef: MatDialogRef<PrivateChatDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: PrivateChatDialogData
+  ) {
+    this.allMembers = data.groupMembers || [];
+  }
+
+  ngOnInit(): void {
+    // Filtrer les utilisateurs en temps réel
+    this.filteredUsers$ = this.searchControl.valueChanges.pipe(
+      startWith(''),
+      map(searchTerm => this.filterUsers(searchTerm || ''))
+    );
+  }
+
+  private filterUsers(searchTerm: string): User[] {
+    if (!searchTerm) {
+      return this.allMembers;
+    }
+
+    const search = searchTerm.toLowerCase().trim();
+    
+    return this.allMembers.filter(user => {
+      const fullName = `${user.username}`.toLowerCase();
+      const email = user.email.toLowerCase();
+      
+      return fullName.includes(search) || email.includes(search);
+    });
+  }
+
+  selectUser(user: User): void {
+    this.selectedUser = user;
+  }
+
+  createChat(): void {
+    if (this.selectedUser) {
+      this.dialogRef.close(this.selectedUser.id);
+    }
+  }
+
+  cancel(): void {
+    this.dialogRef.close();
+  }
+
+  getUserDisplayName(user: User): string {
+    return `${user.username}`;
+  }
+
+  getUserAvatar(user: User): string {
+    return user.profilePhotoUrl || 'assets/default-avatar.png';
+  }
+}

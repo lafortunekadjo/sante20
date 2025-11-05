@@ -1,0 +1,105 @@
+<!-- src/app/modules/chat/components/message-item/message-item.component.html -->
+
+<div class="message-item" [class.own-message]="isOwn" [class.system-message]="message.isSystemMessage">
+  
+  <!-- Message système -->
+  <div *ngIf="message.isSystemMessage" class="system-message-content">
+    <mat-icon>info</mat-icon>
+    <span>{{ message.content }}</span>
+  </div>
+
+  <!-- Message normal -->
+  <div *ngIf="!message.isSystemMessage" class="message-wrapper">
+    <!-- Avatar (seulement pour les messages des autres) -->
+    <div *ngIf="!isOwn" class="message-avatar">
+      <!-- <img 
+        *ngIf="message.sender?.id" 
+        [src]="'message.sender.photoUrl'" 
+        [alt]="getSenderName()"> -->
+      <div *ngIf="!message.sender?.id" class="avatar-placeholder">
+        {{ getSenderInitials() }}
+      </div>
+    </div>
+
+    <div class="message-content-wrapper">
+      <!-- Nom de l'expéditeur (pour les messages de groupe) -->
+      <div *ngIf="!isOwn" class="sender-name">
+        {{ getSenderName() }}
+      </div>
+
+      <div class="message-bubble" 
+           [class.has-attachments]="message.attachments.length > 0"
+           (mouseenter)="showMenu = true" 
+           (mouseleave)="showMenu = false">
+        
+        <!-- Attachements images -->
+        <div *ngIf="message.type === MessageType.IMAGE && message.attachments.length > 0" class="image-attachments">
+          <img 
+            *ngFor="let attachment of message.attachments"
+            [src]="attachment.url" 
+            [alt]="attachment.filename"
+            (click)="onImageClick(attachment.url)"
+            class="message-image">
+        </div>
+
+        <!-- Attachements fichiers -->
+        <div *ngIf="message.type === MessageType.FILE && message.attachments.length > 0" class="file-attachments">
+          <div *ngFor="let attachment of message.attachments" class="file-attachment">
+            <div class="file-icon">
+              <mat-icon>{{ getFileIcon(attachment.mimeType) }}</mat-icon>
+            </div>
+            <div class="file-info">
+              <div class="file-name">{{ attachment.filename }}</div>
+              <div class="file-size">{{ formatFileSize(attachment.fileSize) }}</div>
+            </div>
+            <button mat-icon-button (click)="downloadAttachment(attachment)">
+              <mat-icon>download</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenu texte -->
+        <div *ngIf="message.content && !message.isDeleted" class="message-text">
+          {{ message.content }}
+        </div>
+
+        <!-- Message supprimé -->
+        <div *ngIf="message.isDeleted" class="message-deleted">
+          <mat-icon>block</mat-icon>
+          <span>{{ message.content }}</span>
+        </div>
+
+        <!-- Informations du message -->
+        <div class="message-info">
+          <span class="message-time">{{ formatTime(message.createdAt) }}</span>
+          <mat-icon *ngIf="message.isEdited" class="edited-icon" matTooltip="Modifié">edit</mat-icon>
+          
+          <!-- Indicateur de lecture (pour les messages envoyés) -->
+          <mat-icon *ngIf="isOwn && message.readStatuses.length > 0" class="read-icon" matTooltip="Lu">
+            done_all
+          </mat-icon>
+        </div>
+
+        <!-- Menu d'actions -->
+        <button 
+          *ngIf="showMenu && isOwn && !message.isDeleted" 
+          mat-icon-button 
+          class="message-menu-button"
+          [matMenuTriggerFor]="messageMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+
+        <mat-menu #messageMenu="matMenu">
+          <button mat-menu-item (click)="onEditMessage()" *ngIf="message.type === MessageType.TEXT">
+            <mat-icon>edit</mat-icon>
+            <span>Modifier</span>
+          </button>
+          <button mat-menu-item (click)="onDeleteMessage()">
+            <mat-icon>delete</mat-icon>
+            <span>Supprimer</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </div>
+</div>
