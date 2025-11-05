@@ -1,0 +1,81 @@
+<!-- equipe-members-dialog.component.html -->
+<div class="members-dialog">
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">groups</mat-icon>
+      <div>
+        <h2 mat-dialog-title>Membres de l'équipe</h2>
+        <p class="team-name">{{ data.equipe.nom }}</p>
+      </div>
+    </div>
+    <button mat-icon-button mat-dialog-close class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="loading-text">Chargement des membres...</p>
+    </div>
+
+    <!-- Liste des membres -->
+    <div *ngIf="!isLoading && members.length > 0" class="members-list">
+      <div class="members-stats">
+        <div class="stat-item">
+          <mat-icon>people</mat-icon>
+          <span>{{ members.length }} membre(s)</span>
+        </div>
+      </div>
+
+      <mat-list class="member-items">
+        <mat-list-item *ngFor="let member of members; let i = index" class="member-item">
+          <div class="member-avatar" mat-list-avatar [style.background-color]="getAvatarColor(i)">
+            <span>{{ getInitials(member.prenom, member.nom) }}</span>
+          </div>
+          
+          <div matListItemTitle class="member-name">
+            {{ member.prenom }} {{ member.nom }}
+          </div>
+          
+          <div matListItemLine class="member-info">
+            <mat-icon class="info-icon">email</mat-icon>
+            <span>{{ member.email || 'Non renseigné' }}</span>
+          </div>
+
+          <div matListItemLine class="member-info" *ngIf="member.tel">
+            <mat-icon class="info-icon">phone</mat-icon>
+            <span>{{ member.tel }}</span>
+          </div>
+
+          <div class="member-actions" matListItemMeta>
+            <mat-icon class="status-icon" [class.active]="member.active">
+              {{ member.active ? 'check_circle' : 'cancel' }}
+            </mat-icon>
+          </div>
+        </mat-list-item>
+
+        <!-- <mat-divider *ngIf="i < members.length - 1"></mat-divider> -->
+      </mat-list>
+    </div>
+
+    <!-- État vide -->
+    <div *ngIf="!isLoading && members.length === 0" class="empty-state">
+      <mat-icon class="empty-icon">person_off</mat-icon>
+      <h3>Aucun membre</h3>
+      <p>Cette équipe n'a pas encore de membres</p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-stroked-button mat-dialog-close>
+      <mat-icon>close</mat-icon>
+      Fermer
+    </button>
+    <button mat-raised-button color="primary" (click)="exportMembers()" [disabled]="members.length === 0">
+      <mat-icon>download</mat-icon>
+      Exporter
+    </button>
+  </mat-dialog-actions>
+</div>

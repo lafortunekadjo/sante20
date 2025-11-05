@@ -671,17 +671,58 @@ printPresenceSheet() {
     this.printContent('print-presence-section');
 }
 
-// --- DANS VOTRE COMPOSANT TS (ou service) ---
-
 getMembreNameAbbreviated(presence: any): string {
+    const maxLength = 22; // Longueur cible pour tenir sur une ligne
+
+    // --- 1. GESTION DU JOUEUR OCCASIONNEL ---
+    if (presence.nomOccasionnel) {
+        // Tente de séparer le nom occasionnel en Nom et Prénom pour l'abréviation
+        const parts = presence.nomOccasionnel.trim().split(/\s+/);
+        let nomOccasionnel = '';
+        let prenomOccasionnel = '';
+        
+        // Hypothèse : le dernier mot est le Nom, les autres sont les Prénoms
+        if (parts.length > 1) {
+            nomOccasionnel = parts.pop()!.toUpperCase(); // Nom en majuscules
+            prenomOccasionnel = parts.join(' ');
+        } else if (parts.length === 1) {
+            // Un seul mot, on le traite comme le Nom (en majuscules)
+            nomOccasionnel = parts[0].toUpperCase();
+        } else {
+            // Chaîne vide ou juste des espaces
+            return 'Nom occasionnel inconnu';
+        }
+
+        // Si c'est un nom simple qui tient, on le retourne directement
+        if (!prenomOccasionnel && nomOccasionnel.length <= maxLength) {
+            return nomOccasionnel;
+        }
+
+        // Simuler la structure membre pour réutiliser la logique d'abréviation ci-dessous
+        const tempPresence = {
+            membre: {
+                prenom: prenomOccasionnel,
+                nom: nomOccasionnel
+            }
+        };
+
+        // Utiliser la même logique d'abréviation pour les noms occasionnels composés
+        return this.abbreviateNameLogic(tempPresence, maxLength);
+    }
+    
+    // --- 2. GESTION DU MEMBRE RÉGULIER ---
+    return this.abbreviateNameLogic(presence, maxLength);
+}
+
+// --- LOGIQUE D'ABRÉVIATION ISOLÉE POUR RÉUTILISATION ---
+private abbreviateNameLogic(presence: any, maxLength: number): string {
     const prenom = presence.membre?.prenom || '';
     const nom = presence.membre?.nom || '';
     const nomMaj = nom.toUpperCase(); // Nom toujours en majuscules
     
     // Concaténation Nom + Prénoms (version complète)
     let fullName = `${nomMaj} ${prenom}`;
-    const maxLength = 22; // Longueur cible pour tenir sur une ligne (ajustable)
-
+    
     // 1. Si la longueur est acceptable, on la garde
     if (fullName.length <= maxLength) {
         return fullName.trim();
@@ -694,7 +735,8 @@ getMembreNameAbbreviated(presence: any): string {
     
     if (prenomParts.length === 0) {
         // Pas de prénom, on retourne juste le nom
-        return nomMaj;
+        // Note: Le nom peut être plus long que maxLength, c'est géré par la suite
+        return nomMaj.trim(); 
     }
 
     let abbreviatedPrenoms = '';
@@ -708,7 +750,13 @@ getMembreNameAbbreviated(presence: any): string {
         
         // Abréger les prénoms suivants
         for (let i = 1; i < prenomParts.length; i++) {
-            abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
+            // Vérification pour ne pas dépasser la limite avec les initiales
+            const futureLength = nomMaj.length + 1 + abbreviatedPrenoms.length + 1 + 2; // + ' ' + 'X.'
+            if (futureLength <= maxLength) {
+                 abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
+            } else {
+                break; // Stop si l'ajout dépasse la limite
+            }
         }
     } else {
         // Le premier prénom est déjà trop long avec le nom, on abrège TOUS les prénoms
@@ -722,13 +770,72 @@ getMembreNameAbbreviated(presence: any): string {
     if (fullName.length > maxLength) {
         // Si le résultat avec les prénoms abrégés est encore trop long (nom de famille long)
         // on ne garde que l'initiale du PREMIER prénom.
+        // C'est la stratégie la plus courte: Nom + Initial.
         fullName = `${nomMaj} ${prenomParts[0].charAt(0)}.`;
     }
     
-    // On conserve le nom dans tous les cas, même si le texte final dépasse légèrement
-    // la limite idéale de 22 (le CSS gèrera l'overflow).
+    // On conserve le nom dans tous les cas.
     return fullName.trim();
 }
+
+// --- DANS VOTRE COMPOSANT TS (ou service) ---
+
+// getMembreNameAbbreviated(presence: any): string {
+//     const prenom = presence.membre?.prenom || '';
+//     const nom = presence.membre?.nom || '';
+//     const nomMaj = nom.toUpperCase(); // Nom toujours en majuscules
+    
+//     // Concaténation Nom + Prénoms (version complète)
+//     let fullName = `${nomMaj} ${prenom}`;
+//     const maxLength = 22; // Longueur cible pour tenir sur une ligne (ajustable)
+
+//     // 1. Si la longueur est acceptable, on la garde
+//     if (fullName.length <= maxLength) {
+//         return fullName.trim();
+//     }
+
+//     // --- STRATÉGIE D'ABBRÉVIATION DES PRÉNOMS ---
+    
+//     // Sépare les prénoms (par espace ou trait d'union)
+//     const prenomParts = prenom.split(/[\s-]/).filter((p: string | any[]) => p.length > 0);
+    
+//     if (prenomParts.length === 0) {
+//         // Pas de prénom, on retourne juste le nom
+//         return nomMaj;
+//     }
+
+//     let abbreviatedPrenoms = '';
+
+//     // Tenter de garder le premier prénom en entier
+//     let currentLength = nomMaj.length + 1 + prenomParts[0].length; // Nom + ' ' + PremierPrénom
+    
+//     if (currentLength <= maxLength) {
+//         // Premier prénom tient, on l'ajoute
+//         abbreviatedPrenoms += prenomParts[0];
+        
+//         // Abréger les prénoms suivants
+//         for (let i = 1; i < prenomParts.length; i++) {
+//             abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
+//         }
+//     } else {
+//         // Le premier prénom est déjà trop long avec le nom, on abrège TOUS les prénoms
+//         // Ex: Jean-Christophe Marie -> J. C. M.
+//         abbreviatedPrenoms = prenomParts.map((p: string) => p.charAt(0) + '.').join(' ');
+//     }
+    
+//     fullName = `${nomMaj} ${abbreviatedPrenoms}`;
+
+//     // --- Dernière Vérification (Ne JAMAIS tronquer le nom) ---
+//     if (fullName.length > maxLength) {
+//         // Si le résultat avec les prénoms abrégés est encore trop long (nom de famille long)
+//         // on ne garde que l'initiale du PREMIER prénom.
+//         fullName = `${nomMaj} ${prenomParts[0].charAt(0)}.`;
+//     }
+    
+//     // On conserve le nom dans tous les cas, même si le texte final dépasse légèrement
+//     // la limite idéale de 22 (le CSS gèrera l'overflow).
+//     return fullName.trim();
+// }
 
 //   printMatchSheet() {
 //     if (!this.match || !this.dataSource.data.length) {

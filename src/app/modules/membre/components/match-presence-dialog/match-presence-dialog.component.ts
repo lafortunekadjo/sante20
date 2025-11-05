@@ -36,7 +36,7 @@ import { MatListModule } from "@angular/material/list";
     MatListModule,
     
     
-  ],
+],
   templateUrl: './match-presence-dialog.component.html',
   styleUrls: ['./match-presence-dialog.component.scss']
 })

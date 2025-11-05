@@ -17,10 +17,15 @@ import { TypeDepense } from '../models/typeDepense';
   providedIn: 'root'
 })
 export class GeneralService {
-  getAllMembres(): any {
-    throw new Error('Method not implemented.');
+    // Membres du groupe
+  getGroupMembers(): Observable<Membre[]> {
+    return this.http.get<Membre[]>(`${environment.apiUrl}/groupes/membre1`).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la récupération des membres:', err);
+        return throwError(err);
+      })
+    );
   }
- 
 
   constructor(private http: HttpClient) { }
 

@@ -23,10 +23,6 @@ import { environment } from '../../../../environment';
 import { MatIconModule } from '@angular/material/icon';
 import { MatchPresenceDialogComponent } from '../match-presence-dialog/match-presence-dialog.component';
 import { ContributionDialogComponent } from '../../../responsable/components/contribution-dialog/contribution-dialog.component';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatMenuModule } from "@angular/material/menu"; 
-import { TranslateModule } from '@ngx-translate/core';
-
 
 @Component({
   selector: 'app-news-feed',
@@ -37,11 +33,8 @@ import { TranslateModule } from '@ngx-translate/core';
     MatButtonModule,
     MatExpansionModule,
     MatProgressSpinnerModule,
-    MatIconModule,
-    MatTooltipModule,
-    MatMenuModule,
-    TranslateModule
-],
+    MatIconModule
+  ],
   templateUrl: './news-feed.component.html',
   styleUrls: ['./news-feed.component.scss']
 })
@@ -57,11 +50,9 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   allMembres$: Observable<Membre[]>;
   allPresences$: BehaviorSubject<Presence[]> = new BehaviorSubject<Presence[]>([]);
   apiBaseUrl = environment.apiUrl;
-    imageUrl = environment.imageUrl;
   mediaBlobUrls: { [key: string]: { url: string; type: string } } = {};
     mediaLoadingErrors: { [key: string]: boolean } = {};
     allPresences: Presence[] = [];
-    showAllMatches: boolean = false; 
 
   constructor(
     private generalService: GeneralService,
@@ -85,54 +76,6 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
      Object.values(this.mediaBlobUrls).forEach(({ url }) => window.URL.revokeObjectURL(url));
   }
 
-private filterAndSortRecentMatches(matches: Match[], allPresences: Presence[], today: Date): Match[] {
-    
-    // 1. Déterminer les IDs de tous les Matchs qui ont été effectivement joués.
-    const playedMatchIds = new Set<number>();
-    
-    for (const p of allPresences) {
-        // Vérifie si la présence a activement joué ET si l'objet match est bien défini
-        if (p.aJoue === true && p.match?.id) {
-            playedMatchIds.add(p.match.id);
-        }
-    }
-
-    // Calculer la date limite (30 jours en arrière)
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 60);
-    
-    // 2. Filtrer l'array principal des Matchs
-    return matches
-        .filter(m => {
-            const matchDate = new Date(m.dateMatch);
-            
-            // a. Vérification de la date : Le match est-il récent (dans les 30 derniers jours)?
-            const isRecent = matchDate >= thirtyDaysAgo && matchDate <= today;
-
-            // b. Vérification de la participation : L'ID du match est-il dans la liste des matchs joués?
-            const hasBeenPlayed = playedMatchIds.has(m.id);
-
-            // 3. Inclure le match s'il est récent ET a été joué
-            return isRecent && hasBeenPlayed;
-        })
-        .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
-}
-
-  get matchesToDisplay(): Match[] {
-        if (this.showAllMatches) {
-            // Si VRAI, on affiche tout
-            return this.recentMatches;
-        } else if (this.recentMatches.length > 0) {
-            // Si FAUX, on affiche seulement le premier match
-            return [this.recentMatches[0]];
-        }
-        // S'il n'y a pas de matchs, retourne un array vide
-        return [];
-    }
-
-       toggleDisplay(): void {
-        this.showAllMatches = !this.showAllMatches;
-    }
 loadFeedData(): void {
     this.isLoading = true;
 
@@ -159,8 +102,15 @@ loadFeedData(): void {
             // Logique de filtrage et tri (synchrone)
             this.currentEvents = events.filter(e => e.estContributionOuverte && new Date(e.dateEvenement) <= today);
 
-            // Supposons que 'matches' est la liste complète des matchs, et que 'today' est une date Date()
-            this.recentMatches = this.filterAndSortRecentMatches(matches, presences, new Date());
+            this.recentMatches = matches
+                .filter(m => {
+                    const matchDate = new Date(m.dateMatch);
+                    const thirtyDaysAgo = new Date(today);
+                    thirtyDaysAgo.setDate(today.getDate() - 30);
+                    return matchDate >= thirtyDaysAgo && matchDate <= today;
+                })
+                .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
+            
             // Correction de la gestion des contributions individuelles (assumons que c'est synchrone)
             this.ongoingContributions = typedContributions
                 .map(contrib => ({
@@ -219,7 +169,7 @@ loadFeedData(): void {
 
             recentMatches.forEach(match => {
                 match.mediaUrls?.forEach(mediaUrl => {
-                    const fullMediaUrl = `${this.imageUrl}${mediaUrl}`;
+                    const fullMediaUrl = `${this.apiBaseUrl}${mediaUrl}`;
 
                     if (!this.mediaBlobUrls[fullMediaUrl] && !this.mediaLoadingErrors[fullMediaUrl]) {
                         // Transformer l'appel 'fetch' en un Observable pour l'intégrer à RxJS
@@ -516,13 +466,13 @@ openMediaPreview(match: Match, mediaUrl: string): void {
             poste?: string
           }
         }>();
- 
+  
         for (const c of contributions) {
           const membre = c.membre;
           if (!membre?.id) continue;
- 
+  
           const montant = c.montant ?? 0;
- 
+  
           if (!groupedMap.has(membre.id)) {
             groupedMap.set(membre.id, {
               montant,
@@ -541,15 +491,10 @@ openMediaPreview(match: Match, mediaUrl: string): void {
             existing.montant += montant;
           }
         }
- 
+  
         const formattedContributions = Array.from(groupedMap.values());
-
-        // --- DÉBUT DE LA MODIFICATION : Tri par Montant Décroissant ---
-        formattedContributions.sort((a, b) => b.montant - a.montant);
-        // --- FIN DE LA MODIFICATION ---
- 
         const total = formattedContributions.reduce((sum, c) => sum + c.montant, 0);
- 
+  
         this.dialog.open(ContributionDialogComponent, {
           width: '600px',
           data: {
@@ -558,7 +503,7 @@ openMediaPreview(match: Match, mediaUrl: string): void {
           }
         });
       },
- 
+  
       error: (err: any) => {
         console.error('Erreur lors du chargement des contributions:', err);
         this.dialog.open(ContributionDialogComponent, {
@@ -571,6 +516,4 @@ openMediaPreview(match: Match, mediaUrl: string): void {
       }
     });
   }
-
-
 }

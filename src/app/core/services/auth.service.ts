@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, tap , switchMap, throwError, catchError, map, forkJoin, of} from 'rxjs';
+import { Observable, tap , switchMap, throwError, catchError, map, forkJoin, of, BehaviorSubject} from 'rxjs';
 import { environment } from '../../environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { User } from '../models/user';
@@ -29,7 +29,30 @@ export class AuthService {
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
-  constructor(private http: HttpClient,private sanitizer: DomSanitizer, private router: Router) {}
+  private currentGroupeIdSubject = new BehaviorSubject<number | null>(null);
+  public currentGroupeId$ = this.currentGroupeIdSubject.asObservable();
+
+  constructor(private http: HttpClient,private sanitizer: DomSanitizer, private router: Router) {
+    this.initializeAuthState();
+  }
+
+
+     /**
+   * Initialise l'état du service à partir du localStorage au chargement.
+   */
+  private initializeAuthState(): void {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+        this.token = storedToken;
+    }
+    
+    // Initialise le BehaviorSubject avec le groupe stocké
+    const storedGroupeId = localStorage.getItem('currentGroupeId');
+    if (storedGroupeId) {
+      const id = parseInt(storedGroupeId, 10);
+      this.currentGroupeIdSubject.next(id);
+    }
+  }
 
 login(username: string, password: string): Observable<any> {
   const loginPayload = { username, password };
@@ -84,6 +107,20 @@ login(username: string, password: string): Observable<any> {
     })
   );
 }
+
+  /**
+   * Retourne un Observable du Groupe ID actif (pour utilisation réactive)
+   */
+  getCurrentGroupeId$(): Observable<number | null> {
+    return this.currentGroupeIdSubject.asObservable();
+  }
+
+  /**
+   * Retourne immédiatement le Groupe ID actif (pour utilisation synchrone)
+   */
+  getCurrentGroupeId(): number | null {
+    return this.currentGroupeIdSubject.value;
+  }
 
   // Vérifier si l'utilisateur a besoin de réinitialiser son mot de passe
   isPasswordResetRequired(): boolean {

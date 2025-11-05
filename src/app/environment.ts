@@ -4,4 +4,4 @@ export const environment = {
   imageUrl: 'http://localhost:8082',
   //apiUrl:'https://lexical-sybil-mon2-0-76700d64.koyeb.app/api'
 
-}; 
+};
