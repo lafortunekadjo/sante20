@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators'; // Import nécessaire
 
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleCustomService } from '../../../core/services/role-custom.service';
@@ -25,322 +26,387 @@ import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
-  selector: 'app-layout',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatToolbarModule,
-    MatSidenavModule,
-    MatIconModule,
-    MatButtonModule,
-    MatListModule,
-    RouterModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatMenuModule,
-    MatProgressSpinnerModule,
-    MatDividerModule,
-    MatTooltipModule,
-    NavbarComponent,
-    TranslateModule
-  ],
-  templateUrl: './layout.component.html',
-  styleUrls: ['./layout.component.scss']
+  selector: 'app-layout',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatToolbarModule,
+    MatSidenavModule,
+    MatIconModule,
+    MatButtonModule,
+    MatListModule,
+    RouterModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatMenuModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
+    MatTooltipModule,
+    NavbarComponent,
+    TranslateModule
+  ],
+  templateUrl: './layout.component.html',
+  styleUrls: ['./layout.component.scss']
 })
 export class LayoutComponent implements OnInit, OnDestroy {
-  @ViewChild('sidenav') sidenav!: MatSidenav;
+  @ViewChild('sidenav') sidenav!: MatSidenav;
 
-  // Rôles et permissions
-  isAdmin: boolean = false;
-  isResponsable: boolean = false;
-  isMembre: boolean = false;
-  roles: string[] = [];
-  selectedRole: string = '';
+  // Rôles et permissions
+  isAdmin: boolean = false;
+  isResponsable: boolean = false;
+  isMembre: boolean = false;
+  roles: string[] = [];
+  selectedRole: string = '';
 
-  // Menus dynamiques
-  menuCategories: MenuCategorie[] = [];
-  menusCommuns: Menu[] = []; // Menus accessibles à tous
-  isLoadingMenus = false;
-  
-  // UI State
-  user: any = null;
-  userProfileImage: string | null = null;
-  isMobile = false;
-  sidebarOpen = true;
-  currentGroupeId: number | null = null;
-  isLoggedIn = false
+  // Menus dynamiques
+  menuCategories: MenuCategorie[] = [];
+  menusCommuns: Menu[] = []; // Menus accessibles à tous
+  isLoadingMenus = false;
+  
+  // UI State
+  user: any = null;
+  userProfileImage: string | null = null;
+  isMobile = false;
+  sidebarOpen = true;
+  currentGroupeId: number | null = null;
+  isLoggedIn = false
 
-  private menusSubscription?: Subscription;
-  private groupeSubscription?: Subscription;
+  private menusSubscription?: Subscription;
+  private groupeSubscription?: Subscription;
+  private authStatusSubscription?: Subscription; // Nouvelle subscription
 
-  constructor(
-    public authService: AuthService,
-    private roleCustomService: RoleCustomService,
-    private router: Router,
-    private dialog: MatDialog,
-    private breakpointObserver: BreakpointObserver
-  ) {}
+  constructor(
+    public authService: AuthService,
+    private roleCustomService: RoleCustomService,
+    private router: Router,
+    private dialog: MatDialog,
+    private breakpointObserver: BreakpointObserver
+  ) {}
 
-  ngOnInit(): void {
-    this.loadUserData();
-    this.setupRoles();
-    this.setupResponsiveLayout();
-    this.loadMenusCommuns();
-    this.loadUserMenus();
+  ngOnInit(): void {
+    // 1. Logique statique/UI
+    this.setupResponsiveLayout();
+    this.loadMenusCommuns();
 
-    // S'abonner aux changements de groupe
-    this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
-      if (groupeId && groupeId !== this.currentGroupeId) {
-        this.currentGroupeId = groupeId;
-        this.loadUserMenus();
-      }
-    });
+    // 2. Logique dépendante de l'état d'authentification (LE PLUS IMPORTANT)
+    // Nous nous abonnons à l'état prêt pour garantir que les rôles sont chargés.
+    this.authStatusSubscription = this.authService.isUserReady$
+        .subscribe(isReady => {
+            if (isReady && this.authService.isLoggedIn()) {
+                // L'utilisateur est connecté et l'état est stable
+                this.isLoggedIn = true;
+                this.loadUserData(); // Charge l'utilisateur et son image
+                this.setupRoles(); // Met à jour isResponsable, isAdmin, etc.
 
-    // S'abonner aux changements de menus
-    this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
-      if (menus && menus.length > 0) {
-        this.organiserMenusParCategorie(menus);
-      }
-    });
-  }
-
-  ngOnDestroy(): void {
-    if (this.menusSubscription) {
-      this.menusSubscription.unsubscribe();
-    }
-    if (this.groupeSubscription) {
-      this.groupeSubscription.unsubscribe();
-    }
-  }
-
-  setupRoles(): void {
-    this.roles = this.authService.getRoles();
-    
-    if (this.roles.includes('ROLE_RESPONSABLE') || this.roles.includes('RESPONSABLE')) {
-      this.selectedRole = 'RESPONSABLE';
-      this.isResponsable = true;
-    } else if (this.roles.includes('ROLE_ADMIN') || this.roles.includes('ADMIN')) {
-      this.selectedRole = 'ADMIN';
-      this.isAdmin = true;
-    } else if (this.roles.includes('ROLE_MEMBRE') || this.roles.includes('MEMBRE')) {
-      this.selectedRole = 'MEMBRE';
-      this.isMembre = true;
-    }
-  }
-
-  setupResponsiveLayout(): void {
-    this.breakpointObserver
-      .observe([Breakpoints.Handset, Breakpoints.Tablet])
-      .subscribe(result => {
-        this.isMobile = result.matches;
-        this.sidebarOpen = !this.isMobile;
+                // Charger les menus spécifiques maintenant que les rôles sont définis
+                this.loadUserMenus(); 
+                
+                // S'abonner aux changements de groupe (doit être fait APRES que l'utilisateur soit chargé)
+                this.setupGroupeSubscription();
+            } else if (isReady && !this.authService.isLoggedIn()) {
+                // L'état est stable, mais l'utilisateur est déconnecté
+                this.isLoggedIn = false;
+                this.resetUserSpecificState();
+            }
+        });
         
-        if (this.isMobile && this.sidenav) {
-          this.sidenav.close();
+    // 3. S'abonner aux changements de menus (Laissé ici car il réagit à un service)
+    this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
+      if (menus && menus.length > 0) {
+        this.organiserMenusParCategorie(menus);
+      } else {
+        this.menuCategories = []; // Vider si le service émet null/vide
+      }
+    });
+  }
+
+  /**
+   * Encapsule l'abonnement aux changements de groupe.
+   */
+  setupGroupeSubscription(): void {
+    // Si la subscription existait déjà, on la nettoie pour éviter les doubles abonnements
+    if (this.groupeSubscription) {
+        this.groupeSubscription.unsubscribe();
+    }
+    
+    this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
+        if (groupeId !== this.currentGroupeId) { // Vérifier si l'ID a réellement changé
+            this.currentGroupeId = groupeId;
+            // Recharger les menus si le groupe change
+            if (this.isLoggedIn) {
+                this.loadUserMenus();
+            }
         }
-      });
+    });
   }
-
-  loadUserData(): void {
-    this.user = this.authService.getUser();
-    this.userProfileImage = this.user?.profileImage || null;
-  }
-
+  
   /**
-   * Charger les menus communs (accessibles à tous les utilisateurs connectés)
+   * Nettoie les états spécifiques à l'utilisateur lors de la déconnexion
    */
-  loadMenusCommuns(): void {
-     console.log("lodmenucommon")
-    this.menusCommuns = [
-      {
-        id: 1,
-        code: 'EXPLORER',
-        label: 'Explorer',
-        icone: 'explore',
-        route: '/explorer',
-        description: 'Explorer les groupes',
-        ordre: 1,
-        actif: true,
-        categorie: 'COMMUN'
-      },
-      {
-        id: 2,
-        code: 'MES_DEMANDES',
-        label: 'Mes demandes',
-        icone: 'inbox',
-        route: '/mes-demandes',
-        description: 'Mes demandes d\'adhésion',
-        ordre: 2,
-        actif: true,
-        categorie: 'COMMUN'
-      },
-      {
-        id: 3,
-        code: 'ACTUALITES',
-        label: 'Actualités',
-        icone: 'newspaper',
-        route: '/actualites',
-        description: 'Fil d\'actualités',
-        ordre: 3,
-        actif: true,
-        categorie: 'COMMUN'
-      },
-      {
-        id: 4,
-        code: 'CHAT',
-        label: 'Messages',
-        icone: 'chat',
-        route: '/chat',
-        description: 'Messagerie',
-        ordre: 4,
-        actif: true,
-        categorie: 'COMMUN'
-      }
-    ];
-  }
+  resetUserSpecificState(): void {
+    this.user = null;
+    this.roles = [];
+    this.isAdmin = false;
+    this.isResponsable = false;
+    this.isMembre = false;
+    this.menuCategories = [];
+    this.currentGroupeId = null;
 
-  /**
-   * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
-   */
-  loadUserMenus(): void {
-     console.log("lodmenu")
-    if(this.authService.isLoggedIn()){
-       if (!this.isResponsable) {
-      return;
+    if (this.groupeSubscription) {
+        this.groupeSubscription.unsubscribe();
+        this.groupeSubscription = undefined;
     }
+  }
 
-    const groupeId = this.authService.getCurrentGroupeId();
+  ngOnDestroy(): void {
+    if (this.menusSubscription) {
+      this.menusSubscription.unsubscribe();
+    }
+    if (this.groupeSubscription) {
+      this.groupeSubscription.unsubscribe();
+    }
+    if (this.authStatusSubscription) { // Nettoyage du nouvel abonnement
+      this.authStatusSubscription.unsubscribe();
+    }
+  }
+
+  setupRoles(): void {
+    // On met à jour les rôles à partir de l'état stable
+    this.roles = this.authService.getRoles();
     
-    if (!groupeId) {
-      this.menuCategories = [];
-      return;
-    }
+    // Réinitialisation des flags (important si l'utilisateur change de rôle ou si l'état change)
+    this.isAdmin = false;
+    this.isResponsable = false;
+    this.isMembre = false;
 
-    this.isLoadingMenus = true;
+    if (this.roles.includes('RESPONSABLE') || this.roles.includes('ROLE_RESPONSABLE')) {
+      this.selectedRole = 'RESPONSABLE';
+      this.isResponsable = true;
+    } else if (this.roles.includes('ADMIN') || this.roles.includes('ROLE_ADMIN')) {
+      this.selectedRole = 'ADMIN';
+      this.isAdmin = true;
+    } else if (this.roles.includes('MEMBRE') || this.roles.includes('ROLE_MEMBRE')) {
+      this.selectedRole = 'MEMBRE';
+      this.isMembre = true;
+    }
+  }
 
-    this.roleCustomService.getUserMenus(groupeId).subscribe({
-      next: (userMenus) => {
-        console.log("les menus", userMenus)
-        this.organiserMenusParCategorie(userMenus.menus);
-        this.isLoadingMenus = false;
-      },
-      error: (err) => {
-        console.error('Erreur chargement menus:', err);
-        this.menuCategories = [];
-        this.isLoadingMenus = false;
-      }
-    });
-      
-    }
-   
-  }
+  setupResponsiveLayout(): void {
+// ... (méthode non modifiée)
+    this.breakpointObserver
+      .observe([Breakpoints.Handset, Breakpoints.Tablet])
+      .subscribe(result => {
+        this.isMobile = result.matches;
+        this.sidebarOpen = !this.isMobile;
+        
+        if (this.isMobile && this.sidenav) {
+          this.sidenav.close();
+        }
+      });
+  }
 
-  /**
-   * Organiser les menus par catégorie
-   */
-  organiserMenusParCategorie(menus: Menu[]): void {
-    const categoriesMap = new Map<string, Menu[]>();
+  loadUserData(): void {
+    // Assurez-vous que getUser() lit bien les données stockées après l'initialisation asynchrone
+    this.user = this.authService.getUser();
+    this.userProfileImage = this.user?.profileImage || null;
+  }
 
-    menus.forEach(menu => {
-      if (!categoriesMap.has(menu.categorie)) {
-        categoriesMap.set(menu.categorie, []);
-      }
-      categoriesMap.get(menu.categorie)?.push(menu);
-    });
+  /**
+   * Charger les menus communs (accessibles à tous les utilisateurs connectés)
+   */
+  loadMenusCommuns(): void {
+// ... (méthode non modifiée)
+    this.menusCommuns = [
+      {
+        id: 1,
+        code: 'EXPLORER',
+        label: 'Explorer',
+        icone: 'explore',
+        route: '/explorer',
+        description: 'Explorer les groupes',
+        ordre: 1,
+        actif: true,
+        categorie: 'COMMUN'
+      },
+      {
+        id: 2,
+        code: 'MES_DEMANDES',
+        label: 'Mes demandes',
+        icone: 'inbox',
+        route: '/mes-demandes',
+        description: 'Mes demandes d\'adhésion',
+        ordre: 2,
+        actif: true,
+        categorie: 'COMMUN'
+      },
+      {
+        id: 3,
+        code: 'ACTUALITES',
+        label: 'Actualités',
+        icone: 'newspaper',
+        route: '/actualites',
+        description: 'Fil d\'actualités',
+        ordre: 3,
+        actif: true,
+        categorie: 'COMMUN'
+      },
+      {
+        id: 4,
+        code: 'CHAT',
+        label: 'Messages',
+        icone: 'chat',
+        route: '/chat',
+        description: 'Messagerie',
+        ordre: 4,
+        actif: true,
+        categorie: 'COMMUN'
+      }
+    ];
+  }
 
-    const categoriesConfig = {
-      'GESTION': { label: 'Gestion', icone: 'settings' },
-      'SPORT': { label: 'Sport', icone: 'sports_soccer' },
-      'FINANCES': { label: 'Finances', icone: 'account_balance' },
-      'COMMUNICATION': { label: 'Communication', icone: 'campaign' }
-    };
-
-    this.menuCategories = Array.from(categoriesMap.entries())
-      .map(([code, menus]) => ({
-        code,
-        label: categoriesConfig[code as keyof typeof categoriesConfig]?.label || code,
-        icone: categoriesConfig[code as keyof typeof categoriesConfig]?.icone || 'folder',
-        menus: menus.sort((a, b) => a.ordre - b.ordre)
-      }))
-      .sort((a, b) => {
-        const order = ['GESTION', 'SPORT', 'FINANCES', 'COMMUNICATION'];
-        return order.indexOf(a.code) - order.indexOf(b.code);
-      });
-  }
-
-  // ===== HELPERS POUR LE TRACKING (optimisation Angular) =====
-
-  /**
-   * TrackBy function pour les menus (optimisation Angular)
-   */
-  trackByMenuId(index: number, menu: Menu): any {
-    return menu.id;
-  }
-
-  /**
-   * TrackBy function pour les catégories (optimisation Angular)
-   */
-  trackByCategoryId(index: number, category: MenuCategorie): any {
-    return category.code;
-  }
-
-  // ===== HELPERS POUR LES FONCTIONS D'UI =====
-
-  /**
-   * Obtenir la date actuelle
-   */
-  getCurrentDate(): Date {
-    return new Date();
-  }
-
-  // Sidebar
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
+  /**
+   * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
+   */
+  loadUserMenus(): void {
+    console.log("lodmenu")
+    // La vérification isLoggedIn() est faite par l'abonnement à isUserReady$
     
-    if (this.sidenav) {
-      this.sidenav.toggle();
-    }
-  }
+    if (!this.isResponsable) {
+        this.menuCategories = []; // Important: vider les anciens menus
+      return;
+    }
 
-  closeSidebar(): void {
-    if (this.isMobile) {
-      this.sidebarOpen = false;
-      
-      if (this.sidenav) {
-        this.sidenav.close();
-      }
-    }
-  }
+    const groupeId = this.authService.getCurrentGroupeId();
+    
+    if (!groupeId) {
+      this.menuCategories = [];
+      return;
+    }
 
-  onNavClick(): void {
-    this.closeSidebar();
-  }
+    this.isLoadingMenus = true;
 
-  // Profil
-  openProfileEdit(): void {
-    const dialogRef = this.dialog.open(ProfilEditComponent, {
-      width: '400px',
-      data: { user: this.user }
-    });
+    this.roleCustomService.getUserMenus(groupeId).subscribe({
+      next: (userMenus) => {
+        console.log("les menus", userMenus)
+        this.organiserMenusParCategorie(userMenus.menus);
+        this.isLoadingMenus = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement menus:', err);
+        this.menuCategories = [];
+        this.isLoadingMenus = false;
+      }
+    });
+   
+  }
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadUserData();
-      }
-    });
-  }
+  /**
+   * Organiser les menus par catégorie
+   */
+// ... (méthode non modifiée)
+  organiserMenusParCategorie(menus: Menu[]): void {
+    const categoriesMap = new Map<string, Menu[]>();
 
-  viewNotifications(): void {
-    this.router.navigate(['/notifications']);
-  }
+    menus.forEach(menu => {
+      if (!categoriesMap.has(menu.categorie)) {
+        categoriesMap.set(menu.categorie, []);
+      }
+      categoriesMap.get(menu.categorie)?.push(menu);
+    });
 
-  viewSettings(): void {
-    this.router.navigate(['/settings']);
-  }
+    const categoriesConfig = {
+      'GESTION': { label: 'Gestion', icone: 'settings' },
+      'SPORT': { label: 'Sport', icone: 'sports_soccer' },
+      'FINANCES': { label: 'Finances', icone: 'account_balance' },
+      'COMMUNICATION': { label: 'Communication', icone: 'campaign' }
+    };
 
-  logout(): void {
-    this.authService.logout();
-    this.roleCustomService.clearUserMenus();
-    this.router.navigate(['/']);
-  }
+    this.menuCategories = Array.from(categoriesMap.entries())
+      .map(([code, menus]) => ({
+        code,
+        label: categoriesConfig[code as keyof typeof categoriesConfig]?.label || code,
+        icone: categoriesConfig[code as keyof typeof categoriesConfig]?.icone || 'folder',
+        menus: menus.sort((a, b) => a.ordre - b.ordre)
+      }))
+      .sort((a, b) => {
+        const order = ['GESTION', 'SPORT', 'FINANCES', 'COMMUNICATION'];
+        return order.indexOf(a.code) - order.indexOf(b.code);
+      });
+  }
+
+  // ===== HELPERS POUR LE TRACKING (optimisation Angular) =====
+
+  /**
+   * TrackBy function pour les menus (optimisation Angular)
+   */
+  trackByMenuId(index: number, menu: Menu): any {
+    return menu.id;
+  }
+
+  /**
+   * TrackBy function pour les catégories (optimisation Angular)
+   */
+  trackByCategoryId(index: number, category: MenuCategorie): any {
+    return category.code;
+  }
+
+  // ===== HELPERS POUR LES FONCTIONS D'UI =====
+
+  /**
+   * Obtenir la date actuelle
+   */
+  getCurrentDate(): Date {
+    return new Date();
+  }
+
+  // Sidebar
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    
+    if (this.sidenav) {
+      this.sidenav.toggle();
+    }
+  }
+
+  closeSidebar(): void {
+    if (this.isMobile) {
+      this.sidebarOpen = false;
+      
+      if (this.sidenav) {
+        this.sidenav.close();
+      }
+    }
+  }
+
+  onNavClick(): void {
+    this.closeSidebar();
+  }
+
+  // Profil
+  openProfileEdit(): void {
+    const dialogRef = this.dialog.open(ProfilEditComponent, {
+      width: '400px',
+      data: { user: this.user }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadUserData();
+      }
+    });
+  }
+
+  viewNotifications(): void {
+    this.router.navigate(['/notifications']);
+  }
+
+  viewSettings(): void {
+    this.router.navigate(['/settings']);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.roleCustomService.clearUserMenus();
+    this.router.navigate(['/']);
+  }
 }
