@@ -150,6 +150,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
    * Charger les menus communs (accessibles à tous les utilisateurs connectés)
    */
   loadMenusCommuns(): void {
+     console.log("lodmenucommon")
     this.menusCommuns = [
       {
         id: 1,
@@ -202,6 +203,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
    * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
    */
   loadUserMenus(): void {
+     console.log("lodmenu")
     if(this.authService.isLoggedIn()){
        if (!this.isResponsable) {
       return;
