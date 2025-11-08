@@ -32,6 +32,8 @@ import { applyPlugin, autoTable} from 'jspdf-autotable';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 applyPlugin(jsPDF)
 
 @Component({
@@ -56,7 +58,9 @@ applyPlugin(jsPDF)
     MatNativeDateModule,
     MatSnackBarModule,
     MatButtonToggleModule,
-    MatChipsModule
+    MatChipsModule,
+    TranslateModule,
+    MatTooltipModule
   ],
    animations: [
     trigger('slideDown', [
@@ -263,8 +267,6 @@ filterMatchesByDate(date: Date | null) {
   const year = selectedDate.getFullYear();
   const formattedDate = `${year}-${month}-${day}`; // Ex: "2025-09-28"
 
-  console.log('Date formatée pour comparaison:', formattedDate);
-console.log(this.dataSource.data)
   // 3. Filtrage : on itère sur la liste complète (this.allSanctions)
   const filteredSanctions = this.allSanctions.filter(sanction => {
     // On compare la date du match de la sanction avec la date formatée
@@ -857,6 +859,22 @@ getTotalAmount(): number {
       return sanctionTypeId === typeId;
     }).length;
   }
+
+   getCountByStatus(status: string): number {
+    return this.allSanctions.filter(s => {
+      const sanction = typeof s.status === status 
+        ? s.status 
+        : (s.status as TypeSanction)?.id;
+      return sanction === status;
+    }).length;
+  }
+
+  toggleView() {
+    // Optional: Add logic here if needed, e.g., refresh data or apply filters on view change
+    this.applyFilters(); // If filters need to be re-applied after view switch
+    // Or save to localStorage for persistence: localStorage.setItem('sanctionViewMode', this.viewMode);
+  }
+
 
   
 }

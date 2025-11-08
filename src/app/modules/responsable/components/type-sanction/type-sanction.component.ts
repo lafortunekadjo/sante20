@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-type-sanction',
@@ -30,6 +31,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
+    TranslateModule,
     MatProgressSpinnerModule],
   templateUrl: './type-sanction.component.html',
   styleUrl: './type-sanction.component.scss'

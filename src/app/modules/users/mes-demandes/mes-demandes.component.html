@@ -1,161 +1,264 @@
 <div class="mes-demandes-container">
-  <!-- Header -->
+  <!-- Header harmonisé -->
   <div class="page-header">
+    <div class="header-background"></div>
     <div class="header-content">
-      <button mat-icon-button (click)="retourExplorer()" class="back-button">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <div class="header-title">
-        <h1>Mes demandes d'adhésion</h1>
-        <p class="subtitle">Suivez l'état de vos candidatures</p>
+      <div class="header-main">
+        <button mat-icon-button (click)="retourExplorer()" class="back-button">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-text">
+          <h1 class="page-title">{{ 'myRequests.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'myRequests.subtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ demandes.length }}</span>
+          <span class="stat-label">{{ 'myRequests.totalRequests' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ getCountByStatus('EN_ATTENTE') }}</span>
+          <span class="stat-label">{{ 'myRequests.pending' | translate }}</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Chargement de vos demandes...</p>
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'myRequests.loadingRequests' | translate }}</p>
+    </div>
   </div>
 
   <!-- Content -->
   <div *ngIf="!isLoading" class="content">
     
-    <!-- Filtres -->
+    <!-- Filtres harmonisés -->
     <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <h3>{{ 'common.filterBy' | translate }}</h3>
+        </div>
+      </div>
+      
       <div class="filter-chips">
-        <mat-chip 
-          [class.active]="filtreStatut === 'TOUS'"
-          (click)="filtreStatut = 'TOUS'">
-          <mat-icon>list</mat-icon>
-          Toutes ({{ getCountByStatus('TOUS') }})
-        </mat-chip>
-        <mat-chip 
-          [class.active]="filtreStatut === 'EN_ATTENTE'"
-          (click)="filtreStatut = 'EN_ATTENTE'">
-          <mat-icon>hourglass_empty</mat-icon>
-          En attente ({{ getCountByStatus('EN_ATTENTE') }})
-        </mat-chip>
-        <mat-chip 
-          [class.active]="filtreStatut === 'ACCEPTEE'"
-          (click)="filtreStatut = 'ACCEPTEE'">
-          <mat-icon>check_circle</mat-icon>
-          Acceptées ({{ getCountByStatus('ACCEPTEE') }})
-        </mat-chip>
-        <mat-chip 
-          [class.active]="filtreStatut === 'REFUSEE'"
-          (click)="filtreStatut = 'REFUSEE'">
-          <mat-icon>cancel</mat-icon>
-          Refusées ({{ getCountByStatus('REFUSEE') }})
-        </mat-chip>
+        <mat-chip-listbox class="status-chips">
+          <mat-chip-option 
+            [selected]="filtreStatut === 'TOUS'"
+            (click)="setFilter('TOUS')"
+            class="filter-chip all">
+            <mat-icon>list</mat-icon>
+            <span>{{ 'common.all' | translate }} ({{ getCountByStatus('TOUS') }})</span>
+          </mat-chip-option>
+          
+          <mat-chip-option 
+            [selected]="filtreStatut === 'EN_ATTENTE'"
+            (click)="setFilter('EN_ATTENTE')"
+            class="filter-chip pending">
+            <mat-icon>hourglass_empty</mat-icon>
+            <span>{{ 'status.pending' | translate }} ({{ getCountByStatus('EN_ATTENTE') }})</span>
+          </mat-chip-option>
+          
+          <mat-chip-option 
+            [selected]="filtreStatut === 'ACCEPTEE'"
+            (click)="setFilter('ACCEPTEE')"
+            class="filter-chip accepted">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ 'status.accepted' | translate }} ({{ getCountByStatus('ACCEPTEE') }})</span>
+          </mat-chip-option>
+          
+          <mat-chip-option 
+            [selected]="filtreStatut === 'REFUSEE'"
+            (click)="setFilter('REFUSEE')"
+            class="filter-chip rejected">
+            <mat-icon>cancel</mat-icon>
+            <span>{{ 'status.rejected' | translate }} ({{ getCountByStatus('REFUSEE') }})</span>
+          </mat-chip-option>
+        </mat-chip-listbox>
       </div>
     </div>
 
     <!-- Liste des demandes -->
     <div class="demandes-list" *ngIf="demandesFiltrees.length > 0">
-      <mat-card class="demande-card" *ngFor="let demande of demandesFiltrees">
+      <div 
+        class="demande-card" 
+        *ngFor="let demande of demandesFiltrees; trackBy: trackByDemandeId"
+        [class.fade-in]="true">
         
         <!-- Header de la card -->
         <div class="demande-header">
           <div class="groupe-info">
-            <mat-icon class="discipline-icon">
-  {{ getDisciplineIcon(demande.groupe?.discipline ?? '') }}
-</mat-icon>
-            <div>
+            <div class="groupe-avatar">
+              <mat-icon class="discipline-icon">
+                {{ getDisciplineIcon(demande.groupe?.discipline ?? '') }}
+              </mat-icon>
+            </div>
+            <div class="groupe-details">
               <h3 class="groupe-nom">{{ demande.groupe?.nom }}</h3>
               <p class="groupe-discipline">{{ demande.groupe?.discipline }}</p>
+              <p class="groupe-ville" *ngIf="demande.groupe?.ville">
+                <mat-icon>place</mat-icon>
+                {{ demande.groupe?.ville }}
+              </p>
             </div>
           </div>
           
           <mat-chip class="statut-chip" [class]="'statut-' + demande.statut.toLowerCase()">
             <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
-            {{ getStatutLabel(demande.statut) }}
+            <span>{{ getStatutLabel(demande.statut) | translate }}</span>
           </mat-chip>
         </div>
 
-        <mat-card-content>
-          <!-- Infos de la demande -->
-          <div class="demande-info">
-            <div class="info-row">
-              <mat-icon>calendar_today</mat-icon>
-              <span class="info-label">Date de demande:</span>
-              <span class="info-value">{{ demande.dateCreation | date:'dd/MM/yyyy à HH:mm' }}</span>
+        <!-- Contenu de la card -->
+        <div class="demande-content">
+          <!-- Timeline des événements -->
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-icon created">
+                <mat-icon>send</mat-icon>
+              </div>
+              <div class="timeline-content">
+                <h4>{{ 'myRequests.requestSent' | translate }}</h4>
+                <p>{{ demande.dateCreation | date:'dd/MM/yyyy à HH:mm' }}</p>
+              </div>
             </div>
 
-            <div class="info-row" *ngIf="demande.dateReponse && demande.statut !== 'EN_ATTENTE'">
-              <mat-icon>event_available</mat-icon>
-              <span class="info-label">Date de réponse:</span>
-              <span class="info-value">{{ demande.dateReponse | date:'dd/MM/yyyy à HH:mm' }}</span>
+            <div class="timeline-item" *ngIf="demande.dateReponse && demande.statut !== 'EN_ATTENTE'">
+              <div class="timeline-icon" [class]="demande.statut.toLowerCase()">
+                <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
+              </div>
+              <div class="timeline-content">
+                <h4>{{ 'myRequests.responseReceived' | translate }}</h4>
+                <p>{{ demande.dateReponse | date:'dd/MM/yyyy à HH:mm' }}</p>
+              </div>
             </div>
+          </div>
 
-            <div class="info-row" *ngIf="demande.reponses && demande.reponses.length > 0">
+          <!-- Informations supplémentaires -->
+          <div class="additional-info" *ngIf="demande.reponses && demande.reponses.length > 0">
+            <div class="info-card">
               <mat-icon>question_answer</mat-icon>
-              <span class="info-label">Nombre de réponses:</span>
-              <span class="info-value">{{ demande.reponses.length }} question(s)</span>
+              <div>
+                <span class="info-label">{{ 'myRequests.questionnaire' | translate }}</span>
+                <span class="info-value">{{ demande.reponses.length }} {{ 'myRequests.questions' | translate }}</span>
+              </div>
             </div>
           </div>
 
           <!-- Message selon le statut -->
-          <div class="status-message" [ngClass]="'message-' + demande.statut.toLowerCase()">
-            <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
-            <div>
+          <div class="status-message" [class]="'message-' + demande.statut.toLowerCase()">
+            <div class="message-icon">
+              <mat-icon>{{ getStatutIcon(demande.statut) }}</mat-icon>
+            </div>
+            <div class="message-content">
               <ng-container [ngSwitch]="demande.statut">
-                <p *ngSwitchCase="'EN_ATTENTE'">
-                  Votre demande est en cours d'examen par les responsables du groupe.
-                </p>
-                <p *ngSwitchCase="'ACCEPTEE'">
-                  Félicitations ! Votre demande a été acceptée. Vous êtes maintenant membre du groupe.
-                </p>
-                <p *ngSwitchCase="'REFUSEE'">
-                  Votre demande n'a pas été retenue pour le moment. Vous pouvez contacter les responsables pour plus d'informations.
-                </p>
+                <div *ngSwitchCase="'EN_ATTENTE'" class="message-text">
+                  <h4>{{ 'myRequests.statusMessages.pendingTitle' | translate }}</h4>
+                  <p>{{ 'myRequests.statusMessages.pendingMessage' | translate }}</p>
+                </div>
+                <div *ngSwitchCase="'ACCEPTEE'" class="message-text">
+                  <h4>{{ 'myRequests.statusMessages.acceptedTitle' | translate }}</h4>
+                  <p>{{ 'myRequests.statusMessages.acceptedMessage' | translate }}</p>
+                </div>
+                <div *ngSwitchCase="'REFUSEE'" class="message-text">
+                  <h4>{{ 'myRequests.statusMessages.rejectedTitle' | translate }}</h4>
+                  <p>{{ 'myRequests.statusMessages.rejectedMessage' | translate }}</p>
+                </div>
               </ng-container>
             </div>
           </div>
-        </mat-card-content>
+        </div>
 
-        <mat-card-actions>
-          <button 
-            mat-button 
-            (click)="viewDetails(demande)"
-            color="primary">
-            <mat-icon>visibility</mat-icon>
-            Voir les détails
-          </button>
+        <!-- Actions de la card -->
+        <div class="demande-actions">
+          <div class="primary-actions">
+            <button 
+              mat-raised-button 
+              color="primary"
+              (click)="viewDetails(demande)"
+              class="details-btn">
+              <mat-icon>visibility</mat-icon>
+              <span>{{ 'common.viewDetails' | translate }}</span>
+            </button>
 
-          <button 
-            mat-button 
-            (click)="goToGroupe(demande.groupeId)">
-            <mat-icon>group</mat-icon>
-            Voir le groupe
-          </button>
+            <button 
+              mat-stroked-button 
+              (click)="goToGroupe(demande.groupeId)"
+              class="group-btn">
+              <mat-icon>group</mat-icon>
+              <span>{{ 'common.viewGroup' | translate }}</span>
+            </button>
+          </div>
 
-          <button 
-            mat-stroked-button 
-            color="warn"
-            (click)="annulerDemande(demande)"
-            *ngIf="demande.statut === 'EN_ATTENTE'">
-            <mat-icon>delete</mat-icon>
-            Annuler
-          </button>
-        </mat-card-actions>
-      </mat-card>
+          <div class="secondary-actions">
+            <button 
+              mat-icon-button 
+              [matTooltip]="'common.share' | translate"
+              (click)="shareRequest(demande)">
+              <mat-icon>share</mat-icon>
+            </button>
+
+            <button 
+              mat-stroked-button 
+              color="warn"
+              (click)="annulerDemande(demande)"
+              *ngIf="demande.statut === 'EN_ATTENTE'"
+              class="cancel-btn">
+              <mat-icon>cancel</mat-icon>
+              <span>{{ 'common.cancel' | translate }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Message si aucune demande -->
+    <!-- État vide -->
     <div class="empty-state" *ngIf="demandesFiltrees.length === 0">
-      <mat-icon>inbox</mat-icon>
-      <h2>Aucune demande trouvée</h2>
-      <p *ngIf="filtreStatut === 'TOUS'">
-        Vous n'avez pas encore fait de demande d'adhésion.
-      </p>
-      <p *ngIf="filtreStatut !== 'TOUS'">
-        Aucune demande avec le statut "{{ getStatutLabel(filtreStatut) }}".
-      </p>
-      <button mat-raised-button color="primary" (click)="retourExplorer()">
-        <mat-icon>explore</mat-icon>
-        Explorer les groupes
-      </button>
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">
+          {{ filtreStatut === 'TOUS' ? 'inbox' : 'search_off' }}
+        </mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">
+          {{ filtreStatut === 'TOUS' ? ('myRequests.noRequests' | translate) : ('myRequests.noRequestsFilter' | translate) }}
+        </h3>
+        <p class="empty-text">
+          <ng-container *ngIf="filtreStatut === 'TOUS'">
+            {{ 'myRequests.noRequestsMessage' | translate }}
+          </ng-container>
+          <ng-container *ngIf="filtreStatut !== 'TOUS'">
+            {{ 'myRequests.noRequestsFilterMessage' | translate: { status: (getStatutLabel(filtreStatut) | translate) } }}
+          </ng-container>
+        </p>
+        <div class="empty-actions">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            (click)="retourExplorer()"
+            class="explore-btn">
+            <mat-icon>explore</mat-icon>
+            <span>{{ 'myRequests.exploreGroups' | translate }}</span>
+          </button>
+          
+          <button 
+            *ngIf="filtreStatut !== 'TOUS'"
+            mat-stroked-button 
+            (click)="setFilter('TOUS')"
+            class="show-all-btn">
+            <mat-icon>list</mat-icon>
+            <span>{{ 'myRequests.showAll' | translate }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>

@@ -1,42 +1,79 @@
-<!-- src/app/modules/chat/components/chat-main/chat-main.component.html -->
-
-<div class="chat-container">
-  <div class="chat-sidebar">
-    <div class="sidebar-header">
-      <h2>{{ 'chat.messages' | translate }}</h2>
-      <button mat-icon-button [matMenuTriggerFor]="menu">
-        <mat-icon>more_vert</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu">
-        <button mat-menu-item (click)="openPrivateChatDialog()">
-          <mat-icon>person_add</mat-icon>
-          <span>{{ 'chat.newPrivateChat' | translate }}</span>
-        </button>
-        <button mat-menu-item (click)="openGroupChatDialog()">
-          <mat-icon>group_add</mat-icon>
-          <span>{{ 'chat.newGroupChat' | translate }}</span>
-        </button>
-      </mat-menu>
+<div class="chat-main-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'chat.messages' | translate }}</h1>
+          <p class="page-subtitle">{{ 'chat.subtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ conversations?.length }}</span>
+          <span class="stat-label">{{ 'chat.totalConversations' | translate }}</span>
+        </div>
+      </div>
     </div>
-    
-    <app-conversation-list
-      [conversations]="conversations"
-      [selectedConversation]="selectedConversation"
-      [loading]="loading"
-      (conversationSelected)="selectConversation($event)">
-    </app-conversation-list>
   </div>
 
-  <div class="chat-main">
-    <app-conversation-detail
-      *ngIf="selectedConversation"
-      [conversation]="selectedConversation">
-    </app-conversation-detail>
-    
-    <div *ngIf="!selectedConversation" class="no-conversation-selected">
-      <mat-icon>forum</mat-icon>
-      <h3>{{ 'chat.selectConversation' | translate }}</h3>
-      <p>{{ 'chat.selectConversationHint' | translate }}</p>
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'chat.loadingConversations' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading" class="content">
+    <div class="chat-layout">
+      <div class="chat-sidebar">
+        <div class="sidebar-header">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="openPrivateChatDialog()">
+              <mat-icon>person_add</mat-icon>
+              <span>{{ 'chat.newPrivateChat' | translate }}</span>
+            </button>
+            <button mat-menu-item (click)="openGroupChatDialog()">
+              <mat-icon>group_add</mat-icon>
+              <span>{{ 'chat.newGroupChat' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+        
+        <app-conversation-list
+          [conversations]="conversations"
+          [selectedConversation]="selectedConversation"
+          [loading]="loading"
+          (conversationSelected)="selectConversation($event)">
+        </app-conversation-list>
+      </div>
+
+      <div class="chat-main" *ngIf="selectedConversation; else noConversation">
+        <app-conversation-detail
+          [conversation]="selectedConversation">
+        </app-conversation-detail>
+      </div>
+
+      <ng-template #noConversation>
+        <div class="empty-state">
+          <div class="empty-illustration">
+            <mat-icon class="empty-icon">forum</mat-icon>
+          </div>
+          <div class="empty-content">
+            <h3 class="empty-title">{{ 'chat.selectConversation' | translate }}</h3>
+            <p class="empty-text">{{ 'chat.selectConversationHint' | translate }}</p>
+          </div>
+        </div>
+      </ng-template>
     </div>
   </div>
 </div>

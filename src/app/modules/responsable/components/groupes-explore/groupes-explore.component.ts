@@ -27,6 +27,9 @@ import { GroupeDetailsDialogComponent } from '../../../membre/components/groupe-
 import { LoginPromptDialogComponent } from '../../../membre/components/login-prompt-dialog/login-prompt-dialog.component';
 import { environment } from '../../../../environment';
 import { NavbarComponent } from "../../../../shared/components/navbar/navbar.component";
+import { TranslateModule } from '@ngx-translate/core';
+import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 @Component({
   selector: 'app-groupes-explore',
@@ -50,8 +53,10 @@ import { NavbarComponent } from "../../../../shared/components/navbar/navbar.com
     MatDialogModule,
     MatSnackBarModule,
     MatButtonToggleModule,
-    NavbarComponent
-  ],
+    TranslateModule,
+    MatProgressBarModule,
+    MatCheckboxModule
+],
   templateUrl: './groupes-explore.component.html',
   styleUrl: './groupes-explore.component.scss'
 })
@@ -94,14 +99,8 @@ export class GroupesExploreComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('==========================================');
-    console.log('📍 GroupesExploreComponent initialized');
-    console.log('Current URL:', this.router.url);
-    console.log('Is authenticated:', this.authService.isLoggedIn());
-    console.log('==========================================');
-    
-    // ❌ NE PAS FAIRE DE REDIRECTION ICI
-    // Juste charger les données
+
+    this.totalDisciplines = this.disciplines.length;
     this.loadGroupes();
     this.loadVilles();
   }
@@ -159,7 +158,7 @@ export class GroupesExploreComponent implements OnInit {
       filtered = filtered.filter(g => 
         g.nom.toLowerCase().includes(search) ||
         g.description?.toLowerCase().includes(search) ||
-        g.stade.toLowerCase().includes(search)
+        g.stade.nom.toLowerCase().includes(search)
       );
     }
 
@@ -357,4 +356,255 @@ export class GroupesExploreComponent implements OnInit {
     if (this.filters.accepteNouveauxMembres !== null) count++;
     return count;
   }
+  // ===== AJOUTS POUR TON COMPOSANT EXISTANT =====
+// Ajoute simplement ces propriétés et méthodes à ton GroupesExploreComponent
+
+// 1. NOUVELLES PROPRIÉTÉS (ajouter après tes propriétés existantes)
+selectedGroups: any[] = [];
+favoriteGroups: Set<number> = new Set();
+totalDisciplines: number = 0;
+sortBy: string = 'nom';
+
+// Filtres rapides (optionnel, tu peux les ignorer pour l'instant)
+quickFilterTags: any[] = [];
+priceRanges: any[] = [
+  { label: 'Gratuit', min: 0, max: 0 },
+  { label: '< 5,000 FCFA', min: 0, max: 5000 },
+  { label: '5,000 - 10,000 FCFA', min: 5000, max: 10000 },
+  { label: '10,000 - 25,000 FCFA', min: 10000, max: 25000 },
+  { label: '> 25,000 FCFA', min: 25000, max: null }
+];
+
+// 2. NOUVELLES MÉTHODES (ajouter à la fin de ta classe)
+
+// Gestion de la sélection multiple
+isGroupSelected(groupe: any): boolean {
+  return this.selectedGroups.some(g => g?.id === groupe?.id);
+}
+
+toggleGroupSelection(groupe: any): void {
+  if (!groupe?.id) return;
+  
+  const index = this.selectedGroups.findIndex(g => g?.id === groupe.id);
+  if (index >= 0) {
+    this.selectedGroups.splice(index, 1);
+  } else {
+    this.selectedGroups.push(groupe);
+  }
+}
+
+selectAll(): void {
+  this.selectedGroups = [...this.filteredGroupes];
+}
+
+compareSelected(): void {
+  if (this.selectedGroups.length < 2) return;
+  console.log('Comparing groups:', this.selectedGroups);
+  // Tu peux ajouter ta logique de comparaison plus tard
+}
+
+// Gestion des favoris
+isGroupFavorite(groupe: any): boolean {
+  return groupe?.id ? this.favoriteGroups.has(groupe.id) : false;
+}
+
+toggleFavorite(groupe: any): void {
+  if (!groupe?.id) return;
+  
+  if (this.favoriteGroups.has(groupe.id)) {
+    this.favoriteGroups.delete(groupe.id);
+  } else {
+    this.favoriteGroups.add(groupe.id);
+  }
+}
+
+// Helpers pour le template
+getActiveFiltersList(): any[] {
+  const activeFilters = [];
+  
+  if (this.filters.searchText?.trim()) {
+    activeFilters.push({
+      label: `"${this.filters.searchText}"`,
+      icon: 'search',
+      key: 'searchText'
+    });
+  }
+  
+  if (this.filters.discipline) {
+    activeFilters.push({
+      label: this.filters.discipline,
+      icon: 'sports',
+      key: 'discipline'
+    });
+  }
+  
+  if (this.filters.ville) {
+    activeFilters.push({
+      label: this.filters.ville,
+      icon: 'location_city',
+      key: 'ville'
+    });
+  }
+  
+  if (this.filters.fraisMin !== 0 || this.filters.fraisMax !== 100000) {
+    const min = this.filters.fraisMin || 0;
+    const max = this.filters.fraisMax || '∞';
+    activeFilters.push({
+      label: `${min} - ${max} FCFA`,
+      icon: 'payments',
+      key: 'prix'
+    });
+  }
+  
+  return activeFilters;
+}
+
+removeFilter(filter: any): void {
+  switch (filter.key) {
+    case 'searchText':
+      this.filters.searchText = '';
+      break;
+    case 'discipline':
+      this.filters.discipline = '';
+      break;
+    case 'ville':
+      this.filters.ville = '';
+      this.quartiers = [];
+      break;
+    case 'prix':
+      this.filters.fraisMin = 0;
+      this.filters.fraisMax = 100000;
+      break;
+  }
+  this.applyFilters();
+}
+
+// Tri
+applySorting(): void {
+  this.filteredGroupes.sort((a, b) => {
+    switch (this.sortBy) {
+      case 'nom':
+        return (a.nom || '').localeCompare(b.nom || '');
+      case 'ville':
+        return (a.ville || '').localeCompare(b.ville || '');
+      case 'fraisAdhesion':
+        return (a.fraisAdhesion || 0) - (b.fraisAdhesion || 0);
+      case 'discipline':
+        return (a.discipline || '').localeCompare(b.discipline || '');
+      default:
+        return 0;
+    }
+  });
+}
+
+// Actions
+exportResults(): void {
+  console.log('Export:', this.filteredGroupes);
+  // Tu peux implémenter l'export plus tard
+}
+
+shareGroupe(groupe: any): void {
+  if (!groupe?.id) return;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: groupe.nom || 'Groupe sportif',
+      text: `Découvre ce groupe: ${groupe.nom} - ${groupe.discipline}`,
+      url: `${window.location.origin}/groupe/${groupe.id}`
+    });
+  } else {
+    const url = `${window.location.origin}/groupe/${groupe.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      this.snackBar.open('Lien copié dans le presse-papiers', 'Fermer', { duration: 2000 });
+    });
+  }
+}
+
+// Filtres rapides (optionnel)
+applyQuickFilter(tag: any): void {
+  tag.active = !tag.active;
+  this.applyFilters();
+}
+
+setPriceRange(range: any): void {
+  this.filters.fraisMin = range.min;
+  this.filters.fraisMax = range.max;
+  this.applyFilters();
+}
+
+isPriceRangeActive(range: any): boolean {
+  return this.filters.fraisMin === range.min && this.filters.fraisMax === range.max;
+}
+
+getCapacityColor(groupe: any): 'primary' | 'accent' | 'warn' {
+  const percentage = this.getCapacityPercentage(groupe);
+  if (percentage < 70) return 'primary';
+  if (percentage < 90) return 'accent';
+  return 'warn';
+}
+
+getCapacityPercentage(groupe: any): number {
+  if (!groupe.capaciteMax || !groupe.nombreMembres) return 0;
+  return Math.round((groupe.nombreMembres / groupe.capaciteMax) * 100);
+}
+getAvailabilityIcon(groupe: any): string {
+  const availability = this.getAvailabilityClass(groupe);
+  switch (availability) {
+    case 'available': return 'check_circle';
+    case 'limited': return 'schedule';
+    case 'full': return 'block';
+    default: return 'help';
+  }
+}
+getAvailabilityClass(groupe: any): string {
+  if (!groupe.accepteNouveauxMembres) return 'full';
+  if (!groupe.capaciteMax) return 'available';
+  
+  const percentage = this.getCapacityPercentage(groupe);
+  if (percentage < 70) return 'available';
+  if (percentage < 90) return 'limited';
+  return 'full';
+}
+
+// Effacer la recherche
+clearSearch(): void {
+  this.filters.searchText = '';
+  this.applyFilters();
+}
+ // Helper pour l'URL d'image
+getGroupeImageUrl(groupe: any): string {
+  return groupe.imageUrl ? `url(${this.imageUrl}${groupe.imageUrl})` : `url('assets/default-groupe.jpg')`;
+}
+trackByGroupeId(index: number, groupe: any): any {
+  return groupe?.id || index;
+}
+
+getBackgroundImageStyle(groupe: any): string {
+  // Assurez-vous que l'interface Groupe est définie dans votre fichier (Groupe est simulée ici)
+  interface Groupe {
+    imageUrl: string | null;
+  }
+  
+  // Vérifie si l'URL de l'image est non nulle et non vide
+  if (groupe.imageUrl) {
+    // Retourne la valeur CSS 'url(...)'
+    return `url(${groupe.imageUrl})`;
+  }
+  
+  // Aucune image, retourne 'none' pour laisser le fond gris et l'icône s'afficher
+  return 'none'; 
+}
+
+getPlaceholderColor(nom: string): string {
+  // Petite fonction de hachage simple
+  let hash = 0;
+  for (let i = 0; i < nom.length; i++) {
+    hash = nom.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Convertir le hachage en couleur HSL (plus agréable que RGB aléatoire)
+  const h = hash % 360;
+  // Saturation et Luminosité fixes pour de belles couleurs
+  return `hsl(${h}, 60%, 45%)`; 
+}
 }

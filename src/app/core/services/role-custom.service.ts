@@ -29,8 +29,8 @@ export class RoleCustomService {
   /**
    * Récupérer les rôles d'un groupe
    */
-  getRolesByGroupe(groupeId: number): Observable<RoleCustom[]> {
-    return this.http.get<RoleCustom[]>(`${this.apiUrl}/groupe/${groupeId}`);
+  getRolesByGroupe(): Observable<RoleCustom[]> {
+    return this.http.get<RoleCustom[]>(`${this.apiUrl}/groupe`);
   }
 
   /**
@@ -43,8 +43,8 @@ export class RoleCustomService {
   /**
    * Créer un nouveau rôle
    */
-  createRole(groupeId: number, dto: CreateRoleCustomDTO): Observable<RoleCustom> {
-    return this.http.post<RoleCustom>(`${this.apiUrl}/groupe/${groupeId}`, dto);
+  createRole(dto: CreateRoleCustomDTO): Observable<RoleCustom> {
+    return this.http.post<RoleCustom>(`${this.apiUrl}/groupe`, dto);
   }
 
   /**
@@ -72,8 +72,8 @@ export class RoleCustomService {
    * Récupérer les menus de l'utilisateur pour un groupe
    */
   getUserMenus(groupeId: number): Observable<UserMenusDTO> {
-    const params = new HttpParams().set('groupeId', groupeId.toString());
-    return this.http.get<UserMenusDTO>(`${this.apiUrl}/user-menus`, { params }).pipe(
+   
+    return this.http.get<UserMenusDTO>(`${this.apiUrl}/user-menus`).pipe(
       tap(result => {
         // Mettre à jour le BehaviorSubject avec les menus
         this.userMenusSubject.next(result.menus);

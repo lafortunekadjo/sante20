@@ -1,5 +1,3 @@
-// src/app/shared/components/navbar/navbar.component.ts
-
 import { Component, EventEmitter, Output, OnInit } from '@angular/core';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -69,7 +67,7 @@ export class NavbarComponent implements OnInit {
     public authService: AuthService,
     private settingsService: SettingsService,
     public memberService: MembreService, 
-    private router: Router, 
+    public router: Router, 
     private dialog: MatDialog, 
     private equipeService: GeneralService
   ) {
@@ -78,14 +76,9 @@ export class NavbarComponent implements OnInit {
     console.log('Current route:', this.router.url);
     console.log('==========================================');
 
-    // ✅ CORRECTION : Ne PAS appeler navigateToRole() automatiquement
     this.roles = this.authService.getRoles();
     if (this.roles.length > 0) {
       this.selectedRole = this.roles[0];
-      // ❌ SUPPRIMER CETTE LIGNE :
-      // this.navigateToRole(this.selectedRole);
-      
-      // ✅ À la place, juste définir le rôle sélectionné
       console.log('Selected role:', this.selectedRole);
     }
   }
@@ -246,6 +239,52 @@ export class NavbarComponent implements OnInit {
       return '/mes-demandes';
     }
     return '/explorer';
+  }
+
+  // ===== NOUVELLES MÉTHODES HELPER POUR L'HARMONISATION =====
+
+  /**
+   * Obtenir l'icône correspondant au rôle
+   */
+  getRoleIcon(role: string): string {
+    switch (role) {
+      case 'ADMIN':
+      case 'ROLE_ADMIN':
+        return 'admin_panel_settings';
+      case 'RESPONSABLE':
+      case 'ROLE_RESPONSABLE':
+        return 'supervisor_account';
+      case 'MEMBRE':
+      case 'ROLE_MEMBRE':
+        return 'person';
+      case 'CANDIDAT':
+      case 'ROLE_CANDIDAT':
+        return 'person_add';
+      default:
+        return 'person';
+    }
+  }
+
+  /**
+   * Obtenir le nom d'affichage du rôle
+   */
+  getRoleDisplayName(role: string): string {
+    switch (role) {
+      case 'ADMIN':
+      case 'ROLE_ADMIN':
+        return 'Administrateur';
+      case 'RESPONSABLE':
+      case 'ROLE_RESPONSABLE':
+        return 'Responsable';
+      case 'MEMBRE':
+      case 'ROLE_MEMBRE':
+        return 'Membre';
+      case 'CANDIDAT':
+      case 'ROLE_CANDIDAT':
+        return 'Candidat';
+      default:
+        return role;
+    }
   }
 
   logout() {

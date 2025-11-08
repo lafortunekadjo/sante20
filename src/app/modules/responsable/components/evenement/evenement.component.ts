@@ -23,6 +23,9 @@ import { Contribution } from '../../../../core/models/contribution.model'; // Aj
 import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-evenement',
@@ -43,7 +46,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
     FormsModule,
     RouterModule,
          MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    TranslateModule,
+    MatTooltipModule
   ],
   templateUrl: './evenement.component.html',
   styleUrl: './evenement.component.scss'
@@ -52,10 +57,22 @@ export class EvenementComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   dataSource = new MatTableDataSource<Evenement>([]);
-  displayedColumns: string[] = ['nomEvenement', 'typeEvenement', 'membre', 'dateCreation', 'dateEvenement', 'estContributionOuverte', 'actions'];
+  displayedColumns: string[] = ['nomEvenement', 'typeEvenement', 'dateEvenement', 'estContributionOuverte', 'actions'];
   isLoading: boolean = true;
   showCreateRow: boolean = false;
+    editingRows: boolean[] = [];
   editingEvenementId: number | null = null;
+
+  editEvenement: Evenement={
+    id: 0,
+    idGroupe: 0,
+    nomEvenement: '',
+    description: '',
+    typeEvenement: '',
+    dateCreation: new Date(),
+    estContributionOuverte: false,
+    dateEvenement: new Date(),
+  }
 
 
   newEvenement: Evenement = {
@@ -77,7 +94,8 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     private evenementService: GeneralService,
     private membreService: MembreService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+     private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit() {
@@ -89,7 +107,19 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
   }
+  /**
+   * Retourne le nombre d'événements avec contributions ouvertes
+   */
+  getActiveEventsCount(): number {
+    return (this.dataSource.data || []).filter(e => e.estContributionOuverte).length;
+  }
 
+  /**
+   * Retourne le nombre total d'événements
+   */
+  getTotalEventsCount(): number {
+    return this.dataSource.data?.length || 0;
+  }
   loadEvenements() {
     this.isLoading = true;
     this.evenementService.getAllEvenements().subscribe({
@@ -173,14 +203,14 @@ export class EvenementComponent implements OnInit, AfterViewInit {
   }
 }
 
-editEvenement(evenement: any) {
-  console.log(evenement)
-  this.newEvenement = { ...evenement }; // copie des données
-  this.newEvenement.idMembreLie = evenement.membreLie?.id ?? null;
-  this.editingEvenementId = evenement.id;
-  this.showCreateRow = true;
+// editEvenement(evenement: Evenement) {
+//   console.log(evenement)
+//   this.newEvenement = { ...evenement }; // copie des données
+//   // this.newEvenement.idMembreLie = evenement.membreLie?.id ?? null;
+//   this.editingEvenementId = evenement.id;
+//   this.showCreateRow = true;
   
-}
+// }
 
 
   openDeleteDialog(id: number) {
@@ -221,6 +251,72 @@ editEvenement(evenement: any) {
 cancelCreate() {
   this.toggleCreateRow();
   this.editingEvenementId = null;
+}
+
+editRow(localIndex: number, membre: Evenement) {
+  // 1. Trouver l'index global en utilisant l'ID unique du membre
+  // C'est crucial car l'index 'localIndex' est affecté par le filtre/la pagination.
+  const globalIndex = this.dataSource.data.findIndex(m => m.id === membre.id);
+
+  console.log("Tentative d'édition pour Membre ID:", membre.id, "Index Global:", globalIndex);
+
+  if (membre && globalIndex !== -1) {
+    // 2. Utiliser l'index global pour activer l'édition dans le tableau 'editingRows'
+    // C'est l'index que le template utilise via getGlobalIndex(i)
+    this.editingRows[globalIndex] = true;
+    
+    // 3. Copier le membre pour l'édition
+    this.editEvenement = { ...membre };
+    
+    // Si vous utilisez OnPush, vous pourriez avoir besoin de: this.cdr.detectChanges();
+  } else {
+    console.error('Erreur: Impossible de trouver l\'index global du membre pour l\'édition.');
+    }
+  }
+
+  isEditFormValid(): boolean {
+    return !!this.editEvenement.nomEvenement ;
+  }
+
+// Méthode saveEdit modifiée avec loading et messages
+// saveEdit(index: number) {
+//   const membre = this.[index];
+//   const globalIndex = this.dataSource.data.findIndex(m => m.id === membre?.id);
+  
+//   if (!this.isEditFormValid() || globalIndex === -1) {
+//     return;
+//   }
+
+
+//   this.evenementService.updateEvenement(this.editEvenement.id, this.editEvenement).subscribe({
+//     next: () => {
+//       this.showSuccessMessage('Membre modifié avec succès');
+//       this.editingRows[globalIndex] = false;
+//     },
+//     error: (err) => {
+//       console.error('Erreur lors de la mise à jour du membre:', err);
+//       this.showErrorMessage('Erreur lors de la modification du membre');
+//     }
+//   });
+// }
+
+  // Méthodes pour afficher les messages
+showSuccessMessage(message: string) {
+  this.snackBar.open(message, 'Fermer', {
+    duration: 4000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['message-snackbar', 'success']
+  });
+}
+
+showErrorMessage(message: string) {
+  this.snackBar.open(message, 'Fermer', {
+    duration: 5000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['message-snackbar', 'error']
+  });
 }
 
 }

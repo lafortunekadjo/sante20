@@ -23,6 +23,8 @@ import { ConfirmationDialogComponent } from '../../../../shared/components/confi
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { GeneralService } from '../../../../core/services/general.service';
 import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-contribution',
@@ -45,7 +47,9 @@ import { ContributionDialogComponent } from '../contribution-dialog/contribution
     MatDatepickerModule,
     MatNativeDateModule,
     CurrencyPipe,
-    DatePipe
+    DatePipe,
+    TranslateModule,
+    MatTooltipModule
   ],
   templateUrl: './contribution.component.html',
   styleUrl: './contribution.component.scss'

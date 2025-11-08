@@ -123,7 +123,8 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       stade: { id: 0, nom: '' },
       profilePhotoUrl: '',
       heureMatch: '',
-      isPublic: false
+      isPublic: false,
+      abreviation: ''
     },
     typeMatch: 'AMICAL',
     dateMatch: new Date().toISOString().split('T')[0],
@@ -507,7 +508,8 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
           stade: { id: 0, nom: '' },
           profilePhotoUrl: '',
           heureMatch: '',
-          isPublic: false
+          isPublic: false,
+          abreviation: ''
         },
         typeMatch: 'AMICAL',
         dateMatch: new Date().toISOString().split('T')[0],

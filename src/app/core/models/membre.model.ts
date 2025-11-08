@@ -27,5 +27,6 @@ export interface Membre {
   adresse:string;
   tel:string;
   assurance:boolean;
+
   roleCustom?: RoleCustom | null; //
 }

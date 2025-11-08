@@ -17,4 +17,6 @@ export interface Groupe {
   profilePhotoUrl: string;
   heureMatch:string;
   isPublic:boolean;
+    abreviation: string;
 }
+

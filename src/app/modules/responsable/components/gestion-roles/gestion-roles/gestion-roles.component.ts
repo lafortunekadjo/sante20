@@ -117,7 +117,7 @@ export class GestionRolesComponent implements OnInit {
     // Charger les menus et les rôles en parallèle
     Promise.all([
       this.roleCustomService.getAllMenus().toPromise(),
-      this.roleCustomService.getRolesByGroupe(this.groupeId).toPromise()
+      this.roleCustomService.getRolesByGroupe().toPromise()
     ]).then(([menus, roles]) => {
       this.menus = menus || [];
       this.roles = roles || [];
@@ -280,7 +280,7 @@ export class GestionRolesComponent implements OnInit {
 
     const operation = this.editingRole
       ? this.roleCustomService.updateRole(this.editingRole.id, dto)
-      : this.roleCustomService.createRole(this.groupeId, dto);
+      : this.roleCustomService.createRole(dto);
 
     operation.pipe(
       finalize(() => this.isSaving = false)

@@ -29,8 +29,8 @@ export interface GroupeFilters {
   quartier: string;
   typeEquipe: string;
   jourMatch: string;
-  fraisMin: number;
-  fraisMax: number;
+  fraisMin: number ;
+  fraisMax: number ;
   niveauRequis: string;
   accepteNouveauxMembres: boolean | null;
 }
@@ -41,7 +41,7 @@ export interface DemandeAdhesion {
   groupeId: number;
   userId?: number;
   statut: 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE';
-  dateCreation?: Date;
+  dateCreation: Date;
   reponses?: ReponseQuestion[];
 }
 

@@ -24,6 +24,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { trigger, state, style, transition, animate } from '@angular/animations';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-paiement-sanction-form',
@@ -41,6 +42,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
     MatSortModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    TranslateModule
   ],
    animations: [
     trigger('slideDown', [
@@ -75,6 +77,10 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
   isLoading: boolean = true;
   showCreateRow: boolean = false;
   newEquipe: Equipe = { id: 0, nom: '' };
+  membresEquipe: any[]=[]
+ teamDisplayState: { [key: number]: boolean } = {};
+
+ 
   
   editingRows: boolean[] = [];
   editEquipe: Equipe = { id: 0, nom: '' };
@@ -94,9 +100,21 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
 
   }
 
+// Méthode pour basculer l'état (afficher/cacher) pour UNE équipe spécifique
+  toggleMembersList(equipeId: number) {
+    // Si l'état n'existe pas, il est considéré comme 'false' (caché)
+    this.teamDisplayState[equipeId] = !this.teamDisplayState[equipeId];
+  }
+  
+  // Méthode pour vérifier l'état d'affichage
+  getDisplayState(equipeId: number): boolean {
+    return this.teamDisplayState[equipeId] || false;
+  }
+
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+
   }
 
   loadEquipes() {
@@ -104,6 +122,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
     this.equipeService.getEquipesByGroupe().subscribe({
       next: (equipes: Equipe[]) => {
         this.dataSource.data = equipes;
+        
         this.editingRows = new Array(equipes.length).fill(false);
         this.isLoading = false;
       },

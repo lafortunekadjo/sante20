@@ -18,7 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { switchMap, forkJoin, of, map } from 'rxjs'; // Ajout de 'of' ici
+import { switchMap, forkJoin, of, map, lastValueFrom } from 'rxjs'; // Ajout de 'of' ici
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeneralService } from '../../../../core/services/general.service';
@@ -28,6 +28,11 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { RoleCustom } from '../../../../core/models/role-custom.model';
+import { RoleCustomService } from '../../../../core/services/role-custom.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatChipsModule } from '@angular/material/chips';
 
 @Component({
   selector: 'app-membre-form',
@@ -51,7 +56,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatDatepickerModule,
     MatExpansionModule, // Ajouté,
     MatListModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatMenuModule,
+    MatChipsModule
   ],
   
   templateUrl: './membre-form.component.html',
@@ -75,6 +82,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   dataSource = new MatTableDataSource<Membre>([]);
   expandedRowIndex: number | null = null;
   showCreateRow: boolean = false;
+   roles: RoleCustom[] = [];
   newMembre: Membre = {
     id: 0,
     nom: '',
@@ -89,7 +97,8 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
       profilePhotoUrl: '',
       heureMatch: '',
-      isPublic: false
+      isPublic: false,
+      abreviation: ''
     },
     buts: 0,
     passes: 0,
@@ -126,7 +135,8 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
       profilePhotoUrl: '',
       heureMatch: '',
-      isPublic: false
+      isPublic: false,
+      abreviation: ''
     },
     buts: 0,
     passes: 0,
@@ -153,6 +163,7 @@ filters = {
   equipe: null as number | null,
   active: null as boolean | null,
   sexe: null as string | null,
+  roleCustom: null as number | null,
   roleCO: null as string | null,
   cotisation: null as boolean | null,
   poste: '' as string
@@ -177,13 +188,16 @@ private avatarColors = [
     private dialog: MatDialog,
     private groupService: GroupeService,
     private userService: UserService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+     private roleCustomService: RoleCustomService, 
+     private authService: AuthService
   ) {}
 
 
 
   ngOnInit() {
     this.loadData();
+    this.loadRoles();
   }
 
   ngAfterViewInit() {
@@ -199,11 +213,154 @@ private avatarColors = [
     };
   }
 
+  
+
   // Méthode pour obtenir l'index global depuis l'index paginé
 getGlobalIndex(paginatedIndex: number): number {
   const membre = this.paginatedMembers[paginatedIndex];
   return this.dataSource.data.findIndex(m => m.id === membre?.id);
 }
+
+
+ async loadRoles(): Promise<void> {
+        // 1. Récupération synchrone de l'ID du groupe
+        const groupeId = this.authService.getCurrentGroupeId();
+
+        if (groupeId === null) {
+            console.warn('Aucun groupe actif défini. Les rôles ne peuvent pas être chargés.');
+            this.roles = [];
+            return;
+        }
+
+        try {
+            // 2. Conversion de l'Observable en Promesse avec lastValueFrom
+            const roles = await lastValueFrom(
+                this.roleCustomService.getRolesByGroupe()
+            );
+            
+            // 3. Traitement des données
+            this.roles = roles?.filter(r => r.actif) || [];
+            
+            // 4. Logique de continuation
+            this.initializeRoleCustomFromRoleCO();
+
+        } catch (err) {
+            console.error('Erreur chargement rôles:', err);
+            this.roles = [];
+        }
+  }
+
+  /**
+   * Initialiser roleCustom depuis l'ancien roleCO
+   */
+  initializeRoleCustomFromRoleCO(): void {
+    // Mapping entre les anciens codes roleCO et les nouveaux noms de rôles
+    const roleCOMapping: { [key: string]: string } = {
+      'PRESI': 'Président',
+      'CAISSIER': 'Trésorier',
+      'COMM': 'Secrétaire',
+      'RESP': 'Capitaine'
+    };
+
+    this.dataSource.data.forEach(membre => {
+      if (membre.roleCO && !membre.roleCustom) {
+        const roleNom = roleCOMapping[membre.roleCO];
+        if (roleNom) {
+          const role = this.roles.find(r => r.nom === roleNom);
+          if (role) {
+            membre.roleCustom = role;
+            console.log(`Membre ${membre.prenom} ${membre.nom} : roleCO "${membre.roleCO}" → roleCustom "${role.nom}"`);
+          }
+        }
+      }
+    });
+
+    // Rafraîchir le dataSource
+    this.dataSource.data = [...this.dataSource.data];
+    this.applyFilters();
+  }
+
+
+/**
+   * Assigner un rôle personnalisé à un membre
+   */
+  assignRole(membre: Membre, role: RoleCustom | null, rowIndex: number): void {
+    const roleText = role ? `assigner le rôle "${role.nom}"` : 'retirer le rôle';
+
+    if (!confirm(`Voulez-vous vraiment ${roleText} à ${membre.prenom} ${membre.nom} ?`)) {
+      return;
+    }
+
+    this.isSaving = true;
+
+    const roleId = role?.id || null;
+
+    this.roleCustomService.assignRoleToMembre(membre.id, roleId).subscribe({
+      next: () => {
+        // Mettre à jour le membre localement
+        const globalIndex = this.getGlobalIndex(rowIndex);
+        this.dataSource.data[globalIndex].roleCustom = role;
+        
+        // Si on est en mode édition, mettre à jour aussi editMembre
+        if (this.editingRows[globalIndex]) {
+          this.editMembre.roleCustom = role;
+        }
+
+        this.snackBar.open(
+          role ? `Rôle "${role.nom}" assigné avec succès` : 'Rôle retiré avec succès',
+          'Fermer',
+          { duration: 3000 }
+        );
+        
+        this.isSaving = false;
+        this.applyFilters();
+      },
+      error: (err) => {
+        console.error('Erreur assignation rôle:', err);
+        this.snackBar.open(
+          err.error?.message || 'Erreur lors de l\'assignation',
+          'Fermer',
+          { duration: 3000 }
+        );
+        this.isSaving = false;
+      }
+    });
+  }
+
+  /**
+   * Vérifier si un membre a un rôle spécifique
+   */
+  hasRole(membre: Membre, roleId: number): boolean {
+    return membre.roleCustom?.id === roleId;
+  }
+
+  /**
+   * Obtenir le rôle d'un membre
+   */
+  getMembreRole(membre: Membre): RoleCustom | null {
+    return membre.roleCustom || null;
+  }
+
+  /**
+   * Obtenir le nom du rôle à afficher
+   */
+  getRoleName(membre: Membre): string {
+    return membre.roleCustom?.nom || 'Sans rôle';
+  }
+
+  /**
+   * Obtenir la couleur du rôle
+   */
+  getRoleColor(membre: Membre): string {
+    return membre.roleCustom?.couleur || '#9e9e9e';
+  }
+
+  /**
+   * Obtenir l'icône du rôle
+   */
+  getRoleIcon(membre: Membre): string {
+    return membre.roleCustom?.icone || 'badge';
+  }
 
   // Modifiez loadData pour appliquer les filtres après chargement
 loadData() {
@@ -213,6 +370,7 @@ loadData() {
     this.groupService.getAllGroupesMembre().pipe(map(data => data || null)),
     this.userService.getAllUsers().pipe(map(data => data || [])),
     this.equipeService.getEquipesByGroupe().pipe(map(data => data || []))
+    
   ]).subscribe({
     next: ([membres, groupeResponse, users, equipes]) => {
       this.dataSource.data = membres || [];
@@ -293,67 +451,41 @@ loadData() {
   }
 
   saveMembre() {
- if (this.isCreateFormValid()) {
-        
-        // 1. Déterminer si des rôles de coordination (roleCo) sont présents.
-        // J'utilise le champ `roleCo` du membre pour cette vérification.
-        const rolesDeCoordinationPresents = !!this.newMembre.roleCO && this.newMembre.roleCO.length > 0;
-        
-        // 2. Définir les rôles pour l'objet User et pour l'objet Membre
-        let userRoles: string;
-        let membreRoleCo: string; // Ce sera soit la chaîne de rôles, soit une chaîne vide
-
-        if (rolesDeCoordinationPresents) {
-            // Règle 2: Si roles est mentionné
-            userRoles = 'RESPONSABLE,MEMBRE'; // On envoie RESPONSABLE, MEMBRE à l'USER
-            membreRoleCo = this.newMembre.roleCO; // On envoie le contenu de roles à roleCo du MEMBRE
-        } else {
-            // Règle 1: Si roles est vide
-            userRoles = 'MEMBRE'; // On envoie MEMBRE à l'USER
-            membreRoleCo = ''; // On envoie roleCo vide au MEMBRE
-        }
-        
-        // Appliquer le rôleCo au membre (avant la sauvegarde)
-        this.newMembre.roleCO = membreRoleCo; 
-
- if (this.createUserForMembre) {
- const newUser: User = {
- id: 0,
- username: `${this.newMembre.nom.toLowerCase()}_${this.newMembre.prenom.toLowerCase()}`,
- email: this.newMembre.email || `${this.newMembre.nom.toLowerCase()}@example.com`,
- motDePasse: this.newMembre.nom,
- roles: userRoles, // <-- Rôle de l'utilisateur déterminé dynamiquement
- active: true,
-  membre: this.newMembre.id,
- groupe: 0,
- profilePhotoUrl: ''
- };
-        
- this.userService.createUser(newUser).pipe(
- switchMap((createdUser) => {
- this.newMembre.user = createdUser;
-            // 3. Appel de la création du Membre (avec le rôleCo déjà mis à jour)
- return this.adminService.createMember(this.newMembre);
- })
- ).subscribe({
- next: () => {
- this.loadData();
- this.toggleCreateRow();
- },
-error: (err) => console.error('Erreur lors de la création du membre et de l\'utilisateur:', err)
- });
- } else {
-        // Le cas où l'on ne crée pas d'utilisateur, le roleCo a déjà été appliqué au newMembre
- this.adminService.createMember(this.newMembre).subscribe({
- next: () => {
- this.loadData();
- this.toggleCreateRow();
-},
- error: (err) => console.error('Erreur lors de la création du membre:', err)
- });
- }
- }
- 
+    if (this.isCreateFormValid()) {
+      if (this.createUserForMembre) {
+        const newUser: User = {
+          id: 0,
+          username: `${this.newMembre.nom.toLowerCase()}_${this.newMembre.prenom.toLowerCase()}`,
+          email: this.newMembre.email || `${this.newMembre.nom.toLowerCase()}@example.com`,
+          motDePasse: this.newMembre.nom,
+          roles: 'MEMBRE',
+          active: true,
+          membre: this.newMembre.id,
+          groupe: 0,
+          profilePhotoUrl: ''
+        };
+        this.userService.createUser(newUser).pipe(
+          switchMap((createdUser) => {
+            this.newMembre.user = createdUser;
+            return this.adminService.createMember(this.newMembre);
+          })
+        ).subscribe({
+          next: () => {
+            this.loadData();
+            this.toggleCreateRow();
+          },
+          error: (err) => console.error('Erreur lors de la création du membre:', err)
+        });
+      } else {
+        this.adminService.createMember(this.newMembre).subscribe({
+          next: () => {
+            this.loadData();
+            this.toggleCreateRow();
+          },
+          error: (err) => console.error('Erreur lors de la création du membre:', err)
+        });
+      }
+    }
   }
 
   cancelCreate() {
@@ -375,7 +507,8 @@ error: (err) => console.error('Erreur lors de la création du membre et de l\'ut
         id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
         profilePhotoUrl: '',
         heureMatch: '',
-        isPublic: false
+        isPublic: false,
+        abreviation: ''
       },
       buts: 0,
       passes: 0,
@@ -414,8 +547,8 @@ editRow(localIndex: number, membre: Membre) {
     // Si vous utilisez OnPush, vous pourriez avoir besoin de: this.cdr.detectChanges();
   } else {
     console.error('Erreur: Impossible de trouver l\'index global du membre pour l\'édition.');
+    }
   }
-}
 
   isEditFormValid(): boolean {
     return !!this.editMembre.nom && !!this.editMembre.sexe;
@@ -482,7 +615,8 @@ showErrorMessage(message: string) {
         id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
         profilePhotoUrl: '',
         heureMatch: '',
-        isPublic: false
+        isPublic: false,
+        abreviation: ''
       },
       buts: 0,
       passes: 0,
@@ -622,6 +756,16 @@ applyFilters() {
     }
   }
 
+  // ✅ AJOUTER ce nouveau filtre
+    if (this.filters.roleCustom !== null) {
+      if (this.filters.roleCustom === 0) {
+        // Filtrer les membres sans rôle
+        filtered = filtered.filter(m => !m.roleCustom);
+      } else {
+        filtered = filtered.filter(m => m.roleCustom?.id === this.filters.roleCustom);
+      }
+    }
+
   // Filtre par cotisation
   if (this.filters.cotisation !== null) {
     filtered = filtered.filter(m => m.cotisationPayee === this.filters.cotisation);
@@ -670,6 +814,7 @@ clearAllFilters() {
     active: null,
     sexe: null,
     roleCO: null,
+    roleCustom: null,
     cotisation: null,
     poste: ''
   };
@@ -726,6 +871,17 @@ expandPanel(index: number) {
     this.editMembre = { ...this.dataSource.data[globalIndex] };
   }
 }
+
+// ✅ AJOUTER cette méthode dans le composant TypeScript
+
+/**
+ * Comparer deux rôles pour le mat-select
+ */
+compareRoles(r1: RoleCustom, r2: RoleCustom): boolean {
+  return r1 && r2 ? r1.id === r2.id : r1 === r2;
+}
+
+
 
 // Modifiez les autres méthodes pour gérer correctement les index
 // editRow(index: number, membre: Membre) {

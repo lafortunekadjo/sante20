@@ -13,6 +13,39 @@ import { Ville } from '../models/ville';
 })
 export class GroupeService {
 
+    // uploadProfilePhoto(userId: number, file: File): Observable<any> {
+    //   const formData: FormData = new FormData();
+    //   formData.append('profilePhoto', file, file.name);
+  
+    //   return this.http.post(`${this.userUpdateUrl}/${userId}/profile-photo`, formData).pipe(
+    //     tap(() => console.log('Photo de profil téléchargée avec succès sur le serveur.')),
+    //     catchError(error => {
+    //       console.error('Erreur lors du téléchargement de la photo de profil:', error);
+    //       return throwError(error);
+    //     })
+    //   );
+    // }
+
+
+  uploadGroupePhoto(groupId: number, formData: FormData): Observable<any> {
+    // Le chemin de l'API pourrait être quelque chose comme:
+    // POST /api/v1/groupes/{groupId}/photo
+    const url = `${environment.apiUrl}/group/${groupId}/profile-photo`;
+
+    // HttpClient gère automatiquement les headers (comme 'Content-Type: multipart/form-data')
+    // lorsqu'il reçoit un objet FormData.
+    return this.http.post<any>(url, formData);
+  }
+
+  // --- Fonctions simulées pour un exemple complet (non requises mais utiles) ---
+
+  /**
+   * Récupère les détails d'un groupe. (Simulé)
+   */
+  // getGroupe(groupId: number): Observable<Groupe> {
+  //   const url = `${this.apiUrl}/${groupId}`;
+  //   return this.http.get<Groupe>(url);
+  // }
   
   verifierDemandeExistante(id: number, userId: number) {
     return this.http.get<Boolean>(`${environment.apiUrl}/candidatures/check/${id}/${userId}`);

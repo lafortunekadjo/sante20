@@ -25,6 +25,7 @@ import { Stats } from '../../../../core/models/stats.model';
 import { BreakpointObserver, Breakpoints, LayoutModule } from '@angular/cdk/layout';
 import { map, Observable } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 // Enregistrer les contrôleurs localement
@@ -64,6 +65,7 @@ Chart.register(
     MatListModule, 
     LayoutModule,
     MatProgressSpinnerModule,
+    TranslateModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'

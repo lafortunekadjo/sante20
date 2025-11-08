@@ -51,10 +51,10 @@ import { MembreFormComponent } from "./modules/responsable/components/membre-for
 
 export const routes: Routes = [
   // ==================== ROUTES PUBLIQUES (sans authentification) ====================
-  {
-    path: '',
-    component: GroupesExploreComponent,
-  },
+  // {
+  //   path: '',
+  //   component: GroupesExploreComponent,
+  // },
   {
     path: 'login',
     component: LoginComponent
@@ -267,5 +267,5 @@ export const routes: Routes = [
   },
 
   // Route par défaut - redirection vers accueil public
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '/explorer' }
 ];

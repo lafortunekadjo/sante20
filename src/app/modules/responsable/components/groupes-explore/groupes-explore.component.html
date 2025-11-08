@@ -1,87 +1,135 @@
-<app-navbar></app-navbar>
 <div class="explore-container">
-  <!-- Header -->
+  <!-- Header amélioré -->
   <div class="page-header">
+    <div class="header-background"></div>
     <div class="header-content">
-      <mat-icon class="header-icon">explore</mat-icon>
-      <div>
-        <h1 class="page-title">Explorer les Groupes</h1>
-        <p class="page-subtitle">Trouvez le 2-0 qui vous correspond</p>
+      <div class="header-main">
+        <mat-icon class="header-icon">explore</mat-icon>
+        <div class="header-text">
+          <h1 class="page-title">Explorer les Groupes</h1>
+          <p class="page-subtitle">Trouvez le groupe qui vous correspond</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ filteredGroupes.length }}</span>
+          <span class="stat-label">Groupes</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ totalDisciplines }}</span>
+          <span class="stat-label">Disciplines</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Search and Filters Bar -->
-  <div class="search-bar">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Rechercher un groupe...</mat-label>
-      <input 
-        matInput 
-        [(ngModel)]="filters.searchText"
-        (ngModelChange)="applyFilters()"
-        placeholder="Nom, stade, description...">
-      <mat-icon matPrefix>search</mat-icon>
-      <button 
-        *ngIf="filters.searchText"
-        matSuffix 
-        mat-icon-button 
-        (click)="filters.searchText = ''; applyFilters()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </mat-form-field>
+  <!-- Barre de recherche et filtres -->
+  <div class="search-controls">
+    <div class="search-section">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Rechercher un groupe...</mat-label>
+        <input 
+          matInput 
+          [(ngModel)]="filters.searchText"
+          (ngModelChange)="applyFilters()"
+          placeholder="Nom, stade, description...">
+        <mat-icon matPrefix>search</mat-icon>
+        <button 
+          *ngIf="filters.searchText"
+          matSuffix 
+          mat-icon-button 
+          (click)="clearSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
 
-    <button 
-      mat-raised-button 
-      [color]="hasActiveFilters() ? 'accent' : 'primary'"
-      (click)="toggleFilters()"
-      class="filter-btn"
-      [matBadge]="getActiveFiltersCount()"
-      [matBadgeHidden]="!hasActiveFilters()"
-      matBadgeColor="warn">
-      <mat-icon>{{ showFilters ? 'filter_list_off' : 'filter_list' }}</mat-icon>
-      Filtres
-    </button>
+    <div class="controls-section">
+      <div class="action-buttons">
+        <button 
+          mat-raised-button 
+          [color]="hasActiveFilters() ? 'accent' : ''"
+          [class.active-filters]="hasActiveFilters()"
+          (click)="toggleFilters()"
+          class="filter-btn"
+          [matBadge]="getActiveFiltersCount()"
+          [matBadgeHidden]="!hasActiveFilters()"
+          matBadgeColor="warn"
+          matBadgeSize="small">
+          <mat-icon>{{ showFilters ? 'filter_list_off' : 'tune' }}</mat-icon>
+          <span>Filtres</span>
+          <mat-icon class="expand-icon" [class.expanded]="showFilters">expand_more</mat-icon>
+        </button>
 
-    <button 
-      mat-stroked-button 
-      *ngIf="hasActiveFilters()"
-      (click)="resetFilters()"
-      class="reset-btn">
-      <mat-icon>refresh</mat-icon>
-      Réinitialiser
-    </button>
+        <button 
+          mat-stroked-button 
+          *ngIf="hasActiveFilters()"
+          (click)="resetFilters()"
+          class="reset-btn">
+          <mat-icon>refresh</mat-icon>
+          <span>Réinitialiser</span>
+        </button>
 
-    <div class="spacer"></div>
+        <button 
+          mat-stroked-button 
+          (click)="exportResults()"
+          class="export-btn">
+          <mat-icon>file_download</mat-icon>
+          <span class="btn-text">Exporter</span>
+        </button>
+      </div>
 
-    <mat-button-toggle-group [(value)]="viewMode" class="view-toggle">
-      <mat-button-toggle value="grid" matTooltip="Vue grille">
-        <mat-icon>view_module</mat-icon>
-      </mat-button-toggle>
-      <mat-button-toggle value="list" matTooltip="Vue liste">
-        <mat-icon>view_list</mat-icon>
-      </mat-button-toggle>
-    </mat-button-toggle-group>
+      <div class="view-controls">
+        <mat-form-field appearance="outline" class="sort-field">
+          <mat-label>Trier par</mat-label>
+          <mat-select [(ngModel)]="sortBy" (selectionChange)="applySorting()">
+            <mat-option value="nom">Nom</mat-option>
+            <mat-option value="ville">Ville</mat-option>
+            <mat-option value="fraisAdhesion">Prix</mat-option>
+            <mat-option value="discipline">Discipline</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>sort</mat-icon>
+        </mat-form-field>
+
+        <mat-button-toggle-group [(value)]="viewMode" class="view-toggle">
+          <mat-button-toggle value="grid">
+            <mat-icon>view_module</mat-icon>
+          </mat-button-toggle>
+          <mat-button-toggle value="list">
+            <mat-icon>view_list</mat-icon>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    </div>
   </div>
 
-  <!-- Filters Panel -->
-  <mat-expansion-panel 
-    [expanded]="showFilters" 
-    class="filters-panel"
-    *ngIf="showFilters">
-    <mat-expansion-panel-header>
-      <mat-panel-title>
+  <!-- Panel de filtres avancés -->
+  <div class="filters-panel" [class.expanded]="showFilters" *ngIf="showFilters">
+    <div class="filters-header">
+      <div class="filters-title">
         <mat-icon>tune</mat-icon>
-        Filtres avancés
-      </mat-panel-title>
-      <mat-panel-description>
-        {{ getActiveFiltersCount() }} filtre(s) actif(s)
-      </mat-panel-description>
-    </mat-expansion-panel-header>
+        <h3>Filtres avancés</h3>
+      </div>
+      <div class="filters-summary">
+        <div class="active-filters-chips">
+          <mat-chip 
+            *ngFor="let filter of getActiveFiltersList()" 
+            (removed)="removeFilter(filter)"
+            removable="true"
+            class="active-filter-chip">
+            <mat-icon>{{ filter.icon }}</mat-icon>
+            {{ filter.label }}
+            <mat-icon matChipRemove>cancel</mat-icon>
+          </mat-chip>
+        </div>
+      </div>
+    </div>
 
     <div class="filters-content">
       <div class="filters-grid">
         <!-- Discipline -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Discipline</mat-label>
           <mat-select [(ngModel)]="filters.discipline" (selectionChange)="applyFilters()">
             <mat-option value="">Toutes</mat-option>
@@ -94,40 +142,27 @@
         </mat-form-field>
 
         <!-- Ville -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Ville</mat-label>
           <mat-select 
             [(ngModel)]="filters.ville" 
             (selectionChange)="onVilleChange(filters.ville)">
             <mat-option value="">Toutes</mat-option>
             <mat-option *ngFor="let ville of villes" [value]="ville">
+              <mat-icon class="option-icon">location_city</mat-icon>
               {{ ville.nom }}
             </mat-option>
           </mat-select>
           <mat-icon matPrefix>location_city</mat-icon>
         </mat-form-field>
 
-        <!-- Quartier -->
-        <mat-form-field appearance="outline">
-          <mat-label>Quartier</mat-label>
-          <mat-select 
-            [(ngModel)]="filters.quartier" 
-            (selectionChange)="applyFilters()"
-            [disabled]="!filters.ville">
-            <mat-option value="">Tous</mat-option>
-            <mat-option *ngFor="let quartier of quartiers" [value]="quartier">
-              {{ quartier }}
-            </mat-option>
-          </mat-select>
-          <mat-icon matPrefix>place</mat-icon>
-        </mat-form-field>
-
         <!-- Type d'équipe -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Type d'équipe</mat-label>
           <mat-select [(ngModel)]="filters.typeEquipe" (selectionChange)="applyFilters()">
             <mat-option value="">Tous</mat-option>
             <mat-option *ngFor="let type of typesEquipe" [value]="type">
+              <mat-icon class="option-icon">category</mat-icon>
               {{ type }}
             </mat-option>
           </mat-select>
@@ -135,11 +170,12 @@
         </mat-form-field>
 
         <!-- Jour de match -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Jour de match</mat-label>
           <mat-select [(ngModel)]="filters.jourMatch" (selectionChange)="applyFilters()">
             <mat-option value="">Tous</mat-option>
             <mat-option *ngFor="let jour of joursSemaine" [value]="jour">
+              <mat-icon class="option-icon">event</mat-icon>
               {{ jour }}
             </mat-option>
           </mat-select>
@@ -147,11 +183,12 @@
         </mat-form-field>
 
         <!-- Niveau requis -->
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Niveau</mat-label>
           <mat-select [(ngModel)]="filters.niveauRequis" (selectionChange)="applyFilters()">
             <mat-option value="">Tous niveaux</mat-option>
             <mat-option *ngFor="let niveau of niveaux" [value]="niveau">
+              <mat-icon class="option-icon">trending_up</mat-icon>
               {{ niveau }}
             </mat-option>
           </mat-select>
@@ -159,14 +196,14 @@
         </mat-form-field>
       </div>
 
-      <!-- Frais d'adhésion -->
-      <div class="frais-filter">
-        <label class="filter-label">
+      <!-- Filtre de prix -->
+      <div class="price-filter">
+        <div class="filter-section-title">
           <mat-icon>payments</mat-icon>
-          Frais d'adhésion (FCFA)
-        </label>
-        <div class="range-inputs">
-          <mat-form-field appearance="outline" class="range-field">
+          <span>Frais d'adhésion (FCFA)</span>
+        </div>
+        <div class="price-range">
+          <mat-form-field appearance="outline" class="price-input">
             <mat-label>Min</mat-label>
             <input 
               matInput 
@@ -174,9 +211,14 @@
               [(ngModel)]="filters.fraisMin"
               (ngModelChange)="applyFilters()"
               min="0">
+            <span matTextPrefix>FCFA&nbsp;</span>
           </mat-form-field>
-          <span class="range-separator">à</span>
-          <mat-form-field appearance="outline" class="range-field">
+          
+          <div class="range-separator">
+            <mat-icon>remove</mat-icon>
+          </div>
+          
+          <mat-form-field appearance="outline" class="price-input">
             <mat-label>Max</mat-label>
             <input 
               matInput 
@@ -184,115 +226,254 @@
               [(ngModel)]="filters.fraisMax"
               (ngModelChange)="applyFilters()"
               min="0">
+            <span matTextPrefix>FCFA&nbsp;</span>
           </mat-form-field>
+        </div>
+        
+        <!-- Boutons de prix rapide -->
+        <div class="quick-price-buttons">
+          <button 
+            *ngFor="let range of priceRanges" 
+            mat-stroked-button 
+            (click)="setPriceRange(range)"
+            class="price-range-btn"
+            [class.active]="isPriceRangeActive(range)">
+            {{ range.label }}
+          </button>
         </div>
       </div>
     </div>
-  </mat-expansion-panel>
-
-  <!-- Results Info -->
-  <div class="results-info">
-    <span class="results-count">
-      <strong>{{ filteredGroupes.length }}</strong> groupe(s) trouvé(s)
-    </span>
-    <span *ngIf="hasActiveFilters()" class="filtered-notice">
-      <mat-icon>info</mat-icon>
-      Résultats filtrés
-    </span>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p class="loading-text">Chargement des groupes...</p>
-  </div>
-
-  <!-- Groupes Grid View -->
-  <div *ngIf="!isLoading && viewMode === 'grid'" class="groupes-grid">
-    <mat-card 
-      *ngFor="let groupe of filteredGroupes" 
-      class="groupe-card"
-      (click)="viewGroupeDetails(groupe)">
+  <!-- Informations sur les résultats -->
+  <div class="results-header">
+    <div class="results-info">
+      <div class="results-count">
+        <span class="count-number">{{ filteredGroupes.length }}</span>
+        <span class="count-text">groupe(s) trouvé(s)</span>
+      </div>
       
-      <div class="card-image" [style.background-image]="'url(' + (imageUrl + groupe.imageUrl || 'assets/default-groupe.jpg') + ')'">
+      <div class="results-meta" *ngIf="hasActiveFilters()">
+        <mat-icon class="filter-icon">filter_list</mat-icon>
+        <span>Résultats filtrés</span>
+      </div>
+    </div>
+
+    <div class="quick-actions" *ngIf="filteredGroupes.length > 0">
+      <button 
+        mat-stroked-button 
+        (click)="selectAll()"
+        class="select-action">
+        <mat-icon>select_all</mat-icon>
+        <span>Tout sélectionner</span>
+      </button>
+      
+      <button 
+        mat-stroked-button 
+        (click)="compareSelected()"
+        [disabled]="selectedGroups.length < 2"
+        class="compare-action">
+        <mat-icon>compare</mat-icon>
+        <span>Comparer ({{ selectedGroups.length }})</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>Chargement...</h3>
+      <p>Recherche des groupes disponibles</p>
+    </div>
+  </div>
+
+  <!-- Vue grille des groupes -->
+  <div *ngIf="!isLoading && viewMode === 'grid'" class="groupes-grid">
+    <div 
+      *ngFor="let groupe of filteredGroupes; trackBy: trackByGroupeId" 
+      class="groupe-card"
+      [class.selected]="isGroupSelected(groupe)"
+      (click)="toggleGroupSelection(groupe)">
+      
+      <!-- Sélecteur -->
+      <mat-checkbox 
+        class="card-selector"
+        [checked]="isGroupSelected(groupe)"
+        (click)="$event.stopPropagation()"
+        (change)="toggleGroupSelection(groupe)">
+      </mat-checkbox>
+
+       <div 
+      class="card-image relative w-full"
+      [style.background-image]="getBackgroundImageStyle(groupe)"
+      [class.placeholder-bg]="!groupe.imageUrl" 
+      [style.background-color]="!groupe.imageUrl ? getPlaceholderColor(groupe.nom) : null"
+    >
+      
+      <!-- Placeholder Nom (Affiché SANS image) -->
+      <div *ngIf="!groupe.imageUrl" class="no-image-placeholder flex items-center justify-center">
+        <span class="text-2xl font-extrabold text-white text-center p-4">
+          {{ groupe.nom | uppercase }}
+        </span>
+      </div>
+
+      <div *ngIf="groupe.imageUrl" class="card-image" [style.background-image]="'url(' + (imageUrl + groupe.imageUrl || 'assets/default-groupe.jpg') + ')'">
+
+        <div class="image-overlay">
+
+          <mat-chip class="discipline-chip">
+
+            <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
+
+            {{ groupe.discipline }}
+
+          </mat-chip>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- Overlay (Affiché PAR-DESSUS l'image ou le nom) -->
+      <div class="image-overlay absolute top-0 left-0 w-full h-full p-3 flex justify-end items-start">
+        <mat-chip class="discipline-chip">
+          <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
+          {{ groupe.discipline }}
+        </mat-chip>
+      </div>
+    </div>
+<!-- 
+      Image avec overlay
+      <div class="card-image" [style.background-image]="getGroupeImageUrl(groupe)">
         <div class="image-overlay">
           <mat-chip class="discipline-chip">
             <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
             {{ groupe.discipline }}
           </mat-chip>
         </div>
-      </div>
+        <div class="availability-badge" [class]="getAvailabilityClass(groupe)">
+          <mat-icon>{{ getAvailabilityIcon(groupe) }}</mat-icon>
+        </div>
+      </div> -->
 
-      <mat-card-header>
-        <mat-card-title class="groupe-name">{{ groupe.nom }}</mat-card-title>
-        <mat-card-subtitle class="groupe-location">
-          <mat-icon>place</mat-icon>
-          {{ groupe.ville }}{{ groupe.quartier ? ' - ' + groupe.quartier : '' }}
-        </mat-card-subtitle>
-      </mat-card-header>
+      <!-- Contenu de la carte -->
+      <div class="card-content">
+        <div class="card-header">
+          <h3 class="groupe-name">{{ groupe.nom }}</h3>
+          <div class="groupe-location">
+            <mat-icon>place</mat-icon>
+            <span>{{ groupe.ville }}{{ groupe.quartier ? ' - ' + groupe.quartier : '' }}</span>
+          </div>
+        </div>
 
-      <mat-card-content>
-        <div class="groupe-info">
-          <div class="info-row">
+        <div class="groupe-details">
+          <div class="detail-item">
             <mat-icon>stadium</mat-icon>
             <span>{{ groupe.stade }}</span>
           </div>
-          <div class="info-row">
-            <mat-icon>event</mat-icon>
+          <div class="detail-item">
+            <mat-icon>schedule</mat-icon>
             <span>{{ groupe.jourMatch }}{{ groupe.heureMatch ? ' - ' + groupe.heureMatch : '' }}</span>
           </div>
-          <div class="info-row">
+          <div class="detail-item">
             <mat-icon>category</mat-icon>
             <span>{{ groupe.typeEquipe }}</span>
           </div>
-          <div class="info-row">
+          <div class="detail-item price-item">
             <mat-icon>payments</mat-icon>
-            <span>{{ groupe.fraisAdhesion }} FCFA</span>
-          </div>
-          <div *ngIf="groupe.capaciteMax" class="info-row">
-            <mat-icon [class]="getCapaciteClass(groupe)">group</mat-icon>
-            <span>{{ getCapaciteInfo(groupe) }}</span>
+            <span class="price-amount">{{ groupe.fraisAdhesion | currency:'XAF':'symbol':'1.0-0' }}</span>
           </div>
         </div>
 
         <p *ngIf="groupe.description" class="groupe-description">
           {{ groupe.description }}
         </p>
-      </mat-card-content>
 
-      <mat-card-actions class="card-actions">
+        <!-- Jauge de capacité -->
+        <div *ngIf="groupe.capaciteMax" class="capacity-indicator">
+          <div class="capacity-header">
+            <span class="capacity-text">{{ getCapaciteInfo(groupe) }}</span>
+            <span class="capacity-percentage">{{ getCapacityPercentage(groupe) }}%</span>
+          </div>
+          <mat-progress-bar 
+            [value]="getCapacityPercentage(groupe)"
+            [color]="getCapacityColor(groupe)"
+            class="capacity-bar">
+          </mat-progress-bar>
+        </div>
+      </div>
+
+      <!-- Actions de la carte -->
+      <div class="card-actions">
         <button 
           mat-raised-button 
           color="primary"
           (click)="demanderAdhesion(groupe); $event.stopPropagation()"
-          [disabled]="!groupe.accepteNouveauxMembres">
-          <mat-icon>person_add</mat-icon>
-          {{ groupe.accepteNouveauxMembres ? 'Demander adhésion' : 'Complet' }}
+          [disabled]="!groupe.accepteNouveauxMembres"
+          class="primary-action">
+          <mat-icon>{{ groupe.accepteNouveauxMembres ? 'person_add' : 'block' }}</mat-icon>
+          <span>{{ groupe.accepteNouveauxMembres ? 'Rejoindre' : 'Complet' }}</span>
         </button>
-        <button 
-          mat-icon-button 
-          matTooltip="Voir les détails"
-          (click)="viewGroupeDetails(groupe); $event.stopPropagation()">
-          <mat-icon>info</mat-icon>
-        </button>
-      </mat-card-actions>
-    </mat-card>
+        
+        <div class="secondary-actions">
+          <button 
+            mat-icon-button 
+            matTooltip="Voir les détails"
+            (click)="viewGroupeDetails(groupe); $event.stopPropagation()">
+            <mat-icon>info</mat-icon>
+          </button>
+          
+          <button 
+            mat-icon-button 
+            matTooltip="Partager"
+            (click)="shareGroupe(groupe); $event.stopPropagation()">
+            <mat-icon>share</mat-icon>
+          </button>
+          
+          <button 
+            mat-icon-button 
+            matTooltip="Favori"
+            (click)="toggleFavorite(groupe); $event.stopPropagation()"
+            [class.active]="isGroupFavorite(groupe)">
+            <mat-icon>{{ isGroupFavorite(groupe) ? 'favorite' : 'favorite_border' }}</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Groupes List View -->
+  <!-- Vue liste des groupes -->
   <div *ngIf="!isLoading && viewMode === 'list'" class="groupes-list">
-    <mat-card 
-      *ngFor="let groupe of filteredGroupes" 
+    <div 
+      *ngFor="let groupe of filteredGroupes; trackBy: trackByGroupeId" 
       class="groupe-list-item"
-      (click)="viewGroupeDetails(groupe)">
+      [class.selected]="isGroupSelected(groupe)"
+      (click)="toggleGroupSelection(groupe)">
       
       <div class="list-item-content">
-        <div class="list-item-image" [style.background-image]="'url(' + (groupe.imageUrl || 'assets/default-groupe.jpg') + ')'">
+        <!-- Sélecteur -->
+        <mat-checkbox 
+          class="list-selector"
+          [checked]="isGroupSelected(groupe)"
+          (click)="$event.stopPropagation()"
+          (change)="toggleGroupSelection(groupe)">
+        </mat-checkbox>
+
+        <!-- Image -->
+        <div class="list-item-image" [style.background-image]="getGroupeImageUrl(groupe)">
           <mat-chip class="discipline-chip-small">
             <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
           </mat-chip>
+          <div class="availability-badge-small" [class]="getAvailabilityClass(groupe)">
+            <mat-icon>{{ getAvailabilityIcon(groupe) }}</mat-icon>
+          </div>
         </div>
 
+        <!-- Informations -->
         <div class="list-item-info">
           <h3 class="list-item-title">{{ groupe.nom }}</h3>
           <div class="list-item-details">
@@ -320,48 +501,87 @@
           <p *ngIf="groupe.description" class="list-item-description">
             {{ groupe.description }}
           </p>
+
+          <!-- Jauge de capacité en liste -->
+          <div *ngIf="groupe.capaciteMax" class="list-capacity-indicator">
+            <span class="capacity-label">{{ getCapaciteInfo(groupe) }}</span>
+            <mat-progress-bar 
+              [value]="getCapacityPercentage(groupe)"
+              [color]="getCapacityColor(groupe)"
+              class="capacity-bar-small">
+            </mat-progress-bar>
+          </div>
         </div>
 
+        <!-- Actions -->
         <div class="list-item-actions">
           <div class="frais-badge">
             <span class="frais-amount">{{ groupe.fraisAdhesion }}</span>
             <span class="frais-currency">FCFA</span>
           </div>
-          <div *ngIf="groupe.capaciteMax" class="capacite-info" [class]="getCapaciteClass(groupe)">
-            <mat-icon>group</mat-icon>
-            <span>{{ getCapaciteInfo(groupe) }}</span>
+
+          <div class="action-buttons">
+            <button 
+              mat-raised-button 
+              color="primary"
+              (click)="demanderAdhesion(groupe); $event.stopPropagation()"
+              [disabled]="!groupe.accepteNouveauxMembres"
+              class="adhesion-btn">
+              <mat-icon>{{ groupe.accepteNouveauxMembres ? 'person_add' : 'block' }}</mat-icon>
+              <span>{{ groupe.accepteNouveauxMembres ? 'Rejoindre' : 'Complet' }}</span>
+            </button>
+
+            <div class="secondary-actions-list">
+              <button 
+                mat-icon-button 
+                matTooltip="Voir les détails"
+                (click)="viewGroupeDetails(groupe); $event.stopPropagation()">
+                <mat-icon>info</mat-icon>
+              </button>
+              
+              <button 
+                mat-icon-button 
+                matTooltip="Partager"
+                (click)="shareGroupe(groupe); $event.stopPropagation()">
+                <mat-icon>share</mat-icon>
+              </button>
+              
+              <button 
+                mat-icon-button 
+                matTooltip="Favori"
+                (click)="toggleFavorite(groupe); $event.stopPropagation()"
+                [class.active]="isGroupFavorite(groupe)">
+                <mat-icon>{{ isGroupFavorite(groupe) ? 'favorite' : 'favorite_border' }}</mat-icon>
+              </button>
+            </div>
           </div>
-          <button 
-            mat-raised-button 
-            color="primary"
-            (click)="demanderAdhesion(groupe); $event.stopPropagation()"
-            [disabled]="!groupe.accepteNouveauxMembres"
-            class="adhesion-btn">
-            <mat-icon>person_add</mat-icon>
-            {{ groupe.accepteNouveauxMembres ? 'Adhérer' : 'Complet' }}
-          </button>
         </div>
       </div>
-    </mat-card>
+    </div>
   </div>
 
-  <!-- Empty State -->
+  <!-- État vide -->
   <div *ngIf="!isLoading && filteredGroupes.length === 0" class="empty-state">
-    <mat-icon class="empty-icon">search_off</mat-icon>
-    <h3 class="empty-title">Aucun groupe trouvé</h3>
-    <p class="empty-text" *ngIf="hasActiveFilters()">
-      Essayez de modifier vos critères de recherche
-    </p>
-    <p class="empty-text" *ngIf="!hasActiveFilters()">
-      Il n'y a pas encore de groupes disponibles dans votre région
-    </p>
-    <button 
-      *ngIf="hasActiveFilters()"
-      mat-raised-button 
-      color="primary"
-      (click)="resetFilters()">
-      <mat-icon>refresh</mat-icon>
-      Réinitialiser les filtres
-    </button>
+    <div class="empty-illustration">
+      <mat-icon class="empty-icon">{{ hasActiveFilters() ? 'search_off' : 'explore_off' }}</mat-icon>
+    </div>
+    <div class="empty-content">
+      <h3 class="empty-title">
+        {{ hasActiveFilters() ? 'Aucun résultat trouvé' : 'Aucun groupe disponible' }}
+      </h3>
+      <p class="empty-text">
+        {{ hasActiveFilters() ? 'Essayez de modifier vos critères de recherche' : 'Il n\'y a pas encore de groupes dans votre région' }}
+      </p>
+      <div class="empty-actions">
+        <button 
+          *ngIf="hasActiveFilters()"
+          mat-raised-button 
+          color="primary"
+          (click)="resetFilters()">
+          <mat-icon>refresh</mat-icon>
+          <span>Réinitialiser les filtres</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>

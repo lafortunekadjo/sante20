@@ -24,6 +24,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { QuestionCandidatureService } from '../../../../core/services/question-candidature.service';
 import { finalize } from 'rxjs/operators';
+import { environment } from '../../../../environment';
 
 
 @Component({
@@ -65,12 +66,16 @@ export class GroupeConfigComponent implements OnInit {
   isSaving = false;
   editingQuestion: QuestionCandidature | null = null;
   showQuestionForm = false;
-  
+  imageUrl=environment.imageUrl
+  // Pour l'aperçu de l'image
+  profilePhotoPreview: string | null = null;
+  selectedFile: File | null = null;
   typeChampConfig = TYPE_CHAMP_CONFIG;
   joursMatch = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
   disciplines = ['Football', 'Basketball', 'Volleyball', 'Handball', 'Rugby'];
   typesEquipe = ['Senior', 'Junior', 'Vétéran', 'Féminin', 'Masculin', 'Mixte'];
    isDialogOpen = signal(false);
+   isUploadingPhoto = false;
 
   // Signal pour stocker la valeur de l'input du nom du stade
   stadeNom = signal('');
@@ -92,10 +97,11 @@ export class GroupeConfigComponent implements OnInit {
       ville: [null, Validators.required],
       stade: [null, Validators.required],
       jourMatch: ['', Validators.required],
-      typeEquipe: ['', Validators.required],
-      modeEquipe: ['STATIQUE', Validators.required],
+      typeEquipe: [''],
+      modeEquipe: ['STATIQUE'],
       fraisAdhesion: [0, [Validators.required, Validators.min(0)]],
-      heureMatch: [null, Validators.required]
+      heureMatch: [null, Validators.required],
+      abreviation: ['']
     });
 
     this.questionForm = this.fb.group({
@@ -317,6 +323,82 @@ loadVillesEtStades(callback: () => void): void {
           this.isSaving = false;
         }
       });
+    }
+  }
+
+  /**
+   * Gère la sélection d'un fichier image
+   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      
+      // Vérifier le type de fichier
+      if (!file.type.startsWith('image/')) {
+        this.snackBar.open('Veuillez sélectionner une image', 'Fermer', { duration: 3000 });
+        return;
+      }
+      
+      // Vérifier la taille (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        this.snackBar.open('L\'image ne doit pas dépasser 5MB', 'Fermer', { duration: 3000 });
+        return;
+      }
+      
+      this.selectedFile = file;
+      
+      // Créer un aperçu
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.profilePhotoPreview = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  /**
+   * Upload de l'image de profil
+   */
+  uploadProfilePhoto(): void {
+    if (!this.selectedFile || !this.groupe) {
+      return;
+    }
+    
+    this.isUploadingPhoto = true;
+    const formData = new FormData();
+    formData.append('profilePhoto', this.selectedFile);
+    
+    this.groupeService.uploadGroupePhoto(this.groupe.id, formData).pipe(
+      finalize(() => {
+        this.isUploadingPhoto = false;
+      })
+    ).subscribe({
+      next: (response) => {
+        this.snackBar.open('Photo de profil mise à jour avec succès', 'Fermer', { duration: 3000 });
+        // Mettre à jour l'URL de la photo dans le groupe
+        if (this.groupe && response.url) {
+          this.groupe.profilePhotoUrl = response.url;
+        }
+        this.selectedFile = null;
+      },
+      error: (error) => {
+        console.error('Erreur upload photo:', error);
+        this.snackBar.open('Erreur lors de l\'upload de la photo', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Annuler la sélection de photo
+   */
+  cancelPhotoSelection(): void {
+    this.selectedFile = null;
+    this.profilePhotoPreview = null;
+    // Réinitialiser l'input file
+    const fileInput = document.getElementById('photoInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
     }
   }
 

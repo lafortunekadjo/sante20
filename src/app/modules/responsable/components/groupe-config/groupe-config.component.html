@@ -91,6 +91,71 @@
             <mat-card-content>
               <form [formGroup]="groupeForm" (ngSubmit)="saveGroupe()">
                 
+                <!-- Photo de profil -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>photo_camera</mat-icon>
+                    Photo de profil
+                  </h3>
+
+                  <div class="photo-upload-section">
+                    <div class="photo-preview">
+                      <img *ngIf="profilePhotoPreview || groupe?.profilePhotoUrl" 
+                           [src]="profilePhotoPreview || imageUrl  + groupe?.profilePhotoUrl" 
+                           alt="Photo de profil"
+                           class="profile-image">
+                      <div *ngIf="!profilePhotoPreview && !groupe?.profilePhotoUrl" class="photo-placeholder">
+                        <mat-icon>groups</mat-icon>
+                        <span>Aucune photo</span>
+                      </div>
+                    </div>
+                    
+                    <div class="photo-actions">
+                      <input type="file" 
+                             id="photoInput" 
+                             #fileInput
+                             accept="image/*" 
+                             (change)="onFileSelected($event)"
+                             style="display: none;">
+                      
+                      <button mat-stroked-button 
+                              type="button"
+                              color="primary"
+                              (click)="fileInput.click()"
+                              [disabled]="isUploadingPhoto">
+                        <mat-icon>photo_camera</mat-icon>
+                        Choisir une photo
+                      </button>
+                      
+                      <div class="upload-actions" *ngIf="selectedFile">
+                        <button mat-raised-button 
+                                type="button"
+                                color="primary"
+                                (click)="uploadProfilePhoto()"
+                                [disabled]="isUploadingPhoto">
+                          <mat-spinner diameter="20" *ngIf="isUploadingPhoto"></mat-spinner>
+                          <mat-icon *ngIf="!isUploadingPhoto">cloud_upload</mat-icon>
+                          {{ isUploadingPhoto ? 'Upload...' : 'Uploader' }}
+                        </button>
+                        
+                        <button mat-button 
+                                type="button"
+                                (click)="cancelPhotoSelection()"
+                                [disabled]="isUploadingPhoto">
+                          <mat-icon>cancel</mat-icon>
+                          Annuler
+                        </button>
+                      </div>
+                      
+                      <mat-hint class="photo-hint">
+                        Format accepté : JPG, PNG (max 5MB)
+                      </mat-hint>
+                    </div>
+                  </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
                 <!-- Nom et statut -->
                 <div class="form-section">
                   <h3 class="section-title">
@@ -109,6 +174,25 @@
                       <mat-error *ngIf="groupeForm.get('nom')?.hasError('minlength')">
                         Minimum 3 caractères
                       </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>Abréviation</mat-label>
+                      <input matInput 
+                             formControlName="abreviation" 
+                             placeholder="Ex: FCL"
+                             style="text-transform: uppercase;">
+                      <mat-icon matPrefix>short_text</mat-icon>
+                      <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('required')">
+                        L'abréviation est requise
+                      </mat-error>
+                      <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('minlength')">
+                        Minimum 2 caractères
+                      </mat-error>
+                      <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('maxlength')">
+                        Maximum 10 caractères
+                      </mat-error>
+                      <mat-hint>Sigle ou acronyme du groupe</mat-hint>
                     </mat-form-field>
 
                     <div class="toggle-field">

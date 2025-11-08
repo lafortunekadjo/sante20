@@ -1,217 +1,231 @@
-<div class="individual-contribution-container">
-  <h1>Gestion des Contributions Individuelles</h1>
-  <mat-card class="table-card">
-    <mat-card-header>
-      <mat-card-title>Liste des Contributions Individuelles</mat-card-title>
-      <mat-card-subtitle>Gérez les contributions individuelles ci-dessous</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Chargement des données...</p>
-      </div>
-        <div *ngIf="!isLoading">
-            <div class="filter-controls">
-              <!-- Bouton de création -->
-              <div class="filter-section">
-                <button mat-raised-button color="primary" (click)="toggleCreateRow()">
-                  <mat-icon>add</mat-icon> Créer une Contribution
-                </button>
-              </div>
-
-              <!-- Filtres de texte et de sélection -->
-              <div class="filter-section filter-fields">
-                <mat-form-field appearance="outline" class="filter-input">
-                  <mat-label>Rechercher par nom/prénom</mat-label>
-                  <input matInput (keyup)="applySearchFilter($event)" placeholder="Ex: Jean Dupont">
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="filter-input">
-                <mat-label>Filtrer par type</mat-label>
-                <mat-select [(ngModel)]="selectedType" (selectionChange)="applyTypeFilter($event.value)">
-                  <mat-option value="">-- Tous --</mat-option>
-                  <mat-option *ngFor="let type of contributions$" [value]="type.id">
-                    {{ type.commentaire }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-              </div>
-
-              <!-- Filtres de montant -->
-              <div class="filter-section filter-amounts">
-                <mat-form-field appearance="outline" class="filter-input">
-                  <mat-label>Montant min</mat-label>
-                  <input matInput type="number" [(ngModel)]="minAmount" (input)="applyAmountFilter()">
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="filter-input">
-                  <mat-label>Montant max</mat-label>
-                  <input matInput type="number" [(ngModel)]="maxAmount" (input)="applyAmountFilter()">
-                </mat-form-field>
-              </div>
-
-            <!-- Filtres de date -->
-              <div class="filter-container">
-              <form [formGroup]="dateRangeForm" class="date-filter-form">
-                <mat-form-field appearance="outline" class="flex-grow">
-                  <mat-label>Plage de dates</mat-label>
-                  <mat-date-range-input [rangePicker]="picker">
-                    <input matStartDate formControlName="start" placeholder="Date de début" (click)="picker.open()">
-                    <input matEndDate formControlName="end" placeholder="Date de fin" (click)="picker.open()">
-                  </mat-date-range-input>
-                  <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                  <mat-date-range-picker #picker></mat-date-range-picker>
-                  <mat-error *ngIf="dateRangeForm.errors?.['rangeInvalid']">
-                    La date de fin doit être postérieure à la date de début
-                  </mat-error>
-                </mat-form-field>
-                <div class="button-group">
-                  <button mat-raised-button color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid" class="apply-button">
-                    Appliquer
-                  </button>
-                  <button mat-stroked-button color="warn" (click)="resetDateFilter()" class="reset-button">
-                    Réinitialiser
-                  </button>
-                </div>
-              </form>
-              <!-- Ajoute ce bouton dans ta section filter-controls, après les autres filtres -->
-              <div class="filter-section">
-                <button mat-stroked-button color="accent" (click)="clearAllFilters()" class="clear-all-button">
-                  <mat-icon>clear_all</mat-icon> Effacer tous les filtres
-                </button>
-              </div>
-      </div>
-
+<div class="contribution-form-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'contribution.management' | translate }}</h1>
+          <p class="page-subtitle">{{ 'contribution.managementSubtitle' | translate }}</p>
         </div>
-        <div *ngIf="showCreateRow" class="create-row">
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ dataSource.data.length }}</span>
+          <span class="stat-label">{{ 'contribution.totalIndividual' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'contribution.loadingData' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+    <!-- Filtres harmonisés -->
+    <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <h3>{{ 'common.filterBy' | translate }}</h3>
+        </div>
+      </div>
+      <div class="filter-chips">
+        <mat-form-field appearance="outline" class="search-filter">
+          <mat-label>{{ 'contribution.searchName' | translate }}</mat-label>
+          <input matInput (keyup)="applySearchFilter($event)" />
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.type' | translate }}</mat-label>
+          <mat-select [(ngModel)]="selectedType" (selectionChange)="applyTypeFilter($event.value)">
+            <mat-option value="">{{ 'common.all' | translate }}</mat-option>
+            <mat-option *ngFor="let type of contributions$" [value]="type.id">
+              {{ type.commentaire }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>category</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.minAmount' | translate }}</mat-label>
+          <input matInput type="number" [(ngModel)]="minAmount" (input)="applyAmountFilter()" />
+          <mat-icon matPrefix>arrow_downward</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.maxAmount' | translate }}</mat-label>
+          <input matInput type="number" [(ngModel)]="maxAmount" (input)="applyAmountFilter()" />
+          <mat-icon matPrefix>arrow_upward</mat-icon>
+        </mat-form-field>
+        <form [formGroup]="dateRangeForm" class="date-filter-form">
           <mat-form-field appearance="outline">
-            <mat-label>Contribution</mat-label>
-            <mat-select [(ngModel)]="newContribution.idContribution" required>
-              <mat-option *ngFor="let contribution of contributions$ " [value]="contribution.id">
-                {{ contribution.commentaire }}
-              </mat-option>
-            </mat-select>
-            <mat-error *ngIf="!newContribution.idContribution">Contribution requise</mat-error>
+            <mat-label>{{ 'contribution.dateFrom' | translate }}</mat-label>
+            <input matInput [matDatepicker]="pickerStart" formControlName="start" (dateChange)="applyDateFilter()" />
+            <mat-datepicker-toggle matSuffix [for]="pickerStart"></mat-datepicker-toggle>
+            <mat-datepicker #pickerStart></mat-datepicker>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Membre</mat-label>
-            <mat-select [(ngModel)]="newContribution.idMembre" required>
-              <mat-option *ngFor="let membre of membres" [value]="membre.id">
-                {{ membre.nom }} {{ membre.prenom }}
-              </mat-option>
-            </mat-select>
-            <mat-error *ngIf="!newContribution.idMembre">Membre requis</mat-error>
+            <mat-label>{{ 'contribution.dateTo' | translate }}</mat-label>
+            <input matInput [matDatepicker]="pickerEnd" formControlName="end" (dateChange)="applyDateFilter()" />
+            <mat-datepicker-toggle matSuffix [for]="pickerEnd"></mat-datepicker-toggle>
+            <mat-datepicker #pickerEnd></mat-datepicker>
           </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Montant</mat-label>
-            <input matInput type="number" [(ngModel)]="newContribution.montant" required>
-            <mat-error *ngIf="!newContribution.montant">Montant requis</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Date de contribution</mat-label>
-            <input matInput [matDatepicker]="picker" [(ngModel)]="newContribution.dateContribution" required>
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-            <mat-error *ngIf="!newContribution.dateContribution">Date requise</mat-error>
-          </mat-form-field>
-          <div class="action-buttons">
-            <button mat-raised-button color="primary" (click)="saveContribution()" [disabled]="!isCreateFormValid()">Enregistrer</button>
-            <button mat-raised-button color="warn" (click)="cancelCreate()">Annuler</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bouton de création -->
+    <div class="action-buttons">
+      <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+        <mat-icon>add</mat-icon>
+        <span>{{ 'contribution.create' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Formulaire de création -->
+    <div *ngIf="showCreateRow" class="demande-card create-card">
+      <div class="demande-header">
+        <div class="groupe-info">
+          <div class="groupe-avatar">
+            <mat-icon class="discipline-icon">add_circle</mat-icon>
+          </div>
+          <div class="groupe-details">
+            <h3 class="groupe-nom">{{ 'contribution.newIndividual' | translate }}</h3>
           </div>
         </div>
-        <div class="table-wrapper">
-          <table mat-table [dataSource]="dataSource" matSort>
-            <ng-container matColumnDef="idContribution">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Contribution</th>
-              <td mat-cell *matCellDef="let contribution; let i = index">
-                <span *ngIf="!editingRows[i]">{{ contribution.contribution }}</span>
-                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                  <mat-label>Contribution</mat-label>
-                  <mat-select [(ngModel)]="editContribution.contribution" required>
-                    <mat-option *ngFor="let cont of contributions$ " [value]="cont.id">
-                      {{ cont.commentaire }}
-                    </mat-option>
-                  </mat-select>
-                  <mat-error *ngIf="!editContribution.contribution.id">Contribution requise</mat-error>
-                </mat-form-field>
-              </td>
-            </ng-container>
-             <ng-container matColumnDef="contribution">
-            <th mat-header-cell *matHeaderCellDef>Contribution</th>
-            <td mat-cell *matCellDef="let contribution; let i = index">
-               <span>{{ contribution.contribution?.commentaire}}</span>
-            </td>
-          </ng-container>
-            <ng-container matColumnDef="idMembre">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Membre</th>
-              <td mat-cell *matCellDef="let contribution; let i = index">
-                <span *ngIf="!editingRows[i]">{{ contribution.membre }}</span>
-                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                  <mat-label>Membre</mat-label>
-                  <mat-select [(ngModel)]="editContribution.idMembre" required>
-                    <mat-option *ngFor="let membre of membres" [value]="membre.id">
-                      {{ membre.nom }} {{ membre.prenom }}
-                    </mat-option>
-                  </mat-select>
-                  <mat-error *ngIf="!editContribution.idMembre">Membre requis</mat-error>
-                </mat-form-field>
-              </td>
-            </ng-container>
-             <ng-container matColumnDef="membre">
-            <th mat-header-cell *matHeaderCellDef>Membre</th>
-            <td mat-cell *matCellDef="let contribution; let i = index">
-               <span >{{ contribution.membre?.nom}}</span>
-            </td>
-          </ng-container>
-            <ng-container matColumnDef="montant">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
-              <td mat-cell *matCellDef="let contribution; let i = index">
-                <span *ngIf="!editingRows[i]">{{ contribution.montant }}</span>
-                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                  <mat-label>Montant</mat-label>
-                  <input matInput type="number" [(ngModel)]="editContribution.montant" required>
-                  <mat-error *ngIf="!editContribution.montant">Montant requis</mat-error>
-                </mat-form-field>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="dateContribution">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
-              <td mat-cell *matCellDef="let contribution; let i = index">
-                <span *ngIf="!editingRows[i]">{{ contribution.dateContribution | date:'dd/MM/yyyy' }}</span>
-                <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                  <mat-label>Date</mat-label>
-                  <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editContribution.dateContribution" required>
-                  <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
-                  <mat-datepicker #pickerEdit></mat-datepicker>
-                  <mat-error *ngIf="!editContribution.dateContribution">Date requise</mat-error>
-                </mat-form-field>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let contribution; let i = index">
-                <ng-container *ngIf="!editingRows[i]">
-                  <div class="action-buttons-horizontal">
-                    <button mat-icon-button color="primary" (click)="editRow(i, contribution)" title="Modifier">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="openDeleteDialog(contribution)" title="Supprimer">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </ng-container>
-                <ng-container *ngIf="editingRows[i]">
-                  <div class="action-buttons-horizontal">
-                    <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()">Enregistrer</button>
-                    <button mat-raised-button color="warn" (click)="cancelEdit(i)">Annuler</button>
-                  </div>
-                </ng-container>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-          </table>
-           <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+      </div>
+      <div class="demande-content">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.member' | translate }}</mat-label>
+          <mat-select [(ngModel)]="newContribution.idMembre" required>
+            <mat-option *ngFor="let membre of membres" [value]="membre.id">{{ membre.prenom + ' ' + membre.nom }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.contribution' | translate }}</mat-label>
+          <mat-select [(ngModel)]="newContribution.idContribution" required>
+            <mat-option *ngFor="let contrib of contributions$" [value]="contrib.id">{{ contrib.commentaire }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.amount' | translate }}</mat-label>
+          <input matInput type="number" [(ngModel)]="newContribution.montant" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'contribution.date' | translate }}</mat-label>
+          <input matInput [matDatepicker]="pickerNew" [(ngModel)]="newContribution.dateContribution" required>
+          <mat-datepicker-toggle matSuffix [for]="pickerNew"></mat-datepicker-toggle>
+          <mat-datepicker #pickerNew></mat-datepicker>
+        </mat-form-field>
+      </div>
+      <div class="demande-actions">
+        <div class="primary-actions">
+          <button mat-raised-button color="primary" (click)="saveContribution()" [disabled]="!isCreateFormValid()">
+            <mat-icon>save</mat-icon>
+            <span>{{ 'common.save' | translate }}</span>
+          </button>
+          <button mat-stroked-button color="warn" (click)="cancelCreate()">
+            <mat-icon>cancel</mat-icon>
+            <span>{{ 'common.cancel' | translate }}</span>
+          </button>
         </div>
       </div>
-    </mat-card-content>
-  </mat-card>
+    </div>
+
+    <!-- Tableau des contributions -->
+    <div class="table-wrapper" *ngIf="dataSource.data.length > 0">
+      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+        <ng-container matColumnDef="contribution">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.id' | translate }}</th>
+          <td mat-cell *matCellDef="let contribution">{{ contribution.contribution?.commentaire }}</td>
+        </ng-container>
+        <ng-container matColumnDef="membre">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.member' | translate }}</th>
+          <td mat-cell *matCellDef="let contribution">{{ contribution.membre?.nom }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="montant">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.amount' | translate }}</th>
+          <td mat-cell *matCellDef="let contribution; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editMontant">
+              {{ contribution.montant | number }} FCFA
+            </ng-container>
+            <ng-template #editMontant>
+              <mat-form-field appearance="outline">
+                <input matInput type="number" [(ngModel)]="editContribution.montant" required>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="dateContribution">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.date' | translate }}</th>
+          <td mat-cell *matCellDef="let contribution; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editDate">
+              {{ contribution.dateContribution | date:'dd/MM/yyyy' }}
+            </ng-container>
+            <ng-template #editDate>
+              <mat-form-field appearance="outline">
+                <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editContribution.dateContribution" required>
+                <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
+                <mat-datepicker #pickerEdit></mat-datepicker>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
+          <td mat-cell *matCellDef="let contribution; let i = index">
+            <ng-container *ngIf="!editingRows[i]">
+              <div class="action-buttons-horizontal">
+                <button mat-icon-button color="primary" (click)="editRow(i, contribution)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="openDeleteDialog(contribution)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="editingRows[i]">
+              <div class="action-buttons-horizontal">
+                <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()">
+                  {{ 'common.save' | translate }}
+                </button>
+                <button mat-raised-button color="warn" (click)="cancelEdit(i)">
+                  {{ 'common.cancel' | translate }}
+                </button>
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+      <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="dataSource.data.length === 0">
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'contribution.noContributions' | translate }}</h3>
+        <p class="empty-text">{{ 'contribution.noContributionsMessage' | translate }}</p>
+        <div class="empty-actions">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+            <mat-icon>add</mat-icon>
+            <span>{{ 'contribution.create' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

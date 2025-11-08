@@ -1,31 +1,41 @@
-
-  <!-- Loader élégant -->
-  <div class="loading-overlay" *ngIf="isLoading">
-    <div class="loader-content">
-      <div class="spinner-container">
-        <mat-spinner diameter="60" color="accent"></mat-spinner>
+<div class="news-feed-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'feed.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'feed.subtitle' | translate }}</p>
+        </div>
       </div>
-      <div class="loading-text">
-        <h3>Chargement du fil d'actualité...</h3>
-        <p>Récupération des dernières informations</p>
+      <div class="header-stats">
+        <div class="stat-item">
+          <!-- <span class="stat-number">{{ currentEvents?.length + recentMatches?.length + ongoingContributions?.length + upcomingBirthdays?.length + groupAnnouncements?.length }}</span> -->
+          <span class="stat-label">{{ 'feed.totalItems' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ currentEvents?.length }}</span>
+          <span class="stat-label">{{ 'feed.sections.events.title' | translate }}</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Contenu principal -->
-  <div class="feed-content" [class.loaded]="!isLoading">
-    <!-- Header avec titre moderne -->
-    <div class="feed-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <mat-icon class="title-icon">feed</mat-icon>
-          Fil d'Actualité
-        </h1>
-        <p class="page-subtitle">Restez informé de toutes les activités du groupe</p>
-      </div>
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
     </div>
+    <div class="loading-content">
+      <h3>{{ 'feed.loader.title' | translate }}</h3>
+      <p>{{ 'feed.loader.subtitle' | translate }}</p>
+    </div>
+  </div>
 
-    <!-- Grille moderne des actualités -->
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
     <div class="feed-grid">
       <!-- Section Événements en Cours -->
       <div class="feed-section events-section">
@@ -34,40 +44,53 @@
             <mat-icon>event</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Événements en Cours</h2>
+            <h2>{{ 'feed.sections.events.title' | translate }}</h2>
             <span class="badge">{{ currentEvents?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="modern-card event-card" *ngFor="let event of currentEvents">
-              <div class="card-ribbon">En cours</div>
-              <div class="card-header">
-                <div class="card-icon">
-                  <mat-icon>celebration</mat-icon>
-                </div>
-                <div class="card-title-group">
-                  <h3 class="card-title">{{ event.nomEvenement }}</h3>
-                  <p class="card-subtitle">{{ event.typeEvenement }}</p>
+            <div class="demande-card event-card" *ngFor="let event of currentEvents">
+              <div class="card-ribbon">{{ 'feed.sections.events.ongoing_ribbon' | translate }}</div>
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">celebration</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ event.nomEvenement }}</h3>
+                    <p class="groupe-discipline">{{ event.typeEvenement }}</p>
+                  </div>
                 </div>
               </div>
-              <div class="card-body">
+              <div class="demande-content">
                 <p class="card-description">{{ event.description }}</p>
-                <div class="card-info" *ngIf="event.estContributionOuverte">
-                  <mat-icon>schedule</mat-icon>
-                  <span>Contributions jusqu'au {{ event.dateCreation | date:'dd/MM/yyyy' }}</span>
+                <div class="additional-info" *ngIf="event.estContributionOuverte">
+                  <div class="info-card">
+                    <mat-icon>schedule</mat-icon>
+                    <div>
+                      <span class="info-label">{{ 'feed.sections.events.contribution_deadline' | translate }}</span>
+                      <span class="info-value">{{ event.dateCreation | date:'dd/MM/yyyy' }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="card-footer">
-                <button mat-flat-button color="primary">
-                  <mat-icon>visibility</mat-icon>
-                  Voir Détails
-                </button>
+              <div class="demande-actions">
+                <div class="primary-actions">
+                  <button mat-raised-button color="primary">
+                    <mat-icon>visibility</mat-icon>
+                    <span>{{ 'common.viewDetails' | translate }}</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="empty-state" *ngIf="currentEvents?.length === 0">
-              <mat-icon>event_busy</mat-icon>
-              <span>Aucun événement en cours</span>
+              <div class="empty-illustration">
+                <mat-icon class="empty-icon">event_busy</mat-icon>
+              </div>
+              <div class="empty-content">
+                <h3 class="empty-title">{{ 'feed.sections.events.empty' | translate }}</h3>
+              </div>
             </div>
           </div>
         </div>
@@ -80,35 +103,41 @@
             <mat-icon>sports_soccer</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Derniers Matchs</h2>
+            <h2>{{ 'feed.sections.matches.title' | translate }}</h2>
             <span class="badge">{{ recentMatches?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="modern-card match-card" *ngFor="let match of recentMatches">
-              <div class="card-header">
-                <div class="card-icon">
-                  <mat-icon>stadium</mat-icon>
-                </div>
-                <div class="card-title-group">
-                  <h3 class="card-title">{{ match.adversaire }}</h3>
-                  <p class="card-subtitle">{{ match.typeMatch }} • {{ match.dateMatch | date:'dd/MM/yyyy' }}</p>
+            <div class="demande-card match-card" *ngFor="let match of matchesToDisplay">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">stadium</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ match.adversaire }}</h3>
+                    <p class="groupe-discipline">{{ match.typeMatch }} • {{ match.dateMatch | date:'dd/MM/yyyy' }}</p>
+                  </div>
                 </div>
               </div>
-              <div class="card-body">
+              <div class="demande-content">
                 <div class="match-score">
-                  <div class="score-label">Score</div>
-                  <div class="score-value">{{ getScore(match) }}</div>
+                  <div class="score-label">{{ 'feed.sections.matches.score_label' | translate }}</div>
+                  <span>{{ getScore(match) }}</span>
+                  <span *ngIf="match.forfait" class="forfait-badge" 
+                        [matTooltip]="'feed.sections.matches.forfeit_tooltip' | translate: { teamName: match.equipeForfait }">
+                    <mat-icon class="icon-small">error_outline</mat-icon>
+                  </span>
                 </div>
                 <div class="match-stats">
                   <div class="stat-row">
                     <mat-icon>sports_soccer</mat-icon>
-                    <span>Buteurs: {{ getButeurs(match) }}</span>
+                    <span>{{ 'feed.sections.matches.scorers_label' | translate }} {{ getButeurs(match) }}</span>
                   </div>
                   <div class="stat-row">
                     <mat-icon>swap_horiz</mat-icon>
-                    <span>Passeurs: {{ getPasseurs(match) }}</span>
+                    <span>{{ 'feed.sections.matches.passers_label' | translate }} {{ getPasseurs(match) }}</span>
                   </div>
                   <div class="stat-row star-player">
                     <mat-icon>star</mat-icon>
@@ -118,39 +147,50 @@
                 <div class="media-gallery" *ngIf="match?.mediaUrls && match.mediaUrls.length > 0">
                   <div class="media-grid">
                     <ng-container *ngFor="let mediaUrl of match.mediaUrls | slice:0:4">
-                      <ng-container *ngIf="mediaBlobUrls[apiBaseUrl + mediaUrl]">
-                        <div class="media-wrapper" (click)="openMediaPreview(match, mediaUrl)">
-                          <img *ngIf="mediaBlobUrls[apiBaseUrl + mediaUrl].type.startsWith('image')" 
-                               [src]="mediaBlobUrls[apiBaseUrl + mediaUrl].url" 
-                               alt="Media du match" 
-                               class="media-thumbnail" />
-                          <video *ngIf="mediaBlobUrls[apiBaseUrl + mediaUrl].type.startsWith('video')" 
-                                 [src]="mediaBlobUrls[apiBaseUrl + mediaUrl].url" 
-                                 class="media-thumbnail"></video>
-                          <div class="media-overlay">
-                            <mat-icon>fullscreen</mat-icon>
-                          </div>
+                      <div class="media-wrapper" (click)="openMediaPreview(match, mediaUrl)">
+                        <img [src]="imageUrl + mediaUrl" alt="Media du match" class="media-thumbnail" />
+                        <div class="media-overlay">
+                          <mat-icon>fullscreen</mat-icon>
                         </div>
-                      </ng-container>
+                      </div>
                     </ng-container>
                   </div>
-                  <span class="media-count" *ngIf="match.mediaUrls.length > 4">+{{ match.mediaUrls.length - 4 }} médias</span>
+                  <span class="media-count" *ngIf="match.mediaUrls.length > 4">
+                    + {{ 'feed.sections.matches.media_count' | translate: { count: match.mediaUrls.length - 4 } }}
+                  </span>
                 </div>
               </div>
-              <div class="card-footer">
-                <button mat-stroked-button (click)="downloadMedia(match)">
-                  <mat-icon>download</mat-icon>
-                  Télécharger
-                </button>
-                   <button mat-stroked-button (click)="openPresenceDialog(match)">
-                  <mat-icon>people</mat-icon>
-                  Présences
-                </button>
+              <div class="demande-actions">
+                <div class="primary-actions">
+                  <button mat-stroked-button (click)="downloadMedia(match)">
+                    <mat-icon>download</mat-icon>
+                    <span>{{ 'common.download' | translate }}</span>
+                  </button>
+                  <button mat-stroked-button (click)="openPresenceDialog(match)">
+                    <mat-icon>people</mat-icon>
+                    <span>{{ 'feed.sections.matches.presence' | translate }}</span>
+                  </button>
+                </div>
               </div>
             </div>
+            <div *ngIf="recentMatches.length > 1" class="expansion-button-container">
+              <button mat-flat-button color="primary" (click)="toggleDisplay()">
+                <mat-icon>{{ showAllMatches ? 'expand_less' : 'expand_more' }}</mat-icon>
+                <span *ngIf="!showAllMatches">
+                  {{ 'feed.sections.matches.show_more' | translate: { count: recentMatches.length - 1 } }}
+                </span>
+                <span *ngIf="showAllMatches">
+                  {{ 'feed.sections.matches.show_less' | translate }}
+                </span>
+              </button>
+            </div>
             <div class="empty-state" *ngIf="recentMatches?.length === 0">
-              <mat-icon>sports_soccer</mat-icon>
-              <span>Aucun match récent</span>
+              <div class="empty-illustration">
+                <mat-icon class="empty-icon">sports_soccer</mat-icon>
+              </div>
+              <div class="empty-content">
+                <h3 class="empty-title">{{ 'feed.sections.matches.empty' | translate }}</h3>
+              </div>
             </div>
           </div>
         </div>
@@ -163,73 +203,79 @@
             <mat-icon>account_balance_wallet</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Contributions en Cours</h2>
+            <h2>{{ 'feed.sections.contributions.title' | translate }}</h2>
             <span class="badge">{{ ongoingContributions?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="modern-card contribution-card" *ngFor="let contrib of ongoingContributions">
-              <div class="card-header">
-                <div class="card-icon">
-                  <mat-icon>payments</mat-icon>
-                </div>
-                <div class="card-title-group">
-                  <h3 class="card-title">{{ contrib.contribution.commentaire }}</h3>
-                  <p class="card-subtitle">Objectif de collecte</p>
+            <div class="demande-card contribution-card" *ngFor="let contrib of ongoingContributions">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">payments</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ contrib.contribution.commentaire }}</h3>
+                    <p class="groupe-discipline">{{ 'feed.sections.contributions.target' | translate }}</p>
+                  </div>
                 </div>
               </div>
-              <div class="card-body">
+              <div class="demande-content">
                 <div class="contribution-progress">
                   <div class="progress-info">
-                    <!-- Sécurisez l'accès à contrib.contribution -->
                     <span class="current-amount">{{ contrib.contribution?.montantCollecteActuel | number }} FCFA</span>
                     <span class="target-amount">/ {{ contrib.contribution?.montantCible | number }} FCFA</span>
                   </div>
-                  <div class="progress-bar-container">
+                  <!-- <div class="progress-bar-container">
                     <div class="progress-bar-fill" 
-                    
-                      [style.width.%]="(contrib?.contribution && contrib.contribution.montantCible && contrib.contribution.montantCible > 0) ? 
-                        (contrib.contribution.montantCollecteActuel / contrib.contribution.montantCible) * 100 : 0">
+                         [style.width.%]="(contrib?.contribution && contrib.contribution.montantCible > 0) ? ((contrib?.contribution.montantCollecteActuel / contrib?.contribution.montantCible) * 100) : 0">
                     </div>
                   </div>
                   <div class="progress-percentage">
-                    <!-- CORRECTION 2: Même logique de vérification pour l'affichage du pourcentage. -->
-                    {{ (contrib?.contribution && contrib.contribution.montantCible && contrib.contribution.montantCible > 0) ? 
-                      ((contrib.contribution.montantCollecteActuel / contrib.contribution.montantCible) * 100) : 0 | number:'1.0-2' }}%
-                  </div>
+                    {{ (contrib?.contribution && contrib.contribution.montantCible > 0) ? ((contrib.contribution.montantCollecteActuel / contrib.contribution.montantCible) * 100 | number:'1.0-2') : 0 }}%
+                  </div> -->
                 </div>
                 <div class="contributors-list">
                   <div class="contributor-item" *ngFor="let indiv of (contrib.individuelles || []) | slice:0:3">
                     <div class="contributor-avatar">
-                      <!-- CORRECTION 3: Ajout du pipe async et de ?. pour éviter l'erreur sur charAt(0) -->
                       {{ (getMembreName(indiv.idMembre) | async)?.charAt(0) }}
                     </div>
                     <div class="contributor-info">
-                      <!-- CORRECTION 4: Ajout du pipe async sur le nom complet si getMembreName retourne un Observable -->
                       <span class="contributor-name">{{ getMembreName(indiv.idMembre) | async }}</span>
                       <span class="contributor-amount">{{ indiv.montant | number }} FCFA</span>
                     </div>
                   </div>
                   <span class="more-contributors" *ngIf="contrib.individuelles.length > 3">
-                    +{{ contrib.individuelles.length - 3 }} contributeurs
+                    {{ 'feed.sections.contributions.contributors_count' | translate: { count: contrib.individuelles.length - 3 } }}
                   </span>
                 </div>
-                <div class="card-info deadline">
-                  <mat-icon>alarm</mat-icon>
-                  <span>Délai: {{ contrib.contribution.delaiContribution | date:'dd/MM/yyyy' }}</span>
+                <div class="additional-info">
+                  <div class="info-card deadline">
+                    <mat-icon>alarm</mat-icon>
+                    <div>
+                      <span class="info-label">{{ 'feed.sections.contributions.deadline' | translate }}</span>
+                      <span class="info-value">{{ contrib.contribution.delaiContribution | date:'dd/MM/yyyy' }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="card-footer">
-                <button mat-flat-button color="accent" (click)="viewContributions(contrib.contribution.id!)">
-                  <mat-icon>add_circle</mat-icon>
-                  Voir les contributions
-                </button>
+              <div class="demande-actions">
+                <div class="primary-actions">
+                  <button mat-raised-button color="accent" (click)="viewContributions(contrib.contribution.id!)">
+                    <mat-icon>add_circle</mat-icon>
+                    <span>{{ 'feed.sections.contributions.view_button' | translate }}</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="empty-state" *ngIf="ongoingContributions?.length === 0">
-              <mat-icon>account_balance_wallet</mat-icon>
-              <span>Aucune contribution en cours</span>
+              <div class="empty-illustration">
+                <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
+              </div>
+              <div class="empty-content">
+                <h3 class="empty-title">{{ 'feed.sections.contributions.empty' | translate }}</h3>
+              </div>
             </div>
           </div>
         </div>
@@ -242,27 +288,39 @@
             <mat-icon>cake</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Anniversaires à Venir</h2>
+            <h2>{{ 'feed.sections.birthdays.title' | translate }}</h2>
             <span class="badge">{{ upcomingBirthdays?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list horizontal-list">
-            <div class="modern-card birthday-card" *ngFor="let birthday of upcomingBirthdays">
-              <div class="birthday-icon">
-                <mat-icon>celebration</mat-icon>
+            <div class="demande-card birthday-card" *ngFor="let birthday of upcomingBirthdays">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">celebration</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ birthday.membre.prenom }} {{ birthday.membre.nom }}</h3>
+                    <p class="groupe-discipline">{{ birthday.date | date:'dd MMMM' }}</p>
+                  </div>
+                </div>
               </div>
-              <div class="birthday-content">
-                <h3 class="birthday-name">{{ birthday.membre.prenom }} {{ birthday.membre.nom }}</h3>
-                <p class="birthday-date">{{ birthday.date | date:'dd MMMM' }}</p>
-                <button mat-icon-button color="primary">
-                  <mat-icon>card_giftcard</mat-icon>
-                </button>
+              <div class="demande-actions">
+                <div class="secondary-actions">
+                  <button mat-icon-button color="primary">
+                    <mat-icon>card_giftcard</mat-icon>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="empty-state" *ngIf="upcomingBirthdays?.length === 0">
-              <mat-icon>cake</mat-icon>
-              <span>Aucun anniversaire à venir</span>
+              <div class="empty-illustration">
+                <mat-icon class="empty-icon">cake</mat-icon>
+              </div>
+              <div class="empty-content">
+                <h3 class="empty-title">{{ 'feed.sections.birthdays.empty' | translate }}</h3>
+              </div>
             </div>
           </div>
         </div>
@@ -275,7 +333,7 @@
             <mat-icon>emoji_events</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Statistiques du Groupe</h2>
+            <h2>{{ 'feed.sections.stats.title' | translate }}</h2>
           </div>
         </div>
         <div class="section-content">
@@ -283,7 +341,7 @@
             <div class="stats-card">
               <div class="stats-header">
                 <mat-icon>sports_soccer</mat-icon>
-                <h3>Top Buteurs</h3>
+                <h3>{{ 'feed.sections.stats.top_scorers' | translate }}</h3>
               </div>
               <div class="leaderboard">
                 <div class="leaderboard-item" *ngFor="let scorer of topScorers; let i = index">
@@ -300,7 +358,7 @@
             <div class="stats-card">
               <div class="stats-header">
                 <mat-icon>swap_horiz</mat-icon>
-                <h3>Top Passeurs</h3>
+                <h3>{{ 'feed.sections.stats.top_passers' | translate }}</h3>
               </div>
               <div class="leaderboard">
                 <div class="leaderboard-item" *ngFor="let passer of topPassers; let i = index">
@@ -325,34 +383,47 @@
             <mat-icon>campaign</mat-icon>
           </div>
           <div class="header-text">
-            <h2>Annonces du Groupe</h2>
+            <h2>{{ 'feed.sections.announcements.title' | translate }}</h2>
             <span class="badge">{{ groupAnnouncements?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="announcements-list">
-            <div class="announcement-card" *ngFor="let announcement of groupAnnouncements">
-              <div class="announcement-icon">
-                <mat-icon>notifications_active</mat-icon>
-              </div>
-              <div class="announcement-content">
-                <div class="announcement-header">
-                  <h3>{{ announcement.title }}</h3>
-                  <span class="announcement-date">{{ announcement.date | date:'dd/MM/yyyy' }}</span>
+            <div class="demande-card announcement-card" *ngFor="let announcement of groupAnnouncements">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">notifications_active</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ announcement.title }}</h3>
+                    <p class="groupe-discipline">{{ announcement.date | date:'dd/MM/yyyy' }}</p>
+                  </div>
                 </div>
+              </div>
+              <div class="demande-content">
                 <p class="announcement-text">{{ announcement.content }}</p>
-                <button mat-button color="primary">
-                  Lire la suite
-                  <mat-icon>arrow_forward</mat-icon>
-                </button>
+              </div>
+              <div class="demande-actions">
+                <div class="primary-actions">
+                  <button mat-stroked-button color="primary">
+                    <span>{{ 'feed.sections.announcements.read_more' | translate }}</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="empty-state" *ngIf="groupAnnouncements?.length === 0">
-              <mat-icon>campaign</mat-icon>
-              <span>Aucune annonce</span>
+              <div class="empty-illustration">
+                <mat-icon class="empty-icon">campaign</mat-icon>
+              </div>
+              <div class="empty-content">
+                <h3 class="empty-title">{{ 'feed.sections.announcements.empty' | translate }}</h3>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>

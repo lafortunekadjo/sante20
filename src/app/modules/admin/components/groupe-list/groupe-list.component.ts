@@ -68,7 +68,8 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
     fraisAdhesion: 0,
     profilePhotoUrl: '',
     heureMatch: '',
-    isPublic:true
+    isPublic: true,
+    abreviation: ''
   };
   villes: Ville[] = [];
   stades: Stade[] = [];
@@ -249,7 +250,8 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
       fraisAdhesion: 0,
       profilePhotoUrl: '',
       heureMatch:'',
-      isPublic:true
+      isPublic:true,
+      abreviation:''
     };
   }
 

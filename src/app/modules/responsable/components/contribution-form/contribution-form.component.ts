@@ -26,6 +26,7 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { GeneralService } from '../../../../core/services/general.service';
 import { Evenement } from '../../../../core/models/evenement.model';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-contribution-form',
@@ -47,7 +48,8 @@ import { Evenement } from '../../../../core/models/evenement.model';
     FormsModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    TranslateModule
   ],
   templateUrl: './contribution-form.component.html',
   styleUrl: './contribution-form.component.scss'
