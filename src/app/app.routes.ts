@@ -73,6 +73,10 @@ export const routes: Routes = [
     path: '',
     component: LayoutComponent,
     children: [
+      {
+    path: '',
+    component: GroupesExploreComponent,
+  },
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
       {
         path: 'explorer',

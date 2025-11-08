@@ -26,7 +26,7 @@ export class MenuGuard implements CanActivate {
     const groupeId = this.authService.getCurrentGroupeId();
     
     if (!groupeId) {
-      this.router.navigate(['/']);
+      this.router.navigate(['/explorer']);
       return of(false);
     }
 
@@ -48,7 +48,7 @@ export class MenuGuard implements CanActivate {
         return true;
       }),
       catchError(() => {
-        this.router.navigate(['/']);
+        this.router.navigate(['/explorer']);
         return of(false);
       })
     );

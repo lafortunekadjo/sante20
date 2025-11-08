@@ -202,7 +202,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
    * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
    */
   loadUserMenus(): void {
-    if (!this.isResponsable) {
+    if(this.authService.isLoggedIn()){
+       if (!this.isResponsable) {
       return;
     }
 
@@ -217,6 +218,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     this.roleCustomService.getUserMenus(groupeId).subscribe({
       next: (userMenus) => {
+        console.log("les menus", userMenus)
         this.organiserMenusParCategorie(userMenus.menus);
         this.isLoadingMenus = false;
       },
@@ -226,6 +228,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.isLoadingMenus = false;
       }
     });
+      
+    }
+   
   }
 
   /**
