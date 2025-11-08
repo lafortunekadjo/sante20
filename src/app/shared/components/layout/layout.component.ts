@@ -268,7 +268,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
    * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
    */
   loadUserMenus(): void {
-    console.log("lodmenu")
+   console.log("lodmenu", !this.isResponsable)
     // La vérification isLoggedIn() est faite par l'abonnement à isUserReady$
     
     if (!this.isResponsable) {
