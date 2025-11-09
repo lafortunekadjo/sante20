@@ -276,13 +276,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const groupeId = this.authService.getGroupId();
-console.log("lodmenu", !this.isResponsable, groupeId)
+//     const groupeId = this.authService.getGroupId();
+// console.log("lodmenu", !this.isResponsable, groupeId)
     
-    if (!groupeId) {
-      this.menuCategories = [];
-      return;
-    }
+//     if (!groupeId) {
+//       this.menuCategories = [];
+//       return;
+//     }
 
     this.isLoadingMenus = true;
 
