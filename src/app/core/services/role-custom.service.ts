@@ -71,7 +71,7 @@ export class RoleCustomService {
   /**
    * Récupérer les menus de l'utilisateur pour un groupe
    */
-  getUserMenus(groupeId: number): Observable<UserMenusDTO> {
+  getUserMenus(): Observable<UserMenusDTO> {
    
     return this.http.get<UserMenusDTO>(`${this.apiUrl}/user-menus`).pipe(
       tap(result => {
