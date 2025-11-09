@@ -18,6 +18,7 @@ export class AuthService {
   private token: string | null = null;
   private roles: string[] = [];
   private userId: number | null = null;
+  private groupeId: number | null = null;
   private apiUrl = `${environment.apiUrl}/auth/login`; 
   private apiCheck = `${environment.apiUrl}/presences/check-in`; 
   private userInfoUrl = `${environment.apiUrl}/auth/me`;
@@ -134,6 +135,7 @@ login(username: string, password: string): Observable<any> {
       if (!response?.token) {
         return throwError(() => new Error('Connexion échouée : pas de token reçu.'));
       }
+this.fetchUserGroup()
       // Utilise la nouvelle méthode d'extraction des infos
       return this.fetchUserInfoFromToken();
     }),
@@ -150,6 +152,33 @@ login(username: string, password: string): Observable<any> {
   );
 }
 
+getGroupId(): number | null {
+    // 1. Si vous utilisez un BehaviorSubject (recommandé dans les services)
+    // C'est l'état le plus fiable car il est mis à jour après l'appel API.
+    if (this.currentGroupeIdSubject && this.currentGroupeIdSubject.value !== null) {
+        return this.currentGroupeIdSubject.value;
+    }
+
+    // 2. Fallback: Tentative de récupération depuis le localStorage (pour rechargement)
+    const groupInfoString = localStorage.getItem('currentGroupeId');
+    
+    if (groupInfoString) {
+        // CONVERSION CRITIQUE: La valeur du localStorage est une STRING,
+        // mais le type de retour est NUMBER | null.
+        const groupIdNumber = parseInt(groupInfoString, 10);
+
+        // Vérifier si la conversion a réussi (n'est pas NaN)
+        if (!isNaN(groupIdNumber)) {
+            // Mettre à jour la propriété interne du service (si elle est utilisée)
+            // this.groupeId = groupIdNumber; 
+            return groupIdNumber;
+        }
+    }
+    
+    // Si rien n'est trouvé ou si la valeur est invalide
+    return null;
+}
+
 private fetchUserGroup(): Observable<any> {
     // --- Fonction getToken() est nécessaire ici ---
     const token = this.getToken(); // Assume que this.getToken() est défini dans le service
@@ -162,6 +191,7 @@ private fetchUserGroup(): Observable<any> {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
     });
+    
 
     return this.http.get<any>(this.apiGroupesConnect, { headers: authHeaders, withCredentials: true }).pipe(
         tap(groupInfo => {
