@@ -31,7 +31,7 @@ export class MenuGuard implements CanActivate {
     }
 
     // Récupérer les menus de l'utilisateur
-    return this.roleCustomService.getUserMenus(groupeId).pipe(
+    return this.roleCustomService.getUserMenus().pipe(
       map(userMenus => {
         const requestedRoute = state.url;
         
