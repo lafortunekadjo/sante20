@@ -23,6 +23,7 @@ export class AuthService {
   private userInfoUrl = `${environment.apiUrl}/auth/me`;
   private userUpdateUrl = `${environment.apiUrl}/user`;
   private memberUpdateUrl = `${environment.apiUrl}/membres`;
+  private apiGroupesConnect= `${environment.apiUrl}/groupes/connect`;
   username: any;
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
@@ -33,6 +34,7 @@ export class AuthService {
   // NOUVEAU: BehaviorSubject pour suivre si l'état de l'utilisateur est stable et chargé.
   private isUserReadySubject = new BehaviorSubject<boolean>(false);
   public isUserReady$ = this.isUserReadySubject.asObservable();
+  
 
   constructor(private http: HttpClient,private sanitizer: DomSanitizer, private router: Router) {
     this.initializeAuthState();
@@ -46,6 +48,7 @@ export class AuthService {
     const storedToken = localStorage.getItem('token');
     if (storedToken && !this.jwtHelper.isTokenExpired(storedToken)) {
         this.token = storedToken;
+        this.fetchUserGroup()
         
         // Comme le token existe, nous allons essayer de charger les infos utilisateur
         this.fetchUserInfoFromToken().pipe(
@@ -145,6 +148,47 @@ login(username: string, password: string): Observable<any> {
         return throwError(() => err);
     })
   );
+}
+
+private fetchUserGroup(): Observable<any> {
+    // --- Fonction getToken() est nécessaire ici ---
+    const token = this.getToken(); // Assume que this.getToken() est défini dans le service
+    
+    if (!token) {
+        return throwError(() => new Error('Token manquant pour la récupération du groupe.'));
+    }
+
+    const authHeaders = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    });
+
+    return this.http.get<any>(this.apiGroupesConnect, { headers: authHeaders, withCredentials: true }).pipe(
+        tap(groupInfo => {
+            if (groupInfo && groupInfo.id) {
+                const newGroupeId = groupInfo.id;
+                
+                // Mettre à jour l'état réactif (BehaviorSubject)
+                this.currentGroupeIdSubject.next(newGroupeId);
+                
+                // --- C'EST LA LIGNE QUI MET À JOUR LE LOCALSTORAGE ---
+                localStorage.setItem('currentGroupeId', newGroupeId.toString());
+                // ----------------------------------------------------
+                
+                console.log(`[AuthService] Groupe ID récupéré et défini: ${newGroupeId}`);
+            } else {
+                console.warn("[AuthService] Groupe ID non trouvé dans la réponse de /groupes/connect.");
+                this.currentGroupeIdSubject.next(null);
+                localStorage.removeItem('currentGroupeId');
+            }
+        }),
+        catchError(err => {
+            console.error("[AuthService] Erreur lors de la récupération du groupe connecté:", err);
+            this.currentGroupeIdSubject.next(null);
+            localStorage.removeItem('currentGroupeId');
+            return of(null);
+        })
+    );
 }
 
   /**
