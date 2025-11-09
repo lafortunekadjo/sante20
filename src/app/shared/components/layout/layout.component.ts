@@ -286,7 +286,7 @@ console.log("lodmenu", !this.isResponsable, groupeId)
 
     this.isLoadingMenus = true;
 
-    this.roleCustomService.getUserMenus(groupeId).subscribe({
+    this.roleCustomService.getUserMenus().subscribe({
       next: (userMenus) => {
         console.log("les menus", userMenus)
         this.organiserMenusParCategorie(userMenus.menus);
