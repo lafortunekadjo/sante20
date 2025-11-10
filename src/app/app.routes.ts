@@ -207,17 +207,18 @@ export const routes: Routes = [
           {
             path: 'matchs',
             component: MatchFormComponent,
-            canActivate: [MenuGuard]
+            canActivate: [MenuGuard],
+             data: { roles: ['RESPONSABLE'] }
           },
-          {
-            path: 'presences/:id',
-            component: PresenceFormComponent,
-            canActivate: [MenuGuard]
-          },
+          // {
+          //   path: 'presences/:id',
+          //   component: PresenceFormComponent,
+          //   canActivate: [MenuGuard]
+          // },
           {
             path: 'presences/:matchId',
             component: PresenceFormComponent,
-            canActivate: [MenuGuard]
+            canActivate: [RoleGuard]
           },
           {
             path: 'equipes',
