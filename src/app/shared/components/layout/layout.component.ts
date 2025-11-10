@@ -333,6 +333,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         const order = ['GESTION', 'SPORT', 'FINANCES', 'COMMUNICATION'];
         return order.indexOf(a.code) - order.indexOf(b.code);
       });
+    console.log(this.menuCategories)
   }
 
   // ===== HELPERS POUR LE TRACKING (optimisation Angular) =====
