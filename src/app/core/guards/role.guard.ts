@@ -12,7 +12,7 @@ export class RoleGuard implements CanActivate {
 
   canActivate(route: ActivatedRouteSnapshot): boolean {
     // Vérifier si l'utilisateur est authentifié
-    if (!this.authService.isAuthenticated()) {
+    if (!this.authService.isLoggedIn()) {
       console.log('RoleGuard: Utilisateur non authentifié, redirection vers /login');
       this.router.navigate(['/login']);
       return false;
