@@ -357,7 +357,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       alert('Les présences ne sont accessibles que pour les matchs passés ou du jour.');
       return;
     }
-    this.router.navigate(['/presence', match.id]);
+    this.router.navigate(['/responsable/presence', match.id]);
   }
 
   openMediaDialog(match: Match) {
