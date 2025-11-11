@@ -53,42 +53,75 @@ export class AuthService {
    * Initialise l'état du service à partir du localStorage au chargement.
    * Assure la persistance du token et des données utilisateur.
    */
-  private initializeAuthState(): void {
-    const storedToken = localStorage.getItem(this.TOKEN_KEY);
-    
-    // 1. Vérification du token et de son expiration
-    if (storedToken && !this.jwtHelper.isTokenExpired(storedToken)) {
-        this.token = storedToken; // Mise à jour de la propriété privée
-        
-        // 2. Chargement des données utilisateur et groupe en parallèle
-        const fetchGroup$ = this.fetchUserGroup().pipe(catchError(() => of(null)));
-        const fetchUser$ = this.fetchUserInfoFromToken();
+private initializeAuthState(): void {
+    const storedToken = localStorage.getItem(this.TOKEN_KEY);
+    
+    // 1. Vérification du token et de son expiration
+    if (storedToken && !this.jwtHelper.isTokenExpired(storedToken)) {
+        this.token = storedToken; // Mise à jour de la propriété privée
+        
+        // 🔧 CORRECTION: Charger les données utilisateur depuis localStorage IMMÉDIATEMENT
+        this.loadUserDataFromStorage();
+        
+        // 🔧 CORRECTION: Émettre isUserReady IMMÉDIATEMENT avec les données en cache
+        this.isUserReadySubject.next(true);
+        
+        // 2. Chargement des données utilisateur et groupe en arrière-plan (pour mise à jour)
+        const fetchGroup$ = this.fetchUserGroup().pipe(catchError(() => of(null)));
+        const fetchUser$ = this.fetchUserInfoFromToken();
 
-        forkJoin([fetchGroup$, fetchUser$]).pipe(
-            first(),
-            tap(() => this.isUserReadySubject.next(true)),
-            catchError(err => {
-                console.warn("Erreur lors du rechargement des infos utilisateur. Déconnexion.", err);
-                this.logout();
-                this.isUserReadySubject.next(true); 
-                return of(null);
-            })
-        ).subscribe();
-    } else {
-        // Si non connecté, nettoyer le stockage et stabiliser l'état
-        this.logout(false); // Déconnexion sans navigation
-        this.isUserReadySubject.next(true);
-    }
-    
-    // 3. Initialisation du BehaviorSubject du groupe depuis le localStorage
-    const storedGroupeId = localStorage.getItem(this.GROUPE_ID_KEY);
-    if (storedGroupeId) {
-      const id = parseInt(storedGroupeId, 10);
-      if (!isNaN(id)) {
-        this.currentGroupeIdSubject.next(id);
-      }
-    }
-  }
+        forkJoin([fetchGroup$, fetchUser$]).pipe(
+            first(),
+            catchError(err => {
+                console.warn("Erreur lors du rechargement des infos utilisateur. Utilisation du cache.", err);
+                // Ne pas déconnecter, garder les données en cache
+                return of(null);
+            })
+        ).subscribe();
+    } else {
+        // Si non connecté, nettoyer le stockage et stabiliser l'état
+        this.logout(false); // Déconnexion sans navigation
+        this.isUserReadySubject.next(true);
+    }
+    
+    // 3. Initialisation du BehaviorSubject du groupe depuis le localStorage
+    const storedGroupeId = localStorage.getItem(this.GROUPE_ID_KEY);
+    if (storedGroupeId) {
+      const id = parseInt(storedGroupeId, 10);
+      if (!isNaN(id)) {
+        this.currentGroupeIdSubject.next(id);
+      }
+    }
+}
+
+  /**
+ * 🆕 Nouvelle méthode: Charge les données utilisateur depuis localStorage
+ */
+private loadUserDataFromStorage(): void {
+    // Charger les infos utilisateur depuis localStorage
+    const userInfoString = localStorage.getItem(this.USER_INFO_KEY);
+    
+    if (userInfoString) {
+        try {
+            const userInfo = JSON.parse(userInfoString);
+            
+            // Restaurer les propriétés depuis le cache
+            this.userId = userInfo.userId || null;
+            this.roles = userInfo.roles || [];
+            this.username = userInfo.username || null;
+            this.currentRole = userInfo.currentRole || null;
+            
+            console.log('Données utilisateur chargées depuis localStorage:', {
+                userId: this.userId,
+                roles: this.roles,
+                username: this.username,
+                currentRole: this.currentRole
+            });
+        } catch (e) {
+            console.error("Erreur lors du parsing de userInfo depuis localStorage:", e);
+        }
+    }
+}
 
 /**
  * Logique pour récupérer les informations utilisateur après l'authentification.
@@ -265,52 +298,73 @@ getProfilePhoto2(): Observable<SafeUrl> {
   }
 
 getRoles(): string[] {
-  if (this.roles.length > 0 && typeof this.roles[0] === 'string' && !this.roles[0].startsWith('ROLE_')) {
-    return this.roles;
-  }
+  // Si on a déjà les rôles en mémoire et qu'ils sont valides
+  if (this.roles && this.roles.length > 0 && typeof this.roles[0] === 'string' && !this.roles[0].startsWith('ROLE_')) {
+    return this.roles;
+  }
 
-  const userInfoString = localStorage.getItem(this.USER_INFO_KEY);
+  // Sinon, charger depuis localStorage
+  const userInfoString = localStorage.getItem(this.USER_INFO_KEY);
 
-  if (userInfoString) {
-    try {
-      const userInfo = JSON.parse(userInfoString);
-      
-      if (userInfo && userInfo.roles && Array.isArray(userInfo.roles) && userInfo.roles.length > 0) {
-        
-        this.roles = userInfo.roles.map((role: any) => 
-          role.name ? role.name.replace('ROLE_', '') : role.replace('ROLE_', '')
-        );
-        
-        return this.roles;
-      }
-    } catch (e) {
-      console.error("Erreur lors du parsing de userInfo :", e);
-      return [];
-    }
-  }
+  if (userInfoString) {
+    try {
+      const userInfo = JSON.parse(userInfoString);
+      
+      if (userInfo && userInfo.roles && Array.isArray(userInfo.roles) && userInfo.roles.length > 0) {
+        // Nettoyer les rôles et les mettre en cache
+        this.roles = userInfo.roles.map((role: any) => 
+          role.name ? role.name.replace('ROLE_', '') : role.replace('ROLE_', '')
+        );
+        
+        return this.roles;
+      }
+    } catch (e) {
+      console.error("Erreur lors du parsing de userInfo :", e);
+      return [];
+    }
+  }
 
-  return [];
+  return [];
 }
 
-  getUserId(): number | null {
-    if (!this.userId) {
-      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
-      if (userInfo) {
-        this.userId = JSON.parse(userInfo).userId || null;
-      }
-    }
-    return this.userId;
-  }
-
-  getUsername(): string | null {
-    if (!this.username) {
-      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
-      if (userInfo) {
-        this.username = JSON.parse(userInfo).username || null;
-      }
-    }
-    return this.username;
-  }
+getUserId(): number | null {
+  if (this.userId) {
+    return this.userId;
+  }
+  
+  // Charger depuis localStorage si pas en mémoire
+  const userInfo = localStorage.getItem(this.USER_INFO_KEY);
+  if (userInfo) {
+    try {
+      const parsedInfo = JSON.parse(userInfo);
+      this.userId = parsedInfo.userId || null;
+      return this.userId;
+    } catch (e) {
+      console.error("Erreur parsing userId depuis localStorage:", e);
+    }
+  }
+  
+  return null;
+}
+getUsername(): string | null {
+  if (this.username) {
+    return this.username;
+  }
+  
+  // Charger depuis localStorage si pas en mémoire
+  const userInfo = localStorage.getItem(this.USER_INFO_KEY);
+  if (userInfo) {
+    try {
+      const parsedInfo = JSON.parse(userInfo);
+      this.username = parsedInfo.username || null;
+      return this.username;
+    } catch (e) {
+      console.error("Erreur parsing username depuis localStorage:", e);
+    }
+  }
+  
+  return null;
+}
 
   isTokenExpired(): boolean {
     const token = this.getToken();
