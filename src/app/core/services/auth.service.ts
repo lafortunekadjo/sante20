@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, tap , switchMap, throwError, catchError, map, forkJoin, of, BehaviorSubject, first } from 'rxjs';
+import { Observable, tap, switchMap, throwError, catchError, map, forkJoin, of, BehaviorSubject, first } from 'rxjs';
 import { environment } from '../../environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { User } from '../models/user';
@@ -14,258 +14,232 @@ import { Route, Router } from '@angular/router';
 })
 export class AuthService {
  
+  // 🔑 Constantes pour les clés du localStorage
+  private readonly TOKEN_KEY = 'token'; 
+  private readonly GROUPE_ID_KEY = 'currentGroupeId'; 
+  private readonly USER_INFO_KEY = 'userInfo'; 
+  private readonly PROFIL_URL_KEY = 'profilUrl';
+ 
   private jwtHelper = new JwtHelperService();
   private token: string | null = null;
   private roles: string[] = [];
   private userId: number | null = null;
-  private groupeId: number | null = null;
+
   private apiUrl = `${environment.apiUrl}/auth/login`; 
   private apiCheck = `${environment.apiUrl}/presences/check-in`; 
   private userInfoUrl = `${environment.apiUrl}/auth/me`;
   private userUpdateUrl = `${environment.apiUrl}/user`;
   private memberUpdateUrl = `${environment.apiUrl}/membres`;
-  private apiGroupesConnect= `${environment.apiUrl}/groupes/connect`;
+  private apiGroupesConnect= `${environment.apiUrl}/groupes/connect`;
+  
   username: any;
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
+  // BehaviorSubject pour la gestion d'état réactif
   private currentGroupeIdSubject = new BehaviorSubject<number | null>(null);
   public currentGroupeId$ = this.currentGroupeIdSubject.asObservable();
 
-  // NOUVEAU: BehaviorSubject pour suivre si l'état de l'utilisateur est stable et chargé.
-  private isUserReadySubject = new BehaviorSubject<boolean>(false);
-  public isUserReady$ = this.isUserReadySubject.asObservable();
-  
+  private isUserReadySubject = new BehaviorSubject<boolean>(false);
+  public isUserReady$ = this.isUserReadySubject.asObservable();
+  
 
-  constructor(private http: HttpClient,private sanitizer: DomSanitizer, private router: Router) {
+  constructor(private http: HttpClient, private sanitizer: DomSanitizer, private router: Router) {
     this.initializeAuthState();
   }
 
 
   /**
    * Initialise l'état du service à partir du localStorage au chargement.
+   * Assure la persistance du token et des données utilisateur.
    */
   private initializeAuthState(): void {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken && !this.jwtHelper.isTokenExpired(storedToken)) {
-        this.token = storedToken;
-        this.fetchUserGroup()
-        
-        // Comme le token existe, nous allons essayer de charger les infos utilisateur
-        this.fetchUserInfoFromToken().pipe(
-            first(), // Ne prendre qu'une seule émission
-            tap(() => this.isUserReadySubject.next(true)), // Émettre TRUE si chargement réussi
-            catchError(err => {
-                console.warn("Token valide mais erreur lors du rechargement des infos utilisateur. Déconnexion.", err);
-                this.logout();
-                this.isUserReadySubject.next(true); // Terminer l'attente même en cas d'erreur de rechargement
-                return of(null);
-            })
-        ).subscribe();
-    } else {
-        // Si aucun token ou token expiré, l'utilisateur est non connecté. L'état est stable.
-        this.isUserReadySubject.next(true);
-    }
+    const storedToken = localStorage.getItem(this.TOKEN_KEY);
     
-    // Initialise le BehaviorSubject avec le groupe stocké
-    const storedGroupeId = localStorage.getItem('currentGroupeId');
+    // 1. Vérification du token et de son expiration
+    if (storedToken && !this.jwtHelper.isTokenExpired(storedToken)) {
+        this.token = storedToken; // Mise à jour de la propriété privée
+        
+        // 2. Chargement des données utilisateur et groupe en parallèle
+        const fetchGroup$ = this.fetchUserGroup().pipe(catchError(() => of(null)));
+        const fetchUser$ = this.fetchUserInfoFromToken();
+
+        forkJoin([fetchGroup$, fetchUser$]).pipe(
+            first(),
+            tap(() => this.isUserReadySubject.next(true)),
+            catchError(err => {
+                console.warn("Erreur lors du rechargement des infos utilisateur. Déconnexion.", err);
+                this.logout();
+                this.isUserReadySubject.next(true); 
+                return of(null);
+            })
+        ).subscribe();
+    } else {
+        // Si non connecté, nettoyer le stockage et stabiliser l'état
+        this.logout(false); // Déconnexion sans navigation
+        this.isUserReadySubject.next(true);
+    }
+    
+    // 3. Initialisation du BehaviorSubject du groupe depuis le localStorage
+    const storedGroupeId = localStorage.getItem(this.GROUPE_ID_KEY);
     if (storedGroupeId) {
       const id = parseInt(storedGroupeId, 10);
-      this.currentGroupeIdSubject.next(id);
+      if (!isNaN(id)) {
+        this.currentGroupeIdSubject.next(id);
+      }
     }
   }
 
 /**
- * Logique pour récupérer les informations utilisateur après l'authentification.
- * Utilisé après le login OU lors de l'initialisation si un token est présent.
- */
+ * Logique pour récupérer les informations utilisateur après l'authentification.
+ */
 private fetchUserInfoFromToken(): Observable<any> {
-    const token = this.getToken();
-    if (!token) {
-        return throwError(() => new Error('Token manquant.'));
-    }
+    const token = this.getToken();
+    if (!token) {
+        return throwError(() => new Error('Token manquant.'));
+    }
 
-    const authHeaders = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    });
+    const authHeaders = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    });
 
-    return this.http.get<any>(this.userInfoUrl, {
-        headers: authHeaders,
-        withCredentials: true
-    }).pipe(
-        tap(userInfo => {
-            this.userId = userInfo.id || null;
-            this.passwordResetRequired = userInfo.passwordResetRequired || false;
-            this.roles = userInfo.roles || [];
-            this.username = userInfo.username || null;
-            this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
-            localStorage.setItem('profilUrl', environment.imageUrl + userInfo.profilePhotoUrl);
+    return this.http.get<any>(this.userInfoUrl, {
+        headers: authHeaders,
+        withCredentials: true
+    }).pipe(
+        tap(userInfo => {
+            this.userId = userInfo.id || null;
+            this.passwordResetRequired = userInfo.passwordResetRequired || false;
+            this.roles = userInfo.roles || [];
+            this.username = userInfo.username || null;
+            
+            if (!this.currentRole || !this.roles.includes(this.currentRole)) {
+              this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
+            }
+            
+            localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl); 
 
-            localStorage.setItem('userInfo', JSON.stringify({
-                userId: this.userId,
-                roles: this.roles,
-                username: this.username
-            }));
-        })
-    );
+            localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
+                userId: this.userId,
+                roles: this.roles, 
+                username: this.username,
+                currentRole: this.currentRole
+            }));
+        })
+    );
 }
 
 login(username: string, password: string): Observable<any> {
   const loginPayload = { username, password };
   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-  
-  // Rétablir l'état initial avant le login
-  this.isUserReadySubject.next(false);
+  
+  this.isUserReadySubject.next(false);
 
-  // Étape 1 : Authentification et récupération du token
   return this.http.post<any>(this.apiUrl, loginPayload, {
     headers,
-    withCredentials: true // Important si backend autorise les credentials
+    withCredentials: true 
   }).pipe(
     tap(response => {
       if (response?.token) {
         this.token = response.token;
-        localStorage.setItem('token', response.token);
+        localStorage.setItem(this.TOKEN_KEY, response.token);
       }
     }),
 
-    // Étape 2 : Utilisation du token pour récupérer les infos utilisateur
     switchMap(response => {
       if (!response?.token) {
         return throwError(() => new Error('Connexion échouée : pas de token reçu.'));
       }
-this.fetchUserGroup()
-      // Utilise la nouvelle méthode d'extraction des infos
-      return this.fetchUserInfoFromToken();
+      // Lancer les deux requêtes en parallèle (groupe et user info)
+      const fetchGroup$ = this.fetchUserGroup().pipe(catchError(() => of(null)));
+      const fetchUser$ = this.fetchUserInfoFromToken();
+      return forkJoin([fetchGroup$, fetchUser$]);
     }),
 
-    // Étape 3 : Émettre que l'utilisateur est prêt
     tap(() => {
-        this.isUserReadySubject.next(true);
+        this.isUserReadySubject.next(true);
     }),
-    catchError(err => {
-        // Émettre TRUE pour débloquer l'UI, même si le login a échoué
-        this.isUserReadySubject.next(true); 
-        return throwError(() => err);
-    })
+    catchError(err => {
+        this.isUserReadySubject.next(true); 
+        return throwError(() => err);
+    })
   );
 }
 
-getGroupId(): number | null {
-    // 1. Si vous utilisez un BehaviorSubject (recommandé dans les services)
-    // C'est l'état le plus fiable car il est mis à jour après l'appel API.
-    if (this.currentGroupeIdSubject && this.currentGroupeIdSubject.value !== null) {
-        return this.currentGroupeIdSubject.value;
-    }
-
-    // 2. Fallback: Tentative de récupération depuis le localStorage (pour rechargement)
-    const groupInfoString = localStorage.getItem('currentGroupeId');
-    
-    if (groupInfoString) {
-        // CONVERSION CRITIQUE: La valeur du localStorage est une STRING,
-        // mais le type de retour est NUMBER | null.
-        const groupIdNumber = parseInt(groupInfoString, 10);
-
-        // Vérifier si la conversion a réussi (n'est pas NaN)
-        if (!isNaN(groupIdNumber)) {
-            // Mettre à jour la propriété interne du service (si elle est utilisée)
-            // this.groupeId = groupIdNumber; 
-            return groupIdNumber;
-        }
-    }
-    
-    // Si rien n'est trouvé ou si la valeur est invalide
-    return null;
+/**
+ * Récupère le token depuis la mémoire ou le localStorage, et le met en cache dans la mémoire du service.
+ */
+getToken(): string | null {
+  if (!this.token) {
+    this.token = localStorage.getItem(this.TOKEN_KEY);
+  }
+  return this.token;
 }
 
 private fetchUserGroup(): Observable<any> {
-    // --- Fonction getToken() est nécessaire ici ---
-    const token = this.getToken(); // Assume que this.getToken() est défini dans le service
-    
-    if (!token) {
-        return throwError(() => new Error('Token manquant pour la récupération du groupe.'));
-    }
+    const token = this.getToken(); 
+    
+    if (!token) {
+        return throwError(() => new Error('Token manquant pour la récupération du groupe.'));
+    }
 
-    const authHeaders = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    });
-    
+    const authHeaders = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    });
+    
 
-    return this.http.get<any>(this.apiGroupesConnect, { headers: authHeaders, withCredentials: true }).pipe(
-        tap(groupInfo => {
-            if (groupInfo && groupInfo.id) {
-                const newGroupeId = groupInfo.id;
-                
-                // Mettre à jour l'état réactif (BehaviorSubject)
-                this.currentGroupeIdSubject.next(newGroupeId);
-                
-                // --- C'EST LA LIGNE QUI MET À JOUR LE LOCALSTORAGE ---
-                localStorage.setItem('currentGroupeId', newGroupeId.toString());
-                // ----------------------------------------------------
-                
-                console.log(`[AuthService] Groupe ID récupéré et défini: ${newGroupeId}`);
-            } else {
-                console.warn("[AuthService] Groupe ID non trouvé dans la réponse de /groupes/connect.");
-                this.currentGroupeIdSubject.next(null);
-                localStorage.removeItem('currentGroupeId');
-            }
-        }),
-        catchError(err => {
-            console.error("[AuthService] Erreur lors de la récupération du groupe connecté:", err);
-            this.currentGroupeIdSubject.next(null);
-            localStorage.removeItem('currentGroupeId');
-            return of(null);
-        })
-    );
+    return this.http.get<any>(this.apiGroupesConnect, { headers: authHeaders, withCredentials: true }).pipe(
+        tap(groupInfo => {
+            if (groupInfo && groupInfo.id) {
+                const newGroupeId = groupInfo.id;
+                
+                this.currentGroupeIdSubject.next(newGroupeId);
+                
+                localStorage.setItem(this.GROUPE_ID_KEY, newGroupeId.toString());
+                
+            } else {
+                this.currentGroupeIdSubject.next(null);
+                localStorage.removeItem(this.GROUPE_ID_KEY);
+            }
+        }),
+        catchError(err => {
+            console.error("[AuthService] Erreur lors de la récupération du groupe connecté:", err);
+            this.currentGroupeIdSubject.next(null);
+            localStorage.removeItem(this.GROUPE_ID_KEY);
+            return of(null);
+        })
+    );
 }
 
-  /**
-   * Retourne un Observable du Groupe ID actif (pour utilisation réactive)
-   */
   getCurrentGroupeId$(): Observable<number | null> {
     return this.currentGroupeIdSubject.asObservable();
   }
 
-  /**
-   * Retourne immédiatement le Groupe ID actif (pour utilisation synchrone)
-   */
   getCurrentGroupeId(): number | null {
     return this.currentGroupeIdSubject.value;
   }
 
-  // Vérifier si l'utilisateur a besoin de réinitialiser son mot de passe
   isPasswordResetRequired(): boolean {
-    // Ceci devrait venir d'une propriété de votre objet utilisateur
     return this.passwordResetRequired;
   }
 
-  getToken(): string | null {
-    return this.token || localStorage.getItem('token');
-  }
-
 getProfilePhoto2(): Observable<SafeUrl> {
-    // 1. Récupérer la partie de l'URL (le chemin, ex: 'users/123/avatar.jpg')
-    const pathPart = localStorage.getItem('profilUrl');
+    const pathPart = localStorage.getItem(this.PROFIL_URL_KEY);
     
     let finalUrl: string;
 
     if (pathPart) {
-      // 2. Compléter l'URL
       finalUrl = environment.imageUrl + pathPart;
     } else {
-      // Utiliser une image par défaut si le chemin n'est pas trouvé
       finalUrl = 'assets/default-avatar.png'; 
       console.warn('Chemin de photo de profil non trouvé dans localStorage.');
     }
 
-    // 3. Sécuriser l'URL: bypassSecurityTrustUrl est utilisé car nous savons que l'URL est fiable.
     const safeUrl = this.sanitizer.bypassSecurityTrustUrl(finalUrl);
-
-    // 4. Retourner l'objet SafeUrl dans un Observable (utilisant 'of' de RxJS)
     return of(safeUrl);
-  }
+}
 
 
   getProfilePhoto(userId: number): Observable<SafeUrl> {
@@ -291,12 +265,11 @@ getProfilePhoto2(): Observable<SafeUrl> {
   }
 
 getRoles(): string[] {
-  // Si les rôles sont déjà chargés et formatés, on les retourne.
   if (this.roles.length > 0 && typeof this.roles[0] === 'string' && !this.roles[0].startsWith('ROLE_')) {
     return this.roles;
   }
 
-  const userInfoString = localStorage.getItem('userInfo');
+  const userInfoString = localStorage.getItem(this.USER_INFO_KEY);
 
   if (userInfoString) {
     try {
@@ -304,9 +277,8 @@ getRoles(): string[] {
       
       if (userInfo && userInfo.roles && Array.isArray(userInfo.roles) && userInfo.roles.length > 0) {
         
-        // On mappe pour extraire le nom, puis on utilise replace() pour enlever le préfixe.
         this.roles = userInfo.roles.map((role: any) => 
-          role.name.replace('ROLE_', '')
+          role.name ? role.name.replace('ROLE_', '') : role.replace('ROLE_', '')
         );
         
         return this.roles;
@@ -317,13 +289,12 @@ getRoles(): string[] {
     }
   }
 
-  // Retourne un tableau vide par défaut.
   return [];
 }
 
   getUserId(): number | null {
     if (!this.userId) {
-      const userInfo = localStorage.getItem('userInfo');
+      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
       if (userInfo) {
         this.userId = JSON.parse(userInfo).userId || null;
       }
@@ -333,7 +304,7 @@ getRoles(): string[] {
 
   getUsername(): string | null {
     if (!this.username) {
-      const userInfo = localStorage.getItem('userInfo');
+      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
       if (userInfo) {
         this.username = JSON.parse(userInfo).username || null;
       }
@@ -347,33 +318,45 @@ getRoles(): string[] {
   }
 
   isAuthenticated(): boolean {
-    const token = this.getToken();
-    return !!token && !this.isTokenExpired();
+    return this.isLoggedIn() && !this.isTokenExpired();
   }
 
-  logout(): void {
+  /**
+   * Déconnecte l'utilisateur en nettoyant la mémoire et le localStorage.
+   * @param navigate Indique si l'application doit naviguer vers '/explorer' après la déconnexion.
+   */
+  logout(navigate: boolean = true): void {
     this.token = null;
     this.roles = [];
     this.userId = null;
-    this.isUserReadySubject.next(true); // Émettre TRUE pour indiquer un état stable (déconnecté)
-    localStorage.removeItem('token');
-    // ✅ NETTOYER LES REDIRECTIONS RÉSIDUELLES
-  localStorage.removeItem('redirectAfterLogin');
-  
-  // Rediriger vers la page publique
-  this.router.navigate(['/explorer']);
+    this.username = null;
+    this.currentRole = null;
+    this.passwordResetRequired = false;
+    this.currentGroupeIdSubject.next(null);
+
+    // Nettoyer toutes les clés pertinentes du localStorage
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.GROUPE_ID_KEY);
+    localStorage.removeItem(this.USER_INFO_KEY);
+    localStorage.removeItem(this.PROFIL_URL_KEY);
+    localStorage.removeItem('redirectAfterLogin');
+    
+    this.isUserReadySubject.next(true); 
+
+    if (navigate) {
+      this.router.navigate(['/explorer']);
+    }
   }
 
-  isLoggedIn(): boolean {
-    const token = this.getToken();
-    return token ? !this.jwtHelper.isTokenExpired(token) : false;
-  }
+isLoggedIn(): boolean {
+  const token = this.getToken();
+  return !!token; 
+}
 
   isAdmin(): boolean {
     return this.getRoles().includes('ADMIN');
   }
 
-   // Méthodes ajoutées
   updateUserProfile(userData: User): Observable<User> {
     const token = this.getToken();
     if (!token) {
@@ -384,10 +367,9 @@ getRoles(): string[] {
     });
     return this.http.put<User>(this.userUpdateUrl, userData, { headers }).pipe(
       tap(updatedUser => {
-        // Mettre à jour les données locales après une modification réussie
         this.userId = updatedUser.id || this.userId;
         this.username = updatedUser.username || this.username;
-        localStorage.setItem('userInfo', JSON.stringify({
+        localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
           userId: this.userId,
           roles: this.roles,
           username: this.username,
@@ -408,24 +390,22 @@ getRoles(): string[] {
       Authorization: `Bearer ${token}`
     });
     
-    // Créez les deux observables pour les requêtes de mise à jour
     const userUpdate$ = this.http.put<User>(this.userUpdateUrl, userData, { headers }).pipe(
-      map(() => true), // Si la requête réussit, émet true
+      map(() => true), 
       catchError(err => {
         console.error('Erreur lors de la mise à jour de l\'utilisateur:', err);
-        return of(false); // Si la requête échoue, émet false
+        return of(false); 
       })
     );
     
     const memberUpdate$ = this.http.put<any>(this.memberUpdateUrl, memberData, { headers }).pipe(
-      map(() => true), // Si la requête réussit, émet true
+      map(() => true), 
       catchError(err => {
         console.error('Erreur lors de la mise à jour du membre:', err);
-        return of(false); // Si la requête échoue, émet false
+        return of(false); 
       })
     );
 
-    // Utilisez forkJoin pour attendre la fin des deux observables
     return forkJoin({
       userUpdated: userUpdate$,
       memberUpdated: memberUpdate$
@@ -433,9 +413,10 @@ getRoles(): string[] {
   }
  getCurrentRole(): string | null {
     if (!this.currentRole) {
-      const userInfo = localStorage.getItem('userInfo');
+      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
       if (userInfo) {
-        this.currentRole = JSON.parse(userInfo).currentRole || this.getRoles()[0] || null;
+        const parsedInfo = JSON.parse(userInfo);
+        this.currentRole = parsedInfo.currentRole || this.getRoles()[0] || null;
       } else {
         this.currentRole = this.getRoles()[0] || null;
       }
@@ -446,17 +427,17 @@ getRoles(): string[] {
   setCurrentRole(role: string): void {
     if (this.getRoles().includes(role)) {
       this.currentRole = role;
-      const userInfo = localStorage.getItem('userInfo');
+      const userInfo = localStorage.getItem(this.USER_INFO_KEY);
       if (userInfo) {
         const userData = JSON.parse(userInfo);
         userData.currentRole = role;
-        localStorage.setItem('userInfo', JSON.stringify(userData));
+        localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userData));
       }
     }
   }
 
   getUser(): any {
-    const userInfo = localStorage.getItem('userInfo');
+    const userInfo = localStorage.getItem(this.USER_INFO_KEY);
     if (userInfo) {
       return JSON.parse(userInfo);
     }
@@ -481,19 +462,21 @@ getRoles(): string[] {
         longitude: coordinates.coords.longitude,
         equipe: id,
       };
-      console.log('Données envoyées:', data);
 
-      const response = await this.http.post<{ message: string }>(this.apiCheck, data).toPromise();
-      console.log('Réponse complète:', response);
+      const token = this.getToken();
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`
+      });
+      
+      const response = await this.http.post<{ message: string }>(this.apiCheck, data, { headers }).toPromise();
+
       return { success: true, message:  'Présence enregistrée avec succès' };
     } catch (error: any) {
       console.error('Erreur API détaillée:', error);
       let errorMessage = 'Erreur : Une erreur inattendue est survenue.';
       if (error.status) {
-        // Erreur HTTP avec un corps JSON
         errorMessage = error.error?.message || `Erreur ${error.status}: ${error.statusText}`;
       } else if (error.message) {
-        // Erreur non HTTP (ex. réseau)
         errorMessage = error.message;
       }
       return { success: false, message: errorMessage };
