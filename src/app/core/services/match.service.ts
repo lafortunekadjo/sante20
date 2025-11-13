@@ -41,7 +41,7 @@ export class MatchService {
   // }
 
   getAllMatch(): Observable<Match[]> {
-        return this.http.get<Match[]>(`${environment.apiUrl}/matchs`);
+        return this.http.get<Match[]>(`${environment.apiUrl}/matchs/groupe`);
   }
 
   getMatch(matchId: number): Observable<Match> {
@@ -63,7 +63,7 @@ export class MatchService {
   }
 
   getAllMatches(): Observable<Match[]> {
-    return this.http.get<Match[]>(this.matchUrl);
+    return this.http.get<Match[]>(`${this.matchUrl}/groupe`);
   }
 
   getMatchesByGroupeId(groupeId: number): Observable<Match[]> {
@@ -88,7 +88,7 @@ export class MatchService {
 
   // Récupère toutes les présences
   getAllPresences(): Observable<Presence[]> {
-    return this.http.get<Presence[]>(`${environment.apiUrl}/presences`);
+    return this.http.get<Presence[]>(`${environment.apiUrl}/presences/groupe`);
   }
 
     getPresencesByMatch(matchId: number): Observable<Presence[]> {

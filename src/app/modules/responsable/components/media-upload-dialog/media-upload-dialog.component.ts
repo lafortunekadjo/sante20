@@ -45,6 +45,8 @@ export class MediaUploadDialogComponent implements OnInit {
   isUploading = false;
   isDragOver = false;
   matchId: number;
+  imageUrl = `${environment.imageUrl}`;
+
 
   constructor(
     public dialogRef: MatDialogRef<MediaUploadDialogComponent>,
@@ -63,6 +65,7 @@ export class MediaUploadDialogComponent implements OnInit {
       .pipe(catchError(() => of([])))
       .subscribe(medias => {
         this.existingMedias = medias;
+        console.log(medias)
       });
   }
 

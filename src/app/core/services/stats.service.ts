@@ -5,8 +5,9 @@ import { environment } from '../../environment';
 import { AuthService } from './auth.service';
 import { MemberStats, MonthlyStats } from '../models/stats.model';
 
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root' 
 })
 export class StatsService {
 

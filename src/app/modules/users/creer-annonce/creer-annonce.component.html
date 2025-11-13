@@ -1,0 +1,477 @@
+<div class="announcements-page">
+  <!-- Header de la page -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <mat-icon class="header-icon">campaign</mat-icon>
+      </div>
+      <div class="header-text">
+        <h1 class="page-title">{{ 'announcements.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'announcements.subtitle' | translate }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button 
+              color="primary" 
+              (click)="toggleCreationForm()"
+              class="create-button">
+        <mat-icon>{{ showCreationForm ? 'expand_less' : 'add' }}</mat-icon>
+        <span>{{ showCreationForm ? ('common.close' | translate) : ('announcements.createNew' | translate) }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- FORMULAIRE DE CRÉATION -->
+  <div class="creation-section" [class.expanded]="showCreationForm" [@slideToggle]="showCreationForm">
+    <mat-card class="creation-card">
+      <mat-card-header>
+        <div class="card-header-content">
+          <div class="card-icon-wrapper">
+            <mat-icon>edit</mat-icon>
+          </div>
+          <div class="card-text">
+            <mat-card-title>{{ isEditing ? ('announcements.editAnnouncement' | translate) : ('announcements.newAnnouncement' | translate) }}</mat-card-title>
+            <mat-card-subtitle>{{ 'announcements.fillForm' | translate }}</mat-card-subtitle>
+          </div>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          
+          <!-- Section Contenu -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <mat-icon>article</mat-icon>
+              <span>{{ 'announcements.content' | translate }}</span>
+            </h3>
+            
+            <div class="form-grid">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'announcements.title' | translate }}</mat-label>
+                <input matInput 
+                       formControlName="titre" 
+                       [placeholder]="'announcements.titlePlaceholder' | translate"
+                       required />
+                <mat-icon matPrefix>title</mat-icon>
+                <mat-error *ngIf="form.get('titre')?.hasError('required')">
+                  {{ 'announcements.titleRequired' | translate }}
+                </mat-error>
+                <mat-hint>{{ 'announcements.titleHint' | translate }}</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'announcements.message' | translate }}</mat-label>
+                <textarea matInput 
+                          rows="5" 
+                          formControlName="contenu" 
+                          [placeholder]="'announcements.messagePlaceholder' | translate"
+                          required
+                          maxlength="1000">
+                </textarea>
+                <mat-icon matPrefix>message</mat-icon>
+                <mat-error *ngIf="form.get('contenu')?.hasError('required')">
+                  {{ 'announcements.messageRequired' | translate }}
+                </mat-error>
+                <mat-hint align="end">{{ getMessageLength() }}/1000</mat-hint>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Section Ciblage -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <mat-icon>people</mat-icon>
+              <span>{{ 'announcements.targeting' | translate }}</span>
+            </h3>
+            
+            <div class="form-grid targeting-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'announcements.group' | translate }}</mat-label>
+                <mat-select formControlName="groupeId" 
+                           (selectionChange)="onGroupChange($event)">
+                  <mat-option [value]="null">
+                    <mat-icon>groups</mat-icon>
+                    <span>{{ 'announcements.allGroups' | translate }}</span>
+                  </mat-option>
+                  <mat-option *ngFor="let g of groupes" [value]="g.id">
+                    <mat-icon>group</mat-icon>
+                    <span>{{ g.nom }}</span>
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>group_work</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'announcements.team' | translate }}</mat-label>
+                <mat-select formControlName="equipeId">
+                  <mat-option [value]="null">
+                    <mat-icon>sports_soccer</mat-icon>
+                    <span>{{ 'announcements.allTeams' | translate }}</span>
+                  </mat-option>
+                  <mat-option *ngFor="let e of filteredEquipes" [value]="e.id">
+                    <div class="team-option">
+                      <span class="team-color" [style.background-color]="e.couleur"></span>
+                      <span>{{ e.nom }}</span>
+                    </div>
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>sports</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'announcements.targetRole' | translate }}</mat-label>
+                <mat-select formControlName="roleCible">
+                  <mat-option [value]="null">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ 'announcements.allRoles' | translate }}</span>
+                  </mat-option>
+                  <mat-option value="JOUEUR">
+                    <mat-icon>sports_soccer</mat-icon>
+                    <span>{{ 'roles.player' | translate }}</span>
+                  </mat-option>
+                  <mat-option value="TRESORIER">
+                    <mat-icon>account_balance</mat-icon>
+                    <span>{{ 'roles.treasurer' | translate }}</span>
+                  </mat-option>
+                  <mat-option value="SECRETAIRE">
+                    <mat-icon>assignment</mat-icon>
+                    <span>{{ 'roles.secretary' | translate }}</span>
+                  </mat-option>
+                  <mat-option value="ENTRAINEUR">
+                    <mat-icon>fitness_center</mat-icon>
+                    <span>{{ 'roles.coach' | translate }}</span>
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>badge</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Preview des destinataires -->
+            <div class="recipients-preview">
+              <div class="preview-header">
+                <mat-icon>preview</mat-icon>
+                <span>{{ 'announcements.recipientsPreview' | translate }}</span>
+              </div>
+              <div class="preview-content">
+                <div class="recipient-count">
+                  <mat-icon>people_outline</mat-icon>
+                  <span>{{ getEstimatedRecipients() }} {{ 'announcements.recipients' | translate }}</span>
+                </div>
+                <div class="targeting-summary">
+                  <mat-chip-listbox>
+                    <mat-chip-option *ngIf="getSelectedGroup()" selected disabled>
+                      <mat-icon>group</mat-icon>
+                      {{ getSelectedGroup()?.nom }}
+                    </mat-chip-option>
+                    <mat-chip-option *ngIf="getSelectedTeam()" selected disabled>
+                      <mat-icon>sports</mat-icon>
+                      {{ getSelectedTeam()?.nom }}
+                    </mat-chip-option>
+                    <mat-chip-option *ngIf="getSelectedRole()" selected disabled>
+                      <mat-icon>badge</mat-icon>
+                      {{ getSelectedRole() | translate }}
+                    </mat-chip-option>
+                    <mat-chip-option *ngIf="form.value.actifSeulement" selected disabled>
+                      <mat-icon>check_circle</mat-icon>
+                      {{ 'announcements.activeOnly' | translate }}
+                    </mat-chip-option>
+                  </mat-chip-listbox>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Programmation -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ 'announcements.scheduling' | translate }}</span>
+            </h3>
+            
+            <div class="scheduling-container">
+              <mat-slide-toggle formControlName="isScheduled"
+                               (change)="onScheduleToggle($event)"
+                               class="schedule-toggle">
+                {{ 'announcements.scheduleForLater' | translate }}
+              </mat-slide-toggle>
+
+              <div class="datetime-inputs" *ngIf="form.value.isScheduled" [@slideIn]>
+                <mat-form-field appearance="outline" class="date-field">
+                  <mat-label>{{ 'announcements.sendDate' | translate }}</mat-label>
+                  <input matInput 
+                         [matDatepicker]="datePicker" 
+                         formControlName="dateEnvoiDate"
+                         [min]="minDate">
+                  <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+                  <mat-datepicker #datePicker></mat-datepicker>
+                  <mat-icon matPrefix>calendar_today</mat-icon>
+                  <mat-error *ngIf="form.get('dateEnvoiDate')?.hasError('required')">
+                    {{ 'announcements.dateRequired' | translate }}
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="time-field">
+                  <mat-label>{{ 'announcements.sendTime' | translate }}</mat-label>
+                  <input matInput 
+                         type="time" 
+                         formControlName="dateEnvoiHeure">
+                  <mat-icon matPrefix>access_time</mat-icon>
+                  <mat-error *ngIf="form.get('dateEnvoiHeure')?.hasError('required')">
+                    {{ 'announcements.timeRequired' | translate }}
+                  </mat-error>
+                </mat-form-field>
+
+                <button mat-icon-button 
+                        color="warn" 
+                        (click)="clearScheduling()" 
+                        [matTooltip]="'announcements.clearScheduling' | translate"
+                        class="clear-schedule-btn">
+                  <mat-icon>clear</mat-icon>
+                </button>
+              </div>
+
+              <div class="schedule-preview" *ngIf="getScheduledDateTime()">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ 'announcements.willBeSentOn' | translate }} {{ getScheduledDateTime() | date:'full' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Options -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <mat-icon>settings</mat-icon>
+              <span>{{ 'announcements.options' | translate }}</span>
+            </h3>
+            
+            <div class="options-grid">
+              <mat-checkbox formControlName="actifSeulement" 
+                           class="option-checkbox">
+                <div class="checkbox-content">
+                  <span class="checkbox-label">{{ 'announcements.activeOnly' | translate }}</span>
+                  <span class="checkbox-hint">{{ 'announcements.activeOnlyHint' | translate }}</span>
+                </div>
+              </mat-checkbox>
+
+              <mat-checkbox formControlName="urgente" 
+                           class="option-checkbox">
+                <div class="checkbox-content">
+                  <span class="checkbox-label">{{ 'announcements.urgent' | translate }}</span>
+                  <span class="checkbox-hint">{{ 'announcements.urgentHint' | translate }}</span>
+                </div>
+              </mat-checkbox>
+
+              <mat-checkbox formControlName="accuseReception" 
+                           class="option-checkbox">
+                <div class="checkbox-content">
+                  <span class="checkbox-label">{{ 'announcements.readReceipt' | translate }}</span>
+                  <span class="checkbox-hint">{{ 'announcements.readReceiptHint' | translate }}</span>
+                </div>
+              </mat-checkbox>
+            </div>
+          </div>
+
+        </form>
+      </mat-card-content>
+
+      <mat-card-actions class="card-actions">
+        <div class="actions-info">
+          <mat-icon class="info-icon">info</mat-icon>
+          <span class="info-text">{{ getActionInfoText() }}</span>
+        </div>
+        
+        <div class="actions-buttons">
+          <button mat-stroked-button 
+                  type="button" 
+                  (click)="saveAsDraft()"
+                  [disabled]="!canSaveAsDraft()"
+                  class="draft-btn">
+            <mat-icon>save</mat-icon>
+            <span>{{ 'announcements.saveAsDraft' | translate }}</span>
+          </button>
+          
+          <button mat-stroked-button 
+                  type="button" 
+                  (click)="previewAnnouncement()"
+                  [disabled]="form.invalid"
+                  class="preview-btn">
+            <mat-icon>preview</mat-icon>
+            <span>{{ 'announcements.preview' | translate }}</span>
+          </button>
+          
+          <button mat-raised-button 
+                  color="primary" 
+                  type="submit" 
+                  [disabled]="form.invalid || isSubmitting"
+                  class="submit-btn">
+            <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
+            <mat-icon *ngIf="!isSubmitting">{{ getSubmitIcon() }}</mat-icon>
+            <span>{{ getSubmitText() }}</span>
+          </button>
+        </div>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <!-- LISTE DES ANNONCES -->
+  <div class="announcements-list">
+    <div class="list-header">
+      <div class="list-title-section">
+        <h2 class="section-title">
+          <mat-icon>list</mat-icon>
+          <span>{{ 'announcements.myAnnouncements' | translate }} ({{ filteredAnnonces.length }})</span>
+        </h2>
+      </div>
+      
+      <div class="list-filters">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>{{ 'announcements.filterByStatus' | translate }}</mat-label>
+          <mat-select [(value)]="selectedStatusFilter" 
+                     (selectionChange)="onStatusFilterChange()">
+            <mat-option value="all">{{ 'announcements.allStatuses' | translate }}</mat-option>
+            <mat-option value="draft">{{ 'announcements.drafts' | translate }}</mat-option>
+            <mat-option value="scheduled">{{ 'announcements.scheduled' | translate }}</mat-option>
+            <mat-option value="sent">{{ 'announcements.sent' | translate }}</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>filter_list</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>{{ 'announcements.search' | translate }}</mat-label>
+          <input matInput 
+                 [(ngModel)]="searchQuery"
+                 (ngModelChange)="onSearchChange()"
+                 [placeholder]="'announcements.searchPlaceholder' | translate">
+          <mat-icon matPrefix>search</mat-icon>
+          <button matSuffix 
+                  mat-icon-button 
+                  *ngIf="searchQuery"
+                  (click)="clearSearch()">
+            <mat-icon>clear</mat-icon>
+          </button>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="list-container" *ngIf="filteredAnnonces.length > 0; else noAnnouncements">
+      <mat-card class="announcement-item" 
+                *ngFor="let announcement of paginatedAnnonces; trackBy: trackByAnnouncementId"
+                [class.sent]="announcement.envoyee" 
+                [class.scheduled]="announcement.programmee"
+                [class.urgent]="announcement.urgente">
+        
+        <mat-card-header>
+          <div class="status-indicator">
+            <div class="status-badge" [ngClass]="getStatusClass(announcement)">
+              <mat-icon>{{ getStatusIcon(announcement) }}</mat-icon>
+              <span>{{ getStatusText(announcement) }}</span>
+            </div>
+            <div class="priority-indicator" *ngIf="announcement.urgente">
+              <mat-icon class="urgent-icon">priority_high</mat-icon>
+            </div>
+          </div>
+          
+          <div class="header-content">
+            <mat-card-title class="announcement-title">
+              {{ announcement.titre }}
+            </mat-card-title>
+            <mat-card-subtitle class="announcement-meta">
+              <div class="meta-line">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ 'announcements.created' | translate }}: {{ announcement.dateCreation | date:'short' }}</span>
+                <span *ngIf="announcement.dateEnvoi" class="send-date">
+                  → {{ 'announcements.sendAt' | translate }}: {{ announcement.dateEnvoi | date:'short' }}
+                </span>
+              </div>
+            </mat-card-subtitle>
+          </div>
+
+          <div class="header-actions">
+            <button mat-icon-button 
+                    [matMenuTriggerFor]="announcementMenu" 
+                    [matTooltip]="'common.actions' | translate">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            
+            <mat-menu #announcementMenu="matMenu">
+              <button mat-menu-item (click)="editAnnouncement(announcement)">
+                <mat-icon>edit</mat-icon>
+                <span>{{ 'common.edit' | translate }}</span>
+              </button>
+              <button mat-menu-item 
+                      *ngIf="!announcement.envoyee" 
+                      (click)="duplicateAnnouncement(announcement)">
+                <mat-icon>content_copy</mat-icon>
+                <span>{{ 'announcements.duplicate' | translate }}</span>
+              </button>
+              <button mat-menu-item 
+                      *ngIf="!announcement.envoyee" 
+                      (click)="sendNow(announcement.id)">
+                <mat-icon>send</mat-icon>
+                <span>{{ 'announcements.sendNow' | translate }}</span>
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item 
+                      (click)="deleteAnnouncement(announcement.id)"
+                      class="delete-action">
+                <mat-icon>delete</mat-icon>
+                <span>{{ 'common.delete' | translate }}</span>
+              </button>
+            </mat-menu>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="announcement-content">
+            <p class="content-preview" [innerHTML]="announcement.contenu | truncate:200"></p>
+          </div>
+          
+          <div class="announcement-details">
+            <div class="targeting-info">
+              <mat-icon>people</mat-icon>
+              <span>{{ 'announcements.targeting' | translate }}: {{ getCiblageText(announcement) }}</span>
+            </div>
+            <div class="recipients-info">
+              <mat-icon>groups</mat-icon>
+              <span>{{ 'announcements.recipients' | translate }}: {{ announcement.destinatairesCount || '?' }}</span>
+            </div>
+            <div class="read-status" *ngIf="announcement.envoyee && announcement.accuseReception">
+              <mat-icon>visibility</mat-icon>
+              <span>{{ announcement.readCount || 0 }} / {{ announcement.destinatairesCount || 0 }} {{ 'announcements.read' | translate }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Pagination -->
+    <mat-paginator [length]="filteredAnnonces.length"
+                   [pageSize]="pageSize"
+                   [pageSizeOptions]="[5, 10, 25, 50]"
+                   [showFirstLastButtons]="true"
+                   (page)="onPageChange($event)"
+                   *ngIf="filteredAnnonces.length > pageSize">
+    </mat-paginator>
+  </div>
+
+  <!-- État vide -->
+  <ng-template #noAnnouncements>
+    <div class="empty-state">
+      <div class="empty-content">
+        <div class="empty-icon-wrapper">
+          <mat-icon class="empty-icon">campaign</mat-icon>
+        </div>
+        <h3 class="empty-title">{{ getEmptyStateTitle() }}</h3>
+        <p class="empty-message">{{ getEmptyStateMessage() }}</p>
+        <button mat-raised-button 
+                color="primary" 
+                (click)="createFirstAnnouncement()"
+                *ngIf="annonces.length === 0">
+          <mat-icon>add</mat-icon>
+          <span>{{ 'announcements.createFirst' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</div>

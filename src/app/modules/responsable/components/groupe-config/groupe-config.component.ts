@@ -1,39 +1,530 @@
+import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTableModule } from '@angular/material/table';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterModule } from '@angular/router';
-import { BaseChartDirective } from 'ng2-charts';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDividerModule } from '@angular/material/divider';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Groupe } from '../../../../core/models/groupe.model';
+import { QuestionCandidature, TYPE_CHAMP_CONFIG, TypeChamp } from '../../../../core/models/question-candidature.model';
+import { Stade } from '../../../../core/models/stade';
+import { Ville } from '../../../../core/models/ville';
+import { AuthService } from '../../../../core/services/auth.service';
+import { GroupeService } from '../../../../core/services/groupe.service';
+import { QuestionCandidatureService } from '../../../../core/services/question-candidature.service';
+import { finalize } from 'rxjs/operators';
+import { environment } from '../../../../environment';
+
 
 @Component({
   selector: 'app-groupe-config',
   standalone: true,
-    imports: [
+  imports: [
     CommonModule,
-    RouterModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatButtonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatTabsModule,
+    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    FormsModule,
-    ReactiveFormsModule,
-    BaseChartDirective
+    MatButtonModule,
+    MatIconModule,
+    MatSlideToggleModule,
+    MatChipsModule,
+    MatExpansionModule,
+    MatTooltipModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
+    DragDropModule
   ],
   templateUrl: './groupe-config.component.html',
   styleUrl: './groupe-config.component.scss'
 })
-export class GroupeConfigComponent {
+export class GroupeConfigComponent implements OnInit {
+  groupeForm: FormGroup;
+  questionForm: FormGroup;
+  
+  groupe: Groupe | null = null;
+  questions: QuestionCandidature[] = [];
+  villes: Ville[] = [];
+  stades: Stade[] = [];
+  
+  isLoading = true;
+  isSaving = false;
+  editingQuestion: QuestionCandidature | null = null;
+  showQuestionForm = false;
+  imageUrl=environment.imageUrl
+  // Pour l'aperçu de l'image
+  profilePhotoPreview: string | null = null;
+  selectedFile: File | null = null;
+  typeChampConfig = TYPE_CHAMP_CONFIG;
+  joursMatch = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  disciplines = ['Football', 'Basketball', 'Volleyball', 'Handball', 'Rugby'];
+  typesEquipe = ['Senior', 'Junior', 'Vétéran', 'Féminin', 'Masculin', 'Mixte'];
+   isDialogOpen = signal(false);
+   isUploadingPhoto = false;
 
+  // Signal pour stocker la valeur de l'input du nom du stade
+  stadeNom = signal('');
+  
+  // Signal de démo pour stocker les stades ajoutés
+  stades2 = signal<string[]>([]);
+
+  constructor(
+    private fb: FormBuilder,
+    private groupeService: GroupeService,
+    private questionService: QuestionCandidatureService,
+    private authService: AuthService,
+    private snackBar: MatSnackBar
+  ) {
+    this.groupeForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(3)]],
+      isPublic: [true],
+      discipline: ['', Validators.required],
+      ville: [null, Validators.required],
+      stade: [null, Validators.required],
+      jourMatch: ['', Validators.required],
+      typeEquipe: [''],
+      modeEquipe: ['STATIQUE'],
+      fraisAdhesion: [0, [Validators.required, Validators.min(0)]],
+      heureMatch: [null, Validators.required],
+      abreviation: ['']
+    });
+
+    this.questionForm = this.fb.group({
+      texteQuestion: ['', [Validators.required, Validators.minLength(5)]],
+      typeChamp: [TypeChamp.TEXTE_COURT, Validators.required],
+      optionsChoix: [''],
+      obligatoire: [false]
+    });
+  }
+
+  isSubmitting = signal(false);
+  errorMessage = signal<string | null>(null); 
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  openNewStadeDialog(): void {
+    console.log("Dialogue d'ajout de stade ouvert.");
+    this.stadeNom.set(''); // Réinitialise l'input à vide avant l'ouverture
+    this.isDialogOpen.set(true);
+  }
+
+  /**
+   * Ferme le dialogue.
+   */
+  closeDialog(): void {
+    this.isDialogOpen.set(false);
+  }
+
+  /**
+   * Computed signal pour valider si le nom du stade est rempli.
+   */
+  isFormValid = computed(() => {
+    return this.stadeNom().trim().length >= 2;
+  });
+
+  /**
+   * Gère la soumission du formulaire et l'enregistrement du stade.
+   */
+  // submitStade(): void {
+  //   if (this.isFormValid()) {
+  //     const nouveauNom = this.stadeNom().trim();
+  //     this.closeDialog();
+  //   }
+  // }
+
+    submitStade(): void {
+    // 0. Vérification de la validité
+    if (!this.isFormValid() || this.isSubmitting()) {
+      console.warn("Le formulaire n'est pas valide ou une soumission est déjà en cours.");
+      return;
+    }
+
+    const nouveauNom = this.stadeNom().trim();
+    this.isSubmitting.set(true); // 1. Début de la soumission
+    this.errorMessage.set(null); // 2. Réinitialise les erreurs
+
+    const payload: any = {
+      nom: nouveauNom
+    };
+
+    // 3. Appel du service et abonnement à l'Observable
+    this.groupeService.createStade(payload).pipe(
+      // Exécuté après succès ou erreur (équivalent du 'finally')
+      finalize(() => {
+        this.isSubmitting.set(false);
+      })
+    ).subscribe({
+      // Gère le cas de succès (code 2xx)
+      next: (stadeCree: Stade) => {
+        // 4. Traitement après succès
+        console.log(`Stade créé avec succès (ID: ${stadeCree.id}). Fermeture du dialogue.`);
+        
+        // Réinitialiser le champ
+        this.stadeNom.set(''); 
+        
+        // Fermer le dialogue seulement après confirmation du serveur
+        this.closeDialog(); 
+      },
+      // Gère le cas d'erreur (code 4xx ou 5xx)
+      error: (error) => {
+        // 5. Gestion des erreurs
+        console.error("Erreur RxJS lors de la création du stade:", error);
+        // Afficher un message d'erreur clair à l'utilisateur
+        this.errorMessage.set(`Échec de la création du stade. Détails: ${error.message || 'Erreur inconnue.'}`);
+      }
+    });
+    
+    console.log("Appel au service déclenché. En attente de la réponse du serveur...");
+    // Le code continue ici immédiatement, sans attendre la réponse HTTP.
+  }
+
+  getVilleName(membre: number | Ville | undefined): string {
+      if (!membre) {
+        // console.log('Membre est undefined ou null');
+        return 'Inconnu';
+      }
+      if (typeof membre === 'object' && membre !== null && 'nom' in membre ) {
+        // console.log('Membre est un objet:', membre);
+        return `${membre.nom} `;
+      }
+      const membreId = typeof membre === 'number' ? membre : (membre as Ville)?.id;
+      if (!membreId) {
+        // console.log('MembreId non défini:', membre);
+        return 'Inconnu';
+      }
+      const found = this.villes.find(m => m.id === membreId);
+      // console.log('Membre trouvé:', found, 'pour ID:', membreId, 'dans:', this.membres);
+      return found ? `${found.nom}` : 'Inconnu';
+    }
+
+
+    getStadeName(membre: number | Stade | undefined): string {
+
+      if (!membre) {
+        // console.log('Membre est undefined ou null');
+        return 'Inconnu';
+      }
+      if (typeof membre === 'object' && membre !== null && 'nom' in membre ) {
+        // console.log('Membre est un objet:', membre);
+        return `${membre.nom} `;
+      }
+      const membreId = typeof membre === 'number' ? membre : (membre as Stade)?.id;
+      if (!membreId) {
+        // console.log('MembreId non défini:', membre);
+        return 'Inconnu';
+      }
+      const found = this.stades.find(m => m.id === membreId);
+      // console.log('Membre trouvé:', found, 'pour ID:', membreId, 'dans:', this.membres);
+      return found ? `${found.nom}` : 'Inconnu';
+    }
+
+loadData(): void {
+  this.isLoading = true;
+  
+  // 1. Charger les listes de Villes et Stades en premier
+  // Utilisez un forkJoin si possible, ou enchaînez les observables si nécessaire.
+  // Pour la simplicité, utilisons les callbacks (next) pour enchaîner l'ordre:
+
+  // ÉTAPE 1: Charger les villes et stades
+  this.loadVillesEtStades(() => {
+    // ÉTAPE 2: Charger les données du Groupe une fois que les listes de référence sont prêtes
+    this.groupeService.getGroupeConn().subscribe({
+      next: (groupe) => {
+        this.groupe = groupe;
+        if (groupe) {
+          // --- CORRECTION CLÉ ---
+          // Si l'objet 'groupe' contient l'entité 'ville' complète,
+          // vous devez extraire l'ID de la ville pour le formControl.
+          const villeId = typeof groupe.ville === 'object' && groupe.ville !== null ? groupe.ville.id : groupe.ville;
+          const stadeId = typeof groupe.stade === 'object' && groupe.stade !== null ? groupe.stade.id : groupe.stade;
+          
+          this.groupeForm.patchValue({
+            ...groupe, // Applique toutes les autres valeurs
+            ville: villeId, // Applique seulement l'ID de la ville au FormControl 'ville'
+            stade:stadeId
+          });
+          
+          this.loadQuestions(groupe.id);
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement groupe:', err);
+        this.snackBar.open('Erreur lors du chargement du groupe', 'Fermer', { duration: 3000 });
+        this.isLoading = false;
+      }
+    });
+  });
+}
+
+ // Modifiez loadVillesEtStades pour prendre un callback ou retourner un Observable
+loadVillesEtStades(callback: () => void): void {
+  // Utilisez un forkJoin pour charger les deux en parallèle si ce sont des Observables
+  // Sinon, si ce sont de simples appels API, adaptez la logique.
+
+  // Supposons que ce sont des Observables que vous voulez exécuter :
+  this.groupeService.getVilles().subscribe(villes => {
+    this.villes = villes;
+
+    this.groupeService.getStades().subscribe(stades => {
+      this.stades = stades;
+      callback(); // Appel du callback une fois les deux listes chargées
+    });
+  });
+}
+
+  loadQuestions(groupeId: number): void {
+    this.questionService.getQuestionsByGroupe(groupeId).subscribe({
+      next: (questions) => {
+        this.questions = questions.sort((a, b) => a.ordreAffichage - b.ordreAffichage);
+      },
+      error: (err) => {
+        console.error('Erreur chargement questions:', err);
+        this.snackBar.open('Erreur lors du chargement des questions', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  // Gestion du formulaire groupe
+  saveGroupe(): void {
+    if (this.groupeForm.valid && this.groupe) {
+      this.isSaving = true;
+      const groupeData = {
+        ...this.groupe,
+        ...this.groupeForm.value
+      };
+
+      this.groupeService.updateGroupe(this.groupe.id, groupeData).subscribe({
+        next: () => {
+          this.snackBar.open('Groupe mis à jour avec succès !', 'Fermer', { duration: 3000 });
+          this.isSaving = false;
+          this.loadData();
+        },
+        error: (err) => {
+          console.error('Erreur sauvegarde groupe:', err);
+          this.snackBar.open('Erreur lors de la sauvegarde', 'Fermer', { duration: 3000 });
+          this.isSaving = false;
+        }
+      });
+    }
+  }
+
+  /**
+   * Gère la sélection d'un fichier image
+   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      
+      // Vérifier le type de fichier
+      if (!file.type.startsWith('image/')) {
+        this.snackBar.open('Veuillez sélectionner une image', 'Fermer', { duration: 3000 });
+        return;
+      }
+      
+      // Vérifier la taille (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        this.snackBar.open('L\'image ne doit pas dépasser 5MB', 'Fermer', { duration: 3000 });
+        return;
+      }
+      
+      this.selectedFile = file;
+      
+      // Créer un aperçu
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.profilePhotoPreview = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  /**
+   * Upload de l'image de profil
+   */
+  uploadProfilePhoto(): void {
+    if (!this.selectedFile || !this.groupe) {
+      return;
+    }
+    
+    this.isUploadingPhoto = true;
+    const formData = new FormData();
+    formData.append('profilePhoto', this.selectedFile);
+    
+    this.groupeService.uploadGroupePhoto(this.groupe.id, formData).pipe(
+      finalize(() => {
+        this.isUploadingPhoto = false;
+      })
+    ).subscribe({
+      next: (response) => {
+        this.snackBar.open('Photo de profil mise à jour avec succès', 'Fermer', { duration: 3000 });
+        // Mettre à jour l'URL de la photo dans le groupe
+        if (this.groupe && response.url) {
+          this.groupe.profilePhotoUrl = response.url;
+        }
+        this.selectedFile = null;
+      },
+      error: (error) => {
+        console.error('Erreur upload photo:', error);
+        this.snackBar.open('Erreur lors de l\'upload de la photo', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  /**
+   * Annuler la sélection de photo
+   */
+  cancelPhotoSelection(): void {
+    this.selectedFile = null;
+    this.profilePhotoPreview = null;
+    // Réinitialiser l'input file
+    const fileInput = document.getElementById('photoInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  // Gestion des questions
+  toggleQuestionForm(): void {
+    this.showQuestionForm = !this.showQuestionForm;
+    if (!this.showQuestionForm) {
+      this.questionForm.reset({
+        typeChamp: TypeChamp.TEXTE_COURT,
+        obligatoire: false
+      });
+      this.editingQuestion = null;
+    }
+  }
+
+  onTypeChampChange(typeChamp: TypeChamp): void {
+    const config = this.typeChampConfig.find(t => t.value === typeChamp);
+    if (config && !config.needsOptions) {
+      this.questionForm.patchValue({ optionsChoix: '' });
+    }
+  }
+
+  needsOptions(): boolean {
+    const typeChamp = this.questionForm.get('typeChamp')?.value;
+    const config = this.typeChampConfig.find(t => t.value === typeChamp);
+    return config?.needsOptions || false;
+  }
+
+  getTypeChampIcon(typeChamp: TypeChamp): string {
+    const config = this.typeChampConfig.find(t => t.value === typeChamp);
+    return config?.icon || 'help';
+  }
+
+  getTypeChampLabel(typeChamp: TypeChamp): string {
+    const config = this.typeChampConfig.find(t => t.value === typeChamp);
+    return config?.label || typeChamp;
+  }
+
+  saveQuestion(): void {
+    if (this.questionForm.valid && this.groupe) {
+      const questionData: QuestionCandidature = {
+        id: this.editingQuestion?.id || 0,
+        groupe: this.groupe.id,
+        ...this.questionForm.value,
+        ordreAffichage: this.editingQuestion?.ordreAffichage || this.questions.length + 1
+      };
+
+      const operation = this.editingQuestion
+        ? this.questionService.updateQuestion(this.editingQuestion.id, questionData)
+        : this.questionService.createQuestion(this.groupe.id, questionData);
+
+      operation.subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.editingQuestion ? 'Question mise à jour !' : 'Question ajoutée !',
+            'Fermer',
+            { duration: 3000 }
+          );
+          this.loadQuestions(this.groupe!.id);
+          this.toggleQuestionForm();
+        },
+        error: (err) => {
+          console.error('Erreur sauvegarde question:', err);
+          this.snackBar.open('Erreur lors de la sauvegarde', 'Fermer', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  editQuestion(question: QuestionCandidature): void {
+    this.editingQuestion = question;
+    this.showQuestionForm = true;
+    this.questionForm.patchValue(question);
+  }
+
+  deleteQuestion(question: QuestionCandidature): void {
+    if (confirm(`Voulez-vous vraiment supprimer cette question ?`)) {
+      this.questionService.deleteQuestion(question.id).subscribe({
+        next: () => {
+          this.snackBar.open('Question supprimée !', 'Fermer', { duration: 3000 });
+          this.loadQuestions(this.groupe!.id);
+        },
+        error: (err) => {
+          console.error('Erreur suppression question:', err);
+          this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  duplicateQuestion(question: QuestionCandidature): void {
+    this.questionService.duplicateQuestion(question.id).subscribe({
+      next: () => {
+        this.snackBar.open('Question dupliquée !', 'Fermer', { duration: 3000 });
+        this.loadQuestions(this.groupe!.id);
+      },
+      error: (err) => {
+        console.error('Erreur duplication question:', err);
+        this.snackBar.open('Erreur lors de la duplication', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  // Drag & drop pour réorganiser
+  drop(event: CdkDragDrop<QuestionCandidature[]>): void {
+    moveItemInArray(this.questions, event.previousIndex, event.currentIndex);
+    
+    // Mettre à jour l'ordre
+    this.questions.forEach((q, index) => {
+      q.ordreAffichage = index + 1;
+    });
+
+    this.questionService.updateOrdreQuestions(this.questions).subscribe({
+      next: () => {
+        this.snackBar.open('Ordre mis à jour !', 'Fermer', { duration: 2000 });
+      },
+      error: (err) => {
+        console.error('Erreur mise à jour ordre:', err);
+        this.snackBar.open('Erreur lors de la réorganisation', 'Fermer', { duration: 3000 });
+        this.loadQuestions(this.groupe!.id); // Recharger en cas d'erreur
+      }
+    });
+  }
+
+  getOptionsArray(optionsChoix: string | undefined): string[] {
+    if (!optionsChoix) return [];
+    return optionsChoix.split(';').map(o => o.trim()).filter(o => o.length > 0);
+  }
 }

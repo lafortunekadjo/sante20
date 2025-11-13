@@ -23,6 +23,8 @@ import { MatListModule } from '@angular/material/list';
 import { MemberStats, MonthlyStats } from '../../../../core/models/stats.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core'; // ← Ajout
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Enregistrer les contrôleurs localement
 Chart.register(
@@ -60,11 +62,12 @@ Chart.register(
     MatListModule,
     MatTabsModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
+    TranslateModule, // ← Ajout
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-
 export class MDashboardComponent implements OnInit {
   stats: MemberStats = {
     matchesPlayed: 0,
@@ -153,7 +156,6 @@ export class MDashboardComponent implements OnInit {
     this.dashboardService.getAvailableMonths().subscribe({
       next: (months) => {
         this.stats.availableMonths = months;
-        // Sélectionner le mois le plus récent par défaut
         if (months.length > 0) {
           this.selectedMonth = months[0].value;
           this.monthFilterForm.patchValue({ selectedMonth: this.selectedMonth });
@@ -212,12 +214,10 @@ export class MDashboardComponent implements OnInit {
     });
   }
 
-  // Méthode helper pour déterminer si les stats mensuelles sont disponibles
   hasMonthlyStats(): boolean {
     return !!this.stats.monthlyStats;
   }
 
-  // Méthode helper pour obtenir le taux de victoire formaté
   getWinRateFormatted(): string {
     if (!this.stats.monthlyStats?.bestTeam) return '0%';
     return this.stats.monthlyStats.bestTeam.winRate.toFixed(1) + '%';

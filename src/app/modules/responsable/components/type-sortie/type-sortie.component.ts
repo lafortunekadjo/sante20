@@ -26,6 +26,7 @@ import { UserService } from '../../../../core/services/user.service';
 import { User } from '../../../../core/models/user';
 import { MembreService } from '../../../../core/services/membre.service';
 import { Membre } from '../../../../core/models/membre.model';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-type-sortie',
@@ -46,6 +47,7 @@ import { Membre } from '../../../../core/models/membre.model';
     MatSortModule,
     MatTableModule,
     CurrencyPipe,
+    TranslateModule,
     DatePipe],
   templateUrl: './type-sortie.component.html',
   styleUrl: './type-sortie.component.scss'
@@ -322,5 +324,17 @@ export class TypeSortieComponent implements OnInit, AfterViewInit{
       error: (err) => console.error('Erreur lors de la suppression du type:', err),
     });
   }
+
+  // In your component class (e.g., TypeSortieComponent)
+
+getTypeDepenseName(typeDepense: any): string {
+  if (!typeDepense) return 'N/A';
+  if (typeof typeDepense === 'object' && typeDepense.nom) {
+    return typeDepense.nom;
+  }
+  // If typeDepense is an ID, lookup from typesDepenses array
+  const type = this.typesDepenses.find(t => t.id === typeDepense);
+  return type ? type.nom : 'N/A';
+}
 
 }

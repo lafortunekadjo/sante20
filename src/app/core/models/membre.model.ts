@@ -1,5 +1,6 @@
 import { Groupe } from "./groupe.model";
 import { Equipe } from "./groupe.model copy";
+import { RoleCustom } from "./role-custom.model";
 import { User } from "./user";
 
 export interface Membre {
@@ -26,4 +27,6 @@ export interface Membre {
   adresse:string;
   tel:string;
   assurance:boolean;
+
+  roleCustom?: RoleCustom | null; //
 }

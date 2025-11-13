@@ -1,0 +1,25 @@
+<!-- src/app/modules/chat/components/message-list/message-list.component.html -->
+
+<div class="message-list" #scrollContainer (scroll)="onScroll($event)">
+  <div *ngIf="loading && hasMore" class="loading-more">
+    <mat-spinner diameter="30"></mat-spinner>
+  </div>
+
+  <div *ngIf="messages.length === 0 && !loading" class="no-messages">
+    <mat-icon>chat_bubble_outline</mat-icon>
+    <p>{{ 'chat.noMessages' | translate }}</p>
+  </div>
+
+  <div class="messages-container">
+    <ng-container *ngFor="let message of messages; let i = index">
+      <div *ngIf="shouldShowDate(i)" class="date-divider">
+        <span>{{ formatDate(message.createdAt) }}</span>
+      </div>
+      
+      <app-message-item
+        [message]="message"
+        [isOwn]="isOwnMessage(message)">
+      </app-message-item>
+    </ng-container>
+  </div>
+</div>

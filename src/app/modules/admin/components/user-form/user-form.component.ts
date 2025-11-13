@@ -59,7 +59,8 @@ export class UserFormComponent implements OnInit, AfterViewInit {
     active: true,
     membre: 0,
     motDePasse: '',
-    groupe:0
+    groupe: 0,
+    profilePhotoUrl: ''
   };
   groupes: Groupe[] = [];
   editingRows: boolean[] = [];
@@ -201,7 +202,8 @@ export class UserFormComponent implements OnInit, AfterViewInit {
       active: true,
       membre: 0,
       motDePasse: '',
-      groupe: 0 
+      groupe: 0 ,
+      profilePhotoUrl:''
     };
   }
 

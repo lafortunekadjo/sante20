@@ -57,12 +57,12 @@ export class ContributionComponent implements OnInit, AfterViewInit {
   // Le type du dataSource est maintenant `Contribution[]` car le modèle est mis à jour
   dataSource = new MatTableDataSource<Contribution>([]);
   // La colonne groupe est supprimée car gérée au backend
-  displayedColumns: string[] = ['commentaire', 'idEvenement', 'delaiContribution', 'montantMin', 'montantCible', 'montantCollecteActuel', 'active', 'actions'];
+  displayedColumns: string[] = ['commentaire', 'idEvenement', 'delaiContribution', 'montantMin', 'montantCible', 'montantCollecteActuel', 'active', 'adhesion', 'actions'];
   
   showCreateRow: boolean = false;
   
   newContribution: Contribution = {
-    idEvenement: {} as Evenement, // Initialisation avec un Evenement vide
+    evenement: {} as Evenement, // Initialisation avec un Evenement vide
     commentaire: '',
     description: '',
     delaiContribution: new Date(),
@@ -70,7 +70,8 @@ export class ContributionComponent implements OnInit, AfterViewInit {
     montantCible: 0,
     groupe: 0,
     montantCollecteActuel: 0,
-    open: false,
+    open: true,
+    isAdhesion: false,
   };
   
   editingRows: boolean[] = [];
@@ -107,8 +108,8 @@ export class ContributionComponent implements OnInit, AfterViewInit {
       const contributionsWithDetails: Contribution[] = contributions.map(c => {
         let evenementAssocie: Evenement | null = null;
 
-        if (c.idEvenement && c.idEvenement.id) {
-          evenementAssocie = evenementMap.get(c.idEvenement.id) || null;
+        if (c.evenement && c.evenement.id) {
+          evenementAssocie = evenementMap.get(c.evenement.id) || null;
         }
 
         return {
@@ -161,7 +162,7 @@ export class ContributionComponent implements OnInit, AfterViewInit {
 
   resetNewContribution(): void {
     this.newContribution = {
-      idEvenement: {} as Evenement,
+      evenement: {} as Evenement,
       commentaire: '',
       description: '',
       delaiContribution: new Date(),
@@ -170,6 +171,7 @@ export class ContributionComponent implements OnInit, AfterViewInit {
       groupe: 0,
       montantCollecteActuel: 0,
       open: false,
+      isAdhesion:false
     };
   }
 

@@ -6,7 +6,7 @@ export interface Evenement {
   typeEvenement: string;
   dateCreation: Date;
   estContributionOuverte: boolean;
-  idMembreLie?: number;
+  idMembreLie?: number | null;
   dateEvenement: Date;
 }
 

@@ -16,7 +16,7 @@
       <mat-card-title class="card-title">
         <mat-icon>list</mat-icon>
         Liste des Matchs
-        <span class="match-count" *ngIf="!isLoading">({{ dataSource.data.length }})</span>
+        <span class="match-count" *ngIf="!isLoading">({{ filteredDataSource.data.length }})</span>
       </mat-card-title>
     </mat-card-header>
 
@@ -30,7 +30,7 @@
       <!-- Contenu -->
       <div *ngIf="!isLoading" class="content-wrapper">
         
-        <!-- Barre d'actions -->
+        <!-- Barre d'actions principale -->
         <div class="action-bar">
           <button 
             mat-raised-button 
@@ -58,6 +58,130 @@
             <mat-icon>auto_awesome</mat-icon>
             Générer matchs
           </button>
+
+          <button 
+            mat-stroked-button 
+            (click)="toggleFilters()"
+            class="action-btn">
+            <mat-icon>filter_list</mat-icon>
+            Filtres
+            <mat-icon *ngIf="showFilters">expand_less</mat-icon>
+            <mat-icon *ngIf="!showFilters">expand_more</mat-icon>
+          </button>
+
+          <button 
+            mat-button 
+            [matMenuTriggerFor]="exportMenu"
+            class="action-btn">
+            <mat-icon>download</mat-icon>
+            Exporter
+          </button>
+
+          <mat-menu #exportMenu="matMenu">
+            <button mat-menu-item (click)="exportToExcel()">
+              <mat-icon>description</mat-icon>
+              <span>Excel (.xlsx)</span>
+            </button>
+            <button mat-menu-item (click)="exportToCSV()">
+              <mat-icon>text_snippet</mat-icon>
+              <span>CSV</span>
+            </button>
+          </mat-menu>
+
+          <div class="spacer"></div>
+
+          <!-- Toggle vue -->
+          <mat-button-toggle-group [(value)]="viewMode" class="view-toggle">
+            <mat-button-toggle value="card">
+              <mat-icon>view_module</mat-icon>
+            </mat-button-toggle>
+            <mat-button-toggle value="list">
+              <mat-icon>view_list</mat-icon>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        <!-- Panneau de filtres -->
+        <div *ngIf="showFilters" class="filters-panel" [@slideDown]>
+          <div class="filters-header">
+            <h3>
+              <mat-icon>filter_alt</mat-icon>
+              Filtres avancés
+            </h3>
+            <button mat-icon-button (click)="resetFilters()" matTooltip="Réinitialiser les filtres">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <!-- Recherche textuelle -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Rechercher</mat-label>
+              <input 
+                matInput 
+                [(ngModel)]="filters.searchText" 
+                (ngModelChange)="applyFilters()"
+                placeholder="Adversaire, lieu, commentaire...">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+
+            <!-- Type de match -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Type de match</mat-label>
+              <mat-select [(ngModel)]="filters.typeMatch" (selectionChange)="applyFilters()">
+                <mat-option value="tous">Tous les types</mat-option>
+                <mat-option value="AMICAL">Amical</mat-option>
+                <mat-option value="INTERNE">Interne</mat-option>
+                <mat-option value="ANNIVERSAIRE">Anniversaire</mat-option>
+                <mat-option value="DUEL">Duel</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>category</mat-icon>
+            </mat-form-field>
+
+            <!-- Statut -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Statut</mat-label>
+              <mat-select [(ngModel)]="filters.statut" (selectionChange)="applyFilters()">
+                <mat-option value="tous">Tous les statuts</mat-option>
+                <mat-option value="joues">Joués</mat-option>
+                <mat-option value="manques">Manqués</mat-option>
+                <mat-option value="futurs">À venir</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>info</mat-icon>
+            </mat-form-field>
+
+            <!-- Date de début -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Date de début</mat-label>
+              <input 
+                matInput 
+                [matDatepicker]="pickerDebut" 
+                [(ngModel)]="filters.dateDebut"
+                (ngModelChange)="applyFilters()">
+              <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
+              <mat-datepicker #pickerDebut></mat-datepicker>
+              <mat-icon matPrefix>date_range</mat-icon>
+            </mat-form-field>
+
+            <!-- Date de fin -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Date de fin</mat-label>
+              <input 
+                matInput 
+                [matDatepicker]="pickerFin" 
+                [(ngModel)]="filters.dateFin"
+                (ngModelChange)="applyFilters()">
+              <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+              <mat-datepicker #pickerFin></mat-datepicker>
+              <mat-icon matPrefix>date_range</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="filters-summary">
+            <span class="results-count">
+              <strong>{{ filteredDataSource.data.length }}</strong> résultat(s) trouvé(s)
+            </span>
+          </div>
         </div>
 
         <!-- Formulaire de création/édition -->
@@ -107,7 +231,7 @@
               appearance="outline" 
               class="form-field">
               <mat-label>Équipe adverse</mat-label>
-              <input matInput [(ngModel)]="newMatch.adversaire" required>
+              <input matInput [(ngModel)]="newMatch.adversaire" required (ngModelChange)="onAdversaireInput()">
               <mat-icon matPrefix>shield</mat-icon>
               <mat-error>L'équipe adverse est requise</mat-error>
             </mat-form-field>
@@ -258,9 +382,9 @@
           </div>
         </div>
 
-        <!-- Liste des matchs -->
-        <div class="matches-list">
-          <mat-card *ngFor="let match of dataSource.data" class="match-card">
+        <!-- Vue en cartes -->
+        <div *ngIf="viewMode === 'card'" class="matches-list">
+          <mat-card *ngFor="let match of filteredDataSource.data" class="match-card">
             <mat-card-header>
               <div mat-card-avatar class="match-avatar" [ngClass]="getMatchStatusClass(match)">
                 <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
@@ -297,13 +421,21 @@
               <button mat-icon-button matTooltip="Modifier" (click)="editMatch(match)">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button mat-icon-button matTooltip="Présences" [routerLink]="['/presence', match.id]">
+              <button 
+                mat-icon-button 
+                matTooltip="Présences" 
+                (click)="navigateToPresences(match)"
+                [disabled]="!canAccessMatchData(match)">
                 <mat-icon>group</mat-icon>
               </button>
               <button mat-icon-button matTooltip="Feuille de match" (click)="printFeuilleMatch(match)">
                 <mat-icon>print</mat-icon>
               </button>
-              <button mat-icon-button matTooltip="Médias" (click)="openMediaDialog(match)">
+              <button 
+                mat-icon-button 
+                matTooltip="Médias" 
+                (click)="openMediaDialog(match)"
+                [disabled]="!canAccessMatchData(match)">
                 <mat-icon>perm_media</mat-icon>
               </button>
               <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="openDeleteDialog(match)">
@@ -311,18 +443,106 @@
               </button>
             </mat-card-actions>
           </mat-card>
+        </div>
 
-          <!-- État vide -->
-          <div *ngIf="dataSource.data.length === 0" class="empty-state">
-            <mat-icon>sports_soccer</mat-icon>
-            <h3>Aucun match planifié</h3>
-            <p>Créez votre premier match ou générez automatiquement le calendrier</p>
-          </div>
+        <!-- Vue en liste (tableau) -->
+        <div *ngIf="viewMode === 'list'" class="table-container">
+          <table mat-table [dataSource]="filteredDataSource" matSort class="matches-table">
+            
+            <!-- Colonne Date -->
+            <ng-container matColumnDef="dateMatch">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+              <td mat-cell *matCellDef="let match">{{ match.dateMatch | date:'dd/MM/yyyy' }}</td>
+            </ng-container>
+
+            <!-- Colonne Type -->
+            <ng-container matColumnDef="typeMatch">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+              <td mat-cell *matCellDef="let match">
+                <span class="match-type-badge" [ngClass]="'type-' + match.typeMatch.toLowerCase()">
+                  {{ match.typeMatch }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Colonne Adversaire/Info -->
+            <ng-container matColumnDef="adversaire">
+              <th mat-header-cell *matHeaderCellDef>Adversaire / Info</th>
+              <td mat-cell *matCellDef="let match">
+                <div class="table-info">
+                  <strong>{{ getMatchInfo(match) }}</strong>
+                  <span *ngIf="match.forfait" class="forfait-badge">
+                    <mat-icon>flag</mat-icon>
+                    {{ match.equipeForfait }}
+                  </span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Colonne Statut -->
+            <ng-container matColumnDef="statut">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+              <td mat-cell *matCellDef="let match">
+                <div class="status-badge" [ngClass]="getMatchStatusClass(match)">
+                  <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
+                  <span>{{ getMatchStatusLabel(match) }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Colonne Actions -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let match">
+                <div class="table-actions">
+                  <button mat-icon-button matTooltip="Modifier" (click)="editMatch(match)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button 
+                    mat-icon-button 
+                    matTooltip="Présences" 
+                    (click)="navigateToPresences(match)"
+                    [disabled]="!canAccessMatchData(match)">
+                    <mat-icon>group</mat-icon>
+                  </button>
+                  <button mat-icon-button matTooltip="Feuille de match" (click)="printFeuilleMatch(match)">
+                    <mat-icon>print</mat-icon>
+                  </button>
+                  <button 
+                    mat-icon-button 
+                    matTooltip="Médias" 
+                    (click)="openMediaDialog(match)"
+                    [disabled]="!canAccessMatchData(match)">
+                    <mat-icon>perm_media</mat-icon>
+                  </button>
+                  <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="openDeleteDialog(match)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+        </div>
+
+        <!-- État vide -->
+        <div *ngIf="filteredDataSource.data.length === 0" class="empty-state">
+          <mat-icon>sports_soccer</mat-icon>
+          <h3>Aucun match trouvé</h3>
+          <p *ngIf="filters.searchText || filters.typeMatch !== 'tous' || filters.statut !== 'tous' || filters.dateDebut || filters.dateFin">
+            Essayez de modifier vos critères de recherche
+          </p>
+          <p *ngIf="!filters.searchText && filters.typeMatch === 'tous' && filters.statut === 'tous' && !filters.dateDebut && !filters.dateFin">
+            Créez votre premier match ou générez automatiquement le calendrier
+          </p>
         </div>
 
         <!-- Pagination -->
         <mat-paginator 
-          [pageSizeOptions]="[5, 10, 20, 50]" 
+          [pageSizeOptions]="[10, 20, 50, 100]" 
+          [pageSize]="20"
           showFirstLastButtons>
         </mat-paginator>
       </div>

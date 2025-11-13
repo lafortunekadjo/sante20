@@ -4,18 +4,30 @@
     <div class="header-content">
       <mat-icon class="header-icon">flag</mat-icon>
       <div>
-        <h1 class="page-title">Mes Objectifs</h1>
-        <p class="page-subtitle">Suivez votre progression et atteignez vos objectifs</p>
+        <h1 class="page-title">{{ 'objectives.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'objectives.subtitle' | translate }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Formulaire de création -->
-  <mat-card class="create-card">
+  <!-- Bouton pour afficher/masquer le formulaire -->
+  <div class="action-bar" *ngIf="!showForm">
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="toggleForm()"
+      class="create-btn">
+      <mat-icon>add</mat-icon>
+      {{ 'objectives.createNew' | translate }}
+    </button>
+  </div>
+
+  <!-- Formulaire de création/modification -->
+  <mat-card class="create-card" *ngIf="showForm" [@slideDown]>
     <mat-card-header>
       <mat-card-title class="card-title">
-        <mat-icon>add_circle</mat-icon>
-        Créer un nouvel objectif
+        <mat-icon>{{ editingObjectif ? 'edit' : 'add_circle' }}</mat-icon>
+        {{ editingObjectif ? ('objectives.edit' | translate) : ('objectives.createNew' | translate) }}
       </mat-card-title>
     </mat-card-header>
     
@@ -23,47 +35,50 @@
       <form [formGroup]="objectifForm" (ngSubmit)="onSubmit()" class="objectif-form">
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Type d'objectif</mat-label>
+            <mat-label>{{ 'objectives.type' | translate }}</mat-label>
             <mat-select formControlName="type">
               <mat-option value="BUTS">
                 <mat-icon class="option-icon">sports_soccer</mat-icon>
-                Buts marqués
+                {{ 'objectives.types.goals' | translate }}
               </mat-option>
               <mat-option value="PASSES">
                 <mat-icon class="option-icon">arrow_forward</mat-icon>
-                Passes décisives
+                {{ 'objectives.types.assists' | translate }}
               </mat-option>
               <mat-option value="PRESENCE">
                 <mat-icon class="option-icon">check_circle</mat-icon>
-                Présences
+                {{ 'objectives.types.attendance' | translate }}
               </mat-option>
               <mat-option value="CARTON">
                 <mat-icon class="option-icon">warning</mat-icon>
-                Cartons (à réduire)
+                {{ 'objectives.types.cards' | translate }}
               </mat-option>
             </mat-select>
             <mat-icon matPrefix>category</mat-icon>
+            <mat-error>{{ 'objectives.errors.typeRequired' | translate }}</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Valeur cible</mat-label>
+            <mat-label>{{ 'objectives.targetValue' | translate }}</mat-label>
             <input matInput type="number" formControlName="valeurCible" min="0">
             <mat-icon matPrefix>trending_up</mat-icon>
-            <mat-hint>Objectif à atteindre</mat-hint>
+            <mat-hint>{{ 'objectives.targetHint' | translate }}</mat-hint>
+            <mat-error>{{ 'objectives.errors.valueRequired' | translate }}</mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field-full">
-            <mat-label>Période de l'objectif</mat-label>
+            <mat-label>{{ 'objectives.period' | translate }}</mat-label>
             <mat-date-range-input [rangePicker]="picker">
-              <input matStartDate formControlName="dateDebut" placeholder="Date de début">
-              <input matEndDate formControlName="dateFin" placeholder="Date de fin">
+              <input matStartDate formControlName="dateDebut" [placeholder]="'objectives.startDate' | translate">
+              <input matEndDate formControlName="dateFin" [placeholder]="'objectives.endDate' | translate">
             </mat-date-range-input>
             <mat-icon matPrefix>event</mat-icon>
-            <mat-hint>JJ/MM/AAAA – JJ/MM/AAAA</mat-hint>
+            <mat-hint>{{ 'objectives.dateFormat' | translate }}</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-date-range-picker #picker></mat-date-range-picker>
+            <mat-error>{{ 'objectives.errors.datesRequired' | translate }}</mat-error>
           </mat-form-field>
         </div>
 
@@ -74,16 +89,16 @@
             type="submit" 
             [disabled]="!objectifForm.valid"
             class="submit-btn">
-            <mat-icon>add</mat-icon>
-            Créer l'objectif
+            <mat-icon>{{ editingObjectif ? 'save' : 'add' }}</mat-icon>
+            {{ editingObjectif ? ('common.save' | translate) : ('objectives.create' | translate) }}
           </button>
           <button 
             mat-stroked-button 
             type="button" 
-            (click)="objectifForm.reset()"
-            class="reset-btn">
-            <mat-icon>refresh</mat-icon>
-            Réinitialiser
+            (click)="cancelEdit()"
+            class="cancel-btn">
+            <mat-icon>close</mat-icon>
+            {{ 'common.cancel' | translate }}
           </button>
         </div>
       </form>
@@ -94,31 +109,25 @@
   <div class="objectifs-section">
     <h2 class="section-title">
       <mat-icon>list</mat-icon>
-      Mes objectifs en cours
+      {{ 'objectives.myObjectives' | translate }}
       <span class="objectifs-count" *ngIf="objectifs.length > 0">({{ objectifs.length }})</span>
     </h2>
 
     <!-- État de chargement -->
     <div *ngIf="isLoading" class="loading-container">
       <mat-spinner diameter="50"></mat-spinner>
-      <p class="loading-text">Chargement de vos objectifs...</p>
+      <p class="loading-text">{{ 'objectives.loading' | translate }}</p>
     </div>
 
     <!-- Liste des objectifs -->
     <div *ngIf="!isLoading && objectifs.length > 0" class="objectifs-grid">
-      <mat-card *ngFor="let objectif of objectifs" class="objectif-card">
+      <mat-card *ngFor="let objectif of objectifs" class="objectif-card" [ngClass]="'status-' + getObjectifStatus(objectif)">
         <mat-card-header>
           <div mat-card-avatar class="objectif-avatar" [ngClass]="'type-' + objectif.type.toLowerCase()">
-            <mat-icon>
-              {{ objectif.type === 'BUTS' ? 'sports_soccer' : 
-                 objectif.type === 'PASSES' ? 'arrow_forward' : 
-                 objectif.type === 'PRESENCE' ? 'check_circle' : 'warning' }}
-            </mat-icon>
+            <mat-icon>{{ getObjectifTypeIcon(objectif.type) }}</mat-icon>
           </div>
           <mat-card-title class="objectif-title">
-            {{ objectif.type === 'BUTS' ? 'Buts marqués' : 
-               objectif.type === 'PASSES' ? 'Passes décisives' : 
-               objectif.type === 'PRESENCE' ? 'Présences' : 'Cartons' }}
+            {{ getObjectifTypeLabel(objectif.type) }}
           </mat-card-title>
           <mat-card-subtitle class="objectif-period">
             <mat-icon class="subtitle-icon">event</mat-icon>
@@ -145,26 +154,45 @@
             class="progress-bar">
           </mat-progress-bar>
 
-          <div class="objectif-status" [ngClass]="(objectif?.valeurActuelle ?? 0) >= (objectif?.valeurCible ?? 0) ? 'completed' : 'in-progress'">
-            <mat-icon>
-              {{ (objectif?.valeurActuelle ?? 0) >= (objectif?.valeurCible ?? 0) ? 'check_circle' : 'timer' }}
-            </mat-icon>
-            <span>
-              {{ (objectif?.valeurActuelle ?? 0) >= (objectif?.valeurCible ?? 0) ? 'Objectif atteint !' : 'En cours...' }}
-            </span>
+          <div class="objectif-status" [ngClass]="getObjectifStatus(objectif)">
+            <mat-icon>{{ getObjectifStatusIcon(objectif) }}</mat-icon>
+            <span>{{ getObjectifStatusLabel(objectif) }}</span>
           </div>
         </mat-card-content>
+
+        <mat-card-actions class="objectif-actions">
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.share' | translate" 
+            (click)="shareObjectif(objectif)">
+            <mat-icon>share</mat-icon>
+          </button>
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.edit' | translate" 
+            (click)="editObjectif(objectif)"
+            [disabled]="isObjectifExpired(objectif) && !isObjectifCompleted(objectif)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.delete' | translate" 
+            color="warn" 
+            (click)="deleteObjectif(objectif)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card-actions>
       </mat-card>
     </div>
 
     <!-- Message si aucun objectif -->
     <div *ngIf="!isLoading && objectifs.length === 0" class="empty-state">
       <mat-icon class="empty-icon">flag</mat-icon>
-      <h3 class="empty-title">Aucun objectif défini</h3>
-      <p class="empty-text">Créez votre premier objectif pour commencer à suivre votre progression !</p>
+      <h3 class="empty-title">{{ 'objectives.noObjectives' | translate }}</h3>
+      <p class="empty-text">{{ 'objectives.noObjectivesText' | translate }}</p>
       <button mat-raised-button color="primary" (click)="scrollToForm()">
         <mat-icon>add</mat-icon>
-        Créer un objectif
+        {{ 'objectives.createObjective' | translate }}
       </button>
     </div>
   </div>

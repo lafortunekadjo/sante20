@@ -18,6 +18,7 @@ export class UserService {
     }
 
     createUser(user: User): Observable<User> {
+      console.log(user)
     return this.http.post<User>(`${environment.apiUrl}/user/create`, user).pipe(
       catchError(err => {
         console.error('Erreur lors de la création de l’utilisateur:', err);
@@ -29,7 +30,7 @@ export class UserService {
 
 
   updateUser(id: number, user: User): Observable<User> {
-    console.log(id)
+    console.log(user)
     return this.http.put<User>(`${environment.apiUrl}/user/update/${id}`, user).pipe(
       catchError(err => {
         console.error('Erreur lors de la mise à jour de l’utilisateur:', err);

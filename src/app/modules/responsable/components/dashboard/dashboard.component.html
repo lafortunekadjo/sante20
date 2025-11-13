@@ -1,218 +1,403 @@
 <div class="dashboard-container">
-  <!-- Header avec titre et filtres -->
-  <div class="dashboard-header">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
     <div class="header-content">
-      <h1 class="dashboard-title">
-        <mat-icon class="title-icon">dashboard</mat-icon>
-        Tableau de Bord
-      </h1>
-      <div class="header-subtitle">Vue d'ensemble de votre groupe sportif</div>
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'dashboard.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'dashboard.subtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.memberCount || 0 }}</span>
+          <span class="stat-label">{{ 'dashboard.activeMembers' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalContributions || 0 }}</span>
+          <span class="stat-label">{{ 'dashboard.totalContributions' | translate }}</span>
+        </div>
+      </div>
     </div>
-    
-    <!-- Conteneur des filtres modernisé -->
-    <div class="filter-container">
-      <form [formGroup]="dateRangeForm" class="date-filter-form">
-        <div class="filter-group">
-          <mat-icon class="filter-icon">date_range</mat-icon>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'dashboard.loading' | translate }}...</h3>
+      <p>{{ 'dashboard.loadingMessage' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+    <!-- Filtres harmonisés -->
+    <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <h3>{{ 'common.filterBy' | translate }}</h3>
+        </div>
+      </div>
+      <div class="filter-chips">
+        <form [formGroup]="dateRangeForm" class="date-filter-form">
           <mat-form-field appearance="outline" class="date-field">
-            <mat-label>Période d'analyse</mat-label>
+            <mat-label>{{ 'dashboard.analysisPeriod' | translate }}</mat-label>
             <mat-date-range-input [rangePicker]="picker">
-              <input matStartDate formControlName="start" placeholder="Du">
-              <input matEndDate formControlName="end" placeholder="Au">
+              <input matStartDate formControlName="start" placeholder="{{ 'common.from' | translate }}">
+              <input matEndDate formControlName="end" placeholder="{{ 'common.to' | translate }}">
             </mat-date-range-input>
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-date-range-picker #picker></mat-date-range-picker>
           </mat-form-field>
-        </div>
-        <div class="action-buttons">
-          <button mat-fab color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid" class="apply-btn" matTooltip="Appliquer les filtres">
+          <button mat-raised-button color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid">
             <mat-icon>search</mat-icon>
+            <span>{{ 'common.apply' | translate }}</span>
           </button>
-          <button mat-mini-fab color="accent" (click)="resetDateFilter()" class="reset-btn" matTooltip="Réinitialiser">
+          <button mat-stroked-button (click)="resetDateFilter()">
             <mat-icon>refresh</mat-icon>
+            <span>{{ 'common.reset' | translate }}</span>
           </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-
-  <!-- Grille principale des statistiques -->
-  <div class="stats-main-grid">
-    <!-- Section des métriques principales -->
-    <div class="metrics-section">
-      <div class="section-title">
-        <mat-icon>analytics</mat-icon>
-        <span>Métriques Principales</span>
-        <div class="title-underline"></div>
-      </div>
-      
-      <div class="metrics-grid">
-        <div class="metric-card primary-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">groups</mat-icon>
-            </div>
-            <div class="metric-trend">
-              <mat-icon class="trend-icon up">trending_up</mat-icon>
-            </div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ stats.memberCount || 0 }}</div>
-            <div class="metric-label">Membres Actifs</div>
-            <div class="metric-sublabel">Dans le groupe</div>
-          </div>
-          <div class="metric-footer">
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="(stats.memberCount || 0) * 10"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="metric-card success-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">account_balance_wallet</mat-icon>
-            </div>
-            <div class="metric-trend">
-              <mat-icon class="trend-icon up">trending_up</mat-icon>
-            </div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ (stats.totalContributions || 0) | number:'1.0-0' }}</div>
-            <div class="metric-label">FCFA</div>
-            <div class="metric-sublabel">Contributions totales</div>
-          </div>
-          <div class="metric-footer">
-            <div class="pulse-indicator"></div>
-            <span class="footer-text">En augmentation</span>
-          </div>
-        </div>
-
-        <div class="metric-card warning-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">check_circle_outline</mat-icon>
-            </div>
-            <div class="metric-badge">{{ stats.paidSanctions?.count || 0 }}</div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ (stats.paidSanctions?.amount || 0) | number:'1.0-0' }}</div>
-            <div class="metric-label">FCFA</div>
-            <div class="metric-sublabel">Sanctions réglées</div>
-          </div>
-          <div class="metric-footer">
-            <mat-icon class="status-icon">done_all</mat-icon>
-            <span class="footer-text">Statut OK</span>
-          </div>
-        </div>
-
-        <div class="metric-card danger-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">error_outline</mat-icon>
-            </div>
-            <div class="metric-badge alert">{{ stats.unpaidSanctions?.count || 0 }}</div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ (stats.unpaidSanctions?.amount || 0) | number:'1.0-0' }}</div>
-            <div class="metric-label">FCFA</div>
-            <div class="metric-sublabel">En attente</div>
-          </div>
-          <div class="metric-footer">
-            <mat-icon class="status-icon warning">priority_high</mat-icon>
-            <span class="footer-text">Action requise</span>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
 
-    <!-- Section des performances -->
-    <div class="performance-section">
-      <div class="section-title">
-        <mat-icon>emoji_events</mat-icon>
-        <span>Performances</span>
-        <div class="title-underline"></div>
-      </div>
-      
-      <div class="performance-grid">
-        <div class="performance-card scorers-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>sports_soccer</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Top Buteurs</h3>
-              <p>Meilleurs attaquants</p>
-            </div>
-            <div class="header-action">
-              <mat-icon>keyboard_arrow_right</mat-icon>
-            </div>
+    <!-- Grille des statistiques -->
+    <div class="stats-grid">
+      <!-- Section Métriques Principales -->
+      <div class="feed-section metrics-section full-width">
+        <div class="section-header">
+          <div class="header-icon-wrapper">
+            <mat-icon>analytics</mat-icon>
           </div>
-          <div class="card-body">
-            <div class="leaderboard">
-              <div class="leader-item" *ngFor="let scorer of stats.topScorers | slice:0:3; let i = index" 
-                   [class.first]="i === 0" [class.second]="i === 1" [class.third]="i === 2">
-                <div class="position-indicator">
-                  <span class="position-number">{{ i + 1 }}</span>
-                  <mat-icon *ngIf="i === 0" class="crown">military_tech</mat-icon>
-                </div>
-                <div class="player-avatar">
-                  <span>{{ scorer.name.charAt(0) }}</span>
-                </div>
-                <div class="player-info">
-                  <div class="player-name">{{ scorer.name }}</div>
-                  <div class="player-team">{{ scorer.team }}</div>
-                </div>
-                <div class="score-badge">
-                  <span class="score-value">{{ scorer.goals }}</span>
-                  <span class="score-unit">buts</span>
+          <div class="header-text">
+            <h2>{{ 'dashboard.mainMetrics' | translate }}</h2>
+          </div>
+        </div>
+        <div class="section-content">
+          <div class="card-list horizontal-list">
+            <div class="demande-card metric-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">groups</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ stats.memberCount || 0 }}</h3>
+                    <p class="groupe-discipline">{{ 'dashboard.activeMembers' | translate }}</p>
+                  </div>
                 </div>
               </div>
-              <div class="empty-leaderboard" *ngIf="stats.topScorers?.length === 0">
-                <mat-icon>sports_soccer</mat-icon>
-                <span>Aucun buteur enregistré</span>
+              <div class="demande-content">
+                <div class="additional-info">
+                  <div class="info-card">
+                    <mat-icon>trending_up</mat-icon>
+                    <span>{{ 'dashboard.inGroup' | translate }}</span>
+                  </div>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="(stats.memberCount || 0) / (stats.memberCount || 1) * 100"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card metric-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">account_balance_wallet</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ (stats.totalContributions || 0) | number:'1.0-0' }}</h3>
+                    <p class="groupe-discipline">{{ 'dashboard.totalContributions' | translate }} FCFA</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="additional-info">
+                  <div class="info-card">
+                    <mat-icon>trending_up</mat-icon>
+                    <span>{{ 'dashboard.contributions' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card metric-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">savings</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <!-- <h3 class="groupe-nom">{{ (stats.totalDues || 0) | number:'1.0-0' }}</h3> -->
+                    <p class="groupe-discipline">{{ 'dashboard.totalDues' | translate }} FCFA</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="additional-info">
+                  <div class="info-card">
+                    <mat-icon>trending_up</mat-icon>
+                    <span>{{ 'dashboard.dues' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card metric-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">gavel</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <!-- <h3 class="groupe-nom">{{ (stats.totalFines || 0) | number:'1.0-0' }}</h3> -->
+                    <p class="groupe-discipline">{{ 'dashboard.totalFines' | translate }} FCFA</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="additional-info">
+                  <div class="info-card">
+                    <mat-icon>trending_up</mat-icon>
+                    <span>{{ 'dashboard.fines' | translate }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="performance-card assists-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>swap_horiz</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Top Passeurs</h3>
-              <p>Meilleurs créateurs</p>
-            </div>
-            <div class="header-action">
-              <mat-icon>keyboard_arrow_right</mat-icon>
-            </div>
+      <!-- Section Performance Sportive -->
+      <div class="feed-section performance-section full-width">
+        <div class="section-header">
+          <div class="header-icon-wrapper">
+            <mat-icon>bar_chart</mat-icon>
           </div>
-          <div class="card-body">
-            <div class="leaderboard">
-              <div class="leader-item" *ngFor="let assister of stats.topAssists | slice:0:3; let i = index"
-                   [class.first]="i === 0" [class.second]="i === 1" [class.third]="i === 2">
-                <div class="position-indicator">
-                  <span class="position-number">{{ i + 1 }}</span>
-                  <mat-icon *ngIf="i === 0" class="crown">military_tech</mat-icon>
-                </div>
-                <div class="player-avatar">
-                  <span>{{ assister.name.charAt(0) }}</span>
-                </div>
-                <div class="player-info">
-                  <div class="player-name">{{ assister.name }}</div>
-                  <div class="player-team">{{ assister.team }}</div>
-                </div>
-                <div class="score-badge">
-                  <span class="score-value">{{ assister.assists }}</span>
-                  <span class="score-unit">passes</span>
+          <div class="header-text">
+            <h2>{{ 'dashboard.sportsPerformance' | translate }}</h2>
+          </div>
+        </div>
+        <div class="section-content">
+          <div class="card-list">
+            <div class="demande-card performance-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">insights</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.performanceAnalysis' | translate }}</h3>
+                  </div>
                 </div>
               </div>
-              <div class="empty-leaderboard" *ngIf="stats.topAssists?.length === 0">
-                <mat-icon>swap_horiz</mat-icon>
-                <span>Aucun passeur enregistré</span>
+              <div class="demande-content">
+                <div class="chart-container">
+                  <canvas id="performanceChart"></canvas>
+                </div>
+                <div class="performance-metrics">
+                  <div class="metric-item">
+                    <!-- <span class="metric-value">{{ stats.wins || 0 }}</span> -->
+                    <span class="metric-label">{{ 'dashboard.wins' | translate }}</span>
+                  </div>
+                  <div class="metric-item">
+                    <!-- <span class="metric-value">{{ stats.losses || 0 }}</span> -->
+                    <span class="metric-label">{{ 'dashboard.losses' | translate }}</span>
+                  </div>
+                  <div class="metric-item">
+                    <!-- <span class="metric-value">{{ stats.draws || 0 }}</span> -->
+                    <span class="metric-label">{{ 'dashboard.draws' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card performance-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">trending_up</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.performanceEvolution' | translate }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="chart-container">
+                  <canvas id="evolutionChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Meilleurs Performers -->
+      <div class="feed-section performers-section full-width">
+        <div class="section-header">
+          <div class="header-icon-wrapper">
+            <mat-icon>emoji_events</mat-icon>
+          </div>
+          <div class="header-text">
+            <h2>{{ 'dashboard.topPerformers' | translate }}</h2>
+          </div>
+        </div>
+        <div class="section-content">
+          <div class="card-list horizontal-list">
+            <div class="demande-card performer-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">sports_soccer</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.topScorers' | translate }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="leaderboard">
+                  <div class="leaderboard-item" *ngFor="let scorer of stats.topScorers; let i = index">
+                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                      {{ i + 1 }}
+                    </div>
+                    <div class="player-info">
+                      <span class="player-name">{{ scorer.name }}</span>
+                      <span class="player-team">{{ scorer.team }}</span>
+                    </div>
+                    <div class="player-score">{{ scorer.goals }}</div>
+                  </div>
+                  <div class="empty-state" *ngIf="stats.topScorers?.length === 0">
+                    <mat-icon>sports_soccer</mat-icon>
+                    <span>{{ 'dashboard.noScorers' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card performer-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">assist_walker</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.topAssisters' | translate }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="leaderboard">
+                  <div class="leaderboard-item" *ngFor="let assister of stats.topAssists; let i = index">
+                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                      {{ i + 1 }}
+                    </div>
+                    <div class="player-info">
+                      <span class="player-name">{{ assister.name }}</span>
+                      <span class="player-team">{{ assister.team }}</span>
+                    </div>
+                    <div class="player-score">{{ assister.assists }}</div>
+                  </div>
+                  <div class="empty-state" *ngIf="stats.topAssists?.length === 0">
+                    <mat-icon>assist_walker</mat-icon>
+                    <span>{{ 'dashboard.noAssisters' | translate }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Assiduité et Prochains Matchs -->
+      <div class="feed-section activity-section full-width">
+        <div class="section-header">
+          <div class="header-icon-wrapper">
+            <mat-icon>event_available</mat-icon>
+          </div>
+          <div class="header-text">
+            <h2>{{ 'dashboard.activity' | translate }}</h2>
+          </div>
+        </div>
+        <div class="section-content">
+          <div class="card-list">
+            <div class="demande-card activity-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">person_pin</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.attendance' | translate }}</h3>
+                    <p class="groupe-discipline">{{ 'dashboard.mostPresent' | translate }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="leaderboard">
+                  <div class="leaderboard-item" *ngFor="let attendance of stats.topAttendance | slice:0:3; let i = index">
+                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
+                      {{ i + 1 }}
+                    </div>
+                    <div class="player-info">
+                      <span class="player-name">{{ attendance.name }}</span>
+                      <span class="player-team">{{ attendance.team }}</span>
+                    </div>
+                    <div class="player-score">{{ attendance.appearances }}</div>
+                  </div>
+                  <div class="empty-state" *ngIf="stats.topAttendance?.length === 0">
+                    <div class="empty-illustration">
+                      <mat-icon class="empty-icon">person_off</mat-icon>
+                    </div>
+                    <div class="empty-content">
+                      <h3 class="empty-title">{{ 'dashboard.noAttendance' | translate }}</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="demande-card activity-card">
+              <div class="demande-header">
+                <div class="groupe-info">
+                  <div class="groupe-avatar">
+                    <mat-icon class="discipline-icon">event</mat-icon>
+                  </div>
+                  <div class="groupe-details">
+                    <h3 class="groupe-nom">{{ 'dashboard.upcomingMatches' | translate }}</h3>
+                    <p class="groupe-discipline">{{ 'dashboard.calendar' | translate }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <div class="timeline">
+                  <div class="timeline-item" *ngFor="let match of stats.upcomingMatches; let i = index">
+                    <div class="timeline-icon">
+                      <mat-icon>sports_soccer</mat-icon>
+                    </div>
+                    <div class="timeline-content">
+                      <h4>{{ match.date | date:'EEEE d MMM' }}</h4>
+                      <p>{{ match.opponent }}</p>
+                      <span>{{ match.date | date:'HH:mm' }}</span>
+                    </div>
+                  </div>
+                  <div class="empty-state" *ngIf="stats.upcomingMatches?.length === 0">
+                    <div class="empty-illustration">
+                      <mat-icon class="empty-icon">event_busy</mat-icon>
+                    </div>
+                    <div class="empty-content">
+                      <h3 class="empty-title">{{ 'dashboard.noMatches' | translate }}</h3>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -220,101 +405,17 @@
       </div>
     </div>
 
-    <!-- Section des présences et matchs -->
-    <div class="activity-section">
-      <div class="activity-grid">
-        <!-- Carte des présences -->
-        <div class="activity-card attendance-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>person_pin</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Assiduité</h3>
-              <p>Membres les plus présents</p>
-            </div>
-            <div class="stats-bubble">
-              <span>{{ stats.topAttendance?.length || 0 }}</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="attendance-list">
-              <div class="attendance-item" *ngFor="let attendance of stats.topAttendance | slice:0:3; let i = index">
-                <div class="attendance-rank">{{ i + 1 }}</div>
-                <div class="attendance-info">
-                  <div class="member-name">{{ attendance.name }}</div>
-                  <div class="member-details">
-                    <span class="team-name">{{ attendance.team }}</span>
-                    <span class="separator">•</span>
-                    <span class="appearances">{{ attendance.appearances }} présences</span>
-                  </div>
-                </div>
-                <div class="attendance-progress">
-                  <div class="progress-circle" [attr.data-percentage]="attendance.appearances || 0  * 10">
-                    <span>{{ attendance.appearances || 0 }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="empty-attendance" *ngIf="stats.topAttendance?.length === 0">
-                <mat-icon>person_off</mat-icon>
-                <span>Aucune présence</span>
-              </div>
-            </div>
-          </div>
+    <!-- Footer -->
+    <div class="dashboard-footer">
+      <div class="footer-stats">
+        <div class="footer-item">
+          <mat-icon>update</mat-icon>
+          <span>{{ 'dashboard.lastUpdate' | translate }}: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
-
-        <!-- Carte des matchs à venir -->
-        <div class="activity-card matches-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>event</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>Prochains Matchs</h3>
-              <p>Calendrier à venir</p>
-            </div>
-            <div class="stats-bubble">
-              <span>{{ stats.upcomingMatches?.length || 0 }}</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="matches-timeline">
-              <div class="timeline-item" *ngFor="let match of stats.upcomingMatches; let isLast = last">
-                <div class="timeline-marker">
-                  <mat-icon>sports_soccer</mat-icon>
-                </div>
-                <div class="timeline-content">
-                  <div class="match-date">
-                    {{ match.date | date:'EEEE d MMM' }}
-                  </div>
-                  <div class="match-opponent"> {{ match.opponent }}</div>
-                  <div class="match-time">
-                    {{ match.date | date:'HH:mm' }}
-                  </div>
-                </div>
-                <div class="timeline-line" *ngIf="!isLast"></div>
-              </div>
-              <div class="empty-timeline" *ngIf="stats.upcomingMatches?.length === 0">
-                <mat-icon>event_busy</mat-icon>
-                <span>Aucun match programmé</span>
-              </div>
-            </div>
-          </div>
+        <div class="footer-item">
+          <mat-icon>visibility</mat-icon>
+          <span>{{ 'dashboard.overview' | translate }}</span>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Footer avec informations supplémentaires -->
-  <div class="dashboard-footer">
-    <div class="footer-stats">
-      <div class="footer-item">
-        <mat-icon>update</mat-icon>
-        <span>Dernière mise à jour: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
-      </div>
-      <div class="footer-item">
-        <mat-icon>visibility</mat-icon>
-        <span>Vue d'ensemble</span>
       </div>
     </div>
   </div>

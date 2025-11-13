@@ -1,40 +1,45 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient, HttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { Observable } from 'rxjs';
+
 import { routes } from './app.routes';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTableModule } from '@angular/material/table';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { BaseChartDirective } from 'ng2-charts';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { provideNativeDateAdapter } from '@angular/material/core';
+
+// Classe de loader personnalisée
+class CustomTranslateLoader implements TranslateLoader {
+  constructor(private http: HttpClient) {}
+  
+  getTranslation(lang: string): Observable<any> {
+    return this.http.get(`assets/i18n/${lang}.json`);
+  }
+}
+
+// Fonction factory
+export function HttpLoaderFactory(http: HttpClient): TranslateLoader {
+  return new CustomTranslateLoader(http);
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-     provideHttpClient(withInterceptors([authInterceptor])),
-    importProvidersFrom([
-      BrowserAnimationsModule,
-      MatToolbarModule,
-      MatButtonModule,
-      MatTableModule,
-      MatPaginatorModule,
-      MatFormFieldModule,
-      MatInputModule,
-      MatSelectModule,
-      MatDatepickerModule,
-      MatNativeDateModule,
-      FormsModule,
-      ReactiveFormsModule,
-      BaseChartDirective,
-      
-    ])
+    provideHttpClient(
+      withInterceptors([authInterceptor])
+    ),
+    provideAnimations(),
+    provideNativeDateAdapter(), 
+    importProvidersFrom(
+      TranslateModule.forRoot({
+        defaultLanguage: 'fr',
+        loader: {
+          provide: TranslateLoader,
+          useFactory: HttpLoaderFactory,
+          deps: [HttpClient]
+        }
+      })
+    )
   ]
 };

@@ -21,6 +21,10 @@ export class ObjectifsService {
     return this.http.post<Objectif>(`${environment.apiUrl}/objectifs`, objectif);
   }
 
+   updateObjectif(id: number, objectif: Objectif): Observable<Objectif> {
+    return this.http.post<Objectif>(`${environment.apiUrl}/objectifs`, objectif);
+  }
+
   deleteObjectif(objectifId: number): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/${objectifId}`);
   }

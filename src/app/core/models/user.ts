@@ -9,4 +9,5 @@ export interface User {
   membre: number;
   motDePasse: string;
   groupe:number;
+  profilePhotoUrl: string;
 }

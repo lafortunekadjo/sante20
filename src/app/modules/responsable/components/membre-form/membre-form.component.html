@@ -117,16 +117,18 @@
 
             <!-- Filtre Rôle CO -->
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Rôle CO</mat-label>
-              <mat-select [(ngModel)]="filters.roleCO" (selectionChange)="applyFilters()">
+              <mat-label>Rôle</mat-label>
+              <mat-select [(ngModel)]="filters.roleCustom" (selectionChange)="applyFilters()">
                 <mat-option [value]="null">Tous les rôles</mat-option>
-                <mat-option value="PRESI">Président</mat-option>
-                <mat-option value="CAISSIER">Caissier</mat-option>
-                <mat-option value="COMM">Communicateur</mat-option>
-                <mat-option value="RESP">Responsable</mat-option>
-                <mat-option value="">Sans rôle</mat-option>
+                <mat-option [value]="0">Sans rôle</mat-option>
+                <mat-option *ngFor="let role of roles" [value]="role.id">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
+                    <span>{{ role.nom }}</span>
+                  </div>
+                </mat-option>
               </mat-select>
-              <mat-icon matPrefix>badge</mat-icon>
+              <mat-icon matPrefix>admin_panel_settings</mat-icon>
             </mat-form-field>
 
             <!-- Filtre Cotisation -->
@@ -233,17 +235,19 @@
                 <mat-icon matPrefix>shield</mat-icon>
               </mat-form-field>
 
-              <mat-form-field appearance="outline" class="form-field">
-                <mat-label>Rôle CO</mat-label>
-                <mat-select [(ngModel)]="newMembre.roleCO">
-                  <mat-option value="">Aucun rôle</mat-option>
-                  <mat-option value="PRESI">Président</mat-option>
-                  <mat-option value="CAISSIER">Caissier</mat-option>
-                  <mat-option value="COMM">Communicateur</mat-option>
-                  <mat-option value="RESP">Responsable</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>badge</mat-icon>
-              </mat-form-field>
+             <mat-form-field appearance="outline">
+  <mat-label>Rôle dans le groupe</mat-label>
+  <mat-select [(ngModel)]="editMembre.roleCustom" [compareWith]="compareRoles" >
+    <mat-option [value]="null">Aucun rôle</mat-option>
+    <mat-option *ngFor="let role of roles" [value]="role">
+      <div class="flex items-center gap-2">
+        <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
+        <span>{{ role.nom }}</span>
+      </div>
+    </mat-option>
+  </mat-select>
+  <mat-icon matPrefix>admin_panel_settings</mat-icon>
+</mat-form-field>
 
               <div class="checkbox-group">
                 <mat-checkbox [(ngModel)]="newMembre.cotisationPayee">
@@ -386,17 +390,22 @@
                   <mat-icon matPrefix>phone</mat-icon>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                  <mat-label>Rôle CO</mat-label>
-                  <mat-select [(ngModel)]="editMembre.roleCO" [disabled]="!editingRows[getGlobalIndex(i)]">
-                    <mat-option value="">Aucun</mat-option>
-                    <mat-option value="PRESI">Président</mat-option>
-                    <mat-option value="CAISSIER">Caissier</mat-option>
-                    <mat-option value="COMM">Communicateur</mat-option>
-                    <mat-option value="RESP">Responsable</mat-option>
-                  </mat-select>
-                  <mat-icon matPrefix>badge</mat-icon>
-                </mat-form-field>
+                   <mat-form-field appearance="outline">
+ <mat-label>Rôle dans le groupe</mat-label>
+<mat-select 
+        [(ngModel)]="editMembre.roleCustom" 
+        [compareWith]="compareRoles" 
+        [disabled]="!editingRows[getGlobalIndex(i)]">
+        <mat-option [value]="null">Aucun rôle</mat-option>
+        <mat-option *ngFor="let role of roles" [value]="role">
+        <div class="flex items-center gap-2">
+        <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
+        <span>{{ role.nom }}</span>
+        </div>
+        </mat-option>
+        </mat-select>
+        <mat-icon matPrefix>admin_panel_settings</mat-icon>
+        </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Équipe</mat-label>

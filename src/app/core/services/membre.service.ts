@@ -78,7 +78,7 @@ export class MembreService {
   // }
 
   deleteMember(id: number): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/membres/all`).pipe(
+    return this.http.delete<void>(`${environment.apiUrl}/membres/${id}`).pipe(
       catchError(err => {
         console.error('Erreur lors de la suppression du membre:', err);
         return throwError(err);
@@ -87,7 +87,7 @@ export class MembreService {
   }
 
   activateMember(id: number): Observable<void> {
-    return this.http.get<void>(`${environment.apiUrl}/membres/all`).pipe(
+    return this.http.get<void>(`${environment.apiUrl}/membres/enable/${id}`, {}).pipe(
       catchError(err => {
         console.error('Erreur lors de l’activation du membre:', err);
         return throwError(err);
@@ -96,13 +96,14 @@ export class MembreService {
   }
 
   deactivateMember(id: number): Observable<void> {
-    return this.http.get<void>(`${environment.apiUrl}/membres/all`).pipe(
+    return this.http.put<void>(`${environment.apiUrl}/membres/disable/${id}`, {}).pipe(
       catchError(err => {
         console.error('Erreur lors de la désactivation du membre:', err);
         return throwError(err);
       })
     );
   }
+
 
 
   createMembre(membre: any): Observable<Membre> {
@@ -147,7 +148,7 @@ export class MembreService {
   }
 
   getAllMembres(): Observable<Membre[]> {
-    return this.http.get<Membre[]>(this.apiUrl);
+    return this.http.get<Membre[]>(`${this.apiUrl}/groupe`);
   }
 
 

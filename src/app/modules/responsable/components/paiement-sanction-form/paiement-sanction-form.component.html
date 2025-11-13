@@ -1,215 +1,159 @@
-<div class="equipe-container">
-  <!-- En-tête -->
-  <div class="page-header">
-    <div class="header-content">
-      <mat-icon class="header-icon">groups</mat-icon>
-      <div>
-        <h1 class="page-title">Gestion des Équipes</h1>
-        <p class="page-subtitle">Créez, modifiez et gérez vos équipes</p>
+<div class="equipe-manager-container">
+  <!-- Loader élégant -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loader-content">
+      <div class="spinner-container">
+        <mat-spinner diameter="60" color="accent"></mat-spinner>
+      </div>
+      <div class="loading-text">
+        <h3>Chargement des équipes...</h3>
+        <p>Veuillez patienter</p>
       </div>
     </div>
   </div>
 
   <!-- Contenu principal -->
-  <mat-card class="main-card">
-    <mat-card-header>
-      <mat-card-title class="card-title">
-        <mat-icon>list</mat-icon>
-        Liste des Équipes
-        <span class="team-count" *ngIf="!isLoading">({{ dataSource.data.length }})</span>
-      </mat-card-title>
-    </mat-card-header>
-
-    <mat-card-content>
-      <!-- État de chargement -->
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner diameter="50"></mat-spinner>
-        <p class="loading-text">Chargement des équipes...</p>
+  <div class="content-wrapper" [class.loaded]="!isLoading">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">
+          <mat-icon class="title-icon">groups</mat-icon>
+          Gestion des Équipes
+        </h1>
+        <p class="page-subtitle">Organisez et gérez vos équipes sportives</p>
       </div>
+    </div>
 
-      <!-- Contenu -->
-      <div *ngIf="!isLoading" class="content-wrapper">
-        <!-- Barre d'actions -->
-        <div class="action-bar">
-          <button 
-            mat-raised-button 
-            color="primary" 
-            (click)="toggleCreateRow()"
-            class="create-btn">
-            <mat-icon>{{ showCreateRow ? 'close' : 'add' }}</mat-icon>
-            {{ showCreateRow ? 'Annuler' : 'Créer une équipe' }}
-          </button>
+    <!-- Actions principales -->
+    <div class="actions-bar">
+      <button mat-fab extended color="primary" (click)="toggleCreateRow()" class="create-fab">
+        <mat-icon>add</mat-icon>
+        Nouvelle Équipe
+      </button>
+      <div class="stats-summary">
+        <div class="stat-chip">
+          <mat-icon>shield</mat-icon>
+          <span>{{ dataSource.data.length }} équipes</span>
+        </div>
+        <div class="stat-chip">
+          <mat-icon>person</mat-icon>
+          <span>{{ allMembres.length }} membres</span>
+        </div>
+      </div>
+    </div>
 
-          <div class="search-container">
-            <mat-form-field appearance="outline" class="search-field">
-              <mat-label>Rechercher</mat-label>
-              <input 
-                matInput 
-                (keyup)="applyFilter($event)" 
-                placeholder="Nom de l'équipe..."
-                #input>
-              <mat-icon matPrefix>search</mat-icon>
-            </mat-form-field>
+    <!-- Formulaire de création -->
+    <div class="create-card" *ngIf="showCreateRow" [@slideIn]>
+      <div class="create-card-header">
+        <mat-icon>add_circle</mat-icon>
+        <h3>Créer une nouvelle équipe</h3>
+      </div>
+      <div class="create-card-body">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nom de l'équipe</mat-label>
+          <input matInput [(ngModel)]="newEquipe.nom" placeholder="Ex: Équipe Rouge" required />
+          <mat-icon matPrefix>shield</mat-icon>
+          <mat-error *ngIf="!newEquipe.nom">Le nom est requis</mat-error>
+        </mat-form-field>
+      </div>
+      <div class="create-card-footer">
+        <button mat-stroked-button (click)="cancelCreate()">
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+        <button mat-flat-button color="primary" (click)="saveEquipe()" [disabled]="!isCreateFormValid()">
+          <mat-icon>check</mat-icon>
+          Enregistrer
+        </button>
+      </div>
+    </div>
+
+    <!-- Liste des équipes -->
+    <div class="equipes-grid">
+      <div class="equipe-card" *ngFor="let equipe of dataSource.data; let i = index">
+        <!-- Header de la carte -->
+        <div class="equipe-card-header" [class.expanded]="isEquipeExpanded(equipe.id)">
+          <div class="equipe-info">
+            <div class="equipe-icon">
+              <mat-icon>shield</mat-icon>
+            </div>
+            <div class="equipe-details">
+              <h3 class="equipe-name" *ngIf="!editingRows[i]">{{ equipe.nom }}</h3>
+              <mat-form-field appearance="outline" *ngIf="editingRows[i]" class="edit-field">
+                <mat-label>Nom de l'équipe</mat-label>
+                <input matInput [(ngModel)]="editEquipe.nom" required />
+              </mat-form-field>
+              <p class="equipe-members-count">
+                <mat-icon>person</mat-icon>
+                {{ getFullMembersByEquipeId(equipe.id).length }} membre(s)
+              </p>
+            </div>
+          </div>
+          <div class="equipe-actions">
+            <ng-container *ngIf="!editingRows[i]">
+              <button mat-icon-button (click)="editRow(i, equipe)" matTooltip="Modifier">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="openDeleteDialog(equipe)" matTooltip="Supprimer">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+            <ng-container *ngIf="editingRows[i]">
+              <button mat-icon-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" matTooltip="Enregistrer">
+                <mat-icon>check</mat-icon>
+              </button>
+              <button mat-icon-button (click)="cancelEdit(i)" matTooltip="Annuler">
+                <mat-icon>close</mat-icon>
+              </button>
+            </ng-container>
           </div>
         </div>
 
-        <!-- Formulaire de création -->
-        <div *ngIf="showCreateRow" class="create-form" [@slideDown]>
-          <div class="form-header">
-            <mat-icon>add_circle</mat-icon>
-            <h3>Nouvelle équipe</h3>
-          </div>
-          
-          <div class="form-content">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Nom de l'équipe</mat-label>
-              <input 
-                matInput 
-                [(ngModel)]="newEquipe.nom" 
-                placeholder="Ex: Équipe A"
-                required>
-              <mat-icon matPrefix>people</mat-icon>
-              <mat-error *ngIf="!newEquipe.nom">Le nom est requis</mat-error>
-            </mat-form-field>
+        <!-- Toggle pour voir les membres -->
+        <div class="equipe-toggle" (click)="toggleEquipeRow(equipe.id)">
+          <span>{{ isEquipeExpanded(equipe.id) ? 'Masquer' : 'Voir' }} les membres</span>
+          <mat-icon [class.rotated]="isEquipeExpanded(equipe.id)">expand_more</mat-icon>
+        </div>
 
-            <div class="form-actions">
-              <button 
-                mat-raised-button 
-                color="primary" 
-                (click)="saveEquipe()" 
-                [disabled]="!isCreateFormValid()">
-                <mat-icon>save</mat-icon>
-                Enregistrer
-              </button>
-              <button 
-                mat-stroked-button 
-                (click)="cancelCreate()">
-                <mat-icon>close</mat-icon>
-                Annuler
-              </button>
+        <!-- Liste des membres (expansion) -->
+        <div class="equipe-members" *ngIf="isEquipeExpanded(equipe.id)" [@expandCollapse]>
+          <div class="members-header">
+            <h4>Composition de l'équipe</h4>
+          </div>
+          <div class="members-list">
+            <div class="member-card" *ngFor="let membre of getFullMembersByEquipeId(equipe.id)">
+              <!-- Dans .member-avatar -->
+              <div class="member-avatar" 
+                  [style.background]="getAvatarGradient(membre)">
+                {{ getInitials(membre) }}
+              </div>
+              <div class="member-info">
+                <div class="member-name">{{ membre.prenom }} {{ membre.nom }}</div>
+                <div class="member-role" *ngIf="membre.roleCO">{{ membre.roleCO }}</div>
+              </div>
+              <div class="member-badge">
+                <mat-icon>verified</mat-icon>
+              </div>
+            </div>
+            <div class="empty-members" *ngIf="getFullMembersByEquipeId(equipe.id).length === 0">
+              <mat-icon>person_off</mat-icon>
+              <span>Aucun membre dans cette équipe</span>
             </div>
           </div>
         </div>
-
-        <!-- Tableau -->
-        <div class="table-container">
-          <table mat-table [dataSource]="dataSource" matSort class="equipe-table">
-            
-            <!-- Colonne ID -->
-            <ng-container matColumnDef="id">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                <div class="header-content">
-                  <mat-icon>tag</mat-icon>
-                  ID
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let equipe">
-                <span class="id-badge">{{ equipe.id }}</span>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Nom -->
-            <ng-container matColumnDef="nom">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                <div class="header-content">
-                  <mat-icon>groups</mat-icon>
-                  Nom de l'équipe
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let equipe; let i = index">
-                <div *ngIf="!editingRows[i]" class="team-name">
-                  <mat-icon class="team-icon">shield</mat-icon>
-                  <span>{{ equipe.nom }}</span>
-                </div>
-                
-                <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="edit-field">
-                  <mat-label>Nom</mat-label>
-                  <input matInput [(ngModel)]="editEquipe.nom" required>
-                  <mat-error *ngIf="!editEquipe.nom">Le nom est requis</mat-error>
-                </mat-form-field>
-              </td>
-            </ng-container>
-
-            <!-- Colonne Actions -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>
-                <div class="header-content">
-                  <mat-icon>settings</mat-icon>
-                  Actions
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let equipe; let i = index">
-                <div class="action-buttons">
-                  <!-- Mode normal -->
-                  <ng-container *ngIf="!editingRows[i]">
-                    <button 
-                      mat-icon-button 
-                      color="accent" 
-                      (click)="viewMembers(equipe)"
-                      matTooltip="Voir les membres">
-                      <mat-icon>people</mat-icon>
-                    </button>
-                    <button 
-                      mat-icon-button 
-                      color="primary" 
-                      (click)="editRow(i, equipe)"
-                      matTooltip="Modifier">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button 
-                      mat-icon-button 
-                      color="warn" 
-                      (click)="openDeleteDialog(equipe)"
-                      matTooltip="Supprimer">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </ng-container>
-
-                  <!-- Mode édition -->
-                  <ng-container *ngIf="editingRows[i]">
-                    <button 
-                      mat-mini-fab 
-                      color="primary" 
-                      (click)="saveEdit(i)" 
-                      [disabled]="!isEditFormValid()"
-                      matTooltip="Enregistrer">
-                      <mat-icon>check</mat-icon>
-                    </button>
-                    <button 
-                      mat-mini-fab 
-                      color="warn" 
-                      (click)="cancelEdit(i)"
-                      matTooltip="Annuler">
-                      <mat-icon>close</mat-icon>
-                    </button>
-                  </ng-container>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Lignes -->
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-
-            <!-- Message si aucune donnée -->
-            <tr class="mat-row" *matNoDataRow>
-              <td class="mat-cell" [attr.colspan]="displayedColumns.length">
-                <div class="no-data">
-                  <mat-icon>info</mat-icon>
-                  <p>{{ input.value ? 'Aucune équipe trouvée' : 'Aucune équipe créée' }}</p>
-                </div>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Pagination -->
-          <mat-paginator 
-            [pageSizeOptions]="[5, 10, 20, 50]" 
-            showFirstLastButtons
-            class="paginator">
-          </mat-paginator>
-        </div>
       </div>
-    </mat-card-content>
-  </mat-card>
+
+      <!-- État vide -->
+      <div class="empty-state" *ngIf="dataSource.data.length === 0 && !isLoading">
+        <mat-icon>shield_moon</mat-icon>
+        <h3>Aucune équipe</h3>
+        <p>Créez votre première équipe pour commencer</p>
+        <button mat-flat-button color="primary" (click)="toggleCreateRow()">
+          <mat-icon>add</mat-icon>
+          Créer une équipe
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

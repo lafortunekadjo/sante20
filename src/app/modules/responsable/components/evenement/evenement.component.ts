@@ -65,7 +65,7 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     typeEvenement: 'Autre',
     dateCreation: new Date(),
     estContributionOuverte: false,
-    idMembreLie: 0,
+    idMembreLie: null,
     dateEvenement: new Date(),
     id: 0
   };
@@ -131,7 +131,7 @@ export class EvenementComponent implements OnInit, AfterViewInit {
       typeEvenement: 'Autre',
       dateCreation: new Date(),
       estContributionOuverte: false,
-      idMembreLie: 0,
+      idMembreLie: null,
       dateEvenement: new Date(),
       id:0
     };

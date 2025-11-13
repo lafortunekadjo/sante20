@@ -33,11 +33,24 @@ import { GeneralService } from '../../../../core/services/general.service';
 import { MediaUploadDialogComponent } from '../media-upload-dialog/media-upload-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatMenuModule } from '@angular/material/menu';
+import * as XLSX from 'xlsx';
+
+interface MatchFilters {
+  typeMatch: string;
+  dateDebut: Date | null;
+  dateFin: Date | null;
+  searchText: string;
+  statut: string; // 'tous', 'joues', 'manques', 'futurs'
+}
 
 @Component({
   selector: 'app-match-form',
   imports: [
-        CommonModule,
+    CommonModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -50,44 +63,68 @@ import { trigger, transition, style, animate } from '@angular/animations';
     MatSortModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    MatButtonToggleModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatMenuModule,
     FormsModule,
     RouterModule,
-  EquipeFilterPipe],
+    EquipeFilterPipe
+  ],
   animations: [
-  trigger('slideDown', [
-    transition(':enter', [
-      style({ opacity: 0, height: 0, overflow: 'hidden' }),
-      animate('300ms ease-out', style({ opacity: 1, height: '*' }))
-    ]),
-    transition(':leave', [
-      animate('300ms ease-in', style({ opacity: 0, height: 0, overflow: 'hidden' }))
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ opacity: 0, height: 0, overflow: 'hidden' }),
+        animate('300ms ease-out', style({ opacity: 1, height: '*' }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-in', style({ opacity: 0, height: 0, overflow: 'hidden' }))
+      ])
     ])
-  ])
-],
+  ],
   templateUrl: './match-form.component.html',
   styleUrl: './match-form.component.scss'
 })
 export class MatchFormComponent implements OnInit, AfterViewInit {
-@ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  
   dataSource = new MatTableDataSource<Match>([]);
-  displayedColumns: string[] = ['dateMatch', 'typeMatch', 'adversaire', 'actions'];
+  filteredDataSource = new MatTableDataSource<Match>([]);
+  displayedColumns: string[] = ['dateMatch', 'typeMatch', 'adversaire', 'statut', 'actions'];
+  
+  // Vue et filtres
+  viewMode: 'card' | 'list' = 'card';
+  showFilters: boolean = false;
+  filters: MatchFilters = {
+    typeMatch: 'tous',
+    dateDebut: null,
+    dateFin: null,
+    searchText: '',
+    statut: 'tous'
+  };
+  
   showCreateRow: boolean = false;
   isLoading: boolean = true;
+  
   newMatch: Match = {
     id: 0,
     groupe: {
       id: 0, nom: '',
       isActive: false,
       discipline: '',
-      ville: 0,
-      stade: 0,
+      ville1: 0,
+      stade2: 0,
       jourMatch: '',
       typeEquipe: '',
       modeEquipe: 'STATIQUE',
       fraisAdhesion: 0,
-      ville1: { id: 0, nom: '' },
-      stade2: { id: 0, nom: '' },
+      ville: { id: 0, nom: '' },
+      stade: { id: 0, nom: '' },
+      profilePhotoUrl: '',
+      heureMatch: '',
+      isPublic: false,
+      abreviation: ''
     },
     typeMatch: 'AMICAL',
     dateMatch: new Date().toISOString().split('T')[0],
@@ -95,8 +132,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     lieu: '',
     commentaire: '',
     membreAnniversaire: '',
-    mediaUrls: [] // Initialisation du champ mediaUrls
-    ,
+    mediaUrls: [],
     forfait: false,
     equipeForfait: '',
     arbitrePrincipal: null,
@@ -105,7 +141,9 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     arbitreAssistantNomOccasionnel: null,
     rapporteur: null,
     rapporteurNomOccasionnel: null
+
   };
+  
   groupes: Groupe | null = null;
   membres: Membre[] = [];
   equipe: Equipe[] = [];
@@ -114,7 +152,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
   presencesToPrint: Presence[] = [];
   sanctionsToPrint: Sanction[] = [];
   typeSanctions: TypeSanction[] = [];
-   equipes: string[] = [];
+  equipes: string[] = [];
 
   constructor(
     private matchService: MatchService,
@@ -132,12 +170,13 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-    this.dataSource.sortingDataAccessor = (item, property) => {
+    this.filteredDataSource.paginator = this.paginator;
+    this.filteredDataSource.sort = this.sort;
+    this.filteredDataSource.sortingDataAccessor = (item, property) => {
       switch (property) {
         case 'groupe': return item.groupe.nom;
         case 'dateMatch': return new Date(item.dateMatch).getTime();
+        case 'statut': return this.getMatchStatus(item);
         default: return (item as any)[property];
       }
     };
@@ -158,37 +197,9 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
         this.membres = membres;
         this.equipe = equipes;
         this.typeSanctions = typeSanctions;
+        this.sortMatches();
+        this.applyFilters();
         this.isLoading = false;
-            // Crée une copie du tableau et la trie par date de match croissante
-const today = new Date();
-
-// Dimanche de cette semaine
-const thisSunday = new Date(today);
-thisSunday.setDate(today.getDate() - today.getDay() + 7 - 7); // ou today - today.getDay()
-
-const sortedMatches = [...this.dataSource.data].sort((a, b) => {
-  const dateA = new Date(a.dateMatch);
-  const dateB = new Date(b.dateMatch);
-
-  const isPastA = dateA < thisSunday;
-  const isPastB = dateB < thisSunday;
-
-  // Les deux passés → du plus ancien au plus récent
-  if (isPastA && isPastB) {
-    return dateA.getTime() - dateB.getTime();
-  }
-
-  // Les deux à venir → du plus proche au plus lointain
-  if (!isPastA && !isPastB) {
-    return dateA.getTime() - dateB.getTime();
-  }
-
-  // Un passé et un futur → passé en bas
-  return isPastA ? 1 : -1;
-});
-
-this.dataSource.data = sortedMatches;
-
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);
@@ -197,11 +208,188 @@ this.dataSource.data = sortedMatches;
     });
   }
 
-  sortMatches(){
-    // Crée une copie du tableau et la trie par date de match croissante
+  sortMatches() {
+    const today = new Date();
+    const thisSunday = new Date(today);
+    thisSunday.setDate(today.getDate() - today.getDay() + 7 - 7);
+
     const sortedMatches = [...this.dataSource.data].sort((a, b) => {
-      return new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime();
+      const dateA = new Date(a.dateMatch);
+      const dateB = new Date(b.dateMatch);
+      const isPastA = dateA < thisSunday;
+      const isPastB = dateB < thisSunday;
+
+      if (isPastA && isPastB) {
+        return dateA.getTime() - dateB.getTime();
+      }
+      if (!isPastA && !isPastB) {
+        return dateA.getTime() - dateB.getTime();
+      }
+      return isPastA ? 1 : -1;
     });
+
+    this.dataSource.data = sortedMatches;
+  }
+
+  // Gestion des filtres
+  applyFilters() {
+    let filtered = [...this.dataSource.data];
+
+    // Filtre par type
+    if (this.filters.typeMatch !== 'tous') {
+      filtered = filtered.filter(m => m.typeMatch === this.filters.typeMatch);
+    }
+
+    // Filtre par statut
+    if (this.filters.statut !== 'tous') {
+      filtered = filtered.filter(m => {
+        const status = this.getMatchStatus(m);
+        return status === this.filters.statut;
+      });
+    }
+
+    // Filtre par date de début
+    if (this.filters.dateDebut) {
+      filtered = filtered.filter(m => 
+        new Date(m.dateMatch) >= this.filters.dateDebut!
+      );
+    }
+
+    // Filtre par date de fin
+    if (this.filters.dateFin) {
+      filtered = filtered.filter(m => 
+        new Date(m.dateMatch) <= this.filters.dateFin!
+      );
+    }
+
+    // Filtre par recherche textuelle
+    if (this.filters.searchText.trim()) {
+      const search = this.filters.searchText.toLowerCase();
+      filtered = filtered.filter(m => 
+        m.adversaire?.toLowerCase().includes(search) ||
+        m.commentaire?.toLowerCase().includes(search) ||
+        m.lieu?.toLowerCase().includes(search)
+      );
+    }
+
+    this.filteredDataSource.data = filtered;
+  }
+
+  resetFilters() {
+    this.filters = {
+      typeMatch: 'tous',
+      dateDebut: null,
+      dateFin: null,
+      searchText: '',
+      statut: 'tous'
+    };
+    this.applyFilters();
+  }
+
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  // Export Excel
+  exportToExcel() {
+    const dataToExport = this.filteredDataSource.data.map(match => ({
+      'Date': new Date(match.dateMatch).toLocaleDateString('fr-FR'),
+      'Type': match.typeMatch,
+      'Adversaire': match.adversaire || '-',
+      'Lieu': match.lieu || '-',
+      'Statut': this.getMatchStatusLabel(match),
+      'Arbitre Principal': match.arbitrePrincipalNomOccasionnel || this.getMembreName(match.arbitrePrincipal ?? null),
+      'Rapporteur': match.rapporteurNomOccasionnel || this.getMembreName(match.rapporteur ?? null),
+      'Forfait': match.forfait ? 'Oui' : 'Non',
+      'Équipe Forfait': match.forfait ? match.equipeForfait : '-',
+      'Commentaire': match.commentaire || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Matchs');
+    
+    const fileName = `matchs_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  }
+
+  // Export CSV
+  exportToCSV() {
+    const dataToExport = this.filteredDataSource.data.map(match => ({
+      'Date': new Date(match.dateMatch).toLocaleDateString('fr-FR'),
+      'Type': match.typeMatch,
+      'Adversaire': match.adversaire || '-',
+      'Lieu': match.lieu || '-',
+      'Statut': this.getMatchStatusLabel(match),
+      'Arbitre Principal': match.arbitrePrincipalNomOccasionnel || this.getMembreName(match.arbitrePrincipal ?? null),
+      'Rapporteur': match.rapporteurNomOccasionnel || this.getMembreName(match.rapporteur ?? null),
+      'Forfait': match.forfait ? 'Oui' : 'Non',
+      'Équipe Forfait': match.forfait ? match.equipeForfait : '-',
+      'Commentaire': match.commentaire || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `matchs_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Vérification si le match peut être modifié (présences/médias)
+  canAccessMatchData(match: Match): boolean {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    matchDate.setHours(0, 0, 0, 0);
+    return matchDate <= today;
+    
+  }
+
+  navigateToPresences(match: Match) {
+    if (!this.canAccessMatchData(match)) {
+      alert('Les présences ne sont accessibles que pour les matchs passés ou du jour.');
+      return;
+    }
+    this.router.navigate(['/presence', match.id]);
+  }
+
+  openMediaDialog(match: Match) {
+    if (!this.canAccessMatchData(match)) {
+      alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
+      width: '90vw',
+      maxWidth: '900px',
+      data: { matchId: match.id },
+      panelClass: 'media-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadData();
+      }
+    });
+  }
+
+  getMatchStatus(match: Match): string {
+    if (this.isMatchPlayed(match)) return 'joues';
+    if (this.isMatchMissed(match)) return 'manques';
+    return 'futurs';
+  }
+
+  getMatchStatusLabel(match: Match): string {
+    if (this.isMatchPlayed(match)) return 'Joué';
+    if (this.isMatchMissed(match)) return 'Manqué';
+    return 'À venir';
   }
 
   onTypeChange() {
@@ -226,11 +414,11 @@ this.dataSource.data = sortedMatches;
 
   getMembreName(membre: number | Membre | null): string {
     if (membre === null) {
-      return 'Inconnu';
+      return '-';
     }
     if (typeof membre === 'number') {
       const foundMembre = this.membres.find(m => m.id === membre);
-      return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : 'Inconnu';
+      return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : '-';
     } else {
       return `${membre?.nom} ${membre?.prenom}`;
     }
@@ -277,10 +465,11 @@ this.dataSource.data = sortedMatches;
         rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null,
         scoreAdversaire: this.newMatch.scoreAdversaire || null
       };
-      console.log(payload)
+      
       const saveObservable = this.editingMatch
         ? this.matchService.updateMatch(this.editingMatch.id, payload)
         : this.matchService.createMatch(payload);
+        
       saveObservable.subscribe({
         next: () => {
           this.loadData();
@@ -288,7 +477,7 @@ this.dataSource.data = sortedMatches;
           this.editingMatch = null;
         },
         error: (err) => {
-          console.error('Erreur lors de l’enregistrement du match:', err);
+          console.error('Erreur lors de l\'enregistrement du match:', err);
           this.isLoading = false;
         }
       });
@@ -309,15 +498,18 @@ this.dataSource.data = sortedMatches;
           id: 0, nom: '',
           isActive: false,
           discipline: '',
-          ville: 0,
-          stade: 0,
+          ville1: 0,
+          stade2: 0,
           jourMatch: '',
           typeEquipe: '',
           modeEquipe: 'STATIQUE',
           fraisAdhesion: 0,
-          ville1: {id: 0, nom: ''},
-          stade2: {id: 0, nom: ''},
-        
+          ville: { id: 0, nom: '' },
+          stade: { id: 0, nom: '' },
+          profilePhotoUrl: '',
+          heureMatch: '',
+          isPublic: false,
+          abreviation: ''
         },
         typeMatch: 'AMICAL',
         dateMatch: new Date().toISOString().split('T')[0],
@@ -326,15 +518,14 @@ this.dataSource.data = sortedMatches;
         commentaire: '',
         membreAnniversaire: '',
         mediaUrls: [],
-          forfait: false,
-          equipeForfait:'',
-           arbitrePrincipal: null,
+        forfait: false,
+        equipeForfait:'',
+        arbitrePrincipal: null,
         arbitrePrincipalNomOccasionnel: null,
         arbitreAssistant: null,
         arbitreAssistantNomOccasionnel: null,
         rapporteur: null,
         rapporteurNomOccasionnel: null
-          
       };
     }
   }
@@ -359,7 +550,7 @@ this.dataSource.data = sortedMatches;
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des données d’impression:', err);
+        console.error('Erreur lors du chargement des données d\'impression:', err);
         this.isLoading = false;
       }
     });
@@ -388,13 +579,12 @@ this.dataSource.data = sortedMatches;
     });
   }
 
-viewCalendar() {
+  viewCalendar() {
     if (!this.groupes || !this.dataSource.data) {
       console.error('Groupe ou données de match non disponibles.');
       return;
     }
 
-    // Crée une copie du tableau et la trie par date de match croissante
     const sortedMatches = [...this.dataSource.data].sort((a, b) => {
       return new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime();
     });
@@ -410,12 +600,6 @@ viewCalendar() {
         console.log('Calendrier fermé avec résultat:', result);
       }
     });
-}
-
-  generateCalendar() {
-    const jourDeMatch = this.groupes?.jourMatch || 'Sunday';
-    const calendar = this.generateMatchDates(jourDeMatch);
-    console.log('Calendrier généré:', calendar);
   }
 
   generateAndSaveMatches() {
@@ -436,11 +620,11 @@ viewCalendar() {
       }
 
       const newMatch: any = {
-        id: 0, // ID sera généré par le backend
-        typeMatch: 'INTERNE', // Par défaut
-        dateMatch: date.toISOString().split('T')[0], // Format YYYY-MM-DD
+        id: 0,
+        typeMatch: 'INTERNE',
+        dateMatch: date.toISOString().split('T')[0],
         adversaire: `${equipe1.nom} vs ${equipe2.nom}`,
-        lieu: '', // À définir si nécessaire
+        lieu: '',
         commentaire: '',
         membreAnniversaire: '',
         mediaUrls: []
@@ -452,7 +636,7 @@ viewCalendar() {
     forkJoin(matchesToSave.map(match => this.matchService.createMatch(match))).subscribe({
       next: () => {
         console.log('Matchs générés et enregistrés avec succès.');
-        this.loadData(); // Recharge la liste des matchs
+        this.loadData();
         this.isLoading = false;
       },
       error: (err) => {
@@ -483,29 +667,29 @@ viewCalendar() {
     return dates;
   }
 
-isMatchPlayed(match: Match): boolean {
-  const matchDate = new Date(match.dateMatch);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  isMatchPlayed(match: Match): boolean {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const hasRapporteur =
-    !!match.rapporteur ||
-    !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+    const hasRapporteur =
+      !!match.rapporteur ||
+      !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
 
-  return matchDate < today && hasRapporteur;
-}
+    return matchDate < today && hasRapporteur;
+  }
 
-isMatchMissed(match: Match): boolean {
-  const matchDate = new Date(match.dateMatch);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  isMatchMissed(match: Match): boolean {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const hasRapporteur =
-    !!match.rapporteur ||
-    (match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+    const hasRapporteur =
+      !!match.rapporteur ||
+      (match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
 
-  return matchDate < today && !hasRapporteur;
-}
+    return matchDate < today && !hasRapporteur;
+  }
 
   isMatchFuture(match: Match): boolean {
     const matchDate = new Date(match.dateMatch);
@@ -521,25 +705,10 @@ isMatchMissed(match: Match): boolean {
     return ['', ''];
   }
 
-  openMediaUploadDialog(match: Match) {
-    const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
-      width: '400px',
-      data: { matchId: match.id }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadData(); // Recharge les données après un upload réussi
-      }
-    });
-  }
-
-    onForfaitChange() {
-    // Si la case forfait est cochée, on parse le champ adversaire
+  onForfaitChange() {
     if (this.newMatch.forfait && this.newMatch.adversaire) {
       this.equipes = this.getEquipeNames(this.newMatch.adversaire);
     } else {
-      // Sinon, on réinitialise l'équipe forfait
       this.newMatch.equipeForfait = "";
       this.equipes = [];
     }
@@ -554,62 +723,36 @@ isMatchMissed(match: Match): boolean {
   }
 
   getMatchStatusClass(match: Match): string {
-  if (this.isMatchPlayed(match)) {
-    return 'status-played';
-  } else if (this.isMatchMissed(match)) {
-    return 'status-missed';
-  } else {
-    return 'status-future';
-  }
-}
-
-getMatchStatusIcon(match: Match): string {
-  if (this.isMatchPlayed(match)) {
-    return 'check_circle';
-  } else if (this.isMatchMissed(match)) {
-    return 'cancel';
-  } else {
-    return 'schedule';
-  }
-}
-
-// Méthode pour obtenir les infos du match ${this.getMembreName(match.membreAnniversaire)}
-getMatchInfo(match: Match): string {
-  switch (match.typeMatch) {
-    case 'ANNIVERSAIRE':
-      return `Anniversaire de `;
-    case 'DUEL':
-      return match.commentaire || 'Duel';
-    case 'AMICAL':
-    case 'INTERNE':
-      return match.adversaire || 'Match interne';
-    default:
-      return match.adversaire || '';
-  }
-}
-
-// Méthode pour ouvrir le dialog des médias (version améliorée)
-openMediaDialog(match: Match): void {
-  const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
-    width: '90vw',
-    maxWidth: '900px',
-    data: { matchId: match.id },
-    panelClass: 'media-dialog-container'
-  });
-
-  dialogRef.afterClosed().subscribe(result => {
-    if (result) {
-      // Recharger les données si des médias ont été uploadés
-      this.loadData();
+    if (this.isMatchPlayed(match)) {
+      return 'status-played';
+    } else if (this.isMatchMissed(match)) {
+      return 'status-missed';
+    } else {
+      return 'status-future';
     }
-  });
-}
+  }
 
-// // Garde la compatibilité avec l'ancienne méthode
-// openMediaUploadDialog(match: Match): void {
-//   this.openMediaDialog(match);
-// }
+  getMatchStatusIcon(match: Match): string {
+    if (this.isMatchPlayed(match)) {
+      return 'check_circle';
+    } else if (this.isMatchMissed(match)) {
+      return 'cancel';
+    } else {
+      return 'schedule';
+    }
+  }
 
-
-
+  getMatchInfo(match: Match): string {
+    switch (match.typeMatch) {
+      case 'ANNIVERSAIRE':
+        return `Anniversaire de ${match.membreAnniversaire}`;
+      case 'DUEL':
+        return match.commentaire || 'Duel';
+      case 'AMICAL':
+      case 'INTERNE':
+        return match.adversaire || 'Match interne';
+      default:
+        return match.adversaire || '';
+    }
+  }
 }

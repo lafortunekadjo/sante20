@@ -6,12 +6,17 @@ export interface Groupe {
   nom: string;
   isActive: boolean;
   discipline: string;
-  ville: number;
-  stade: number;
-  ville1: Ville;
-  stade2: Stade;
+  ville1: number;
+  stade2: number;
+  ville: Ville;
+  stade: Stade;
   jourMatch: string;
   typeEquipe: string;
   modeEquipe: 'STATIQUE' | 'DYNAMIQUE';
   fraisAdhesion: number;
+  profilePhotoUrl: string;
+  heureMatch:string;
+  isPublic:boolean;
+    abreviation: string;
 }
+

@@ -57,15 +57,19 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
     id: 0,
     nom: '',
     discipline: '',
-    ville: 0,
-    stade: 0,
-      ville1:{id: 0, nom: ''},
-      stade2: {id: 0, nom: ''},
+    ville1: 0,
+    stade2: 0,
+    ville: { id: 0, nom: '' },
+    stade: { id: 0, nom: '' },
     isActive: true,
     jourMatch: '',
     typeEquipe: '',
     modeEquipe: 'STATIQUE',
-    fraisAdhesion: 0
+    fraisAdhesion: 0,
+    profilePhotoUrl: '',
+    heureMatch: '',
+    isPublic: true,
+    abreviation: ''
   };
   villes: Ville[] = [];
   stades: Stade[] = [];
@@ -235,15 +239,19 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
       id: 0,
       nom: '',
       discipline: '',
-      ville1:{id: 0, nom: ''},
-      stade2: {id: 0, nom: ''},
-      ville:0,
-      stade: 0,
+      ville:{id: 0, nom: ''},
+      stade: {id: 0, nom: ''},
+      ville1:0,
+      stade2: 0,
       isActive: true,
       jourMatch: '',
       typeEquipe: '',
       modeEquipe: 'STATIQUE',
-      fraisAdhesion: 0
+      fraisAdhesion: 0,
+      profilePhotoUrl: '',
+      heureMatch:'',
+      isPublic:true,
+      abreviation:''
     };
   }
 

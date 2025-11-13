@@ -1,202 +1,199 @@
+<!-- Layout principal de l'application My2-0 -->
 <div class="app-container">
-  <!-- Navbar -->
-   <app-navbar (toggleMenu)="toggleSidebar()"></app-navbar>
+  <!-- Navbar - toujours visible -->
+  <app-navbar (toggleMenu)="toggleSidebar()"></app-navbar>
 
-  <!-- Layout principal -->
-  <div class="main-layout">
-    <!-- Bouton toggle sidebar (mobile) -->
-    <!-- <button 
-      mat-icon-button 
-      class="sidebar-toggle"
-      (click)="toggleSidebar()"
-      *ngIf="isMobile">
-      <mat-icon>{{ sidebarOpen ? 'close' : 'menu' }}</mat-icon>
-    </button> -->
-
-    <!-- Overlay pour mobile -->
+  <!-- Layout principal - adapté selon l'état de connexion -->
+  <div class="main-layout" [class.no-sidebar]="!authService.isLoggedIn()">
+    
+    <!-- Overlay pour mobile - seulement si connecté -->
     <div 
+      *ngIf="authService.isLoggedIn()"
       class="sidebar-overlay" 
       [class.active]="sidebarOpen && isMobile"
       (click)="closeSidebar()">
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar - seulement si connecté -->
     <aside 
+      *ngIf="authService.isLoggedIn()"
       class="sidebar"
       [class.open]="sidebarOpen"
       [class.mobile]="isMobile">
       
-      <!-- Header sidebar -->
+      <!-- Header sidebar avec design amélioré -->
       <div class="sidebar-header">
-        <mat-icon>dashboard</mat-icon>
-        <span>Navigation</span>
+        <div class="header-background"></div>
+        <div class="header-content">
+          <mat-icon class="logo-icon">sports_soccer</mat-icon>
+          <div class="logo-text">
+            <span class="app-name">{{ 'app.name' | translate }}</span>
+            <span class="app-subtitle">{{ 'app.subtitle' | translate }}</span>
+          </div>
+        </div>
       </div>
 
+      <mat-divider class="header-divider"></mat-divider>
+
       <!-- Menu navigation -->
-      <nav class="sidebar-nav">
+      <nav class="sidebar-nav" [class.loading]="isLoadingMenus">
         
-        <!-- Section: Général -->
-        <div class="nav-section">
-          <div class="section-title">Général</div>
+        <!-- Loading state -->
+        <div *ngIf="isLoadingMenus" class="sidebar-loading">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span>{{ 'common.loading' | translate }}...</span>
+        </div>
+
+        <!-- Navigation content -->
+        <ng-container *ngIf="!isLoadingMenus">
           
-          <a 
-            routerLink="/news-feed" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>newspaper</mat-icon>
-            <span>Actualités</span>
-          </a>
+          <!-- Section: Menus Communs -->
+          <div class="nav-section" *ngIf="menusCommuns.length > 0">
+            <div class="section-title">
+              <mat-icon>home</mat-icon>
+              <span>{{ 'nav.mainMenu' | translate }}</span>
+            </div>
 
-          <a 
-            routerLink="/objectifs" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>flag</mat-icon>
-            <span>Objectifs</span>
-          </a>
+            <a 
+              *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
+              [routerLink]="menu.route" 
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item"
+              [matTooltip]="menu.description"
+              matTooltipPosition="right"
+              matTooltipShowDelay="500">
+              <mat-icon>{{ menu.icone }}</mat-icon>
+              <span>{{ menu.label }}</span>
+              <div class="nav-indicator"></div>
+            </a>
+          </div>
 
-          <a 
-            routerLink="/suggestions" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>lightbulb</mat-icon>
-            <span>Suggestions</span>
-          </a>
-        </div>
+          <!-- Section: Administration -->
+          <div class="nav-section" *ngIf="isAdmin">
+            <div class="section-divider"></div>
+            <div class="section-title admin-section">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span>{{ 'nav.administration' | translate }}</span>
+            </div>
+            
+            <a 
+              routerLink="/admin/dashboard" 
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item admin-item">
+              <mat-icon>dashboard</mat-icon>
+              <span>{{ 'admin.dashboard' | translate }}</span>
+              <div class="nav-indicator"></div>
+            </a>
 
-        <!-- Section: Administration (si admin) -->
-        <div class="nav-section" *ngIf="isAdmin">
-          <div class="section-divider"></div>
-          <div class="section-title">Administration</div>
-          
-          <a 
-            routerLink="/groupes" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>group</mat-icon>
-            <span>Groupes</span>
-          </a>
+            <a 
+              routerLink="/admin/groupes" 
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item admin-item">
+              <mat-icon>group</mat-icon>
+              <span>{{ 'admin.groups' | translate }}</span>
+              <div class="nav-indicator"></div>
+            </a>
 
-          <a 
-            routerLink="/user" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>person</mat-icon>
-            <span>Utilisateurs</span>
-          </a>
-        </div>
+            <a 
+              routerLink="/admin/utilisateurs" 
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item admin-item">
+              <mat-icon>person</mat-icon>
+              <span>{{ 'admin.users' | translate }}</span>
+              <div class="nav-indicator"></div>
+            </a>
+          </div>
 
-        <!-- Section: Gestion (si responsable) -->
-        <div class="nav-section" *ngIf="isResponsable">
-          <div class="section-divider"></div>
-          <div class="section-title">Gestion</div>
+          <!-- Section: Menus Responsable -->
+          <div *ngIf="isResponsable && currentGroupeId">
+            
+            <!-- Menus dynamiques par catégorie -->
+            <div class="nav-section" *ngFor="let categorie of menuCategories">
+              <div class="section-divider"></div>
+              <div class="section-title category-section">
+                <mat-icon>{{ categorie.icone }}</mat-icon>
+                <span>{{ categorie.label }}</span>
+              </div>
 
-          <a 
-            routerLink="/equipe" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>groups</mat-icon>
-            <span>Équipes</span>
-          </a>
+              <!-- Menus de la catégorie -->
+              <a 
+                *ngFor="let menu of categorie.menus"
+                [routerLink]="menu.route.replace(':id', currentGroupeId.toString())" 
+                routerLinkActive="active"
+                (click)="onNavClick()"
+                class="nav-item category-item"
+                [matTooltip]="menu.description"
+                matTooltipPosition="right"
+                matTooltipShowDelay="500">
+                <mat-icon>{{ menu.icone }}</mat-icon>
+                <span>{{ menu.label }}</span>
+                <div class="nav-indicator"></div>
+              </a>
+            </div>
 
-          <a 
-            routerLink="/membre" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>people</mat-icon>
-            <span>Membres du groupe</span>
-          </a>
+            <!-- Message si pas de groupe sélectionné -->
+            <div *ngIf="!currentGroupeId" class="no-groupe-message">
+              <mat-icon>info_outline</mat-icon>
+              <div class="message-content">
+                <h4>Sélectionnez un groupe</h4>
+                <p>Sélectionnez un groupe pour accéder aux fonctionnalités</p>
+              </div>
+            </div>
+          </div>
 
-          <div class="section-divider"></div>
-          <div class="section-title">Activités</div>
-
-          <a 
-            routerLink="/match" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>sports_soccer</mat-icon>
-            <span>Matchs</span>
-          </a>
-
-          <a 
-            routerLink="/evenement" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>event</mat-icon>
-            <span>Événements</span>
-          </a>
-
-          <div class="section-divider"></div>
-          <div class="section-title">Discipline</div>
-
-          <a 
-            routerLink="/typesanction" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>category</mat-icon>
-            <span>Types de sanction</span>
-          </a>
-
-          <a 
-            routerLink="/sanction" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>gavel</mat-icon>
-            <span>Sanctions</span>
-          </a>
-
-          <div class="section-divider"></div>
-          <div class="section-title">Finances</div>
-
-          <a 
-            routerLink="/contribution2" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>monetization_on</mat-icon>
-            <span>Contributions</span>
-          </a>
-
-          <a 
-            routerLink="/contribution" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>payment</mat-icon>
-            <span>Cotisations</span>
-          </a>
-
-          <a 
-            routerLink="/depense" 
-            routerLinkActive="active"
-            (click)="onNavClick()"
-            class="nav-item">
-            <mat-icon>money_off</mat-icon>
-            <span>Sorties en caisse</span>
-          </a>
-        </div>
+        </ng-container>
       </nav>
 
-      <!-- Footer sidebar -->
+      <!-- Footer sidebar amélioré -->
       <div class="sidebar-footer">
-        <span>My2-0 © 2025</span>
+        <mat-divider></mat-divider>
+        
+        <!-- Informations utilisateur -->
+        <div class="user-info" *ngIf="user" (click)="openProfileEdit()">
+          <div class="user-avatar">
+            <img *ngIf="userProfileImage" 
+                 [src]="userProfileImage" 
+                 [alt]="user.username"
+                 class="avatar-image">
+            <mat-icon *ngIf="!userProfileImage" class="avatar-icon">account_circle</mat-icon>
+            <div class="status-indicator online"></div>
+          </div>
+          <div class="user-details">
+            <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+            <span class="user-role">{{ selectedRole }}</span>
+            <span class="user-status">En ligne</span>
+          </div>
+          <mat-icon class="edit-icon">edit</mat-icon>
+        </div>
+
+        <!-- Informations app -->
+        <div class="app-info">
+          <div class="version-info">
+            <span class="app-version">My 2.0 v2.0.1</span>
+            <span class="build-date">{{ getCurrentDate() | date:'shortDate' }}</span>
+          </div>
+          <div class="footer-links">
+            <button mat-button class="footer-link" (click)="viewSettings()">
+              <mat-icon>help_outline</mat-icon>
+            </button>
+            <button mat-button class="footer-link" (click)="viewSettings()">
+              <mat-icon>settings</mat-icon>
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
 
     <!-- Contenu principal -->
-    <main class="main-content">
-      <router-outlet></router-outlet>
+    <main class="main-content" [class.full-width]="!authService.isLoggedIn()">
+      <!-- Contenu de la page -->
+      <div class="page-content">
+        <router-outlet></router-outlet>
+      </div>
     </main>
   </div>
 </div>

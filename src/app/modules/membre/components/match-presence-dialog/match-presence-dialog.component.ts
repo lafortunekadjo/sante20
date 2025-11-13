@@ -13,6 +13,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { Presence } from '../../../../core/models/presence.model';
 import { BehaviorSubject } from 'rxjs';
+import { MatMenuModule } from "@angular/material/menu";
+import { MatListModule } from "@angular/material/list";
 
 
 
@@ -30,8 +32,11 @@ import { BehaviorSubject } from 'rxjs';
     FormsModule,
     MatCardModule,
     MatSnackBarModule,
+    MatMenuModule,
+    MatListModule,
     
-  ],
+    
+],
   templateUrl: './match-presence-dialog.component.html',
   styleUrls: ['./match-presence-dialog.component.scss']
 })
@@ -41,6 +46,7 @@ export class MatchPresenceDialogComponent implements OnInit {
   teams: string[] = [];
   selectedTeam: string = 'all';
   searchTerm: string = '';
+  snackBar: any;
 
   constructor(
     public dialogRef: MatDialogRef<MatchPresenceDialogComponent>,
@@ -50,6 +56,7 @@ export class MatchPresenceDialogComponent implements OnInit {
   ngOnInit(): void {
     // Filtrer les présences pour ce match spécifique
     // Tous ceux dans la liste sont présents
+    console.log(this.data.presences.value)
     this.allPresences = this.data.presences.value.filter(
       p => p.match.id === this.data.match.id
     );
@@ -240,6 +247,192 @@ export class MatchPresenceDialogComponent implements OnInit {
   clearSearch(): void {
     this.searchTerm = '';
     this.filterPresences();
+  }
+
+
+  /**
+   * Génère le texte formaté pour le partage
+   */
+  generateShareText(): string {
+    const matchDate = new Date(this.data.match.dateMatch);
+    const dateStr = matchDate.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+
+    let text = `⚽ COMPOSITION DU MATCH du ${this.data.match.dateMatch}\n`;
+    text += `📅 ${dateStr} - ${this.data.match.adversaire}\n`;
+    text += `${this.data.match.typeMatch ? `🏆 ${this.data.match.typeMatch}\n` : ''}`;
+    text += `\n━━━━━━━━━━━━━━━━━━\n`;
+    text += `👥 ${this.getTotalCount()} joueurs présents\n`;
+    text += `⚽ ${this.getPlayedCount()} ont joué | 🪑 ${this.getBenchCount()} spectateur(s)\n`;
+    text += `\n`;
+
+    // Statistiques globales
+    const totalButs = this.allPresences.reduce((sum, p) => sum + p.buts + p.penalti + p.butsContreSonCamp, 0);
+    const totalPasses = this.allPresences.reduce((sum, p) => sum + p.passes, 0);
+    if (totalButs > 0 || totalPasses > 0) {
+      text += `📊 STATISTIQUES GLOBALES\n`;
+      if (totalButs > 0) text += `⚽ ${totalButs} but${totalButs > 1 ? 's' : ''} marqué${totalButs > 1 ? 's' : ''}\n`;
+      if (totalPasses > 0) text += `🎯 ${totalPasses} passe${totalPasses > 1 ? 's' : ''} décisive${totalPasses > 1 ? 's' : ''}\n`;
+      text += `\n`;
+    }
+
+    // Par équipe
+    this.teams.forEach(team => {
+      const teamPresences = this.allPresences.filter(p => p.equipeMatch === team);
+      text += `━━━━━━━━━━━━━━━━━━\n`;
+      text += `🛡️ ÉQUIPE ${team.toUpperCase()}\n`;
+      text += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+      teamPresences.forEach(p => {
+        const name = this.getPlayerName(p);
+        let line = p.estCapitaine ? `👑 ${name}` : `• ${name}`;
+        
+        if (p.estHommeDuMatch) {
+          line += ` ⭐`;
+        }
+        
+        const stats: string[] = [];
+        if (p.buts > 0) stats.push(`⚽${p.buts}`);
+        if (p.penalti > 0) stats.push(`⚡️${p.penalti}`);
+        if (p.butsContreSonCamp > 0) stats.push(`🤦${p.butsContreSonCamp}`);
+        if (p.passes > 0) stats.push(`🎯${p.passes}`);
+        if (p.cartonsJaunes > 0) stats.push(`🟨${p.cartonsJaunes}`);
+        if (p.cartonsRouges > 0) stats.push(`🟥${p.cartonsRouges}`);
+        
+        if (stats.length > 0) {
+          line += ` (${stats.join(' ')})`;
+        }
+        
+        if (!p.aJoue) {
+          line += ` 🪑`;
+        }
+        
+        text += line + '\n';
+      });
+      text += `\n`;
+    });
+
+    // Homme du match
+    const motm = this.allPresences.find(p => p.estHommeDuMatch);
+    if (motm) {
+      text += `━━━━━━━━━━━━━━━━━━\n`;
+      text += `⭐ HOMME DU MATCH\n`;
+      text += `${this.getPlayerName(motm)}\n`;
+      if (this.hasStats(motm)) {
+        text += `${this.getPlayerStats(motm)}\n`;
+      }
+      text += `\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━\n`;
+    text += `🏅 Légende : ⚽ Buts | 🎯 Passes | 🟨 Carton jaune | 🟥 Carton rouge | 🪑 Remplaçant | 👑 Capitaine | ⭐ Homme du match`;
+
+    return text;
+  }
+
+  /**
+   * Partage sur WhatsApp
+   */
+  shareOnWhatsApp(): void {
+    const text = this.generateShareText();
+    const encodedText = encodeURIComponent(text);
+    
+    // WhatsApp Web
+    const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+    
+    // Tenter d'ouvrir dans une nouvelle fenêtre
+    const newWindow = window.open(whatsappUrl, '_blank');
+    
+    if (!newWindow) {
+      // Si le popup est bloqué, copier dans le presse-papier
+      this.copyToClipboard(text);
+      this.snackBar.open('Texte copié ! Collez-le dans WhatsApp', 'OK', {
+        duration: 5000,
+        horizontalPosition: 'center',
+        verticalPosition: 'top',
+        panelClass: ['success-snackbar']
+      });
+    } else {
+      this.snackBar.open('Ouverture de WhatsApp...', '', {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom'
+      });
+    }
+  }
+
+  /**
+   * Partage sur Facebook
+   */
+  shareOnFacebook(): void {
+    const text = this.generateShareText();
+    
+    // Facebook ne supporte pas le partage de texte pur via URL
+    // On copie le texte dans le presse-papier
+    this.copyToClipboard(text);
+    
+    // Ouvrir Facebook pour créer un post
+    const facebookUrl = 'https://www.facebook.com/';
+    window.open(facebookUrl, '_blank');
+    
+    this.snackBar.open('Texte copié ! Collez-le dans votre publication Facebook', 'OK', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+      panelClass: ['info-snackbar']
+    });
+  }
+
+  /**
+   * Copie le texte dans le presse-papier
+   */
+  private copyToClipboard(text: string): void {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(err => {
+        console.error('Erreur lors de la copie:', err);
+        this.fallbackCopyToClipboard(text);
+      });
+    } else {
+      this.fallbackCopyToClipboard(text);
+    }
+  }
+
+  /**
+   * Méthode de secours pour copier dans le presse-papier
+   */
+  private fallbackCopyToClipboard(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      console.error('Erreur lors de la copie:', err);
+    }
+    
+    document.body.removeChild(textArea);
+  }
+
+  /**
+   * Partage générique (copie dans le presse-papier)
+   */
+  copyShareText(): void {
+    const text = this.generateShareText();
+    this.copyToClipboard(text);
+    
+    this.snackBar.open('✓ Texte copié dans le presse-papier !', 'OK', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+      panelClass: ['success-snackbar']
+    });
   }
 
   /**

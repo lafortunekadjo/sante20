@@ -1,5 +1,3 @@
-// match.component.scss
-
 $primary-color: #1976d2;
 $success-color: #4caf50;
 $warning-color: #ff9800;
@@ -13,7 +11,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 // Container
 .match-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0;
   animation: fadeIn 0.3s ease-out;
@@ -102,9 +100,18 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
 
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     flex-direction: column;
+  }
+
+  .spacer {
+    flex: 1;
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
   }
 
   .action-btn {
@@ -120,9 +127,80 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       width: 100%;
       justify-content: center;
+    }
+  }
+
+  .view-toggle {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
+  }
+}
+
+// Panneau de filtres
+.filters-panel {
+  background-color: $background-light;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid $border-color;
+
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-primary;
+
+      mat-icon {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-field {
+      width: 100%;
+    }
+  }
+
+  .filters-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid $border-color;
+
+    .results-count {
+      color: $text-secondary;
+      font-size: 14px;
+
+      strong {
+        color: $primary-color;
+        font-size: 16px;
+      }
     }
   }
 }
@@ -245,7 +323,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// Liste des matchs
+// Vue en cartes
 .matches-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -378,9 +456,113 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     button {
       transition: $transition;
 
-      &:hover {
+      &:hover:not(:disabled) {
         transform: scale(1.1);
         background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Vue en liste (tableau)
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+
+  .matches-table {
+    width: 100%;
+    background-color: white;
+
+    th {
+      background-color: $background-light;
+      font-weight: 600;
+      color: $text-primary;
+      padding: 16px;
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid $border-color;
+    }
+
+    tr:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .table-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      strong {
+        color: $text-primary;
+      }
+
+      .forfait-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background-color: rgba(255, 152, 0, 0.1);
+        color: $warning-color;
+        border-radius: 8px;
+        font-size: 12px;
+        width: fit-content;
+
+        mat-icon {
+          font-size: 14px;
+          width: 14px;
+          height: 14px;
+        }
+      }
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      width: fit-content;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      &.status-played {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: $success-color;
+      }
+
+      &.status-missed {
+        background-color: rgba(244, 67, 54, 0.1);
+        color: $danger-color;
+      }
+
+      &.status-future {
+        background-color: rgba(25, 118, 210, 0.1);
+        color: $primary-color;
+      }
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 4px;
+
+      button {
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
       }
     }
   }
@@ -453,4 +635,20 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 18px;
   margin-right: 8px;
   vertical-align: middle;
+}
+
+// Responsive pour le tableau
+@media (max-width: 768px) {
+  .table-container {
+    .matches-table {
+      th, td {
+        padding: 12px 8px;
+        font-size: 13px;
+      }
+
+      .table-actions {
+        flex-wrap: wrap;
+      }
+    }
+  }
 }

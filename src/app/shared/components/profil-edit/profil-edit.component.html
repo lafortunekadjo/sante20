@@ -1,94 +1,279 @@
-<div class="main-container">
-  <div class="form-card">
-    <div class="card-header">
-      <h1 class="card-title">Mise à jour du Profil</h1>
+<div class="dialog-container">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <div class="avatar-section">
+        <div class="avatar">{{ getInitials() || '?' }}</div>
+        <div class="header-text">
+          <h2 class="dialog-title">
+            <mat-icon>person</mat-icon>
+            Modifier mon profil
+          </h2>
+          <p class="dialog-subtitle">Mettez à jour vos informations personnelles</p>
+        </div>
+      </div>
+      <button mat-icon-button class="close-button" (click)="cancelEdit()" matTooltip="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
+  </div>
 
-    <div class="card-body">
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p class="loading-text">Chargement des données...</p>
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p class="loading-text">Chargement de vos données...</p>
+  </div>
+
+  <!-- Form Content -->
+  <div *ngIf="!isLoading" class="dialog-content">
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      
+      <!-- Section Compte -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">account_circle</mat-icon>
+          <h3 class="section-title">Informations du compte</h3>
+        </div>
+        
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Nom d'utilisateur</mat-label>
+            <input 
+              matInput 
+              formControlName="username" 
+              placeholder="Votre nom d'utilisateur"
+              autocomplete="username">
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <mat-error *ngIf="username?.invalid">{{ getErrorMessage('username') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Email</mat-label>
+            <input 
+              matInput 
+              type="email"
+              formControlName="email" 
+              placeholder="exemple@domaine.com"
+              autocomplete="email">
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error *ngIf="email?.invalid">{{ getErrorMessage('email') }}</mat-error>
+          </mat-form-field>
+        </div>
       </div>
 
-      <div *ngIf="!isLoading" class="div-form">
-        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+      <mat-divider></mat-divider>
 
-          <!-- Section Informations Utilisateur -->
-          <h2 class="section-title">Informations Utilisateur</h2>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="username" class="form-label">Nom d'utilisateur</label>
-              <input id="username" type="text" formControlName="username" class="form-input" placeholder="Nom d'utilisateur">
-              <p *ngIf="profileForm.get('username')?.hasError('required') && profileForm.get('username')?.touched" class="error-message">
-                Le nom d'utilisateur est requis
-              </p>
-            </div>
-            <div class="form-group">
-              <label for="email" class="form-label">Email</label>
-              <input id="email" type="email" formControlName="email" class="form-input" placeholder="exemple@domaine.com">
-              <p *ngIf="profileForm.get('email')?.hasError('required') && profileForm.get('email')?.touched" class="error-message">
-                L'email est requis
-              </p>
-              <p *ngIf="profileForm.get('email')?.hasError('email') && profileForm.get('email')?.touched" class="error-message">
-                Email invalide
-              </p>
-            </div>
-          </div>
-          <!-- Section Informations Membre -->
-          <h2 class="section-title">Informations Membre</h2>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="nom" class="form-label">Nom</label>
-              <input id="nom" type="text" formControlName="nom" class="form-input" placeholder="Nom">
-            </div>
-            <div class="form-group">
-              <label for="prenom" class="form-label">Prénom</label>
-              <input id="prenom" type="text" formControlName="prenom" class="form-input" placeholder="Prénom">
-            </div>
-            <div class="form-group">
-              <label for="date_naissance" class="form-label">Date de naissance</label>
-              <input id="date_naissance" type="date" formControlName="date_naissance" class="form-input">
-            </div>
-            <div class="form-group">
-              <label for="poste" class="form-label">Poste</label>
-              <input id="poste" type="text" formControlName="poste" class="form-input" placeholder="Poste">
-            </div>
-            <div class="form-group">
-              <label for="cni" class="form-label">CNI</label>
-              <input id="cni" type="text" formControlName="cni" class="form-input" placeholder="CNI">
-            </div>
-            <div class="form-group">
-              <label for="adresse" class="form-label">Adresse</label>
-              <input id="adresse" type="text" formControlName="adresse" class="form-input" placeholder="Adresse">
-            </div>
-            <div class="form-group">
-              <label for="tel" class="form-label">Tel</label>
-              <input id="tel" type="text" formControlName="tel" class="form-input" placeholder="Tel">
-            </div>
-            <div class="form-group">
-              <label for="sexe" class="form-label">Sexe</label>
-              <select id="sexe" formControlName="sexe" class="form-input">
-                <option value="" disabled>Sélectionner...</option>
-                <option value="feminin">Féminin</option>
-                <option value="masculin">Masculin</option>
-              </select>
-            </div>
-            <div class="form-group checkbox-group">
-              <label>
-                <input id="assurance" type="checkbox" formControlName="assurance" class="form-checkbox">
-                Assurance
-              </label>
-            </div>
-          </div>
+      <!-- Section Identité -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">badge</mat-icon>
+          <h3 class="section-title">Identité</h3>
+        </div>
+        
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Nom</mat-label>
+            <input 
+              matInput 
+              formControlName="nom" 
+              placeholder="Votre nom"
+              autocomplete="family-name">
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error *ngIf="nom?.invalid">{{ getErrorMessage('nom') }}</mat-error>
+          </mat-form-field>
 
-          <!-- Boutons -->
-          <div class="action-buttons">
-            <button type="button" (click)="cancelEdit()" class="button cancel-button">Annuler</button>
-            <button type="submit" [disabled]="profileForm.invalid" class="button save-button">Enregistrer</button>
-          </div>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Prénom</mat-label>
+            <input 
+              matInput 
+              formControlName="prenom" 
+              placeholder="Votre prénom"
+              autocomplete="given-name">
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error *ngIf="prenom?.invalid">{{ getErrorMessage('prenom') }}</mat-error>
+          </mat-form-field>
 
-        </form>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Date de naissance</mat-label>
+            <input 
+              matInput 
+              [matDatepicker]="picker"
+              formControlName="date_naissance"
+              [max]="maxDate"
+              placeholder="JJ/MM/AAAA">
+            <mat-icon matPrefix>cake</mat-icon>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-hint *ngIf="calculateAge()">{{ calculateAge() }} ans</mat-hint>
+            <mat-error *ngIf="date_naissance?.invalid">{{ getErrorMessage('date_naissance') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Sexe</mat-label>
+            <mat-select formControlName="sexe" placeholder="Sélectionner...">
+              <mat-option value="masculin">
+                <mat-icon class="option-icon">male</mat-icon>
+                Masculin
+              </mat-option>
+              <mat-option value="feminin">
+                <mat-icon class="option-icon">female</mat-icon>
+                Féminin
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>wc</mat-icon>
+            <mat-error *ngIf="sexe?.invalid">{{ getErrorMessage('sexe') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>CNI</mat-label>
+            <input 
+              matInput 
+              formControlName="cni" 
+              placeholder="Numéro CNI"
+              maxlength="15">
+            <mat-icon matPrefix>credit_card</mat-icon>
+            <mat-hint>9 à 15 chiffres</mat-hint>
+            <mat-error *ngIf="cni?.invalid">{{ getErrorMessage('cni') }}</mat-error>
+          </mat-form-field>
+        </div>
       </div>
-    </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Section Contact & Poste -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">contacts</mat-icon>
+          <h3 class="section-title">Contact & Poste</h3>
+        </div>
+        <div>
+              <div class="form-grid">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>Téléphone</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="tel" 
+                    placeholder="Numéro de téléphone"
+                    type="tel"
+                    maxlength="15"
+                    autocomplete="tel">
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <mat-hint>9 à 15 chiffres</mat-hint>
+                  <mat-error *ngIf="tel?.invalid">{{ getErrorMessage('tel') }}</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>Adresse</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="adresse" 
+                    placeholder="Votre adresse complète"
+                    autocomplete="street-address">
+                  <mat-icon matPrefix>home</mat-icon>
+                </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Poste</mat-label>
+            <mat-select formControlName="poste" placeholder="Sélectionner...">
+              <mat-option value="Gardien">
+                <mat-icon class="option-icon">sports_handball</mat-icon>
+                Gardien
+              </mat-option>
+              <mat-option value="Défenseur">
+                <mat-icon class="option-icon">shield</mat-icon>
+                Défenseur
+              </mat-option>
+              <mat-option value="Milieu">
+                <mat-icon class="option-icon">sports_soccer</mat-icon>
+                Milieu
+              </mat-option>
+              <mat-option value="Attaquant">
+                <mat-icon class="option-icon">flash_on</mat-icon>
+                Attaquant
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>sports</mat-icon>
+          </mat-form-field>
+<!-- 
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Rôle CO</mat-label>
+            <input 
+              matInput 
+              formControlName="roleCo" 
+              placeholder="Rôle dans le club">
+            <mat-icon matPrefix>star</mat-icon>
+          </mat-form-field> -->
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Section Assurance -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">verified_user</mat-icon>
+          <h3 class="section-title">Assurance</h3>
+        </div>
+        
+        <div class="assurance-container">
+          <mat-checkbox formControlName="assurance" color="primary" class="assurance-checkbox">
+            <span class="checkbox-label">
+              <mat-icon class="checkbox-icon">health_and_safety</mat-icon>
+              Je confirme avoir une assurance sportive valide
+            </span>
+          </mat-checkbox>
+          <p class="assurance-hint">
+            <mat-icon class="hint-icon">info</mat-icon>
+            L'assurance est obligatoire pour participer aux matchs et entraînements
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="dialog-actions">
+        <div class="actions-left">
+          <button 
+            mat-button 
+            type="button"
+            (click)="resetForm()"
+            [disabled]="!hasChanges() || isSaving"
+            matTooltip="Réinitialiser aux valeurs d'origine">
+            <mat-icon>refresh</mat-icon>
+            Réinitialiser
+          </button>
+        </div>
+        
+        <div class="actions-right">
+          <button 
+            mat-stroked-button 
+            type="button"
+            (click)="cancelEdit()"
+            [disabled]="isSaving"
+            class="cancel-button">
+            <mat-icon>close</mat-icon>
+            Annuler
+          </button>
+          
+          <button 
+            mat-raised-button 
+            color="primary"
+            type="submit"
+            [disabled]="profileForm.invalid || !hasChanges() || isSaving"
+            class="save-button">
+            <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
+            <mat-icon *ngIf="!isSaving">save</mat-icon>
+            <span *ngIf="!isSaving">Enregistrer</span>
+            <span *ngIf="isSaving">Enregistrement...</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Indicateur de modifications -->
+  <div class="changes-indicator" *ngIf="hasChanges() && !isLoading">
+    <mat-icon>info</mat-icon>
+    <span>Vous avez des modifications non enregistrées</span>
   </div>
 </div>

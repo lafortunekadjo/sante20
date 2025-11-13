@@ -1,0 +1,158 @@
+<div class="details-dialog">
+  <div class="dialog-header" [style.background-image]="'url(' + (data.groupe.imageUrl || 'assets/default-groupe.jpg') + ')'">
+    <div class="header-overlay">
+      <h2 class="dialog-title">{{ data.groupe.nom }}</h2>
+      <p class="dialog-subtitle">{{ data.groupe.discipline }} - {{ data.groupe.typeEquipe }}</p>
+    </div>
+    <button mat-icon-button class="close-btn" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-content">
+    <mat-tab-group>
+      <!-- Informations -->
+      <mat-tab [label]="'common.details' | translate">
+        <div class="tab-content">
+          <div class="info-section">
+            <h3 class="section-title">
+              <mat-icon>info</mat-icon>
+              {{ 'profile.personalInfo' | translate }}
+            </h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <mat-icon>sports</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.discipline' | translate }}</span>
+                  <span class="info-value">{{ data.groupe.discipline }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>place</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.city' | translate }}</span>
+                  <span class="info-value">
+                    {{ data.groupe.ville }}{{ data.groupe.quartier ? ' - ' + data.groupe.quartier : '' }}
+                  </span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>stadium</mat-icon>
+                <div>
+                  <span class="info-label">Stade</span>
+                  <span class="info-value">{{ data.groupe.stade }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>event</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.matchDay' | translate }}</span>
+                  <span class="info-value">
+                    {{ data.groupe.jourMatch }}{{ data.groupe.heureMatch ? ' à ' + data.groupe.heureMatch : '' }}
+                  </span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>category</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.teamType' | translate }}</span>
+                  <span class="info-value">{{ data.groupe.typeEquipe }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>tune</mat-icon>
+                <div>
+                  <span class="info-label">Mode</span>
+                  <span class="info-value">{{ data.groupe.modeEquipe }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <mat-icon>payments</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.fees' | translate }}</span>
+                  <span class="info-value">{{ data.groupe.fraisAdhesion }} FCFA</span>
+                </div>
+              </div>
+              <div class="info-item" *ngIf="data.groupe.niveauRequis">
+                <mat-icon>trending_up</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.level' | translate }}</span>
+                  <span class="info-value">{{ data.groupe.niveauRequis }}</span>
+                </div>
+              </div>
+              <div class="info-item" *ngIf="data.groupe.capaciteMax">
+                <mat-icon>group</mat-icon>
+                <div>
+                  <span class="info-label">{{ 'groups.members' | translate }}</span>
+                  <span class="info-value">{{ data.groupe.nombreMembres || 0 }} / {{ data.groupe.capaciteMax }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="description-section" *ngIf="data.groupe.description">
+            <h3 class="section-title">
+              <mat-icon>description</mat-icon>
+              Description
+            </h3>
+            <p class="description-text">{{ data.groupe.description }}</p>
+          </div>
+
+          <div class="status-section">
+            <mat-chip-set>
+              <mat-chip [highlighted]="data.groupe.accepteNouveauxMembres" 
+                        [color]="data.groupe.accepteNouveauxMembres ? 'primary' : 'warn'">
+                <mat-icon>{{ data.groupe.accepteNouveauxMembres ? 'check_circle' : 'cancel' }}</mat-icon>
+                {{ data.groupe.accepteNouveauxMembres ? ('groups.acceptNewMembers' | translate) : ('Groupe complet') }}
+              </mat-chip>
+              <mat-chip highlighted color="accent">
+                <mat-icon>verified</mat-icon>
+                {{ 'Groupe actif' }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Localisation -->
+      <mat-tab label="Localisation">
+        <div class="tab-content">
+          <div class="location-info">
+            <mat-icon class="large-icon">place</mat-icon>
+            <h3>{{ data.groupe.stade }}</h3>
+            <p>{{ data.groupe.ville }}{{ data.groupe.quartier ? ', ' + data.groupe.quartier : '' }}</p>
+            <p *ngIf="data.groupe.localisation" class="location-details">
+              {{ data.groupe.localisation }}
+            </p>
+            <!-- Ici vous pouvez ajouter une carte Google Maps -->
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+
+  <div class="dialog-actions">
+    <button mat-stroked-button (click)="close()">
+      <mat-icon>close</mat-icon>
+      {{ 'common.close' | translate }}
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary"
+      (click)="demanderAdhesion()">
+      <mat-icon>person_add</mat-icon>
+      {{ 'demands.title' | translate }}
+    </button>
+
+  <!-- Bouton demande de match amical -->
+    <button 
+      mat-raised-button 
+      color="primary"
+      (click)="demanderMatchAmical()">
+      <mat-icon>sports_soccer</mat-icon>
+      {{ 'matchRequest.button' | translate }}
+    </button>
+  </div>
+</div>

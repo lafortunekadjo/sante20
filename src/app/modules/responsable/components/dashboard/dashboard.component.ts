@@ -25,6 +25,7 @@ import { Stats } from '../../../../core/models/stats.model';
 import { BreakpointObserver, Breakpoints, LayoutModule } from '@angular/cdk/layout';
 import { map, Observable } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 // Enregistrer les contrôleurs localement
@@ -64,6 +65,7 @@ Chart.register(
     MatListModule, 
     LayoutModule,
     MatProgressSpinnerModule,
+    TranslateModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -105,7 +107,7 @@ stats: Stats = {
   barChartType: ChartType = 'bar';
    gridCols!: Observable<number>;
 
-  constructor(private statsService: StatsService, private fb: FormBuilder, private breakpointObserver: BreakpointObserver) {
+  constructor(private statService: StatsService, private fb: FormBuilder, private breakpointObserver: BreakpointObserver) {
     this.dateRangeForm = this.fb.group({
       start: [null],
       end: [null],
@@ -154,7 +156,7 @@ stats: Stats = {
   private loadStats(startDate?: Date, endDate?: Date): void {
      this.isLoading = true;
     const groupeId = 1; // Remplacez par l'ID du groupe actuel (à récupérer dynamiquement)
-   this.statsService.getResponsableStats(startDate, endDate).subscribe({
+   this.statService.getResponsableStats(startDate, endDate).subscribe({
       next: (data) => {
         this.stats = {
           ...this.stats,

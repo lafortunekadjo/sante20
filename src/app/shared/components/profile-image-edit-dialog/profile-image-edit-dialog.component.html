@@ -1,20 +1,276 @@
-<h1 mat-dialog-title class="dialog-title">Modifier la photo de profil</h1>
-
-<div mat-dialog-content class="dialog-content">
-  <div class="image-preview-container">
-    <img [src]="imagePreviewUrl || '../assets/default-profile.jpg'" alt="Aperçu de la photo de profil" class="image-preview">
-  </div>
-
-  <div class="file-input-container">
-    <input type="file" #fileInput hidden (change)="onFileSelected($event)" accept="image/*">
-    <button mat-raised-button color="primary" class="choose-button" (click)="fileInput.click()">
-      <mat-icon>folder_open</mat-icon>
-      <span>Choisir une photo</span>
+<div class="image-edit-dialog">
+  <!-- Header harmonisé -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <mat-icon class="header-icon">photo_camera</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 class="dialog-title">{{ 'profile.imageEdit.title' | translate }}</h2>
+        <p class="dialog-subtitle">{{ 'profile.imageEdit.subtitle' | translate }}</p>
+      </div>
+    </div>
+    <button mat-icon-button 
+            class="close-button" 
+            (click)="onCancel()" 
+            [matTooltip]="'common.close' | translate">
+      <mat-icon>close</mat-icon>
     </button>
   </div>
-</div>
 
-<div mat-dialog-actions class="dialog-actions">
-  <button mat-button class="cancel-button" (click)="onCancel()">Annuler</button>
-  <button mat-raised-button color="accent" class="save-button" [disabled]="!selectedFile" (click)="onSave()">Enregistrer</button>
+  <!-- Loading overlay -->
+  <div *ngIf="isProcessing" class="loading-overlay">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'profile.imageEdit.processing' | translate }}...</h3>
+      <p>{{ 'common.pleaseWait' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content" [class.processing]="isProcessing">
+    
+    <!-- Preview Area -->
+    <div class="preview-section">
+      <div class="preview-container">
+        <div class="canvas-wrapper">
+          <canvas 
+            #canvas 
+            class="preview-canvas"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp()"
+            (mouseleave)="onMouseUp()">
+          </canvas>
+          
+          <!-- Placeholder si pas d'image -->
+          <div *ngIf="!originalImage" class="placeholder">
+            <div class="placeholder-content">
+              <div class="placeholder-icon-wrapper">
+                <mat-icon class="placeholder-icon">add_photo_alternate</mat-icon>
+              </div>
+              <div class="placeholder-text">
+                <h4>{{ 'profile.imageEdit.noImage' | translate }}</h4>
+                <p>{{ 'profile.imageEdit.selectImage' | translate }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info fichier -->
+        <div *ngIf="selectedFile" class="file-info">
+          <div class="file-info-content">
+            <mat-icon class="info-icon">description</mat-icon>
+            <div class="file-details">
+              <span class="file-name">{{ selectedFile.name }}</span>
+              <span class="file-size">{{ getFileInfo() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section" *ngIf="originalImage">
+      
+      <!-- Actions rapides -->
+      <div class="quick-actions-container">
+        <h4 class="section-title">
+          <mat-icon>tune</mat-icon>
+          <span>{{ 'profile.imageEdit.quickActions' | translate }}</span>
+        </h4>
+        
+        <div class="quick-actions">
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="rotateLeft()"
+            [matTooltip]="'profile.imageEdit.rotateLeft' | translate"
+            class="action-btn">
+            <mat-icon>rotate_left</mat-icon>
+          </button>
+          
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="rotateRight()"
+            [matTooltip]="'profile.imageEdit.rotateRight' | translate"
+            class="action-btn">
+            <mat-icon>rotate_right</mat-icon>
+          </button>
+          
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="flipHorizontal()"
+            [matTooltip]="'profile.imageEdit.flipHorizontal' | translate"
+            class="action-btn">
+            <mat-icon>flip</mat-icon>
+          </button>
+          
+          <button 
+            mat-mini-fab 
+            color="accent" 
+            (click)="resetControls()"
+            [matTooltip]="'profile.imageEdit.reset' | translate"
+            class="action-btn reset-btn">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contrôles avancés -->
+      <div class="advanced-controls">
+        <h4 class="section-title">
+          <mat-icon>settings</mat-icon>
+          <span>{{ 'profile.imageEdit.adjustments' | translate }}</span>
+        </h4>
+        
+        <div class="sliders-container">
+          
+          <!-- Zoom -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <div class="slider-info">
+                <mat-icon class="slider-icon">zoom_in</mat-icon>
+                <span class="slider-label">{{ 'profile.imageEdit.zoom' | translate }}</span>
+              </div>
+              <span class="slider-value">{{ (scale * 100) | number:'1.0-0' }}%</span>
+            </div>
+            <mat-slider 
+              min="0.5" 
+              max="3" 
+              step="0.1" 
+              [(ngModel)]="scale"
+              (input)="onScaleChange()"
+              class="custom-slider">
+              <input matSliderThumb>
+            </mat-slider>
+          </div>
+
+          <!-- Luminosité -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <div class="slider-info">
+                <mat-icon class="slider-icon">brightness_6</mat-icon>
+                <span class="slider-label">{{ 'profile.imageEdit.brightness' | translate }}</span>
+              </div>
+              <span class="slider-value">{{ brightness }}%</span>
+            </div>
+            <mat-slider 
+              min="50" 
+              max="150" 
+              step="5" 
+              [(ngModel)]="brightness"
+              (input)="onBrightnessChange()"
+              class="custom-slider">
+              <input matSliderThumb>
+            </mat-slider>
+          </div>
+
+          <!-- Contraste -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <div class="slider-info">
+                <mat-icon class="slider-icon">contrast</mat-icon>
+                <span class="slider-label">{{ 'profile.imageEdit.contrast' | translate }}</span>
+              </div>
+              <span class="slider-value">{{ contrast }}%</span>
+            </div>
+            <mat-slider 
+              min="50" 
+              max="150" 
+              step="5" 
+              [(ngModel)]="contrast"
+              (input)="onContrastChange()"
+              class="custom-slider">
+              <input matSliderThumb>
+            </mat-slider>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- File input actions -->
+    <div class="file-actions-container">
+      <h4 class="section-title">
+        <mat-icon>folder_open</mat-icon>
+        <span>{{ 'profile.imageEdit.imageSource' | translate }}</span>
+      </h4>
+      
+      <div class="file-actions">
+        <input 
+          type="file" 
+          #fileInput 
+          hidden 
+          (change)="onFileSelected($event)" 
+          accept="image/*">
+        
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="openFileSelector()"
+          class="action-button primary-action">
+          <mat-icon>folder_open</mat-icon>
+          <span>{{ selectedFile ? ('profile.imageEdit.changePhoto' | translate) : ('profile.imageEdit.choosePhoto' | translate) }}</span>
+        </button>
+
+        <button 
+          mat-stroked-button 
+          (click)="loadFromUrl()"
+          class="action-button secondary-action"
+          [matTooltip]="'profile.imageEdit.loadFromUrl' | translate">
+          <mat-icon>link</mat-icon>
+          <span>URL</span>
+        </button>
+
+        <button 
+          *ngIf="selectedFile"
+          mat-stroked-button 
+          color="warn"
+          (click)="removeImage()"
+          class="action-button danger-action"
+          [matTooltip]="'profile.imageEdit.removeImage' | translate">
+          <mat-icon>delete</mat-icon>
+          <span>{{ 'common.delete' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Actions footer -->
+  <div class="dialog-actions">
+    <div class="actions-info">
+      <div class="info-content">
+        <mat-icon class="info-icon">touch_app</mat-icon>
+        <span class="info-text">{{ 'profile.imageEdit.dragToPosition' | translate }}</span>
+      </div>
+    </div>
+    
+    <div class="actions-buttons">
+      <button 
+        mat-stroked-button 
+        (click)="onCancel()"
+        [disabled]="isProcessing"
+        class="cancel-btn">
+        <mat-icon>close</mat-icon>
+        <span>{{ 'common.cancel' | translate }}</span>
+      </button>
+      
+      <button 
+        mat-raised-button 
+        color="primary" 
+        [disabled]="!selectedFile || isProcessing" 
+        (click)="onSave()"
+        class="save-btn">
+        <mat-spinner diameter="20" *ngIf="isProcessing"></mat-spinner>
+        <mat-icon *ngIf="!isProcessing">save</mat-icon>
+        <span>{{ isProcessing ? ('profile.imageEdit.saving' | translate) + '...' : ('common.save' | translate) }}</span>
+      </button>
+    </div>
+  </div>
 </div>

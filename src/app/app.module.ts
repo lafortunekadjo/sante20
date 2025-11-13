@@ -57,7 +57,8 @@ Chart.register(
     MatSelectModule,
     MatFormFieldModule,
     MatButtonModule, 
-    NavbarComponent
+    NavbarComponent,
+    
     
   ],
   providers: [

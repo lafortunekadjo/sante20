@@ -1,5 +1,5 @@
 export interface Objectif {
-  id?: number;
+  id: number;
   membre: {
     id: number;
   };

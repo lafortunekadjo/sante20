@@ -18,11 +18,12 @@ export class ContributionService {
     const payload = {
     commentaire: editContribution.commentaire,
       description: editContribution.description,
-      idEvenement: editContribution.idEvenement?.id,
+      idEvenement: editContribution.evenement?.id,
       delaiContribution: editContribution.delaiContribution,
       montantMin: editContribution.montantMin,
       montantCible: editContribution.montantCible || null,
-      open: editContribution.open
+      open: editContribution.open,
+      adhesion: editContribution.isAdhesion
          };
          
     return this.http.put<Contribution>(`${environment.apiUrl}/contributions/${id}`, editContribution);
@@ -44,7 +45,8 @@ export class ContributionService {
       delaiContribution: contribution.delaiContribution,
       montantMin: contribution.montantMin,
       montantCible: contribution.montantCible || null,
-      open: contribution.open
+      open: contribution.open,
+       adhesion: contribution.isAdhesion
     };
     return this.http.post<Contribution>(`${environment.apiUrl}/contributions`, payload);
   }

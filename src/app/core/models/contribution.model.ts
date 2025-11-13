@@ -3,7 +3,7 @@ import { Membre } from "./membre.model";
 
 export interface Contribution {
   id?: number;
-  idEvenement: Evenement | null;
+  evenement: Evenement | null;
   commentaire: string;
   description: string;
   delaiContribution: Date;
@@ -11,7 +11,8 @@ export interface Contribution {
   montantCible?: number;
   groupe: number;
   montantCollecteActuel: number;
-  open:boolean
+  open:boolean;
+  isAdhesion:boolean;
 }
 
 export interface ContributionIndividuelle {

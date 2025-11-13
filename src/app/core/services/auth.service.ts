@@ -1,12 +1,13 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, tap , switchMap, throwError, catchError, map, forkJoin, of} from 'rxjs';
+import { Observable, tap , switchMap, throwError, catchError, map, forkJoin, of, BehaviorSubject} from 'rxjs';
 import { environment } from '../../environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { User } from '../models/user';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Geolocation } from '@capacitor/geolocation';
 import { Membre } from '../models/membre.model';
+import { Route, Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +29,30 @@ export class AuthService {
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
-  constructor(private http: HttpClient,private sanitizer: DomSanitizer) {}
+  private currentGroupeIdSubject = new BehaviorSubject<number | null>(null);
+  public currentGroupeId$ = this.currentGroupeIdSubject.asObservable();
+
+  constructor(private http: HttpClient,private sanitizer: DomSanitizer, private router: Router) {
+    this.initializeAuthState();
+  }
+
+
+     /**
+   * Initialise l'état du service à partir du localStorage au chargement.
+   */
+  private initializeAuthState(): void {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+        this.token = storedToken;
+    }
+    
+    // Initialise le BehaviorSubject avec le groupe stocké
+    const storedGroupeId = localStorage.getItem('currentGroupeId');
+    if (storedGroupeId) {
+      const id = parseInt(storedGroupeId, 10);
+      this.currentGroupeIdSubject.next(id);
+    }
+  }
 
 login(username: string, password: string): Observable<any> {
   const loginPayload = { username, password };
@@ -73,6 +97,7 @@ login(username: string, password: string): Observable<any> {
       this.roles = userInfo.roles || [];
       this.username = userInfo.username || null;
       this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
+      localStorage.setItem('profilUrl', environment.imageUrl + userInfo.profilePhotoUrl)
 
       localStorage.setItem('userInfo', JSON.stringify({
         userId: this.userId,
@@ -83,6 +108,20 @@ login(username: string, password: string): Observable<any> {
   );
 }
 
+  /**
+   * Retourne un Observable du Groupe ID actif (pour utilisation réactive)
+   */
+  getCurrentGroupeId$(): Observable<number | null> {
+    return this.currentGroupeIdSubject.asObservable();
+  }
+
+  /**
+   * Retourne immédiatement le Groupe ID actif (pour utilisation synchrone)
+   */
+  getCurrentGroupeId(): number | null {
+    return this.currentGroupeIdSubject.value;
+  }
+
   // Vérifier si l'utilisateur a besoin de réinitialiser son mot de passe
   isPasswordResetRequired(): boolean {
     // Ceci devrait venir d'une propriété de votre objet utilisateur
@@ -91,6 +130,28 @@ login(username: string, password: string): Observable<any> {
 
   getToken(): string | null {
     return this.token || localStorage.getItem('token');
+  }
+
+getProfilePhoto2(): Observable<SafeUrl> {
+    // 1. Récupérer la partie de l'URL (le chemin, ex: 'users/123/avatar.jpg')
+    const pathPart = localStorage.getItem('profilUrl');
+    
+    let finalUrl: string;
+
+    if (pathPart) {
+      // 2. Compléter l'URL
+      finalUrl = environment.imageUrl + pathPart;
+    } else {
+      // Utiliser une image par défaut si le chemin n'est pas trouvé
+      finalUrl = 'assets/default-avatar.png'; 
+      console.warn('Chemin de photo de profil non trouvé dans localStorage.');
+    }
+
+    // 3. Sécuriser l'URL: bypassSecurityTrustUrl est utilisé car nous savons que l'URL est fiable.
+    const safeUrl = this.sanitizer.bypassSecurityTrustUrl(finalUrl);
+
+    // 4. Retourner l'objet SafeUrl dans un Observable (utilisant 'of' de RxJS)
+    return of(safeUrl);
   }
 
 
@@ -183,6 +244,11 @@ getRoles(): string[] {
     this.roles = [];
     this.userId = null;
     localStorage.removeItem('token');
+    // ✅ NETTOYER LES REDIRECTIONS RÉSIDUELLES
+  localStorage.removeItem('redirectAfterLogin');
+  
+  // Rediriger vers la page publique
+  this.router.navigate(['/explorer-public']);
   }
 
   isLoggedIn(): boolean {
@@ -319,6 +385,15 @@ getRoles(): string[] {
       }
       return { success: false, message: errorMessage };
     }
+  }
+
+  createUser(user: any): Observable<User> {
+    return this.http.post<User>(`${environment.apiUrl}/user/create`, user).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la création de l’utilisateur:', err);
+        return throwError(err);
+      })
+    );
   }
 }
 

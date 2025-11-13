@@ -1,55 +1,50 @@
-// navbar.component.scss
+@import '../../../../variables';
 
-// Variables
-$navbar-height: 64px;
-$navbar-height-mobile: 56px;
-$primary-color: #1976d2;
-$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-// Container principal du navbar
+// ===== NAVBAR CONTAINER =====
 .navbar-container {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: $z-fixed;
   height: $navbar-height;
-  padding: 0 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0 $spacing-xl;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  box-shadow: $shadow-lg;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-  @media (max-width: 640px) {
+  @include mobile {
     height: $navbar-height-mobile;
-    padding: 0 8px;
+    padding: 0 $spacing-md;
   }
 }
 
-// Contenu du navbar
+// ===== CONTENU PRINCIPAL =====
 .navbar-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include flex-between;
   width: 100%;
   height: 100%;
-  gap: 16px;
+  gap: $spacing-lg;
 
-  @media (max-width: 640px) {
-    gap: 8px;
+  @include mobile {
+    gap: $spacing-sm;
   }
 }
 
-// Section Logo
+// ===== SECTION LOGO/BRAND =====
 .navbar-brand {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: $spacing-md;
+  flex-shrink: 0;
 
   .menu-toggle-btn {
     color: white;
-    transition: $transition;
+    transition: $transition-base;
+    border-radius: $border-radius-md;
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: rgba(255, 255, 255, 0.15);
       transform: scale(1.05);
     }
 
@@ -60,185 +55,324 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .app-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-    letter-spacing: 0.5px;
+  .app-logo {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-lg;
+    transition: $transition-base;
 
-    @media (max-width: 640px) {
-      font-size: 18px;
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
     }
 
-    @media (max-width: 480px) {
-      display: none;
+    .logo-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: var(--accent-color);
+      transition: $transition-base;
+
+      @include mobile {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    .app-title {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: white;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+      @include mobile {
+        font-size: $font-size-lg;
+      }
+
+      @media (max-width: 480px) {
+        display: none;
+      }
+    }
+
+    &:hover .logo-icon {
+      transform: rotate(5deg) scale(1.1);
+      color: var(--accent-light);
     }
   }
 }
 
-// Section Centre (sélecteur de rôle)
+// ===== SECTION CENTRE (Sélecteur de rôle) =====
 .navbar-center {
   flex: 1;
   display: flex;
   justify-content: center;
-  max-width: 300px;
+  max-width: 320px;
 
-  @media (max-width: 768px) {
+  @include mobile {
     max-width: 200px;
-  }
-
-  @media (max-width: 640px) {
-    max-width: 160px;
   }
 
   .role-select {
     width: 100%;
 
     ::ng-deep {
-      .mat-form-field-wrapper {
+      .mat-mdc-form-field-wrapper {
         padding-bottom: 0;
         margin: 0;
       }
 
-      .mat-form-field-infix {
-        padding: 8px 0;
+      .mat-mdc-form-field-infix {
+        padding: $spacing-sm 0;
         border-top: 0;
       }
 
-      .mat-form-field-outline {
-        color: rgba(255, 255, 255, 0.4);
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
+      .mdc-notched-outline {
+        border-color: rgba(255, 255, 255, 0.3);
+        border-width: 1px;
       }
 
-      .mat-form-field-outline-thick {
-        color: rgba(255, 255, 255, 0.8);
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: inherit;
+        background-color: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
       }
 
-      .mat-form-field-label {
+      .mdc-notched-outline--notched .mdc-notched-outline__notch {
+        border-top: none;
+      }
+
+      &.mdc-text-field--focused .mdc-notched-outline {
+        border-color: var(--accent-color);
+        border-width: 2px;
+        box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+      }
+
+      .mdc-floating-label {
         color: rgba(255, 255, 255, 0.9);
-        font-size: 14px;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
       }
 
-      .mat-select-value,
-      .mat-select-arrow {
+      .mdc-floating-label--float-above {
+        color: var(--accent-color);
+      }
+
+      .mat-mdc-select-value,
+      .mat-mdc-select-arrow {
         color: white;
       }
 
-      .mat-select-value-text {
-        font-weight: 500;
+      .mat-mdc-select-value-text {
+        font-weight: $font-weight-medium;
+        font-size: $font-size-sm;
       }
     }
   }
 }
 
-// Section Actions (droite)
+// ===== OPTIONS DE RÔLE =====
+.role-option {
+  @include flex-between;
+  padding: $spacing-xs 0;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--primary-color);
+    margin-right: $spacing-md;
+  }
+
+  span {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+}
+
+// ===== SECTION ACTIONS (droite) =====
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: $spacing-md;
   flex-shrink: 0;
 
-  @media (max-width: 640px) {
-    gap: 4px;
+  @include mobile {
+    gap: $spacing-xs;
   }
 }
 
-// Bouton Check-in
-.check-in-btn {
-  transition: $transition;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+// ===== BOUTONS PARAMÈTRES =====
+.settings-btn {
+  color: white;
+  transition: $transition-base;
+  border-radius: $border-radius-md;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
   }
 
-  &:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  &.language-btn .flag-icon {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  mat-icon {
-    color: white;
-  }
-
-  // Spinner blanc
-  ::ng-deep {
-    mat-spinner circle {
-      stroke: white !important;
-    }
-  }
-
-  @media (max-width: 640px) {
-    width: 40px;
-    height: 40px;
-
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
+  &.theme-btn mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
   }
 }
 
-// Bouton Profil
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  border-radius: 24px;
-  transition: $transition;
-  min-width: 48px;
-  height: 48px;
+// ===== BOUTON NOTIFICATIONS =====
+.notification-btn {
+  color: white;
+  transition: $transition-base;
+  border-radius: $border-radius-md;
+  position: relative;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.15);
     transform: translateY(-1px);
   }
 
-  @media (max-width: 640px) {
-    padding: 4px 8px;
-    gap: 4px;
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  // Animation pour les notifications actives
+  &:has(mat-icon[name="notifications_active"]) {
+    animation: pulse 2s infinite;
+  }
+}
+
+// ===== BOUTON CHECK-IN =====
+.check-in-btn {
+  @include button-states(var(--accent-color), white);
+  position: relative;
+  overflow: hidden;
+
+  &.checked-in {
+    background-color: var(--success-color) !important;
+    cursor: default;
+    
+    &:hover {
+      transform: none !important;
+      box-shadow: $shadow-md !important;
+    }
+  }
+
+  mat-icon {
+    color: white;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  // Animation du spinner
+  ::ng-deep mat-spinner circle {
+    stroke: white !important;
+  }
+
+  @include mobile {
+    width: 40px;
+    height: 40px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// ===== BOUTON PROFIL =====
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-xl;
+  transition: $transition-base;
+  min-width: 48px;
+  height: 48px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: $shadow-lg;
+  }
+
+  @include mobile {
+    padding: $spacing-xs;
+    gap: $spacing-xs;
     height: 40px;
   }
 
   .profile-avatar-container {
+    position: relative;
     width: 32px;
     height: 32px;
     flex-shrink: 0;
 
-    @media (max-width: 640px) {
+    @include mobile {
       width: 28px;
       height: 28px;
+    }
+
+    .status-indicator {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 12px;
+      height: 12px;
+      border-radius: $border-radius-full;
+      border: 2px solid white;
+      
+      &.online {
+        background-color: var(--success-color);
+        box-shadow: 0 0 0 1px var(--success-color);
+      }
+      
+      &.away {
+        background-color: var(--warning-color);
+      }
+      
+      &.offline {
+        background-color: var(--text-tertiary);
+      }
     }
   }
 
   .profile-avatar {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
+    border-radius: $border-radius-full;
     object-fit: cover;
-    border: 2px solid white;
-    transition: transform 0.2s ease;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition: $transition-base;
   }
 
   .profile-avatar-icon {
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.2);
-    border: 2px solid white;
-    transition: transform 0.2s ease;
+    @include flex-center;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition: $transition-base;
 
     mat-icon {
       color: white;
@@ -246,7 +380,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       width: 28px;
       height: 28px;
 
-      @media (max-width: 640px) {
+      @include mobile {
         font-size: 24px;
         width: 24px;
         height: 24px;
@@ -257,265 +391,352 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover {
     .profile-avatar,
     .profile-avatar-icon {
-      transform: scale(1.08);
+      transform: scale(1.1);
+      border-color: var(--accent-color);
     }
   }
 
   .profile-name {
     color: white;
-    font-weight: 500;
-    font-size: 14px;
+    font-weight: $font-weight-medium;
+    font-size: $font-size-sm;
     max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    @include text-truncate;
 
     @media (max-width: 1024px) {
       display: none;
     }
   }
 
-  mat-icon {
-    color: white;
+  .dropdown-arrow {
+    color: rgba(255, 255, 255, 0.8);
     font-size: 20px;
     width: 20px;
     height: 20px;
+    transition: $transition-base;
 
-    @media (max-width: 640px) {
+    @include mobile {
       display: none;
     }
   }
+
+  &:hover .dropdown-arrow {
+    transform: rotate(180deg);
+    color: var(--accent-color);
+  }
 }
 
-// Options de rôle dans le select
-.role-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0;
+// ===== BOUTONS D'AUTHENTIFICATION =====
+.auth-btn {
+  @include flex-center;
+  gap: $spacing-sm;
+  height: 40px;
+  padding: 0 $spacing-xl;
+  border-radius: $border-radius-xl;
+  font-weight: $font-weight-medium;
+  font-size: $font-size-sm;
+  transition: $transition-base;
+  text-transform: none;
 
   mat-icon {
     font-size: 20px;
     width: 20px;
     height: 20px;
-    flex-shrink: 0;
   }
 
   span {
-    font-size: 14px;
-    font-weight: 500;
+    @include mobile {
+      display: none;
+    }
+  }
+
+  @include mobile {
+    padding: 0 $spacing-md;
+    height: 36px;
+    min-width: 36px;
+    border-radius: $border-radius-lg;
   }
 }
 
-// Styles globaux pour les menus Material
+.login-btn {
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+  }
+}
+
+.register-btn {
+  background-color: var(--accent-color);
+  color: white;
+  border: 1px solid var(--accent-color);
+
+  &:hover {
+    background-color: var(--accent-light);
+    border-color: var(--accent-light);
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: $shadow-md;
+  }
+}
+
+// ===== MENU PROFIL =====
 ::ng-deep {
-  // Panel du menu profil
-  .mat-menu-panel {
-    max-width: 350px !important;
-    min-width: 280px !important;
-    border-radius: 8px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    margin-top: 8px;
+  .profile-menu {
+    .mat-mdc-menu-panel {
+      max-width: 380px !important;
+      min-width: 320px !important;
+      border-radius: $border-radius-xl;
+      box-shadow: $shadow-xl;
+      margin-top: $spacing-sm;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
 
-    @media (max-width: 640px) {
-      max-width: 90vw !important;
-      min-width: 260px !important;
-    }
-  }
-
-  .mat-menu-content {
-    padding: 0 !important;
-  }
-
-  // Header du menu profil
-  .profile-menu-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 1px solid #dee2e6;
-
-    .profile-menu-avatar-container {
-      width: 48px;
-      height: 48px;
-      flex-shrink: 0;
+      @include mobile {
+        max-width: 90vw !important;
+        min-width: 280px !important;
+      }
     }
 
-    .profile-menu-avatar {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid $primary-color;
+    .mat-mdc-menu-content {
+      padding: 0 !important;
     }
 
-    .profile-menu-avatar-icon {
-      width: 100%;
-      height: 100%;
+    // Header du menu profil
+    .profile-menu-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: linear-gradient(135deg, $primary-color 0%, #1565c0 100%);
-      border: 2px solid $primary-color;
+      gap: $spacing-md;
+      padding: $spacing-xl;
+      background: linear-gradient(135deg, var(--background-tertiary) 0%, var(--background-secondary) 100%);
+      border-bottom: 1px solid var(--divider-color);
 
-      mat-icon {
-        color: white;
-        font-size: 40px;
-        width: 40px;
-        height: 40px;
+      .profile-menu-avatar-container {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+
+        .status-indicator {
+          position: absolute;
+          bottom: 2px;
+          right: 2px;
+          width: 16px;
+          height: 16px;
+          border-radius: $border-radius-full;
+          border: 3px solid var(--background-primary);
+          
+          &.online {
+            background-color: var(--success-color);
+          }
+        }
       }
-    }
 
-    .profile-menu-info {
-      flex: 1;
-      overflow: hidden;
-      min-width: 0;
+      .profile-menu-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: $border-radius-full;
+        object-fit: cover;
+        border: 3px solid var(--primary-color);
+      }
 
-      .profile-menu-name {
-        font-weight: 600;
-        font-size: 15px;
-        color: #212529;
-        margin: 0 0 4px 0;
+      .profile-menu-avatar-icon {
+        width: 100%;
+        height: 100%;
+        @include flex-center;
+        border-radius: $border-radius-full;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border: 3px solid var(--primary-color);
+
+        mat-icon {
+          color: white;
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+        }
+      }
+
+      .profile-menu-info {
+        flex: 1;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
+        min-width: 0;
 
-      .profile-menu-email {
-        font-size: 13px;
-        color: #6c757d;
-        margin: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-    }
-  }
+        .profile-menu-name {
+          font-weight: $font-weight-semibold;
+          font-size: $font-size-lg;
+          color: var(--text-primary);
+          margin: 0 0 $spacing-xs 0;
+          @include text-truncate;
+        }
 
-  // Items du menu
-  .mat-menu-item {
-    height: 48px !important;
-    line-height: 48px !important;
-    padding: 0 16px !important;
-    transition: $transition;
-    font-size: 14px;
+        .profile-menu-email {
+          font-size: $font-size-sm;
+          color: var(--text-secondary);
+          margin: 0 0 $spacing-xs 0;
+          @include text-truncate;
+        }
 
-    &:hover {
-      background-color: rgba(25, 118, 210, 0.08) !important;
-
-      mat-icon {
-        transform: translateX(4px);
-        color: $primary-color !important;
-      }
-
-      span {
-        font-weight: 500;
-        color: $primary-color;
-      }
-    }
-
-    mat-icon {
-      margin-right: 12px;
-      transition: $transition;
-      color: $primary-color;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    span {
-      transition: $transition;
-    }
-
-    // Item de déconnexion (rouge)
-    &.logout-btn {
-      mat-icon,
-      span {
-        color: #f44336 !important;
-      }
-
-      &:hover {
-        background-color: rgba(244, 67, 54, 0.08) !important;
-      }
-    }
-  }
-
-  // Dividers dans le menu
-  mat-divider {
-    margin: 4px 0 !important;
-    border-top-color: #dee2e6 !important;
-  }
-
-  // Panel du sélecteur de rôle
-  .mat-select-panel {
-    .mat-option {
-      height: 56px !important;
-      padding: 8px 16px !important;
-      font-size: 14px;
-
-      &:hover {
-        background-color: rgba(25, 118, 210, 0.08) !important;
-      }
-
-      &.mat-selected {
-        background-color: rgba(25, 118, 210, 0.12) !important;
-        font-weight: 600;
-
-        &:not(.mat-option-disabled) {
-          color: $primary-color;
+        .profile-menu-role {
+          display: inline-block;
+          padding: $spacing-xs $spacing-sm;
+          background-color: var(--primary-color);
+          color: white;
+          font-size: $font-size-xs;
+          font-weight: $font-weight-medium;
+          border-radius: $border-radius-sm;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       }
     }
+
+    // Items du menu
+    .mat-mdc-menu-item {
+      height: 52px !important;
+      line-height: 52px !important;
+      padding: 0 $spacing-xl !important;
+      transition: $transition-base;
+      font-size: $font-size-sm;
+      border-bottom: 1px solid transparent;
+
+      &:hover {
+        background-color: var(--background-tertiary) !important;
+        border-bottom-color: var(--primary-color);
+
+        mat-icon {
+          transform: translateX($spacing-xs) scale(1.1);
+          color: var(--primary-color) !important;
+        }
+
+        span {
+          font-weight: $font-weight-medium;
+          color: var(--primary-color);
+        }
+      }
+
+      mat-icon {
+        margin-right: $spacing-md;
+        transition: $transition-base;
+        color: var(--text-secondary);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      span {
+        transition: $transition-base;
+        color: var(--text-primary);
+      }
+
+      // Item de déconnexion
+      &.logout-btn {
+        border-top: 1px solid var(--divider-color);
+        margin-top: $spacing-xs;
+
+        mat-icon,
+        span {
+          color: var(--error-color) !important;
+        }
+
+        &:hover {
+          background-color: rgba(239, 68, 68, 0.1) !important;
+          border-bottom-color: var(--error-color);
+        }
+      }
+
+      // Item d'édition avec couleur spéciale
+      &.menu-item-edit {
+        mat-icon,
+        span {
+          color: var(--accent-color) !important;
+        }
+
+        &:hover {
+          background-color: rgba(16, 185, 129, 0.1) !important;
+          border-bottom-color: var(--accent-color);
+        }
+      }
+    }
+
+    // Dividers
+    mat-divider {
+      margin: $spacing-xs 0 !important;
+      border-top-color: var(--divider-color) !important;
+    }
   }
 }
 
-// Amélioration de l'accessibilité
-button:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 2px;
-  border-radius: 4px;
+// ===== ANIMATIONS =====
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-// États disabled
+// ===== ÉTATS FOCUS ET ACCESSIBILITÉ =====
+button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: $border-radius-sm;
+}
+
+// États disabled améliorés
 button[disabled] {
   pointer-events: none;
   opacity: 0.6;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-// Animation du spinner
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-mat-spinner {
-  animation: spin 1s linear infinite;
-}
-
-// Media queries pour très petits écrans
+// ===== RESPONSIVE DESIGN =====
 @media (max-width: 360px) {
   .navbar-container {
-    padding: 0 4px;
+    padding: 0 $spacing-sm;
   }
 
   .navbar-content {
-    gap: 4px;
+    gap: $spacing-xs;
   }
 
   .navbar-center {
     max-width: 140px;
 
     .role-select ::ng-deep {
-      .mat-form-field-label,
-      .mat-select-value-text {
-        font-size: 12px;
+      .mdc-floating-label,
+      .mat-mdc-select-value-text {
+        font-size: $font-size-xs;
       }
     }
+  }
+
+  .auth-btn {
+    padding: 0 $spacing-sm;
+    height: 32px;
+    min-width: 32px;
+  }
+}
+
+// Mode haute densité
+@media (min-resolution: 2dppx) {
+  .profile-avatar,
+  .profile-menu-avatar {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
