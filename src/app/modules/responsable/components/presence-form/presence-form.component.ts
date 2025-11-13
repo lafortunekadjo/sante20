@@ -293,12 +293,31 @@ filteredMembres() {
   // }
 
  getMembreName(presence: any): string {
-    if (presence.membre && presence.membre.nom && presence.membre.prenom) {
+
+    if (presence.membre && presence.membre.nom ) {
         return `${presence.membre.nom} ${presence.membre.prenom}`;
     } else if (presence.nomOccasionnel) {
         return presence.nomOccasionnel;
     }
     return 'Nom inconnu';
+}
+
+getMembreName2(id: number): string {
+
+  const membreTrouve = this.membres2.find(membre => membre.id === id);
+
+  // 2. Vérifier si un membre a été trouvé
+  if (membreTrouve) {
+    // 3. Retourner le Nom et le Prénom s'ils existent
+    if (membreTrouve.nom && membreTrouve.prenom) {
+      return `${membreTrouve.nom} ${membreTrouve.prenom}`;
+    }
+    // Si l'on ne trouve qu'un des deux, retourner ce qui est disponible
+    return membreTrouve.nom || membreTrouve.prenom || 'Nom du membre incomplet';
+  }
+
+  // 4. Si le membre n'est pas trouvé, retourner une valeur par défaut
+  return 'Nom inconnu';
 }
 
 getButsDisplay(presence: any): string {
@@ -989,7 +1008,7 @@ addMembreToPresenceList() {
         this.membresNonPresents = this.membresNonPresents.filter(m => m.id !== this.selectedMembreIdToAdd);
         this.selectedMembreIdToAdd = null;
 
-        this.snackBar.open(`${this.getMembreName(membreToAdd.id)} a été ajouté à la feuille de présence.`, 'Fermer', {
+        this.snackBar.open(`${this.getMembreName2(membreToAdd.id)} a été ajouté à la feuille de présence.`, 'Fermer', {
           duration: 3000,
         });
       }

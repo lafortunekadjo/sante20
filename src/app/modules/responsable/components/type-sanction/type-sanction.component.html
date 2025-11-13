@@ -74,9 +74,9 @@
 
     <!-- Bouton d'action -->
     <div class="action-buttons">
-      <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+      <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="add-button">
         <mat-icon>add</mat-icon>
-        <span>{{ 'sanction.addType' | translate }}</span>
+        <span class="button-text">{{ 'sanction.addType' | translate }}</span>
       </button>
     </div>
 
@@ -93,47 +93,163 @@
         </div>
       </div>
       <div class="demande-content">
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'sanction.name' | translate }}</mat-label>
-          <input matInput [(ngModel)]="newTypeSanction.nom" required>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'sanction.type' | translate }}</mat-label>
-          <mat-select [(ngModel)]="newTypeSanction.type" (ngModelChange)="onTypeChange(newTypeSanction)" required>
-            <mat-option value="AMENDE">{{ 'sanction.fine' | translate }}</mat-option>
-            <mat-option value="SUSPENSION">{{ 'sanction.suspension' | translate }}</mat-option>
-            <mat-option value="DISCIPLINE">{{ 'sanction.discipline' | translate }}</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'sanction.description' | translate }}</mat-label>
-          <input matInput [(ngModel)]="newTypeSanction.description">
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'sanction.defaultAmount' | translate }} (FCFA)</mat-label>
-          <input matInput type="number" [(ngModel)]="newTypeSanction.montantParDefaut" min="0" required>
-        </mat-form-field>
-        <mat-form-field appearance="outline" *ngIf="newTypeSanction.type === 'SUSPENSION'">
-          <mat-label>{{ 'sanction.duration' | translate }} (jours)</mat-label>
-          <input matInput type="number" [(ngModel)]="newTypeSanction.duree" min="1" required>
-        </mat-form-field>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'sanction.name' | translate }}</mat-label>
+            <input matInput [(ngModel)]="newTypeSanction.nom" required>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'sanction.type' | translate }}</mat-label>
+            <mat-select [(ngModel)]="newTypeSanction.type" (ngModelChange)="onTypeChange(newTypeSanction)" required>
+              <mat-option value="AMENDE">{{ 'sanction.fine' | translate }}</mat-option>
+              <mat-option value="SUSPENSION">{{ 'sanction.suspension' | translate }}</mat-option>
+              <mat-option value="DISCIPLINE">{{ 'sanction.discipline' | translate }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field full-width">
+            <mat-label>{{ 'sanction.description' | translate }}</mat-label>
+            <input matInput [(ngModel)]="newTypeSanction.description">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'sanction.defaultAmount' | translate }} (FCFA)</mat-label>
+            <input matInput type="number" [(ngModel)]="newTypeSanction.montantParDefaut" min="0" required>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field" *ngIf="newTypeSanction.type === 'SUSPENSION'">
+            <mat-label>{{ 'sanction.duration' | translate }} (jours)</mat-label>
+            <input matInput type="number" [(ngModel)]="newTypeSanction.duree" min="1" required>
+          </mat-form-field>
+        </div>
       </div>
       <div class="demande-actions">
         <div class="primary-actions">
-          <button mat-raised-button color="primary" (click)="saveTypeSanction()" [disabled]="!isCreateFormValid()">
+          <button mat-raised-button color="primary" (click)="saveTypeSanction()" [disabled]="!isCreateFormValid()" class="action-button">
             <mat-icon>save</mat-icon>
-            <span>{{ 'common.save' | translate }}</span>
+            <span class="button-text">{{ 'common.save' | translate }}</span>
           </button>
-          <button mat-stroked-button color="warn" (click)="cancelCreate()">
+          <button mat-stroked-button color="warn" (click)="cancelCreate()" class="action-button">
             <mat-icon>cancel</mat-icon>
-            <span>{{ 'common.cancel' | translate }}</span>
+            <span class="button-text">{{ 'common.cancel' | translate }}</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Tableau des types de sanctions -->
-    <div class="demandes-list" *ngIf="dataSource.data.length > 0">
+    <!-- Liste mobile des types de sanctions -->
+    <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
+      <div class="sanction-card" *ngFor="let typeSanction of dataSource.data; let i = index">
+        <div class="card-header">
+          <div class="card-title">
+            <mat-icon class="card-icon">gavel</mat-icon>
+            <div class="title-content">
+              <h4 class="sanction-name">
+                <ng-container *ngIf="!editingRows[i]; else editNomMobile">
+                  {{ typeSanction.nom }}
+                </ng-container>
+                <ng-template #editNomMobile>
+                  <mat-form-field appearance="outline" class="mobile-field">
+                    <input matInput [(ngModel)]="editTypeSanction.nom" required>
+                  </mat-form-field>
+                </ng-template>
+              </h4>
+              <span class="sanction-id">ID: {{ typeSanction.id }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <ng-container *ngIf="!editingRows[i]; else editActionsMobile">
+              <button mat-icon-button color="primary" (click)="editRow(i, typeSanction)" class="action-btn">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="openDeleteDialog(typeSanction)" class="action-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+            <ng-template #editActionsMobile>
+              <button mat-icon-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" class="action-btn">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="cancelEdit(i)" class="action-btn">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="card-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <label class="info-label">{{ 'sanction.type' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editTypeMobile">
+                  <span class="type-badge type-{{ typeSanction.type }}">{{ typeSanction.type | translate }}</span>
+                </ng-container>
+                <ng-template #editTypeMobile>
+                  <mat-form-field appearance="outline" class="mobile-field">
+                    <mat-select [(ngModel)]="editTypeSanction.type" (ngModelChange)="onTypeChange(editTypeSanction)" required>
+                      <mat-option value="AMENDE">{{ 'sanction.fine' | translate }}</mat-option>
+                      <mat-option value="SUSPENSION">{{ 'sanction.suspension' | translate }}</mat-option>
+                      <mat-option value="DISCIPLINE">{{ 'sanction.discipline' | translate }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">{{ 'sanction.defaultAmount' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editMontantMobile">
+                  <span class="amount">{{ typeSanction.montantParDefaut | currency:'XAF' }}</span>
+                </ng-container>
+                <ng-template #editMontantMobile>
+                  <mat-form-field appearance="outline" class="mobile-field">
+                    <input matInput type="number" [(ngModel)]="editTypeSanction.montantParDefaut" min="0" required>
+                  </mat-form-field>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item" *ngIf="typeSanction.type === 'SUSPENSION' || editingRows[i]">
+              <label class="info-label">{{ 'sanction.duration' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editDureeMobile">
+                  <span class="duration">{{ typeSanction.duree ? (typeSanction.duree + ' jours') : ('common.na' | translate) }}</span>
+                </ng-container>
+                <ng-template #editDureeMobile>
+                  <mat-form-field appearance="outline" class="mobile-field" *ngIf="editTypeSanction.type === 'SUSPENSION'">
+                    <input matInput type="number" [(ngModel)]="editTypeSanction.duree" min="1" required>
+                  </mat-form-field>
+                  <span *ngIf="editTypeSanction.type !== 'SUSPENSION'" class="na-text">{{ 'common.na' | translate }}</span>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item full-width" *ngIf="typeSanction.description">
+              <label class="info-label">{{ 'sanction.description' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editDescriptionMobile">
+                  <span class="description">{{ typeSanction.description || ('common.na' | translate) }}</span>
+                </ng-container>
+                <ng-template #editDescriptionMobile>
+                  <mat-form-field appearance="outline" class="mobile-field full-width">
+                    <input matInput [(ngModel)]="editTypeSanction.description">
+                  </mat-form-field>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">{{ 'sanction.createdDate' | translate }}</label>
+              <div class="info-value">
+                <span class="date">{{ typeSanction.createdDate | date:'shortDate' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau desktop (caché sur mobile) -->
+    <div class="desktop-table-view" *ngIf="dataSource.data.length > 0">
       <div class="table-wrapper">
         <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
           <ng-container matColumnDef="id">

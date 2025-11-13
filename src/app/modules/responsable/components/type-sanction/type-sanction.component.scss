@@ -64,6 +64,10 @@
     .date-filter {
       flex: 1;
       max-width: 300px;
+
+      @include mobile {
+        max-width: none;
+      }
     }
   }
 }
@@ -74,13 +78,29 @@
   display: flex;
   justify-content: flex-end;
 
-  button {
+  @include mobile {
+    justify-content: stretch;
+  }
+
+  .add-button {
     @include button-states(var(--primary-color));
     display: flex;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-md $spacing-xl;
     font-weight: $font-weight-medium;
+
+    @include mobile {
+      width: 100%;
+      justify-content: center;
+      padding: $spacing-lg;
+    }
+
+    .button-text {
+      @include mobile {
+        display: none;
+      }
+    }
   }
 }
 
@@ -97,10 +117,18 @@
     background: var(--background-tertiary);
     border-bottom: 1px solid var(--divider-color);
 
+    @include mobile {
+      padding: $spacing-lg;
+    }
+
     .groupe-info {
       display: flex;
       align-items: flex-start;
       gap: $spacing-lg;
+
+      @include mobile {
+        gap: $spacing-md;
+      }
 
       .groupe-avatar {
         width: 64px;
@@ -110,11 +138,22 @@
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         flex-shrink: 0;
 
+        @include mobile {
+          width: 48px;
+          height: 48px;
+        }
+
         .discipline-icon {
           font-size: 32px;
           width: 32px;
           height: 32px;
           color: white;
+
+          @include mobile {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
         }
       }
 
@@ -126,6 +165,10 @@
           font-size: $font-size-xl;
           font-weight: $font-weight-bold;
           color: var(--text-primary);
+
+          @include mobile {
+            font-size: $font-size-lg;
+          }
         }
       }
     }
@@ -133,12 +176,30 @@
 
   .demande-content {
     padding: $spacing-xl;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: $spacing-lg;
 
-    mat-form-field {
-      width: 100%;
+    @include mobile {
+      padding: $spacing-lg;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: $spacing-lg;
+
+      @include mobile {
+        grid-template-columns: 1fr;
+        gap: $spacing-md;
+      }
+
+      .form-field {
+        width: 100%;
+
+        &.full-width {
+          @include mobile {
+            grid-column: 1;
+          }
+        }
+      }
     }
   }
 
@@ -149,132 +210,325 @@
     gap: $spacing-lg;
     flex-wrap: wrap;
 
+    @include mobile {
+      padding: $spacing-lg;
+      flex-direction: column;
+    }
+
     .primary-actions {
       display: flex;
       gap: $spacing-md;
 
-      button {
+      @include mobile {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .action-button {
         @include button-states(var(--primary-color));
         display: flex;
         align-items: center;
         gap: $spacing-sm;
         padding: $spacing-md $spacing-lg;
         font-weight: $font-weight-medium;
-      }
 
-      button[color="warn"] {
-        border-color: var(--error-color);
-        color: var(--error-color);
+        @include mobile {
+          width: 100%;
+          justify-content: center;
+          padding: $spacing-lg;
+        }
 
-        &:hover {
-          background: rgba(239, 68, 68, 0.1);
+        .button-text {
+          @media (max-width: 480px) {
+            display: none;
+          }
+        }
+
+        &[color="warn"] {
+          border-color: var(--error-color);
+          color: var(--error-color);
+
+          &:hover {
+            background: rgba(239, 68, 68, 0.1);
+          }
         }
       }
     }
   }
 }
 
-// ===== TABLE =====
-.demandes-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xl;
-}
+// ===== MOBILE CARDS VIEW =====
+.mobile-cards-view {
+  display: none;
 
-.table-wrapper {
-  @include card-base;
-  overflow-x: auto;
+  @include mobile {
+    display: block;
+  }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .sanction-card {
+    @include card-base;
+    margin-bottom: $spacing-lg;
+    overflow: hidden;
+    transition: $transition-base;
 
-    th {
-      background: var(--background-tertiary);
-      color: var(--text-primary);
-      font-weight: $font-weight-semibold;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--divider-color);
-      padding: $spacing-lg $spacing-xl;
-      text-align: left;
+    &:hover {
+      box-shadow: $shadow-lg;
+      transform: translateY(-2px);
     }
 
-    td {
-      border-bottom: 1px solid var(--divider-color);
-      padding: $spacing-lg $spacing-xl;
-      font-size: $font-size-md;
-      color: var(--text-primary);
-
-      mat-form-field {
-        width: 100%;
-      }
-    }
-
-    .table-row:hover {
-      background: var(--background-tertiary);
-    }
-
-    .col-id {
-      width: 10%;
-      min-width: 80px;
-    }
-
-    .col-nom {
-      width: 20%;
-      min-width: 200px;
-    }
-
-    .col-type {
-      width: 15%;
-    }
-
-    .col-description {
-      width: 25%;
-    }
-
-    .col-montantParDefaut {
-      width: 15%;
-    }
-
-    .col-duree {
-      width: 10%;
-    }
-
-    .col-createdDate {
-      width: 15%;
-    }
-
-    .col-actions {
-      width: 10%;
-      min-width: 150px;
-      text-align: right;
-    }
-
-    .action-buttons-horizontal {
+    .card-header {
       display: flex;
       align-items: center;
-      gap: $spacing-sm;
-      justify-content: flex-end;
-    }
+      justify-content: space-between;
+      padding: $spacing-lg;
+      background: var(--background-tertiary);
+      border-bottom: 1px solid var(--divider-color);
 
-    mat-icon-button {
-      transition: $transition-base;
+      .card-title {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        flex: 1;
 
-      &[color="primary"]:hover {
-        color: var(--primary-color);
+        .card-icon {
+          color: var(--primary-color);
+          font-size: 24px;
+        }
+
+        .title-content {
+          .sanction-name {
+            margin: 0 0 $spacing-xs 0;
+            font-size: $font-size-md;
+            font-weight: $font-weight-semibold;
+            color: var(--text-primary);
+
+            .mobile-field {
+              margin: 0;
+              
+              ::ng-deep .mat-form-field-wrapper {
+                padding-bottom: 0;
+              }
+            }
+          }
+
+          .sanction-id {
+            font-size: $font-size-sm;
+            color: var(--text-secondary);
+          }
+        }
       }
 
-      &[color="warn"]:hover {
-        color: var(--error-color);
+      .card-actions {
+        display: flex;
+        gap: $spacing-xs;
+
+        .action-btn {
+          width: 36px;
+          height: 36px;
+          
+          mat-icon {
+            font-size: 18px;
+          }
+
+          &[color="primary"]:hover {
+            color: var(--primary-color);
+          }
+
+          &[color="warn"]:hover {
+            color: var(--error-color);
+          }
+        }
+      }
+    }
+
+    .card-content {
+      padding: $spacing-lg;
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: $spacing-md;
+
+        .info-item {
+          &.full-width {
+            grid-column: 1 / -1;
+          }
+
+          .info-label {
+            display: block;
+            font-size: $font-size-xs;
+            font-weight: $font-weight-medium;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: $spacing-xs;
+          }
+
+          .info-value {
+            .type-badge {
+              display: inline-block;
+              padding: $spacing-xs $spacing-sm;
+              border-radius: $border-radius-full;
+              font-size: $font-size-xs;
+              font-weight: $font-weight-medium;
+              text-transform: uppercase;
+
+              &.type-AMENDE {
+                background: rgba(239, 68, 68, 0.1);
+                color: var(--error-color);
+              }
+
+              &.type-SUSPENSION {
+                background: rgba(245, 158, 11, 0.1);
+                color: var(--warning-color);
+              }
+
+              &.type-DISCIPLINE {
+                background: rgba(59, 130, 246, 0.1);
+                color: var(--info-color);
+              }
+            }
+
+            .amount {
+              font-weight: $font-weight-semibold;
+              color: var(--primary-color);
+            }
+
+            .duration,
+            .description,
+            .date {
+              color: var(--text-primary);
+            }
+
+            .na-text {
+              color: var(--text-tertiary);
+              font-style: italic;
+            }
+
+            .mobile-field {
+              width: 100%;
+              margin: 0;
+
+              &.full-width {
+                width: 100%;
+              }
+
+              ::ng-deep .mat-form-field-wrapper {
+                padding-bottom: 0;
+              }
+
+              ::ng-deep .mat-form-field-infix {
+                padding: $spacing-sm 0;
+              }
+            }
+          }
+        }
       }
     }
   }
+}
 
-  mat-paginator {
-    background: var(--background-tertiary);
-    border-top: 1px solid var(--divider-color);
-    padding: $spacing-lg 0;
+// ===== DESKTOP TABLE VIEW =====
+.desktop-table-view {
+  @include mobile {
+    display: none;
+  }
+
+  .table-wrapper {
+    @include card-base;
+    overflow-x: auto;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th {
+        background: var(--background-tertiary);
+        color: var(--text-primary);
+        font-weight: $font-weight-semibold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--divider-color);
+        padding: $spacing-lg $spacing-xl;
+        text-align: left;
+      }
+
+      td {
+        border-bottom: 1px solid var(--divider-color);
+        padding: $spacing-lg $spacing-xl;
+        font-size: $font-size-md;
+        color: var(--text-primary);
+
+        mat-form-field {
+          width: 100%;
+        }
+      }
+
+      .table-row:hover {
+        background: var(--background-tertiary);
+      }
+
+      .col-id {
+        width: 10%;
+        min-width: 80px;
+      }
+
+      .col-nom {
+        width: 20%;
+        min-width: 200px;
+      }
+
+      .col-type {
+        width: 15%;
+      }
+
+      .col-description {
+        width: 25%;
+      }
+
+      .col-montantParDefaut {
+        width: 15%;
+      }
+
+      .col-duree {
+        width: 10%;
+      }
+
+      .col-createdDate {
+        width: 15%;
+      }
+
+      .col-actions {
+        width: 10%;
+        min-width: 150px;
+        text-align: right;
+      }
+
+      .action-buttons-horizontal {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        justify-content: flex-end;
+      }
+
+      mat-icon-button {
+        transition: $transition-base;
+
+        &[color="primary"]:hover {
+          color: var(--primary-color);
+        }
+
+        &[color="warn"]:hover {
+          color: var(--error-color);
+        }
+      }
+    }
+
+    mat-paginator {
+      background: var(--background-tertiary);
+      border-top: 1px solid var(--divider-color);
+      padding: $spacing-lg 0;
+    }
   }
 }
 
@@ -287,11 +541,23 @@
   align-items: flex-start;
   gap: $spacing-lg;
 
+  @include mobile {
+    padding: $spacing-lg;
+    gap: $spacing-md;
+  }
+
   .message-icon {
     @include flex-center;
     font-size: 24px;
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
+
+    @include mobile {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .message-content {
@@ -301,12 +567,20 @@
       margin: 0 0 $spacing-xs 0;
       font-size: $font-size-md;
       font-weight: $font-weight-semibold;
+
+      @include mobile {
+        font-size: $font-size-sm;
+      }
     }
 
     p {
       margin: 0;
       font-size: $font-size-sm;
       line-height: 1.5;
+
+      @include mobile {
+        font-size: $font-size-xs;
+      }
     }
   }
 
@@ -349,8 +623,16 @@
   border-radius: $border-radius-xl;
   border: 2px dashed var(--border-color);
 
+  @include mobile {
+    padding: $spacing-2xl $spacing-lg;
+  }
+
   .empty-illustration {
     margin-bottom: $spacing-2xl;
+
+    @include mobile {
+      margin-bottom: $spacing-xl;
+    }
 
     .empty-icon {
       font-size: 120px;
@@ -358,6 +640,12 @@
       height: 120px;
       color: var(--text-tertiary);
       opacity: 0.6;
+
+      @include mobile {
+        font-size: 80px;
+        width: 80px;
+        height: 80px;
+      }
     }
   }
 
@@ -369,6 +657,10 @@
       font-size: $font-size-2xl;
       font-weight: $font-weight-semibold;
       color: var(--text-primary);
+
+      @include mobile {
+        font-size: $font-size-xl;
+      }
     }
 
     .empty-text {
@@ -376,6 +668,10 @@
       font-size: $font-size-md;
       color: var(--text-secondary);
       line-height: 1.6;
+
+      @include mobile {
+        font-size: $font-size-sm;
+      }
     }
 
     .empty-actions {
@@ -384,6 +680,10 @@
       justify-content: center;
       flex-wrap: wrap;
 
+      @include mobile {
+        flex-direction: column;
+      }
+
       button {
         @include button-states(var(--primary-color));
         display: flex;
@@ -391,51 +691,53 @@
         gap: $spacing-sm;
         padding: $spacing-md $spacing-xl;
         font-weight: $font-weight-medium;
+
+        @include mobile {
+          width: 100%;
+          justify-content: center;
+        }
       }
     }
   }
 }
 
-// ===== RESPONSIVE DESIGN =====
-@include mobile {
-  .action-buttons {
-    justify-content: center;
+// ===== RESPONSIVE DESIGN SPÉCIFIQUE =====
+@media (max-width: 480px) {
+  .content {
+    padding: $spacing-md;
   }
 
-  .create-card {
-    .demande-content {
-      grid-template-columns: 1fr;
+  .filters-container {
+    margin-bottom: $spacing-lg;
+
+    .filters-header {
+      padding: $spacing-lg;
+    }
+
+    .filter-chips {
+      padding: $spacing-lg;
     }
   }
 
-  .table-wrapper {
-    table {
-      th {
-        display: none;
-      }
-
-      td {
-        display: block;
-        border-bottom: 1px solid var(--divider-color);
-        padding: $spacing-md;
-        text-align: right;
-        position: relative;
-
-        &::before {
-          content: attr(data-label);
-          font-weight: $font-weight-medium;
-          float: left;
-          text-transform: uppercase;
-          color: var(--text-secondary);
+  .mobile-cards-view .sanction-card {
+    .card-header {
+      padding: $spacing-md;
+      
+      .card-title {
+        gap: $spacing-sm;
+        
+        .card-icon {
+          font-size: 20px;
         }
       }
+    }
 
-      .col-actions {
-        text-align: right;
-      }
+    .card-content {
+      padding: $spacing-md;
 
-      .action-buttons-horizontal {
-        justify-content: flex-end;
+      .info-grid {
+        grid-template-columns: 1fr;
+        gap: $spacing-sm;
       }
     }
   }

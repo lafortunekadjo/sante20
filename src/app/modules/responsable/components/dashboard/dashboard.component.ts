@@ -73,17 +73,25 @@ Chart.register(
 export class RDashboardComponent implements OnInit {
 
 stats: Stats = {
-    memberCount: 0,
-    totalContributions: 0,
-    paidSanctions: { amount: 0, count: 0 },
-    unpaidSanctions: { amount: 0, count: 0 },
-    sanctionsPercentage: 0,
-    contributionsByMonth: [],
-    upcomingMatches: [],
-    topScorers: [],
-    topAssists: [],
-    topAttendance: [],
-  };
+  memberCount: 0,
+  totalContributions: 0,
+  paidSanctions: { amount: 0, count: 0 },
+  unpaidSanctions: { amount: 0, count: 0 },
+  sanctionsPercentage: 0,
+  contributionsByMonth: [],
+  upcomingMatches: [],
+  topScorers: [],
+  topAssists: [],
+  topAttendance: [],
+  totalDues: 0,
+  totalFines: 0,
+  totalMatches: 0,
+  avgGoalsPerMatch: 0,
+  activePlayers: 0,
+  participationRate: 0,
+  bestPerformingTeam: '',
+  teamComparison: []
+};
   currentDate: Date = new Date();
   isLoading = true;
   dateRangeForm: FormGroup;
@@ -135,11 +143,8 @@ stats: Stats = {
     );
   }
 
-  
-
-  
-
   ngOnInit(): void {
+    console.log("dash")
     this.loadStats();
   }
 
@@ -153,36 +158,71 @@ stats: Stats = {
     this.loadStats();
   }
 
-  private loadStats(startDate?: Date, endDate?: Date): void {
-     this.isLoading = true;
-    const groupeId = 1; // Remplacez par l'ID du groupe actuel (à récupérer dynamiquement)
-   this.statService.getResponsableStats(startDate, endDate).subscribe({
-      next: (data) => {
-        this.stats = {
-          ...this.stats,
-          ...data,
-          contributionsByMonth: data.contributionsByMonth || [],
-          upcomingMatches: this.sortAndLimitUpcomingMatches(data.upcomingMatches || []),
-          topScorers: data.topScorers || [],
-          topAssists: data.topAssists || [],
-          topAttendance: data.topAttendance || [],
-        };
-        this.donutChartData.datasets[0].data = [
-          this.stats.paidSanctions.count,
-          this.stats.unpaidSanctions.count,
-        ];
-        this.barChartData.labels = this.stats.contributionsByMonth.map(item => item.month);
-        this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
-        
-        this.isLoading = false; // Arrêter le loader
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des statistiques:', err);
-        this.isLoading = false; // Arrêter le loader même en cas d'erreur
-      }
-    });
-  }
+  // Mise à jour de la méthode loadStats dans dashboard.component.ts
 
+// Correction de la méthode loadStats dans dashboard.component.ts
+
+// Mise à jour de la méthode loadStats dans dashboard.component.ts
+
+private loadStats(startDate?: Date, endDate?: Date): void {
+  console.log("Chargement des stats", startDate);
+  this.isLoading = true;
+  
+  this.statService.getResponsableStats(startDate, endDate).subscribe({
+    next: (data) => {
+      this.stats = {
+        ...this.stats,
+        ...data,
+        contributionsByMonth: data.contributionsByMonth || [],
+        upcomingMatches: this.sortAndLimitUpcomingMatches(data.upcomingMatches || []),
+        topScorers: data.topScorers || [],
+        topAssists: data.topAssists || [],
+        topAttendance: data.topAttendance || [],
+        
+        // 🆕 Nouvelles métriques sportives avec totalGoals
+        totalMatches: data.totalMatches || 0,
+        avgGoalsPerMatch: data.avgGoalsPerMatch || 0,
+        activePlayers: data.activePlayers || 0,
+        participationRate: data.participationRate || 0,
+        bestPerformingTeam: data.bestPerformingTeam || '',
+        bestTeamTotalGoals: data.bestTeamTotalGoals || 0, // 🔧 CHANGÉ: totalGoals
+        teamComparison: data.teamComparison || [],
+        
+        // Finances
+        totalDues: data.totalDues || 0,
+        totalFines: data.totalFines || 0,
+        
+        totalSanction: data.unpaidSanctions
+      };
+      
+      console.log("Stats chargées:", this.stats);
+      
+      // Mise à jour des graphiques
+      this.donutChartData.datasets[0].data = [
+        this.stats.paidSanctions.count,
+        this.stats.unpaidSanctions.count,
+      ];
+      this.barChartData.labels = this.stats.contributionsByMonth.map(item => item.month);
+      this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
+      
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement des statistiques:', err);
+      this.isLoading = false;
+    }
+  });
+}
+/**
+ * Méthode pour créer un graphique de comparaison des équipes (optionnel)
+ */
+private createTeamComparisonChart(): void {
+  if (this.stats.teamComparison && this.stats.teamComparison.length > 0) {
+    // Tu peux créer ici un graphique Chart.js pour comparer les équipes
+    // Par exemple, un graphique en barres comparant les avgGoals de chaque équipe
+    console.log('Données pour graphique équipes:', this.stats.teamComparison);
+  }
+}
   /**
  * Trie et limite les matchs à venir aux 3 plus proches
  */

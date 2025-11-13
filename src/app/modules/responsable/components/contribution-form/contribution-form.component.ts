@@ -58,7 +58,7 @@ export class ContributionFormComponent implements OnInit, AfterViewInit{
   [x: string]: any;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  dataSource = new MatTableDataSource<ContributionIndividuelle>([]);
+  dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = ['contribution', 'membre', 'montant', 'dateContribution', 'actions'];
   showCreateRow: boolean = false;
   newContribution: ContributionIndividuelle = {

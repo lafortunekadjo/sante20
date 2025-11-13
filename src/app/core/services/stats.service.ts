@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, ModelOptions } from '@angular/core';
 import { Observable, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../environment';
 import { AuthService } from './auth.service';
@@ -88,8 +88,8 @@ export class StatsService {
   }
 
   // Récupérer la liste des mois disponibles
-  getAvailableMonths(): Observable<Array<{ value: string; label: string }>> {
-    return this.http.get<Array<{ value: string; label: string }>>(`${environment.apiUrl}/stats/available-months`);
+  getAvailableMonths(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/stats/available-months`);
   }
 
   // Stats du joueur avec stats mensuelles

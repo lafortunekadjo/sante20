@@ -45,7 +45,7 @@ export class SanctionService {
 
 
   deleteSanction(id: number): Observable<void> {
-      return this.http.delete<void>(`${environment.apiUrl}/membres/all`).pipe(
+      return this.http.delete<void>(`${environment.apiUrl}/sanctions/${id}`).pipe(
         catchError(err => {
           console.error('Erreur lors de la suppression du membre:', err);
           return throwError(err);

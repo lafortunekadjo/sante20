@@ -135,8 +135,8 @@
                     <mat-icon class="discipline-icon">savings</mat-icon>
                   </div>
                   <div class="groupe-details">
-                    <!-- <h3 class="groupe-nom">{{ (stats.totalDues || 0) | number:'1.0-0' }}</h3> -->
-                    <p class="groupe-discipline">{{ 'dashboard.totalDues' | translate }} FCFA</p>
+                    <h3 class="groupe-nom">{{ (stats.totalDues || 0) | number:'1.0-0' }}</h3>
+                    <p class="groupe-discipline">{{ 'dashboard.totalDues' | translate }} </p>
                   </div>
                 </div>
               </div>
@@ -157,7 +157,7 @@
                     <mat-icon class="discipline-icon">gavel</mat-icon>
                   </div>
                   <div class="groupe-details">
-                    <!-- <h3 class="groupe-nom">{{ (stats.totalFines || 0) | number:'1.0-0' }}</h3> -->
+                    <h3 class="groupe-nom">{{ (stats.totalFines || 0) | number:'1.0-0' }}</h3>
                     <p class="groupe-discipline">{{ 'dashboard.totalFines' | translate }} FCFA</p>
                   </div>
                 </div>
@@ -187,58 +187,108 @@
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="demande-card performance-card">
+            <!-- Statistiques générales du groupe -->
+            <div class="demande-card performance-card sports-overview">
               <div class="demande-header">
                 <div class="groupe-info">
                   <div class="groupe-avatar">
                     <mat-icon class="discipline-icon">insights</mat-icon>
                   </div>
                   <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.performanceAnalysis' | translate }}</h3>
+                    <h3 class="groupe-nom">{{ 'dashboard.groupStats' | translate }}</h3>
                   </div>
                 </div>
               </div>
               <div class="demande-content">
-                <div class="chart-container">
-                  <canvas id="performanceChart"></canvas>
-                </div>
-                <div class="performance-metrics">
-                  <div class="metric-item">
-                    <!-- <span class="metric-value">{{ stats.wins || 0 }}</span> -->
-                    <span class="metric-label">{{ 'dashboard.wins' | translate }}</span>
+                <div class="sports-metrics-grid">
+                  <div class="sport-metric">
+                    <div class="metric-icon">
+                      <mat-icon>sports_soccer</mat-icon>
+                    </div>
+                    <div class="metric-data">
+                      <span class="metric-value">{{ stats.totalMatches || 0 }}</span>
+                      <span class="metric-label">{{ 'dashboard.totalMatches' | translate }}</span>
+                    </div>
                   </div>
-                  <div class="metric-item">
-                    <!-- <span class="metric-value">{{ stats.losses || 0 }}</span> -->
-                    <span class="metric-label">{{ 'dashboard.losses' | translate }}</span>
+                  <div class="sport-metric">
+                    <div class="metric-icon">
+                      <mat-icon>speed</mat-icon>
+                    </div>
+                    <div class="metric-data">
+                      <span class="metric-value">{{ (stats.avgGoalsPerMatch || 0) | number:'1.1-1' }}</span>
+                      <span class="metric-label">{{ 'dashboard.avgGoalsPerMatch' | translate }}</span>
+                    </div>
                   </div>
-                  <div class="metric-item">
-                    <!-- <span class="metric-value">{{ stats.draws || 0 }}</span> -->
-                    <span class="metric-label">{{ 'dashboard.draws' | translate }}</span>
+                  <div class="sport-metric">
+                    <div class="metric-icon">
+                      <mat-icon>people</mat-icon>
+                    </div>
+                    <div class="metric-data">
+                      <span class="metric-value">{{ stats.activePlayers || 0 }}</span>
+                      <span class="metric-label">{{ 'dashboard.activePlayers' | translate }}</span>
+                    </div>
+                  </div>
+                  <div class="sport-metric">
+                    <div class="metric-icon">
+                      <mat-icon>percent</mat-icon>
+                    </div>
+                    <div class="metric-data">
+                      <span class="metric-value">{{ (stats.participationRate || 0) | number:'1.0-0' }}%</span>
+                      <span class="metric-label">{{ 'dashboard.participationRate' | translate }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="demande-card performance-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar">
-                    <mat-icon class="discipline-icon">trending_up</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.performanceEvolution' | translate }}</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="chart-container">
-                  <canvas id="evolutionChart"></canvas>
-                </div>
-              </div>
-            </div>
+            <!-- Équipe la plus performante -->
+          <!-- Section de la carte meilleure équipe - MISE À JOUR -->
+<div class="demande-card performance-card best-team-card">
+  <div class="demande-header">
+    <div class="groupe-info">
+      <div class="groupe-avatar">
+        <mat-icon class="discipline-icon">emoji_events</mat-icon>
+      </div>
+      <div class="groupe-details">
+        <h3 class="groupe-nom">{{ 'dashboard.bestTeam' | translate }}</h3>
+        <p class="groupe-discipline">{{ stats.bestPerformingTeam || ('dashboard.noTeamData' | translate) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="demande-content">
+    <div class="best-team-stats">
+      <div class="team-performance-badge">
+        <mat-icon>trending_up</mat-icon>
+        <!-- 🔧 CHANGÉ: totalGoals au lieu de avgGoals -->
+        <span>{{ (stats.bestTeamTotalGoals || 0) }} {{ 'dashboard.totalGoals' | translate }}</span>
+      </div>
+    </div>
+    
+    <!-- Comparaison des équipes -->
+    <div class="team-comparison" >
+      <h4 class="comparison-title">{{ 'dashboard.teamComparison' | translate }}</h4>
+      <div class="comparison-list">
+        <div class="comparison-item" *ngFor="let team of stats.teamComparison; let i = index">
+          <div class="team-rank">{{ i + 1 }}</div>
+          <div class="team-info">
+            <span class="team-name">{{ team.teamName }}</span>
+            <span class="team-players">{{ team.playersCount }} {{ 'dashboard.players' | translate }}</span>
+          </div>
+          <div class="team-performance">
+            <!-- 🔧 CHANGÉ: totalGoals au lieu de avgGoals -->
+            <span class="performance-value">{{ team.totalGoals }}</span>
+            <span class="performance-label">{{ 'dashboard.totalGoals' | translate }}</span>
           </div>
         </div>
       </div>
+    </div>
+    
+    <div class="empty-state" *ngIf="stats.teamComparison?.length === 0">
+      <mat-icon>groups</mat-icon>
+      <span>{{ 'dashboard.noTeamComparison' | translate }}</span>
+    </div>
+  </div>
+</div>
 
       <!-- Section Meilleurs Performers -->
       <div class="feed-section performers-section full-width">
@@ -314,7 +364,7 @@
               </div>
             </div>
 
-                        <div class="demande-card performer-card">
+            <div class="demande-card performer-card">
               <div class="demande-header">
                 <div class="groupe-info">
                   <div class="groupe-avatar">
@@ -327,25 +377,23 @@
               </div>
               <div class="demande-content">
                 <div class="leaderboard">
-                  <div class="leaderboard-item" *ngFor="let assister of stats.topAttendance; let i = index">
+                  <div class="leaderboard-item" *ngFor="let member of stats.topAttendance; let i = index">
                     <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
                       {{ i + 1 }}
                     </div>
                     <div class="player-info">
-                      <span class="player-name">{{ assister.name }}</span>
-                      <span class="player-team">{{ assister.team }}</span>
+                      <span class="player-name">{{ member.name }}</span>
+                      <span class="player-team">{{ member.team }}</span>
                     </div>
-                    <div class="player-score">{{ assister.appearances }}</div>
+                    <div class="player-score">{{ member.appearances }}</div>
                   </div>
                   <div class="empty-state" *ngIf="stats.topAttendance?.length === 0">
-                    <mat-icon>assist_walker</mat-icon>
-                    <span>{{ 'dashboard.noAssisters' | translate }}</span>
+                    <mat-icon>event_available</mat-icon>
+                    <span>{{ 'dashboard.noAttendance' | translate }}</span>
                   </div>
                 </div>
               </div>
             </div>
-
-            
           </div>
         </div>
       </div>
@@ -362,42 +410,6 @@
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="demande-card activity-card">
-              <!-- <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar">
-                    <mat-icon class="discipline-icon">person_pin</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.attendance' | translate }}</h3>
-                    <p class="groupe-discipline">{{ 'dashboard.mostPresent' | translate }}</p>
-                  </div>
-                </div>
-              </div> -->
-              <!-- <!-- <div class="demande-content">
-                <div class="leaderboard">
-                  <div class="leaderboard-item" *ngFor="let attendance of stats.topAttendance | slice:0:3; let i = index">
-                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
-                      {{ i + 1 }}
-                    </div>
-                    <div class="player-info">
-                      <span class="player-name">{{ attendance.name }}</span>
-                      <span class="player-team">{{ attendance.team }}</span>
-                    </div>
-                    <div class="player-score">{{ attendance.appearances }}</div>
-                  </div>
-                  <div class="empty-state" *ngIf="stats.topAttendance?.length === 0">
-                    <div class="empty-illustration">
-                      <mat-icon class="empty-icon">person_off</mat-icon>
-                    </div>
-                    <div class="empty-content">
-                      <h3 class="empty-title">{{ 'dashboard.noAttendance' | translate }}</h3>
-                    </div>
-                  </div>
-                </div> 
-              </div> -->
-            </div>
-
             <div class="demande-card activity-card">
               <div class="demande-header">
                 <div class="groupe-info">
@@ -422,7 +434,7 @@
                       <span>{{ match.date | date:'HH:mm' }}</span>
                     </div>
                   </div>
-                  <div class="empty-state" *ngIf="stats.upcomingMatches?.length === 0">
+                  <div class="empty-state" *ngIf="stats.upcomingMatches.length === 0">
                     <div class="empty-illustration">
                       <mat-icon class="empty-icon">event_busy</mat-icon>
                     </div>

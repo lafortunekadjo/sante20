@@ -93,7 +93,9 @@ export class ContributionComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.loadAllData();
   }
-
+get activeContributionsCount(): number {
+  return (this.dataSource.data || []).filter(c => c.open).length;
+}
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;

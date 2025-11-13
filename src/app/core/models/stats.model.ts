@@ -6,20 +6,78 @@ export interface StatMember {
   assists?: number;  // Pour topAssists
   appearances?: number; // Pour topAttendance
 }
-
+// src/app/core/models/stats.model.ts - Mise à jour pour totalGoals
 export interface Stats {
+  // 👥 Membres
   memberCount: number;
-  totalContributions: number;
-  paidSanctions: { amount: number; count: number };
-  unpaidSanctions: { amount: number; count: number };
-  sanctionsPercentage: number;
-  contributionsByMonth: { month: string; amount: number; date: Date | null }[];
-  upcomingMatches: { date: Date; opponent: string }[];
-  topScorers: StatMember[];
-  topAssists: StatMember[];
-  topAttendance: StatMember[];
-}
 
+  // 💰 Finances
+  totalContributions: number;
+  totalDues?: number;
+  totalFines?: number;
+  
+  // 🔨 Sanctions détaillées
+  paidSanctions: {
+    amount: number;
+    count: number;
+  };
+  unpaidSanctions: {
+    amount: number;
+    count: number;
+  };
+  sanctionsPercentage: number;
+
+  // 📈 Données pour graphiques
+  contributionsByMonth: Array<{
+    month: string;
+    amount: number;
+    date?: Date;
+  }>;
+
+  // 🏆 Nouvelles métriques sportives
+  totalMatches?: number;
+  avgGoalsPerMatch?: number;          // Moyenne globale conservée
+  activePlayers?: number;
+  participationRate?: number;
+  bestPerformingTeam?: string;
+  bestTeamTotalGoals?: number;        // 🔧 CHANGÉ: totalGoals au lieu de avgGoals
+  
+  // 🏅 Comparaison des équipes
+  teamComparison?: Array<{
+    teamName: string;
+    totalGoals: number;               // 🔧 CHANGÉ: totalGoals au lieu de avgGoals
+    playersCount: number;
+  }>;
+
+  // 🏆 Classements individuels
+  topScorers: Array<{
+    name: string;
+    team: string;
+    goals: number;
+  }>;
+  
+  topAssists: Array<{
+    name: string;
+    team: string;
+    assists: number;
+  }>;
+  
+  topAttendance: Array<{
+    name: string;
+    team: string;
+    appearances: number;
+  }>;
+
+  // 🏈 Matchs à venir
+  upcomingMatches: Array<{
+    date: Date;
+    opponent: string;
+    location?: string;
+  }>;
+
+  // Autres propriétés existantes
+  totalSanction?: any;
+}
 export interface Sanctions {
   paid: { amount: number; count: number };
   unpaid: { amount: number; count: number };
@@ -52,8 +110,8 @@ export interface MemberStats {
   totalPlayingTime: number;
 
     // Nouvelles propriétés pour les stats mensuelles
-  monthlyStats?: MonthlyStats;
-  availableMonths?: Array<{ value: string; label: string }>; // Liste des mois disponibles
+  monthlyStats: MonthlyStats;
+  availableMonths: Array<{ value: string; label: string }>; // Liste des mois disponibles
 }
 
 // Interface pour les statistiques mensuelles d'une équipe

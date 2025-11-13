@@ -16,7 +16,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, Observable } from 'rxjs';
 import { Match } from '../../../../core/models/match.model';
 import { Membre } from '../../../../core/models/membre.model';
 import { Sanction } from '../../../../core/models/sanction.model';
@@ -291,6 +291,37 @@ filterMatchesByDate(date: Date | null) {
     this.newSanction.selectedDate = '';
     this.snackBar.open('Aucune sanction trouvée pour cette date de match', 'Fermer', { duration: 3000 });
   }
+}
+
+getTotalUnpaid(): Observable<{ totalCount: number, totalAmount: number }> {
+  // Remplacez this.sanctionService.getAllSanctions() par votre source de données réelle
+  return this.sanctionService.getSanctionsAll().pipe(
+    // 1. Filtrer et calculer les totaux
+    map((sanctions: Sanction[]) => {
+      
+      let totalCount = 0;
+      let totalAmount = 0;
+
+      // Filtrer les sanctions dont le statut est 'NON_PAYE'
+      const unpaidSanctions = sanctions.filter(
+        sanction => sanction.etat === 'NON_PAYEE'
+      );
+
+      // Calculer le montant total
+      unpaidSanctions.forEach(sanction => {
+        totalAmount += sanction.montant;
+      });
+
+      // Le nombre total est la taille du tableau filtré
+      totalCount = unpaidSanctions.length;
+
+      // 2. Retourner les totaux sous forme d'objet
+      return {
+        totalCount: totalCount,
+        totalAmount: totalAmount
+      };
+    })
+  );
 }
 
   loadSanctions() {
@@ -860,15 +891,28 @@ getTotalAmount(): number {
     }).length;
   }
 
-   getCountByStatus(status: string): number {
-    return this.allSanctions.filter(s => {
-      const sanction = typeof s.status === status 
-        ? s.status 
-        : (s.status as TypeSanction)?.id;
-      return sanction === status;
-    }).length;
-  }
+getCountByStatus(status: string): number {
+  return this.allSanctions.filter(s => {
+    let sanctionStatus: string | number;
 
+    // 1. Déterminer la valeur du statut de la sanction
+    if (typeof s.etat === 'string') {
+      // Cas 1: Si s.etat est déjà une chaîne de caractères (le statut lui-même)
+      sanctionStatus = s.etat;
+    } else if (s.etat && typeof s.etat === 'object' && 'id' in s.etat) {
+      // Cas 2: Si s.etat est un objet et contient une propriété 'id' (ex: TypeSanction)
+      sanctionStatus = s.etat.id; 
+    } else {
+      // Cas par défaut si la structure est inattendue
+      return false;
+    }
+
+    // 2. Comparer la valeur extraite avec le statut recherché
+    // Note: Assurez-vous que le type de 'status' (string) correspond au type de 'sanctionStatus' (string ou number).
+    // Si 'id' est un nombre, vous devrez peut-être convertir 'status' en nombre.
+    return sanctionStatus === status; 
+  }).length;
+}
   toggleView() {
     // Optional: Add logic here if needed, e.g., refresh data or apply filters on view change
     this.applyFilters(); // If filters need to be re-applied after view switch

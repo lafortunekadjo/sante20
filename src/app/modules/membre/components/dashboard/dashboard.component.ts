@@ -23,7 +23,8 @@ import { MatListModule } from '@angular/material/list';
 import { MemberStats, MonthlyStats } from '../../../../core/models/stats.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslateModule } from '@ngx-translate/core'; // ← Ajout
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Enregistrer les contrôleurs localement
 Chart.register(
@@ -37,6 +38,12 @@ Chart.register(
   Tooltip,
   Legend
 );
+
+interface MonthOption {
+  value: string;
+  label: string;
+  date: Date;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -61,7 +68,8 @@ Chart.register(
     MatListModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-    TranslateModule, // ← Ajout
+    TranslateModule,
+    MatTooltipModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -79,7 +87,52 @@ export class MDashboardComponent implements OnInit {
     goalsScored: 0,
     sanctions: { paid: { amount: 0, count: 0 }, unpaid: { amount: 0, count: 0 }, yellowCards: 0, redCards: 0 },
     totalPlayingTime: 0,
-    monthlyStats: undefined,
+    monthlyStats: {
+      month: '',
+      monthLabel: '',
+      bestTeam: {
+        teamName: '',
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        goalsScored: 0,
+        goalsConceded: 0,
+        matchesPlayed: 0,
+        winRate: 0
+      },
+      topScorer: {
+        playerName: '',
+        teamName: '',
+        goals: 0,
+        assists: 0,
+        appearances: 0,
+        manOfTheMatchCount: 0
+      },
+      topAssister: {
+        playerName: '',
+        teamName: '',
+        goals: 0,
+        assists: 0,
+        appearances: 0,
+        manOfTheMatchCount: 0
+      },
+      mostAppearances: {
+        playerName: '',
+        teamName: '',
+        goals: 0,
+        assists: 0,
+        appearances: 0,
+        manOfTheMatchCount: 0
+      },
+      mostManOfTheMatch: {
+        playerName: '',
+        teamName: '',
+        goals: 0,
+        assists: 0,
+        appearances: 0,
+        manOfTheMatchCount: 0
+      }
+    },
     availableMonths: [],
   };
   
@@ -131,6 +184,9 @@ export class MDashboardComponent implements OnInit {
     this.loadAvailableMonths();
   }
 
+  /**
+   * Applique le filtre de dates
+   */
   applyDateFilter(): void {
     const { start, end } = this.dateRangeForm.value;
     if (start && end && start <= end) {
@@ -140,22 +196,102 @@ export class MDashboardComponent implements OnInit {
     }
   }
 
+  /**
+   * Remet à zéro le filtre de dates
+   */
   resetDateFilter(): void {
     this.dateRangeForm.reset();
     this.loadStats();
   }
 
+  /**
+   * Gère le changement de mois sélectionné
+   */
   onMonthChange(month: string): void {
     this.selectedMonth = month;
     this.loadMonthlyStats(month);
   }
 
+  /**
+   * Retourne les mois disponibles filtrés (seulement les mois passés ou en cours de l'année actuelle)
+   */
+getFilteredAvailableMonths(): any[] {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+
+  return this.stats.availableMonths.filter(month => {
+    const [year, monthNum] = month.value.split('-').map(Number);
+    // Ne garder que les mois de l'année actuelle passés ou en cours
+    return year === currentYear && monthNum - 1 <= currentMonth;
+  });
+}
+
+  /**
+   * Détermine s'il faut afficher la meilleure équipe ou un message d'égalité
+   */
+  shouldShowBestTeam(): boolean {
+    if (!this.stats.monthlyStats?.bestTeam) {
+      return false;
+    }
+
+    // Logique d'égalité : si plusieurs équipes ont le même nombre de victoires max
+    // Cette logique doit être implémentée côté serveur idéalement
+    // Pour l'instant, on suppose que le serveur ne renvoie bestTeam que s'il y a un vrai gagnant
+    return true;
+  }
+
+  /**
+   * Vérifie si des stats mensuelles sont disponibles
+   */
+  hasMonthlyStats(): boolean {
+    return !!this.stats.monthlyStats && this.getFilteredAvailableMonths().length > 0;
+  }
+
+  /**
+   * Retourne le nombre de mois disponibles filtrés
+   */
+  getAvailableMonthsCount(): number {
+    return this.getFilteredAvailableMonths().length;
+  }
+
+  /**
+   * Formate le taux de victoire
+   */
+  getWinRateFormatted(): string {
+    if (!this.stats.monthlyStats?.bestTeam) return '0%';
+    return Math.round(this.stats.monthlyStats.bestTeam.winRate) + '%';
+  }
+
+  /**
+   * Calcule le nombre total de sanctions
+   */
+  getTotalSanctions(): number {
+    if (!this.stats.sanctions) return 0;
+    return this.stats.sanctions.paid.count + this.stats.sanctions.unpaid.count;
+  }
+
+  /**
+   * Calcule le pourcentage de progression des matches (basé sur un objectif théorique)
+   */
+  getMatchesProgress(): number {
+    const maxMatches = 20; // Objectif théorique de matches par période
+    return Math.min((this.stats.matchesPlayed / maxMatches) * 100, 100);
+  }
+
+  /**
+   * Charge les mois disponibles
+   */
   private loadAvailableMonths(): void {
     this.dashboardService.getAvailableMonths().subscribe({
       next: (months) => {
         this.stats.availableMonths = months;
-        if (months.length > 0) {
-          this.selectedMonth = months[0].value;
+        
+        // Sélectionner automatiquement le mois le plus récent disponible
+        const filteredMonths = this.getFilteredAvailableMonths();
+        if (filteredMonths.length > 0) {
+          // Prendre le dernier mois (le plus récent)
+          this.selectedMonth = filteredMonths[filteredMonths.length - 1].value;
           this.monthFilterForm.patchValue({ selectedMonth: this.selectedMonth });
           this.loadMonthlyStats(this.selectedMonth);
         }
@@ -166,12 +302,18 @@ export class MDashboardComponent implements OnInit {
     });
   }
 
+  /**
+   * Charge les statistiques mensuelles pour un mois donné
+   */
   private loadMonthlyStats(month: string): void {
     if (!month) return;
     
     this.dashboardService.getMonthlyStats(month).subscribe({
       next: (monthlyStats) => {
         this.stats.monthlyStats = monthlyStats;
+        
+        // Vérifier s'il y a égalité et ajuster l'affichage si nécessaire
+        this.checkForEquality(monthlyStats);
       },
       error: (err) => {
         console.error('Erreur lors du chargement des stats mensuelles:', err);
@@ -179,9 +321,25 @@ export class MDashboardComponent implements OnInit {
     });
   }
 
+  /**
+   * Vérifie s'il y a égalité entre les équipes
+   */
+  private checkForEquality(monthlyStats: MonthlyStats): void {
+    // Cette logique pourrait être étendue pour détecter les égalités
+    // Par exemple, vérifier si plusieurs équipes ont le même nombre de victoires
+    // et dans ce cas, ne pas afficher de "meilleure équipe"
+    
+    if (!monthlyStats.bestTeam) {
+      // Pas d'équipe dominante - probablement une égalité
+      console.log('Égalité détectée pour le mois:', monthlyStats.monthLabel);
+    }
+  }
+
+  /**
+   * Charge les statistiques principales
+   */
   private loadStats(startDate?: Date, endDate?: Date): void {
     this.isLoading = true;
-    console.log(this.isLoading);
     
     this.dashboardService.getResponsableStats2(startDate, endDate).subscribe({
       next: (data) => {
@@ -195,13 +353,8 @@ export class MDashboardComponent implements OnInit {
           topAttendance: data.topAttendance || [],
         };
         
-        this.donutChartData.datasets[0].data = [
-          this.stats.sanctions.paid.count,
-          this.stats.sanctions.unpaid.count,
-        ];
-        
-        this.barChartData.labels = this.stats.passesByMatch.map(item => item.match);
-        this.barChartData.datasets[0].data = this.stats.passesByMatch.map(item => item.passes);
+        // Mettre à jour les données des graphiques
+        this.updateChartData();
         
         this.isLoading = false;
       },
@@ -212,12 +365,18 @@ export class MDashboardComponent implements OnInit {
     });
   }
 
-  hasMonthlyStats(): boolean {
-    return !!this.stats.monthlyStats;
-  }
-
-  getWinRateFormatted(): string {
-    if (!this.stats.monthlyStats?.bestTeam) return '0%';
-    return this.stats.monthlyStats.bestTeam.winRate.toFixed(1) + '%';
+  /**
+   * Met à jour les données des graphiques
+   */
+  private updateChartData(): void {
+    // Graphique en donut pour les sanctions
+    this.donutChartData.datasets[0].data = [
+      this.stats.sanctions.paid.count,
+      this.stats.sanctions.unpaid.count,
+    ];
+    
+    // Graphique en barres pour les passes
+    this.barChartData.labels = this.stats.passesByMatch.map(item => item.match);
+    this.barChartData.datasets[0].data = this.stats.passesByMatch.map(item => item.passes);
   }
 }
