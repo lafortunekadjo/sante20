@@ -1,185 +1,300 @@
-<div class="signup-container">
-  <!-- Header -->
-  <div class="signup-header">
-    <mat-icon class="header-icon">person_add</mat-icon>
-    <h1 class="header-title">Créer un compte</h1>
-    <p class="header-subtitle">Rejoignez la communauté sportive</p>
-  </div>
+<div class="signup-page">
+  <!-- Background harmonisé -->
+  <div class="signup-background"></div>
+  
+  <div class="signup-container">
+    <!-- Header harmonisé -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon-wrapper">
+          <mat-icon class="header-icon">person_add</mat-icon>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">{{ 'auth.signup.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'auth.signup.subtitle' | translate }}</p>
+        </div>
+      </div>
+    </div>
 
-  <!-- Card -->
-  <mat-card class="signup-card">
-    <mat-stepper [linear]="true" #stepper>
-      
-      <!-- Étape 1: Compte -->
-      <mat-step [stepControl]="accountForm">
-        <ng-template matStepLabel>Informations de compte</ng-template>
+    <!-- Card principale -->
+    <div class="signup-form-container">
+      <mat-stepper [linear]="true" #stepper class="signup-stepper">
         
-        <form [formGroup]="accountForm" class="step-form">
-          <h3 class="step-title">
-            <mat-icon>account_circle</mat-icon>
-            Créez votre compte
-          </h3>
+        <!-- Étape 1: Compte -->
+        <mat-step [stepControl]="accountForm" class="step-account">
+          <ng-template matStepLabel>{{ 'auth.signup.step1.title' | translate }}</ng-template>
+          
+          <div class="step-content">
+            <div class="step-header">
+              <div class="step-icon">
+                <mat-icon>account_circle</mat-icon>
+              </div>
+              <div class="step-info">
+                <h3 class="step-title">{{ 'auth.signup.step1.description' | translate }}</h3>
+                <p class="step-subtitle">{{ 'auth.signup.step1.subtitle' | translate }}</p>
+              </div>
+            </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nom d'utilisateur</mat-label>
-            <input matInput formControlName="username" placeholder="Choisissez un nom d'utilisateur">
-            <mat-icon matPrefix>person</mat-icon>
-            <mat-error>{{ getErrorMessage('account', 'username') }}</mat-error>
-          </mat-form-field>
+            <form [formGroup]="accountForm" class="step-form">
+              <!-- Username -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.signup.username' | translate }}</mat-label>
+                  <input matInput 
+                         formControlName="username" 
+                         [placeholder]="'auth.signup.usernamePlaceholder' | translate"
+                         autocomplete="username">
+                  <mat-icon matPrefix>person</mat-icon>
+                  <mat-error>{{ getErrorMessage('account', 'username') }}</mat-error>
+                </mat-form-field>
+              </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" placeholder="votre@email.com">
-            <mat-icon matPrefix>email</mat-icon>
-            <mat-error>{{ getErrorMessage('account', 'email') }}</mat-error>
-          </mat-form-field>
+              <!-- Email -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.email' | translate }}</mat-label>
+                  <input matInput 
+                         type="email" 
+                         formControlName="email" 
+                         [placeholder]="'auth.emailPlaceholder' | translate"
+                         autocomplete="email">
+                  <mat-icon matPrefix>email</mat-icon>
+                  <mat-error>{{ getErrorMessage('account', 'email') }}</mat-error>
+                </mat-form-field>
+              </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Mot de passe</mat-label>
-            <input 
-              matInput 
-              [type]="hidePassword ? 'password' : 'text'" 
-              formControlName="password"
-              placeholder="Minimum 6 caractères">
-            <mat-icon matPrefix>lock</mat-icon>
-            <button 
-              mat-icon-button 
-              matSuffix 
-              type="button"
-              (click)="hidePassword = !hidePassword">
-              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-            </button>
-            <mat-error>{{ getErrorMessage('account', 'password') }}</mat-error>
-          </mat-form-field>
+              <!-- Password -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.password' | translate }}</mat-label>
+                  <input matInput 
+                         [type]="hidePassword ? 'password' : 'text'" 
+                         formControlName="password"
+                         [placeholder]="'auth.passwordPlaceholder' | translate"
+                         autocomplete="new-password">
+                  <mat-icon matPrefix>lock</mat-icon>
+                  <button mat-icon-button 
+                          matSuffix 
+                          type="button"
+                          (click)="hidePassword = !hidePassword"
+                          [attr.aria-label]="'Toggle password visibility'">
+                    <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error>{{ getErrorMessage('account', 'password') }}</mat-error>
+                </mat-form-field>
+              </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Confirmer le mot de passe</mat-label>
-            <input 
-              matInput 
-              [type]="hideConfirmPassword ? 'password' : 'text'" 
-              formControlName="confirmPassword"
-              placeholder="Répétez votre mot de passe">
-            <mat-icon matPrefix>lock</mat-icon>
-            <button 
-              mat-icon-button 
-              matSuffix 
-              type="button"
-              (click)="hideConfirmPassword = !hideConfirmPassword">
-              <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-            </button>
-            <mat-error>{{ getErrorMessage('account', 'confirmPassword') }}</mat-error>
-          </mat-form-field>
+              <!-- Confirm Password -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.signup.confirmPassword' | translate }}</mat-label>
+                  <input matInput 
+                         [type]="hideConfirmPassword ? 'password' : 'text'" 
+                         formControlName="confirmPassword"
+                         [placeholder]="'auth.signup.confirmPasswordPlaceholder' | translate"
+                         autocomplete="new-password">
+                  <mat-icon matPrefix>lock</mat-icon>
+                  <button mat-icon-button 
+                          matSuffix 
+                          type="button"
+                          (click)="hideConfirmPassword = !hideConfirmPassword"
+                          [attr.aria-label]="'Toggle password visibility'">
+                    <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error>{{ getErrorMessage('account', 'confirmPassword') }}</mat-error>
+                </mat-form-field>
+              </div>
 
-          <div class="step-actions">
-            <button mat-raised-button color="primary" matStepperNext [disabled]="accountForm.invalid">
-              <span>Suivant</span>
-              <mat-icon>arrow_forward</mat-icon>
-            </button>
+              <!-- Actions -->
+              <div class="step-actions">
+                <button mat-raised-button 
+                        color="primary" 
+                        matStepperNext 
+                        [disabled]="accountForm.invalid"
+                        class="next-button">
+                  <span>{{ 'common.next' | translate }}</span>
+                  <mat-icon>arrow_forward</mat-icon>
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </mat-step>
+        </mat-step>
 
-      <!-- Étape 2: Profil -->
-      <mat-step [stepControl]="profileForm">
-        <ng-template matStepLabel>Informations personnelles</ng-template>
-        
-        <form [formGroup]="profileForm" class="step-form">
-          <h3 class="step-title">
-            <mat-icon>badge</mat-icon>
-            Complétez votre profil
-          </h3>
+        <!-- Étape 2: Profil -->
+        <mat-step [stepControl]="profileForm" class="step-profile">
+          <ng-template matStepLabel>{{ 'auth.signup.step2.title' | translate }}</ng-template>
+          
+          <div class="step-content">
+            <div class="step-header">
+              <div class="step-icon">
+                <mat-icon>badge</mat-icon>
+              </div>
+              <div class="step-info">
+                <h3 class="step-title">{{ 'auth.signup.step2.description' | translate }}</h3>
+                <p class="step-subtitle">{{ 'auth.signup.step2.subtitle' | translate }}</p>
+              </div>
+            </div>
 
-          <div class="form-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Nom</mat-label>
-              <input matInput formControlName="nom" placeholder="Votre nom">
-              <mat-icon matPrefix>person</mat-icon>
-              <mat-error>{{ getErrorMessage('profile', 'nom') }}</mat-error>
-            </mat-form-field>
+            <form [formGroup]="profileForm" class="step-form">
+              <!-- Nom et Prénom -->
+              <div class="form-row">
+                <div class="form-field-container">
+                  <mat-form-field appearance="outline" class="form-field">
+                    <mat-label>{{ 'auth.signup.lastName' | translate }}</mat-label>
+                    <input matInput 
+                           formControlName="nom" 
+                           [placeholder]="'auth.signup.lastNamePlaceholder' | translate"
+                           autocomplete="family-name">
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-error>{{ getErrorMessage('profile', 'nom') }}</mat-error>
+                  </mat-form-field>
+                </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Prénom</mat-label>
-              <input matInput formControlName="prenom" placeholder="Votre prénom">
-              <mat-icon matPrefix>person</mat-icon>
-              <mat-error>{{ getErrorMessage('profile', 'prenom') }}</mat-error>
-            </mat-form-field>
+                <div class="form-field-container">
+                  <mat-form-field appearance="outline" class="form-field">
+                    <mat-label>{{ 'auth.signup.firstName' | translate }}</mat-label>
+                    <input matInput 
+                           formControlName="prenom" 
+                           [placeholder]="'auth.signup.firstNamePlaceholder' | translate"
+                           autocomplete="given-name">
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-error>{{ getErrorMessage('profile', 'prenom') }}</mat-error>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <!-- Date de naissance et Sexe -->
+              <div class="form-row">
+                <div class="form-field-container">
+                  <mat-form-field appearance="outline" class="form-field">
+                    <mat-label>{{ 'auth.signup.birthDate' | translate }}</mat-label>
+                    <input matInput 
+                           [matDatepicker]="picker" 
+                           formControlName="dateNaissance"
+                           [max]="maxDate"
+                           readonly>
+                    <mat-icon matPrefix>cake</mat-icon>
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                    <mat-error>{{ getErrorMessage('profile', 'dateNaissance') }}</mat-error>
+                  </mat-form-field>
+                </div>
+
+                <div class="form-field-container">
+                  <mat-form-field appearance="outline" class="form-field">
+                    <mat-label>{{ 'auth.signup.gender' | translate }}</mat-label>
+                    <mat-select formControlName="sexe">
+                      <mat-option value="masculin">
+                        <div class="select-option">
+                          <mat-icon class="option-icon">male</mat-icon>
+                          <span>{{ 'auth.signup.male' | translate }}</span>
+                        </div>
+                      </mat-option>
+                      <mat-option value="feminin">
+                        <div class="select-option">
+                          <mat-icon class="option-icon">female</mat-icon>
+                          <span>{{ 'auth.signup.female' | translate }}</span>
+                        </div>
+                      </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>wc</mat-icon>
+                    <mat-error>{{ getErrorMessage('profile', 'sexe') }}</mat-error>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <!-- Téléphone -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.signup.phone' | translate }}</mat-label>
+                  <input matInput 
+                         formControlName="tel" 
+                         [placeholder]="'auth.signup.phonePlaceholder' | translate"
+                         autocomplete="tel">
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <mat-hint>{{ 'auth.signup.phoneHint' | translate }}</mat-hint>
+                  <mat-error>{{ getErrorMessage('profile', 'tel') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <!-- Adresse -->
+              <div class="form-field-container">
+                <mat-form-field appearance="outline" class="form-field">
+                  <mat-label>{{ 'auth.signup.address' | translate }}</mat-label>
+                  <textarea matInput 
+                            formControlName="adresse" 
+                            rows="2" 
+                            [placeholder]="'auth.signup.addressPlaceholder' | translate"
+                            autocomplete="street-address"></textarea>
+                  <mat-icon matPrefix>home</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <!-- Conditions -->
+              <div class="conditions-container">
+                <mat-checkbox formControlName="accepteConditions" 
+                              color="primary"
+                              class="conditions-checkbox">
+                  <span class="conditions-text">
+                    {{ 'auth.signup.acceptTerms1' | translate }}
+                    <a href="/conditions" target="_blank">{{ 'auth.signup.termsOfService' | translate }}</a>
+                    {{ 'auth.signup.acceptTerms2' | translate }}
+                    <a href="/privacy" target="_blank">{{ 'auth.signup.privacyPolicy' | translate }}</a>
+                  </span>
+                </mat-checkbox>
+              </div>
+
+              <!-- Actions -->
+              <div class="step-actions">
+                <button mat-stroked-button 
+                        matStepperPrevious 
+                        type="button"
+                        class="back-button">
+                  <mat-icon>arrow_back</mat-icon>
+                  <span>{{ 'common.previous' | translate }}</span>
+                </button>
+                
+                <button mat-raised-button 
+                        color="primary" 
+                        type="button"
+                        (click)="onSubmit()"
+                        [disabled]="profileForm.invalid || isLoading"
+                        class="submit-button">
+                  <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+                  <span *ngIf="!isLoading">{{ 'auth.signup.createAccount' | translate }}</span>
+                  <span *ngIf="isLoading">{{ 'auth.signup.creating' | translate }}...</span>
+                </button>
+              </div>
+            </form>
           </div>
+        </mat-step>
+      </mat-stepper>
+    </div>
 
-          <div class="form-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Date de naissance</mat-label>
-              <input 
-                matInput 
-                [matDatepicker]="picker" 
-                formControlName="dateNaissance"
-                [max]="maxDate">
-              <mat-icon matPrefix>cake</mat-icon>
-              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-              <mat-error>{{ getErrorMessage('profile', 'dateNaissance') }}</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Sexe</mat-label>
-              <mat-select formControlName="sexe">
-                <mat-option value="masculin">
-                  <mat-icon class="option-icon">male</mat-icon>
-                  Masculin
-                </mat-option>
-                <mat-option value="feminin">
-                  <mat-icon class="option-icon">female</mat-icon>
-                  Féminin
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix>wc</mat-icon>
-              <mat-error>{{ getErrorMessage('profile', 'sexe') }}</mat-error>
-            </mat-form-field>
+    <!-- Messages d'erreur/succès -->
+    <div *ngIf="errorMessage" class="message-container">
+      <div class="status-message message-error">
+        <div class="message-icon">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="message-content">
+          <div class="message-text">
+            <h4>{{ 'auth.signup.error' | translate }}</h4>
+            <p>{{ errorMessage }}</p>
           </div>
+        </div>
+        <button mat-icon-button (click)="clearError()" class="message-close">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Téléphone</mat-label>
-            <input matInput formControlName="tel" placeholder="6XX XX XX XX">
-            <mat-icon matPrefix>phone</mat-icon>
-            <mat-hint>Format: 9 à 15 chiffres</mat-hint>
-            <mat-error>{{ getErrorMessage('profile', 'tel') }}</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Adresse</mat-label>
-            <textarea matInput formControlName="adresse" rows="2" placeholder="Votre adresse"></textarea>
-            <mat-icon matPrefix>home</mat-icon>
-          </mat-form-field>
-
-          <div class="conditions-box">
-            <mat-checkbox formControlName="accepteConditions" color="primary">
-              J'accepte les <a href="/conditions" target="_blank">conditions d'utilisation</a> 
-              et la <a href="/privacy" target="_blank">politique de confidentialité</a>
-            </mat-checkbox>
-          </div>
-
-          <div class="step-actions">
-            <button mat-stroked-button matStepperPrevious type="button">
-              <mat-icon>arrow_back</mat-icon>
-              <span>Précédent</span>
-            </button>
-            <button 
-              mat-raised-button 
-              color="primary" 
-              type="button"
-              (click)="onSubmit()"
-              [disabled]="profileForm.invalid || isLoading">
-              <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
-              <span *ngIf="!isLoading">Créer mon compte</span>
-              <span *ngIf="isLoading">Création...</span>
-            </button>
-          </div>
-        </form>
-      </mat-step>
-    </mat-stepper>
-  </mat-card>
-
-  <!-- Link to login -->
-  <div class="login-link">
-    <p>Vous avez déjà un compte ? <a routerLink="/login">Se connecter</a></p>
+    <!-- Lien vers login -->
+    <div class="auth-links">
+      <p class="auth-link-text">
+        {{ 'auth.signup.alreadyHaveAccount' | translate }} 
+        <a routerLink="/login" class="auth-link">{{ 'auth.login' | translate }}</a>
+      </p>
+    </div>
   </div>
 </div>
