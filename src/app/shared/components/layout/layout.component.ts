@@ -261,6 +261,30 @@ export class LayoutComponent implements OnInit, OnDestroy {
         actif: true,
         categorie: 'COMMUN'
       }
+      ,
+      {
+        id: 6,
+        code: 'SUGGESTIONS',
+        label: 'Suggestions',
+        icone: 'newspaper',
+        route: '/suggestions',
+        description: 'Faites des suggestions',
+        ordre: 6,
+        actif: true,
+        categorie: 'COMMUN'
+      },
+      ,
+      {
+        id: 5,
+        code: 'OBJECTIFS',
+        label: 'Objectifs',
+        icone: 'newspaper',
+        route: '/objectifs',
+        description: 'Fixer vos objectifs',
+        ordre: 5,
+        actif: true,
+        categorie: 'COMMUN'
+      },
     ];
   }
 
