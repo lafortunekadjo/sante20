@@ -228,17 +228,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
         actif: true,
         categorie: 'COMMUN'
       },
-      {
-        id: 2,
-        code: 'MES_DEMANDES',
-        label: 'Mes demandes',
-        icone: 'inbox',
-        route: '/mes-demandes',
-        description: 'Mes demandes d\'adhésion',
-        ordre: 2,
-        actif: true,
-        categorie: 'COMMUN'
-      },
+      // {
+      //   id: 2,
+      //   code: 'MES_DEMANDES',
+      //   label: 'Mes demandes',
+      //   icone: 'inbox',
+      //   route: '/mes-demandes',
+      //   description: 'Mes demandes d\'adhésion',
+      //   ordre: 2,
+      //   actif: true,
+      //   categorie: 'COMMUN'
+      // },
       {
         id: 3,
         code: 'ACTUALITES',
