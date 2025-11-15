@@ -260,8 +260,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         ordre: 4,
         actif: true,
         categorie: 'COMMUN'
-      }
-      ,
+      },
       {
         id: 6,
         code: 'SUGGESTIONS',
@@ -284,7 +283,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         ordre: 5,
         actif: true,
         categorie: 'COMMUN'
-      },
+      }
     ];
   }
 
