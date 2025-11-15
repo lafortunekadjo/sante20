@@ -250,19 +250,19 @@ export class LayoutComponent implements OnInit, OnDestroy {
         actif: true,
         categorie: 'COMMUN'
       },
+      // {
+      //   id: 4,
+      //   code: 'CHAT',
+      //   label: 'Messages',
+      //   icone: 'chat',
+      //   route: '/chat',
+      //   description: 'Messagerie',
+      //   ordre: 4,
+      //   actif: false,
+      //   categorie: 'COMMUN'
+      // },
       {
         id: 4,
-        code: 'CHAT',
-        label: 'Messages',
-        icone: 'chat',
-        route: '/chat',
-        description: 'Messagerie',
-        ordre: 4,
-        actif: false,
-        categorie: 'COMMUN'
-      },
-      {
-        id: 5,
         code: 'OBJECTIFS',
         label: 'Objectifs',
         icone: 'flag',
@@ -273,7 +273,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         categorie: 'COMMUN'
       },
       {
-        id: 6,
+        id: 5,
         code: 'SUGGESTIONS',
         label: 'Suggestions',
         icone: 'lightbulb',
