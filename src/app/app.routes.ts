@@ -55,18 +55,7 @@ export const routes: Routes = [
   //   path: '',
   //   component: GroupesExploreComponent,
   // },
-  {
-    path: 'login',
-    component: LoginComponent
-  },
-  {
-    path: 'signup',
-    component: SignupComponent
-  },
-  {
-    path: 'reset-password',
-    component: PasswordResetDialogComponent
-  },
+
 
   // ==================== ROUTES PROTÉGÉES (avec Layout et authentification) ====================
   {
@@ -90,6 +79,18 @@ export const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
       },
+        {
+    path: 'login',
+    component: LoginComponent
+  },
+  {
+    path: 'signup',
+    component: SignupComponent
+  },
+  {
+    path: 'reset-password',
+    component: PasswordResetDialogComponent
+  },
       {
         path: 'actualites',
         component: NewsFeedComponent,
