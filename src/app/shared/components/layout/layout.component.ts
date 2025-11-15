@@ -258,7 +258,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         route: '/chat',
         description: 'Messagerie',
         ordre: 4,
-        actif: true,
+        actif: false,
         categorie: 'COMMUN'
       },
       {
@@ -272,7 +272,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
         actif: true,
         categorie: 'COMMUN'
       },
-      ,
       {
         id: 5,
         code: 'OBJECTIFS',
