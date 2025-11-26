@@ -101,7 +101,13 @@ export class GroupeConfigComponent implements OnInit {
       modeEquipe: ['STATIQUE'],
       fraisAdhesion: [0, [Validators.required, Validators.min(0)]],
       heureMatch: [null, Validators.required],
-      abreviation: ['']
+      abreviation: [''],
+      // Nouveaux champs
+      description: ['', [Validators.maxLength(500)]],
+      quartier: ['', [Validators.maxLength(100)]],
+      capaciteMax: [30, [Validators.min(3), Validators.max(1000)]],
+      accepteNouveauxMembres: [true],
+      niveauRequis: ['TOUS'],
     });
 
     this.questionForm = this.fb.group({
@@ -310,6 +316,8 @@ loadVillesEtStades(callback: () => void): void {
         ...this.groupe,
         ...this.groupeForm.value
       };
+
+      console.log(groupeData)
 
       this.groupeService.updateGroupe(this.groupe.id, groupeData).subscribe({
         next: () => {

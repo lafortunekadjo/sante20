@@ -545,4 +545,30 @@ isLoggedIn(): boolean {
       })
     );
   }
+
+// Dans auth.service.ts
+
+/**
+ * Vérifie si l'utilisateur connecté a un rôle de responsable
+ */
+isResponsable(): boolean {
+  const roles = this.getRoles();
+  const rolesResponsable = ['RESPONSABLE', 'ADMIN', 'MEMBRE', 'CANDIDAT'];
+  return roles.some(role => rolesResponsable.includes(role));
+}
+
+/**
+ * Vérifie si l'utilisateur a un rôle spécifique
+ */
+hasRole(role: string): boolean {
+  return this.getRoles().includes(role);
+}
+
+/**
+ * Vérifie si l'utilisateur a au moins un des rôles spécifiés
+ */
+hasAnyRole(roles: string[]): boolean {
+  const userRoles = this.getRoles();
+  return roles.some(role => userRoles.includes(role));
+}
 }
