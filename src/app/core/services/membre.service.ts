@@ -35,6 +35,7 @@ export class MembreService {
     
     const payload = {
       nom: membre.nom,
+      sexe: membre.sexe,
       prenom: membre.prenom,
       dateNaissance: membre.dateNaissance,
       poste: membre.poste || null,
@@ -42,7 +43,7 @@ export class MembreService {
       cotisationPayee: membre.cotisationPayee,
       roleCO: membre.roleCO || null,
       equipe: membre.equipe.id || null,
-      groupe: membre.groupe.id,
+      groupe: membre.groupe || membre.groupe.id ,
       user: membre.user.id,
       active: membre.active
     };

@@ -33,6 +33,8 @@ import { RoleCustomService } from '../../../../core/services/role-custom.service
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
+import { ImportResult } from '../../../../core/services/excel-import.service';
+import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-dialog.component';
 
 @Component({
   selector: 'app-membre-form',
@@ -94,7 +96,12 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     roleCO: '',
     equipe: { id: 0, nom: '' },
     groupe: {
-      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       profilePhotoUrl: '',
       heureMatch: '',
       isPublic: false,
@@ -132,7 +139,12 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     roleCO: '',
     equipe: { id: 0, nom: '' },
     groupe: {
-      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       profilePhotoUrl: '',
       heureMatch: '',
       isPublic: false,
@@ -504,7 +516,12 @@ loadData() {
       roleCO: '',
       equipe: { id: 0, nom: '' },
       groupe: {
-        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+          id: 0, nom: '',
+          stadiumLat: 0,
+          stadiumLon: 0,
+          radius: 0
+        },
         profilePhotoUrl: '',
         heureMatch: '',
         isPublic: false,
@@ -612,7 +629,12 @@ showErrorMessage(message: string) {
       roleCO: '',
       equipe: { id: 0, nom: '' },
       groupe: {
-        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+          id: 0, nom: '',
+          stadiumLat: 0,
+          stadiumLon: 0,
+          radius: 0
+        },
         profilePhotoUrl: '',
         heureMatch: '',
         isPublic: false,
@@ -925,4 +947,68 @@ compareRoles(r1: RoleCustom, r2: RoleCustom): boolean {
 //       sexe: '', cni: '', adresse: '', tel: '', assurance: true
 //     };
 //   }
+
+
+/**
+ * Ouvrir le dialog d'importation Excel
+ */
+openExcelImportDialog(): void {
+  const dialogRef = this.dialog.open(ExcelImportDialogComponent, {
+    width: '900px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    disableClose: true, // Empêche la fermeture accidentelle
+    data: {
+      equipes: this.equipes // Passer les équipes pour la validation
+    }
+  });
+
+  dialogRef.afterClosed().subscribe((result: ImportResult | undefined) => {
+    if (result) {
+      console.log('Résultat de l\'importation:', result);
+      
+      // Afficher le résultat
+      if (result.successCount > 0) {
+        this.showSuccessMessage(
+          `${result.successCount} membre(s) importé(s) avec succès !`
+        );
+      }
+
+      if (result.errorCount > 0) {
+        this.showErrorMessage(
+          `${result.errorCount} erreur(s) lors de l'importation. Vérifiez les détails.`
+        );
+      }
+
+      // Recharger les données pour afficher les nouveaux membres
+      this.loadData();
+    }
+  });
+}
+
+// ===== MÉTHODES UTILITAIRES POUR LES MESSAGES (si pas déjà présentes) =====
+
+/**
+ * Afficher un message de succès
+ */
+// private showSuccessMessage(message: string): void {
+//   this.snackBar.open(message, 'Fermer', {
+//     duration: 5000,
+//     horizontalPosition: 'end',
+//     verticalPosition: 'top',
+//     panelClass: ['success-snackbar']
+//   });
+// }
+
+// /**
+//  * Afficher un message d'erreur
+//  */
+// private showErrorMessage(message: string): void {
+//   this.snackBar.open(message, 'Fermer', {
+//     duration: 6000,
+//     horizontalPosition: 'end',
+//     verticalPosition: 'top',
+//     panelClass: ['error-snackbar']
+//   });
+// }
 }

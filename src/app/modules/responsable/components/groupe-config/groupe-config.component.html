@@ -16,55 +16,202 @@
     <p class="loading-text">Chargement de la configuration...</p>
   </div>
   @if (isDialogOpen()) {
-      <div class="modal-backdrop" (click)="closeDialog()">
+     <div class="modal-backdrop" (click)="closeDialog()">
         
-        <!-- Contenu du Modal -->
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          
-          <!-- En-tête -->
-          <h3 class="modal-header">Nouveau Stade</h3>
-          
-          <!-- Formulaire -->
-          <form (ngSubmit)="submitStade()">
-            
-            <div class="form-group">
-              <label for="stadeName">Nom du Stade</label>
-              <input 
-                id="stadeName" 
-                type="text" 
-                   name="stadeNameInput"
-                 [(ngModel)]="stadeNom" 
-                required
-                maxlength="50"
-                class="text-input"
-                placeholder="Ex: Stade Marion"
-              />
-            </div>
-
-            <!-- Boutons d'action -->
-            <div class="btn-group">
-              <!-- Annuler (Secondaire) -->
-              <button 
-                type="button" 
-                (click)="closeDialog()" 
-                class="btn-base btn-secondary">
-                Annuler
-              </button>
-              
-              <!-- Enregistrer (Primaire) -->
-              <button 
-                type="submit" 
-                [disabled]="!isFormValid()"
-                class="btn-base btn-primary"
-                [style.opacity]="!isFormValid() ? '0.6' : '1'"
-                >
-                Enregistrer
-              </button>
-            </div>
-            
-          </form>
-
+  <!-- Contenu du Modal -->
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <!-- En-tête -->
+    <div class="modal-header">
+      <h3>
+        <mat-icon>stadium</mat-icon>
+        Nouveau Stade
+      </h3>
+      <button mat-icon-button (click)="closeDialog()" class="close-btn">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <!-- Formulaire -->
+    <form (ngSubmit)="submitStade()" class="stade-form">
+      
+      <!-- Section Informations de base -->
+      <div class="form-section">
+        <h4 class="section-title">
+          <mat-icon>info</mat-icon>
+          Informations du stade
+        </h4>
+        
+        <div class="form-group">
+          <label for="stadeName">Nom du Stade *</label>
+          <input 
+            id="stadeName" 
+            type="text" 
+            name="stadeNameInput"
+            [(ngModel)]="stadeNom" 
+            required
+            maxlength="50"
+            class="text-input"
+            placeholder="Ex: Stade Marion"
+          />
+          <div class="input-helper">Maximum 50 caractères</div>
         </div>
+      </div>
+
+      <!-- Section Localisation -->
+      <div class="form-section">
+        <h4 class="section-title">
+          <mat-icon>location_on</mat-icon>
+          Localisation GPS
+        </h4>
+        
+        <!-- Bouton de géolocalisation -->
+        <div class="location-actions">
+          <button 
+            type="button" 
+            (click)="getCurrentLocation()" 
+            [disabled]="isGettingLocation"
+            class="btn-location">
+            <mat-icon>{{ isGettingLocation ? 'hourglass_empty' : 'my_location' }}</mat-icon>
+            {{ isGettingLocation ? 'Localisation...' : 'Utiliser ma position actuelle' }}
+          </button>
+          
+          <div class="location-status" *ngIf="locationMessage">
+            <mat-icon [color]="locationMessageType === 'success' ? 'primary' : 'warn'">
+              {{ locationMessageType === 'success' ? 'check_circle' : 'error' }}
+            </mat-icon>
+            <span>{{ locationMessage }}</span>
+          </div>
+        </div>
+
+        <!-- Coordonnées manuelles -->
+        <div class="coordinates-grid">
+          <div class="form-group">
+            <label for="latitude">Latitude</label>
+            <input 
+              id="latitude" 
+              type="number" 
+              step="any"
+              name="latitudeInput"
+              [(ngModel)]="stadeLatitude" 
+              class="text-input"
+              placeholder="Ex: 3.8480"
+              min="-90"
+              max="90"
+            />
+            <div class="input-helper">Entre -90 et 90</div>
+          </div>
+
+          <div class="form-group">
+            <label for="longitude">Longitude</label>
+            <input 
+              id="longitude" 
+              type="number" 
+              step="any"
+              name="longitudeInput"
+              [(ngModel)]="stadeLongitude" 
+              class="text-input"
+              placeholder="Ex: 11.5021"
+              min="-180"
+              max="180"
+            />
+            <div class="input-helper">Entre -180 et 180</div>
+          </div>
+        </div>
+
+        <!-- Rayon de présence -->
+        <div class="form-group">
+          <label for="rayon">Rayon de détection (mètres)</label>
+          <div class="rayon-input-group">
+            <input 
+              id="rayon" 
+              type="number" 
+              name="rayonInput"
+              [(ngModel)]="stadeRayon" 
+              class="text-input rayon-input"
+              placeholder="500"
+              min="10"
+              max="5000"
+              step="10"
+            />
+            <span class="rayon-unit">m</span>
+          </div>
+          <div class="input-helper">
+            Distance maximale pour marquer la présence (10m - 5km)
+          </div>
+          
+          <!-- Indicateur visuel du rayon -->
+          <div class="rayon-indicator" *ngIf="stadeRayon">
+            <div class="rayon-bar">
+              <div class="rayon-fill" [style.width.%]="(stadeRayon / 1000) * 100"></div>
+            </div>
+            <div class="rayon-labels">
+              <span>10m</span>
+              <span>{{ stadeRayon }}m</span>
+              <span>1000m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Prévisualisation -->
+      <div class="form-section" *ngIf="hasValidCoordinates()">
+        <h4 class="section-title">
+          <mat-icon>preview</mat-icon>
+          Prévisualisation
+        </h4>
+        
+        <div class="location-preview">
+          <div class="preview-card">
+            <div class="preview-icon">
+              <mat-icon>place</mat-icon>
+            </div>
+            <div class="preview-content">
+              <h5>{{ stadeNom || 'Nouveau stade' }}</h5>
+              <div class="preview-coords">
+                <span>📍 {{ stadeLatitude | number:'1.6-6' }}, {{ stadeLongitude | number:'1.6-6' }}</span>
+              </div>
+              <div class="preview-radius">
+                <span>📏 Rayon: {{ stadeRayon }}m</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Mini carte conceptuelle (optionnel) -->
+          <div class="mini-map-placeholder">
+            <mat-icon>map</mat-icon>
+            <span>Position du stade</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boutons d'action -->
+      <div class="btn-group">
+        <!-- Annuler (Secondaire) -->
+        <button 
+          type="button" 
+          (click)="closeDialog()" 
+          class="btn-base btn-secondary">
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+        
+        <!-- Enregistrer (Primaire) -->
+        <button 
+          type="submit" 
+          [disabled]="!isFormValid()"
+          class="btn-base btn-primary"
+          [class.loading]="isSubmitting">
+          <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+          <mat-icon *ngIf="isSubmitting" class="spinning">hourglass_empty</mat-icon>
+          {{ isSubmitting() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+      
+    </form>
+
+  </div>
+
       </div>}
 
   <!-- Content -->

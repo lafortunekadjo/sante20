@@ -48,7 +48,6 @@ import { LoginComponent } from "./shared/components/login/login.component";
 import { GroupesExploreComponent } from "./modules/responsable/components/groupes-explore/groupes-explore.component";
 import { SignupComponent } from "./shared/components/signup/signup.component";
 import { MembreFormComponent } from "./modules/responsable/components/membre-form/membre-form.component";
-import { CreerAnnonceComponent } from "./modules/users/creer-annonce/creer-annonce.component";
 
 export const routes: Routes = [
   // ==================== ROUTES PUBLIQUES (sans authentification) ====================
@@ -56,14 +55,17 @@ export const routes: Routes = [
   //   path: '',
   //   component: GroupesExploreComponent,
   // },
- 
- 
+
 
   // ==================== ROUTES PROTÉGÉES (avec Layout et authentification) ====================
   {
     path: '',
     component: LayoutComponent,
     children: [
+      {
+    path: '',
+    component: GroupesExploreComponent,
+  },
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
       {
         path: 'explorer',
@@ -71,31 +73,24 @@ export const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
       },
-       {
-        path: 'login',
-        component: LoginComponent
-      },
-       {
-    path: 'signup',
-    component: SignupComponent
-  },
-    {
-    path: 'reset-password',
-    component: PasswordResetDialogComponent
-  },
-
       {
         path: 'mes-demandes',
         component: MesDemandesComponent,
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
       },
-       {
-        path: 'annonces',
-        component: CreerAnnonceComponent,
-        canActivate: [RoleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
-      },
+        {
+    path: 'login',
+    component: LoginComponent
+  },
+  {
+    path: 'signup',
+    component: SignupComponent
+  },
+  {
+    path: 'reset-password',
+    component: PasswordResetDialogComponent
+  },
       {
         path: 'actualites',
         component: NewsFeedComponent,
@@ -213,17 +208,18 @@ export const routes: Routes = [
           {
             path: 'matchs',
             component: MatchFormComponent,
-            canActivate: [MenuGuard]
+            canActivate: [MenuGuard],
+             data: { roles: ['RESPONSABLE'] }
           },
-          {
-            path: 'presences/:id',
-            component: PresenceFormComponent,
-            canActivate: [MenuGuard]
-          },
+          // {
+          //   path: 'presences/:id',
+          //   component: PresenceFormComponent,
+          //   canActivate: [MenuGuard]
+          // },
           {
             path: 'presences/:matchId',
             component: PresenceFormComponent,
-            canActivate: [MenuGuard]
+            canActivate: [RoleGuard]
           },
           {
             path: 'equipes',

@@ -19,6 +19,9 @@ export interface GroupePublic {
   isActive: boolean;
   accepteNouveauxMembres?: boolean;
   niveauRequis?: string; // Débutant, Intermédiaire, Avancé
+  stadiumLat: number;
+  stadiumLon: number;
+  radius: number;
 }
 
 // filters.model.ts

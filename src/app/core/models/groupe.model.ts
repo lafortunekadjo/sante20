@@ -17,6 +17,8 @@ export interface Groupe {
   profilePhotoUrl: string;
   heureMatch:string;
   isPublic:boolean;
-    abreviation: string;
+  abreviation: string;
+  imageUrl?: string;
+  // quartier: string;
 }
 

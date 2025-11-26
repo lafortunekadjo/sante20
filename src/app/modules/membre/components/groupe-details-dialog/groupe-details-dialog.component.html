@@ -29,12 +29,12 @@
               </div>
               <div class="info-item">
                 <mat-icon>place</mat-icon>
-                <div>
+                <!-- <div>
                   <span class="info-label">{{ 'groups.city' | translate }}</span>
                   <span class="info-value">
                     {{ data.groupe.ville }}{{ data.groupe.quartier ? ' - ' + data.groupe.quartier : '' }}
                   </span>
-                </div>
+                </div> -->
               </div>
               <div class="info-item">
                 <mat-icon>stadium</mat-icon>
@@ -73,18 +73,19 @@
                   <span class="info-value">{{ data.groupe.fraisAdhesion }} FCFA</span>
                 </div>
               </div>
-              <div class="info-item" *ngIf="data.groupe.niveauRequis">
+              <!-- <div class="info-item" *ngIf="data.groupe.niveauRequis">
                 <mat-icon>trending_up</mat-icon>
                 <div>
                   <span class="info-label">{{ 'groups.level' | translate }}</span>
                   <span class="info-value">{{ data.groupe.niveauRequis }}</span>
                 </div>
-              </div>
-              <div class="info-item" *ngIf="data.groupe.capaciteMax">
+              </div> -->
+              <div class="info-item" *ngIf="data.groupe">
                 <mat-icon>group</mat-icon>
                 <div>
                   <span class="info-label">{{ 'groups.members' | translate }}</span>
-                  <span class="info-value">{{ data.groupe.nombreMembres || 0 }} / {{ data.groupe.capaciteMax }}</span>
+                    <span class="info-value">100 / 5</span>
+                  <!-- <span class="info-value">{{ data.groupe.nombreMembres || 0 }} / {{ data.groupe.capaciteMax }}</span> -->
                 </div>
               </div>
             </div>
@@ -92,12 +93,12 @@
 
           <mat-divider></mat-divider>
 
-          <div class="description-section" *ngIf="data.groupe.description">
+          <div class="description-section" *ngIf="data.groupe">
             <h3 class="section-title">
               <mat-icon>description</mat-icon>
               Description
             </h3>
-            <p class="description-text">{{ data.groupe.description }}</p>
+            <p class="description-text">La description</p>
           </div>
 
           <div class="status-section">
@@ -118,16 +119,74 @@
 
       <!-- Localisation -->
       <mat-tab label="Localisation">
-        <div class="tab-content">
-          <div class="location-info">
+        <div class="tab-content location-tab">
+          
+          <!-- En-tête avec informations basiques -->
+          <div class="location-header">
             <mat-icon class="large-icon">place</mat-icon>
-            <h3>{{ data.groupe.stade }}</h3>
-            <p>{{ data.groupe.ville }}{{ data.groupe.quartier ? ', ' + data.groupe.quartier : '' }}</p>
-            <p *ngIf="data.groupe.localisation" class="location-details">
-              {{ data.groupe.localisation }}
-            </p>
-            <!-- Ici vous pouvez ajouter une carte Google Maps -->
+            <div class="header-content">
+              <h3>{{ data.groupe.stade }}</h3>
+              <!-- <p>{{ data.groupe.ville }}{{ data.groupe.quartier ? ', ' + data.groupe.quartier : '' }}</p> -->
+              <p *ngIf="data.groupe.localisation" class="location-details">
+                {{ data.groupe.localisation }}
+              </p>
+            </div>
           </div>
+
+          <!-- Carte interactive -->
+          <div class="map-section" *ngIf="hasStadeCoordinates()">
+            <app-stade-map [stadeData]="getStadeMapData()"></app-stade-map>
+          </div>
+
+          <!-- Message si pas de coordonnées GPS -->
+          <div *ngIf="!hasStadeCoordinates()" class="no-coordinates">
+            <mat-icon>location_disabled</mat-icon>
+            <h4>Localisation GPS non disponible</h4>
+            <p>Les coordonnées GPS précises de ce stade ne sont pas encore configurées.</p>
+            <button mat-raised-button color="primary" (click)="searchInMaps()" class="maps-button">
+              <mat-icon>map</mat-icon>
+              Rechercher dans Google Maps
+            </button>
+          </div>
+
+          <!-- Informations supplémentaires -->
+          <div class="location-extras" *ngIf="data.groupe.stade">
+            <mat-card class="extras-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon>info</mat-icon>
+                  Informations pratiques
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="extras-grid">
+                  <div class="extra-item">
+                    <mat-icon>directions</mat-icon>
+                    <span>
+                      <button mat-button color="primary" (click)="getDirections()">
+                        Obtenir l'itinéraire
+                      </button>
+                    </span>
+                  </div>
+                  
+                  <div class="extra-item" *ngIf="data.groupe.jourMatch">
+                    <mat-icon>schedule</mat-icon>
+                    <span>Jour de match: {{ data.groupe.jourMatch }}{{ data.groupe.heureMatch ? ' à ' + data.groupe.heureMatch : '' }}</span>
+                  </div>
+                  
+                  <div class="extra-item">
+                    <mat-icon>share_location</mat-icon>
+                    <span>
+                      <button mat-button color="accent" (click)="shareLocation()">
+                        Partager la localisation
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
         </div>
       </mat-tab>
     </mat-tab-group>

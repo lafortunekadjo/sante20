@@ -109,6 +109,7 @@ export class GroupesExploreComponent implements OnInit {
     this.isLoading = true;
     this.groupesService.getAllGroupes().subscribe({
       next: (groupes) => {
+     
         this.groupes = groupes.filter(g => g.isActive);
         this.applyFilters();
         this.isLoading = false;
@@ -229,6 +230,7 @@ export class GroupesExploreComponent implements OnInit {
   }
 
   viewGroupeDetails(groupe: GroupePublic): void {
+    console.log(groupe)
     const dialogRef = this.dialog.open(GroupeDetailsDialogComponent, {
       width: '900px',
       maxWidth: '95vw',

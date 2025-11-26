@@ -23,15 +23,15 @@ export class MenuGuard implements CanActivate {
     state: RouterStateSnapshot
   ): Observable<boolean> {
     
-    const groupeId = this.authService.getCurrentGroupeId();
+    // const groupeId = this.authService.getCurrentGroupeId();
     
-    if (!groupeId) {
-      this.router.navigate(['/']);
-      return of(false);
-    }
+    // if (!groupeId) {
+    //   this.router.navigate(['/explorer']);
+    //   return of(false);
+    // }
 
     // Récupérer les menus de l'utilisateur
-    return this.roleCustomService.getUserMenus(groupeId).pipe(
+    return this.roleCustomService.getUserMenus().pipe(
       map(userMenus => {
         const requestedRoute = state.url;
         
@@ -48,7 +48,7 @@ export class MenuGuard implements CanActivate {
         return true;
       }),
       catchError(() => {
-        this.router.navigate(['/']);
+        this.router.navigate(['/explorer']);
         return of(false);
       })
     );

@@ -120,7 +120,12 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       modeEquipe: 'STATIQUE',
       fraisAdhesion: 0,
       ville: { id: 0, nom: '' },
-      stade: { id: 0, nom: '' },
+      stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       profilePhotoUrl: '',
       heureMatch: '',
       isPublic: false,
@@ -357,7 +362,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       alert('Les présences ne sont accessibles que pour les matchs passés ou du jour.');
       return;
     }
-    this.router.navigate(['/presence', match.id]);
+    this.router.navigate(['/responsable/presence', match.id]);
   }
 
   openMediaDialog(match: Match) {
@@ -505,7 +510,12 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
           modeEquipe: 'STATIQUE',
           fraisAdhesion: 0,
           ville: { id: 0, nom: '' },
-          stade: { id: 0, nom: '' },
+          stade: {
+            id: 0, nom: '',
+            stadiumLat: 0,
+            stadiumLon: 0,
+            radius: 0
+          },
           profilePhotoUrl: '',
           heureMatch: '',
           isPublic: false,
