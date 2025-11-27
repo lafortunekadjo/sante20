@@ -77,8 +77,17 @@ export class GroupeConfigComponent implements OnInit {
    isDialogOpen = signal(false);
    isUploadingPhoto = false;
 
-  // Signal pour stocker la valeur de l'input du nom du stade
-  stadeNom = signal('');
+
+   // Signal pour stocker la valeur de l'input du nom du stade
+  stadeNom : string | ''='';
+    stadeLatitude: number | null = null;
+  stadeLongitude: number | null = null;
+  stadeRayon: number = 500; // Valeur par défaut : 500m
+  
+  // États de l'interface
+  isGettingLocation: boolean = false;
+  locationMessage: string = '';
+  locationMessageType: 'success' | 'error' = 'success';
   
   // Signal de démo pour stocker les stades ajoutés
   stades2 = signal<string[]>([]);
@@ -126,8 +135,6 @@ export class GroupeConfigComponent implements OnInit {
   }
 
   openNewStadeDialog(): void {
-    console.log("Dialogue d'ajout de stade ouvert.");
-    this.stadeNom.set(''); // Réinitialise l'input à vide avant l'ouverture
     this.isDialogOpen.set(true);
   }
 
@@ -141,10 +148,118 @@ export class GroupeConfigComponent implements OnInit {
   /**
    * Computed signal pour valider si le nom du stade est rempli.
    */
-  isFormValid = computed(() => {
-    return this.stadeNom().trim().length >= 2;
-  });
+  isFormValid(): boolean {
+    return !!(
+      this.stadeNom && 
+      this.stadeNom.trim().length > 0 &&
+      this.stadeNom.trim().length <= 50 &&
+      this.hasValidCoordinates() &&
+      this.stadeRayon >= 10 &&
+      this.stadeRayon <= 5000
+    );
+  }
 
+    /**
+   * Obtenir la position GPS actuelle
+   */
+  getCurrentLocation(): void {
+    if (!navigator.geolocation) {
+      this.showLocationMessage('La géolocalisation n\'est pas supportée par ce navigateur', 'error');
+      return;
+    }
+
+    this.isGettingLocation = true;
+    this.locationMessage = '';
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000, // 15 secondes
+      maximumAge: 60000 // Cache d'1 minute
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Succès - récupération des coordonnées
+        this.stadeLatitude = this.roundCoordinate(position.coords.latitude);
+        this.stadeLongitude = this.roundCoordinate(position.coords.longitude);
+        
+        this.showLocationMessage(
+          `Position obtenue avec précision de ±${Math.round(position.coords.accuracy)}m`, 
+          'success'
+        );
+        
+        this.isGettingLocation = false;
+      },
+      (error) => {
+        // Erreur de géolocalisation
+        this.handleGeolocationError(error);
+        this.isGettingLocation = false;
+      },
+      options
+    );
+  }
+
+  /**
+   * Gérer les erreurs de géolocalisation
+   */
+  private handleGeolocationError(error: GeolocationPositionError): void {
+    let message = '';
+    
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        message = 'Accès à la localisation refusé. Veuillez autoriser l\'accès dans votre navigateur.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = 'Position indisponible. Vérifiez votre connexion et réessayez.';
+        break;
+      case error.TIMEOUT:
+        message = 'Délai d\'attente dépassé. Réessayez ou entrez les coordonnées manuellement.';
+        break;
+      default:
+        message = 'Erreur inconnue lors de la géolocalisation.';
+        break;
+    }
+    
+    this.showLocationMessage(message, 'error');
+  }
+
+  /**
+   * Afficher un message de statut de localisation
+   */
+  private showLocationMessage(message: string, type: 'success' | 'error'): void {
+    this.locationMessage = message;
+    this.locationMessageType = type;
+    
+    // Effacer le message après 5 secondes
+    setTimeout(() => {
+      this.locationMessage = '';
+    }, 5000);
+  }
+
+  /**
+   * Arrondir les coordonnées à 6 décimales (précision ~1m)
+   */
+  private roundCoordinate(coord: number): number {
+    return Math.round(coord * 1000000) / 1000000;
+  }
+
+  /**
+   * Vérifier si les coordonnées sont valides
+   */
+  hasValidCoordinates(): boolean {
+    return this.stadeLatitude !== null && 
+           this.stadeLongitude !== null &&
+           this.isValidLatitude(this.stadeLatitude) &&
+           this.isValidLongitude(this.stadeLongitude);
+  }
+
+    private isValidLatitude(lat: number): boolean {
+    return lat >= -90 && lat <= 90;
+  }
+
+    private isValidLongitude(lng: number): boolean {
+    return lng >= -180 && lng <= 180;
+  }
   /**
    * Gère la soumission du formulaire et l'enregistrement du stade.
    */
@@ -155,50 +270,86 @@ export class GroupeConfigComponent implements OnInit {
   //   }
   // }
 
-    submitStade(): void {
-    // 0. Vérification de la validité
-    if (!this.isFormValid() || this.isSubmitting()) {
-      console.warn("Le formulaire n'est pas valide ou une soumission est déjà en cours.");
+  //   submitStade(): void {
+  //   // 0. Vérification de la validité
+  //   if (!this.isFormValid() || this.isSubmitting()) {
+  //     console.warn("Le formulaire n'est pas valide ou une soumission est déjà en cours.");
+  //     return;
+  //   }
+
+  //   const nouveauNom = this.stadeNom().trim();
+  //   this.isSubmitting.set(true); // 1. Début de la soumission
+  //   this.errorMessage.set(null); // 2. Réinitialise les erreurs
+
+  //   const payload: any = {
+  //     nom: nouveauNom
+  //   };
+
+  //   // 3. Appel du service et abonnement à l'Observable
+  //   this.groupeService.createStade(payload).pipe(
+  //     // Exécuté après succès ou erreur (équivalent du 'finally')
+  //     finalize(() => {
+  //       this.isSubmitting.set(false);
+  //     })
+  //   ).subscribe({
+  //     // Gère le cas de succès (code 2xx)
+  //     next: (stadeCree: Stade) => {
+  //       // 4. Traitement après succès
+  //       console.log(`Stade créé avec succès (ID: ${stadeCree.id}). Fermeture du dialogue.`);
+        
+  //       // Réinitialiser le champ
+  //       this.stadeNom.set(''); 
+        
+  //       // Fermer le dialogue seulement après confirmation du serveur
+  //       this.closeDialog(); 
+  //     },
+  //     // Gère le cas d'erreur (code 4xx ou 5xx)
+  //     error: (error) => {
+  //       // 5. Gestion des erreurs
+  //       console.error("Erreur RxJS lors de la création du stade:", error);
+  //       // Afficher un message d'erreur clair à l'utilisateur
+  //       this.errorMessage.set(`Échec de la création du stade. Détails: ${error.message || 'Erreur inconnue.'}`);
+  //     }
+  //   });
+    
+  //   console.log("Appel au service déclenché. En attente de la réponse du serveur...");
+  //   // Le code continue ici immédiatement, sans attendre la réponse HTTP.
+  // }
+
+   /**
+   * Soumettre le formulaire
+   */
+  submitStade(): void {
+    if (!this.isFormValid()) {
       return;
     }
 
-    const nouveauNom = this.stadeNom().trim();
-    this.isSubmitting.set(true); // 1. Début de la soumission
-    this.errorMessage.set(null); // 2. Réinitialise les erreurs
+   this.isSubmitting.set(true);
 
-    const payload: any = {
-      nom: nouveauNom
+    const stadeData = {
+      nom: this.stadeNom.trim(),
+      latitude: this.stadeLatitude,
+      longitude: this.stadeLongitude,
+      rayon: this.stadeRayon
     };
 
-    // 3. Appel du service et abonnement à l'Observable
-    this.groupeService.createStade(payload).pipe(
-      // Exécuté après succès ou erreur (équivalent du 'finally')
-      finalize(() => {
-        this.isSubmitting.set(false);
-      })
-    ).subscribe({
-      // Gère le cas de succès (code 2xx)
-      next: (stadeCree: Stade) => {
-        // 4. Traitement après succès
-        console.log(`Stade créé avec succès (ID: ${stadeCree.id}). Fermeture du dialogue.`);
-        
-        // Réinitialiser le champ
-        this.stadeNom.set(''); 
-        
-        // Fermer le dialogue seulement après confirmation du serveur
-        this.closeDialog(); 
+    console.log('Données du stade à enregistrer:', stadeData);
+
+    // Appel à votre service pour enregistrer le stade
+    this.groupeService.createStade(stadeData).subscribe({
+      next: (response) => {
+        console.log('Stade créé avec succès:', response);
+        this.showSuccessMessage('Stade créé avec succès !');
+        this.closeDialog();
+         this.isSubmitting.set(false);
+         this.loadData();
       },
-      // Gère le cas d'erreur (code 4xx ou 5xx)
       error: (error) => {
-        // 5. Gestion des erreurs
-        console.error("Erreur RxJS lors de la création du stade:", error);
-        // Afficher un message d'erreur clair à l'utilisateur
-        this.errorMessage.set(`Échec de la création du stade. Détails: ${error.message || 'Erreur inconnue.'}`);
+        console.error('Erreur lors de la création du stade:', error);
+        this.showErrorMessage('Erreur lors de la création du stade');
+         this.isSubmitting.set(false);
       }
     });
-    
-    console.log("Appel au service déclenché. En attente de la réponse du serveur...");
-    // Le code continue ici immédiatement, sans attendre la réponse HTTP.
   }
 
   getVilleName(membre: number | Ville | undefined): string {
@@ -534,5 +685,63 @@ loadVillesEtStades(callback: () => void): void {
   getOptionsArray(optionsChoix: string | undefined): string[] {
     if (!optionsChoix) return [];
     return optionsChoix.split(';').map(o => o.trim()).filter(o => o.length > 0);
+  }
+
+   /**
+   * Méthodes utilitaires pour les messages (si pas déjà présentes)
+   */
+  private showSuccessMessage(message: string): void {
+     this.isSubmitting.set(false);
+    this.snackBar.open(message, 'Fermer', {
+    duration: 4000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['success-snackbar']
+  });
+  }
+
+  private showErrorMessage(message: string): void {
+     this.isSubmitting.set(false);
+    this.snackBar.open(message, 'Fermer', {
+    duration: 6000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: ['error-snackbar']
+  });
+  }
+
+  /**
+   * Calculer la distance entre deux points GPS (optionnel pour validation)
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371e3; // Rayon de la Terre en mètres
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance en mètres
+  }
+
+  /**
+   * Formater les coordonnées pour l'affichage
+   */
+  formatCoordinate(coord: number | null): string {
+    return coord !== null ? coord.toFixed(6) : '';
+  }
+
+  /**
+   * Obtenir une estimation de la précision GPS
+   */
+  getAccuracyEstimate(): string {
+    if (this.hasValidCoordinates()) {
+      return 'Précision GPS estimée: ±10-50m';
+    }
+    return '';
   }
 }

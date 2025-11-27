@@ -117,19 +117,46 @@
       </mat-tab>
 
       <!-- Localisation -->
-      <mat-tab label="Localisation">
-        <div class="tab-content">
-          <div class="location-info">
-            <mat-icon class="large-icon">place</mat-icon>
-            <h3>{{ data.groupe.stade }}</h3>
-            <p>{{ data.groupe.ville }}{{ data.groupe.quartier ? ', ' + data.groupe.quartier : '' }}</p>
-            <p *ngIf="data.groupe.localisation" class="location-details">
-              {{ data.groupe.localisation }}
-            </p>
-            <!-- Ici vous pouvez ajouter une carte Google Maps -->
-          </div>
-        </div>
-      </mat-tab>
+<!-- Localisation -->
+<mat-tab label="Localisation">
+  <div class="tab-content">
+    <div class="location-info">
+      <mat-icon class="large-icon">place</mat-icon>
+      <h3>{{ data.groupe.stade.nom }}</h3>
+      <p>{{ data.groupe.ville }}{{ data.groupe.quartier ? ', ' + data.groupe.quartier : '' }}</p>
+      
+      <!-- Carte Google Maps -->
+      <div class="map-container" *ngIf="data.groupe.stade.stadiumLat && data.groupe.stade.stadiumLon">
+        <iframe
+          [src]="getMapUrl()"
+          width="100%"
+          height="300"
+          style="border:0; border-radius: 12px;"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+
+      <!-- Bouton pour ouvrir dans Google Maps -->
+      <button 
+        mat-stroked-button 
+        color="primary"
+        *ngIf="data.groupe.stade.stadiumLat && data.groupe.stade.stadiumLon"
+        (click)="openInGoogleMaps()"
+        class="map-button">
+        <mat-icon>directions</mat-icon>
+        Ouvrir dans Google Maps
+      </button>
+
+      <!-- Message si pas de coordonnées -->
+      <div *ngIf="!data.groupe.stade.stadiumLat || !data.groupe.stade.stadiumLon" class="no-location">
+        <mat-icon>location_off</mat-icon>
+        <p>Coordonnées GPS non disponibles</p>
+      </div>
+    </div>
+  </div>
+</mat-tab>
     </mat-tab-group>
   </div>
 

@@ -1,3 +1,5 @@
+import { Stade } from "./stade";
+
 // groupe-public.model.ts
 export interface GroupePublic {
   id: number;
@@ -6,7 +8,7 @@ export interface GroupePublic {
   ville: string;
   quartier?: string;
   localisation?: string;
-  stade: string;
+  stade: Stade;
   jourMatch: string;
   heureMatch?: string;
   typeEquipe: string;

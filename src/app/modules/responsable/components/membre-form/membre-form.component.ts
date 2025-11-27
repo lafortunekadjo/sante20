@@ -18,7 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { switchMap, forkJoin, of, map, lastValueFrom } from 'rxjs'; // Ajout de 'of' ici
+import { switchMap, forkJoin, of, map, lastValueFrom, finalize, Observable } from 'rxjs'; // Ajout de 'of' ici
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeneralService } from '../../../../core/services/general.service';
@@ -33,6 +33,8 @@ import { RoleCustomService } from '../../../../core/services/role-custom.service
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
+import { ImportResult } from '../../../../core/services/excel-import.service';
+import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-dialog.component';
 
 @Component({
   selector: 'app-membre-form',
@@ -94,7 +96,12 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     roleCO: '',
     equipe: { id: 0, nom: '' },
     groupe: {
-      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       profilePhotoUrl: '',
       heureMatch: '',
       isPublic: false,
@@ -132,7 +139,12 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     roleCO: '',
     equipe: { id: 0, nom: '' },
     groupe: {
-      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+      id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       profilePhotoUrl: '',
       heureMatch: '',
       isPublic: false,
@@ -450,43 +462,66 @@ loadData() {
     return !!this.newMembre.nom && !!this.newMembre.prenom && !!this.newMembre.sexe && !!this.newMembre.groupe?.id;
   }
 
-  saveMembre() {
-    if (this.isCreateFormValid()) {
-      if (this.createUserForMembre) {
-        const newUser: User = {
-          id: 0,
-          username: `${this.newMembre.nom.toLowerCase()}_${this.newMembre.prenom.toLowerCase()}`,
-          email: this.newMembre.email || `${this.newMembre.nom.toLowerCase()}@example.com`,
-          motDePasse: this.newMembre.nom,
-          roles: 'MEMBRE',
-          active: true,
-          membre: this.newMembre.id,
-          groupe: 0,
-          profilePhotoUrl: ''
-        };
-        this.userService.createUser(newUser).pipe(
-          switchMap((createdUser) => {
-            this.newMembre.user = createdUser;
-            return this.adminService.createMember(this.newMembre);
-          })
-        ).subscribe({
-          next: () => {
-            this.loadData();
-            this.toggleCreateRow();
-          },
-          error: (err) => console.error('Erreur lors de la création du membre:', err)
-        });
-      } else {
-        this.adminService.createMember(this.newMembre).subscribe({
-          next: () => {
-            this.loadData();
-            this.toggleCreateRow();
-          },
-          error: (err) => console.error('Erreur lors de la création du membre:', err)
-        });
-      }
-    }
+saveMembre() {
+  if (!this.isCreateFormValid()) {
+
+    return;
   }
+
+  this.isLoading = true;
+
+  const createMembre$ = this.createUserForMembre
+    ? this.createMembreWithUser()
+    : this.adminService.createMember(this.newMembre);
+
+  createMembre$.pipe(
+    finalize(() => this.isLoading = false)
+  ).subscribe({
+    next: () => {
+      this.showSuccess('Membre créé avec succès');
+      this.loadData();
+      this.toggleCreateRow();
+    },
+    error: (err) => this.handleError(err, 'Erreur lors de la création du membre')
+  });
+}
+
+private createMembreWithUser(): Observable<any> {
+  const newUser: User = {
+    id: 0,
+    username: `${this.newMembre.nom.toLowerCase()}_${this.newMembre.prenom.toLowerCase()}`,
+    email: this.newMembre.email || `${this.newMembre.nom.toLowerCase()}@example.com`,
+    motDePasse: this.newMembre.nom,
+    roles: 'MEMBRE',
+    active: true,
+    membre: this.newMembre.id,
+    groupe: this.newMembre.groupe.id,
+    profilePhotoUrl: ''
+  };
+
+  return this.userService.createUser(newUser).pipe(
+    switchMap((createdUser) => {
+      this.newMembre.user = createdUser;
+      return this.adminService.createMember(this.newMembre);
+    })
+  );
+}
+
+private showSuccess(message: string): void {
+  this.snackBar.open(message, 'Fermer', {
+    duration: 3000,
+    panelClass: ['snackbar-success']
+  });
+}
+
+private handleError(err: any, defaultMessage: string): void {
+  console.error(defaultMessage, err);
+  const errorMessage = err.error?.message || defaultMessage;
+  this.snackBar.open(errorMessage, 'Fermer', {
+    duration: 5000,
+    panelClass: ['snackbar-error']
+  });
+}
 
   cancelCreate() {
     this.toggleCreateRow();
@@ -504,7 +539,12 @@ loadData() {
       roleCO: '',
       equipe: { id: 0, nom: '' },
       groupe: {
-        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+          id: 0, nom: '',
+          stadiumLat: 0,
+          stadiumLon: 0,
+          radius: 0
+        },
         profilePhotoUrl: '',
         heureMatch: '',
         isPublic: false,
@@ -612,7 +652,12 @@ showErrorMessage(message: string) {
       roleCO: '',
       equipe: { id: 0, nom: '' },
       groupe: {
-        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: { id: 0, nom: '' },
+        id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true, jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0, ville: { id: 0, nom: '' }, stade: {
+          id: 0, nom: '',
+          stadiumLat: 0,
+          stadiumLon: 0,
+          radius: 0
+        },
         profilePhotoUrl: '',
         heureMatch: '',
         isPublic: false,
@@ -879,6 +924,43 @@ expandPanel(index: number) {
  */
 compareRoles(r1: RoleCustom, r2: RoleCustom): boolean {
   return r1 && r2 ? r1.id === r2.id : r1 === r2;
+}
+
+/**
+ * Ouvrir le dialog d'importation Excel
+ */
+openExcelImportDialog(): void {
+  const dialogRef = this.dialog.open(ExcelImportDialogComponent, {
+    width: '900px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    disableClose: true, // Empêche la fermeture accidentelle
+    data: {
+      equipes: this.equipes // Passer les équipes pour la validation
+    }
+  });
+
+  dialogRef.afterClosed().subscribe((result: ImportResult | undefined) => {
+    if (result) {
+      console.log('Résultat de l\'importation:', result);
+      
+      // Afficher le résultat
+      if (result.successCount > 0) {
+        this.showSuccessMessage(
+          `${result.successCount} membre(s) importé(s) avec succès !`
+        );
+      }
+
+      if (result.errorCount > 0) {
+        this.showErrorMessage(
+          `${result.errorCount} erreur(s) lors de l'importation. Vérifiez les détails.`
+        );
+      }
+
+      // Recharger les données pour afficher les nouveaux membres
+      this.loadData();
+    }
+  });
 }
 
 

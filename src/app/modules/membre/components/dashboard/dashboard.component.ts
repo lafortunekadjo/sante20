@@ -310,6 +310,7 @@ getFilteredAvailableMonths(): any[] {
     
     this.dashboardService.getMonthlyStats(month).subscribe({
       next: (monthlyStats) => {
+        console.log(monthlyStats)
         this.stats.monthlyStats = monthlyStats;
         
         // Vérifier s'il y a égalité et ajuster l'affichage si nécessaire
@@ -343,6 +344,7 @@ getFilteredAvailableMonths(): any[] {
     
     this.dashboardService.getResponsableStats2(startDate, endDate).subscribe({
       next: (data) => {
+        console.log(data)
         this.stats = {
           ...this.stats,
           ...data,

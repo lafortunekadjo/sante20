@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatchRequestService } from '../../../../core/services/match-request.service';
 import { MatchRequestDialogComponent } from '../../../responsable/components/match-request-dialog/match-request-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-groupe-details-dialog',
@@ -36,6 +37,7 @@ export class GroupeDetailsDialogComponent implements OnInit {
      private authService: AuthService,
      private matchRequestService: MatchRequestService,
      private snackBar: MatSnackBar,
+     private sanitizer: DomSanitizer,
     @Inject(MAT_DIALOG_DATA) public data: { groupe: GroupePublic }
   ) {}
 
@@ -49,7 +51,37 @@ export class GroupeDetailsDialogComponent implements OnInit {
   }
 
    ngOnInit(): void {
+     console.log(this.data.groupe)
     this.isResponsable = this.authService.isResponsable();
+  }
+
+   /**
+   * Génère l'URL sécurisée pour l'iframe Google Maps
+   */
+  getMapUrl(): SafeResourceUrl {
+   
+    const lat = this.data.groupe.stade.stadiumLat;
+    const lng = this.data.groupe.stade.stadiumLon;
+    const label = encodeURIComponent(this.data.groupe.stade.nom);
+    
+    // URL Google Maps Embed (gratuit, sans API key)
+    const url = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+    
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  /**
+   * Ouvre la localisation dans Google Maps (nouvelle fenêtre)
+   */
+  openInGoogleMaps(): void {
+    const lat = this.data.groupe.stade.stadiumLat;
+    const lng = this.data.groupe.stade.stadiumLon;
+    const label = encodeURIComponent(this.data.groupe.stade.nom);
+    
+    // URL pour ouvrir Google Maps avec un marqueur
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    
+    window.open(url, '_blank');
   }
 
 

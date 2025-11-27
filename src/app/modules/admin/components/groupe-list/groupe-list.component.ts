@@ -60,7 +60,12 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
     ville1: 0,
     stade2: 0,
     ville: { id: 0, nom: '' },
-    stade: { id: 0, nom: '' },
+    stade: {
+      id: 0, nom: '',
+      stadiumLat: 0,
+      stadiumLon: 0,
+      radius: 0
+    },
     isActive: true,
     jourMatch: '',
     typeEquipe: '',
@@ -240,7 +245,12 @@ export class GroupeListComponent implements OnInit, AfterViewInit {
       nom: '',
       discipline: '',
       ville:{id: 0, nom: ''},
-      stade: {id: 0, nom: ''},
+      stade: {
+        id: 0, nom: '',
+        stadiumLat: 0,
+        stadiumLon: 0,
+        radius: 0
+      },
       ville1:0,
       stade2: 0,
       isActive: true,

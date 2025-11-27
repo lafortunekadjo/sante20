@@ -109,7 +109,8 @@ export class GroupesExploreComponent implements OnInit {
     this.isLoading = true;
     this.groupesService.getAllGroupes().subscribe({
       next: (groupes) => {
-        this.groupes = groupes.filter(g => g.isActive);
+        console.log(groupes)
+        this.groupes = groupes.filter(g => g.isActive && g.isPublic);
         this.applyFilters();
         this.isLoading = false;
       },
@@ -201,7 +202,7 @@ export class GroupesExploreComponent implements OnInit {
     this.filteredGroupes = filtered.map(g => ({
       ...g, 
       ville: g.ville ? g.ville.nom : 'Pas mentionné', 
-      stade: g.stade ? g.stade.nom : 'Pas mentionné',
+      stade: g.stade ,
       imageUrl: g.profilePhotoUrl,
       modeEquipe: g.modeEquipes
     }));

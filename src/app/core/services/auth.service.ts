@@ -24,6 +24,7 @@ export class AuthService {
   private token: string | null = null;
   private roles: string[] = [];
   private userId: number | null = null;
+ private groupeId: number | null = null;
 
   private apiUrl = `${environment.apiUrl}/auth/login`; 
   private apiCheck = `${environment.apiUrl}/presences/check-in`; 
@@ -557,6 +558,7 @@ isResponsable(): boolean {
   return roles.some(role => rolesResponsable.includes(role));
 }
 
+ 
 /**
  * Vérifie si l'utilisateur a un rôle spécifique
  */
@@ -571,4 +573,25 @@ hasAnyRole(roles: string[]): boolean {
   const userRoles = this.getRoles();
   return roles.some(role => userRoles.includes(role));
 }
+
+
+     getGroupe(): number | null {
+    if (this.groupeId) {
+      return this.groupeId;
+    }
+    
+    // Charger depuis localStorage si pas en mémoire
+    const userInfo = localStorage.getItem(this.USER_INFO_KEY);
+    if (userInfo) {
+      try {
+        const parsedInfo = JSON.parse(userInfo);
+        this.groupeId = parsedInfo.username || null;
+        return this.groupeId;
+      } catch (e) {
+        console.error("Erreur parsing groupeId depuis localStorage:", e);
+      }
+    }
+    
+    return null;
+  }
 }

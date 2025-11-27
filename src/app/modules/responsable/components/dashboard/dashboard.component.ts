@@ -165,7 +165,7 @@ stats: Stats = {
 // Mise à jour de la méthode loadStats dans dashboard.component.ts
 
 private loadStats(startDate?: Date, endDate?: Date): void {
-  console.log("Chargement des stats", startDate);
+ 
   this.isLoading = true;
   
   this.statService.getResponsableStats(startDate, endDate).subscribe({
