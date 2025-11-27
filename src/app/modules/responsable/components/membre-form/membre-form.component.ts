@@ -189,7 +189,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   }
 
   isCreateFormValid(): boolean {
-    return !!this.newMembre.nom && !!this.newMembre.prenom && !!this.newMembre.sexe && !!this.newMembre.groupe?.id;
+    return !!this.newMembre.nom && !!this.newMembre.sexe ;
   }
 
   saveMembre() {
