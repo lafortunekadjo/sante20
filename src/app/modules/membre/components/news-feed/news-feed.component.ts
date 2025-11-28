@@ -57,7 +57,6 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   allMembres$: Observable<Membre[]>;
   allPresences$: BehaviorSubject<Presence[]> = new BehaviorSubject<Presence[]>([]);
   apiBaseUrl = environment.apiUrl;
-    imageUrl = environment.imageUrl;
   mediaBlobUrls: { [key: string]: { url: string; type: string } } = {};
     mediaLoadingErrors: { [key: string]: boolean } = {};
     allPresences: Presence[] = [];
@@ -219,7 +218,7 @@ loadFeedData(): void {
 
             recentMatches.forEach(match => {
                 match.mediaUrls?.forEach(mediaUrl => {
-                    const fullMediaUrl = `${this.imageUrl}${mediaUrl}`;
+                    const fullMediaUrl = `${mediaUrl}`;
 
                     if (!this.mediaBlobUrls[fullMediaUrl] && !this.mediaLoadingErrors[fullMediaUrl]) {
                         // Transformer l'appel 'fetch' en un Observable pour l'intégrer à RxJS
@@ -358,49 +357,23 @@ getPasseurs(match: Match): string {
     return individuelles.reduce((sum: number, c: { montant: any; }) => sum + (c.montant || 0), 0);
   }
 
+/**
+ * Ouvre la prévisualisation du média
+ */
 openMediaPreview(match: Match, mediaUrl: string): void {
-    if (mediaUrl) {
-      const fullMediaUrl = `${this.imageUrl}${mediaUrl}`;
-      const token = this.authService.getToken();
-      if (token && !this.mediaBlobUrls[fullMediaUrl]) {
-        fetch(fullMediaUrl, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-          .then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.blob();
-          })
-          .then(blob => {
-            const blobUrl = window.URL.createObjectURL(blob);
-            const contentType = blob.type || this.getMediaTypeFromUrl(mediaUrl);
-            this.mediaBlobUrls[fullMediaUrl] = { url: blobUrl, type: contentType };
-            this.dialog.open(MediaPreviewDialogComponent, {
-              data: { matchId: match.id, mediaUrl: blobUrl, mediaType: contentType },
-              width: '80%',
-              maxHeight: '90vh'
-            });
-            this.dialog.afterAllClosed.subscribe(() => {
-              window.URL.revokeObjectURL(blobUrl);
-              delete this.mediaBlobUrls[fullMediaUrl];
-            });
-          })
-          .catch(err => {
-            console.error('Erreur lors de l\'aperçu:', err);
-            this.mediaLoadingErrors[fullMediaUrl] = true;
-          });
-      } else if (this.mediaBlobUrls[fullMediaUrl]) {
-        this.dialog.open(MediaPreviewDialogComponent, {
-          data: { matchId: match.id, mediaUrl: this.mediaBlobUrls[fullMediaUrl].url, mediaType: this.mediaBlobUrls[fullMediaUrl].type },
-          width: '80%',
-          maxHeight: '90vh'
-        });
-      } else if (this.mediaLoadingErrors[fullMediaUrl]) {
-        console.error(`Échec précédent du chargement de ${fullMediaUrl}`);
-      } else {
-        console.error('Token d\'authentification manquant');
-      }
-    }
-  }
+  this.dialog.open(MediaPreviewDialogComponent, {
+    data: {
+      mediaUrl: mediaUrl,
+      isImage: this.isImageUrl(mediaUrl),
+      isVideo: this.isVideoUrl(mediaUrl),
+      matchId: match.id,
+      allMediaUrls: match.mediaUrls
+    },
+    panelClass: 'media-preview-dialog',
+    maxWidth: '95vw',
+    maxHeight: '95vh'
+  });
+}
 
   downloadMedia(match: Match): void {
     if (match.mediaUrls && Array.isArray(match.mediaUrls) && match.mediaUrls.length > 0) {
@@ -573,6 +546,49 @@ openMediaPreview(match: Match, mediaUrl: string): void {
       }
     });
   }
+
+  /**
+ * Vérifie si l'URL est une image
+ */
+isImageUrl(url: string): boolean {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  
+  // Vérifier les extensions classiques
+  if (lowerUrl.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/)) {
+    return true;
+  }
+  
+  // Vérifier les URLs Cloudinary
+  if (lowerUrl.includes('/image/upload/') || lowerUrl.includes('/image/')) {
+    return true;
+  }
+  
+  // Par défaut, si ce n'est pas une vidéo, c'est probablement une image
+  return !this.isVideoUrl(url);
+}
+
+/**
+ * Vérifie si l'URL est une vidéo
+ */
+isVideoUrl(url: string): boolean {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  
+  // Vérifier les extensions classiques
+  if (lowerUrl.match(/\.(mp4|mov|avi|webm)(\?.*)?$/)) {
+    return true;
+  }
+  
+  // Vérifier les URLs Cloudinary
+  if (lowerUrl.includes('/video/upload/') || lowerUrl.includes('/video/')) {
+    return true;
+  }
+  
+  return false;
+}
+
+
 
 
 }

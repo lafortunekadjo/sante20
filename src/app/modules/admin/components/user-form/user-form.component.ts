@@ -170,7 +170,7 @@ export class UserFormComponent implements OnInit, AfterViewInit {
   }
 
   isCreateFormValid(): boolean {
-    return !!this.newUser.username && !!this.newUser.email && !!this.newUser.motDePasse && !!this.newUser.roles;
+    return !!this.newUser.username && !!this.newUser.motDePasse && !!this.newUser.roles;
   }
 
   saveUser() {

@@ -1,3 +1,4 @@
+// profile-image-edit-dialog.component.ts
 import { Component, Inject, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,6 +11,16 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslateModule } from '@ngx-translate/core';
+
+export interface ProfileImageDialogData {
+  currentImageUrl: string | null;
+  userId: number;
+}
+
+export interface ProfileImageDialogResult {
+  file: File;
+  previewUrl: string;
+}
 
 @Component({
   selector: 'app-profile-image-edit-dialog',
@@ -50,6 +61,9 @@ export class ProfileImageEditDialogComponent {
   dragStart = { x: 0, y: 0 };
   imagePosition = { x: 0, y: 0 };
   
+  // Pour savoir si une image existante a été chargée
+  hasExistingImage: boolean = false;
+  
   // Limites
   maxFileSize = 5 * 1024 * 1024; // 5MB
   allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -58,9 +72,9 @@ export class ProfileImageEditDialogComponent {
     public dialogRef: MatDialogRef<ProfileImageEditDialogComponent>,
     private sanitizer: DomSanitizer,
     private snackBar: MatSnackBar,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    @Inject(MAT_DIALOG_DATA) public data: ProfileImageDialogData
   ) {
-    // Si une image existe déjà, la charger
+    // Si une image existe déjà, la charger automatiquement
     if (data?.currentImageUrl) {
       this.loadExistingImage(data.currentImageUrl);
     }
@@ -70,13 +84,27 @@ export class ProfileImageEditDialogComponent {
    * Charge une image existante
    */
   loadExistingImage(url: string): void {
+    this.isProcessing = true;
+    
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    
     img.onload = () => {
       this.originalImage = img;
       this.imagePreviewUrl = this.sanitizer.bypassSecurityTrustUrl(url);
-      this.drawImage();
+      this.hasExistingImage = true;
+      this.isProcessing = false;
+      
+      // Attendre que le canvas soit disponible
+      setTimeout(() => this.drawImage(), 100);
     };
+    
+    img.onerror = () => {
+      console.error('Impossible de charger l\'image existante');
+      this.isProcessing = false;
+      this.hasExistingImage = false;
+    };
+    
     img.src = url;
   }
 
@@ -91,7 +119,8 @@ export class ProfileImageEditDialogComponent {
       // Validation du type de fichier
       if (!this.allowedTypes.includes(file.type)) {
         this.snackBar.open('Format de fichier non supporté. Utilisez JPG, PNG ou WEBP.', 'Fermer', {
-          duration: 4000
+          duration: 4000,
+          panelClass: ['snackbar-error']
         });
         return;
       }
@@ -99,12 +128,14 @@ export class ProfileImageEditDialogComponent {
       // Validation de la taille
       if (file.size > this.maxFileSize) {
         this.snackBar.open('Le fichier est trop volumineux. Taille maximale : 5MB.', 'Fermer', {
-          duration: 4000
+          duration: 4000,
+          panelClass: ['snackbar-error']
         });
         return;
       }
       
       this.selectedFile = file;
+      this.hasExistingImage = false;
       this.loadImage(file);
     }
   }
@@ -131,7 +162,10 @@ export class ProfileImageEditDialogComponent {
     };
     
     reader.onerror = () => {
-      this.snackBar.open('Erreur lors du chargement de l\'image.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Erreur lors du chargement de l\'image.', 'Fermer', { 
+        duration: 3000,
+        panelClass: ['snackbar-error']
+      });
       this.isProcessing = false;
     };
     
@@ -233,11 +267,6 @@ export class ProfileImageEditDialogComponent {
   flipHorizontal(): void {
     if (!this.canvas || !this.originalImage) return;
     
-    const canvas = this.canvas.nativeElement;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Créer un canvas temporaire
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = this.originalImage.width;
     tempCanvas.height = this.originalImage.height;
@@ -248,8 +277,12 @@ export class ProfileImageEditDialogComponent {
       tempCtx.scale(-1, 1);
       tempCtx.drawImage(this.originalImage, 0, 0);
       
-      this.originalImage.src = tempCanvas.toDataURL();
-      this.originalImage.onload = () => this.drawImage();
+      const newImg = new Image();
+      newImg.onload = () => {
+        this.originalImage = newImg;
+        this.drawImage();
+      };
+      newImg.src = tempCanvas.toDataURL();
     }
   }
 
@@ -295,6 +328,7 @@ export class ProfileImageEditDialogComponent {
   loadFromUrl(): void {
     const url = prompt('Entrez l\'URL de l\'image:');
     if (url) {
+      this.hasExistingImage = false;
       this.loadExistingImage(url);
     }
   }
@@ -307,6 +341,7 @@ export class ProfileImageEditDialogComponent {
       this.selectedFile = null;
       this.imagePreviewUrl = null;
       this.originalImage = null;
+      this.hasExistingImage = false;
       this.resetControls();
       if (this.fileInput) {
         this.fileInput.nativeElement.value = '';
@@ -319,7 +354,10 @@ export class ProfileImageEditDialogComponent {
    */
   async onSave(): Promise<void> {
     if (!this.canvas || !this.originalImage) {
-      this.snackBar.open('Aucune image à enregistrer.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Aucune image à enregistrer.', 'Fermer', { 
+        duration: 3000,
+        panelClass: ['snackbar-error']
+      });
       return;
     }
     
@@ -339,14 +377,25 @@ export class ProfileImageEditDialogComponent {
       });
       
       // Créer un fichier à partir du blob
-      const file = new File([blob], this.selectedFile?.name || 'profile.jpg', {
-        type: 'image/jpeg'
-      });
+      const fileName = this.selectedFile?.name || `profile_${Date.now()}.jpg`;
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
       
-      this.dialogRef.close(file);
+      // Créer une URL de prévisualisation pour mise à jour immédiate
+      const previewUrl = canvas.toDataURL('image/jpeg', 0.95);
+      
+      // Retourner le fichier ET l'URL de prévisualisation
+      const result: ProfileImageDialogResult = {
+        file: file,
+        previewUrl: previewUrl
+      };
+      
+      this.dialogRef.close(result);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      this.snackBar.open('Erreur lors de la sauvegarde de l\'image.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Erreur lors de la sauvegarde de l\'image.', 'Fermer', { 
+        duration: 3000,
+        panelClass: ['snackbar-error']
+      });
       this.isProcessing = false;
     }
   }
@@ -355,7 +404,8 @@ export class ProfileImageEditDialogComponent {
    * Annule l'opération
    */
   onCancel(): void {
-    if (this.selectedFile && !confirm('Voulez-vous vraiment annuler ? Les modifications seront perdues.')) {
+    if ((this.selectedFile || this.hasExistingImage) && 
+        !confirm('Voulez-vous vraiment annuler ? Les modifications seront perdues.')) {
       return;
     }
     this.dialogRef.close();
@@ -377,5 +427,12 @@ export class ProfileImageEditDialogComponent {
     if (!this.selectedFile) return '';
     const sizeMB = (this.selectedFile.size / (1024 * 1024)).toFixed(2);
     return `${this.selectedFile.name} (${sizeMB} MB)`;
+  }
+  
+  /**
+   * Vérifie si on peut sauvegarder
+   */
+  canSave(): boolean {
+    return !!(this.selectedFile || this.hasExistingImage) && !this.isProcessing;
   }
 }

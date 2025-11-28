@@ -88,7 +88,7 @@ export class GroupesExploreComponent implements OnInit {
   typesEquipe = TYPES_EQUIPE;
   joursSemaine = JOURS_SEMAINE;
   niveaux = NIVEAUX;
-  imageUrl = `${environment.imageUrl}`;
+  // imageUrl = `${environment.imageUrl}`;
 
   constructor(
     private groupesService: GroupeService,
@@ -574,7 +574,7 @@ clearSearch(): void {
 }
  // Helper pour l'URL d'image
 getGroupeImageUrl(groupe: any): string {
-  return groupe.imageUrl ? `url(${this.imageUrl}${groupe.imageUrl})` : `url('assets/default-groupe.jpg')`;
+  return groupe.imageUrl ? `url(${groupe.imageUrl})` : `url('assets/default-groupe.jpg')`;
 }
 trackByGroupeId(index: number, groupe: any): any {
   return groupe?.id || index;

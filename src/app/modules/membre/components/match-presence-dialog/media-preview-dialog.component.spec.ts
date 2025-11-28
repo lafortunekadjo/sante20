@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MediaPreviewDialogComponent } from '../media-preview-dialog/media-preview-dialog.component';
 
-import { MediaPreviewDialogComponent } from './media-preview-dialog.component';
 
 describe('MediaPreviewDialogComponent', () => {
   let component: MediaPreviewDialogComponent;

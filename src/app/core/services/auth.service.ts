@@ -212,19 +212,9 @@ getToken(): string | null {
 }
 
 private fetchUserGroup(): Observable<any> {
-    const token = this.getToken(); 
-    
-    if (!token) {
-        return throwError(() => new Error('Token manquant pour la récupération du groupe.'));
-    }
 
-    const authHeaders = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    });
-    
 
-    return this.http.get<any>(this.apiGroupesConnect, { headers: authHeaders, withCredentials: true }).pipe(
+    return this.http.get<any>(this.apiGroupesConnect).pipe(
         tap(groupInfo => {
             if (groupInfo && groupInfo.id) {
                 const newGroupeId = groupInfo.id;
@@ -265,7 +255,7 @@ getProfilePhoto2(): Observable<SafeUrl> {
     let finalUrl: string;
 
     if (pathPart) {
-      finalUrl = environment.imageUrl + pathPart;
+      finalUrl = pathPart;
     } else {
       finalUrl = 'assets/default-avatar.png'; 
       console.warn('Chemin de photo de profil non trouvé dans localStorage.');

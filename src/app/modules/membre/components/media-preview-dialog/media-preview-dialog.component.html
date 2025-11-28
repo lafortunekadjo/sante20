@@ -1,10 +1,81 @@
-<div mat-dialog-content class="preview-content">
-  <img [src]="data.mediaUrl" alt="Aperçu du média" class="preview-image" *ngIf="data.mediaUrl.includes('.jpg') || data.mediaUrl.includes('.png') || data.mediaUrl.includes('.jpeg')">
-  <video [src]="data.mediaUrl" controls class="preview-video" *ngIf="data.mediaUrl.includes('.mp4') || data.mediaUrl.includes('.mov')"></video>
-  <p *ngIf="!data.mediaUrl.includes('.jpg') && !data.mediaUrl.includes('png') && !data.mediaUrl.includes('.jpeg') && !data.mediaUrl.includes('.mp4') && !data.mediaUrl.includes('.mov')" class="error-message">
-    Type de média non pris en charge.
-  </p>
-</div>
-<div mat-dialog-actions class="preview-actions">
-  <button mat-button (click)="closeDialog()" color="warn">Fermer</button>
+<!-- media-preview-dialog.component.html -->
+
+<div class="media-preview-dialog">
+  <!-- Header -->
+  <div class="preview-header">
+    <div class="header-info">
+      <span class="media-counter" *ngIf="canNavigate">
+        {{ currentIndex + 1 }} / {{ data.allMediaUrls?.length }}
+      </span>
+    </div>
+    <div class="header-actions">
+      <button mat-icon-button (click)="downloadMedia()" matTooltip="Télécharger">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button mat-icon-button (click)="closeDialog()" matTooltip="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenu -->
+  <div class="preview-content">
+    <!-- Navigation gauche -->
+    <button 
+      *ngIf="canNavigate" 
+      mat-icon-button 
+      class="nav-btn nav-prev" 
+      (click)="previousMedia()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+
+    <!-- Image -->
+    <img 
+      *ngIf="isCurrentImage" 
+      [src]="currentUrl" 
+      alt="Aperçu du média" 
+      class="preview-image" />
+
+    <!-- Vidéo -->
+    <video 
+      *ngIf="isCurrentVideo" 
+      [src]="currentUrl" 
+      controls 
+      autoplay
+      class="preview-video">
+    </video>
+
+    <!-- Type non supporté -->
+    <div *ngIf="!isCurrentImage && !isCurrentVideo" class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>Type de média non pris en charge</p>
+    </div>
+
+    <!-- Navigation droite -->
+    <button 
+      *ngIf="canNavigate" 
+      mat-icon-button 
+      class="nav-btn nav-next" 
+      (click)="nextMedia()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <!-- Miniatures (optionnel) -->
+  <div class="preview-thumbnails" *ngIf="canNavigate && data.allMediaUrls && data.allMediaUrls.length <= 10">
+    <div 
+      *ngFor="let url of data.allMediaUrls; let i = index" 
+      class="thumbnail-item"
+      [class.active]="i === currentIndex"
+      (click)="currentIndex = i; currentUrl = url">
+      <img 
+        *ngIf="isImageUrl(url)" 
+        [src]="url" 
+        alt="Miniature"
+        loading="lazy" />
+      <div *ngIf="isVideoUrl(url)" class="video-thumb">
+        <mat-icon>videocam</mat-icon>
+      </div>
+    </div>
+  </div>
 </div>

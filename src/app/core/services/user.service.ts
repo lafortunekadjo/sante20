@@ -17,6 +17,10 @@ export class UserService {
       return this.http.get<User[]>(`${environment.apiUrl}/user/allNotDelete`);
     }
 
+      getAllUsers2(): Observable<User[]> {
+      return this.http.get<User[]>(`${environment.apiUrl}/user/allNotDelete2`);
+    }
+
     createUser(user: User): Observable<User> {
       console.log(user)
     return this.http.post<User>(`${environment.apiUrl}/user/create`, user).pipe(
@@ -26,6 +30,19 @@ export class UserService {
       })
     );
   }
+
+  
+
+  createUser2(user: User): Observable<User> {
+      console.log(user)
+    return this.http.post<User>(`${environment.apiUrl}/user/create2`, user).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la création de l’utilisateur:', err);
+        return throwError(err);
+      })
+    );
+  }
+
 
 
 

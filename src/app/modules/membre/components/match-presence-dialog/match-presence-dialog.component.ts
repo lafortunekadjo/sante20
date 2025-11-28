@@ -1,507 +1,369 @@
-// match-presence-dialog.component.ts
 import { Component, Inject, OnInit } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { Presence } from '../../../../core/models/presence.model';
-import { BehaviorSubject } from 'rxjs';
-import { MatMenuModule } from "@angular/material/menu";
-import { MatListModule } from "@angular/material/list";
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 
+export interface Presence {
+  id: number;
+  membre?: {
+    id: number;
+    nom: string;
+    prenom: string;
+    user?: {
+      profilePhotoUrl?: string;
+    };
+  };
+  nomOccasionnel?: string;
+  equipeMatch: string;
+  aJoue: boolean;
+  estCapitaine: boolean;
+  estHommeDuMatch: boolean;
+  buts: number;
+  passes: number;
+  penalti: number;
+  butsContreSonCamp: number;
+  cartonsJaunes: number;
+  cartonsRouges: number;
+}
 
+export interface PresenceDialogData {
+  match: {
+    id: number;
+    dateMatch: Date;
+    adversaire: string;
+  };
+  presences: Presence[] | any;
+}
 
 @Component({
   selector: 'app-match-presence-dialog',
   standalone: true,
   imports: [
     CommonModule,
-    MatIconModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatChipsModule,
-    MatButtonToggleModule,
     FormsModule,
-    MatCardModule,
-    MatSnackBarModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
     MatMenuModule,
-    MatListModule,
-    
-    
-],
+    MatDividerModule,
+    MatSnackBarModule,
+    TranslateModule
+  ],
   templateUrl: './match-presence-dialog.component.html',
-  styleUrls: ['./match-presence-dialog.component.scss']
+  styleUrls: ['./match-presence-dialog.component.scss'],
+  animations: [
+    trigger('cardAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(-20px)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+      ])
+    ])
+  ]
 })
 export class MatchPresenceDialogComponent implements OnInit {
-  allPresences: Presence[] = [];
-  filteredPresences: Presence[] = [];
+  
+  selectedTeam = 'all';
+  searchTerm = '';
   teams: string[] = [];
-  selectedTeam: string = 'all';
-  searchTerm: string = '';
-  snackBar: any;
+  filteredPresences: Presence[] = [];
+  
+  // Liste des présences normalisée (toujours un tableau)
+  private presencesList: Presence[] = [];
+  
+  // Gradients pour avatars
+  private avatarGradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
+  ];
 
   constructor(
     public dialogRef: MatDialogRef<MatchPresenceDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { match: any; presences: BehaviorSubject<Presence[]> }
+    @Inject(MAT_DIALOG_DATA) public data: PresenceDialogData,
+    private snackBar: MatSnackBar,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
-    // Filtrer les présences pour ce match spécifique
-    // Tous ceux dans la liste sont présents
-    console.log(this.data.presences.value)
-    this.allPresences = this.data.presences.value.filter(
-      p => p.match.id === this.data.match.id
-    );
-    
-    // Extraire les équipes uniques
-    this.teams = [...new Set(this.allPresences.map(p => p.equipeMatch))].filter(Boolean);
-    
-    // Trier : capitaines en premier, puis par équipe, puis par nom
-    this.allPresences.sort((a, b) => {
-      if (a.estCapitaine !== b.estCapitaine) {
-        return a.estCapitaine ? -1 : 1;
+    this.normalizePresences();
+    this.extractTeams();
+    this.filterPresences();
+  }
+
+  // ===== NORMALISATION DES DONNÉES =====
+
+  private normalizePresences(): void {
+    // Gérer les différents formats possibles de data.presences
+    if (Array.isArray(this.data?.presences)) {
+      this.presencesList = this.data.presences;
+    } else if (this.data?.presences && typeof this.data.presences === 'object') {
+      // Si c'est un objet, essayer de le convertir en tableau
+      this.presencesList = Object.values(this.data.presences);
+    } else {
+      this.presencesList = [];
+      console.warn('MatchPresenceDialog: presences n\'est pas un tableau valide', this.data?.presences);
+    }
+  }
+
+  // ===== EXTRACTION DES ÉQUIPES =====
+
+  private extractTeams(): void {
+    const teamSet = new Set<string>();
+    this.presencesList.forEach(p => {
+      if (p?.equipeMatch) {
+        teamSet.add(p.equipeMatch);
       }
-      if (a.equipeMatch !== b.equipeMatch) {
-        return a.equipeMatch.localeCompare(b.equipeMatch);
-      }
-      return this.getPlayerName(a).localeCompare(this.getPlayerName(b));
     });
-    
-    // Initialiser la liste filtrée
-    this.filteredPresences = [...this.allPresences];
+    this.teams = Array.from(teamSet).sort();
   }
 
-  /**
-   * Récupère le nom complet du joueur
-   */
-  getPlayerName(presence: Presence): string {
-    if (presence.nomOccasionnel) {
-      return presence.nomOccasionnel;
-    }
-    if (presence.membre) {
-      return `${presence.membre.prenom} ${presence.membre.nom}`;
-    }
-    return 'Joueur inconnu';
-  }
+  // ===== FILTRES =====
 
-  /**
-   * Récupère les initiales du joueur pour l'avatar
-   */
-  getPlayerInitials(presence: Presence): string {
-    const name = this.getPlayerName(presence);
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  }
-
-  /**
-   * Génère une couleur d'avatar basée sur le nom
-   */
-  getAvatarColor(presence: Presence): string {
-    const colors = [
-      'linear-gradient(135deg, #667eea, #764ba2)',
-      'linear-gradient(135deg, #f093fb, #f5576c)',
-      'linear-gradient(135deg, #4facfe, #00f2fe)',
-      'linear-gradient(135deg, #43e97b, #38f9d7)',
-      'linear-gradient(135deg, #fa709a, #fee140)',
-      'linear-gradient(135deg, #30cfd0, #330867)',
-      'linear-gradient(135deg, #a8edea, #fed6e3)',
-      'linear-gradient(135deg, #ff9a9e, #fecfef)'
-    ];
-    
-    const name = this.getPlayerName(presence);
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  }
-
-  /**
-   * Retourne le statut de participation du joueur
-   */
-  getPlayerStatus(presence: Presence): string {
-    if (presence.estHommeDuMatch) {
-      return 'Homme du match';
-    }
-    if (presence.estHommeDuMatchEq) {
-      return 'Homme du match (équipe)';
-    }
-    if (presence.estCapitaine) {
-      return 'Capitaine';
-    }
-    if (presence.aJoue) {
-      return 'A joué';
-    }
-    return 'Présent (banc)';
-  }
-
-  /**
-   * Compte le total de présents
-   */
-  getTotalCount(): number {
-    return this.allPresences.length;
-  }
-
-  /**
-   * Compte ceux qui ont joué
-   */
-  getPlayedCount(): number {
-    return this.allPresences.filter(p => p.aJoue).length;
-  }
-
-  /**
-   * Compte ceux sur le banc
-   */
-  getBenchCount(): number {
-    return this.allPresences.filter(p => !p.aJoue).length;
-  }
-
-  /**
-   * Compte le nombre de joueurs par équipe
-   */
-  getTeamCount(team: string): number {
-    return this.allPresences.filter(p => p.equipeMatch === team).length;
-  }
-
-  /**
-   * Récupère les stats d'un joueur
-   */
-  getPlayerStats(presence: Presence): string {
-    const stats: string[] = [];
-    
-    if (presence.buts > 0) {
-      stats.push(`${presence.buts} but${presence.buts > 1 ? 's' : ''}`);
-    }
-    if (presence.butsContreSonCamp > 0) {
-      stats.push(`${presence.butsContreSonCamp} CSC`);
-    }
-    if (presence.passes > 0) {
-      stats.push(`${presence.passes} passe${presence.passes > 1 ? 's' : ''}`);
-    }
-    if (presence.penalti > 0) {
-      stats.push(`${presence.penalti} penalty`);
-    }
-    if (presence.cartonsJaunes > 0) {
-      stats.push(`${presence.cartonsJaunes} 🟨`);
-    }
-    if (presence.cartonsRouges > 0) {
-      stats.push(`${presence.cartonsRouges} 🟥`);
-    }
-    
-    return stats.length > 0 ? stats.join(', ') : 'Aucune stat';
-  }
-
-  /**
-   * Vérifie si un joueur a des stats notables
-   */
-  hasStats(presence: Presence): boolean {
-    return presence.buts > 0 || 
-           presence.passes > 0 || 
-           presence.cartonsJaunes > 0 || 
-           presence.cartonsRouges > 0 ||
-           presence.butsContreSonCamp > 0 ||
-           presence.penalti > 0;
-  }
-
-  /**
-   * Filtre par équipe
-   */
   filterByTeam(): void {
     this.filterPresences();
   }
 
-  /**
-   * Filtre les présences selon les critères sélectionnés
-   */
   filterPresences(): void {
-    let filtered = [...this.allPresences];
+    console.log(this.presencesList)
+    console.log(this.data.presences)
+    let filtered = [...this.presencesList];
 
     // Filtre par équipe
     if (this.selectedTeam !== 'all') {
-      filtered = filtered.filter(p => p.equipeMatch === this.selectedTeam);
+      filtered = filtered.filter(p => p?.equipeMatch === this.selectedTeam);
     }
 
     // Filtre par recherche
-    if (this.searchTerm) {
-      const search = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
-        this.getPlayerName(p).toLowerCase().includes(search) ||
-        p.equipeMatch.toLowerCase().includes(search)
-      );
+    if (this.searchTerm.trim()) {
+      const search = this.searchTerm.toLowerCase().trim();
+      filtered = filtered.filter(p => {
+        const name = this.getPlayerName(p).toLowerCase();
+        return name.includes(search);
+      });
     }
+
+    // Tri: capitaines d'abord, puis homme du match, puis ceux qui ont joué
+    filtered.sort((a, b) => {
+      if (a?.estCapitaine !== b?.estCapitaine) return a?.estCapitaine ? -1 : 1;
+      if (a?.estHommeDuMatch !== b?.estHommeDuMatch) return a?.estHommeDuMatch ? -1 : 1;
+      if (a?.aJoue !== b?.aJoue) return a?.aJoue ? -1 : 1;
+      return this.getPlayerName(a).localeCompare(this.getPlayerName(b));
+    });
 
     this.filteredPresences = filtered;
   }
 
-  /**
-   * Réinitialise la recherche
-   */
   clearSearch(): void {
     this.searchTerm = '';
     this.filterPresences();
   }
 
+  // ===== COMPTEURS =====
 
-  /**
-   * Génère le texte formaté pour le partage
-   */
-  generateShareText(): string {
-    const matchDate = new Date(this.data.match.dateMatch);
-    const dateStr = matchDate.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    });
+  getTotalCount(): number {
+    return this.presencesList.length;
+  }
 
-    let text = `⚽ COMPOSITION DU MATCH du ${this.data.match.dateMatch}\n`;
-    text += `📅 ${dateStr} - ${this.data.match.adversaire}\n`;
-    text += `${this.data.match.typeMatch ? `🏆 ${this.data.match.typeMatch}\n` : ''}`;
-    text += `\n━━━━━━━━━━━━━━━━━━\n`;
-    text += `👥 ${this.getTotalCount()} joueurs présents\n`;
-    text += `⚽ ${this.getPlayedCount()} ont joué | 🪑 ${this.getBenchCount()} spectateur(s)\n`;
-    text += `\n`;
+  getTeamCount(team: string): number {
+    return this.presencesList.filter(p => p?.equipeMatch === team).length;
+  }
 
-    // Statistiques globales
-    const totalButs = this.allPresences.reduce((sum, p) => sum + p.buts + p.penalti + p.butsContreSonCamp, 0);
-    const totalPasses = this.allPresences.reduce((sum, p) => sum + p.passes, 0);
-    if (totalButs > 0 || totalPasses > 0) {
-      text += `📊 STATISTIQUES GLOBALES\n`;
-      if (totalButs > 0) text += `⚽ ${totalButs} but${totalButs > 1 ? 's' : ''} marqué${totalButs > 1 ? 's' : ''}\n`;
-      if (totalPasses > 0) text += `🎯 ${totalPasses} passe${totalPasses > 1 ? 's' : ''} décisive${totalPasses > 1 ? 's' : ''}\n`;
-      text += `\n`;
+  getPlayedCount(): number {
+    return this.presencesList.filter(p => p?.aJoue).length;
+  }
+
+  getBenchCount(): number {
+    return this.presencesList.filter(p => !p?.aJoue).length;
+  }
+
+  getMotmCount(): number {
+    return this.presencesList.filter(p => p?.estHommeDuMatch).length;
+  }
+
+  // ===== INFOS JOUEUR =====
+
+  getPlayerName(presence: Presence): string {
+    if (!presence) return 'Joueur inconnu';
+    
+    if (presence.nomOccasionnel) {
+      return presence.nomOccasionnel;
     }
+    if (presence.membre) {
+      return `${presence.membre.prenom || ''} ${presence.membre.nom || ''}`.trim();
+    }
+    return 'Joueur inconnu';
+  }
 
-    // Par équipe
-    this.teams.forEach(team => {
-      const teamPresences = this.allPresences.filter(p => p.equipeMatch === team);
-      text += `━━━━━━━━━━━━━━━━━━\n`;
-      text += `🛡️ ÉQUIPE ${team.toUpperCase()}\n`;
-      text += `━━━━━━━━━━━━━━━━━━\n\n`;
+  getPlayerInitials(presence: Presence): string {
+    if (!presence) return '??';
+    
+    if (presence.nomOccasionnel) {
+      const parts = presence.nomOccasionnel.split(' ');
+      return parts.length >= 2 
+        ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
+        : presence.nomOccasionnel.substring(0, 2).toUpperCase();
+    }
+    if (presence.membre) {
+      const prenom = presence.membre.prenom || '';
+      const nom = presence.membre.nom || '';
+      return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+    }
+    return '??';
+  }
 
-      teamPresences.forEach(p => {
-        const name = this.getPlayerName(p);
-        let line = p.estCapitaine ? `👑 ${name}` : `• ${name}`;
-        
-        if (p.estHommeDuMatch) {
-          line += ` ⭐`;
-        }
-        
-        const stats: string[] = [];
-        if (p.buts > 0) stats.push(`⚽${p.buts}`);
-        if (p.penalti > 0) stats.push(`⚡️${p.penalti}`);
-        if (p.butsContreSonCamp > 0) stats.push(`🤦${p.butsContreSonCamp}`);
-        if (p.passes > 0) stats.push(`🎯${p.passes}`);
-        if (p.cartonsJaunes > 0) stats.push(`🟨${p.cartonsJaunes}`);
-        if (p.cartonsRouges > 0) stats.push(`🟥${p.cartonsRouges}`);
-        
-        if (stats.length > 0) {
-          line += ` (${stats.join(' ')})`;
-        }
-        
-        if (!p.aJoue) {
-          line += ` 🪑`;
-        }
-        
-        text += line + '\n';
-      });
-      text += `\n`;
+  getPlayerPhoto(presence: Presence): string | null {
+    if (presence?.membre?.user?.profilePhotoUrl) {
+      return presence.membre.user.profilePhotoUrl;
+    }
+    return null;
+  }
+
+  onImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.style.display = 'none';
+  }
+
+  getAvatarGradient(presence: Presence): string {
+    const name = this.getPlayerName(presence);
+    const index = name.charCodeAt(0) % this.avatarGradients.length;
+    return this.avatarGradients[index];
+  }
+
+  // ===== STATISTIQUES =====
+
+  hasStats(presence: Presence): boolean {
+    if (!presence) return false;
+    
+    return (
+      (presence.buts || 0) > 0 ||
+      (presence.passes || 0) > 0 ||
+      (presence.penalti || 0) > 0 ||
+      (presence.butsContreSonCamp || 0) > 0 ||
+      (presence.cartonsJaunes || 0) > 0 ||
+      (presence.cartonsRouges || 0) > 0
+    );
+  }
+
+  // ===== PARTAGE =====
+
+  shareOnWhatsApp(): void {
+    const text = this.generateShareText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  shareOnFacebook(): void {
+    const text = this.generateShareText();
+    const url = `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  copyShareText(): void {
+    const text = this.generateShareText();
+    navigator.clipboard.writeText(text).then(() => {
+      this.showSnackbar(this.translate.instant('presence.textCopied'), 'success');
+    }).catch(() => {
+      this.showSnackbar(this.translate.instant('presence.copyError'), 'error');
     });
+  }
+
+  private generateShareText(): string {
+    const match = this.data?.match;
+    const dateStr = match?.dateMatch ? new Date(match.dateMatch).toLocaleDateString('fr-FR') : 'Date inconnue';
+    
+    let text = `⚽ Match du ${dateStr}\n`;
+    text += `🆚 ${match?.adversaire || 'Adversaire'}\n\n`;
+    text += `📋 Présents: ${this.getTotalCount()}\n`;
+    text += `🎮 Ont joué: ${this.getPlayedCount()}\n`;
+    text += `🪑 Spectateurs: ${this.getBenchCount()}\n\n`;
+
+    // Top buteurs
+    const scorers = this.presencesList.filter(p => (p?.buts || 0) > 0).sort((a, b) => (b?.buts || 0) - (a?.buts || 0));
+    if (scorers.length > 0) {
+      text += `⚽ Buteurs:\n`;
+      scorers.forEach(p => {
+        text += `  • ${this.getPlayerName(p)}: ${p?.buts || 0} but(s)\n`;
+      });
+      text += '\n';
+    }
 
     // Homme du match
-    const motm = this.allPresences.find(p => p.estHommeDuMatch);
+    const motm = this.presencesList.find(p => p?.estHommeDuMatch);
     if (motm) {
-      text += `━━━━━━━━━━━━━━━━━━\n`;
-      text += `⭐ HOMME DU MATCH\n`;
-      text += `${this.getPlayerName(motm)}\n`;
-      if (this.hasStats(motm)) {
-        text += `${this.getPlayerStats(motm)}\n`;
-      }
-      text += `\n`;
+      text += `⭐ Homme du match: ${this.getPlayerName(motm)}\n`;
     }
 
-    text += `━━━━━━━━━━━━━━━━━━\n`;
-    text += `🏅 Légende : ⚽ Buts | 🎯 Passes | 🟨 Carton jaune | 🟥 Carton rouge | 🪑 Remplaçant | 👑 Capitaine | ⭐ Homme du match`;
-
+    text += '\n#My20 #Football';
     return text;
   }
 
-  /**
-   * Partage sur WhatsApp
-   */
-  shareOnWhatsApp(): void {
-    const text = this.generateShareText();
-    const encodedText = encodeURIComponent(text);
-    
-    // WhatsApp Web
-    const whatsappUrl = `https://wa.me/?text=${encodedText}`;
-    
-    // Tenter d'ouvrir dans une nouvelle fenêtre
-    const newWindow = window.open(whatsappUrl, '_blank');
-    
-    if (!newWindow) {
-      // Si le popup est bloqué, copier dans le presse-papier
-      this.copyToClipboard(text);
-      this.snackBar.open('Texte copié ! Collez-le dans WhatsApp', 'OK', {
-        duration: 5000,
-        horizontalPosition: 'center',
-        verticalPosition: 'top',
-        panelClass: ['success-snackbar']
-      });
-    } else {
-      this.snackBar.open('Ouverture de WhatsApp...', '', {
-        duration: 2000,
-        horizontalPosition: 'center',
-        verticalPosition: 'bottom'
-      });
-    }
-  }
+  // ===== EXPORT =====
 
-  /**
-   * Partage sur Facebook
-   */
-  shareOnFacebook(): void {
-    const text = this.generateShareText();
-    
-    // Facebook ne supporte pas le partage de texte pur via URL
-    // On copie le texte dans le presse-papier
-    this.copyToClipboard(text);
-    
-    // Ouvrir Facebook pour créer un post
-    const facebookUrl = 'https://www.facebook.com/';
-    window.open(facebookUrl, '_blank');
-    
-    this.snackBar.open('Texte copié ! Collez-le dans votre publication Facebook', 'OK', {
-      duration: 5000,
-      horizontalPosition: 'center',
-      verticalPosition: 'top',
-      panelClass: ['info-snackbar']
-    });
-  }
-
-  /**
-   * Copie le texte dans le presse-papier
-   */
-  private copyToClipboard(text: string): void {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(err => {
-        console.error('Erreur lors de la copie:', err);
-        this.fallbackCopyToClipboard(text);
-      });
-    } else {
-      this.fallbackCopyToClipboard(text);
-    }
-  }
-
-  /**
-   * Méthode de secours pour copier dans le presse-papier
-   */
-  private fallbackCopyToClipboard(text: string): void {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.select();
-    
-    try {
-      document.execCommand('copy');
-    } catch (err) {
-      console.error('Erreur lors de la copie:', err);
-    }
-    
-    document.body.removeChild(textArea);
-  }
-
-  /**
-   * Partage générique (copie dans le presse-papier)
-   */
-  copyShareText(): void {
-    const text = this.generateShareText();
-    this.copyToClipboard(text);
-    
-    this.snackBar.open('✓ Texte copié dans le presse-papier !', 'OK', {
-      duration: 3000,
-      horizontalPosition: 'center',
-      verticalPosition: 'bottom',
-      panelClass: ['success-snackbar']
-    });
-  }
-
-  /**
-   * Exporte les présences vers CSV
-   */
   exportToExcel(): void {
-    const csvData = this.convertToCSV(this.filteredPresences);
-    const blob = new Blob(['\ufeff' + csvData], { type: 'text/csv;charset=utf-8;' });
+    const headers = ['Nom', 'Équipe', 'A joué', 'Capitaine', 'MOTM', 'Buts', 'Passes', 'Penalties', 'CSC', 'Jaunes', 'Rouges'];
+    const rows = this.presencesList.map(p => [
+      this.getPlayerName(p),
+      p?.equipeMatch || '',
+      p?.aJoue ? 'Oui' : 'Non',
+      p?.estCapitaine ? 'Oui' : 'Non',
+      p?.estHommeDuMatch ? 'Oui' : 'Non',
+      p?.buts || 0,
+      p?.passes || 0,
+      p?.penalti || 0,
+      p?.butsContreSonCamp || 0,
+      p?.cartonsJaunes || 0,
+      p?.cartonsRouges || 0
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.join(';'))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    
+    const dateStr = this.data?.match?.dateMatch 
+      ? new Date(this.data.match.dateMatch).toISOString().split('T')[0] 
+      : 'match';
+    
     link.setAttribute('href', url);
-    link.setAttribute('download', `presences_${this.data.match.adversaire}_${new Date().getTime()}.csv`);
+    link.setAttribute('download', `presences_${dateStr}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    this.showSnackbar(this.translate.instant('presence.exportSuccess'), 'success');
   }
 
-  /**
-   * Convertit les présences en CSV
-   */
-  private convertToCSV(presences: Presence[]): string {
-    const headers = ['Joueur', 'Type', 'Équipe', 'A joué', 'Capitaine', 'Buts', 'Passes', 'Cartons J', 'Cartons R', 'Homme du match'];
-    const rows = presences.map(p => [
-      this.getPlayerName(p),
-      p.nomOccasionnel ? 'Occasionnel' : 'Membre',
-      p.equipeMatch,
-      p.aJoue ? 'Oui' : 'Non',
-      p.estCapitaine ? 'Oui' : 'Non',
-      p.buts.toString(),
-      p.passes.toString(),
-      p.cartonsJaunes.toString(),
-      p.cartonsRouges.toString(),
-      p.estHommeDuMatch ? 'Oui' : 'Non'
-    ]);
-    
-    const csvContent = [
-      headers.join(';'),
-      ...rows.map(row => row.join(';'))
-    ].join('\n');
-    
-    return csvContent;
-  }
+  // ===== UTILITAIRES =====
 
-  /**
-   * Ferme le dialog
-   */
   close(): void {
     this.dialogRef.close();
   }
+
+  private showSnackbar(message: string, type: 'success' | 'error' | 'info'): void {
+    const panelClass = type === 'success' ? 'snackbar-success' : 
+                       type === 'error' ? 'snackbar-error' : 'snackbar-info';
+    
+    this.snackBar.open(message, '✕', {
+      duration: 3000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: [panelClass]
+    });
+  }
 }
-
-// Dans votre composant feed, ajoutez cette méthode pour ouvrir le dialog :
-/*
-import { MatDialog } from '@angular/material/dialog';
-import { MatchPresenceDialogComponent } from './match-presence-dialog/match-presence-dialog.component';
-
-constructor(private dialog: MatDialog) {}
-
-openPresenceDialog(match: any): void {
-  this.dialog.open(MatchPresenceDialogComponent, {
-    width: '800px',
-    maxWidth: '95vw',
-    maxHeight: '90vh',
-    data: {
-      match: match,
-      presences: this.allPresences // Votre liste complète de présences
-    },
-    panelClass: 'modern-dialog'
-  });
-}
-*/

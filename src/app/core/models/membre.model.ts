@@ -4,6 +4,7 @@ import { RoleCustom } from "./role-custom.model";
 import { User } from "./user";
 
 export interface Membre {
+
   id: number;
   nom: string;
   prenom: string;
@@ -12,7 +13,7 @@ export interface Membre {
   email: string;
   cotisationPayee: boolean;
   roleCO: string;
-  equipe: Equipe;
+  equipe?: Equipe | null;
   groupe: Groupe;
   buts: number;
   passes: number;

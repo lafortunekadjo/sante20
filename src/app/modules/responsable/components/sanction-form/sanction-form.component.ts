@@ -411,7 +411,7 @@ getTotalUnpaid(): Observable<{ totalCount: number, totalAmount: number }> {
     if (sanction.membre && sanction.match) {
       this.presenceService.getPresenceByMatchAndMembre(sanction.match, sanction.membre).subscribe({
         next: (presence) => {
-          sanction.equipeMatch = presence.membre.equipe.nom || 'Non défini';
+          sanction.equipeMatch = presence.membre?.equipe?.nom || 'Non défini';
           console.log('Présence pour membre', sanction.membre, 'et match', sanction.match, ':', presence);
         },
         error: (err) => {
@@ -444,7 +444,7 @@ getTotalUnpaid(): Observable<{ totalCount: number, totalAmount: number }> {
       
       this.presenceService.getPresenceByMatchAndMembre(sanction.match.id, sanction.membre.id).subscribe({
         next: (presence) => {
-          sanction.equipeMatch = presence.membre.equipe.nom || 'Non défini';
+          sanction.equipeMatch = presence.membre?.equipe?.nom || 'Non défini';
           console.log('Présence pour membre', sanction.membre, 'et match', sanction.match, ':', presence);
           // Pré-remplir typeSanction si cartons présents
           if (presence.cartonsJaunes > 0 && this.typeSanctions.find(t => t.nom === 'JAUNE')) {

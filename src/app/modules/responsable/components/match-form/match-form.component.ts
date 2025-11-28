@@ -192,7 +192,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     forkJoin([
       this.matchService.getAllMatch(),
       this.adminService.getAllGroupesMembre(),
-      this.membreService.getMembres(),
+      this.membreService.getGroupMembers(),
       this.sanctionService.getTypeSanctions(),
       this.generalService.getEquipesByGroupe()
     ]).subscribe({
@@ -365,25 +365,28 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     this.router.navigate(['/responsable/presences', match.id]);
   }
 
-  openMediaDialog(match: Match) {
-    if (!this.canAccessMatchData(match)) {
-      alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
-      return;
-    }
-
-    const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
-      width: '90vw',
-      maxWidth: '900px',
-      data: { matchId: match.id },
-      panelClass: 'media-dialog-container'
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadData();
-      }
-    });
+openMediaDialog(match: Match) {
+  if (!this.canAccessMatchData(match)) {
+    alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
+    return;
   }
+
+  const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
+    width: '90vw',
+    maxWidth: '900px',
+    data: { 
+      matchId: match.id,
+      existingMediaUrls: match.mediaUrls || []  // Passer directement les URLs
+    },
+    panelClass: 'media-dialog-container'
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      this.loadData();
+    }
+  });
+}
 
   getMatchStatus(match: Match): string {
     if (this.isMatchPlayed(match)) return 'joues';

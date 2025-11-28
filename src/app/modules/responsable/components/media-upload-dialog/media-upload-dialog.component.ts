@@ -8,16 +8,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { environment } from '../../../../environment';
 
-interface Media {
-  id: number;
-  url: string;
-  type: string;
-  filename: string;
+export interface MediaDialogData {
+  matchId: number;
+  existingMediaUrls: string[];
 }
 
 @Component({
@@ -30,7 +29,8 @@ interface Media {
     MatIconModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   templateUrl: './media-upload-dialog.component.html',
   styleUrls: ['./media-upload-dialog.component.scss']
@@ -38,35 +38,27 @@ interface Media {
 export class MediaUploadDialogComponent implements OnInit {
   selectedFiles: File[] = [];
   previews: (string | null)[] = [];
-  existingMedias: Media[] = [];
+  existingMediaUrls: string[] = [];
   uploadProgress = '';
   uploadProgressValue = 0;
   isError = false;
   isUploading = false;
   isDragOver = false;
   matchId: number;
-  imageUrl = `${environment.imageUrl}`;
-
 
   constructor(
     public dialogRef: MatDialogRef<MediaUploadDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { matchId: number },
-    private http: HttpClient
+    @Inject(MAT_DIALOG_DATA) public data: MediaDialogData,
+    private http: HttpClient,
+    private snackBar: MatSnackBar
   ) {
     this.matchId = data.matchId;
+    // Charger directement les URLs passées en paramètre
+    this.existingMediaUrls = data.existingMediaUrls || [];
   }
 
   ngOnInit(): void {
-    this.loadExistingMedias();
-  }
-
-  loadExistingMedias(): void {
-    this.http.get<Media[]>(`${environment.apiUrl}/matches/${this.matchId}/media`)
-      .pipe(catchError(() => of([])))
-      .subscribe(medias => {
-        this.existingMedias = medias;
-        console.log(medias)
-      });
+    // Plus besoin de charger les médias via HTTP, ils sont déjà passés
   }
 
   onFileSelected(event: any): void {
@@ -141,12 +133,56 @@ export class MediaUploadDialogComponent implements OnInit {
     return file.type.startsWith('video/');
   }
 
-  isMediaImage(media: Media): boolean {
-    return media.type?.startsWith('image/') || media.filename?.match(/\.(jpg|jpeg|png|gif)$/i) !== null;
+  /**
+   * Vérifie si l'URL correspond à une image
+   */
+  isMediaUrlImage(url: string): boolean {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/) !== null ||
+           lowerUrl.includes('/image/');
   }
 
-  isMediaVideo(media: Media): boolean {
-    return media.type?.startsWith('video/') || media.filename?.match(/\.(mp4|avi|mov)$/i) !== null;
+  /**
+   * Vérifie si l'URL correspond à une vidéo
+   */
+  isMediaUrlVideo(url: string): boolean {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.match(/\.(mp4|avi|mov|webm)(\?.*)?$/) !== null ||
+           lowerUrl.includes('/video/');
+  }
+
+  /**
+   * Retourne l'URL complète du média
+   */
+  getMediaUrl(url: string): string {
+    if (!url) return '';
+    
+    // Si c'est déjà une URL complète (Cloudinary)
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    // Sinon, c'est un chemin relatif
+    return environment.imageUrl + url;
+  }
+
+  /**
+   * Extrait le nom du fichier depuis l'URL
+   */
+  getFilenameFromUrl(url: string): string {
+    if (!url) return 'media';
+    
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const filename = pathname.split('/').pop() || 'media';
+      // Retirer l'extension de version Cloudinary si présente
+      return filename.split('?')[0];
+    } catch {
+      return url.split('/').pop() || 'media';
+    }
   }
 
   removeFile(index: number): void {
@@ -206,7 +242,12 @@ export class MediaUploadDialogComponent implements OnInit {
         } else if (event.type === HttpEventType.Response) {
           this.uploadProgress = 'Médias uploadés avec succès !';
           this.uploadProgressValue = 100;
-          this.loadExistingMedias();
+          
+          this.snackBar.open('Médias uploadés avec succès !', 'Fermer', {
+            duration: 3000,
+            panelClass: ['snackbar-success']
+          });
+          
           this.clearAllFiles();
           
           setTimeout(() => {
@@ -217,33 +258,57 @@ export class MediaUploadDialogComponent implements OnInit {
     });
   }
 
-  openMediaPreview(media: Media): void {
-    window.open(media.url, '_blank');
+  /**
+   * Ouvre le média dans un nouvel onglet
+   */
+  openMediaPreview(url: string): void {
+    const fullUrl = this.getMediaUrl(url);
+    window.open(fullUrl, '_blank');
   }
 
-  downloadMedia(media: Media): void {
+  /**
+   * Télécharge le média
+   */
+  downloadMedia(url: string): void {
+    const fullUrl = this.getMediaUrl(url);
+    const filename = this.getFilenameFromUrl(url);
+    
     const link = document.createElement('a');
-    link.href = media.url;
-    link.download = media.filename || 'media';
+    link.href = fullUrl;
+    link.download = filename;
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  deleteMedia(mediaId: number): void {
+  /**
+   * Supprime un média par son index
+   */
+  deleteMedia(index: number): void {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce média ?')) {
       return;
     }
 
-    this.http.delete(`${environment.apiUrl}/matches/${this.matchId}/media/${mediaId}`)
-      .pipe(catchError(error => {
-        this.showError(`Erreur lors de la suppression : ${error.message}`);
-        return of(null);
-      }))
+    this.http.delete(`${environment.apiUrl}/matches/${this.matchId}/media/${index}`)
+      .pipe(
+        catchError(error => {
+          this.snackBar.open(`Erreur lors de la suppression : ${error.message}`, 'Fermer', {
+            duration: 4000,
+            panelClass: ['snackbar-error']
+          });
+          return of(null);
+        })
+      )
       .subscribe(response => {
-        if (response !== null) {
-          this.loadExistingMedias();
+        if (response !== null || response === undefined) {
+          // Supprimer localement
+          this.existingMediaUrls.splice(index, 1);
+          
+          this.snackBar.open('Média supprimé avec succès', 'Fermer', {
+            duration: 3000,
+            panelClass: ['snackbar-success']
+          });
         }
       });
   }
@@ -252,6 +317,11 @@ export class MediaUploadDialogComponent implements OnInit {
     this.uploadProgress = message;
     this.isError = true;
     this.uploadProgressValue = 0;
+    
+    this.snackBar.open(message, 'Fermer', {
+      duration: 4000,
+      panelClass: ['snackbar-error']
+    });
   }
 
   closeDialog(): void {

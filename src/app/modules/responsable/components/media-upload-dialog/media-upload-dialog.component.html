@@ -1,3 +1,5 @@
+<!-- media-upload-dialog.component.html -->
+
 <div class="media-dialog">
   <div class="dialog-header">
     <div class="header-content">
@@ -15,7 +17,8 @@
   <mat-dialog-content class="dialog-content">
     
     <!-- Zone d'upload -->
-    <div class="upload-zone" (click)="fileInput.click()" 
+    <div class="upload-zone" 
+         (click)="fileInput.click()" 
          (dragover)="onDragOver($event)" 
          (dragleave)="onDragLeave($event)" 
          (drop)="onDrop($event)"
@@ -78,36 +81,45 @@
     </div>
 
     <!-- Médias existants -->
-    <div *ngIf="existingMedias && existingMedias.length > 0" class="existing-medias-section">
+    <div *ngIf="existingMediaUrls && existingMediaUrls.length > 0" class="existing-medias-section">
       <div class="section-header">
         <h3>
           <mat-icon>photo_library</mat-icon>
-          Médias du match ({{ existingMedias.length }})
+          Médias du match ({{ existingMediaUrls.length }})
         </h3>
       </div>
 
       <div class="media-grid">
-        <div *ngFor="let media of existingMedias; let i = index" class="media-item">
-          <div class="media-content" (click)="openMediaPreview(media)">
+        <div *ngFor="let mediaUrl of existingMediaUrls; let i = index" class="media-item">
+          <div class="media-content" (click)="openMediaPreview(mediaUrl)">
             <!-- Image -->
             <img 
-              *ngIf="isMediaImage(media)" 
-              [src]="imageUrl + media" 
+              *ngIf="isMediaUrlImage(mediaUrl)" 
+              [src]="getMediaUrl(mediaUrl)" 
               alt="Media"
-              class="media-image">
+              class="media-image"
+              loading="lazy">
             
             <!-- Video thumbnail -->
-            <div *ngIf="isMediaVideo(media)" class="video-thumbnail">
+            <div *ngIf="isMediaUrlVideo(mediaUrl)" class="video-thumbnail">
               <mat-icon class="video-play-icon">play_circle_filled</mat-icon>
-              <video [src]="imageUrl + media" class="video-element"></video>
+              <video [src]="getMediaUrl(mediaUrl)" class="video-element"></video>
             </div>
 
             <!-- Actions -->
             <div class="media-actions">
-              <button mat-icon-button class="download-btn" (click)="downloadMedia(media); $event.stopPropagation()" matTooltip="Télécharger">
+              <button 
+                mat-icon-button 
+                class="download-btn" 
+                (click)="downloadMedia(mediaUrl); $event.stopPropagation()" 
+                matTooltip="Télécharger">
                 <mat-icon>download</mat-icon>
               </button>
-              <button mat-icon-button class="delete-btn" (click)="deleteMedia(media.id); $event.stopPropagation()" matTooltip="Supprimer">
+              <button 
+                mat-icon-button 
+                class="delete-btn" 
+                (click)="deleteMedia(i); $event.stopPropagation()" 
+                matTooltip="Supprimer">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
@@ -127,10 +139,11 @@
     </div>
 
     <!-- État vide -->
-    <div *ngIf="!selectedFiles.length && (!existingMedias || existingMedias.length === 0)" class="empty-state">
+    <div *ngIf="!selectedFiles.length && (!existingMediaUrls || existingMediaUrls.length === 0)" class="empty-state">
       <mat-icon>photo</mat-icon>
       <p>Aucun média pour ce match</p>
     </div>
+
   </mat-dialog-content>
 
   <mat-dialog-actions align="end" class="dialog-actions">

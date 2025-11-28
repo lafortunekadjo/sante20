@@ -144,22 +144,34 @@
                     <span>{{ getHommeDuMatch(match) }}</span>
                   </div>
                 </div>
-                <div class="media-gallery" *ngIf="match?.mediaUrls && match.mediaUrls.length > 0">
-                  <div class="media-grid">
-                    <ng-container *ngFor="let mediaUrl of match.mediaUrls | slice:0:4">
-                      <div class="media-wrapper" (click)="openMediaPreview(match, mediaUrl)">
-                        <img [src]="imageUrl + mediaUrl" alt="Media du match" class="media-thumbnail" />
-                        <div class="media-overlay">
-                          <mat-icon>fullscreen</mat-icon>
-                        </div>
-                      </div>
-                    </ng-container>
+          <div class="media-gallery" *ngIf="match?.mediaUrls && match.mediaUrls.length > 0">
+            <div class="media-grid">
+              <ng-container *ngFor="let mediaUrl of match.mediaUrls | slice:0:4">
+                <div class="media-wrapper" (click)="openMediaPreview(match, mediaUrl)">
+                  <!-- Image -->
+                  <img 
+                    *ngIf="isImageUrl(mediaUrl)" 
+                    [src]="mediaUrl" 
+                    alt="Media du match" 
+                    class="media-thumbnail"
+                    loading="lazy" />
+                  
+                  <!-- Vidéo thumbnail -->
+                  <div *ngIf="isVideoUrl(mediaUrl)" class="video-thumbnail">
+                    <video [src]="mediaUrl" class="media-thumbnail"></video>
+                    <mat-icon class="play-icon">play_circle_filled</mat-icon>
                   </div>
-                  <span class="media-count" *ngIf="match.mediaUrls.length > 4">
-                    + {{ 'feed.sections.matches.media_count' | translate: { count: match.mediaUrls.length - 4 } }}
-                  </span>
+                  
+                  <div class="media-overlay">
+                    <mat-icon>fullscreen</mat-icon>
+                  </div>
                 </div>
-              </div>
+              </ng-container>
+            </div>
+            <span class="media-count" *ngIf="match.mediaUrls.length > 4">
+              + {{ 'feed.sections.matches.media_count' | translate: { count: match.mediaUrls.length - 4 } }}
+            </span>
+          </div>
               <div class="demande-actions">
                 <div class="primary-actions">
                   <button mat-stroked-button (click)="downloadMedia(match)">

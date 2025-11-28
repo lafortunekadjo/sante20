@@ -11,7 +11,7 @@ import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { SafeUrl } from '@angular/platform-browser';
-import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
+import { ProfileImageEditDialogComponent, ProfileImageDialogResult } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
 import { PasswordResetDialogComponent } from '../password-reset-dialog/password-reset-dialog.component';
 import { Geolocation } from '@capacitor/geolocation';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
@@ -24,7 +24,8 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { Language, TranslateModule } from '@ngx-translate/core';
 import { SettingsService, Theme } from '../../../core/services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { filter } from 'rxjs/operators';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { filter, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-navbar',
@@ -43,7 +44,8 @@ import { filter } from 'rxjs/operators';
     MatListModule,
     RouterModule,
     TranslateModule,
-    MatTooltipModule, 
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
@@ -53,9 +55,10 @@ export class NavbarComponent implements OnInit {
   
   roles: string[] = [];
   selectedRole: string | null = null;
-  userProfileImage: SafeUrl | string | null = null;
+  userProfileImage: string | null = null;
   user: any = null;
   isChecking = false;
+  isUploadingPhoto = false;
   success = false;
   error = '';
   isMobile = false;
@@ -69,36 +72,25 @@ export class NavbarComponent implements OnInit {
     public memberService: MembreService, 
     public router: Router, 
     private dialog: MatDialog, 
-    private equipeService: GeneralService
+    private equipeService: GeneralService,
+    private snackBar: MatSnackBar
   ) {
-    console.log('==========================================');
-    console.log('📍 NavbarComponent Constructor');
-    console.log('Current route:', this.router.url);
-    console.log('==========================================');
-
     this.roles = this.authService.getRoles();
     if (this.roles.length > 0) {
       this.selectedRole = this.roles[0];
-      console.log('Selected role:', this.selectedRole);
     }
   }
 
   ngOnInit() {
-    console.log('==========================================');
-    console.log('📍 NavbarComponent ngOnInit');
-    console.log('Current route:', this.router.url);
-    console.log('==========================================');
-
     this.loadUserData();
     this.roles = this.authService.getRoles() || [];
     this.selectedRole = this.authService.getCurrentRole() || this.roles[0] || '';
 
-    // Écouter les changements de route pour mettre à jour l'UI
+    // Écouter les changements de route
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.currentRoute = event.url;
-      console.log('Route changed in navbar:', this.currentRoute);
     });
 
     // Charger les paramètres actuels
@@ -112,28 +104,56 @@ export class NavbarComponent implements OnInit {
     });
   }
   
-  loadUserData() {
+  /**
+   * Charge les données utilisateur et la photo de profil
+   */
+  loadUserData(): void {
     this.user = this.authService.getUser();
-    if (this.user && this.user.userId) {
-      this.userProfileImage = this.authService.getProfilePhoto2().subscribe(
-        (url: SafeUrl) => {
-          this.userProfileImage = url;
+    this.loadProfilePhoto();
+  }
+
+  /**
+   * Charge la photo de profil depuis le localStorage ou le service
+   */
+  loadProfilePhoto(): void {
+    const storedUrl = localStorage.getItem('profilUrl');
+    
+    if (storedUrl) {
+      this.userProfileImage = this.getFullImageUrl(storedUrl);
+    } else {
+      // Fallback : charger via le service
+      this.authService.getProfilePhoto2().subscribe({
+        next: (url: SafeUrl) => {
+          this.userProfileImage = url as string;
         },
-        (error) => {
+        error: (error) => {
           console.error('Erreur lors du chargement de la photo de profil:', error);
           this.userProfileImage = null;
         }
-      );
-    } else {
-      this.userProfileImage = null;
+      });
     }
   }
+
+  /**
+   * Retourne l'URL complète de l'image
+   */
+  getFullImageUrl(url: string): string {
+    if (!url) return '';
+    
+    // Si c'est déjà une URL complète (Cloudinary)
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    // Sinon, c'est un chemin relatif (ancien format) - ne devrait plus arriver avec Cloudinary
+    return url;
+  }
   
-  openPasswordEdit() {
+  openPasswordEdit(): void {
     this.dialog.open(PasswordResetDialogComponent);
   }
 
-  openProfileEdit() {
+  openProfileEdit(): void {
     const dialogRef = this.dialog.open(ProfilEditComponent, {
       width: '600px',
       data: { user: this.user },
@@ -146,73 +166,134 @@ export class NavbarComponent implements OnInit {
     });
   }
 
+  /**
+   * Ouvre le dialog d'édition de photo de profil
+   */
   openProfileImageEdit(): void {
     const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, {
-      width: '400px',
-      data: { user: this.user }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      console.log(this.user)
-      if (result && this.user && this.user.userId) {
-        this.authService.uploadProfilePhoto(this.user.userId, result).subscribe(
-          () => {
-            console.log('Photo de profil téléchargée avec succès.');
-            this.loadUserData();
-          },
-          (error) => {
-            console.error('Erreur lors du téléchargement de la photo:', error);
-          }
-        );
+      width: '600px',
+      maxWidth: '95vw',
+      maxHeight: '95vh',
+      disableClose: true,
+      data: {
+        currentImageUrl: this.userProfileImage,
+        userId: this.user?.userId
       }
     });
+
+    dialogRef.afterClosed().subscribe((result: ProfileImageDialogResult | undefined) => {
+      if (result && result.file && this.user?.userId) {
+        this.uploadProfilePhoto(result.file, result.previewUrl);
+      }
+    });
+  }
+
+  /**
+   * Upload la photo de profil vers le serveur
+   */
+  uploadProfilePhoto(file: File, previewUrl: string): void {
+    if (!this.user?.userId) {
+      this.snackBar.open('Erreur : utilisateur non identifié', 'Fermer', {
+        duration: 3000,
+        panelClass: ['snackbar-error']
+      });
+      return;
+    }
+
+    this.isUploadingPhoto = true;
+    
+    // Mise à jour immédiate de l'affichage avec la prévisualisation
+    const previousImage = this.userProfileImage;
+    this.userProfileImage = previewUrl;
+
+    this.authService.uploadProfilePhoto(this.user.userId, file).pipe(
+      finalize(() => this.isUploadingPhoto = false)
+    ).subscribe({
+      next: (response: any) => {
+        // Extraire l'URL du message de réponse
+        let serverUrl = this.extractUrlFromResponse(response);
+        
+        if (serverUrl) {
+          this.userProfileImage = serverUrl;
+          localStorage.setItem('profilUrl', serverUrl);
+        }
+        
+        this.snackBar.open('Photo de profil mise à jour avec succès !', 'Fermer', {
+          duration: 4000,
+          panelClass: ['snackbar-success']
+        });
+      },
+      error: (err) => {
+        console.error('Erreur lors de l\'upload:', err);
+        
+        // Restaurer l'ancienne photo en cas d'erreur
+        this.userProfileImage = previousImage;
+        
+        this.snackBar.open('Erreur lors de la mise à jour de la photo', 'Fermer', {
+          duration: 4000,
+          panelClass: ['snackbar-error']
+        });
+      }
+    });
+  }
+
+  /**
+   * Extrait l'URL Cloudinary de la réponse du serveur
+   */
+  private extractUrlFromResponse(response: any): string | null {
+    if (!response) return null;
+
+    // Si la réponse contient directement une URL
+    if (response.url && response.url.startsWith('http')) {
+      return response.url;
+    }
+
+    // Si l'URL est dans le message (format: "... URL: https://...")
+    if (response.message && typeof response.message === 'string') {
+      const urlMatch = response.message.match(/https?:\/\/[^\s]+/);
+      if (urlMatch) {
+        return urlMatch[0];
+      }
+    }
+
+    // Si la réponse est une chaîne directe
+    if (typeof response === 'string' && response.startsWith('http')) {
+      return response;
+    }
+
+    return null;
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      if (this.user && this.user.id) {
-        this.authService.uploadProfilePhoto(this.user.id, file).subscribe(
-          () => {
-            console.log('Photo de profil téléchargée avec succès.');
-            this.loadUserData();
-          },
-          (error) => {
-            console.error('Erreur lors du téléchargement de la photo:', error);
-          }
-        );
+      if (this.user && this.user.userId) {
+        // Créer une prévisualisation
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const previewUrl = e.target?.result as string;
+          this.uploadProfilePhoto(file, previewUrl);
+        };
+        reader.readAsDataURL(file);
       }
     }
   }
 
-  viewNotifications() {
+  viewNotifications(): void {
     this.router.navigate(['/notifications']);
   }
 
-  viewSettings() {
+  viewSettings(): void {
     this.router.navigate(['/settings']);
   }
 
-  /**
-   * ✅ CORRECTION : Cette méthode doit être appelée MANUELLEMENT
-   * par un bouton ou un changement de sélection dans le menu
-   * PAS automatiquement au chargement !
-   */
-  changeRole(role: string) {
-    console.log('Changing role to:', role);
+  changeRole(role: string): void {
     this.selectedRole = role;
     this.navigateToRole(role);
   }
 
-  /**
-   * Navigation vers le dashboard selon le rôle
-   * Cette méthode doit être appelée UNIQUEMENT quand l'utilisateur
-   * clique sur un bouton ou change de rôle manuellement
-   */
-  navigateToRole(role: string) {
-    console.log('Navigating to role:', role);
-    
+  navigateToRole(role: string): void {
     if (role === 'ADMIN') {
       this.router.navigate(['/admin']);
     } else if (role === 'RESPONSABLE') {
@@ -224,10 +305,6 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  /**
-   * ✅ NOUVELLE MÉTHODE : Obtenir le lien du dashboard
-   * (pour l'utiliser avec routerLink dans le template)
-   */
   getDashboardRoute(): string {
     if (this.selectedRole === 'ADMIN') {
       return '/admin';
@@ -241,11 +318,6 @@ export class NavbarComponent implements OnInit {
     return '/explorer';
   }
 
-  // ===== NOUVELLES MÉTHODES HELPER POUR L'HARMONISATION =====
-
-  /**
-   * Obtenir l'icône correspondant au rôle
-   */
   getRoleIcon(role: string): string {
     switch (role) {
       case 'ADMIN':
@@ -265,9 +337,6 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  /**
-   * Obtenir le nom d'affichage du rôle
-   */
   getRoleDisplayName(role: string): string {
     switch (role) {
       case 'ADMIN':
@@ -287,11 +356,11 @@ export class NavbarComponent implements OnInit {
     }
   }
 
-  logout() {
+  logout(): void {
     this.authService.logout();
   }
 
-  async checkIn() {
+  async checkIn(): Promise<void> {
     this.isChecking = true;
     this.error = '';
     this.success = false;

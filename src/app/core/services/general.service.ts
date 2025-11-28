@@ -238,5 +238,22 @@ getContributionIndividuellesByContributionId(idContribution: number): Observable
   );
 }
 
+// Assigner un membre à une équipe
+assignMemberToTeam(membreId: number, equipeId: number): Observable<Membre> {
+  const groupeId = localStorage.getItem('selectedGroupId');
+  return this.http.put<Membre>(
+    `${this.equipeUrl}/membres/${membreId}/equipe/${equipeId}`,
+    {}
+  );
+}
+
+// Retirer un membre de son équipe
+removeMemberFromTeam(membreId: number): Observable<Membre> {
+  const groupeId = localStorage.getItem('selectedGroupId');
+  return this.http.delete<Membre>(
+    `${this.equipeUrl}/membres/${membreId}/equipe`
+  );
+}
+
   
 }
