@@ -135,6 +135,7 @@ export class ObjectifsComponent implements OnInit {
       data => {
         this.objectifs = data;
         this.calculateProgress();
+        this.isLoading = false;
       },
       error => {
         console.error('Erreur lors du chargement des objectifs', error);
