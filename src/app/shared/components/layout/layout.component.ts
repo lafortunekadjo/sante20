@@ -250,17 +250,18 @@ export class LayoutComponent implements OnInit, OnDestroy {
         actif: true,
         categorie: 'COMMUN'
       },
-      // {
-      //   id: 4,
-      //   code: 'CHAT',
-      //   label: 'Messages',
-      //   icone: 'chat',
-      //   route: '/chat',
-      //   description: 'Messagerie',
-      //   ordre: 4,
-      //   actif: false,
-      //   categorie: 'COMMUN'
-      // },
+//       {
+//         id: 6,
+//         code: 'INVITATION',
+//         label: 'iNVITATION',
+//         icone: 'newspaper',
+//         route: '/invitation',
+//         description: 'Invitations',
+//         ordre: 4,
+//         actif: true,
+//         categorie: 'COMMUN'
+//       },
+      
       {
         id: 4,
         code: 'OBJECTIFS',

@@ -499,13 +499,14 @@ isLoggedIn(): boolean {
     return this.http.patch(passwordUpdateUrl, { oldPassword, newPassword });
   }
 
-  async checkIn(id:number): Promise<{ success: boolean; message: string }> {
+  async checkIn(id:number, check: boolean): Promise<{ success: boolean; message: string }> {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
       const data = {
         latitude: coordinates.coords.latitude,
         longitude: coordinates.coords.longitude,
         equipe: id,
+        ajoue:check,
       };
 
       const token = this.getToken();
@@ -571,11 +572,11 @@ hasAnyRole(roles: string[]): boolean {
     }
     
     // Charger depuis localStorage si pas en mémoire
-    const userInfo = localStorage.getItem(this.USER_INFO_KEY);
+    const userInfo = localStorage.getItem(this.GROUPE_ID_KEY);
     if (userInfo) {
       try {
         const parsedInfo = JSON.parse(userInfo);
-        this.groupeId = parsedInfo.username || null;
+        this.groupeId = parsedInfo || null;
         return this.groupeId;
       } catch (e) {
         console.error("Erreur parsing groupeId depuis localStorage:", e);

@@ -38,6 +38,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import * as XLSX from 'xlsx';
+import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
 
 interface MatchFilters {
   typeMatch: string;
@@ -768,4 +769,25 @@ openMediaDialog(match: Match) {
         return match.adversaire || '';
     }
   }
+
+  openInvitationDialog(match: Match): void {
+  const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
+    width: '500px',
+    maxWidth: '95vw',
+    data: {
+      match: {
+        id: match.id,
+        dateMatch: match.dateMatch,
+        adversaire: match.adversaire
+      }
+    }
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      // Invitation créée avec succès
+      // this.loadInvitations(); // Rafraîchir la liste
+    }
+  });
+}
 }

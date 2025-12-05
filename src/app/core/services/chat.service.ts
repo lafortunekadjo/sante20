@@ -85,7 +85,6 @@ export class ChatService {
   }
 
   sendMessage(conversationId: number, content: string): Observable<Message> {
-    console.log(conversationId+ ' ' + content)
     return this.http.post<Message>(`${this.apiUrl}/conversations/${conversationId}/messages`, {
       content
     });

@@ -1,21 +1,85 @@
-<h2 mat-dialog-title>Sélectionner une équipe</h2>
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-title">
+    <mat-icon class="title-icon">sports_soccer</mat-icon>
+    Check-in Match
+  </h2>
 
-<div mat-dialog-content>
-  <p *ngIf="data.joueur">
-    Joueur : <strong>{{ data.joueur.prenom }} {{ data.joueur.nom }}</strong>
-  </p>
+  <div mat-dialog-content class="dialog-content">
+    <!-- Carte du joueur -->
+    <div class="player-card" *ngIf="data.joueur">
+      <div class="player-icon">
+        <mat-icon>person</mat-icon>
+      </div>
+      <div class="player-info">
+        <span class="player-label">Joueur</span>
+        <span class="player-name">{{ data.joueur.prenom }} {{ data.joueur.nom }}</span>
+      </div>
+    </div>
 
-  <mat-form-field appearance="fill" class="full-width">
-    <mat-label>Équipe</mat-label>
-    <mat-select [(value)]="selectedEquipeId">
-      <mat-option *ngFor="let equipe of data.equipes" [value]="equipe.id">
-        {{ equipe.nom }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-</div>
+    <mat-divider class="section-divider"></mat-divider>
 
-<div mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Annuler</button>
-  <button mat-flat-button color="primary" [disabled]="!selectedEquipeId" (click)="confirmSelection()">Valider</button>
+    <!-- Sélection du statut -->
+    <div class="status-section">
+      <h3 class="section-title">Participation au match</h3>
+      
+      <mat-radio-group [(ngModel)]="playerStatus" (change)="onPlayerStatusChange()" class="status-radio-group">
+        <mat-radio-button value="played" class="status-option played">
+          <div class="option-content">
+            <mat-icon class="option-icon">check_circle</mat-icon>
+            <span class="option-text">J'ai joué</span>
+          </div>
+        </mat-radio-button>
+        
+        <mat-radio-button value="notPlayed" class="status-option not-played">
+          <div class="option-content">
+            <mat-icon class="option-icon">cancel</mat-icon>
+            <span class="option-text">Je n'ai pas joué</span>
+          </div>
+        </mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <!-- Sélection de l'équipe (visible uniquement si le joueur a joué) -->
+    <div class="team-selection" *ngIf="playerStatus === 'played'">
+      <mat-form-field appearance="outline" class="full-width team-field">
+        <mat-label>
+          <mat-icon class="field-icon">groups</mat-icon>
+          Sélectionner votre équipe
+        </mat-label>
+        <mat-select [(value)]="selectedEquipeId" required>
+          <mat-select-trigger>
+            {{ getSelectedEquipeName() }}
+          </mat-select-trigger>
+          <mat-option *ngFor="let equipe of data.equipes" [value]="equipe.id" class="team-option">
+            <div class="team-option-content">
+              <mat-icon class="team-icon">shield</mat-icon>
+              <span>{{ equipe.nom }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+        <mat-hint>Choisissez l'équipe avec laquelle vous avez joué</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <!-- Message d'information -->
+    <div class="info-message" *ngIf="playerStatus === 'notPlayed'">
+      <mat-icon class="info-icon">info</mat-icon>
+      <span>Votre présence sera enregistrée sans équipe associée</span>
+    </div>
+  </div>
+
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button (click)="cancel()" class="cancel-btn">
+      <mat-icon>close</mat-icon>
+      Annuler
+    </button>
+    <button mat-flat-button 
+            color="primary" 
+            [disabled]="!isValidSelection()" 
+            (click)="confirmSelection()"
+            class="confirm-btn">
+      <mat-icon>check</mat-icon>
+      Valider le check-in
+    </button>
+  </div>
 </div>

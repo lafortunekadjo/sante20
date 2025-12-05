@@ -1,0 +1,138 @@
+<!-- create-invitation-dialog.component.html -->
+<div class="invitation-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">link</mat-icon>
+      <div class="header-text">
+        <h2>{{ 'invitation.createTitle' | translate }}</h2>
+        <p>{{ 'invitation.createSubtitle' | translate }}</p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="close()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="dialog-body">
+    <!-- Étape 1: Configuration -->
+    <div class="step-section" *ngIf="!invitationCreated">
+      <div class="match-info">
+        <mat-icon>event</mat-icon>
+        <div class="match-details">
+          <span class="match-date">{{ data.match.dateMatch | date:'EEEE d MMMM yyyy':'':'fr' }}</span>
+          <span class="match-adversaire">vs {{ data.match.adversaire || 'À définir' }}</span>
+        </div>
+      </div>
+
+      <form class="invitation-form">
+        <!-- Nombre de joueurs -->
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'invitation.minPlayers' | translate }}</mat-label>
+            <input matInput type="number" [(ngModel)]="formData.minJoueurs" name="minJoueurs" min="1" max="50">
+            <mat-hint>{{ 'invitation.minPlayersHint' | translate }}</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'invitation.maxPlayers' | translate }}</mat-label>
+            <input matInput type="number" [(ngModel)]="formData.maxJoueurs" name="maxJoueurs" min="1" max="50">
+            <mat-hint>{{ 'invitation.maxPlayersHint' | translate }}</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <!-- Durée de validité -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'invitation.validityDays' | translate }}</mat-label>
+          <mat-select [(ngModel)]="formData.joursValidite" name="joursValidite">
+            <mat-option [value]="1">1 jour</mat-option>
+            <mat-option [value]="3">3 jours</mat-option>
+            <mat-option [value]="7">7 jours (recommandé)</mat-option>
+            <mat-option [value]="14">14 jours</mat-option>
+            <mat-option [value]="30">30 jours</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Message personnalisé -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'invitation.customMessage' | translate }}</mat-label>
+          <textarea 
+            matInput 
+            [(ngModel)]="formData.message" 
+            name="message"
+            rows="3"
+            maxlength="500"
+            [placeholder]="'invitation.messagePlaceholder' | translate">
+          </textarea>
+          <mat-hint align="end">{{ formData.message?.length || 0 }}/500</mat-hint>
+        </mat-form-field>
+      </form>
+    </div>
+
+    <!-- Étape 2: Invitation créée -->
+    <div class="success-section" *ngIf="invitationCreated" @fadeIn>
+      <div class="success-icon">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <h3>{{ 'invitation.linkReady' | translate }}</h3>
+      
+      <!-- Lien -->
+      <div class="link-box">
+        <input type="text" [value]="createdInvitation!.inviteUrl" readonly #linkInput>
+        <button mat-icon-button (click)="copyLink(linkInput)" matTooltip="Copier">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </div>
+
+      <!-- QR Code -->
+      <div class="qrcode-section">
+        <img [src]="createdInvitation!.qrCodeUrl" alt="QR Code" class="qrcode-image">
+        <p class="qrcode-hint">{{ 'invitation.scanQR' | translate }}</p>
+      </div>
+
+      <!-- Actions de partage -->
+      <div class="share-actions">
+        <button mat-stroked-button (click)="shareOnWhatsApp()" class="btn-whatsapp">
+          <mat-icon>chat</mat-icon>
+          WhatsApp
+        </button>
+        <button mat-stroked-button (click)="shareViaSMS()" class="btn-sms">
+          <mat-icon>sms</mat-icon>
+          SMS
+        </button>
+        <button mat-stroked-button (click)="shareViaEmail()" class="btn-email">
+          <mat-icon>email</mat-icon>
+          Email
+        </button>
+      </div>
+
+      <!-- Infos -->
+      <div class="info-box">
+        <mat-icon>info</mat-icon>
+        <span>
+          {{ 'invitation.expiresOn' | translate }} 
+          {{ createdInvitation!.dateExpiration | date:'dd/MM/yyyy à HH:mm' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button mat-stroked-button (click)="close()">
+      {{ invitationCreated ? ('common.close' | translate) : ('common.cancel' | translate) }}
+    </button>
+    
+    <button 
+      mat-raised-button 
+      color="primary"
+      *ngIf="!invitationCreated"
+      [disabled]="isCreating"
+      (click)="createInvitation()">
+      <mat-spinner *ngIf="isCreating" diameter="20"></mat-spinner>
+      <mat-icon *ngIf="!isCreating">link</mat-icon>
+      <span>{{ 'invitation.generateLink' | translate }}</span>
+    </button>
+  </div>
+</div>

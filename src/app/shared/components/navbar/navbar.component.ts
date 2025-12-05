@@ -359,69 +359,79 @@ export class NavbarComponent implements OnInit {
   logout(): void {
     this.authService.logout();
   }
+async checkIn(): Promise<void> {
+  this.isChecking = true;
+  this.error = '';
+  this.success = false;
 
-  async checkIn(): Promise<void> {
-    this.isChecking = true;
-    this.error = '';
-    this.success = false;
+  try {
+    const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
+    const userId: number | null = this.authService.getUserId();
 
-    try {
-      const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
-      const userId: number | null = this.authService.getUserId();
-
-      if (userId === null) {
-        this.isChecking = false;
-        this.error = 'Utilisateur non authentifié ou ID introuvable.';
-        return;
-      }
-
-      const membre = await this.memberService.getMembreByUserId(userId).toPromise();
-      const membreEquipeId = membre?.equipe?.id ?? null;
-
-      const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
-        width: '500px',
-        data: {
-          equipes,
-          defaultEquipeId: membreEquipeId,
-          joueur: {
-            id: membre?.id,
-            nom: membre?.nom,
-            prenom: membre?.prenom
-          }
-        }
-      });
-
-      const selectedEquipe = await dialogRef.afterClosed().toPromise();
-
-      if (!selectedEquipe) {
-        this.isChecking = false;
-        this.error = 'Check-in annulé : aucune équipe sélectionnée.';
-        return;
-      }
-
-      const result = await this.authService.checkIn(selectedEquipe.id);
+    if (userId === null) {
       this.isChecking = false;
-
-      const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
-        width: '90vw',
-        panelClass: 'scrollable-dialog',
-        data: { message: result.message }
-      });
-
-      confirmRef.afterClosed().subscribe(confirmed => {
-        if (confirmed) {
-          this.success = result.success;
-        } else {
-          this.error = result.success ? '' : result.message;
-        }
-      });
-
-    } catch (err: any) {
-      this.isChecking = false;
-      this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
-      console.error(err);
+      this.error = 'Utilisateur non authentifié ou ID introuvable.';
+      return;
     }
+
+    const membre = await this.memberService.getMembreByUserId(userId).toPromise();
+    const membreEquipeId = membre?.equipe?.id ?? null;
+
+    const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
+      width: '90vw',
+      maxWidth: '500px',
+      data: {
+        equipes,
+        defaultEquipeId: membreEquipeId,
+        joueur: {
+          id: membre?.id,
+          nom: membre?.nom,
+          prenom: membre?.prenom
+        }
+      }
+    });
+
+    const checkInResult = await dialogRef.afterClosed().toPromise();
+
+    if (!checkInResult) {
+      this.isChecking = false;
+      this.error = 'Check-in annulé.';
+      return;
+    }
+
+    // Appel du service avec l'équipe sélectionnée (peut être null)
+    const result = await this.authService.checkIn(
+      checkInResult.equipe?.id || null,
+      checkInResult.hasPlayed
+    );
+    
+    this.isChecking = false;
+
+    const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '90vw',
+      maxWidth: '400px',
+      panelClass: 'scrollable-dialog',
+      data: { 
+        message: checkInResult.hasPlayed 
+          ? result.message 
+          : 'Votre présence a été enregistrée. Vous n\'avez pas participé au match.'
+      }
+    });
+
+    confirmRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.success = result.success;
+      } else {
+        this.error = result.success ? '' : result.message;
+      }
+    });
+
+  } catch (err: any) {
+    this.isChecking = false;
+    this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+    console.error(err);
   }
+}
 
   goToLogin(): void {
     this.router.navigate(['/login']);

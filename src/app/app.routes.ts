@@ -48,6 +48,8 @@ import { LoginComponent } from "./shared/components/login/login.component";
 import { GroupesExploreComponent } from "./modules/responsable/components/groupes-explore/groupes-explore.component";
 import { SignupComponent } from "./shared/components/signup/signup.component";
 import { MembreFormComponent } from "./modules/responsable/components/membre-form/membre-form.component";
+import { InvitationListComponent } from "./modules/users/invitation-list/invitation-list.component";
+import { PublicMatchInviteComponent } from "./modules/users/public-match-invite/public-match-invite.component";
 
 export const routes: Routes = [
   // ==================== ROUTES PUBLIQUES (sans authentification) ====================
@@ -58,6 +60,7 @@ export const routes: Routes = [
 
 
   // ==================== ROUTES PROTÉGÉES (avec Layout et authentification) ====================
+  
   {
     path: '',
     component: LayoutComponent,
@@ -66,6 +69,13 @@ export const routes: Routes = [
     path: '',
     component: GroupesExploreComponent,
   },
+
+      {
+        path: 'match/invite/:token',
+        component: PublicMatchInviteComponent,
+      },
+
+
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
       {
         path: 'explorer',
@@ -73,6 +83,8 @@ export const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
       },
+
+      
       {
         path: 'mes-demandes',
         component: MesDemandesComponent,
@@ -182,6 +194,12 @@ export const routes: Routes = [
             component: RDashboardComponent
           },
 
+           {
+            path: 'utilisateurs',
+            component: UserFormComponent,
+             canActivate: [RoleGuard]
+          },
+
           // GESTION - Protégé par MenuGuard
           {
             path: 'membres',
@@ -193,6 +211,11 @@ export const routes: Routes = [
             component: GestionDemandesGroupeComponent,
             canActivate: [MenuGuard]
           },
+           {
+            path: 'invitation',
+            component: InvitationListComponent,
+          },
+       
           {
             path: 'configuration',
             component: GroupeConfigComponent,

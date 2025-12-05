@@ -15,6 +15,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+
+export interface CheckInResult {
+  equipe: Equipe | null;
+  hasPlayed: boolean;
+}
 
 @Component({
   selector: 'app-equipe-selection-dialog',
@@ -31,13 +38,17 @@ import { MatTableModule } from '@angular/material/table';
       MatSortModule,
       MatProgressSpinnerModule,
       MatDialogModule,
+      MatDividerModule,
+      MatRadioModule,
       FormsModule, 
       ReactiveFormsModule],
   templateUrl: './equipe-selection-dialog.component.html',
   styleUrl: './equipe-selection-dialog.component.scss'
 })
 export class EquipeSelectionDialogComponent {
-selectedEquipeId: number | null;
+  selectedEquipeId: number | null;
+  hasPlayed: boolean = true;
+  playerStatus: 'played' | 'notPlayed' = 'played';
 
   constructor(
     public dialogRef: MatDialogRef<EquipeSelectionDialogComponent>,
@@ -50,12 +61,41 @@ selectedEquipeId: number | null;
     this.selectedEquipeId = data.defaultEquipeId ?? null;
   }
 
+  // Méthode pour obtenir le nom de l'équipe sélectionnée
+  getSelectedEquipeName(): string {
+    if (!this.selectedEquipeId) return '';
+    const equipe = this.data.equipes.find(e => e.id === this.selectedEquipeId);
+    return equipe ? equipe.nom : '';
+  }
+
+  onPlayerStatusChange() {
+    if (this.playerStatus === 'notPlayed') {
+      this.selectedEquipeId = null;
+      this.hasPlayed = false;
+    } else {
+      this.hasPlayed = true;
+    }
+  }
+
   confirmSelection() {
-    const selectedEquipe = this.data.equipes.find(e => e.id === this.selectedEquipeId);
-    this.dialogRef.close(selectedEquipe);
+    const selectedEquipe = this.selectedEquipeId ? 
+      this.data.equipes.find(e => e.id === this.selectedEquipeId) : null;
+    
+    const result: CheckInResult = {
+      equipe: selectedEquipe || null,
+      hasPlayed: this.hasPlayed
+    };
+    
+    this.dialogRef.close(result);
   }
 
   cancel() {
     this.dialogRef.close(null);
+  }
+
+  isValidSelection(): boolean {
+    // Valide si le joueur n'a pas joué OU s'il a joué et a sélectionné une équipe
+    return this.playerStatus === 'notPlayed' || 
+           (this.playerStatus === 'played' && this.selectedEquipeId !== null);
   }
 }

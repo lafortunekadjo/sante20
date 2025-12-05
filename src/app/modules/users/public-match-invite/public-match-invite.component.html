@@ -1,0 +1,316 @@
+<!-- public-match-invite.component.html -->
+<!-- Page accessible SANS authentification via /match/invite/:token -->
+
+<div class="invite-page" *ngIf="!isLoading">
+  
+  <!-- État: Invitation non valide -->
+  <div class="error-container" *ngIf="!invitation?.valide" @fadeIn>
+    <div class="error-card">
+      <div class="error-icon">
+        <mat-icon>error_outline</mat-icon>
+      </div>
+      <h2>Invitation non disponible</h2>
+      <p>{{ invitation?.messageErreur || 'Cette invitation n\'existe pas ou n\'est plus valide.' }}</p>
+      <a mat-raised-button href="http://localhost:4200" class="btn-home">
+        <mat-icon>home</mat-icon>
+        Découvrir My2-0
+      </a>
+    </div>
+  </div>
+
+  <!-- État: Invitation valide -->
+  <div class="invite-container" *ngIf="invitation?.valide" @fadeIn>
+    
+    <!-- Header avec infos match -->
+    <div class="invite-header">
+      <div class="header-background"></div>
+      <div class="header-content">
+        <div class="club-logo" *ngIf="invitation?.organisateur?.logoUrl">
+          <img [src]="invitation?.organisateur?.logoUrl" [alt]="invitation?.organisateur?.nom">
+        </div>
+        <div class="club-logo placeholder" *ngIf="!invitation?.organisateur?.logoUrl">
+          <mat-icon>sports_soccer</mat-icon>
+        </div>
+        
+        <h1>⚽ Vous êtes invités !</h1>
+        <p class="club-name">{{ invitation?.organisateur?.nom }}</p>
+        <p class="club-city" *ngIf="invitation?.organisateur?.ville">
+          <mat-icon>location_on</mat-icon>
+          {{ invitation?.organisateur?.ville }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Infos du match -->
+    <div class="match-info-card" @slideUp>
+      <div class="match-badge">
+        <mat-icon>event</mat-icon>
+        <span>Match Amical</span>
+      </div>
+      
+      <div class="match-details">
+        <div class="detail-item">
+          <mat-icon>calendar_today</mat-icon>
+          <div class="detail-content">
+            <span class="label">Date</span>
+            <span class="value">{{ invitation?.match?.dateMatch | date:'EEEE d MMMM yyyy':'':'fr' }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-item" *ngIf="invitation?.match?.heureMatch">
+          <mat-icon>schedule</mat-icon>
+          <div class="detail-content">
+            <span class="label">Heure</span>
+            <span class="value">{{ invitation?.match?.heureMatch }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-item" *ngIf="invitation?.match?.lieu || invitation?.match?.stade">
+          <mat-icon>stadium</mat-icon>
+          <div class="detail-content">
+            <span class="label">Lieu</span>
+            <span class="value">{{ invitation?.match?.stade || invitation?.match?.lieu }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-message" *ngIf="invitation?.messagePersonnalise">
+        <mat-icon>format_quote</mat-icon>
+        <p>{{ invitation?.messagePersonnalise }}</p>
+      </div>
+
+      <div class="expiration-warning">
+        <mat-icon>timer</mat-icon>
+        <span>Lien valide jusqu'au {{ invitation?.dateExpiration | date:'dd/MM/yyyy à HH:mm' }}</span>
+      </div>
+    </div>
+
+    <!-- État: Déjà soumis -->
+    <div class="already-submitted" *ngIf="invitation?.dejaSoumis" @slideUp>
+      <div class="success-icon">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <h2>Liste déjà envoyée !</h2>
+      <p>
+        L'équipe <strong>{{ invitation?.nomEquipeSoumise }}</strong> a soumis 
+        <strong>{{ invitation?.nombreJoueursSoumis }}</strong> joueurs.
+      </p>
+      <p class="info-text">
+        <mat-icon>info</mat-icon>
+        L'organisateur va valider votre liste. Vous recevrez une confirmation.
+      </p>
+    </div>
+
+    <!-- Formulaire de soumission -->
+    <div class="form-container" *ngIf="!invitation?.dejaSoumis && !isSubmitted" @slideUp>
+      <h2>
+        <mat-icon>groups</mat-icon>
+        Inscrivez votre équipe
+      </h2>
+      <p class="form-subtitle">
+        Ajoutez entre {{ invitation?.minJoueurs }} et {{ invitation?.maxJoueurs }} joueurs
+      </p>
+
+      <!-- Nom de l'équipe -->
+      <div class="team-name-section">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nom de votre équipe</mat-label>
+          <input matInput [(ngModel)]="formData.nomEquipe" placeholder="Ex: AS Dragons" required>
+          <mat-icon matPrefix>shield</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Contact (optionnel) -->
+      <div class="contact-section">
+        <p class="section-label">Contact (optionnel)</p>
+        <div class="contact-fields">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" [(ngModel)]="formData.emailContact" placeholder="contact@equipe.com">
+            <mat-icon matPrefix>email</mat-icon>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>Téléphone</mat-label>
+            <input matInput type="tel" [(ngModel)]="formData.telephoneContact" placeholder="+237 6XX XXX XXX">
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Liste des joueurs -->
+      <div class="players-section">
+        <div class="section-header">
+          <h3>
+            <mat-icon>people</mat-icon>
+            Vos joueurs
+          </h3>
+          <span class="player-count" [class.valid]="joueurs.length >= invitation?.minJoueurs!">
+            {{ joueurs.length }} / {{ invitation?.maxJoueurs }}
+          </span>
+        </div>
+
+        <!-- Liste des joueurs ajoutés -->
+        <div class="players-list" cdkDropList (cdkDropListDropped)="dropPlayer($event)">
+          <div 
+            class="player-item" 
+            *ngFor="let joueur of joueurs; let i = index"
+            cdkDrag
+            @listAnimation>
+            
+            <div class="drag-handle" cdkDragHandle>
+              <mat-icon>drag_indicator</mat-icon>
+            </div>
+            
+            <div class="player-number">{{ i + 1 }}</div>
+            
+            <div class="player-fields">
+              <mat-form-field appearance="outline" class="field-name">
+                <input matInput [(ngModel)]="joueur.prenom" placeholder="Prénom" required>
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" class="field-name">
+                <input matInput [(ngModel)]="joueur.nom" placeholder="Nom" required>
+              </mat-form-field>
+              
+              <!-- <mat-form-field appearance="outline" class="field-number">
+                <input matInput type="number" [(ngModel)]="joueur.numeroMaillot" placeholder="N°" min="1" max="99">
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" class="field-position">
+                <mat-select [(ngModel)]="joueur.poste" placeholder="Poste">
+                  <mat-option value="Gardien">Gardien</mat-option>
+                  <mat-option value="Défenseur">Défenseur</mat-option>
+                  <mat-option value="Milieu">Milieu</mat-option>
+                  <mat-option value="Attaquant">Attaquant</mat-option>
+                </mat-select>
+              </mat-form-field> -->
+            </div>
+
+            <div class="player-badges">
+              <button 
+                mat-icon-button 
+                [class.active]="joueur.estCapitaine"
+                (click)="toggleCapitaine(i)"
+                matTooltip="Capitaine">
+                <mat-icon>military_tech</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                [class.active]="joueur.estGardien"
+                (click)="toggleGardien(i)"
+                matTooltip="Gardien">
+                <mat-icon>sports_handball</mat-icon>
+              </button>
+            </div>
+
+            <button mat-icon-button class="btn-remove" (click)="removePlayer(i)" matTooltip="Supprimer">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bouton ajouter joueur -->
+        <button 
+          mat-stroked-button 
+          class="btn-add-player"
+          (click)="addPlayer()"
+          [disabled]="joueurs.length >= invitation?.maxJoueurs!">
+          <mat-icon>add</mat-icon>
+          Ajouter un joueur
+        </button>
+
+        <!-- Import Excel -->
+        <div class="import-section">
+          <p class="or-divider"><span>ou</span></p>
+          <button mat-stroked-button class="btn-import" (click)="openImportDialog()">
+            <mat-icon>upload_file</mat-icon>
+            Importer depuis Excel
+          </button>
+          <a href="#" class="download-template" (click)="downloadTemplate($event)">
+            <mat-icon>download</mat-icon>
+            Télécharger le modèle
+          </a>
+        </div>
+      </div>
+
+      <!-- Validation -->
+      <div class="validation-section">
+        <div class="validation-checks">
+          <div class="check-item" [class.valid]="formData.nomEquipe">
+            <mat-icon>{{ formData.nomEquipe ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Nom d'équipe renseigné</span>
+          </div>
+          <div class="check-item" [class.valid]="joueurs.length >= invitation?.minJoueurs!">
+            <mat-icon>{{ joueurs.length >= invitation?.minJoueurs! ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Minimum {{ invitation?.minJoueurs }} joueurs</span>
+          </div>
+          <div class="check-item" [class.valid]="hasCapitaine()">
+            <mat-icon>{{ hasCapitaine() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Capitaine désigné</span>
+          </div>
+          <div class="check-item" [class.valid]="allPlayersValid()">
+            <mat-icon>{{ allPlayersValid() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>Tous les joueurs ont un nom</span>
+          </div>
+        </div>
+
+        <button 
+          mat-raised-button 
+          class="btn-submit"
+          [disabled]="!canSubmit() || isSubmitting"
+          (click)="submitPlayers()">
+          <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
+          <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+          <span>{{ isSubmitting ? 'Envoi en cours...' : 'Envoyer la liste' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- État: Soumission réussie -->
+    <div class="submission-success" *ngIf="isSubmitted" @fadeIn>
+      <div class="success-animation">
+        <mat-icon>celebration</mat-icon>
+      </div>
+      <h2>Liste envoyée avec succès ! 🎉</h2>
+      <p>
+        Votre équipe <strong>{{ formData.nomEquipe }}</strong> avec 
+        <strong>{{ joueurs.length }}</strong> joueurs a bien été enregistrée.
+      </p>
+      <div class="next-steps">
+        <h3>Prochaines étapes :</h3>
+        <ul>
+          <li>
+            <mat-icon>hourglass_top</mat-icon>
+            L'équipe {{ invitation?.organisateur?.nom }} va valider votre liste
+          </li>
+          <li>
+            <mat-icon>notifications</mat-icon>
+            Vous recevrez une confirmation si un email a été fourni
+          </li>
+          <li>
+            <mat-icon>event_available</mat-icon>
+            Rendez-vous le {{ invitation?.match?.dateMatch | date:'d MMMM':'':'fr' }} !
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="invite-footer">
+      <p>
+        Propulsé par 
+        <a href="https://my2-0.app" target="_blank">
+          <strong>My2-0</strong>
+        </a>
+        - L'application de gestion de clubs sportifs
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-container" *ngIf="isLoading">
+  <mat-spinner diameter="60"></mat-spinner>
+  <p>Chargement de l'invitation...</p>
+</div>
