@@ -1,348 +1,526 @@
+// presence-form.component.ts - Version avec support matchs amicaux inter-groupes
+
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, OnInit } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { BaseChartDirective } from 'ng2-charts';
-import { catchError, forkJoin, switchMap, throwError } from 'rxjs';
-import { Match } from '../../../../core/models/match.model';
+import { catchError, forkJoin, switchMap, throwError, of } from 'rxjs';
+
 import { Membre } from '../../../../core/models/membre.model';
 import { Presence } from '../../../../core/models/presence.model';
+import { Groupe } from '../../../../core/models/groupe.model';
 import { MatchService } from '../../../../core/services/match.service';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { MembreService } from '../../../../core/services/membre.service';
-import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { FilterByEquipePipe } from '../../../../core/pipes/filter-by-equipe.pipe';
-import { FilterNonPlayersPipe } from '../../../../core/pipes/filter-non-players.pipe';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { FilterByCartonsJaunesPipe } from '../../../../core/pipes/filter-by-cartons-jaunes.pipe';
-import { FilterByCartonsRougesPipe } from '../../../../core/pipes/filter-by-cartons-rouges.pipe';
-import { Groupe } from '../../../../core/models/groupe.model';
 import { AuthService } from '../../../../core/services/auth.service';
-import { FilterByEquipeAndNotPlayedPipe } from '../../../../core/pipes/filter-by-equipe-and-not-played.pipe';
-import { FilterByButsPipe } from '../../../../core/pipes/filter-by-buts.pipe';
-import { FilterByPassesPipe } from '../../../../core/pipes/filter-by-passes.pipe';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { Match } from '../../../../core/models/match.model';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-presence-form',
-    imports: [
-   CommonModule,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatTableModule,
-    MatInputModule,
     MatFormFieldModule,
+    MatInputModule,
     MatSelectModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
-    FormsModule,
-    RouterModule,
-    FilterByEquipePipe,
-    MatSnackBarModule,
-    FilterByButsPipe,
-    FilterByPassesPipe,
     MatExpansionModule,
+    MatSnackBarModule,
+    MatTabsModule,
+    RouterModule
   ],
   templateUrl: './presence-form.component.html',
-  styleUrl: './presence-form.component.scss'
+  styleUrls: ['./presence-form.component.scss']
 })
-export class PresenceFormComponent implements OnInit{
-dataSource = new MatTableDataSource<any>([]);
-    displayedColumns: string[] = ['membre', 'present', 'aJoue', 'equipe', 'capitaine', 'mvpEquipe', 'mvpMatch' ,'buts' ,'bcsc' ,'penalti', 'passes', 'cartonsJaunes', 'cartonsRouges'];
-  isLoading: boolean = true;
-  match: Match | null = null;
-  membres: Membre[] = [];
-  membres2: Membre[] = [];
-  groupeActif: Groupe| null = null;
-  equipeNames: [string, string] = ['',''];
-  membresNonPresents: Membre[] = [];
-  selectedMembreIdToAdd: number | null = null;
-  occasionalPlayerName:string = '';
-  membreSearch: string = '';
+export class PresenceFormComponent implements OnInit {
+
+  dataSource = new MatTableDataSource<Presence>([]);
+  isLoading = true;
   
+  match: Match | null = null;
+  groupeActif: Groupe | null = null;
+  groupeAdverse: Groupe | null = null;
+  
+  // Membres des deux groupes
+  membres: Membre[] = [];
+  membresAdverse: Membre[] = [];
+  membresNonPresents: Membre[] = [];
+  membresAdverseNonPresents: Membre[] = [];
+  
+  // Noms des équipes
+  equipeNames: [string, string] = ['Équipe 1', 'Équipe 2'];
+  
+  // Pour ajouter des membres
+  selectedMembreIdToAdd: number | null = null;
+  selectedMembreAdverseIdToAdd: number | null = null;
+  occasionalPlayerName = '';
+  occasionalPlayerTeam = '';
+  membreSearch = '';
+  membreAdverseSearch = '';
+  today = new Date();
+
+  private _refreshCounter = 0;
 
   constructor(
     private matchService: MatchService,
     private presenceService: PresenceService,
     private groupeService: GroupeService,
+    private membreService: MembreService,
     private authService: AuthService,
     private route: ActivatedRoute,
     private snackBar: MatSnackBar,
-    private membreService: MembreService
+    private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     const matchId = Number(this.route.snapshot.paramMap.get('matchId'));
     this.loadData(matchId);
-        console.log(this.dataSource.data)
-    
   }
 
- loadData(matchId: number) {
-  this.isLoading = true;
-  
+  // ===== GETTERS =====
 
-  const userId = this.authService.getUserId();
-
-  // ⭐ CRUCIAL FIX: Check if the userId is not null before proceeding.
-  if (userId === null) {
-    this.isLoading = false;
-    this.snackBar.open('Erreur: L\'utilisateur n\'est pas connecté.', 'Fermer', { duration: 3000 });
-    return; // Exit the function early if userId is null
+  get equipe1Players(): Presence[] {
+    const _ = this._refreshCounter;
+    return this.dataSource.data.filter(p => p.equipeMatch === this.equipeNames[0]);
   }
 
-  this.groupeService.getGroupe(userId).pipe(
-    switchMap(groupe => {
-      if (!groupe) {
-        throw new Error('Groupe non trouvé pour l\'utilisateur.');
-      }
-      this.groupeActif = groupe;
-      
-      // Now that we have the active group, we can load its members.
-      return forkJoin([
-        this.matchService.getMatch(matchId),
-        this.presenceService.getPresencesByMatchId(matchId),
-        this.presenceService.getMembreByMatch(matchId),
-        this.membreService.getAllMembres()
-      ]);
-    }),
-    catchError(err => {
-      console.error('Erreur lors du chargement des données:', err);
+  get equipe2Players(): Presence[] {
+    const _ = this._refreshCounter;
+    return this.dataSource.data.filter(p => p.equipeMatch === this.equipeNames[1]);
+  }
+
+  get equipe1Count(): number {
+    return this.equipe1Players.length;
+  }
+
+  get equipe2Count(): number {
+    return this.equipe2Players.length;
+  }
+
+  get buteursPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => 
+      (p.buts && p.buts > 0) || 
+      (p.penalti && p.penalti > 0) || 
+      (p.butsContreSonCamp && p.butsContreSonCamp > 0)
+    );
+  }
+
+  get passeursPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => p.passes && p.passes > 0);
+  }
+
+  get isAmicalWithPlatformGroup(): boolean {
+    return this.match?.typeMatch === 'AMICAL' && 
+           !!this.match?.groupeAdverse?.id;
+  }
+
+  get isAmicalWithManualAdversary(): boolean {
+    return this.match?.typeMatch === 'AMICAL' && 
+           !this.match?.groupeAdverse?.id &&
+           !!this.match?.nomAdversaireManuel;
+  }
+
+  get cartonsJaunesPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => p.cartonsJaunes && p.cartonsJaunes > 0);
+  }
+
+  get cartonsRougesPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => p.cartonsRouges && p.cartonsRouges > 0);
+  }
+
+  // ===== TRACK BY =====
+
+  trackByPresence(index: number, presence: Presence): any {
+    return presence.id || `${presence.membre?.id || presence.nomOccasionnel}-${index}`;
+  }
+
+  // ===== CHARGEMENT DES DONNÉES =====
+
+  loadData(matchId: number): void {
+    this.isLoading = true;
+    const userId = this.authService.getUserId();
+
+    if (userId === null) {
       this.isLoading = false;
-      this.snackBar.open('Erreur lors du chargement des données', 'Fermer', { duration: 3000 });
-      return throwError(() => err);
-    })
-  ).subscribe({
-    next: ([match, presences, membres, membres2]) => {
-      this.match = match;
-      this.membres = membres;
-      this.membres2 = membres2;
-      
- 
+      this.showSnackbar('Erreur: Utilisateur non connecté', 'error');
+      return;
+    }
 
-        // Maintenant, nous avons la liste complète des présences, y compris les joueurs occasionnels.
-        // Nous peuplons simplement `dataSource.data` avec ces présences.
-         //const updatedPresences = presences.map(p => ({ ...p, present: true }));
+    this.groupeService.getGroupe(userId).pipe(
+      switchMap(groupe => {
+        if (!groupe) {
+          throw new Error('Groupe non trouvé');
+        }
+        this.groupeActif = groupe;
+
+        return forkJoin([
+          this.matchService.getMatch(matchId),
+          this.presenceService.getPresencesByMatchId(matchId),
+          this.membreService.getAllMembres()
+        ]);
+      }),
+      switchMap(([match, presences, allMembres]) => {
+        this.match = match;
+        this.membres = allMembres;
+        
+        this.equipeNames = this.getEquipeNamesFromMatch(match);
+        
+        // Si match amical avec groupe adverse, charger ses membres
+        if (match.typeMatch === 'AMICAL' && match.groupeAdverse?.id) {
+          this.groupeAdverse = match.groupeAdverse;
+          
+          return this.membreService.getMembresByGroupeId(match.groupeAdverse.id).pipe(
+            catchError(err => {
+              console.error('Erreur chargement membres adverses:', err);
+              return of([] as Membre[]);
+            }),
+            switchMap(membresAdverse => {
+              this.membresAdverse = membresAdverse;
+              return of({ presences, allMembres });
+            })
+          );
+        }
+        
+        return of({ presences, allMembres });
+      }),
+      catchError(err => {
+        console.error('Erreur chargement:', err);
+        this.isLoading = false;
+        this.showSnackbar('Erreur lors du chargement', 'error');
+        return throwError(() => err);
+      })
+    ).subscribe({
+      next: ({ presences }) => {
         this.dataSource.data = presences.map(p => ({ ...p, present: true }));
         
-        // Et nous peuplons la liste des membres non présents en filtrant à partir de tous les membres.
-        const membresPresentsIds = presences.map(p => p.membre?.id).filter(id => id !== undefined);
-        const membresOccasionnels = presences.filter(p => p.nomOccasionnel).map(p => p.nomOccasionnel);
-
-        const safeLower = (val?: string) => (val ?? '').toLowerCase();
+        this.assignDefaultTeams();
         
-        // J'ai renommé `membres` en `allMembres` pour éviter la confusion
-        this.membres = membres
-          .filter(m => !membresPresentsIds.includes(m?.id))
-          .sort((a, b) => {
-            const nomA = safeLower(a?.nom);
-            const nomB = safeLower(b?.nom);
-            if (nomA < nomB) return -1;
-            if (nomA > nomB) return 1;
-            return safeLower(a?.prenom).localeCompare(safeLower(b?.prenom));
-          });
-          this.membresNonPresents = this.membres2
-              .filter(m => !membresPresentsIds.includes(m?.id))
-              .sort((a, b) => {
-                const nomA = safeLower(a.nom);
-                const nomB = safeLower(b.nom);
-                if (nomA < nomB) return -1;
-                if (nomA > nomB) return 1;
-                return safeLower(a.prenom).localeCompare(safeLower(b.prenom));
+        const presentMemberIds = presences
+          .filter(p => p.membre?.id)
+          .map(p => p.membre!.id);
+        
+        this.membresNonPresents = this.membres
+          .filter(m => !presentMemberIds.includes(m.id))
+          .sort((a, b) => a.nom.localeCompare(b.nom));
+        
+        if (this.isAmicalWithPlatformGroup) {
+          this.membresAdverseNonPresents = this.membresAdverse
+            .filter(m => !presentMemberIds.includes(m.id))
+            .sort((a, b) => a.nom.localeCompare(b.nom));
+        }
 
-              });
-          
-      this.isLoading = false;
-
-      console.log(this.match?.adversaire)
-      this.equipeNames = this.getEquipeNames(this.match?.adversaire ?? '');
-    },
-    error: (err) => {
-      // The error is already handled by catchError, but this can be a fallback.
-      console.error('Erreur de souscription:', err);
-    }
-  });
-}
-
-filteredMembres() {
-  const searchLower = (this.membreSearch || '').toLowerCase();
-
-  return [...this.membresNonPresents]
-    .sort((a, b) => {
-      const nomA = (a.nom || '').toLowerCase();
-      const nomB = (b.nom || '').toLowerCase();
-      if (nomA < nomB) return -1;
-      if (nomA > nomB) return 1;
-      return (a.prenom || '').toLowerCase().localeCompare((b.prenom || '').toLowerCase());
-    })
-    .filter(m =>
-      (m.nom || '').toLowerCase().includes(searchLower) ||
-      (m.prenom || '').toLowerCase().includes(searchLower)
-    );
-}
-
-   getCapitaine(equipe: string): string {
-    const capitaine = this.dataSource.data.find(p => p.equipeMatch === equipe && p.estCapitaine);
-    return capitaine ? this.getMembreName(capitaine) : '_______________________';
-  }
-
-  getHommeDuMatch(): string {
-    const hommeDuMatch = this.dataSource.data.find(p => p.present && p.aJoue && p.estHommeDuMatch);
-    return hommeDuMatch ? this.getMembreName(hommeDuMatch) : 'Aucun';
-  }
-
-  getMvpEquipe(): string {
-    const equipeJauneName = this.equipeNames[0];
-    const equipeRougeName = this.equipeNames[1];
-
-    const mvpJaune = this.dataSource.data.find(p => p.equipeMatch === equipeJauneName && p.estHommeDuMatchEq);
-
-    const mvpRouge = this.dataSource.data.find(p => p.equipeMatch === equipeRougeName && p.estHommeDuMatchEq);
-
-    const mvpJauneNom = mvpJaune ? this.getMembreName(mvpJaune) : 'Aucun';
-    const mvpRougeNom = mvpRouge ? this.getMembreName(mvpRouge) : 'Aucun';
-
-    return `${equipeJauneName} : ${mvpJauneNom} | ${equipeRougeName} : ${mvpRougeNom}`;
-  }
-
-
-  getTotalCartons(equipe: string, typeCarton: 'JAUNES' | 'ROUGES'): number {
-  // Vérifie si la source de données est disponible et contient des données
-  if (!this.dataSource || !this.dataSource.data) {
-    return 0; // Retourne 0 si aucune donnée n'est disponible
-  }
-
-  // Filtre les présences pour l'équipe spécifiée et les joueurs qui ont joué
-  return this.dataSource.data
-    .filter(presence => presence.equipeMatch === equipe && presence.aJoue)
-    .reduce((sum, presence) => {
-      // Accumule le total des cartons en fonction du type demandé
-      if (typeCarton === 'JAUNES') {
-        return sum + (presence.cartonsJaunes || 0); // Ajoute les cartons jaunes, par défaut 0 si undefined
-      } else {
-        return sum + (presence.cartonsRouges || 0); // Ajoute les cartons rouges, par défaut 0 si undefined
+        this.isLoading = false;
+        this.refreshView();
       }
-    }, 0); // Commence la somme à 0
-}
-
-  getScore(equipe: string): number {
-    return this.dataSource.data
-      .filter(p => p.present && p.aJoue && p.equipeMatch === equipe)
-      .reduce((sum, p) => sum + p.buts, 0);
+    });
   }
 
- getMatchScore(equipe: string): number {
-    let score = 0;
-    const equipeAdverse = this.equipeNames.find(name => name !== equipe);
+  private refreshView(): void {
+    this._refreshCounter++;
+    this.cdr.detectChanges();
+  }
 
-    // Calcul des buts et des penaltis de l'équipe actuelle
-    score += this.dataSource.data
-      .filter(p => p.present && p.aJoue && p.equipeMatch === equipe)
-      .reduce((sum, p) => sum + (Number(p.buts) || 0) + (Number(p.penalti) || 0), 0);
+  // ===== NOMS D'ÉQUIPES =====
 
-    // Ajout des buts contre son camp (bcsc) de l'équipe adverse
-    if (equipeAdverse) {
-      score += this.dataSource.data
-        .filter(p => p.present && p.aJoue && p.equipeMatch === equipeAdverse)
-        .reduce((sum, p) => sum + (Number(p.butsContreSonCamp) || 0), 0);
+  getEquipeNamesFromMatch(match: Match | null): [string, string] {
+    if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
+
+    switch (match.typeMatch) {
+      case 'INTERNE':
+      case 'DUEL':
+        return [
+          match.equipe1?.nom || 'Équipe 1',
+          match.equipe2?.nom || 'Équipe 2'
+        ];
+
+      case 'AMICAL':
+        const localeName = this.groupeActif?.abreviation || this.groupeActif?.nom || 'Locale';
+        let adversaireName = 'Adverse';
+        
+        if (match.groupeAdverse) {
+          adversaireName = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
+        } else if (match.nomAdversaireManuel) {
+          adversaireName = match.nomAdversaireManuel;
+        }
+        
+        return [localeName, adversaireName];
+
+      case 'ANNIVERSAIRE':
+        return ['Équipe Fêtés', 'Équipe Adverses'];
+
+      default:
+        return ['Équipe 1', 'Équipe 2'];
+    }
+  }
+
+  needsTeamSelection(): boolean {
+    if (this.isAmicalWithPlatformGroup) {
+      return true;
+    }
+    return this.match?.typeMatch !== 'AMICAL';
+  }
+
+  getDefaultTeamForNewPlayer(membre?: Membre, fromAdverseGroup: boolean = false): string {
+    if (!this.match || !this.match.typeMatch) return this.equipeNames[0];
+
+    switch (this.match.typeMatch) {
+      case 'INTERNE':
+      case 'DUEL':
+        if (membre?.equipe) {
+          if (this.match.equipe1?.id === membre.equipe.id) {
+            return this.equipeNames[0];
+          }
+          if (this.match.equipe2?.id === membre.equipe.id) {
+            return this.equipeNames[1];
+          }
+        }
+        return this.equipeNames[0];
+
+      case 'AMICAL':
+        if (fromAdverseGroup) {
+          return this.equipeNames[1];
+        }
+        return this.equipeNames[0];
+
+      case 'ANNIVERSAIRE':
+        if (membre && this.match.membresAnniversaire?.some(m => m.id === membre.id)) {
+          return this.equipeNames[0];
+        }
+        return this.equipeNames[1];
+
+      default:
+        return this.equipeNames[0];
+    }
+  }
+
+  // ===== FILTRAGE =====
+
+  filteredMembres(): Membre[] {
+    const searchLower = (this.membreSearch || '').toLowerCase();
+    return this.membresNonPresents
+      .filter(m =>
+        m.nom.toLowerCase().includes(searchLower) ||
+        m.prenom.toLowerCase().includes(searchLower)
+      )
+      .sort((a, b) => a.nom.localeCompare(b.nom));
+  }
+
+  filteredMembresAdverse(): Membre[] {
+    const searchLower = (this.membreAdverseSearch || '').toLowerCase();
+    return this.membresAdverseNonPresents
+      .filter(m =>
+        m.nom.toLowerCase().includes(searchLower) ||
+        m.prenom.toLowerCase().includes(searchLower)
+      )
+      .sort((a, b) => a.nom.localeCompare(b.nom));
+  }
+
+  // ===== AJOUT DE MEMBRES =====
+
+  addMembreToPresenceList(): void {
+    if (!this.selectedMembreIdToAdd) return;
+
+    const membre = this.membres.find(m => m.id === this.selectedMembreIdToAdd);
+    if (!membre) return;
+
+    const alreadyExists = this.dataSource.data.some(p => p.membre?.id === membre.id);
+    if (alreadyExists) {
+      this.showSnackbar('Ce membre est déjà dans la liste', 'error');
+      return;
     }
 
-    return score;
+    const newPresence: Presence = {
+      id: 0,
+      match: this.match!,
+      membre: membre,
+      present: true,
+      aJoue: false,
+      estCapitaine: false,
+      buts: 0,
+      passes: 0,
+      penalti: 0,
+      butsContreSonCamp: 0,
+      estHommeDuMatch: false,
+      estHommeDuMatchEq: false,
+      equipeMatch: this.getDefaultTeamForNewPlayer(membre, false),
+      cartonsJaunes: 0,
+      cartonsRouges: 0,
+      nomOccasionnel: ''
+    };
+
+    this.dataSource.data = [...this.dataSource.data, newPresence];
+    this.membresNonPresents = this.membresNonPresents.filter(m => m.id !== this.selectedMembreIdToAdd);
+    
+    this.selectedMembreIdToAdd = null;
+    this.membreSearch = '';
+    this.refreshView();
+
+    this.showSnackbar(`${membre.nom} ${membre.prenom} ajouté à ${newPresence.equipeMatch}`, 'success');
   }
 
-  getScore2(equipe: string): number {
-     return this.match?.scoreAdversaire || 0;
-  
-  }
-  // getHommeDuMatch(): string {
-  //   const hommeDuMatch = this.dataSource.data.find(p => p.present && p.aJoue && p.estHommeDuMatch);
-  //   return hommeDuMatch ? this.getMembreName(hommeDuMatch.membre.id) : 'Aucun';
-  // }
-  // getMvpEquipe(): string {
-  //   // This function now returns the MVP for each team.
-  //   const equipeJauneName = this.equipeNames[0];
-  //   const equipeRougeName = this.equipeNames[1];
+  addMembreAdverseToPresenceList(): void {
+    if (!this.selectedMembreAdverseIdToAdd) return;
 
-  //   // Find the MVP for the first team (yellow).
-  //   const mvpJaune = this.dataSource.data.find(p => p.equipeMatch === equipeJauneName && p.estHommeDuMatchEq);
+    const membre = this.membresAdverse.find(m => m.id === this.selectedMembreAdverseIdToAdd);
+    if (!membre) return;
 
-  //   // Find the MVP for the second team (red).
-  //   const mvpRouge = this.dataSource.data.find(p => p.equipeMatch === equipeRougeName && p.estHommeDuMatchEq);
-
-  //   // Format the output string to display both MVPs.
-  //   const mvpJauneNom = mvpJaune ? this.getMembreName(mvpJaune.membre.id) : 'Aucun';
-  //   const mvpRougeNom = mvpRouge ? this.getMembreName(mvpRouge.membre.id) : 'Aucun';
-
-  //   // Return a formatted string with both MVPs.
-  //   return `${equipeJauneName} : ${mvpJauneNom} | ${equipeRougeName} : ${mvpRougeNom}`;
-  // }
-
- getMembreName(presence: any): string {
-
-    if (presence.membre && presence.membre.nom ) {
-        return `${presence.membre.nom} ${presence.membre.prenom}`;
-    } else if (presence.nomOccasionnel) {
-        return presence.nomOccasionnel;
+    const alreadyExists = this.dataSource.data.some(p => p.membre?.id === membre.id);
+    if (alreadyExists) {
+      this.showSnackbar('Ce membre est déjà dans la liste', 'error');
+      return;
     }
-    return 'Nom inconnu';
-}
 
-getMembreName2(id: number): string {
+    const newPresence: Presence = {
+      id: 0,
+      match: this.match!,
+      membre: membre,
+      present: true,
+      aJoue: false,
+      estCapitaine: false,
+      buts: 0,
+      passes: 0,
+      penalti: 0,
+      butsContreSonCamp: 0,
+      estHommeDuMatch: false,
+      estHommeDuMatchEq: false,
+      equipeMatch: this.getDefaultTeamForNewPlayer(membre, true),
+      cartonsJaunes: 0,
+      cartonsRouges: 0,
+      nomOccasionnel: ''
+    };
 
-  const membreTrouve = this.membres2.find(membre => membre.id === id);
+    this.dataSource.data = [...this.dataSource.data, newPresence];
+    this.membresAdverseNonPresents = this.membresAdverseNonPresents.filter(m => m.id !== this.selectedMembreAdverseIdToAdd);
+    
+    this.selectedMembreAdverseIdToAdd = null;
+    this.membreAdverseSearch = '';
+    this.refreshView();
 
-  // 2. Vérifier si un membre a été trouvé
-  if (membreTrouve) {
-    // 3. Retourner le Nom et le Prénom s'ils existent
-    if (membreTrouve.nom && membreTrouve.prenom) {
-      return `${membreTrouve.nom} ${membreTrouve.prenom}`;
+    this.showSnackbar(`${membre.nom} ${membre.prenom} ajouté à ${newPresence.equipeMatch}`, 'success');
+  }
+
+  addOccasionalPlayer(): void {
+    if (!this.occasionalPlayerName.trim()) {
+      this.showSnackbar('Veuillez entrer un nom', 'error');
+      return;
     }
-    // Si l'on ne trouve qu'un des deux, retourner ce qui est disponible
-    return membreTrouve.nom || membreTrouve.prenom || 'Nom du membre incomplet';
+
+    let equipe = this.getDefaultTeamForNewPlayer();
+    if (this.isAmicalWithPlatformGroup && this.occasionalPlayerTeam) {
+      equipe = this.occasionalPlayerTeam;
+    }
+
+    const newPresence: Presence = {
+      id: 0,
+      match: this.match!,
+      membre: null as any,
+      nomOccasionnel: this.occasionalPlayerName.trim(),
+      present: true,
+      aJoue: false,
+      estCapitaine: false,
+      buts: 0,
+      passes: 0,
+      penalti: 0,
+      butsContreSonCamp: 0,
+      estHommeDuMatch: false,
+      estHommeDuMatchEq: false,
+      equipeMatch: equipe,
+      cartonsJaunes: 0,
+      cartonsRouges: 0
+    };
+
+    this.dataSource.data = [...this.dataSource.data, newPresence];
+    
+    const addedName = this.occasionalPlayerName;
+    this.occasionalPlayerName = '';
+    this.occasionalPlayerTeam = '';
+    this.refreshView();
+
+    this.showSnackbar(`${addedName} ajouté à ${newPresence.equipeMatch}`, 'success');
   }
 
-  // 4. Si le membre n'est pas trouvé, retourner une valeur par défaut
-  return 'Nom inconnu';
-}
-
-getButsDisplay(presence: any): string {
-  const nomMembre = this.getMembreName(presence);
-  let display = `${nomMembre}`;
-
-  // Affichage des buts
-  if (presence.buts > 0) {
-    display += ` (${presence.buts})`;
+  onEquipeChange(): void {
+    this.refreshView();
   }
 
-  // Ajout de la mention (P) pour les penalties
-  if (presence.penalti > 0) {
-    display += ` (${presence.penalti}P)`;
+  // ===== VALIDATION =====
+
+  isPresenceValid(): boolean {
+    const presentPlayers = this.dataSource.data.filter(p => p.present && p.aJoue);
+
+    if (presentPlayers.length === 0) return false;
+
+    if (this.match?.typeMatch === 'AMICAL') {
+      return true;
+    }
+
+    const hasCapitaine1 = presentPlayers.some(p => 
+      p.equipeMatch === this.equipeNames[0] && p.estCapitaine
+    );
+    const hasCapitaine2 = presentPlayers.some(p => 
+      p.equipeMatch === this.equipeNames[1] && p.estCapitaine
+    );
+
+    return hasCapitaine1 && hasCapitaine2;
   }
 
-  // Ajout de la mention (CSC) pour les buts contre son camp
-  if (presence.butsContreSonCamp > 0) {
-    display += ` (${presence.butsContreSonCamp}CSC)`;
-  }
-  
-  return display;
-}
+  // ===== ÉVÉNEMENTS =====
 
-  setCapitaine(presence: Presence) {
+  onPresenceChange(presence: Presence): void {
+    if (!presence.present) {
+      presence.aJoue = false;
+      presence.estCapitaine = false;
+      presence.buts = 0;
+      presence.passes = 0;
+      presence.penalti = 0;
+      presence.butsContreSonCamp = 0;
+      presence.estHommeDuMatch = false;
+      presence.estHommeDuMatchEq = false;
+      presence.cartonsJaunes = 0;
+      presence.cartonsRouges = 0;
+    }
+  }
+
+  onAJoueChange(presence: Presence): void {
+    if (presence.aJoue) {
+      presence.present = true;
+      if (!presence.equipeMatch) {
+        const isFromAdverseGroup = this.isAmicalWithPlatformGroup && 
+          this.membresAdverse.some(m => m.id === presence.membre?.id);
+        presence.equipeMatch = this.getDefaultTeamForNewPlayer(presence.membre || undefined, isFromAdverseGroup);
+      }
+    } else {
+      presence.estCapitaine = false;
+      presence.buts = 0;
+      presence.passes = 0;
+      presence.estHommeDuMatch = false;
+      presence.estHommeDuMatchEq = false;
+      presence.cartonsJaunes = 0;
+      presence.cartonsRouges = 0;
+    }
+  }
+
+  setCapitaine(presence: Presence): void {
     if (presence.estCapitaine) {
       const equipe = presence.equipeMatch;
       this.dataSource.data.forEach(p => {
@@ -353,7 +531,7 @@ getButsDisplay(presence: any): string {
     }
   }
 
-  setMvpEquipe(presence: Presence) {
+  setMvpEquipe(presence: Presence): void {
     if (presence.estHommeDuMatchEq) {
       const equipe = presence.equipeMatch;
       this.dataSource.data.forEach(p => {
@@ -364,699 +542,385 @@ getButsDisplay(presence: any): string {
     }
   }
 
-
- setHommeDuMatch(presence: Presence) {
-  // Vérifie si le joueur actuel est désigné comme "Homme du Match"
-  if (presence.estHommeDuMatch) {
-    // Si oui, on parcourt tous les joueurs de la liste de données
-    this.dataSource.data.forEach(p => {
-      // Pour chaque joueur, si ce n'est pas le joueur que nous venons de sélectionner...
-      if (p !== presence) {
-        // ...on s'assure que son statut "Homme du Match" est désactivé
-        p.estHommeDuMatch = false;
-      }
-    });
-  }
-}
-
-  onPresenceChange(presence: Presence) {
-    if (!presence.present) {
-      // presence.aJoue = false;
-      presence.estCapitaine = false;
-      presence.buts = 0;
-      presence.passes = 0;
-      presence.estHommeDuMatch = false;
-      presence.cartonsJaunes = 0;
-      presence.cartonsRouges = 0;
-    }
-  }
-
-  onAJoueChange(presence: Presence) {
-    if (presence.aJoue) {
-      presence.present = true;
-    } else {
-      presence.estCapitaine = false;
-      presence.buts = 0;
-      presence.passes = 0;
-      presence.estHommeDuMatch = false;
-      presence.cartonsJaunes = 0;
-      presence.cartonsRouges = 0;
-    }
-  }
-isPresenceValid(): boolean {
-  const presentPlayers = this.dataSource.data.filter(p => p.present && p.aJoue);
-
-  if (presentPlayers.length === 0) {
-    return false;
-  }
-
-  if (this.match?.typeMatch === 'AMICAL') {
-    return true; // La présence est toujours considérée comme valide pour ce critère.
-  }
-
-  // Utiliser la fonction getEquipeNames pour obtenir les noms d'équipes dynamiquement
-  const [equipe1, equipe2] = this.getEquipeNames(this.match?.adversaire);
-
-  const hasCapitaineEquipe1 = presentPlayers.some(p => p.equipeMatch === equipe1 && p.estCapitaine);
-  const hasCapitaineEquipe2 = presentPlayers.some(p => p.equipeMatch === equipe2 && p.estCapitaine);
-
-  return hasCapitaineEquipe1 && hasCapitaineEquipe2;
-}
-
-
-
-  savePresences() {
-    if (this.isPresenceValid()) {
-      this.isLoading = true;
-      const matchId = this.match!.id;
-      const presencesToSave = this.dataSource.data.filter(p => p.present);
-      console.log(presencesToSave)
-      this.presenceService.savePresences(matchId, presencesToSave).subscribe({
-        next: () => {
-          this.isLoading = false;
-          console.log('Présences enregistrées avec succès');
-
-        },
-        error: (err) => {
-          console.error('Erreur lors de l’enregistrement des présences:', err);
-          this.isLoading = false;
+  setHommeDuMatch(presence: Presence): void {
+    if (presence.estHommeDuMatch) {
+      this.dataSource.data.forEach(p => {
+        if (p !== presence) {
+          p.estHommeDuMatch = false;
         }
       });
     }
   }
 
+  // ===== CALCULS =====
 
-  // --- DANS VOTRE COMPOSANT .ts ---
+  getMatchScore(equipe: string): number {
+    let score = 0;
+    const equipeAdverse = this.equipeNames.find(name => name !== equipe);
 
-// Fonction utilitaire pour imprimer un contenu spécifique
-private printContent(contentId: string): void {
-    const printContent = document.getElementById(contentId);
-    if (!printContent) {
-        this.snackBar.open(`Erreur : Section d\'impression (${contentId}) non trouvée`, 'Fermer', { duration: 3000 });
-        return;
+    score += this.dataSource.data
+      .filter(p => p.present && p.aJoue && p.equipeMatch === equipe)
+      .reduce((sum, p) => sum + (p.buts || 0) + (p.penalti || 0), 0);
+
+    if (equipeAdverse) {
+      score += this.dataSource.data
+        .filter(p => p.present && p.aJoue && p.equipeMatch === equipeAdverse)
+        .reduce((sum, p) => sum + (p.butsContreSonCamp || 0), 0);
     }
 
-    // Créer une nouvelle fenêtre d'impression
-    const printWindow = window.open('', '_blank', 'height=600,width=800');
-    
-    if (printWindow) {
-        // Définition des variables de couleur pour un style unifié
-        const colorVariables = `
-            :root {
-                --primary-color: #1976d2; /* Bleu principal */
-                --header-bg: #424242; /* Fond d'en-tête (gris foncé) */
-                --team1-color: #1976d2; /* Jaune équipe 1 */
-                --team2-color: #1976d2; /* Rouge équipe 2 */
-                --captain-color: #007bff; /* Bleu Capitaine */
-                --mvp-match-color: #ffc107; /* Jaune/Or pour Homme du Match */
-                --mvp-equipe-color: #28a745; /* Vert pour MVP Équipe */
-                --buteur-color: #dc3545; /* Rouge pour Buteurs/Statistiques */
-            }
-        `;
+    return score;
+  }
 
-        // Blocs de style fusionnés et corrigés
-        const printStyles = `
-            /* Styles généraux du document d'impression */
-            body {
-                font-family: 'Roboto', sans-serif;
-                margin: 0;
-                padding: 0;
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
-                font-size: 10pt; /* Police de base pour A4 */
-            }
+  getCapitaine(equipe: string): string {
+    const capitaine = this.dataSource.data.find(p => 
+      p.equipeMatch === equipe && p.estCapitaine
+    );
+    return capitaine ? this.getMembreName(capitaine) : '_______________________';
+  }
 
-            /* Section principale (contenu à imprimer) */
-            .print-section {
-                display: block !important;
-                width: 210mm; /* Largeur A4 */
-                min-height: 297mm; /* Hauteur A4 */
-                margin: 10mm auto; /* Marges */
-                padding: 0;
-                box-sizing: border-box;
-                page-break-after: always; /* Nouvelle page après cette section */
-            }
+  getHommeDuMatch(): string {
+    const hdm = this.dataSource.data.find(p => p.present && p.aJoue && p.estHommeDuMatch);
+    return hdm ? this.getMembreName(hdm) : 'Aucun';
+  }
 
-            /* Titres */
-            .print-title { 
-                font-size: 12pt;
-                color: var(--primary-color);
-                text-align: center;
-                margin-bottom: 4px;
-                font-weight: 700;
-            }
-            .print-subtitle { 
-                font-size: 10pt;
-                background-color: var(--header-bg);
-                color: #ffffff;
-                padding: 3px;
-                margin-bottom: 6px;
-                text-align: center;
-            }
+  getMvpEquipeFor(equipe: string): string {
+    const mvp = this.dataSource.data.find(p => 
+      p.equipeMatch === equipe && p.estHommeDuMatchEq
+    );
+    return mvp ? this.getMembreName(mvp) : 'Non désigné';
+  }
 
-            /* Mise en page des équipes */
-            .print-team-layout { 
-                display: flex;
-                flex-wrap: nowrap;
-                justify-content: space-between;
-                gap: 4mm;
-                margin-bottom: 6px;
-            }
-            .club-section { 
-                flex: 1;
-                border: 1px solid #000;
-                padding: 2mm;
-            }
-            .section-title {
-                font-size: 10pt;
-                font-weight: 600;
-                text-align: center;
-                margin-bottom: 2mm;
-            }
-            .captain-title {
-                font-size: 8pt;
-                font-style: italic;
-                text-align: center;
-                margin-bottom: 2mm;
-            }
+  getTotalCartons(equipe: string, type: 'JAUNES' | 'ROUGES'): number {
+    return this.dataSource.data
+      .filter(p => p.equipeMatch === equipe && p.aJoue)
+      .reduce((sum, p) => {
+        return sum + (type === 'JAUNES' ? (p.cartonsJaunes || 0) : (p.cartonsRouges || 0));
+      }, 0);
+  }
 
-            /* Couleurs d'équipe pour les en-têtes */
-            .team1-header { background-color: var(--team1-color); color: #fff; }
-            .team2-header { background-color: var(--team2-color); color: #fff; }
+  getTotalButs(equipe: string): number {
+    return this.dataSource.data
+      .filter(p => p.equipeMatch === equipe && p.aJoue)
+      .reduce((sum, p) => sum + (p.buts || 0), 0);
+  }
 
-            /* Styles de tableau */
-            .print-table { 
-                width: 100%;
-                font-size: 9pt; /* Taille de police unifiée */
-                border-collapse: collapse;
-            }
-            .print-table th, .print-table td { 
-                border: 1px solid #000;
-                padding: 1mm 2mm;
-                vertical-align: middle;
-            }
-            .print-table th {
-                background-color: #e2e8f0; /* Fond des en-têtes */
-                font-weight: 700;
-                text-align: center;
-                font-size: 9pt;
-            }
+  getTotalPasses(equipe: string): number {
+    return this.dataSource.data
+      .filter(p => p.equipeMatch === equipe && p.aJoue)
+      .reduce((sum, p) => sum + (p.passes || 0), 0);
+  }
 
-            /* LARGEURS DE COLONNE POUR LA FEUILLE DE MATCH (Générique .club-section) */
-            .club-section .print-table th:nth-child(1),
-            .club-section .print-table td:nth-child(1) { 
-                width: 6%; /* N° */
-                text-align: center;
-            }
-            .club-section .print-table th:nth-child(2),
-            .club-section .print-table td:nth-child(2) { 
-                width: 45%; /* Joueur (augmenté pour le nom abrégé) */
-                text-align: left;
-                white-space: nowrap; /* EMPÊCHE le retour à la ligne du nom */
-                overflow: hidden; 
-                text-overflow: ellipsis; 
-            }
-            .club-section .print-table th:nth-child(n+3),
-            .club-section .print-table td:nth-child(n+3) { 
-                width: 7.33%; /* (100 - 6 - 45) / 6 colonnes restantes */
-                text-align: center;
-            }
+  getTotalPenaltis(equipe: string): number {
+    return this.dataSource.data
+      .filter(p => p.equipeMatch === equipe && p.aJoue)
+      .reduce((sum, p) => sum + (p.penalti || 0), 0);
+  }
 
-            /* LARGEURS DE COLONNE POUR LA FEUILLE DE PRÉSENCE (Spécifique) */
-            #print-presence-section .print-table th:nth-child(1),
-            #print-presence-section .print-table td:nth-child(1) {
-                width: 6%; /* N° */
-            }
-            #print-presence-section .print-table th:nth-child(2),
-            #print-presence-section .print-table td:nth-child(2) {
-                width: 45%; /* NOMS ET PRÉNOMS */
-            }
-            #print-presence-section .print-table th:nth-child(3),
-            #print-presence-section .print-table td:nth-child(3) {
-                width: 49%; /* OBSERVATION */
-            }
-            #print-presence-section .print-table td { 
-                text-align: left; /* Aligner les noms et observations à gauche */
-            }
-            #print-presence-section .print-table td:nth-child(1) {
-                text-align: center;
-            }
+  getTotalCSC(equipe: string): number {
+    return this.dataSource.data
+      .filter(p => p.equipeMatch === equipe && p.aJoue)
+      .reduce((sum, p) => sum + (p.butsContreSonCamp || 0), 0);
+  }
 
+  getTotalCartonsJaunes(): number {
+    return this.dataSource.data.reduce((sum, p) => sum + (p.cartonsJaunes || 0), 0);
+  }
 
-            /* Styles d'accentuation (Capitaine, MVP, Cartons) */
+  getTotalCartonsRouges(): number {
+    return this.dataSource.data.reduce((sum, p) => sum + (p.cartonsRouges || 0), 0);
+  }
 
-            /* Ligne Capitaine */
-            .print-table tr.highlight-captain td {
-                background-color: #e0f7fa !important;
-                font-weight: 700;
-                color: var(--captain-color);
-            }
+  hasSanctions(): boolean {
+    return this.getTotalCartonsJaunes() > 0 || this.getTotalCartonsRouges() > 0;
+  }
 
-            /* Mise en évidence des joueurs avec un Carton Rouge (CR > 0) */
-            .print-table tr:has(td:last-child:not(:empty)) td { 
-                background-color: #ffffff !important;
-                font-style: italic;
-            }
-            
-            /* Styles pour la section STATISTIQUES */
-            .match-stats-section .print-table td:first-child {
-                font-weight: 600;
-            }
-            .match-stats-section .print-table td.highlight-mvp {
-                background-color: #0d700dff;
-                font-weight: 700;
-                color: var(--mvp-equipe-color);
-            }
-            .match-stats-section .print-table td.highlight-hommematch {
-                background-color: #fffbe6;
-                font-weight: 700;
-                color: var(--mvp-match-color);
-            }
-            .match-stats-section .print-table tr:nth-child(2) td {
-                color: var(--buteur-color); /* Ligne Buteurs */
-            }
+  getCartonsJaunesPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => p.cartonsJaunes && p.cartonsJaunes > 0);
+  }
 
-            /* Autres sections */
-            .print-officials, .print-reporter {
-                margin: 12px 0;
-                padding: 8px 12px;
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                background-color: #f9fafb;
-            }
-            .print-officials p, .print-reporter p {
-                margin: 4px 0;
-                font-size: 0.95rem;
-            }
-        `;
+  getCartonsRougesPlayers(): Presence[] {
+    return this.dataSource.data.filter(p => p.cartonsRouges && p.cartonsRouges > 0);
+  }
 
-        // Le HTML final à injecter
-        const htmlToPrint = `
-            <html>
-            <head>
-                <title>Feuille de Match</title>
-                <style>
-                    ${colorVariables}
-                    ${printStyles}
-                </style>
-            </head>
-            <body>
-                ${printContent.innerHTML}
-            </body>
-            </html>
-        `;
+  getPlayersAJoue(equipeName: string): Presence[] {
+    return this.dataSource.data.filter(p => 
+      p.equipeMatch === equipeName && p.aJoue === true
+    );
+  }
 
-        printWindow.document.write(htmlToPrint);
-        printWindow.document.close();
-        
-        // Attendre que le contenu soit chargé et rendre les styles
-        printWindow.onload = () => {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        };
+  // ===== UTILITAIRES =====
 
-        this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
-    } else {
-         this.snackBar.open('Erreur : Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez les bloqueurs de pop-up.', 'Fermer', { duration: 5000 });
+  getMembreName(presence: Presence): string {
+    if (presence.membre?.nom) {
+      return `${presence.membre.nom} ${presence.membre.prenom}`;
     }
-}
-// Mettre à jour les appels publics
-printMatchSheet() {
-    this.printContent('print-section');
-}
-
-printPresenceSheet() {
-    this.printContent('print-presence-section');
-}
-
-getMembreNameAbbreviated(presence: any): string {
-    const maxLength = 22; // Longueur cible pour tenir sur une ligne
-
-    // --- 1. GESTION DU JOUEUR OCCASIONNEL ---
     if (presence.nomOccasionnel) {
-        // Tente de séparer le nom occasionnel en Nom et Prénom pour l'abréviation
-        const parts = presence.nomOccasionnel.trim().split(/\s+/);
-        let nomOccasionnel = '';
-        let prenomOccasionnel = '';
-        
-        // Hypothèse : le dernier mot est le Nom, les autres sont les Prénoms
-        if (parts.length > 1) {
-            nomOccasionnel = parts.pop()!.toUpperCase(); // Nom en majuscules
-            prenomOccasionnel = parts.join(' ');
-        } else if (parts.length === 1) {
-            // Un seul mot, on le traite comme le Nom (en majuscules)
-            nomOccasionnel = parts[0].toUpperCase();
-        } else {
-            // Chaîne vide ou juste des espaces
-            return 'Nom occasionnel inconnu';
-        }
-
-        // Si c'est un nom simple qui tient, on le retourne directement
-        if (!prenomOccasionnel && nomOccasionnel.length <= maxLength) {
-            return nomOccasionnel;
-        }
-
-        // Simuler la structure membre pour réutiliser la logique d'abréviation ci-dessous
-        const tempPresence = {
-            membre: {
-                prenom: prenomOccasionnel,
-                nom: nomOccasionnel
-            }
-        };
-
-        // Utiliser la même logique d'abréviation pour les noms occasionnels composés
-        return this.abbreviateNameLogic(tempPresence, maxLength);
+      return presence.nomOccasionnel;
     }
-    
-    // --- 2. GESTION DU MEMBRE RÉGULIER ---
-    return this.abbreviateNameLogic(presence, maxLength);
-}
+    return 'Nom inconnu';
+  }
 
-// --- LOGIQUE D'ABRÉVIATION ISOLÉE POUR RÉUTILISATION ---
-private abbreviateNameLogic(presence: any, maxLength: number): string {
-    const prenom = presence.membre?.prenom || '';
-    const nom = presence.membre?.nom || '';
-    const nomMaj = nom.toUpperCase(); // Nom toujours en majuscules
-    
-    // Concaténation Nom + Prénoms (version complète)
-    let fullName = `${nomMaj} ${prenom}`;
-    
-    // 1. Si la longueur est acceptable, on la garde
-    if (fullName.length <= maxLength) {
-        return fullName.trim();
-    }
+  getMembreNameAbbreviated(presence: Presence): string {
+    const maxLength = 22;
+    let nom = '';
+    let prenom = '';
 
-    // --- STRATÉGIE D'ABBRÉVIATION DES PRÉNOMS ---
-    
-    // Sépare les prénoms (par espace ou trait d'union)
-    const prenomParts = prenom.split(/[\s-]/).filter((p: string | any[]) => p.length > 0);
-    
-    if (prenomParts.length === 0) {
-        // Pas de prénom, on retourne juste le nom
-        // Note: Le nom peut être plus long que maxLength, c'est géré par la suite
-        return nomMaj.trim(); 
-    }
-
-    let abbreviatedPrenoms = '';
-
-    // Tenter de garder le premier prénom en entier
-    let currentLength = nomMaj.length + 1 + prenomParts[0].length; // Nom + ' ' + PremierPrénom
-    
-    if (currentLength <= maxLength) {
-        // Premier prénom tient, on l'ajoute
-        abbreviatedPrenoms += prenomParts[0];
-        
-        // Abréger les prénoms suivants
-        for (let i = 1; i < prenomParts.length; i++) {
-            // Vérification pour ne pas dépasser la limite avec les initiales
-            const futureLength = nomMaj.length + 1 + abbreviatedPrenoms.length + 1 + 2; // + ' ' + 'X.'
-            if (futureLength <= maxLength) {
-                 abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
-            } else {
-                break; // Stop si l'ajout dépasse la limite
-            }
-        }
+    if (presence.nomOccasionnel) {
+      const parts = presence.nomOccasionnel.trim().split(/\s+/);
+      if (parts.length > 1) {
+        nom = parts.pop()!.toUpperCase();
+        prenom = parts.join(' ');
+      } else {
+        return parts[0]?.toUpperCase() || 'Inconnu';
+      }
+    } else if (presence.membre) {
+      nom = (presence.membre.nom || '').toUpperCase();
+      prenom = presence.membre.prenom || '';
     } else {
-        // Le premier prénom est déjà trop long avec le nom, on abrège TOUS les prénoms
-        // Ex: Jean-Christophe Marie -> J. C. M.
-        abbreviatedPrenoms = prenomParts.map((p: string) => p.charAt(0) + '.').join(' ');
+      return 'Inconnu';
     }
-    
-    fullName = `${nomMaj} ${abbreviatedPrenoms}`;
 
-    // --- Dernière Vérification (Ne JAMAIS tronquer le nom) ---
+    let fullName = `${nom} ${prenom}`;
+    if (fullName.length <= maxLength) return fullName.trim();
+
+    const prenomParts = prenom.split(/[\s-]/).filter(p => p.length > 0);
+    if (prenomParts.length === 0) return nom;
+
+    let abbreviated = prenomParts[0];
+    for (let i = 1; i < prenomParts.length; i++) {
+      abbreviated += ' ' + prenomParts[i].charAt(0) + '.';
+    }
+
+    fullName = `${nom} ${abbreviated}`;
     if (fullName.length > maxLength) {
-        // Si le résultat avec les prénoms abrégés est encore trop long (nom de famille long)
-        // on ne garde que l'initiale du PREMIER prénom.
-        // C'est la stratégie la plus courte: Nom + Initial.
-        fullName = `${nomMaj} ${prenomParts[0].charAt(0)}.`;
+      fullName = `${nom} ${prenomParts[0].charAt(0)}.`;
     }
-    
-    // On conserve le nom dans tous les cas.
+
     return fullName.trim();
-}
+  }
 
-// --- DANS VOTRE COMPOSANT TS (ou service) ---
+  // ===== OFFICIELS =====
 
-// getMembreNameAbbreviated(presence: any): string {
-//     const prenom = presence.membre?.prenom || '';
-//     const nom = presence.membre?.nom || '';
-//     const nomMaj = nom.toUpperCase(); // Nom toujours en majuscules
-    
-//     // Concaténation Nom + Prénoms (version complète)
-//     let fullName = `${nomMaj} ${prenom}`;
-//     const maxLength = 22; // Longueur cible pour tenir sur une ligne (ajustable)
-
-//     // 1. Si la longueur est acceptable, on la garde
-//     if (fullName.length <= maxLength) {
-//         return fullName.trim();
-//     }
-
-//     // --- STRATÉGIE D'ABBRÉVIATION DES PRÉNOMS ---
-    
-//     // Sépare les prénoms (par espace ou trait d'union)
-//     const prenomParts = prenom.split(/[\s-]/).filter((p: string | any[]) => p.length > 0);
-    
-//     if (prenomParts.length === 0) {
-//         // Pas de prénom, on retourne juste le nom
-//         return nomMaj;
-//     }
-
-//     let abbreviatedPrenoms = '';
-
-//     // Tenter de garder le premier prénom en entier
-//     let currentLength = nomMaj.length + 1 + prenomParts[0].length; // Nom + ' ' + PremierPrénom
-    
-//     if (currentLength <= maxLength) {
-//         // Premier prénom tient, on l'ajoute
-//         abbreviatedPrenoms += prenomParts[0];
-        
-//         // Abréger les prénoms suivants
-//         for (let i = 1; i < prenomParts.length; i++) {
-//             abbreviatedPrenoms += ' ' + prenomParts[i].charAt(0) + '.';
-//         }
-//     } else {
-//         // Le premier prénom est déjà trop long avec le nom, on abrège TOUS les prénoms
-//         // Ex: Jean-Christophe Marie -> J. C. M.
-//         abbreviatedPrenoms = prenomParts.map((p: string) => p.charAt(0) + '.').join(' ');
-//     }
-    
-//     fullName = `${nomMaj} ${abbreviatedPrenoms}`;
-
-//     // --- Dernière Vérification (Ne JAMAIS tronquer le nom) ---
-//     if (fullName.length > maxLength) {
-//         // Si le résultat avec les prénoms abrégés est encore trop long (nom de famille long)
-//         // on ne garde que l'initiale du PREMIER prénom.
-//         fullName = `${nomMaj} ${prenomParts[0].charAt(0)}.`;
-//     }
-    
-//     // On conserve le nom dans tous les cas, même si le texte final dépasse légèrement
-//     // la limite idéale de 22 (le CSS gèrera l'overflow).
-//     return fullName.trim();
-// }
-
-//   printMatchSheet() {
-//     if (!this.match || !this.dataSource.data.length) {
-//       this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
-//       return;
-//     }
-
-
-//     const printContent = document.getElementById('print-section');
-//     if (printContent) {
-//       // Forcer le rendu de la section d'impression
-//       printContent.style.display = 'block';
-//       const originalContent = document.body.innerHTML;
-//       document.body.innerHTML = printContent.innerHTML;
-
-//       // Attendre que le DOM soit mis à jour
-//        window.print();
-//       setTimeout(() => {
-//         window.print();
-//         document.body.innerHTML = originalContent;
-//         window.location.reload(); // Restaurer l'état de la page
-//         this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
-//       }, 100);
-//     } else {
-//       console.error('Section d\'impression non trouvée');
-//       this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
-//     }
-//       if (printContent) {
-//     printContent.style.display = 'none';
-//   }
-//   }
-
-//   printPresenceSheet() {
-
-//     if (!this.match || !this.dataSource.data.length) {
-
-//       this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
-
-//       return;
-
-//     }
-
-
-
-
-
-//     const printContent = document.getElementById('print-presence-section');
-
-//     if (printContent) {
-
-//       // Forcer le rendu de la section d'impression
-
-//       printContent.style.display = 'block';
-
-//       const originalContent = document.body.innerHTML;
-
-//       document.body.innerHTML = printContent.innerHTML;
-
-
-
-//       // Attendre que le DOM soit mis à jour
-
-//       setTimeout(() => {
-
-//         window.print();
-
-//         document.body.innerHTML = originalContent;
-
-//          window.location.reload(); // Restaurer l'état de la page
-
-//         this.snackBar.open('Impression déclenchée', 'Fermer', { duration: 3000 });
-
-//       }, 100);
-
-//     } else {
-
-//       console.error('Section d\'impression non trouvée');
-
-//       this.snackBar.open('Erreur : Section d\'impression non trouvée', 'Fermer', { duration: 3000 });
-
-//     }}
-
-
-
-//   printPresenceSheet() {
-//   if (!this.match || !this.dataSource.data.length) {
-//     this.snackBar.open('Aucune donnée disponible pour l\'impression', 'Fermer', { duration: 3000 });
-//     return;
-//   }
-
-//   // Affiche la section à imprimer pour la rendre visible au moment de l'impression
-//   const printSection = document.getElementById('print-presence-section');
-//   if (printSection) {
-//     printSection.style.display = 'block';
-//   }
-
-//   // Déclenche l'impression
-//   window.print();
-
-//   // Masque à nouveau la section après l'impression (si nécessaire)
-//   if (printSection) {
-//     printSection.style.display = 'none';
-//   }
-// }
-
-  //   getEquipeNames(adversaire: string | undefined): [string, string] {
-  //   if (this.match?.typeMatch === 'INTERNE' && adversaire) {
-  //     const parts = adversaire.split(' vs ').map(part => part.trim());
-  //     if (parts.length === 2) {
-  //       return parts as [string, string];
-  //     }
-  //   }
-  //   return ['Locale', 'Adverse'];
-  // }
-  // Dans votre composant TypeScript
-getEquipeNames(adversaire: string | undefined): [string, string] {
-    if (adversaire) {
-      const parts = adversaire.split(' vs ').map(part => part.trim());
-      if (parts.length === 2) {
-        return parts as [string, string];
-      }
+  getArbitrePrincipal(): string {
+    if (this.match?.arbitrePrincipal) {
+      return `${this.match.arbitrePrincipal.nom} ${this.match.arbitrePrincipal.prenom}`;
     }
-    // Gère les autres types de matchs ou les erreurs
-    return ['Locale', 'Adverse'];
-}
+    return this.match?.arbitrePrincipalNomOccasionnel || '';
+  }
 
-addMembreToPresenceList() {
+  getArbitreAssistant(): string {
+    if (this.match?.arbitreAssistant) {
+      return `${this.match.arbitreAssistant.nom} ${this.match.arbitreAssistant.prenom}`;
+    }
+    return this.match?.arbitreAssistantNomOccasionnel || '';
+  }
 
-    if (this.selectedMembreIdToAdd !== null) {
-      const membreToAdd = this.membres2.find(m => m.id === this.selectedMembreIdToAdd);
+  getRapporteur(): string {
+    if (this.match?.rapporteur) {
+      return `${this.match.rapporteur.nom} ${this.match.rapporteur.prenom}`;
+    }
+    return this.match?.rapporteurNomOccasionnel || '';
+  }
 
-      if (membreToAdd) {
-        const newPresence: any = {
-          id: 0,
-          match: this.match!,
-          membre: membreToAdd,
-          present: true,
-          aJoue: false,
-          estCapitaine: false,
-          buts: 0,
-          passes: 0,
-          estHommeDuMatch: false,
-          estHommeDuMatchEq: false,
-          equipeMatch: this.match!.typeMatch === 'INTERNE' ? membreToAdd.equipe?.nom : 'LOCALE',
-          cartonsJaunes: 0,
-          cartonsRouges: 0,
-        };
+  hasOfficiels(): boolean {
+    return !!(this.getArbitrePrincipal() || this.getArbitreAssistant() || this.getRapporteur());
+  }
 
-        this.dataSource.data = [...this.dataSource.data, newPresence];
+  // ===== ASSIGNATION ÉQUIPES =====
 
-        this.membresNonPresents = this.membresNonPresents.filter(m => m.id !== this.selectedMembreIdToAdd);
-        this.selectedMembreIdToAdd = null;
-
-        this.snackBar.open(`${this.getMembreName2(membreToAdd.id)} a été ajouté à la feuille de présence.`, 'Fermer', {
-          duration: 3000,
-        });
+  private assignDefaultTeams(): void {
+    let needsRefresh = false;
+    
+    this.dataSource.data.forEach(presence => {
+      if (!presence.equipeMatch || presence.equipeMatch === '') {
+        needsRefresh = true;
+        
+        const isFromAdverseGroup = this.isAmicalWithPlatformGroup && 
+          presence.membre?.id && 
+          this.membresAdverse.some(m => m.id === presence.membre?.id);
+        
+        if (isFromAdverseGroup) {
+          presence.equipeMatch = this.equipeNames[1];
+        } else if (presence.membre?.equipe?.nom && this.equipeNames.includes(presence.membre.equipe.nom)) {
+          presence.equipeMatch = presence.membre.equipe.nom;
+        } else {
+          presence.equipeMatch = this.equipeNames[0];
+        }
       }
+    });
+    
+    if (needsRefresh) {
+      this._refreshCounter++;
+      this.cdr.detectChanges();
     }
   }
 
- // Method to add an occasional player
-addOccasionalPlayer() {
-    // Check if the occasional player's name is provided
-    if (this.occasionalPlayerName.trim() === '') {
-        console.error("Veuillez entrer un nom pour le joueur occasionnel.");
-        this.snackBar.open("Veuillez entrer un nom pour le joueur occasionnel.", 'Fermer', {
-            duration: 3000,
-        });
-        return;
+  // ===== SAUVEGARDE =====
+
+  savePresences(): void {
+    if (!this.isPresenceValid()) {
+      this.showSnackbar('Veuillez compléter les informations requises', 'error');
+      return;
     }
-    
-    // Create a new presence object for the occasional player
-    const newPresence: any = {
-        id: 0, // Placeholder ID
-        match: this.match!,
-        membre: null, // The member is null for an occasional player
-        nomOccasionnel: this.occasionalPlayerName.trim(), // Assign the entered name
-        present: true,
-        aJoue: false,
-        estCapitaine: false,
-        buts: 0,
-        passes: 0,
-        estHommeDuMatch: false,
-        estHommeDuMatchEq: false,
-        equipeMatch: this.equipeNames,
-        cartonsJaunes: 0,
-        cartonsRouges: 0,
-    };
-    
-    // Add the new presence to the data source
-    this.dataSource.data = [...this.dataSource.data, newPresence];
-    
-    // Display a confirmation message
-    this.snackBar.open(`${this.occasionalPlayerName.trim()} a été ajouté à la feuille de présence.`, 'Fermer', {
-        duration: 3000,
+
+    this.isLoading = true;
+    const matchId = this.match!.id;
+    const presencesToSave = this.dataSource.data.filter(p => p.present);
+
+    this.presenceService.savePresences(matchId, presencesToSave).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.showSnackbar('Présences enregistrées !', 'success');
+      },
+      error: (err) => {
+        console.error('Erreur sauvegarde:', err);
+        this.isLoading = false;
+        this.showSnackbar('Erreur lors de l\'enregistrement', 'error');
+      }
     });
-    
-    // Clear the input field after adding
-    this.occasionalPlayerName = '';
-}
+  }
 
+  // ===== IMPRESSION =====
 
+  printMatchSheet(): void {
+    this.printContent('print-section');
+  }
 
- 
+  printPresenceSheet(): void {
+    this.printContent('print-presence-section');
+  }
+
+  private printContent(contentId: string): void {
+    const printContent = document.getElementById(contentId);
+    if (!printContent) {
+      this.showSnackbar('Section d\'impression non trouvée', 'error');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'height=800,width=1000');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Feuille de Match</title>
+          <meta charset="UTF-8">
+        </head>
+        <body>${printContent.innerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      };
+    }
+  }
+
+  async downloadMatchSheetAsPdf(): Promise<void> {
+    const element = document.getElementById('print-section');
+    if (!element) {
+      this.showSnackbar('Section non trouvée', 'error');
+      return;
+    }
+
+    try {
+      element.style.display = 'block';
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.width = '210mm';
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      element.style.display = 'none';
+      element.style.position = '';
+      element.style.left = '';
+      element.style.width = '';
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * ratio, canvas.height * ratio);
+
+      const dateMatch = this.match?.dateMatch 
+        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+        : 'match';
+      pdf.save(`feuille-match-${dateMatch}.pdf`);
+      this.showSnackbar('PDF téléchargé !', 'success');
+
+    } catch (error) {
+      console.error('Erreur PDF:', error);
+      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
+      element.style.display = 'none';
+    }
+  }
+
+  async downloadPresenceSheetAsPdf(): Promise<void> {
+    const element = document.getElementById('print-presence-section');
+    if (!element) {
+      this.showSnackbar('Section non trouvée', 'error');
+      return;
+    }
+
+    try {
+      element.style.display = 'block';
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.width = '210mm';
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      element.style.display = 'none';
+      element.style.position = '';
+      element.style.left = '';
+      element.style.width = '';
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * ratio, canvas.height * ratio);
+
+      const dateMatch = this.match?.dateMatch 
+        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+        : 'match';
+      pdf.save(`fiche-presence-${dateMatch}.pdf`);
+      this.showSnackbar('PDF téléchargé !', 'success');
+
+    } catch (error) {
+      console.error('Erreur PDF:', error);
+      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
+      element.style.display = 'none';
+    }
+  }
+
+  private showSnackbar(message: string, type: 'success' | 'error'): void {
+    this.snackBar.open(message, '✕', {
+      duration: 3000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: type === 'success' ? 'snackbar-success' : 'snackbar-error'
+    });
+  }
 }

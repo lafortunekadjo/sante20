@@ -96,119 +96,148 @@
         </div>
       </div>
 
-      <!-- Section Derniers Matchs -->
-      <div class="feed-section matches-section">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>sports_soccer</mat-icon>
-          </div>
-          <div class="header-text">
-            <h2>{{ 'feed.sections.matches.title' | translate }}</h2>
-            <span class="badge">{{ recentMatches?.length || 0 }}</span>
+   <!-- Section Derniers Matchs - MODIFIÉE avec bouton Calendrier -->
+<div class="feed-section matches-section">
+  <div class="section-header">
+    <div class="header-icon-wrapper">
+      <mat-icon>sports_soccer</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>{{ 'feed.sections.matches.title' | translate }}</h2>
+      <span class="badge">{{ recentMatches?.length || 0 }}</span>
+    </div>
+    
+    <!-- ✅ AJOUT : Bouton Calendrier dans le header -->
+    <div class="header-actions">
+      <button mat-stroked-button 
+              color="primary" 
+              class="calendar-btn"
+              (click)="openCalendar()"
+              matTooltip="{{ 'feed.sections.matches.calendar_tooltip' | translate }}">
+        <mat-icon>calendar_month</mat-icon>
+        <span class="btn-text">{{ 'feed.sections.matches.calendar' | translate }}</span>
+      </button>
+    </div>
+  </div>
+  
+  <div class="section-content">
+    <div class="card-list">
+      <div class="demande-card match-card" *ngFor="let match of matchesToDisplay">
+        <div class="demande-header">
+          <div class="groupe-info">
+            <div class="groupe-avatar">
+              <mat-icon class="discipline-icon">stadium</mat-icon>
+            </div>
+            <div class="groupe-details">
+              <h3 class="groupe-nom">{{ match.equipe1 }}</h3>
+              <p class="groupe-discipline">{{ match.typeMatch }} • {{ match.dateMatch | date:'dd/MM/yyyy' }}</p>
+            </div>
           </div>
         </div>
-        <div class="section-content">
-          <div class="card-list">
-            <div class="demande-card match-card" *ngFor="let match of matchesToDisplay">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar">
-                    <mat-icon class="discipline-icon">stadium</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ match.adversaire }}</h3>
-                    <p class="groupe-discipline">{{ match.typeMatch }} • {{ match.dateMatch | date:'dd/MM/yyyy' }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="match-score">
-                  <div class="score-label">{{ 'feed.sections.matches.score_label' | translate }}</div>
-                  <span>{{ getScore(match) }}</span>
-                  <span *ngIf="match.forfait" class="forfait-badge" 
-                        [matTooltip]="'feed.sections.matches.forfeit_tooltip' | translate: { teamName: match.equipeForfait }">
-                    <mat-icon class="icon-small">error_outline</mat-icon>
-                  </span>
-                </div>
-                <div class="match-stats">
-                  <div class="stat-row">
-                    <mat-icon>sports_soccer</mat-icon>
-                    <span>{{ 'feed.sections.matches.scorers_label' | translate }} {{ getButeurs(match) }}</span>
-                  </div>
-                  <div class="stat-row">
-                    <mat-icon>swap_horiz</mat-icon>
-                    <span>{{ 'feed.sections.matches.passers_label' | translate }} {{ getPasseurs(match) }}</span>
-                  </div>
-                  <div class="stat-row star-player">
-                    <mat-icon>star</mat-icon>
-                    <span>{{ getHommeDuMatch(match) }}</span>
-                  </div>
-                </div>
-          <div class="media-gallery" *ngIf="match?.mediaUrls && match.mediaUrls.length > 0">
+        <div class="demande-content">
+          <div class="match-score">
+            <div class="score-label">{{ 'feed.sections.matches.score_label' | translate }}</div>
+            <span>{{ getScore(match) }}</span>
+            <span *ngIf="match.forfait" class="forfait-badge" 
+                  [matTooltip]="'feed.sections.matches.forfeit_tooltip' | translate: { teamName: match.equipeForfait }">
+              <mat-icon class="icon-small">error_outline</mat-icon>
+            </span>
+          </div>
+          <div class="match-stats">
+            <div class="stat-row">
+              <mat-icon>sports_soccer</mat-icon>
+              <span>{{ 'feed.sections.matches.scorers_label' | translate }} {{ getButeurs(match) }}</span>
+            </div>
+            <div class="stat-row">
+              <mat-icon>swap_horiz</mat-icon>
+              <span>{{ 'feed.sections.matches.passers_label' | translate }} {{ getPasseurs(match) }}</span>
+            </div>
+            <div class="stat-row star-player">
+              <mat-icon>star</mat-icon>
+              <span>{{ getHommeDuMatch(match) }}</span>
+            </div>
+          </div>
+          <div class="media-gallery" *ngIf="match.mediaUrls && match.mediaUrls.length > 4">
             <div class="media-grid">
               <ng-container *ngFor="let mediaUrl of match.mediaUrls | slice:0:4">
                 <div class="media-wrapper" (click)="openMediaPreview(match, mediaUrl)">
-                  <!-- Image -->
                   <img 
                     *ngIf="isImageUrl(mediaUrl)" 
                     [src]="mediaUrl" 
                     alt="Media du match" 
                     class="media-thumbnail"
                     loading="lazy" />
-                  
-                  <!-- Vidéo thumbnail -->
                   <div *ngIf="isVideoUrl(mediaUrl)" class="video-thumbnail">
                     <video [src]="mediaUrl" class="media-thumbnail"></video>
                     <mat-icon class="play-icon">play_circle_filled</mat-icon>
                   </div>
-                  
                   <div class="media-overlay">
                     <mat-icon>fullscreen</mat-icon>
                   </div>
                 </div>
               </ng-container>
             </div>
-            <span class="media-count" *ngIf="match.mediaUrls.length > 4">
+            <span class="media-count" *ngIf="match.mediaUrls && match.mediaUrls.length > 4">
               + {{ 'feed.sections.matches.media_count' | translate: { count: match.mediaUrls.length - 4 } }}
             </span>
           </div>
-              <div class="demande-actions">
-                <div class="primary-actions">
-                  <button mat-stroked-button (click)="downloadMedia(match)">
-                    <mat-icon>download</mat-icon>
-                    <span>{{ 'common.download' | translate }}</span>
-                  </button>
-                  <button mat-stroked-button (click)="openPresenceDialog(match)">
-                    <mat-icon>people</mat-icon>
-                    <span>{{ 'feed.sections.matches.presence' | translate }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div *ngIf="recentMatches.length > 1" class="expansion-button-container">
-              <button mat-flat-button color="primary" (click)="toggleDisplay()">
-                <mat-icon>{{ showAllMatches ? 'expand_less' : 'expand_more' }}</mat-icon>
-                <span *ngIf="!showAllMatches">
-                  {{ 'feed.sections.matches.show_more' | translate: { count: recentMatches.length - 1 } }}
-                </span>
-                <span *ngIf="showAllMatches">
-                  {{ 'feed.sections.matches.show_less' | translate }}
-                </span>
-              </button>
-            </div>
-            <div class="empty-state" *ngIf="recentMatches?.length === 0">
-              <div class="empty-illustration">
-                <mat-icon class="empty-icon">sports_soccer</mat-icon>
-              </div>
-              <div class="empty-content">
-                <h3 class="empty-title">{{ 'feed.sections.matches.empty' | translate }}</h3>
-              </div>
-            </div>
+        </div>
+        <div class="demande-actions">
+          <div class="primary-actions">
+            <button mat-stroked-button (click)="downloadMedia(match)">
+              <mat-icon>download</mat-icon>
+              <span>{{ 'common.download' | translate }}</span>
+            </button>
+            <button mat-stroked-button (click)="openPresenceDialog(match)">
+              <mat-icon>people</mat-icon>
+              <span>{{ 'feed.sections.matches.presence' | translate }}</span>
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- Section Contributions -->
+      
+      <!-- Boutons d'expansion + Calendrier -->
+      <div *ngIf="recentMatches.length > 0" class="expansion-button-container">
+        <button mat-flat-button color="primary" (click)="toggleDisplay()" *ngIf="recentMatches.length > 1">
+          <mat-icon>{{ showAllMatches ? 'expand_less' : 'expand_more' }}</mat-icon>
+          <span *ngIf="!showAllMatches">
+            {{ 'feed.sections.matches.show_more' | translate: { count: recentMatches.length - 1 } }}
+          </span>
+          <span *ngIf="showAllMatches">
+            {{ 'feed.sections.matches.show_less' | translate }}
+          </span>
+        </button>
+        
+        <!-- ✅ ALTERNATIVE : Bouton Calendrier ici aussi (version mobile) -->
+        <button mat-flat-button 
+                class="calendar-btn-mobile"
+                (click)="openCalendar()">
+          <mat-icon>calendar_month</mat-icon>
+          <span>{{ 'feed.sections.matches.view_calendar' | translate }}</span>
+        </button>
+      </div>
+      
+      <div class="empty-state" *ngIf="recentMatches?.length === 0">
+        <div class="empty-illustration">
+          <mat-icon class="empty-icon">sports_soccer</mat-icon>
+        </div>
+        <div class="empty-content">
+          <h3 class="empty-title">{{ 'feed.sections.matches.empty' | translate }}</h3>
+          
+          <!-- ✅ AJOUT : Bouton calendrier même si pas de matchs récents -->
+          <button mat-stroked-button 
+                  color="primary" 
+                  class="calendar-btn-empty"
+                  (click)="openCalendar()">
+            <mat-icon>calendar_month</mat-icon>
+            <span>{{ 'feed.sections.matches.view_all_calendar' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          <!-- Section Contributions -->
       <div class="feed-section contributions-section">
         <div class="section-header">
           <div class="header-icon-wrapper">
@@ -294,7 +323,7 @@
       </div>
 
       <!-- Section Anniversaires -->
-      <div class="feed-section birthdays-section">
+      <div class="feed-section birthdays-section full-width">
         <div class="section-header">
           <div class="header-icon-wrapper">
             <mat-icon>cake</mat-icon>
@@ -436,6 +465,5 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 </div>

@@ -67,30 +67,11 @@ export class SuggestionsComponent implements OnInit {
     this.userId = this.authService.getUserId();
     if (!this.userId) {
       console.error('Utilisateur non connecté.');
-      this.snackBar.open('Erreur: Vous devez être connecté pour voir vos objectifs.', 'Fermer', {
+      this.snackBar.open('Erreur: Vous devez être connecté pour faire une suggestion', 'Fermer', {
         duration: 3000,
       });
       return;
     }
-    
-    this.membreService.getMembreByUserId(this.userId).subscribe(
-      membre => {
-        if (membre) {
-          this.membreId = membre.id;
-        } else {
-          console.error('Aucun membre trouvé pour cet utilisateur.');
-          this.snackBar.open('Erreur: Aucun membre trouvé pour cet utilisateur.', 'Fermer', {
-            duration: 3000,
-          });
-        }
-      },
-      error => {
-        console.error('Erreur lors de la récupération du membre:', error);
-        this.snackBar.open('Erreur lors du chargement des objectifs.', 'Fermer', {
-          duration: 3000,
-        });
-      }
-    );
   }
 
   onSubmit(): void {

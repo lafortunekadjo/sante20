@@ -1,16 +1,16 @@
-import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Groupe } from '../../../../core/models/groupe.model';
-import { Match } from '../../../../core/models/match.model';
+import { Match, TypeMatch, SourceAdversaire } from '../../../../core/models/match.model';
 import { Presence } from '../../../../core/models/presence.model';
 import { Sanction } from '../../../../core/models/sanction.model';
 import { MatchService } from '../../../../core/services/match.service';
@@ -28,7 +28,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { EquipeFilterPipe } from '../../../../core/pipes/equipe-filter.pipe';
 import { CalendarComponent } from '../calendar/calendar.component';
-import { Equipe } from '../../../../core/models/groupe.model copy';
 import { GeneralService } from '../../../../core/services/general.service';
 import { MediaUploadDialogComponent } from '../media-upload-dialog/media-upload-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -37,19 +36,27 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import * as XLSX from 'xlsx';
+import { Equipe } from '../../../../core/models/groupe.model copy';
+import { MatchEditDialogComponent } from '../match-edit-dialog/match-edit-dialog.component';
 import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
+
 
 interface MatchFilters {
   typeMatch: string;
   dateDebut: Date | null;
   dateFin: Date | null;
   searchText: string;
-  statut: string; // 'tous', 'joues', 'manques', 'futurs'
+  statut: string;
 }
 
 @Component({
   selector: 'app-match-form',
+  standalone: true,
   imports: [
     CommonModule,
     MatCardModule,
@@ -68,6 +75,10 @@ interface MatchFilters {
     MatDatepickerModule,
     MatNativeDateModule,
     MatMenuModule,
+    MatTooltipModule,
+    MatChipsModule,
+    MatRadioModule,
+    MatSnackBarModule,
     FormsModule,
     RouterModule,
     EquipeFilterPipe
@@ -108,57 +119,28 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
   showCreateRow: boolean = false;
   isLoading: boolean = true;
   
-  newMatch: Match = {
-    id: 0,
-    groupe: {
-      id: 0, nom: '',
-      isActive: false,
-      discipline: '',
-      ville1: 0,
-      stade2: 0,
-      jourMatch: '',
-      typeEquipe: '',
-      modeEquipe: 'STATIQUE',
-      fraisAdhesion: 0,
-      ville: { id: 0, nom: '' },
-      stade: {
-        id: 0, nom: '',
-        stadiumLat: 0,
-        stadiumLon: 0,
-        radius: 0
-      },
-      profilePhotoUrl: '',
-      heureMatch: '',
-      isPublic: false,
-      abreviation: ''
-    },
-    typeMatch: 'AMICAL',
-    dateMatch: new Date().toISOString().split('T')[0],
-    adversaire: '',
-    lieu: '',
-    commentaire: '',
-    membreAnniversaire: '',
-    mediaUrls: [],
-    forfait: false,
-    equipeForfait: '',
-    arbitrePrincipal: null,
-    arbitrePrincipalNomOccasionnel: null,
-    arbitreAssistant: null,
-    arbitreAssistantNomOccasionnel: null,
-    rapporteur: null,
-    rapporteurNomOccasionnel: null
-
-  };
+  // Modèle de match pour création
+  newMatch: Partial<Match> = this.getEmptyMatch();
+  
+  // Pour le formulaire de création
+  selectedSourceAdversaire: SourceAdversaire = 'MANUEL';
+  membresAnniversaireSelected: Membre[] = [];
+  groupesFiltres: Groupe[] = [];
+  membreSearch: string = '';
+  groupeSearch: string = '';
   
   groupes: Groupe | null = null;
+  allGroupes: Groupe[] = [];
   membres: Membre[] = [];
-  equipe: Equipe[] = [];
+  equipes: Equipe[] = [];
   editingMatch: Match | null = null;
   matchToPrint: Match | null = null;
   presencesToPrint: Presence[] = [];
   sanctionsToPrint: Sanction[] = [];
   typeSanctions: TypeSanction[] = [];
-  equipes: string[] = [];
+  
+  // Pour le forfait
+  equipesForForfait: string[] = [];
 
   constructor(
     private matchService: MatchService,
@@ -168,7 +150,8 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     private presenceService: PresenceService,
     private generalService: GeneralService,
     private dialog: MatDialog,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit() {
@@ -180,13 +163,123 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     this.filteredDataSource.sort = this.sort;
     this.filteredDataSource.sortingDataAccessor = (item, property) => {
       switch (property) {
-        case 'groupe': return item.groupe.nom;
+        case 'groupe': return item.groupe?.nom || '';
         case 'dateMatch': return new Date(item.dateMatch).getTime();
         case 'statut': return this.getMatchStatus(item);
+        case 'adversaire': return this.getMatchDisplayName(item);
         default: return (item as any)[property];
       }
     };
   }
+
+  // ===== UTILITAIRES =====
+  
+  private getEmptyMatch(): Partial<Match> {
+    return {
+      id: 0,
+      typeMatch: 'INTERNE',
+      dateMatch: new Date().toISOString().split('T')[0],
+      lieu: '',
+      commentaire: '',
+      mediaUrls: [],
+      forfait: false,
+      equipeForfait: '',
+      equipe1: undefined,
+      equipe2: undefined,
+      sourceAdversaire: undefined,
+      groupeAdverse: undefined,
+      nomAdversaireManuel: '',
+      membresAnniversaire: [],
+      arbitrePrincipal: null,
+      arbitrePrincipalNomOccasionnel: null,
+      arbitreAssistant: null,
+      arbitreAssistantNomOccasionnel: null,
+      rapporteur: null,
+      rapporteurNomOccasionnel: null
+    };
+  }
+
+  private showSnackbar(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    this.snackBar.open(message, 'Fermer', {
+      duration: 4000,
+      panelClass: type === 'error' ? 'snackbar-error' : type === 'success' ? 'snackbar-success' : ''
+    });
+  }
+
+  // ===== CORRECTION BUG #2: getEquipeNames =====
+  
+  getEquipeNames(match: any): [string, string] {
+    if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
+
+    switch (match.typeMatch) {
+      case 'INTERNE':
+      case 'DUEL':
+        // CORRECTION: Utiliser equipe1 et equipe2 correctement
+        const eq1Name = match.equipe1?.nom || match.equipe1Nom || 'Équipe 1';
+        const eq2Name = match.equipe2?.nom || match.equipe2Nom || 'Équipe 2';
+        return [eq1Name, eq2Name];
+
+      case 'AMICAL':
+        const localeName = this.groupes?.abreviation || this.groupes?.nom || 'Locale';
+        let adversaireName = 'Adverse';
+        
+        if (match.groupeAdverse) {
+          adversaireName = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
+        } else if (match.nomAdversaireManuel) {
+          adversaireName = match.nomAdversaireManuel;
+        } else if (match.adversaire) {
+          // Fallback sur l'ancien champ
+          adversaireName = match.equipe2Nom;
+        }
+        
+        return [localeName, adversaireName];
+
+      case 'ANNIVERSAIRE':
+        // Pour anniversaire, utiliser les équipes si disponibles
+        const feteTeam = match.equipe1?.nom || 'Équipe Fêtés';
+        const advTeam = match.equipe2?.nom || 'Équipe Adverses';
+        return [feteTeam, advTeam];
+
+      default:
+        return ['Équipe 1', 'Équipe 2'];
+    }
+  }
+
+  getMatchDisplayName(match: Match): string {
+    if (!match || !match.typeMatch) return 'Match';
+
+    const [team1, team2] = this.getEquipeNames(match);
+
+    switch (match.typeMatch) {
+      case 'INTERNE':
+      case 'DUEL':
+        return `${team1} vs ${team2}`;
+
+      case 'AMICAL':
+        return `${team1} vs ${team2}`;
+
+      case 'ANNIVERSAIRE':
+        const fetes = match.membresAnniversaire?.map(m => m.prenom).join(', ') 
+                   ||'';
+        return fetes ? `🎂 ${fetes}` : 'Match Anniversaire';
+
+      default:
+        return `${team1} vs ${team2}`;
+    }
+  }
+
+  getTypeMatchLabel(type: TypeMatch | undefined): string {
+    if (!type) return 'Match';
+    const labels: Record<TypeMatch, string> = {
+      'INTERNE': 'Match Interne',
+      'DUEL': 'Duel',
+      'AMICAL': 'Match Amical',
+      'ANNIVERSAIRE': 'Match Anniversaire'
+    };
+    return labels[type] || 'Match';
+  }
+
+  // ===== CHARGEMENT DES DONNÉES =====
 
   loadData() {
     this.isLoading = true;
@@ -195,13 +288,15 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       this.adminService.getAllGroupesMembre(),
       this.membreService.getGroupMembers(),
       this.sanctionService.getTypeSanctions(),
-      this.generalService.getEquipesByGroupe()
+      this.generalService.getEquipesByGroupe(),
+      this.adminService.getAllGroupes()
     ]).subscribe({
-      next: ([matches, groupes, membres, typeSanctions, equipes]) => {
+      next: ([matches, groupes, membres, typeSanctions, equipes, allGroupes]) => {
         this.dataSource.data = matches;
         this.groupes = groupes;
         this.membres = membres;
-        this.equipe = equipes;
+        this.equipes = equipes;
+        this.allGroupes = allGroupes.filter(g => g.id !== groupes?.id);
         this.typeSanctions = typeSanctions;
         this.sortMatches();
         this.applyFilters();
@@ -209,6 +304,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);
+        this.showSnackbar('Erreur lors du chargement des matchs', 'error');
         this.isLoading = false;
       }
     });
@@ -216,20 +312,24 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
 
   sortMatches() {
     const today = new Date();
-    const thisSunday = new Date(today);
-    thisSunday.setDate(today.getDate() - today.getDay() + 7 - 7);
+    today.setHours(0, 0, 0, 0);
 
     const sortedMatches = [...this.dataSource.data].sort((a, b) => {
       const dateA = new Date(a.dateMatch);
       const dateB = new Date(b.dateMatch);
-      const isPastA = dateA < thisSunday;
-      const isPastB = dateB < thisSunday;
+      dateA.setHours(0, 0, 0, 0);
+      dateB.setHours(0, 0, 0, 0);
+      
+      const isPastA = dateA < today;
+      const isPastB = dateB < today;
 
-      if (isPastA && isPastB) {
-        return dateA.getTime() - dateB.getTime();
-      }
+      // Matchs futurs en premier, triés par date croissante
+      // Puis matchs passés, triés par date décroissante
       if (!isPastA && !isPastB) {
         return dateA.getTime() - dateB.getTime();
+      }
+      if (isPastA && isPastB) {
+        return dateB.getTime() - dateA.getTime();
       }
       return isPastA ? 1 : -1;
     });
@@ -237,45 +337,131 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     this.dataSource.data = sortedMatches;
   }
 
-  // Gestion des filtres
+  // ===== CORRECTION BUG #1: STATUTS DES MATCHS =====
+
+  getMatchStatus(match: any): string {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    matchDate.setHours(0, 0, 0, 0);
+
+    // Match futur
+    if (matchDate > today) {
+      return 'futurs';
+    }
+
+    // Match passé - vérifier s'il a été joué
+    // Un match est considéré "joué" si:
+    // 1. Il a un rapporteur assigné, OU
+    // 2. Il a des scores enregistrés, OU
+    // 3. Il a des présences enregistrées (vérification future possible)
+    // 4. Il est marqué manuellement comme joué
+    
+    const hasRapporteur = this.hasRapporteur(match);
+    const hasScore = this.hasScore(match);
+    //const isMarkedPlayed = (match as any).forceMarkAsPlayed === true;
+
+    if (match.hasRapporteur && hasScore) {
+      return 'joues';
+    }
+
+    return 'manques';
+  }
+
+  /**
+   * Vérifie si le match a un rapporteur assigné
+   */
+  private hasRapporteur(match: Match): boolean {
+    return !!match.rapporteur || 
+           !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
+  }
+
+  /**
+   * Vérifie si le match a un score enregistré
+   */
+  private hasScore(match: Match): boolean {
+    // Pour les matchs internes/duel
+    if (match.scoreEquipe1 !== undefined && match.scoreEquipe1 !== null) return true;
+    if (match.scoreEquipe2 !== undefined && match.scoreEquipe2 !== null) return true;
+    
+    // Pour les matchs amicaux
+    if (match.scoreAdversaire !== undefined && match.scoreAdversaire !== null) return true;
+    
+    return false;
+  }
+
+  getMatchStatusLabel(match: Match): string {
+    const status = this.getMatchStatus(match);
+    switch (status) {
+      case 'joues': return 'Joué';
+      case 'manques': return 'Non validé';
+      case 'futurs': return 'À venir';
+      default: return 'Inconnu';
+    }
+  }
+
+  getMatchStatusClass(match: Match): string {
+    const status = this.getMatchStatus(match);
+    switch (status) {
+      case 'joues': return 'status-played';
+      case 'manques': return 'status-missed';
+      case 'futurs': return 'status-future';
+      default: return '';
+    }
+  }
+
+  getMatchStatusIcon(match: Match): string {
+    const status = this.getMatchStatus(match);
+    switch (status) {
+      case 'joues': return 'check_circle';
+      case 'manques': return 'warning';
+      case 'futurs': return 'schedule';
+      default: return 'help';
+    }
+  }
+
+  // Méthodes legacy pour compatibilité
+  isMatchPlayed(match: Match): boolean {
+    return this.getMatchStatus(match) === 'joues';
+  }
+
+  isMatchMissed(match: Match): boolean {
+    return this.getMatchStatus(match) === 'manques';
+  }
+
+  isMatchFuture(match: Match): boolean {
+    return this.getMatchStatus(match) === 'futurs';
+  }
+
+  // ===== FILTRES =====
+
   applyFilters() {
     let filtered = [...this.dataSource.data];
 
-    // Filtre par type
     if (this.filters.typeMatch !== 'tous') {
       filtered = filtered.filter(m => m.typeMatch === this.filters.typeMatch);
     }
 
-    // Filtre par statut
     if (this.filters.statut !== 'tous') {
-      filtered = filtered.filter(m => {
-        const status = this.getMatchStatus(m);
-        return status === this.filters.statut;
-      });
+      filtered = filtered.filter(m => this.getMatchStatus(m) === this.filters.statut);
     }
 
-    // Filtre par date de début
     if (this.filters.dateDebut) {
-      filtered = filtered.filter(m => 
-        new Date(m.dateMatch) >= this.filters.dateDebut!
-      );
+      filtered = filtered.filter(m => new Date(m.dateMatch) >= this.filters.dateDebut!);
     }
 
-    // Filtre par date de fin
     if (this.filters.dateFin) {
-      filtered = filtered.filter(m => 
-        new Date(m.dateMatch) <= this.filters.dateFin!
-      );
+      filtered = filtered.filter(m => new Date(m.dateMatch) <= this.filters.dateFin!);
     }
 
-    // Filtre par recherche textuelle
     if (this.filters.searchText.trim()) {
       const search = this.filters.searchText.toLowerCase();
-      filtered = filtered.filter(m => 
-        m.adversaire?.toLowerCase().includes(search) ||
-        m.commentaire?.toLowerCase().includes(search) ||
-        m.lieu?.toLowerCase().includes(search)
-      );
+      filtered = filtered.filter(m => {
+        const displayName = this.getMatchDisplayName(m).toLowerCase();
+        return displayName.includes(search) ||
+          m.commentaire?.toLowerCase().includes(search) ||
+          m.lieu?.toLowerCase().includes(search);
+      });
     }
 
     this.filteredDataSource.data = filtered;
@@ -296,12 +482,397 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     this.showFilters = !this.showFilters;
   }
 
-  // Export Excel
+  // ===== CORRECTION BUG #3: ÉDITION EN POPUP =====
+
+  editMatch(match: Match) {
+    const dialogRef = this.dialog.open(MatchEditDialogComponent, {
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      data: {
+        match: match,
+        membres: this.membres,
+        equipes: this.equipes,
+        groupes: this.allGroupes,
+        currentGroupe: this.groupes
+      },
+      panelClass: 'match-edit-dialog'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateMatch(result);
+      }
+    });
+  }
+
+  private updateMatch(payload: any) {
+    this.isLoading = true;
+    
+    this.matchService.updateMatch(payload.id, payload).subscribe({
+      next: () => {
+        this.showSnackbar('Match mis à jour avec succès', 'success');
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Erreur lors de la mise à jour:', err);
+        this.showSnackbar('Erreur lors de la mise à jour du match', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ===== ACTIONS =====
+
+  canAccessMatchData(match: Match): boolean {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    matchDate.setHours(0, 0, 0, 0);
+    return matchDate <= today;
+  }
+
+  navigateToPresences(match: Match) {
+    if (!this.canAccessMatchData(match)) {
+      this.showSnackbar('Les présences ne sont accessibles que pour les matchs passés ou du jour.', 'info');
+      return;
+    }
+    this.router.navigate(['/responsable/presences', match.id]);
+  }
+
+  openMediaDialog(match: Match) {
+    if (!this.canAccessMatchData(match)) {
+      this.showSnackbar('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.', 'info');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
+      width: '90vw',
+      maxWidth: '900px',
+      data: { 
+        matchId: match.id,
+        existingMediaUrls: match.mediaUrls || []
+      },
+      panelClass: 'media-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadData();
+      }
+    });
+  }
+private getAdversaireName(match: any): string | undefined {
+
+    // Cas 1: L'adversaire a été saisi manuellement (généralement pour AMICAL)
+  
+        return match.equipe2Nom;
+   
+}
+openInvitationDialog(match: Match): void {
+    
+    const adversaireNom = this.getAdversaireName(match); // Utilisation de la nouvelle fonction utilitaire
+
+    const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
+        width: '500px',
+        maxWidth: '95vw',
+        data: {
+            match: {
+                id: match.id,
+                dateMatch: match.dateMatch,
+                // Utiliser la valeur déterminée
+                adversaire: adversaireNom 
+            }
+        }
+    });
+    // ... suite de la fonction (gestion de la fermeture, etc.)
+}
+
+  openDeleteDialog(match: Match) {
+    const matchName = this.getMatchDisplayName(match);
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: { 
+        message: `Voulez-vous supprimer le match du ${new Date(match.dateMatch).toLocaleDateString('fr-FR')} (${matchName}) ?` 
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.deleteMatch(match.id);
+      }
+    });
+  }
+
+  deleteMatch(id: number) {
+    this.isLoading = true;
+    this.matchService.deleteMatch(id).subscribe({
+      next: () => {
+        this.showSnackbar('Match supprimé avec succès', 'success');
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Erreur lors de la suppression:', err);
+        this.showSnackbar('Erreur lors de la suppression du match', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ===== CRÉATION DE MATCH =====
+
+  onTypeChange() {
+    const type = this.newMatch.typeMatch;
+    
+    this.newMatch.equipe1 = undefined;
+    this.newMatch.equipe2 = undefined;
+    this.newMatch.sourceAdversaire = undefined;
+    this.newMatch.groupeAdverse = undefined;
+    this.newMatch.nomAdversaireManuel = '';
+    this.membresAnniversaireSelected = [];
+    this.selectedSourceAdversaire = 'MANUEL';
+
+    if (type === 'INTERNE') {
+      this.setRandomTeams();
+    } else if (type === 'AMICAL') {
+      this.newMatch.sourceAdversaire = 'MANUEL';
+    } else if (type === 'ANNIVERSAIRE') {
+      this.setRandomTeams();
+    }
+    
+    this.updateEquipesForForfait();
+  }
+
+  setRandomTeams() {
+    if (this.equipes.length >= 2) {
+      const shuffled = [...this.equipes].sort(() => Math.random() - 0.5);
+      this.newMatch.equipe1 = shuffled[0];
+      this.newMatch.equipe2 = shuffled[1];
+      this.updateEquipesForForfait();
+    }
+  }
+
+  onSourceAdversaireChange() {
+    this.newMatch.sourceAdversaire = this.selectedSourceAdversaire;
+    this.newMatch.groupeAdverse = undefined;
+    this.newMatch.nomAdversaireManuel = '';
+  }
+
+  filterGroupes() {
+    if (!this.groupeSearch.trim()) {
+      this.groupesFiltres = this.allGroupes.slice(0, 10);
+    } else {
+      const search = this.groupeSearch.toLowerCase();
+      this.groupesFiltres = this.allGroupes
+        .filter(g => g.nom.toLowerCase().includes(search))
+        .slice(0, 10);
+    }
+  }
+
+  selectGroupeAdverse(groupe: Groupe) {
+    this.newMatch.groupeAdverse = groupe;
+    this.groupeSearch = '';
+    this.updateEquipesForForfait();
+  }
+
+  get filteredMembres(): Membre[] {
+    if (!this.membreSearch.trim()) {
+      return this.membres.filter(m => 
+        !this.membresAnniversaireSelected.some(s => s.id === m.id)
+      ).slice(0, 10);
+    }
+    const search = this.membreSearch.toLowerCase();
+    return this.membres
+      .filter(m => 
+        !this.membresAnniversaireSelected.some(s => s.id === m.id) &&
+        (`${m.nom} ${m.prenom}`.toLowerCase().includes(search))
+      )
+      .slice(0, 10);
+  }
+
+  addMembreAnniversaire(membre: Membre) {
+    if (!this.membresAnniversaireSelected.some(m => m.id === membre.id)) {
+      this.membresAnniversaireSelected.push(membre);
+      this.newMatch.membresAnniversaire = this.membresAnniversaireSelected;
+      this.membreSearch = '';
+    }
+  }
+
+  removeMembreAnniversaire(membre: Membre) {
+    this.membresAnniversaireSelected = this.membresAnniversaireSelected.filter(m => m.id !== membre.id);
+    this.newMatch.membresAnniversaire = this.membresAnniversaireSelected;
+  }
+
+  updateEquipesForForfait() {
+    const [team1, team2] = this.getEquipeNamesFromNewMatch();
+    this.equipesForForfait = [team1, team2].filter(t => t && t.trim() !== '');
+  }
+
+  getEquipeNamesFromNewMatch(): [string, string] {
+    const type = this.newMatch.typeMatch;
+    
+    switch (type) {
+      case 'INTERNE':
+      case 'DUEL':
+        return [
+          this.newMatch.equipe1?.nom || '',
+          this.newMatch.equipe2?.nom || ''
+        ];
+      case 'AMICAL':
+        const local = this.groupes?.abreviation || this.groupes?.nom || 'Locale';
+        let adverse = '';
+        if (this.newMatch.groupeAdverse) {
+          adverse = this.newMatch.groupeAdverse.abreviation || this.newMatch.groupeAdverse.nom;
+        } else if (this.newMatch.nomAdversaireManuel) {
+          adverse = this.newMatch.nomAdversaireManuel;
+        }
+        return [local, adverse];
+      case 'ANNIVERSAIRE':
+        return ['Équipe Fêtés', 'Équipe Adverses'];
+      default:
+        return ['', ''];
+    }
+  }
+
+  onForfaitChange() {
+    if (this.newMatch.forfait) {
+      this.updateEquipesForForfait();
+    } else {
+      this.newMatch.equipeForfait = '';
+    }
+  }
+
+  onAdversaireManuelInput() {
+    this.updateEquipesForForfait();
+  }
+
+  getMembreName(membre: number | Membre | null): string {
+    if (membre === null) return '-';
+    if (typeof membre === 'number') {
+      const foundMembre = this.membres.find(m => m.id === membre);
+      return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : '-';
+    }
+    return `${membre?.nom} ${membre?.prenom}`;
+  }
+
+  isDateValid(date: string | undefined): boolean {
+    if (!date) return false;
+    try {
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime());
+    } catch {
+      return false;
+    }
+  }
+
+  isCreateFormValid(): boolean {
+    if (!this.newMatch.typeMatch || !this.isDateValid(this.newMatch.dateMatch)) {
+      return false;
+    }
+
+    const type = this.newMatch.typeMatch;
+
+    switch (type) {
+      case 'INTERNE':
+      case 'DUEL':
+        return !!this.newMatch.equipe1 && !!this.newMatch.equipe2 &&
+               this.newMatch.equipe1.id !== this.newMatch.equipe2?.id;
+      
+      case 'AMICAL':
+        if (this.selectedSourceAdversaire === 'GROUPE_EXISTANT') {
+          return !!this.newMatch.groupeAdverse;
+        }
+        if (this.selectedSourceAdversaire === 'MANUEL') {
+          return !!this.newMatch.nomAdversaireManuel?.trim();
+        }
+        return false;
+      
+      case 'ANNIVERSAIRE':
+        return this.membresAnniversaireSelected.length > 0;
+      
+      default:
+        return false;
+    }
+  }
+
+  saveMatch() {
+    if (!this.isCreateFormValid()) return;
+
+    this.isLoading = true;
+    
+    const payload: any = {
+      typeMatch: this.newMatch.typeMatch,
+      dateMatch: this.newMatch.dateMatch,
+      lieu: this.newMatch.lieu || null,
+      commentaire: this.newMatch.commentaire || null,
+      forfait: this.newMatch.forfait || false,
+      equipeForfait: this.newMatch.forfait ? this.newMatch.equipeForfait : null,
+      arbitrePrincipalId: this.newMatch.arbitrePrincipal?.id || null,
+      arbitrePrincipalNom: this.newMatch.arbitrePrincipalNomOccasionnel || null,
+      arbitreAssistantId: this.newMatch.arbitreAssistant?.id || null,
+      arbitreAssistantNom: this.newMatch.arbitreAssistantNomOccasionnel || null,
+      rapporteurId: this.newMatch.rapporteur?.id || null,
+      rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null
+    };
+
+    const type = this.newMatch.typeMatch;
+
+    if (type === 'INTERNE' || type === 'DUEL') {
+      payload.equipe1Id = this.newMatch.equipe1?.id;
+      payload.equipe2Id = this.newMatch.equipe2?.id;
+    }
+
+    if (type === 'AMICAL') {
+      payload.sourceAdversaire = this.selectedSourceAdversaire;
+      if (this.selectedSourceAdversaire === 'GROUPE_EXISTANT') {
+        payload.groupeAdverseId = this.newMatch.groupeAdverse?.id;
+      } else if (this.selectedSourceAdversaire === 'MANUEL') {
+        payload.nomAdversaireManuel = this.newMatch.nomAdversaireManuel;
+      }
+      payload.scoreAdversaire = this.newMatch.scoreAdversaire || null;
+    }
+
+    if (type === 'ANNIVERSAIRE') {
+      payload.membresAnniversaireIds = this.membresAnniversaireSelected.map(m => m.id);
+      payload.equipe1Id = this.newMatch.equipe1?.id;
+      payload.equipe2Id = this.newMatch.equipe2?.id;
+    }
+    
+    this.matchService.createMatch(payload).subscribe({
+      next: () => {
+        this.showSnackbar('Match créé avec succès', 'success');
+        this.loadData();
+        this.toggleCreateRow();
+      },
+      error: (err) => {
+        console.error('Erreur lors de la création:', err);
+        this.showSnackbar('Erreur lors de la création du match', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  cancelCreate() {
+    this.toggleCreateRow();
+  }
+
+  toggleCreateRow() {
+    this.showCreateRow = !this.showCreateRow;
+    if (!this.showCreateRow) {
+      this.newMatch = this.getEmptyMatch();
+      this.membresAnniversaireSelected = [];
+      this.selectedSourceAdversaire = 'MANUEL';
+      this.groupeSearch = '';
+      this.membreSearch = '';
+    }
+  }
+
+  // ===== EXPORT =====
+
   exportToExcel() {
     const dataToExport = this.filteredDataSource.data.map(match => ({
       'Date': new Date(match.dateMatch).toLocaleDateString('fr-FR'),
       'Type': match.typeMatch,
-      'Adversaire': match.adversaire || '-',
+      'Match': this.getMatchDisplayName(match),
       'Lieu': match.lieu || '-',
       'Statut': this.getMatchStatusLabel(match),
       'Arbitre Principal': match.arbitrePrincipalNomOccasionnel || this.getMembreName(match.arbitrePrincipal ?? null),
@@ -319,19 +890,13 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     XLSX.writeFile(wb, fileName);
   }
 
-  // Export CSV
   exportToCSV() {
     const dataToExport = this.filteredDataSource.data.map(match => ({
       'Date': new Date(match.dateMatch).toLocaleDateString('fr-FR'),
       'Type': match.typeMatch,
-      'Adversaire': match.adversaire || '-',
+      'Match': this.getMatchDisplayName(match),
       'Lieu': match.lieu || '-',
-      'Statut': this.getMatchStatusLabel(match),
-      'Arbitre Principal': match.arbitrePrincipalNomOccasionnel || this.getMembreName(match.arbitrePrincipal ?? null),
-      'Rapporteur': match.rapporteurNomOccasionnel || this.getMembreName(match.rapporteur ?? null),
-      'Forfait': match.forfait ? 'Oui' : 'Non',
-      'Équipe Forfait': match.forfait ? match.equipeForfait : '-',
-      'Commentaire': match.commentaire || '-'
+      'Statut': this.getMatchStatusLabel(match)
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -348,313 +913,72 @@ export class MatchFormComponent implements OnInit, AfterViewInit {
     document.body.removeChild(link);
   }
 
-  // Vérification si le match peut être modifié (présences/médias)
-  canAccessMatchData(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    matchDate.setHours(0, 0, 0, 0);
-    return matchDate <= today;
-    
-  }
+  // ===== AUTRES =====
 
-  navigateToPresences(match: Match) {
-    if (!this.canAccessMatchData(match)) {
-      alert('Les présences ne sont accessibles que pour les matchs passés ou du jour.');
-      return;
-    }
-    this.router.navigate(['/responsable/presences', match.id]);
-  }
-
-openMediaDialog(match: Match) {
-  if (!this.canAccessMatchData(match)) {
-    alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
+// Méthode corrigée pour ouvrir le calendrier
+viewCalendar(): void {
+  if (!this.dataSource?.data || this.dataSource.data.length === 0) {
+    this.showSnackbar('Aucun match disponible', 'error');
     return;
   }
 
-  const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
-    width: '90vw',
-    maxWidth: '900px',
-    data: { 
-      matchId: match.id,
-      existingMediaUrls: match.mediaUrls || []  // Passer directement les URLs
-    },
-    panelClass: 'media-dialog-container'
+  // Trier les matchs par date (les plus récents d'abord ou par ordre chronologique)
+  const sortedMatches = [...this.dataSource.data].sort((a, b) => {
+    return new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime();
   });
 
-  dialogRef.afterClosed().subscribe(result => {
-    if (result) {
-      this.loadData();
+  // Récupérer le jour de match depuis le groupe (avec fallback)
+  const jourDeMatch = this.groupes?.jourMatch || 'Dimanche';
+
+  // Ouvrir le dialog avec TOUTES les données nécessaires
+  this.dialog.open(CalendarComponent, {
+    width: '95vw',
+    maxWidth: '900px',
+    height: '85vh',
+    maxHeight: '700px',
+    panelClass: 'calendar-dialog',
+    data: { 
+      matches: sortedMatches,           // ✅ Tous les matchs (pas seulement ceux du jour de match)
+      jourDeMatch: jourDeMatch,         // ✅ Le jour de match habituel (pour affichage)
+      groupeActif: this.groupes         // ✅ Le groupe actif (pour les noms en match AMICAL)
     }
   });
 }
 
-  getMatchStatus(match: Match): string {
-    if (this.isMatchPlayed(match)) return 'joues';
-    if (this.isMatchMissed(match)) return 'manques';
-    return 'futurs';
-  }
-
-  getMatchStatusLabel(match: Match): string {
-    if (this.isMatchPlayed(match)) return 'Joué';
-    if (this.isMatchMissed(match)) return 'Manqué';
-    return 'À venir';
-  }
-
-  onTypeChange() {
-    if (this.newMatch.typeMatch === 'INTERNE') {
-      const equipe1 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      let equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      while (equipe1.id === equipe2.id) {
-        equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      }
-      this.newMatch.adversaire = `${equipe1.nom} vs ${equipe2.nom}`;
-    } else if (this.newMatch.typeMatch === 'DUEL') {
-      this.newMatch.adversaire = this.newMatch.commentaire;
-    } else if (this.newMatch.typeMatch === 'ANNIVERSAIRE') {
-      const equipe1 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      let equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      while (equipe1.id === equipe2.id) {
-        equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      }
-      this.newMatch.adversaire = `${equipe1.nom} vs ${equipe2.nom}`;
-    }
-  }
-
-  getMembreName(membre: number | Membre | null): string {
-    if (membre === null) {
-      return '-';
-    }
-    if (typeof membre === 'number') {
-      const foundMembre = this.membres.find(m => m.id === membre);
-      return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : '-';
-    } else {
-      return `${membre?.nom} ${membre?.prenom}`;
-    }
-  }
-
-  getTypeSanctionName(typeSanctionId: number): string {
-    const typeSanction = this.typeSanctions.find(t => t.id === typeSanctionId);
-    return typeSanction ? typeSanction.nom : 'Inconnu';
-  }
-
-  isDateValid(date: string): boolean {
-    if (!date) return false;
-    try {
-      const parsedDate = new Date(date);
-      return !isNaN(parsedDate.getTime());
-    } catch {
-      return false;
-    }
-  }
-
-  isCreateFormValid(): boolean {
-    let isValid = !!this.newMatch.typeMatch && this.isDateValid(this.newMatch.dateMatch);
-
-    if (this.newMatch.typeMatch === 'AMICAL') {
-      isValid = isValid && !!this.newMatch.adversaire;
-    } else if (this.newMatch.typeMatch === 'DUEL') {
-      isValid = isValid && !!this.newMatch.commentaire;
-    } else if (this.newMatch.typeMatch === 'ANNIVERSAIRE') {
-      isValid = isValid && !!this.newMatch.membreAnniversaire;
-    }
-    return isValid;
-  }
-
-  saveMatch() {
-    if (this.isCreateFormValid()) {
-      this.isLoading = true;
-      const payload: any = {
-        ...this.newMatch,
-        arbitrePrincipalId: this.newMatch.arbitrePrincipal?.id || null,
-        arbitrePrincipalNom: this.newMatch.arbitrePrincipalNomOccasionnel || null,
-        arbitreAssistantId: this.newMatch.arbitreAssistant?.id || null,
-        arbitreAssistantNom: this.newMatch.arbitreAssistantNomOccasionnel || null,
-        rapporteurId: this.newMatch.rapporteur?.id || null,
-        rapporteurNom: this.newMatch.rapporteurNomOccasionnel || null,
-        scoreAdversaire: this.newMatch.scoreAdversaire || null
-      };
-      
-      const saveObservable = this.editingMatch
-        ? this.matchService.updateMatch(this.editingMatch.id, payload)
-        : this.matchService.createMatch(payload);
-        
-      saveObservable.subscribe({
-        next: () => {
-          this.loadData();
-          this.toggleCreateRow();
-          this.editingMatch = null;
-        },
-        error: (err) => {
-          console.error('Erreur lors de l\'enregistrement du match:', err);
-          this.isLoading = false;
-        }
-      });
-    }
-  }
-
-  cancelCreate() {
-    this.toggleCreateRow();
-    this.editingMatch = null;
-  }
-
-  toggleCreateRow() {
-    this.showCreateRow = !this.showCreateRow;
-    if (!this.showCreateRow) {
-      this.newMatch = {
-        id: 0,
-        groupe: {
-          id: 0, nom: '',
-          isActive: false,
-          discipline: '',
-          ville1: 0,
-          stade2: 0,
-          jourMatch: '',
-          typeEquipe: '',
-          modeEquipe: 'STATIQUE',
-          fraisAdhesion: 0,
-          ville: { id: 0, nom: '' },
-          stade: {
-            id: 0, nom: '',
-            stadiumLat: 0,
-            stadiumLon: 0,
-            radius: 0
-          },
-          profilePhotoUrl: '',
-          heureMatch: '',
-          isPublic: false,
-          abreviation: ''
-        },
-        typeMatch: 'AMICAL',
-        dateMatch: new Date().toISOString().split('T')[0],
-        adversaire: '',
-        lieu: '',
-        commentaire: '',
-        membreAnniversaire: '',
-        mediaUrls: [],
-        forfait: false,
-        equipeForfait:'',
-        arbitrePrincipal: null,
-        arbitrePrincipalNomOccasionnel: null,
-        arbitreAssistant: null,
-        arbitreAssistantNomOccasionnel: null,
-        rapporteur: null,
-        rapporteurNomOccasionnel: null
-      };
-    }
-  }
-
-  editMatch(match: Match) {
-    this.editingMatch = { ...match };
-    this.newMatch = { ...match };
-    this.showCreateRow = true;
-  }
-
-  printFeuilleMatch(match: Match) {
-    this.isLoading = true;
-    forkJoin([
-      this.presenceService.getPresences(match.id),
-      this.sanctionService.getSanctionsByMatch(match.id)
-    ]).subscribe({
-      next: ([presences, sanctions]) => {
-        this.matchToPrint = match;
-        this.presencesToPrint = presences;
-        this.sanctionsToPrint = sanctions;
-        setTimeout(() => window.print(), 0);
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des données d\'impression:', err);
-        this.isLoading = false;
-      }
-    });
-  }
-
-  openDeleteDialog(match: Match) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: { message: `Voulez-vous supprimer le match du ${match.dateMatch} contre ${match.adversaire} ?` }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.deleteMatch(match.id);
-      }
-    });
-  }
-
-  deleteMatch(id: number) {
-    this.isLoading = true;
-    this.matchService.deleteMatch(id).subscribe({
-      next: () => this.loadData(),
-      error: (err) => {
-        console.error('Erreur lors de la suppression du match:', err);
-        this.isLoading = false;
-      }
-    });
-  }
-
-  viewCalendar() {
-    if (!this.groupes || !this.dataSource.data) {
-      console.error('Groupe ou données de match non disponibles.');
-      return;
-    }
-
-    const sortedMatches = [...this.dataSource.data].sort((a, b) => {
-      return new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime();
-    });
-
-    const jourDeMatch = this.groupes.jourMatch || 'Sunday';
-    const dialogRef = this.dialog.open(CalendarComponent, {
-      width: '500px',
-      data: { matches: sortedMatches, jourDeMatch }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        console.log('Calendrier fermé avec résultat:', result);
-      }
-    });
-  }
-
   generateAndSaveMatches() {
-    if (!this.groupes || !this.equipe || this.equipe.length < 2) {
-      console.error('Groupe ou équipes non disponibles pour générer les matchs.');
+    if (!this.groupes || !this.equipes || this.equipes.length < 2) {
+      this.showSnackbar('Groupe ou équipes non disponibles pour générer les matchs', 'error');
       return;
     }
 
     const jourDeMatch = this.groupes.jourMatch || 'Sunday';
     const matchDates = this.generateMatchDates(jourDeMatch);
-    const matchesToSave: Match[] = [];
+    const matchesToSave: any[] = [];
 
     matchDates.forEach(date => {
-      const equipe1 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      let equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      while (equipe1.id === equipe2.id) {
-        equipe2 = this.equipe[Math.floor(Math.random() * this.equipe.length)];
-      }
+      const shuffled = [...this.equipes].sort(() => Math.random() - 0.5);
+      const equipe1 = shuffled[0];
+      const equipe2 = shuffled[1];
 
-      const newMatch: any = {
-        id: 0,
+      matchesToSave.push({
         typeMatch: 'INTERNE',
         dateMatch: date.toISOString().split('T')[0],
-        adversaire: `${equipe1.nom} vs ${equipe2.nom}`,
+        equipe1Id: equipe1.id,
+        equipe2Id: equipe2.id,
         lieu: '',
-        commentaire: '',
-        membreAnniversaire: '',
-        mediaUrls: []
-      };
-      matchesToSave.push(newMatch);
+        commentaire: ''
+      });
     });
 
     this.isLoading = true;
     forkJoin(matchesToSave.map(match => this.matchService.createMatch(match))).subscribe({
       next: () => {
-        console.log('Matchs générés et enregistrés avec succès.');
+        this.showSnackbar(`${matchesToSave.length} matchs générés avec succès`, 'success');
         this.loadData();
-        this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur lors de l\'enregistrement des matchs:', err);
+        console.error('Erreur lors de la génération:', err);
+        this.showSnackbar('Erreur lors de la génération des matchs', 'error');
         this.isLoading = false;
       }
     });
@@ -681,113 +1005,9 @@ openMediaDialog(match: Match) {
     return dates;
   }
 
-  isMatchPlayed(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const hasRapporteur =
-      !!match.rapporteur ||
-      !!(match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
-
-    return matchDate < today && hasRapporteur;
-  }
-
-  isMatchMissed(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const hasRapporteur =
-      !!match.rapporteur ||
-      (match.rapporteurNomOccasionnel && match.rapporteurNomOccasionnel.trim() !== '');
-
-    return matchDate < today && !hasRapporteur;
-  }
-
-  isMatchFuture(match: Match): boolean {
-    const matchDate = new Date(match.dateMatch);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return matchDate >= today;
-  }
-
-  getEquipeNames(adversaire: string | undefined | null): [string, string] {
-    if (adversaire && adversaire.includes(' vs ')) {
-      return adversaire.split(' vs ') as [string, string];
-    }
-    return ['', ''];
-  }
-
-  onForfaitChange() {
-    if (this.newMatch.forfait && this.newMatch.adversaire) {
-      this.equipes = this.getEquipeNames(this.newMatch.adversaire);
-    } else {
-      this.newMatch.equipeForfait = "";
-      this.equipes = [];
-    }
-  }
-
-  onAdversaireInput() {
-    if (this.newMatch.forfait && this.newMatch.adversaire) {
-      this.equipes = this.getEquipeNames(this.newMatch.adversaire);
-    } else {
-      this.equipes = [];
-    }
-  }
-
-  getMatchStatusClass(match: Match): string {
-    if (this.isMatchPlayed(match)) {
-      return 'status-played';
-    } else if (this.isMatchMissed(match)) {
-      return 'status-missed';
-    } else {
-      return 'status-future';
-    }
-  }
-
-  getMatchStatusIcon(match: Match): string {
-    if (this.isMatchPlayed(match)) {
-      return 'check_circle';
-    } else if (this.isMatchMissed(match)) {
-      return 'cancel';
-    } else {
-      return 'schedule';
-    }
-  }
-
   getMatchInfo(match: Match): string {
-    switch (match.typeMatch) {
-      case 'ANNIVERSAIRE':
-        return `Anniversaire de ${match.membreAnniversaire}`;
-      case 'DUEL':
-        return match.commentaire || 'Duel';
-      case 'AMICAL':
-      case 'INTERNE':
-        return match.adversaire || 'Match interne';
-      default:
-        return match.adversaire || '';
-    }
+    return this.getMatchDisplayName(match);
   }
 
-  openInvitationDialog(match: Match): void {
-  const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
-    width: '500px',
-    maxWidth: '95vw',
-    data: {
-      match: {
-        id: match.id,
-        dateMatch: match.dateMatch,
-        adversaire: match.adversaire
-      }
-    }
-  });
-
-  dialogRef.afterClosed().subscribe(result => {
-    if (result) {
-      // Invitation créée avec succès
-      // this.loadInvitations(); // Rafraîchir la liste
-    }
-  });
-}
+  
 }

@@ -3,7 +3,7 @@ import { Membre } from "./membre.model";
 
 export interface Presence {
   id: number;
-  membre: Membre;
+  membre: Membre ;
   match: Match;
   aJoue: boolean;
   estCapitaine: boolean;

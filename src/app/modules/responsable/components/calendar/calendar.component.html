@@ -1,22 +1,210 @@
-<!-- <div class="calendar-content1"> -->
-<h2 mat-dialog-title>Calendrier des Matchs - {{ data.jourDeMatch }}</h2>
-<mat-dialog-content class="calendar-content">
-  <div class="match-grid">
-    <div *ngFor="let match of data.matches" class="match-card"
-           [title]="isLoading() ? 'Chargement...' : hoverDetails()"
-          (mouseenter)="hoverSubject.next(match)"
-          (mouseleave)="hoverSubject.next(null)">
-      <div class="match-date">{{ match.dateMatch | date:'dd/MM/yyyy' }}</div>
-      <div class="match-adversaire">{{ match.adversaire }}</div>
-      <div class="match-status">
-        <span *ngIf="isMatchPlayed(match)" style="color: green;">✔️</span>
-        <span *ngIf="isMatchMissed(match)" style="color: red;">❌</span>
-        <span *ngIf="isMatchFuture(match.dateMatch)" style="color: green;">⭕</span>
+<div class="calendar-wrapper" [class.details-open]="selectedMatch()">
+  <!-- Header -->
+  <div class="calendar-header-bar">
+    <div class="header-title">
+      <mat-icon>calendar_month</mat-icon>
+      <span>Calendrier</span>
+      <small *ngIf="jourDeMatch">{{ jourDeMatch }}</small>
+    </div>
+    <button mat-icon-button (click)="onClose()" class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="calendar-body">
+    <!-- Calendrier -->
+    <div class="calendar-section">
+      <!-- Navigation -->
+      <div class="month-nav">
+        <button mat-icon-button (click)="previousMonth()">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        
+        <button mat-button [matMenuTriggerFor]="monthMenu" class="month-label">
+          {{ monthNames[currentMonth] }} {{ currentYear }}
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        <mat-menu #monthMenu="matMenu">
+          <button mat-menu-item *ngFor="let month of monthNames; let i = index" 
+                  (click)="goToMonth(i)" [class.active]="i === currentMonth">
+            {{ month }}
+          </button>
+        </mat-menu>
+
+        <button mat-icon-button (click)="nextMonth()">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+
+        <button mat-stroked-button (click)="goToToday()" class="today-btn">
+          <mat-icon>today</mat-icon>
+          <span class="btn-text">Aujourd'hui</span>
+        </button>
+      </div>
+
+      <!-- Légende -->
+      <div class="legend-bar">
+        <span class="legend-item"><span class="dot green"></span>Joué</span>
+        <span class="legend-item"><span class="dot orange"></span>Non validé</span>
+        <span class="legend-item"><span class="dot blue"></span>À venir</span>
+      </div>
+
+      <!-- Grille -->
+      <div class="calendar-grid-container">
+        <div class="weekdays">
+          <span *ngFor="let day of dayNamesShort">{{ day }}</span>
+        </div>
+        
+        <div class="days-grid">
+          <div *ngFor="let day of calendarDays()" 
+               class="day-cell"
+               [class.other-month]="!day.isCurrentMonth"
+               [class.today]="day.isToday"
+               [class.has-matches]="day.matches.length > 0"
+               [class.selected]="isDaySelected(day)"
+               (click)="onDayClick(day)">
+            
+            <span class="day-num">{{ day.dayNumber }}</span>
+            
+            <div class="day-matches" *ngIf="day.matches.length > 0">
+              <div *ngFor="let match of day.matches.slice(0, 2)" 
+                   class="match-dot"
+                   [class.played]="isMatchPlayed(match)"
+                   [class.missed]="isMatchMissed(match)"
+                   [class.future]="isMatchFuture(match)"
+                   [class.active]="selectedMatch()?.id === match.id"
+                   (click)="onMatchClick(match, $event)">
+                {{ getTypeEmoji(match.typeMatch) }}
+              </div>
+              <span *ngIf="day.matches.length > 2" class="more-badge">+{{ day.matches.length - 2 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="mini-stats">
+        <div class="stat">
+          <span class="num">{{ monthStats().total }}</span>
+          <span class="label">Total</span>
+        </div>
+        <div class="stat green">
+          <span class="num">{{ monthStats().played }}</span>
+          <span class="label">Joués</span>
+        </div>
+        <div class="stat orange">
+          <span class="num">{{ monthStats().missed }}</span>
+          <span class="label">Manqués</span>
+        </div>
+        <div class="stat blue">
+          <span class="num">{{ monthStats().future }}</span>
+          <span class="label">À venir</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détails -->
+    <div class="details-section" *ngIf="selectedMatch()" [class.is-open]="selectedMatch()">
+      <div class="details-header">
+        <div class="match-badge" [ngClass]="'type-' + selectedMatch()!.typeMatch?.toLowerCase()">
+          {{ getTypeEmoji(selectedMatch()!.typeMatch) }}
+          {{ getTypeLabel(selectedMatch()!.typeMatch) }}
+        </div>
+        <button mat-icon-button (click)="closeDetails()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="details-body" *ngIf="!isLoadingDetails()">
+        <!-- Date -->
+        <div class="match-date">
+          <mat-icon>event</mat-icon>
+          {{ selectedMatch()!.dateMatch | date:'EEEE d MMMM yyyy':'':'fr' }}
+        </div>
+
+        <!-- Scoreboard -->
+        <div class="scoreboard">
+          <div class="team home">
+            <span class="team-name">{{ getEquipeNames(selectedMatch()!)[0] }}</span>
+            <span class="team-score">{{ matchDetails()?.scoreLocal ?? '-' }}</span>
+          </div>
+          <div class="score-separator">
+            <span class="vs-text">VS</span>
+            <span class="status-badge" [ngClass]="getMatchStatusClass(selectedMatch()!)">
+              {{ getMatchStatusLabel(selectedMatch()!) }}
+            </span>
+          </div>
+          <div class="team away">
+            <span class="team-score">{{ matchDetails()?.scoreAdverse ?? '-' }}</span>
+            <span class="team-name">{{ getEquipeNames(selectedMatch()!)[1] }}</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="match-stats" *ngIf="matchDetails()?.isPlayed">
+          <!-- Buteurs -->
+          <div class="stat-card" *ngIf="matchDetails()!.buteurs.length > 0">
+            <div class="stat-header">
+              <mat-icon>sports_soccer</mat-icon>
+              <span>Buteurs</span>
+            </div>
+            <div class="stat-content">
+              <div *ngFor="let b of matchDetails()!.buteurs" class="player-row">
+                <span class="player-name">{{ b.nom }}</span>
+                <span class="player-stat">{{ b.count }} ⚽</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Passeurs -->
+          <div class="stat-card" *ngIf="matchDetails()!.passeurs.length > 0">
+            <div class="stat-header">
+              <mat-icon>assistant</mat-icon>
+              <span>Passeurs</span>
+            </div>
+            <div class="stat-content">
+              <div *ngFor="let p of matchDetails()!.passeurs" class="player-row">
+                <span class="player-name">{{ p.nom }}</span>
+                <span class="player-stat">{{ p.count }} 🎯</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Présents -->
+          <div class="stat-card compact" *ngIf="matchDetails()!.presentsCount > 0">
+            <div class="stat-header">
+              <mat-icon>groups</mat-icon>
+              <span>{{ matchDetails()!.presentsCount }} joueurs présents</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-stats" *ngIf="matchDetails() && !matchDetails()!.isPlayed && !isMatchFuture(selectedMatch()!)">
+          <mat-icon>info_outline</mat-icon>
+          <span>Aucune donnée enregistrée</span>
+        </div>
+
+        <!-- Future -->
+        <div class="future-match" *ngIf="isMatchFuture(selectedMatch()!)">
+          <mat-icon>schedule</mat-icon>
+          <span>Match à venir</span>
+        </div>
+
+        <!-- Lieu -->
+        <div class="match-location" *ngIf="selectedMatch()!.lieu">
+          <mat-icon>location_on</mat-icon>
+          <span>{{ selectedMatch()!.lieu }}</span>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="details-loading" *ngIf="isLoadingDetails()">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Chargement...</span>
       </div>
     </div>
   </div>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onClose()">Fermer</button>
-</mat-dialog-actions>
-<!-- </div> -->
+
+  <!-- Overlay mobile -->
+  <div class="mobile-overlay" *ngIf="selectedMatch() && isMobile" (click)="closeDetails()"></div>
+</div>

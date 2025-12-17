@@ -386,7 +386,7 @@ getTotalUnpaid(): Observable<{ totalCount: number, totalAmount: number }> {
     }
     if (typeof match === 'object' && match !== null && 'dateMatch' in match && 'typeMatch' in match) {
     
-      return `${new Date(match.dateMatch).toLocaleDateString('fr-FR')} - ${match.typeMatch} ${match.adversaire ? 'vs ' + match.adversaire : ''}`;
+      return `${new Date(match.dateMatch).toLocaleDateString('fr-FR')} - ${match.typeMatch} ${match.equipe1 ? 'vs ' + match.equipe2 : ''}`;
     }
     const matchId = typeof match === 'number' ? match : (match as Match)?.id;
     if (!matchId) {
@@ -395,7 +395,7 @@ getTotalUnpaid(): Observable<{ totalCount: number, totalAmount: number }> {
     }
     const found = this.matches.find(m => m.id === matchId);
     console.log('Match trouvé:', found, 'pour ID:', matchId, 'dans:', this.matches);
-    return found ? `${new Date(found.dateMatch).toLocaleDateString('fr-FR')} - ${found.typeMatch} ${found.adversaire ? 'vs ' + found.adversaire : ''}` : 'Inconnu';
+    return found ? `${new Date(found.dateMatch).toLocaleDateString('fr-FR')} - ${found.typeMatch} ${found.equipe1 ? 'vs ' + found.equipe2 : ''}` : 'Inconnu';
   }
 
   onTypeSanctionChange(sanction: Sanction & { equipeMatch?: string; selectedDate?: string }) {

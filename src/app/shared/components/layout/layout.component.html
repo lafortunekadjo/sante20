@@ -20,18 +20,6 @@
       class="sidebar"
       [class.open]="sidebarOpen"
       [class.mobile]="isMobile">
-      
-      <!-- Header sidebar avec design amélioré -->
-      <div class="sidebar-header">
-        <div class="header-background"></div>
-        <div class="header-content">
-          <mat-icon class="logo-icon">sports_soccer</mat-icon>
-          <div class="logo-text">
-            <span class="app-name">{{ 'app.name' | translate }}</span>
-            <span class="app-subtitle">{{ 'app.subtitle' | translate }}</span>
-          </div>
-        </div>
-      </div>
 
       <mat-divider class="header-divider"></mat-divider>
 
@@ -55,6 +43,18 @@
               <span>{{ 'nav.mainMenu' | translate }}</span>
             </div>
 
+            <!-- Lien Accueil - toujours visible -->
+            <a 
+              routerLink="/home" 
+              routerLinkActive="active"
+              (click)="onNavClick()"
+              class="nav-item">
+              <mat-icon>home</mat-icon>
+              <span>{{ 'admin.home' | translate }}</span>
+              <div class="nav-indicator"></div>
+            </a>
+
+            <!-- Menus communs dynamiques (gérés dans le TS) -->
             <a 
               *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
               [routerLink]="menu.route" 
@@ -68,6 +68,7 @@
               <span>{{ menu.label }}</span>
               <div class="nav-indicator"></div>
             </a>
+
           </div>
 
           <!-- Section: Administration -->
@@ -109,11 +110,11 @@
             </a>
           </div>
 
-          <!-- Section: Menus Responsable -->
-          <div *ngIf="isResponsable">
+          <!-- Section: Menus Responsable (seulement si a un groupe) -->
+          <div *ngIf="isResponsable && userHasGroup">
            
             <!-- Menus dynamiques par catégorie -->
-            <div class="nav-section" *ngFor="let categorie of menuCategories">
+            <div class="nav-section" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
               <div class="section-divider"></div>
               <div class="section-title category-section">
                 <mat-icon>{{ categorie.icone }}</mat-icon>
@@ -122,7 +123,7 @@
 
               <!-- Menus de la catégorie -->
               <a 
-                *ngFor="let menu of categorie.menus"
+                *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
                 [routerLink]="menu.route" 
                 routerLinkActive="active"
                 (click)="onNavClick()"
@@ -143,6 +144,15 @@
                 <h4>Sélectionnez un groupe</h4>
                 <p>Sélectionnez un groupe pour accéder aux fonctionnalités</p>
               </div>
+            </div>
+          </div>
+
+          <!-- Message si l'utilisateur n'a pas de groupe -->
+          <div *ngIf="!userHasGroup && !isAdmin" class="no-groupe-message info-box">
+            <mat-icon>info_outline</mat-icon>
+            <div class="message-content">
+              <h4>Aucun groupe</h4>
+              <p>Créez ou rejoignez un groupe pour accéder à toutes les fonctionnalités</p>
             </div>
           </div>
 

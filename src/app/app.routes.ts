@@ -50,6 +50,10 @@ import { SignupComponent } from "./shared/components/signup/signup.component";
 import { MembreFormComponent } from "./modules/responsable/components/membre-form/membre-form.component";
 import { InvitationListComponent } from "./modules/users/invitation-list/invitation-list.component";
 import { PublicMatchInviteComponent } from "./modules/users/public-match-invite/public-match-invite.component";
+import { UserGroupRegisterComponent } from "./shared/user-group-register/user-group-register.component";
+import { AboutTutoPageComponent } from "./shared/about-tuto-page/about-tuto-page.component";
+import { HomeComponent } from "./shared/home/home.component";
+
 
 export const routes: Routes = [
   // ==================== ROUTES PUBLIQUES (sans authentification) ====================
@@ -67,7 +71,7 @@ export const routes: Routes = [
     children: [
       {
     path: '',
-    component: GroupesExploreComponent,
+    component: HomeComponent,
   },
 
       {
@@ -75,21 +79,34 @@ export const routes: Routes = [
         component: PublicMatchInviteComponent,
       },
 
+         {
+        path: 'creategroup',
+        component: UserGroupRegisterComponent,
+      },
+          {
+        path: 'apropos',
+        component: HomeComponent,
+      },
+
+         {
+        path: 'home',
+        component: HomeComponent,
+      },
+
+
 
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
       {
         path: 'explorer',
         component: GroupesExploreComponent,
-        canActivate: [RoleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
-      },
+         },
 
       
       {
         path: 'mes-demandes',
         component: MesDemandesComponent,
         canActivate: [RoleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
+        data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'CANDIDAT', 'ROLE_CANDIDAT'] }
       },
         {
     path: 'login',
@@ -113,7 +130,7 @@ export const routes: Routes = [
         path: 'suggestions',
         component: SuggestionsComponent,
         canActivate: [RoleGuard],
-        data: { roles: ['RESPONSABLE', 'MEMBRE', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE'] }
+        data: { roles: ['RESPONSABLE', 'MEMBRE', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'CANDIDAT', 'ROLE_CANDIDAT'] }
       },
       {
         path: 'objectifs',
@@ -296,5 +313,5 @@ export const routes: Routes = [
   },
 
   // Route par défaut - redirection vers accueil public
-  { path: '**', redirectTo: '/explorer' }
+  { path: '**', redirectTo: '/home' }
 ];

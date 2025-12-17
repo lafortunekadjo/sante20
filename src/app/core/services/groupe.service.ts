@@ -77,6 +77,10 @@ export class GroupeService {
     return this.http.post<Groupe>(`${environment.apiUrl}/groupes`, groupe);
   }
 
+    addGroupe(groupe: any): Observable<Groupe> {
+    return this.http.post<Groupe>(`${environment.apiUrl}/addgroupe`, groupe);
+  }
+
   updateGroupe(id: number, groupe: any): Observable<Groupe> {
     console.log(groupe)
     return this.http.put<Groupe>(`${environment.apiUrl}/groupes/${id}`, groupe);

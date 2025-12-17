@@ -159,7 +159,7 @@ export class UserFormComponent implements OnInit, AfterViewInit {
       const search = this.searchTerm.toLowerCase();
       filtered = filtered.filter(user =>
         user.username.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search)
+        user.email?.toLowerCase().includes(search)
       );
     }
 

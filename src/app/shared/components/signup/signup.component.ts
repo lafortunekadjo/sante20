@@ -16,6 +16,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { MembreService } from '../../../core/services/membre.service';
 
 // Validator personnalisé pour la confirmation de mot de passe
 function confirmPasswordValidator(group: FormGroup) {
@@ -67,7 +68,8 @@ export class SignupComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private membreService: MembreService
   ) {
     this.accountForm = this.initializeAccountForm();
     this.profileForm = this.initializeProfileForm();
@@ -117,12 +119,12 @@ export class SignupComponent implements OnInit {
         Validators.maxLength(50)
       ]],
       prenom: ['', [
-        Validators.required,
+       
         Validators.minLength(2),
         Validators.maxLength(50)
       ]],
       dateNaissance: ['', [
-        Validators.required
+       
       ]],
       sexe: ['', [
         Validators.required
@@ -141,26 +143,18 @@ export class SignupComponent implements OnInit {
   /**
    * Soumet le formulaire complet
    */
-  onSubmit(): void {
-    if (!this.accountForm.valid || !this.profileForm.valid) {
-      this.markAllFormGroupsTouched();
-      this.snackBar.open('Veuillez remplir tous les champs correctement', 'Fermer', {
-        duration: 3000
-      });
+ onSubmit(): void {
+    if (this.accountForm.invalid || this.profileForm.invalid) {
       return;
     }
 
     this.isLoading = true;
-    this.clearError();
 
-    const signupData = {
-      // Données du compte
+    const signupData: any = {
       username: this.accountForm.value.username,
       email: this.accountForm.value.email,
       motDePasse: this.accountForm.value.password,
-      roles: 'CANDIDAT',
-      
-      // Données du profil
+      roles: 'ROLE_CANDIDAT',
       membre: {
         nom: this.profileForm.value.nom,
         prenom: this.profileForm.value.prenom,
@@ -171,14 +165,54 @@ export class SignupComponent implements OnInit {
       }
     };
 
-    this.authService.createUser(signupData).subscribe({
+    this.authService.addUser(signupData).subscribe({
       next: (response) => {
-        this.handleSignupSuccess(response);
+        this.isLoading = false;
+        if (response.success) {
+          this.snackBar.open('Inscription réussie ! Vous pouvez vous connecter.', 'OK', {
+            duration: 5000,
+            panelClass: 'success-snackbar'
+          });
+          this.router.navigate(['/login']);
+        }
       },
       error: (err) => {
-        this.handleSignupError(err);
+        this.isLoading = false;
+        const message = err.error?.message || 'Erreur lors de l\'inscription';
+        this.snackBar.open(message, 'Fermer', {
+          duration: 5000,
+          panelClass: 'error-snackbar'
+        });
       }
     });
+  }
+
+  // Vérification asynchrone du username
+  checkUsername(): void {
+    const username = this.accountForm.get('username')?.value;
+    if (username && username.length >= 3) {
+      this.authService.checkUsernameAvailability(username).subscribe({
+        next: (res) => {
+          if (!res.available) {
+            this.accountForm.get('username')?.setErrors({ taken: true });
+          }
+        }
+      });
+    }
+  }
+
+  // Vérification asynchrone de l'email
+  checkEmail(): void {
+    const email = this.accountForm.get('email')?.value;
+    if (email && this.accountForm.get('email')?.valid) {
+      this.authService.checkEmailAvailability(email).subscribe({
+        next: (res) => {
+          if (!res.available) {
+            this.accountForm.get('email')?.setErrors({ taken: true });
+          }
+        }
+      });
+    }
   }
 
   /**
@@ -341,13 +375,10 @@ export class SignupComponent implements OnInit {
         maxlength: 'Maximum 50 caractères'
       },
       prenom: {
-        required: 'Le prénom est requis',
         minlength: 'Minimum 2 caractères',
         maxlength: 'Maximum 50 caractères'
       },
-      dateNaissance: {
-        required: 'La date de naissance est requise'
-      },
+     
       sexe: {
         required: 'Le sexe est requis'
       },

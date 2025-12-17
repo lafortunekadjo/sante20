@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, OnDestroy } from '@angular/core';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,7 +25,8 @@ import { Language, TranslateModule } from '@ngx-translate/core';
 import { SettingsService, Theme } from '../../../core/services/settings.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { filter, finalize } from 'rxjs/operators';
+import { filter, finalize, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -50,7 +51,7 @@ import { filter, finalize } from 'rxjs/operators';
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
 })
-export class NavbarComponent implements OnInit {
+export class NavbarComponent implements OnInit, OnDestroy {
   @Output() toggleMenu = new EventEmitter<void>();
   
   roles: string[] = [];
@@ -66,6 +67,9 @@ export class NavbarComponent implements OnInit {
   currentLanguage: Language = 'fr';
   currentRoute: string = '';
 
+  // ✅ AJOUT : Subject pour nettoyer les subscriptions
+  private destroy$ = new Subject<void>();
+
   constructor(
     public authService: AuthService,
     private settingsService: SettingsService,
@@ -75,20 +79,28 @@ export class NavbarComponent implements OnInit {
     private equipeService: GeneralService,
     private snackBar: MatSnackBar
   ) {
-    this.roles = this.authService.getRoles();
-    if (this.roles.length > 0) {
-      this.selectedRole = this.roles[0];
-    }
+    // ❌ SUPPRIMER : Ne pas charger ici, attendre ngOnInit
+    // this.roles = this.authService.getRoles();
+    // if (this.roles.length > 0) {
+    //   this.selectedRole = this.roles[0];
+    // }
   }
 
   ngOnInit() {
-    this.loadUserData();
-    this.roles = this.authService.getRoles() || [];
-    this.selectedRole = this.authService.getCurrentRole() || this.roles[0] || '';
+    // ✅ AJOUT : S'abonner aux changements d'état utilisateur
+    this.authService.isUserReady$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isReady => {
+        console.log('Navbar: isUserReady changed to', isReady);
+        if (isReady) {
+          this.refreshUserData();
+        }
+      });
 
     // Écouter les changements de route
     this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
+      filter(event => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
     ).subscribe((event: NavigationEnd) => {
       this.currentRoute = event.url;
     });
@@ -97,19 +109,53 @@ export class NavbarComponent implements OnInit {
     this.currentTheme = this.settingsService.getTheme();
     this.currentLanguage = this.settingsService.getLanguage();
 
-    // S'abonner aux changements
-    this.settingsService.settings$.subscribe(settings => {
-      this.currentTheme = settings.theme;
-      this.currentLanguage = settings.language;
+    // S'abonner aux changements de settings
+    this.settingsService.settings$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(settings => {
+        this.currentTheme = settings.theme;
+        this.currentLanguage = settings.language;
+      });
+
+    // Chargement initial
+    this.refreshUserData();
+  }
+
+  // ✅ AJOUT : Implémenter OnDestroy
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * ✅ NOUVELLE MÉTHODE : Rafraîchit toutes les données utilisateur
+   * Appelée à chaque changement d'état d'authentification
+   */
+  refreshUserData(): void {
+    console.log('Navbar: Refreshing user data...');
+    
+    // Recharger les rôles depuis le service
+    this.roles = this.authService.getRoles() || [];
+    this.selectedRole = this.authService.getCurrentRole() || this.roles[0] || null;
+    
+    // Recharger les infos utilisateur
+    this.user = this.authService.getUser();
+    
+    // Recharger la photo de profil
+    this.loadProfilePhoto();
+    
+    console.log('Navbar: User data refreshed', {
+      roles: this.roles,
+      selectedRole: this.selectedRole,
+      user: this.user
     });
   }
   
   /**
-   * Charge les données utilisateur et la photo de profil
+   * @deprecated Utiliser refreshUserData() à la place
    */
   loadUserData(): void {
-    this.user = this.authService.getUser();
-    this.loadProfilePhoto();
+    this.refreshUserData();
   }
 
   /**
@@ -161,7 +207,7 @@ export class NavbarComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.loadUserData();
+        this.refreshUserData();
       }
     });
   }
@@ -290,6 +336,7 @@ export class NavbarComponent implements OnInit {
 
   changeRole(role: string): void {
     this.selectedRole = role;
+    this.authService.setCurrentRole(role);
     this.navigateToRole(role);
   }
 
@@ -357,81 +404,88 @@ export class NavbarComponent implements OnInit {
   }
 
   logout(): void {
+    // ✅ Réinitialiser les données locales avant le logout
+    this.user = null;
+    this.roles = [];
+    this.selectedRole = null;
+    this.userProfileImage = null;
+    
     this.authService.logout();
   }
-async checkIn(): Promise<void> {
-  this.isChecking = true;
-  this.error = '';
-  this.success = false;
 
-  try {
-    const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
-    const userId: number | null = this.authService.getUserId();
+  async checkIn(): Promise<void> {
+    this.isChecking = true;
+    this.error = '';
+    this.success = false;
 
-    if (userId === null) {
-      this.isChecking = false;
-      this.error = 'Utilisateur non authentifié ou ID introuvable.';
-      return;
-    }
+    try {
+      const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
+      const userId: number | null = this.authService.getUserId();
 
-    const membre = await this.memberService.getMembreByUserId(userId).toPromise();
-    const membreEquipeId = membre?.equipe?.id ?? null;
+      if (userId === null) {
+        this.isChecking = false;
+        this.error = 'Utilisateur non authentifié ou ID introuvable.';
+        return;
+      }
 
-    const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
-      width: '90vw',
-      maxWidth: '500px',
-      data: {
-        equipes,
-        defaultEquipeId: membreEquipeId,
-        joueur: {
-          id: membre?.id,
-          nom: membre?.nom,
-          prenom: membre?.prenom
+      const membre = await this.memberService.getMembreByUserId(userId).toPromise();
+      const membreEquipeId = membre?.equipe?.id ?? null;
+
+      const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
+        width: '90vw',
+        maxWidth: '500px',
+        data: {
+          equipes,
+          defaultEquipeId: membreEquipeId,
+          joueur: {
+            id: membre?.id,
+            nom: membre?.nom,
+            prenom: membre?.prenom
+          }
         }
+      });
+
+      const checkInResult = await dialogRef.afterClosed().toPromise();
+
+      if (!checkInResult) {
+        this.isChecking = false;
+        this.error = 'Check-in annulé.';
+        return;
       }
-    });
 
-    const checkInResult = await dialogRef.afterClosed().toPromise();
-
-    if (!checkInResult) {
+      // Appel du service avec l'équipe sélectionnée (peut être null)
+      const result = await this.authService.checkIn(
+        checkInResult.equipe?.id || null,
+        checkInResult.hasPlayed
+      );
+      
       this.isChecking = false;
-      this.error = 'Check-in annulé.';
-      return;
+
+      const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
+        width: '90vw',
+        maxWidth: '400px',
+        panelClass: 'scrollable-dialog',
+        data: { 
+          message: checkInResult.hasPlayed 
+            ? result.message 
+            : 'Votre présence a été enregistrée. Vous n\'avez pas participé au match.'
+        }
+      });
+
+      confirmRef.afterClosed().subscribe(confirmed => {
+        if (confirmed) {
+          this.success = result.success;
+        } else {
+          this.error = result.success ? '' : result.message;
+        }
+      });
+
+    } catch (err: any) {
+      this.isChecking = false;
+      this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+      console.error(err);
     }
-
-    // Appel du service avec l'équipe sélectionnée (peut être null)
-    const result = await this.authService.checkIn(
-      checkInResult.equipe?.id || null,
-      checkInResult.hasPlayed
-    );
-    
-    this.isChecking = false;
-
-    const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '90vw',
-      maxWidth: '400px',
-      panelClass: 'scrollable-dialog',
-      data: { 
-        message: checkInResult.hasPlayed 
-          ? result.message 
-          : 'Votre présence a été enregistrée. Vous n\'avez pas participé au match.'
-      }
-    });
-
-    confirmRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.success = result.success;
-      } else {
-        this.error = result.success ? '' : result.message;
-      }
-    });
-
-  } catch (err: any) {
-    this.isChecking = false;
-    this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
-    console.error(err);
   }
-}
 
   goToLogin(): void {
     this.router.navigate(['/login']);

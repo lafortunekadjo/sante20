@@ -43,7 +43,7 @@ export class MembreService {
       roleCO: membre.roleCO || null,
       equipe: membre.equipe.id || null,
       groupe: membre.groupe.id,
-      user: membre.user.id,
+      user: membre.user?.id,
       active: membre.active
     };
     console.log(payload)
@@ -117,7 +117,7 @@ export class MembreService {
       roleCO: membre.roleCO || null,
       equipe: membre.equipe.id || null,
       groupe: membre.groupe.id,
-      user: membre.user.id,
+      user: membre.user.id || null,
       active: membre.true
     };
     return this.http.post<Membre>(this.apiUrl, payload);
@@ -135,7 +135,7 @@ export class MembreService {
       equipe: membre.equipe?.id || null,
       id:id,
       // groupe: membre.groupe.id,
-      user: membre.user.id,
+      user: membre.user?.id || null,
       active: true,
       sexe:membre.sexe
     };
