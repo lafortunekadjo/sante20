@@ -66,7 +66,7 @@ export class GroupeConfigComponent implements OnInit {
   isSaving = false;
   editingQuestion: QuestionCandidature | null = null;
   showQuestionForm = false;
-  imageUrl=environment.imageUrl
+  //imageUrl=environment.imageUrl
   // Pour l'aperçu de l'image
   profilePhotoPreview: string | null = null;
   selectedFile: File | null = null;
