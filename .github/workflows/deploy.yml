@@ -2,13 +2,14 @@ name: Deploy Angular sante20
 
 on:
   push:
-    branches: [ version_test ]
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -22,14 +23,23 @@ jobs:
       - name: Build Angular app
         run: npm run build --configuration=production
 
-      - name: Copy Files to VPS
+      - name: Copy Files to VPS (SCP)
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # On cible tout ce qui est dans le dossier de build final
-          # Note: Vérifie si ton build crée "dist/sante20" ou "dist/sante20/browser"
+          # On prend le contenu de dist/sante20/browser/
           source: "dist/sante20/browser/*"
           target: "/var/www/sante20"
-          strip_components: 3 # On retire dist/sante20/browser pour ne copier que le contenu
+          # strip_components: 3 retire 'dist/', 'sante20/' et 'browser/' du chemin
+          strip_components: 3
+
+      - name: Restart Nginx (SSH)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl restart nginx
