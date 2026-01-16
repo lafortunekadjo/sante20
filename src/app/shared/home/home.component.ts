@@ -182,12 +182,12 @@ export class HomeComponent implements OnInit {
   faqs: FAQ[] = [
     {
       question: 'Comment créer un nouveau groupe ?',
-      answer: 'Après vous être connecté, accédez à "Mes Groupes" et cliquez sur "Créer un groupe". Remplissez les informations du groupe (nom, discipline, jour de match habituel) et invitez vos premiers membres.',
+      answer: 'Après vous être connecté, accédez à "Créer un groupe". Remplissez les informations du groupe (nom, ville et abrieviation) puis cree le groupe, une fois valide, vous serez notifiez.',
       category: 'Groupe'
     },
     {
       question: 'Comment ajouter un membre à mon groupe ?',
-      answer: 'Dans la section "Membres", cliquez sur "Ajouter un membre". Renseignez le nom, prénom, poste préféré et assignez-le optionnellement à une équipe interne. Le membre recevra une notification s\'il a un compte.',
+      answer: 'Dans la section "Gestion des membres", cliquez sur "Ajouter un membre". Renseignez le nom, prénom, poste préféré et assignez-le optionnellement à une équipe interne. Le membre recevra une notification s\'il a un compte.',
       category: 'Membres'
     },
     {
@@ -197,12 +197,12 @@ export class HomeComponent implements OnInit {
     },
     {
       question: 'Comment organiser un match amical avec un autre groupe ?',
-      answer: 'Créez un match de type "AMICAL" et recherchez le groupe adverse sur la plateforme. Une invitation sera envoyée. Une fois acceptée, les deux groupes pourront gérer les présences de leurs membres respectifs.',
+      answer: 'Créez un match de type "AMICAL" et recherchez le groupe adverse sur la plateforme ou generez une invitation et transferez a l\'adversaire.',
       category: 'Matchs'
     },
     {
       question: 'Comment enregistrer les statistiques d\'un match ?',
-      answer: 'Sur la fiche de présence du match, cochez "A joué" pour chaque participant, puis renseignez les buts, passes décisives, pénaltys, cartons et désignez le capitaine et l\'homme du match pour chaque équipe.',
+      answer: 'Dans la section Match, cliquer sur fiche de presence, Sur la fiche de présence du match, ajoutez les joueurs, cochez "A joué" pour chaque participant, puis renseignez les buts, passes décisives, pénaltys, cartons et désignez le capitaine et l\'homme du match pour chaque équipe.',
       category: 'Présences'
     },
     {
@@ -215,11 +215,7 @@ export class HomeComponent implements OnInit {
       answer: 'Accédez à la section "Finances" de votre groupe. Vous pouvez définir le montant des cotisations, enregistrer les paiements et suivre les arriérés. Des rappels automatiques peuvent être envoyés.',
       category: 'Finances'
     },
-    {
-      question: 'Puis-je avoir plusieurs rôles dans différents groupes ?',
-      answer: 'Oui, vous pouvez être ADMIN dans un groupe et simple MEMBRE dans un autre. Chaque groupe gère indépendamment les rôles de ses participants.',
-      category: 'Groupe'
-    },
+    
     {
       question: 'Comment voir les statistiques de mon groupe ?',
       answer: 'Le tableau de bord affiche les KPIs essentiels. Pour des statistiques détaillées, consultez la section "Classements" qui présente les meilleurs buteurs, passeurs et le palmarès des matchs.',
@@ -227,7 +223,7 @@ export class HomeComponent implements OnInit {
     },
     {
       question: 'L\'application est-elle disponible sur mobile ?',
-      answer: 'Oui, Santé 2.0 est une application responsive qui fonctionne parfaitement sur smartphone et tablette. Une application mobile native est également en développement.',
+      answer: 'Oui, My2-0 est une application responsive qui fonctionne parfaitement sur smartphone et tablette. Une application mobile native est également en développement.',
       category: 'Général'
     }
   ];

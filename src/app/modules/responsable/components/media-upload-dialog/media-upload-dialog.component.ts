@@ -156,7 +156,7 @@ export class MediaUploadDialogComponent implements OnInit {
   /**
    * Retourne l'URL complète du média
    */
-  getMediaUrl(url: string): string {
+  getMediaUrl(url: string): any {
     if (!url) return '';
     
     // Si c'est déjà une URL complète (Cloudinary)
@@ -164,8 +164,6 @@ export class MediaUploadDialogComponent implements OnInit {
       return url;
     }
     
-    // Sinon, c'est un chemin relatif
-    return environment.imageUrl + url;
   }
 
   /**

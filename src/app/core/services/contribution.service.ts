@@ -46,7 +46,7 @@ export class ContributionService {
       montantMin: contribution.montantMin,
       montantCible: contribution.montantCible || null,
       open: contribution.open,
-       adhesion: contribution.isAdhesion
+      adhesion: contribution.isAdhesion
     };
     return this.http.post<Contribution>(`${environment.apiUrl}/contributions`, payload);
   }

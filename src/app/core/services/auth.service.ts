@@ -604,7 +604,13 @@ export class AuthService {
    */
   isResponsable(): boolean {
     const roles = this.getRoles();
-    const rolesResponsable = ['RESPONSABLE', 'ADMIN', 'MEMBRE', 'CANDIDAT'];
+    const rolesResponsable = ['RESPONSABLE', 'ADMIN', 'MEMBRE'];
+    return roles.some(role => rolesResponsable.includes(role));
+  }
+
+    isCandidat(): boolean {
+    const roles = this.getRoles();
+    const rolesResponsable = ['CANDIDAT'];
     return roles.some(role => rolesResponsable.includes(role));
   }
 

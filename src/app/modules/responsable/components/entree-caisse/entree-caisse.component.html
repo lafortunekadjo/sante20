@@ -1,0 +1,324 @@
+<!-- entree-caisse.component.html -->
+<div class="entree-caisse-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon class="header-icon entree">add_circle</mat-icon>
+            Nouvelle Entrée de Caisse
+          </h1>
+          <p class="page-subtitle">Enregistrer une contribution ou un versement</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button mat-stroked-button routerLink="/finances/dashboard">
+          <mat-icon>arrow_back</mat-icon>
+          Retour au dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="60"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>Chargement...</h3>
+    </div>
+  </div>
+
+  <!-- Pas d'exercice actif -->
+  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
+    <mat-icon class="empty-icon">event_busy</mat-icon>
+    <h3>Aucun exercice actif</h3>
+    <p>Créez un exercice pour enregistrer des entrées de caisse.</p>
+    <button mat-raised-button color="primary" routerLink="/finances/exercices">
+      <mat-icon>add</mat-icon>
+      Créer un exercice
+    </button>
+  </div>
+
+  <!-- Contenu principal -->
+  <div *ngIf="!isLoading && exerciceActif" class="content">
+
+    <!-- Formulaire d'entrée -->
+    <div class="form-section">
+      <div class="modern-card form-card">
+        <div class="card-header">
+          <div class="card-icon entree">
+            <mat-icon>add_circle</mat-icon>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-title">Enregistrer une entrée</h3>
+            <p class="card-subtitle">{{ exerciceActif.libelle }}</p>
+          </div>
+        </div>
+
+        <form [formGroup]="entreeForm" class="card-body">
+          <div class="form-grid">
+            
+            <!-- Sélection du membre -->
+            <mat-form-field appearance="outline" class="form-field full-width">
+              <mat-label>Membre</mat-label>
+              <input matInput 
+                     formControlName="membreSearch"
+                     [matAutocomplete]="autoMembre"
+                     placeholder="Rechercher un membre...">
+              <mat-autocomplete #autoMembre="matAutocomplete" 
+                                [displayWith]="displayMembre"
+                                (optionSelected)="onMembreSelected($event.option.value)">
+                <mat-option *ngFor="let membre of filteredMembres | async" [value]="membre">
+                  <div class="membre-option">
+                    <mat-icon>person</mat-icon>
+                    <span>{{ membre.prenom }} {{ membre.nom }}</span>
+                  </div>
+                </mat-option>
+              </mat-autocomplete>
+              <mat-icon matPrefix>person_search</mat-icon>
+              <mat-error *ngIf="entreeForm.get('membreId')?.hasError('required')">
+                Sélectionnez un membre
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Type de contribution -->
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Type de contribution</mat-label>
+              <mat-select formControlName="typeContributionId" 
+                          (selectionChange)="onTypeContributionChange()">
+                <mat-option [value]="null">
+                  <mat-icon>remove</mat-icon>
+                  Aucun (contribution libre)
+                </mat-option>
+                <mat-option *ngFor="let type of typesContributions" [value]="type.id">
+                  <div class="type-option">
+                    <mat-icon [style.color]="type.caisse?.couleur">{{ type.caisse?.icone || 'payments' }}</mat-icon>
+                    <div class="type-info">
+                      <span class="type-nom">{{ type.nom }}</span>
+                      <span class="type-frequence">{{ getFrequenceLabel(type.frequence) }}</span>
+                    </div>
+                    <span class="type-montant" *ngIf="type.montantStandard">
+                      {{ formatMontant(type.montantStandard) }}
+                    </span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>category</mat-icon>
+            </mat-form-field>
+
+            <!-- Caisse de destination -->
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Caisse de destination</mat-label>
+              <mat-select formControlName="caisseId" required>
+                <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
+                  <div class="caisse-option">
+                    <div class="caisse-icon" [style.background-color]="caisse.couleur">
+                      <mat-icon>{{ caisse.icone }}</mat-icon>
+                    </div>
+                    <div class="caisse-info">
+                      <span class="caisse-nom">{{ caisse.nom }}</span>
+                      <span class="caisse-solde">Solde: {{ formatMontant(caisse.soldeActuel) }}</span>
+                    </div>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>account_balance</mat-icon>
+              <mat-error *ngIf="entreeForm.get('caisseId')?.hasError('required')">
+                Sélectionnez une caisse
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Montant -->
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Montant</mat-label>
+              <input matInput 
+                     type="number" 
+                     formControlName="montant"
+                     min="1"
+                     placeholder="0">
+              <span matSuffix>FCFA</span>
+              <mat-icon matPrefix>payments</mat-icon>
+              <mat-error *ngIf="entreeForm.get('montant')?.hasError('required')">
+                Le montant est requis
+              </mat-error>
+              <mat-error *ngIf="entreeForm.get('montant')?.hasError('min')">
+                Le montant doit être positif
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Date -->
+            <mat-form-field appearance="outline" class="form-field">
+              <mat-label>Date du versement</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="dateMouvement">
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-error *ngIf="entreeForm.get('dateMouvement')?.hasError('required')">
+                La date est requise
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Libellé -->
+            <mat-form-field appearance="outline" class="form-field full-width">
+              <mat-label>Libellé / Description</mat-label>
+              <input matInput formControlName="libelle" placeholder="Ex: Cotisation mensuelle janvier">
+              <mat-icon matPrefix>description</mat-icon>
+              <mat-error *ngIf="entreeForm.get('libelle')?.hasError('required')">
+                Le libellé est requis
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Commentaire -->
+            <mat-form-field appearance="outline" class="form-field full-width">
+              <mat-label>Commentaire (optionnel)</mat-label>
+              <textarea matInput 
+                        formControlName="commentaire" 
+                        rows="2"
+                        placeholder="Informations complémentaires..."></textarea>
+              <mat-icon matPrefix>comment</mat-icon>
+            </mat-form-field>
+          </div>
+        </form>
+
+        <div class="card-footer">
+          <div class="primary-actions">
+            <button mat-raised-button 
+                    color="primary" 
+                    (click)="enregistrerEntree()"
+                    [disabled]="entreeForm.invalid || isSaving"
+                    class="save-btn">
+              <mat-icon>{{ isSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+              {{ isSaving ? 'Enregistrement...' : 'Enregistrer l\'entrée' }}
+            </button>
+            <button mat-stroked-button (click)="resetForm()">
+              <mat-icon>refresh</mat-icon>
+              Réinitialiser
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dernières entrées -->
+    <div class="history-section">
+      <div class="section-header">
+        <div class="header-icon-wrapper entree">
+          <mat-icon>history</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>Dernières entrées</h2>
+          <span class="badge">{{ dernieresEntrees.length }}</span>
+        </div>
+        <button mat-button color="primary" routerLink="/finances/mouvements">
+          Voir tout <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </div>
+
+      <!-- Vue mobile en cartes -->
+      <div class="mobile-cards-view" *ngIf="dernieresEntrees.length > 0">
+        <div class="entree-card" *ngFor="let entree of dernieresEntrees">
+          <div class="card-header">
+            <div class="card-title">
+              <mat-icon class="card-icon entree">arrow_upward</mat-icon>
+              <div class="title-content">
+                <h4>{{ entree.libelle }}</h4>
+                <span class="date">{{ entree.dateMouvement | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+            <div class="card-montant">
+              <span class="montant entree">+{{ formatMontant(entree.montant) }}</span>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="info-row">
+              <span class="label">Membre:</span>
+              <span class="value">{{ entree.membre?.prenom }} {{ entree.membre?.nom }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Caisse:</span>
+              <span class="value caisse-badge" [style.background-color]="entree.caisse?.couleur">
+                {{ entree.caisse?.nom }}
+              </span>
+            </div>
+            <div class="info-row" *ngIf="entree.typeContribution">
+              <span class="label">Type:</span>
+              <span class="value">{{ entree.typeContribution.nom }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vue desktop tableau -->
+      <div class="desktop-table-view" *ngIf="dernieresEntrees.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort class="entrees-table">
+          
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <td mat-cell *matCellDef="let entree">
+              {{ entree.dateMouvement | date:'dd/MM/yyyy' }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="membre">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Membre</th>
+            <td mat-cell *matCellDef="let entree">
+              <div class="membre-cell">
+                <mat-icon>person</mat-icon>
+                <span>{{ entree.membre?.prenom }} {{ entree.membre?.nom }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let entree">
+              {{ entree.typeContribution?.nom || entree.libelle }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="caisse">
+            <th mat-header-cell *matHeaderCellDef>Caisse</th>
+            <td mat-cell *matCellDef="let entree">
+              <span class="caisse-badge" [style.background-color]="entree.caisse?.couleur">
+                {{ entree.caisse?.nom }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="montant">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <td mat-cell *matCellDef="let entree">
+              <span class="montant entree">+{{ formatMontant(entree.montant) }}</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="statut">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let entree">
+              <span class="status-badge" [class]="entree.statut.toLowerCase()">
+                <mat-icon>{{ entree.statut === 'VALIDE' ? 'check_circle' : 'schedule' }}</mat-icon>
+                {{ entree.statut }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[5, 10]" showFirstLastButtons></mat-paginator>
+      </div>
+
+      <!-- État vide -->
+      <div class="empty-history" *ngIf="dernieresEntrees.length === 0">
+        <mat-icon>inbox</mat-icon>
+        <p>Aucune entrée enregistrée pour cet exercice</p>
+      </div>
+    </div>
+
+  </div>
+</div>

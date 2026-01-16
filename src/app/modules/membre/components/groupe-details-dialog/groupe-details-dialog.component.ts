@@ -30,6 +30,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 })
 export class GroupeDetailsDialogComponent implements OnInit {
  isResponsable: boolean = false;
+ isCandidat: boolean = false;
   constructor(
     public dialogRef: MatDialogRef<GroupeDetailsDialogComponent>,
     private router: Router, 
@@ -51,8 +52,8 @@ export class GroupeDetailsDialogComponent implements OnInit {
   }
 
    ngOnInit(): void {
-     console.log(this.data.groupe)
     this.isResponsable = this.authService.isResponsable();
+    this.isCandidat = this.authService.isCandidat();
   }
 
    /**

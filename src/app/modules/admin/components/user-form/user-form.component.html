@@ -134,16 +134,15 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Email</mat-label>
-          <input matInput type="email" [(ngModel)]="newUser.email" required>
+          <input matInput type="email" [(ngModel)]="newUser.email">
           <mat-icon matPrefix>email</mat-icon>
-          <mat-error *ngIf="!newUser.email">Requis</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Mot de passe</mat-label>
           <input matInput [type]="hidePassword ? 'password' : 'text'" [(ngModel)]="newUser.motDePasse" required>
           <mat-icon matPrefix>lock</mat-icon>
-          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
             <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           <mat-error *ngIf="!newUser.motDePasse">Requis</mat-error>
@@ -157,13 +156,13 @@
             <mat-option value="MEMBRE">Membre</mat-option>
           </mat-select>
           <mat-icon matPrefix>admin_panel_settings</mat-icon>
-          <mat-error *ngIf="!newUser.roles">Requis</mat-error>
+          <mat-error *ngIf="selectedRolesArray.length === 0">Requis</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Groupe</mat-label>
           <mat-select [(ngModel)]="newUser.groupe">
-            <mat-option [value]="0">Aucun groupe</mat-option>
+            <mat-option [value]="null">Aucun groupe</mat-option>
             <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
           </mat-select>
           <mat-icon matPrefix>groups</mat-icon>
@@ -215,7 +214,7 @@
             </div>
             <div class="groupe-details">
               <h3 class="groupe-nom">{{ user.username }}</h3>
-              <p class="groupe-discipline">{{ user.email }}</p>
+              <p class="groupe-discipline">{{ user.email || 'Pas d\'email' }}</p>
             </div>
           </div>
           <div class="statut-chip" [class.active]="user.active" [class.inactive]="!user.active">
@@ -224,16 +223,18 @@
           </div>
         </div>
 
+        <!-- Mode affichage -->
         <div class="demande-content" *ngIf="!editingRows[i]">
           <div class="info-row">
             <mat-icon>admin_panel_settings</mat-icon>
             <div class="role-chips">
               <span class="role-chip" *ngFor="let role of getRolesArray(user.roles)">{{ role }}</span>
+              <span class="role-chip empty" *ngIf="getRolesArray(user.roles).length === 0">Aucun rôle</span>
             </div>
           </div>
           <div class="info-row">
             <mat-icon>groups</mat-icon>
-            <span>{{ getGroupeName(user.membre) }}</span>
+            <span>{{ getGroupeName(user) }}</span>
           </div>
         </div>
 
@@ -243,21 +244,31 @@
             <mat-label>Nom d'utilisateur</mat-label>
             <input matInput [(ngModel)]="editUser.username" required>
           </mat-form-field>
+          
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput type="email" [(ngModel)]="editUser.email" required>
+            <input matInput type="email" [(ngModel)]="editUser.email">
           </mat-form-field>
+          
+          <!-- ✅ Select multiple pour les rôles en édition -->
           <mat-form-field appearance="outline">
             <mat-label>Rôles</mat-label>
-            <input matInput [(ngModel)]="editUser.roles" required>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Groupe</mat-label>
-            <mat-select [(ngModel)]="editUser.membre">
-              <mat-option [value]="0">Aucun groupe</mat-option>
-              <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+            <mat-select [(ngModel)]="editSelectedRolesArray" multiple required (selectionChange)="onEditRoleSelectionChange()">
+              <mat-option value="ADMIN">Administrateur</mat-option>
+              <mat-option value="RESPONSABLE">Responsable</mat-option>
+              <mat-option value="MEMBRE">Membre</mat-option>
             </mat-select>
           </mat-form-field>
+          
+          <!-- ✅ Select pour le groupe en édition -->
+          <mat-form-field appearance="outline">
+            <mat-label>Groupe</mat-label>
+            <mat-select [(ngModel)]="editUser.groupe" [compareWith]="compareGroupe">
+              <mat-option [value]="null">Aucun groupe</mat-option>
+              <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          
           <mat-checkbox [(ngModel)]="editUser.active" color="primary">Actif</mat-checkbox>
         </div>
 
@@ -296,7 +307,7 @@
     <!-- Vue Liste (tableau) -->
     <div class="users-table" *ngIf="viewMode === 'list' && filteredUsers.length > 0">
       <div class="table-wrapper">
-        <table mat-table [dataSource]="dataSource" matSort>
+        <table mat-table [dataSource]="filteredUsers" matSort>
           <!-- Username -->
           <ng-container matColumnDef="username">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Utilisateur</th>
@@ -308,7 +319,7 @@
                 </div>
                 <div class="user-info">
                   <span class="username">{{ user.username }}</span>
-                  <span class="email">{{ user.email }}</span>
+                  <span class="email">{{ user.email || '-' }}</span>
                 </div>
               </div>
               <mat-form-field *ngIf="editingRows[i]" appearance="outline">
@@ -317,13 +328,13 @@
             </td>
           </ng-container>
 
-          <!-- Email (masqué en mobile, affiché dans user-cell) -->
+          <!-- Email -->
           <ng-container matColumnDef="email">
             <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">Email</th>
             <td mat-cell *matCellDef="let user; let i = index" class="hide-mobile">
-              <span *ngIf="!editingRows[i]">{{ user.email }}</span>
+              <span *ngIf="!editingRows[i]">{{ user.email || '-' }}</span>
               <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                <input matInput type="email" [(ngModel)]="editUser.email" required>
+                <input matInput type="email" [(ngModel)]="editUser.email">
               </mat-form-field>
             </td>
           </ng-container>
@@ -332,11 +343,16 @@
           <ng-container matColumnDef="roles">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Rôles</th>
             <td mat-cell *matCellDef="let user; let i = index">
+              <!-- ✅ Affichage corrigé des rôles -->
               <div class="role-chips" *ngIf="!editingRows[i]">
-                <span class="role-chip" *ngFor="let role of getRolesArray(user.roles?.nom || user.roles)">{{ role }}</span>
+                <span class="role-chip" *ngFor="let role of getRolesArray(user.roles)">{{ role }}</span>
               </div>
               <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                <input matInput [(ngModel)]="editUser.roles" required>
+                <mat-select [(ngModel)]="editSelectedRolesArray" multiple (selectionChange)="onEditRoleSelectionChange()">
+                  <mat-option value="ADMIN">Admin</mat-option>
+                  <mat-option value="RESPONSABLE">Responsable</mat-option>
+                  <mat-option value="MEMBRE">Membre</mat-option>
+                </mat-select>
               </mat-form-field>
             </td>
           </ng-container>
@@ -345,11 +361,12 @@
           <ng-container matColumnDef="groupe">
             <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">Groupe</th>
             <td mat-cell *matCellDef="let user; let i = index" class="hide-mobile">
-              <span *ngIf="!editingRows[i]" class="groupe-name">{{ getGroupeName(user.membre) }}</span>
+              <!-- ✅ Affichage corrigé du groupe -->
+              <span *ngIf="!editingRows[i]" class="groupe-name">{{ getGroupeName(user) }}</span>
               <mat-form-field *ngIf="editingRows[i]" appearance="outline">
-                <mat-select [(ngModel)]="editUser.membre">
-                  <mat-option [value]="0">Aucun</mat-option>
-                  <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
+                <mat-select [(ngModel)]="editUser.groupe" [compareWith]="compareGroupe">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
                 </mat-select>
               </mat-form-field>
             </td>
@@ -399,9 +416,9 @@
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          <tr mat-row *matRowDef="let row; columns: displayedColumns; let i = index" 
               [class.inactive-row]="!row.active"
-              [class.editing-row]="editingRows[dataSource.data.indexOf(row)]"></tr>
+              [class.editing-row]="editingRows[i]"></tr>
         </table>
       </div>
       <mat-paginator [pageSizeOptions]="[10, 25, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>

@@ -1,0 +1,264 @@
+<!-- caisses.component.html -->
+<div class="caisses-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon class="header-icon">account_balance</mat-icon>
+            Gestion des Caisses
+          </h1>
+          <p class="page-subtitle">Vue d'ensemble de toutes les caisses de l'exercice</p>
+        </div>
+      </div>
+
+      <div class="header-stats" *ngIf="caisses.length > 0">
+        <div class="stat-item">
+          <span class="stat-number">{{ caisses.length }}</span>
+          <span class="stat-label">Caisses</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number solde">{{ formatMontant(soldeTotal) }}</span>
+          <span class="stat-label">Solde Total</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="60"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>Chargement des caisses...</h3>
+      <p>Veuillez patienter</p>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div *ngIf="!isLoading && exerciceActif" class="content">
+
+    <!-- Carte résumé global -->
+    <div class="summary-card">
+      <div class="summary-header">
+        <div class="summary-icon">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="summary-info">
+          <span class="summary-label">Solde Global - {{ exerciceActif.libelle }}</span>
+          <span class="summary-value">{{ formatMontant(soldeTotal) }}</span>
+        </div>
+        <button mat-icon-button (click)="refreshData()" matTooltip="Actualiser">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+
+      <div class="summary-stats">
+        <div class="stat-box entrees">
+          <mat-icon>trending_up</mat-icon>
+          <div class="stat-content">
+            <span class="stat-label">Total Entrées</span>
+            <span class="stat-value">{{ formatMontant(totalEntrees) }}</span>
+          </div>
+        </div>
+        <div class="stat-box sorties">
+          <mat-icon>trending_down</mat-icon>
+          <div class="stat-content">
+            <span class="stat-label">Total Sorties</span>
+            <span class="stat-value">{{ formatMontant(totalSorties) }}</span>
+          </div>
+        </div>
+        <div class="stat-box balance">
+          <mat-icon>swap_vert</mat-icon>
+          <div class="stat-content">
+            <span class="stat-label">Balance</span>
+            <span class="stat-value" [class.positive]="totalEntrees > totalSorties" [class.negative]="totalSorties > totalEntrees">
+              {{ formatMontant(totalEntrees - totalSorties) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <button mat-raised-button color="primary" routerLink="/responsable/finances/entree">
+        <mat-icon>add_circle</mat-icon>
+        Nouvelle Entrée
+      </button>
+      <button mat-raised-button color="warn" routerLink="/responsable/finances/sortie">
+        <mat-icon>remove_circle</mat-icon>
+        Nouvelle Sortie
+      </button>
+      <button mat-stroked-button routerLink="/responsable/finances/mouvements">
+        <mat-icon>history</mat-icon>
+        Historique
+      </button>
+    </div>
+
+    <!-- Grille des caisses -->
+    <div class="caisses-section">
+      <div class="section-header">
+        <div class="header-icon-wrapper">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>Détail des Caisses</h2>
+          <span class="badge">{{ caisses.length }}</span>
+        </div>
+      </div>
+
+      <div class="caisses-grid" *ngIf="caisses.length > 0">
+        <div class="caisse-card" 
+             *ngFor="let caisse of caisses"
+             [style.--caisse-color]="caisse.couleur"
+             [class.alerte]="isEnAlerte(caisse)"
+             [class.objectif-atteint]="isObjectifAtteint(caisse)">
+          
+          <!-- Header de la carte -->
+          <div class="caisse-header">
+            <div class="caisse-icon" [style.background-color]="caisse.couleur">
+              <mat-icon>{{ caisse.icone || 'account_balance_wallet' }}</mat-icon>
+            </div>
+            <div class="caisse-title">
+              <h3>{{ caisse.nom }}</h3>
+              <span class="caisse-type">{{ getTypeLibelle(caisse.type) }}</span>
+            </div>
+            <button mat-icon-button [matMenuTriggerFor]="caisseMenu" class="caisse-menu-btn">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #caisseMenu="matMenu">
+              <button mat-menu-item [routerLink]="['/responsable/finances/caisses', caisse.id]">
+                <mat-icon>visibility</mat-icon>
+                <span>Voir les détails</span>
+              </button>
+              <button mat-menu-item [routerLink]="['/responsable/finances/entree']" [queryParams]="{caisseId: caisse.id}">
+                <mat-icon>add_circle</mat-icon>
+                <span>Nouvelle entrée</span>
+              </button>
+              <button mat-menu-item [routerLink]="['/responsable/finances/sortie']" [queryParams]="{caisseId: caisse.id}">
+                <mat-icon>remove_circle</mat-icon>
+                <span>Nouvelle sortie</span>
+              </button>
+            </mat-menu>
+          </div>
+
+          <!-- Corps de la carte -->
+          <div class="caisse-body">
+            <!-- Solde actuel -->
+            <div class="caisse-solde">
+              <span class="solde-label">Solde actuel</span>
+              <span class="solde-amount" [class.negative]="caisse.soldeActuel < 0">
+                {{ formatMontant(caisse.soldeActuel) }}
+              </span>
+            </div>
+
+            <!-- Alerte seuil minimum -->
+            <div class="alerte-box" *ngIf="isEnAlerte(caisse)">
+              <mat-icon>warning</mat-icon>
+              <span>Solde en dessous du seuil ({{ formatMontant(caisse.seuilAlerteMin) }})</span>
+            </div>
+
+            <!-- Objectif atteint -->
+            <div class="objectif-box" *ngIf="isObjectifAtteint(caisse)">
+              <mat-icon>emoji_events</mat-icon>
+              <span>Objectif atteint !</span>
+            </div>
+
+            <!-- Barre de progression -->
+            <div class="caisse-progress" *ngIf="soldeTotal > 0">
+              <div class="progress-bar">
+                <div class="progress-fill" 
+                     [style.width.%]="getProgressPercentage(caisse)"
+                     [style.background-color]="caisse.couleur">
+                </div>
+              </div>
+              <span class="progress-label">{{ getProgressPercentage(caisse) | number:'1.1-1' }}% du total</span>
+            </div>
+
+            <!-- Objectif si défini -->
+            <div class="objectif-progress" *ngIf="getObjectifPercentage(caisse) !== null">
+              <div class="progress-header">
+                <span class="progress-title">Objectif</span>
+                <span class="progress-value">{{ getObjectifPercentage(caisse) | number:'1.0-0' }}%</span>
+              </div>
+              <div class="progress-bar objectif">
+                <div class="progress-fill" 
+                     [style.width.%]="getObjectifPercentage(caisse)"
+                     [class.complete]="isObjectifAtteint(caisse)">
+                </div>
+              </div>
+              <span class="objectif-label">{{ formatMontant(caisse.soldeActuel) }} / {{ formatMontant(caisse.seuilAlerteMax) }}</span>
+            </div>
+
+            <!-- Détails entrées/sorties -->
+            <div class="caisse-details">
+              <div class="detail-item entree">
+                <mat-icon>arrow_upward</mat-icon>
+                <div class="detail-content">
+                  <span class="detail-label">Entrées</span>
+                  <span class="detail-value">{{ formatMontant(caisse.totalEntrees) }}</span>
+                </div>
+              </div>
+              <div class="detail-item sortie">
+                <mat-icon>arrow_downward</mat-icon>
+                <div class="detail-content">
+                  <span class="detail-label">Sorties</span>
+                  <span class="detail-value">{{ formatMontant(caisse.totalSorties) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Solde reporté -->
+            <div class="solde-reporte" *ngIf="caisse.soldeReporte > 0">
+              <mat-icon>history</mat-icon>
+              <span>Report: {{ formatMontant(caisse.soldeReporte) }}</span>
+            </div>
+          </div>
+
+          <!-- Footer de la carte -->
+          <div class="caisse-footer">
+            <button mat-button color="primary" [routerLink]="['/responsable/finances/caisses', caisse.id]">
+              <mat-icon>visibility</mat-icon>
+              Voir détails
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- État vide -->
+      <div class="empty-state" *ngIf="caisses.length === 0">
+        <div class="empty-illustration">
+          <mat-icon class="empty-icon">account_balance</mat-icon>
+        </div>
+        <div class="empty-content">
+          <h3 class="empty-title">Aucune caisse configurée</h3>
+          <p class="empty-text">Les caisses seront créées automatiquement lors de la configuration de l'exercice.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Pas d'exercice actif -->
+  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
+    <div class="empty-illustration">
+      <mat-icon class="empty-icon">event_busy</mat-icon>
+    </div>
+    <div class="empty-content">
+      <h3 class="empty-title">Aucun exercice actif</h3>
+      <p class="empty-text">Créez un exercice comptable pour gérer vos caisses.</p>
+      <div class="empty-actions">
+        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
+          <mat-icon>add</mat-icon>
+          Créer un exercice
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

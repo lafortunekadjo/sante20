@@ -1,0 +1,50 @@
+<!-- qr-generator.component.html -->
+<div class="qr-generator-container">
+  <mat-card class="generator-card">
+    <mat-card-header>
+      <mat-card-title>Générateur de QR Code</mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <form (ngSubmit)="generateQR()" #qrForm="ngForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nom/Label du QR Code</mat-label>
+          <input matInput [(ngModel)]="label" name="label" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Contenu (URL, Texte, etc.)</mat-label>
+          <textarea matInput [(ngModel)]="content" name="content" 
+                    rows="3" required></textarea>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" 
+                [disabled]="!qrForm.form.valid || loading">
+          <mat-icon>qr_code</mat-icon>
+          Générer QR Code
+        </button>
+      </form>
+
+      <div class="qr-result" *ngIf="qrCodeImage">
+        <img [src]="qrCodeImage" alt="QR Code">
+        
+        <div class="qr-info" *ngIf="generatedQRCode">
+          <p><strong>Label:</strong> {{ generatedQRCode.label }}</p>
+          <p><strong>URL de tracking:</strong> {{ generatedQRCode.shortUrl }}</p>
+          <p><strong>Scans:</strong> {{ generatedQRCode.scanCount }}</p>
+        </div>
+
+        <div class="actions">
+          <button mat-button color="primary" (click)="downloadQRCode()">
+            <mat-icon>download</mat-icon>
+            Télécharger
+          </button>
+          <button mat-button color="accent" (click)="reset()">
+            <mat-icon>refresh</mat-icon>
+            Nouveau
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

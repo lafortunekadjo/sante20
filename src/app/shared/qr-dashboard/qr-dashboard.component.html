@@ -1,0 +1,142 @@
+<!-- qr-dashboard.component.html -->
+<div class="qr-dashboard-container">
+  <!-- Liste des QR Codes -->
+  <mat-card class="qr-list-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>qr_code_2</mat-icon>
+        Mes QR Codes
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-table [dataSource]="qrCodes" class="qr-table">
+        <!-- Label Column -->
+        <ng-container matColumnDef="label">
+          <mat-header-cell *matHeaderCellDef>Label</mat-header-cell>
+          <mat-cell *matCellDef="let qr">{{ qr.label }}</mat-cell>
+        </ng-container>
+
+        <!-- Content Column -->
+        <ng-container matColumnDef="content">
+          <mat-header-cell *matHeaderCellDef>Contenu</mat-header-cell>
+          <mat-cell *matCellDef="let qr" class="content-cell">
+            <span [matTooltip]="qr.content">
+              {{ qr.content | slice:0:30 }}{{ qr.content.length > 30 ? '...' : '' }}
+            </span>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Created At Column -->
+        <ng-container matColumnDef="createdAt">
+          <mat-header-cell *matHeaderCellDef>Date de création</mat-header-cell>
+          <mat-cell *matCellDef="let qr">
+            {{ qr.createdAt | date:'dd/MM/yyyy HH:mm' }}
+          </mat-cell>
+        </ng-container>
+
+        <!-- Scan Count Column -->
+        <ng-container matColumnDef="scanCount">
+          <mat-header-cell *matHeaderCellDef>Scans</mat-header-cell>
+          <mat-cell *matCellDef="let qr">
+            <span class="scan-count">{{ qr.scanCount }}</span>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+          <mat-cell *matCellDef="let qr">
+            <button mat-icon-button color="primary" 
+                    (click)="viewStats(qr)" 
+                    matTooltip="Voir les statistiques">
+              <mat-icon>bar_chart</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" 
+                    [cdkCopyToClipboard]="qr.shortUrl"
+                    matTooltip="Copier l'URL de tracking">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;" 
+                 [class.selected-row]="selectedQRCode?.id === row.id"></mat-row>
+      </mat-table>
+
+      <div *ngIf="qrCodes.length === 0" class="empty-state">
+        <mat-icon>qr_code_scanner</mat-icon>
+        <p>Aucun QR Code créé pour le moment</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Statistiques détaillées -->
+  <mat-card class="stats-card" *ngIf="selectedQRCode">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>analytics</mat-icon>
+        Statistiques - {{ selectedQRCode.label }}
+      </mat-card-title>
+      <button mat-icon-button (click)="selectedQRCode = null" class="close-button">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Infos générales -->
+      <div class="stats-summary">
+        <div class="stat-item">
+          <mat-icon>visibility</mat-icon>
+          <div class="stat-content">
+            <span class="stat-value">{{ selectedQRCode.scanCount }}</span>
+            <span class="stat-label">Scans totaux</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <mat-icon>link</mat-icon>
+          <div class="stat-content">
+            <span class="stat-value short-url">{{ selectedQRCode.shortUrl }}</span>
+            <span class="stat-label">URL de tracking</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphique -->
+      <div class="chart-container" *ngIf="lineChartData.labels!.length > 0">
+        <h3>Évolution des scans</h3>
+        <canvas baseChart
+                [data]="lineChartData"
+                [options]="lineChartOptions"
+                [type]="'line'"
+                style="height: 300px">
+        </canvas>
+      </div>
+
+      <!-- Liste des scans récents -->
+      <div class="recent-scans" *ngIf="scans.length > 0">
+        <h3>Scans récents</h3>
+        <mat-list>
+          <mat-list-item *ngFor="let scan of scans.slice(0, 5)">
+            <mat-icon matListItemIcon>
+              {{ getDeviceIcon(scan.userAgent) }}
+            </mat-icon>
+            <div matListItemTitle>
+              {{ scan.scannedAt | date:'dd/MM/yyyy HH:mm:ss' }}
+            </div>
+            <!-- <div matListItemLine>
+              {{ scan.city || 'Localisation inconnue' }}, 
+              {{ scan.country || 'Pays inconnu' }}
+            </div> -->
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <div *ngIf="scans.length === 0" class="no-scans">
+        <mat-icon>hourglass_empty</mat-icon>
+        <p>Aucun scan enregistré pour ce QR Code</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

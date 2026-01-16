@@ -181,8 +181,8 @@ export class GeneralService {
 
   //depenses
 
-   getAllTypesDepenses(): Observable<TypeDepense[]> {
-    return this.http.get<TypeDepense[]>(this.typeSortieUrl);
+   getAllTypesDepenses(): Observable<any[]> {
+    return this.http.get<any[]>(this.typeSortieUrl);
   }
 
   createTypeDepense(typeDepense: TypeDepense): Observable<TypeDepense> {

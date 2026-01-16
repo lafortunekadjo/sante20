@@ -28,7 +28,7 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Match } from '../../../../core/models/match.model';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas'
 
 @Component({
   selector: 'app-presence-form',
@@ -56,7 +56,7 @@ export class PresenceFormComponent implements OnInit {
 
   dataSource = new MatTableDataSource<Presence>([]);
   isLoading = true;
-  
+  isGeneratingPdf = false;
   match: Match | null = null;
   groupeActif: Groupe | null = null;
   groupeAdverse: Groupe | null = null;
@@ -216,8 +216,8 @@ export class PresenceFormComponent implements OnInit {
         this.assignDefaultTeams();
         
         const presentMemberIds = presences
-          .filter(p => p.membre?.id)
-          .map(p => p.membre!.id);
+          .filter(p => p?.membre?.id)
+          .map(p => p?.membre!.id);
         
         this.membresNonPresents = this.membres
           .filter(m => !presentMemberIds.includes(m.id))
@@ -365,7 +365,18 @@ export class PresenceFormComponent implements OnInit {
       equipeMatch: this.getDefaultTeamForNewPlayer(membre, false),
       cartonsJaunes: 0,
       cartonsRouges: 0,
-      nomOccasionnel: ''
+      nomOccasionnel: '',
+      estGardien: false,
+      points: 0,
+      paniers2pts: 0,
+      paniers3pts: 0,
+      lancersFrancs: 0,
+      rebonds: 0,
+      interceptions: 0,
+      contres: 0,
+      fautes: 0,
+      jets7m: 0,
+      deuxMinutes: 0
     };
 
     this.dataSource.data = [...this.dataSource.data, newPresence];
@@ -406,7 +417,18 @@ export class PresenceFormComponent implements OnInit {
       equipeMatch: this.getDefaultTeamForNewPlayer(membre, true),
       cartonsJaunes: 0,
       cartonsRouges: 0,
-      nomOccasionnel: ''
+      nomOccasionnel: '',
+      estGardien: false,
+      points: 0,
+      paniers2pts: 0,
+      paniers3pts: 0,
+      lancersFrancs: 0,
+      rebonds: 0,
+      interceptions: 0,
+      contres: 0,
+      fautes: 0,
+      jets7m: 0,
+      deuxMinutes: 0
     };
 
     this.dataSource.data = [...this.dataSource.data, newPresence];
@@ -446,7 +468,18 @@ export class PresenceFormComponent implements OnInit {
       estHommeDuMatchEq: false,
       equipeMatch: equipe,
       cartonsJaunes: 0,
-      cartonsRouges: 0
+      cartonsRouges: 0,
+      estGardien: false,
+      points: 0,
+      paniers2pts: 0,
+      paniers3pts: 0,
+      lancersFrancs: 0,
+      rebonds: 0,
+      interceptions: 0,
+      contres: 0,
+      fautes: 0,
+      jets7m: 0,
+      deuxMinutes: 0
     };
 
     this.dataSource.data = [...this.dataSource.data, newPresence];
@@ -819,108 +852,368 @@ export class PresenceFormComponent implements OnInit {
     }
   }
 
-  async downloadMatchSheetAsPdf(): Promise<void> {
-    const element = document.getElementById('print-section');
-    if (!element) {
-      this.showSnackbar('Section non trouvée', 'error');
-      return;
-    }
+async downloadMatchSheetAsPdf(): Promise<void> {
+  const element = document.getElementById('print-section');
+  if (!element) return;
 
-    try {
-      element.style.display = 'block';
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
-      element.style.width = '210mm';
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+  this.isLoading = true; // Activer un spinner pour bloquer les clics multiples
+  
+  try {
+    // 1. On prépare l'élément
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.width = '210mm';
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
+    // On attend un peu pour laisser le processeur respirer avant le gros calcul
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      element.style.display = 'none';
-      element.style.position = '';
-      element.style.left = '';
-      element.style.width = '';
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * ratio, canvas.height * ratio);
-
-      const dateMatch = this.match?.dateMatch 
-        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
-        : 'match';
-      pdf.save(`feuille-match-${dateMatch}.pdf`);
-      this.showSnackbar('PDF téléchargé !', 'success');
-
-    } catch (error) {
-      console.error('Erreur PDF:', error);
-      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
-      element.style.display = 'none';
-    }
-  }
-
-  async downloadPresenceSheetAsPdf(): Promise<void> {
-    const element = document.getElementById('print-presence-section');
-    if (!element) {
-      this.showSnackbar('Section non trouvée', 'error');
-      return;
-    }
-
-    try {
-      element.style.display = 'block';
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
-      element.style.width = '210mm';
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-
-      element.style.display = 'none';
-      element.style.position = '';
-      element.style.left = '';
-      element.style.width = '';
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * ratio, canvas.height * ratio);
-
-      const dateMatch = this.match?.dateMatch 
-        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
-        : 'match';
-      pdf.save(`fiche-presence-${dateMatch}.pdf`);
-      this.showSnackbar('PDF téléchargé !', 'success');
-
-    } catch (error) {
-      console.error('Erreur PDF:', error);
-      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
-      element.style.display = 'none';
-    }
-  }
-
-  private showSnackbar(message: string, type: 'success' | 'error'): void {
-    this.snackBar.open(message, '✕', {
-      duration: 3000,
-      horizontalPosition: 'end',
-      verticalPosition: 'top',
-      panelClass: type === 'success' ? 'snackbar-success' : 'snackbar-error'
+    const canvas = await html2canvas(element, {
+      scale: 2, // 2 est le compromis idéal. 3 est trop lourd pour les mobiles.
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
     });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.7); // JPEG à 70% est BEAUCOUP plus léger que PNG
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true // Active la compression interne du PDF
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pdfWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+    
+    pdf.save(`Match_${Date.now()}.pdf`);
+
+    // 2. NETTOYAGE CRUCIAL POUR LA MÉMOIRE
+    element.style.display = 'none';
+    canvas.width = 0;
+    canvas.height = 0; // Libère la mémoire du canvas immédiatement
+
+  } catch (error) {
+    console.error('Erreur PDF:', error);
+  } finally {
+    this.isLoading = false;
   }
+}
+
+// ===== HELPER: Générer tableau d'équipe =====
+private generateTeamTablePdf(
+  doc: jsPDF, 
+  equipeName: string, 
+  x: number, 
+  y: number, 
+  width: number, 
+  color: number[],
+  isTeam1: boolean
+): void {
+  const players = this.getPlayersAJoue(equipeName);
+
+  // Header coloré
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.roundedRect(x, y, width, 9, 2, 2, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(this.truncateText(equipeName, 15), x + 5, y + 6);
+  doc.setFontSize(8);
+  doc.text(`${players.length}`, x + width - 10, y + 6);
+
+  // Capitaine
+  y += 10;
+  doc.setFillColor(250, 250, 250);
+  doc.rect(x, y, width, 6, 'F');
+  doc.setTextColor(100, 100, 100);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Cap: ' + this.truncateText(this.getCapitaine(equipeName), 22), x + 2, y + 4);
+
+  // En-têtes colonnes
+  y += 7;
+  doc.setFillColor(245, 245, 245);
+  doc.rect(x, y, width, 5, 'F');
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(80, 80, 80);
+  
+  const cols = [
+    { label: '#', width: 6 },
+    { label: 'Joueur', width: width - 48 },
+    { label: 'B', width: 7 },
+    { label: 'P', width: 7 },
+    { label: 'PD', width: 7 },
+    { label: 'CSC', width: 7 },
+    { label: 'CJ', width: 7 },
+    { label: 'CR', width: 7 }
+  ];
+  
+  let colX = x;
+  cols.forEach(col => {
+    doc.text(col.label, colX + col.width / 2, y + 3.5, { align: 'center' });
+    colX += col.width;
+  });
+
+  // Lignes des joueurs
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+
+  players.forEach((p, index) => {
+    const rowY = y + (index * 6);
+    
+    // Fond alterné ou spécial
+    if (p.estCapitaine) {
+      doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+    } else if (p.estHommeDuMatch) {
+      doc.setFillColor(255, 248, 225);
+    } else if (index % 2 === 0) {
+      doc.setFillColor(252, 252, 252);
+    } else {
+      doc.setFillColor(255, 255, 255);
+    }
+    doc.rect(x, rowY, width, 6, 'F');
+
+    colX = x;
+    
+    // #
+    doc.setTextColor(150, 150, 150);
+    doc.text(`${index + 1}`, colX + 3, rowY + 4, { align: 'center' });
+    colX += cols[0].width;
+    
+    // Nom
+    doc.setTextColor(51, 51, 51);
+    let name = this.truncateText(this.getMembreNameAbbreviated(p), 16);
+    if (p.estCapitaine) name += ' (C)';
+    if (p.estHommeDuMatchEq) name += ' ★';
+    if (p.estHommeDuMatch) name += ' ♛';
+    doc.text(name, colX + 1, rowY + 4);
+    colX += cols[1].width;
+
+    // Stats
+    const stats = [
+      { value: p.buts || 0, color: color },
+      { value: p.penalti || 0, color: color },
+      { value: p.passes || 0, color: [67, 160, 71] },
+      { value: p.butsContreSonCamp || 0, color: [198, 40, 40] },
+      { value: p.cartonsJaunes || 0, color: [249, 168, 37] },
+      { value: p.cartonsRouges || 0, color: [198, 40, 40] }
+    ];
+
+    stats.forEach((stat, i) => {
+      if (stat.value > 0) {
+        doc.setTextColor(stat.color[0], stat.color[1], stat.color[2]);
+        doc.setFont('helvetica', 'bold');
+      } else {
+        doc.setTextColor(200, 200, 200);
+        doc.setFont('helvetica', 'normal');
+      }
+      doc.text(stat.value > 0 ? `${stat.value}` : '-', colX + cols[i + 2].width / 2, rowY + 4, { align: 'center' });
+      colX += cols[i + 2].width;
+    });
+  });
+
+  // Total
+  const totalY = y + (players.length * 6);
+  doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+  doc.rect(x, totalY, width, 6, 'F');
+  
+  // Ligne de séparation colorée
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.5);
+  doc.line(x, totalY, x + width, totalY);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text('TOTAL', x + cols[0].width + 10, totalY + 4);
+
+  colX = x + cols[0].width + cols[1].width;
+  const totals = [
+    this.getTotalButs(equipeName),
+    this.getTotalPenaltis(equipeName),
+    this.getTotalPasses(equipeName),
+    this.getTotalCSC(equipeName),
+    this.getTotalCartons(equipeName, 'JAUNES'),
+    this.getTotalCartons(equipeName, 'ROUGES')
+  ];
+  const totalColors = [color, color, [67, 160, 71], [198, 40, 40], [249, 168, 37], [198, 40, 40]];
+  
+  totals.forEach((t, i) => {
+    doc.setTextColor(totalColors[i][0], totalColors[i][1], totalColors[i][2]);
+    doc.text(`${t}`, colX + cols[i + 2].width / 2, totalY + 4, { align: 'center' });
+    colX += cols[i + 2].width;
+  });
+}
+
+// ===== FICHE DE PRÉSENCE =====
+async downloadPresenceSheetAsPdf(): Promise<void> {
+  if (this.isGeneratingPdf) return;
+  
+  this.isGeneratingPdf = true;
+  this.showSnackbar('Génération du PDF...', 'success');
+
+  setTimeout(() => {
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      let y = margin;
+
+      // ===== HEADER VERT =====
+      doc.setFillColor(67, 160, 71);
+      doc.rect(0, 0, pageWidth, 28, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FICHE DE PRÉSENCE', pageWidth / 2, 12, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(this.groupeActif?.nom || '', pageWidth / 2, 19, { align: 'center' });
+      
+      const matchDate = this.match?.dateMatch 
+        ? new Date(this.match.dateMatch).toLocaleDateString('fr-FR', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+          })
+        : '';
+      doc.setFontSize(8);
+      doc.text(`${this.match?.typeMatch || ''} - ${matchDate}`, pageWidth / 2, 25, { align: 'center' });
+
+      y = 35;
+
+      // ===== OFFICIELS =====
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      const arbitre = this.getArbitrePrincipal() || '____________';
+      const assistant = this.getArbitreAssistant() || '____________';
+      const rapporteur = this.getRapporteur() || '____________';
+      doc.text(`Arbitre: ${arbitre}   |   Assistant: ${assistant}   |   Rapporteur: ${rapporteur}`, pageWidth / 2, y, { align: 'center' });
+
+      y += 8;
+
+      // ===== TABLEAU DE PRÉSENCE avec autoTable =====
+      const tableData: any[][] = [];
+      
+      this.dataSource.data.forEach((p, i) => {
+        tableData.push([
+          (i + 1).toString(),
+          this.getMembreName(p),
+          p.equipeMatch || '',
+          '' // Signature vide
+        ]);
+      });
+
+      // Ajouter des lignes vides
+      for (let i = 0; i < 5; i++) {
+        tableData.push(['', '', '', '']);
+      }
+
+      (doc as any).autoTable({
+        startY: y,
+        head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [67, 160, 71],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center',
+          cellPadding: 3
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center', fontSize: 9 },
+          1: { cellWidth: 75, fontSize: 9 },
+          2: { cellWidth: 40, halign: 'center', fontSize: 8 },
+          3: { cellWidth: 50 }
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 2,
+          minCellHeight: 8
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        didParseCell: (data: any) => {
+          // Colorer les badges équipe
+          if (data.column.index === 2 && data.cell.section === 'body' && data.cell.raw) {
+            if (data.cell.raw === this.equipeNames[0]) {
+              data.cell.styles.textColor = [25, 118, 210];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (data.cell.raw === this.equipeNames[1]) {
+              data.cell.styles.textColor = [211, 47, 47];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        },
+        margin: { left: margin, right: margin }
+      });
+
+      // ===== FOOTER =====
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(51, 51, 51);
+      doc.text(`Total: `, margin, finalY);
+      doc.setTextColor(67, 160, 71);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${this.dataSource.data.length}`, margin + 12, finalY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 51, 51);
+      doc.text(' inscrits', margin + 18, finalY);
+      
+      // Compteurs par équipe
+      doc.setTextColor(25, 118, 210);
+      doc.text(`${this.equipeNames[0]}: ${this.equipe1Count}`, pageWidth / 2 - 25, finalY);
+      
+      doc.setTextColor(211, 47, 47);
+      doc.text(`${this.equipeNames[1]}: ${this.equipe2Count}`, pageWidth / 2 + 25, finalY);
+      
+      doc.setTextColor(67, 160, 71);
+      doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth - margin, finalY, { align: 'right' });
+
+      // ===== TÉLÉCHARGEMENT =====
+      const dateFile = this.match?.dateMatch 
+        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+        : 'match';
+      doc.save(`fiche-presence-${this.groupeActif?.nom}-${dateFile}.pdf`);
+      
+      this.isGeneratingPdf = false;
+      this.showSnackbar('PDF téléchargé avec succès !', 'success');
+
+    } catch (error) {
+      console.error('Erreur génération PDF:', error);
+      this.isGeneratingPdf = false;
+      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
+    }
+  }, 50);
+}
+
+// ===== HELPER: Tronquer texte =====
+private truncateText(text: string, maxLength: number): string {
+  if (!text) return '';
+  return text.length > maxLength ? text.substring(0, maxLength - 2) + '..' : text;
+}
+
+private showSnackbar(message: string, type: 'success' | 'error'): void {
+  this.snackBar.open(message, '✕', {
+    duration: 3000,
+    horizontalPosition: 'end',
+    verticalPosition: 'top',
+    panelClass: type === 'success' ? 'snackbar-success' : 'snackbar-error'
+  });
+}
+
+ 
 }

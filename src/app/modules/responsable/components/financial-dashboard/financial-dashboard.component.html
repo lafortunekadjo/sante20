@@ -1,0 +1,287 @@
+<!-- financial-dashboard.component.html -->
+<div class="financial-dashboard-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon class="header-icon">account_balance</mat-icon>
+            {{ 'finances.dashboard.title' | translate }}
+          </h1>
+          <p class="page-subtitle">{{ 'finances.dashboard.subtitle' | translate }}</p>
+        </div>
+      </div>
+
+      <!-- Sélecteur d'exercice -->
+      <div class="exercice-selector" *ngIf="exercices.length > 0">
+        <mat-form-field appearance="outline" class="exercice-select">
+          <mat-label>Exercice</mat-label>
+          <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
+            <mat-option *ngFor="let ex of exercices" [value]="ex.id">
+              <div class="exercice-option">
+                <span class="exercice-label">{{ ex.libelle }}</span>
+                <span class="exercice-badge actif" *ngIf="ex.actif">Actif</span>
+                <span class="exercice-badge cloture" *ngIf="ex.cloture">Clôturé</span>
+              </div>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="60" color="accent"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>Chargement des données financières...</h3>
+      <p>Veuillez patienter</p>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div *ngIf="!isLoading && soldeGlobal" class="content">
+
+    <!-- Carte Solde Global -->
+    <div class="solde-global-card">
+      <div class="solde-header">
+        <div class="solde-icon-wrapper">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="solde-info">
+          <span class="solde-label">Solde Total en Caisse</span>
+          <span class="solde-value">{{ formatMontant(soldeGlobal.soldeTotal) }}</span>
+        </div>
+        <button mat-icon-button [matMenuTriggerFor]="menuActions" class="actions-btn">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menuActions="matMenu">
+          <button mat-menu-item routerLink="/finances/bilan">
+            <mat-icon>assessment</mat-icon>
+            <span>Voir le bilan</span>
+          </button>
+          <button mat-menu-item routerLink="/finances/mouvements">
+            <mat-icon>history</mat-icon>
+            <span>Historique complet</span>
+          </button>
+        </mat-menu>
+      </div>
+
+      <div class="solde-stats">
+        <div class="stat-card entrees">
+          <div class="stat-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Entrées</span>
+            <span class="stat-value">{{ formatMontant(soldeGlobal.totalEntrees) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card sorties">
+          <div class="stat-icon">
+            <mat-icon>trending_down</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Sorties</span>
+            <span class="stat-value">{{ formatMontant(soldeGlobal.totalSorties) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card caisses">
+          <div class="stat-icon">
+            <mat-icon>account_balance</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Nombre de Caisses</span>
+            <span class="stat-value">{{ soldeGlobal.nombreCaisses }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <button mat-raised-button color="primary" routerLink="/finances/entree" class="action-btn">
+        <mat-icon>add_circle</mat-icon>
+        <span>Nouvelle Entrée</span>
+      </button>
+      <button mat-raised-button color="warn" routerLink="/finances/sortie" class="action-btn">
+        <mat-icon>remove_circle</mat-icon>
+        <span>Nouvelle Sortie</span>
+      </button>
+      <button mat-stroked-button routerLink="/finances/cotisations" class="action-btn">
+        <mat-icon>payments</mat-icon>
+        <span>Cotisations</span>
+      </button>
+      <button mat-stroked-button routerLink="/finances/exercices" class="action-btn">
+        <mat-icon>calendar_today</mat-icon>
+        <span>Exercices</span>
+      </button>
+    </div>
+
+    <!-- Grille principale -->
+    <div class="dashboard-grid">
+
+      <!-- Cartes des caisses -->
+      <div class="caisses-section">
+        <div class="section-header">
+          <h2>
+            <mat-icon>account_balance</mat-icon>
+            Détail par Caisse
+          </h2>
+          <button mat-button color="primary" routerLink="/finances/caisses">
+            Voir tout <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="caisses-grid">
+          <div class="caisse-card" 
+               *ngFor="let caisse of soldeGlobal.detailCaisses"
+               [style.--caisse-color]="caisse.couleur">
+            <div class="caisse-header">
+              <div class="caisse-icon" [style.background-color]="caisse.couleur">
+                <mat-icon>{{ caisse.icone }}</mat-icon>
+              </div>
+              <div class="caisse-title">
+                <h3>{{ caisse.nom }}</h3>
+                <span class="caisse-type">{{ caisse.type }}</span>
+              </div>
+            </div>
+
+            <div class="caisse-body">
+              <div class="caisse-solde">
+                <span class="solde-amount">{{ formatMontant(caisse.soldeActuel) }}</span>
+              </div>
+
+              <div class="caisse-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="getProgressPercentage(caisse)"
+                       [style.background-color]="caisse.couleur">
+                  </div>
+                </div>
+                <span class="progress-label">{{ getProgressPercentage(caisse) | number:'1.1-1' }}% du total</span>
+              </div>
+
+              <div class="caisse-details">
+                <div class="detail-item entree">
+                  <mat-icon>arrow_upward</mat-icon>
+                  <span>{{ formatMontant(caisse.totalEntrees) }}</span>
+                </div>
+                <div class="detail-item sortie">
+                  <mat-icon>arrow_downward</mat-icon>
+                  <span>{{ formatMontant(caisse.totalSorties) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="caisse-footer">
+              <button mat-button color="primary" [routerLink]="['/finances/caisses', caisse.caisseId]">
+                <mat-icon>visibility</mat-icon>
+                Détails
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphiques -->
+      <div class="charts-section">
+        <!-- Graphique Doughnut -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>
+              <mat-icon>pie_chart</mat-icon>
+              Répartition des Fonds
+            </h3>
+          </div>
+          <div class="chart-body">
+            <canvas baseChart
+                    [data]="doughnutChartData"
+                    [options]="doughnutChartOptions"
+                    type="doughnut">
+            </canvas>
+          </div>
+        </div>
+
+        <!-- Graphique Bar -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>
+              <mat-icon>bar_chart</mat-icon>
+              Entrées vs Sorties
+            </h3>
+          </div>
+          <div class="chart-body bar-chart">
+            <canvas baseChart
+                    [data]="barChartData"
+                    [options]="barChartOptions"
+                    type="bar">
+            </canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Derniers mouvements -->
+      <div class="mouvements-section">
+        <div class="section-header">
+          <h2>
+            <mat-icon>history</mat-icon>
+            Derniers Mouvements
+          </h2>
+          <button mat-button color="primary" routerLink="/finances/mouvements">
+            Voir tout <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="mouvements-list" *ngIf="derniersMouvements.length > 0">
+          <div class="mouvement-item" 
+               *ngFor="let mouvement of derniersMouvements"
+               [class]="getMouvementClass(mouvement)">
+            <div class="mouvement-icon" [class]="getMouvementClass(mouvement)">
+              <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+            </div>
+            <div class="mouvement-info">
+              <span class="mouvement-libelle">{{ mouvement.libelle }}</span>
+              <span class="mouvement-details">
+                {{ mouvement.caisse?.nom }} • {{ mouvement.dateMouvement | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <div class="mouvement-montant" [class]="getMouvementClass(mouvement)">
+              <span>{{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-mouvements" *ngIf="derniersMouvements.length === 0">
+          <mat-icon>history</mat-icon>
+          <p>Aucun mouvement enregistré</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- État vide - Pas d'exercice -->
+  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
+    <div class="empty-illustration">
+      <mat-icon class="empty-icon">event_busy</mat-icon>
+    </div>
+    <div class="empty-content">
+      <h3 class="empty-title">Aucun exercice actif</h3>
+      <p class="empty-text">Créez un exercice comptable pour commencer la gestion financière de votre groupe.</p>
+      <div class="empty-actions">
+        <button mat-raised-button color="primary" routerLink="/finances/exercices/nouveau">
+          <mat-icon>add</mat-icon>
+          Créer un exercice
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

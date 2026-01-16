@@ -88,6 +88,7 @@ export class GroupesExploreComponent implements OnInit {
   typesEquipe = TYPES_EQUIPE;
   joursSemaine = JOURS_SEMAINE;
   niveaux = NIVEAUX;
+  isCandidat : boolean = false
   // imageUrl = `${environment.imageUrl}`;
 
   constructor(
@@ -100,6 +101,7 @@ export class GroupesExploreComponent implements OnInit {
 
   ngOnInit(): void {
 
+    this.isCandidat=this.authService.isCandidat()
     this.totalDisciplines = this.disciplines.length;
     this.loadGroupes();
     this.loadVilles();

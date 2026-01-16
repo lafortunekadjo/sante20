@@ -110,7 +110,6 @@ get activeContributionsCount(): number {
   }).pipe(
     switchMap(({ contributions, evenements }) => {
       const evenementMap = new Map(evenements.map(e => [e.id, e]));
-      console.log(contributions)
       const contributionsWithDetails: Contribution[] = contributions.map(c => {
         let evenementAssocie: Evenement | null = null;
 

@@ -5,7 +5,6 @@ import { RoleGuard } from "./core/guards/role.guard";
 import { MenuGuard } from "./core/guards/menu.guard";
 
 // Pages publiques
-
 import { PasswordResetDialogComponent } from "./shared/components/password-reset-dialog/password-reset-dialog.component";
 
 // Layout
@@ -20,13 +19,10 @@ import { UserFormComponent } from "./modules/admin/components/user-form/user-for
 // Membre
 import { MDashboardComponent } from "./modules/membre/components/dashboard/dashboard.component";
 
-
 // Responsable
 import { RDashboardComponent } from "./modules/responsable/components/dashboard/dashboard.component";
-
 import { GestionDemandesGroupeComponent } from "./modules/responsable/components/gestion-demandes-groupe/gestion-demandes-groupe.component";
 import { GroupeConfigComponent } from "./modules/responsable/components/groupe-config/groupe-config.component";
-
 import { MatchFormComponent } from "./modules/responsable/components/match-form/match-form.component";
 import { PresenceFormComponent } from "./modules/responsable/components/presence-form/presence-form.component";
 import { PaiementSanctionFormComponent } from "./modules/responsable/components/paiement-sanction-form/paiement-sanction-form.component";
@@ -53,15 +49,22 @@ import { PublicMatchInviteComponent } from "./modules/users/public-match-invite/
 import { UserGroupRegisterComponent } from "./shared/user-group-register/user-group-register.component";
 import { AboutTutoPageComponent } from "./shared/about-tuto-page/about-tuto-page.component";
 import { HomeComponent } from "./shared/home/home.component";
+import { QrGeneratorComponent } from "./shared/qr-generator/qr-generator.component";
+import { QrDashboardComponent } from "./shared/qr-dashboard/qr-dashboard.component";
+import { EntreeCaisseComponent } from "./modules/responsable/components/entree-caisse/entree-caisse.component";
+import { ExerciceManagementComponent } from "./modules/responsable/components/exercice-management/exercice-management.component";
+import { FinancialDashboardComponent } from "./modules/responsable/components/financial-dashboard/financial-dashboard.component";
+import { SortieCaisseComponent } from "./modules/responsable/components/sortie-caisse/sortie-caisse.component";
+import { TypeContributionComponent } from "./modules/responsable/components/type-contribution/type-contribution.component";
+
+// ==================== FINANCES - NOUVEAUX COMPOSANTS ====================
+
 
 
 export const routes: Routes = [
-  // ==================== ROUTES PUBLIQUES (sans authentification) ====================
-  // {
-  //   path: '',
-  //   component: GroupesExploreComponent,
-  // },
 
+  { path: 'generator', component: QrGeneratorComponent },
+  { path: 'dashboard', component: QrDashboardComponent },
 
   // ==================== ROUTES PROTÉGÉES (avec Layout et authentification) ====================
   
@@ -70,56 +73,49 @@ export const routes: Routes = [
     component: LayoutComponent,
     children: [
       {
-    path: '',
-    component: HomeComponent,
-  },
-
+        path: '',
+        component: HomeComponent,
+      },
       {
         path: 'match/invite/:token',
         component: PublicMatchInviteComponent,
       },
-
-         {
+      {
         path: 'creategroup',
         component: UserGroupRegisterComponent,
       },
-          {
+      {
         path: 'apropos',
         component: HomeComponent,
       },
-
-         {
+      {
         path: 'home',
         component: HomeComponent,
       },
-
-
 
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
       {
         path: 'explorer',
         component: GroupesExploreComponent,
-         },
-
-      
+      },
       {
         path: 'mes-demandes',
         component: MesDemandesComponent,
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'CANDIDAT', 'ROLE_CANDIDAT'] }
       },
-        {
-    path: 'login',
-    component: LoginComponent
-  },
-  {
-    path: 'signup',
-    component: SignupComponent
-  },
-  {
-    path: 'reset-password',
-    component: PasswordResetDialogComponent
-  },
+      {
+        path: 'login',
+        component: LoginComponent
+      },
+      {
+        path: 'signup',
+        component: SignupComponent
+      },
+      {
+        path: 'reset-password',
+        component: PasswordResetDialogComponent
+      },
       {
         path: 'actualites',
         component: NewsFeedComponent,
@@ -205,16 +201,15 @@ export const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['RESPONSABLE', 'ROLE_RESPONSABLE'] },
         children: [
-          // Dashboard - accessible à tous les responsables (pas de MenuGuard)
+          // Dashboard - accessible à tous les responsables
           {
             path: 'dashboard',
             component: RDashboardComponent
           },
-
-           {
+          {
             path: 'utilisateurs',
             component: UserFormComponent,
-             canActivate: [RoleGuard]
+            canActivate: [RoleGuard]
           },
 
           // GESTION - Protégé par MenuGuard
@@ -228,11 +223,10 @@ export const routes: Routes = [
             component: GestionDemandesGroupeComponent,
             canActivate: [MenuGuard]
           },
-           {
+          {
             path: 'invitation',
             component: InvitationListComponent,
           },
-       
           {
             path: 'configuration',
             component: GroupeConfigComponent,
@@ -249,13 +243,8 @@ export const routes: Routes = [
             path: 'matchs',
             component: MatchFormComponent,
             canActivate: [MenuGuard],
-             data: { roles: ['RESPONSABLE'] }
+            data: { roles: ['RESPONSABLE'] }
           },
-          // {
-          //   path: 'presences/:id',
-          //   component: PresenceFormComponent,
-          //   canActivate: [MenuGuard]
-          // },
           {
             path: 'presences/:matchId',
             component: PresenceFormComponent,
@@ -272,7 +261,8 @@ export const routes: Routes = [
             canActivate: [MenuGuard]
           },
 
-          // FINANCES - Protégé par MenuGuard
+          // ==================== FINANCES (ANCIEN SYSTÈME) ====================
+          // Ces routes restent pour la rétrocompatibilité
           {
             path: 'cotisations',
             component: ContributionFormComponent,
@@ -287,6 +277,80 @@ export const routes: Routes = [
             path: 'depenses',
             component: TypeSortieComponent,
             canActivate: [MenuGuard]
+          },
+
+          // ==================== NOUVEAU MODULE FINANCES ====================
+          {
+            path: 'finances',
+            canActivate: [MenuGuard],
+            children: [
+              // Dashboard financier
+              {
+                path: '',
+                redirectTo: 'dashboard',
+                pathMatch: 'full'
+              },
+              {
+                path: 'dashboard',
+                component: FinancialDashboardComponent,
+                data: { title: 'Tableau de bord financier' }
+              },
+
+              // Gestion des exercices
+              {
+                path: 'exercices',
+                component: ExerciceManagementComponent,
+                data: { title: 'Gestion des exercices' }
+              },
+
+              // Mouvements de caisse
+              {
+                path: 'entree',
+                component: EntreeCaisseComponent,
+                data: { title: 'Nouvelle entrée' }
+              },
+              {
+                path: 'sortie',
+                component: SortieCaisseComponent,
+                data: { title: 'Nouvelle sortie' }
+              },
+
+              // Types de contribution
+              {
+                path: 'types-contributions',
+                component: TypeContributionComponent,
+                data: { title: 'Types de contributions' }
+              },
+
+              // // Gestion des caisses
+              // {
+              //   path: 'caisses',
+              //   component: CaissesComponent,
+              //   data: { title: 'Gestion des caisses' }
+              // },
+              // {
+              //   path: 'caisses/:id',
+              //   component: CaisseDetailComponent,
+              //   data: { title: 'Détail de la caisse' }
+              // },
+
+              // // Historique et rapports
+              // {
+              //   path: 'mouvements',
+              //   component: MouvementsHistoriqueComponent,
+              //   data: { title: 'Historique des mouvements' }
+              // },
+              // {
+              //   path: 'bilan',
+              //   component: BilanComponent,
+              //   data: { title: 'Bilan financier' }
+              // },
+              // {
+              //   path: 'echeancier',
+              //   component: EcheancierComponent,
+              //   data: { title: 'Échéancier des cotisations' }
+              // }
+            ]
           },
 
           // DISCIPLINE - Protégé par MenuGuard
