@@ -41,7 +41,7 @@ export class MembreService {
       email: membre.email || null,
       cotisationPayee: membre.cotisationPayee,
       roleCO: membre.roleCO || null,
-      equipe: membre.equipe.id || null,
+      equipe: membre.equipe?.id || null,
       groupe: membre.groupe.id,
       user: membre.user?.id,
       active: membre.active
@@ -115,7 +115,7 @@ export class MembreService {
       email: membre.email || null,
       cotisationPayee: membre.cotisationPayee,
       roleCO: membre.roleCO || null,
-      equipe: membre.equipe.id || null,
+      equipe: membre.equipe?.id || null,
       groupe: membre.groupe.id,
       user: membre.user.id || null,
       active: membre.true
