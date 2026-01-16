@@ -514,7 +514,14 @@ export class PresenceFormComponent implements OnInit {
       p.equipeMatch === this.equipeNames[1] && p.estCapitaine
     );
 
-    return hasCapitaine1 && hasCapitaine2;
+     const hasGardien1 = presentPlayers.some(p => 
+      p.equipeMatch === this.equipeNames[0] && p.estGardien
+    );
+    const hasGardien2 = presentPlayers.some(p => 
+      p.equipeMatch === this.equipeNames[1] && p.estGardien
+    );
+
+    return hasCapitaine1 && hasCapitaine2 && hasGardien1 && hasGardien2;
   }
 
   // ===== ÉVÉNEMENTS =====
@@ -523,6 +530,7 @@ export class PresenceFormComponent implements OnInit {
     if (!presence.present) {
       presence.aJoue = false;
       presence.estCapitaine = false;
+      presence.estGardien = false;
       presence.buts = 0;
       presence.passes = 0;
       presence.penalti = 0;
@@ -544,6 +552,7 @@ export class PresenceFormComponent implements OnInit {
       }
     } else {
       presence.estCapitaine = false;
+      presence.estGardien = false;
       presence.buts = 0;
       presence.passes = 0;
       presence.estHommeDuMatch = false;
@@ -559,6 +568,17 @@ export class PresenceFormComponent implements OnInit {
       this.dataSource.data.forEach(p => {
         if (p.equipeMatch === equipe && p !== presence) {
           p.estCapitaine = false;
+        }
+      });
+    }
+  }
+
+   setGardien(presence: Presence): void {
+    if (presence.estGardien) {
+      const equipe = presence.equipeMatch;
+      this.dataSource.data.forEach(p => {
+        if (p.equipeMatch === equipe && p !== presence) {
+          p.estGardien = false;
         }
       });
     }
@@ -607,6 +627,13 @@ export class PresenceFormComponent implements OnInit {
   getCapitaine(equipe: string): string {
     const capitaine = this.dataSource.data.find(p => 
       p.equipeMatch === equipe && p.estCapitaine
+    );
+    return capitaine ? this.getMembreName(capitaine) : '_______________________';
+  }
+
+   getGardien(equipe: string): string {
+    const capitaine = this.dataSource.data.find(p => 
+      p.equipeMatch === equipe && p.estGardien
     );
     return capitaine ? this.getMembreName(capitaine) : '_______________________';
   }
