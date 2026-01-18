@@ -521,7 +521,7 @@ export class PresenceFormComponent implements OnInit {
       p.equipeMatch === this.equipeNames[1] && p.estGardien
     );
 
-    return hasCapitaine1 && hasCapitaine2 && hasGardien1 && hasGardien2;
+    return hasCapitaine1 && hasCapitaine2;
   }
 
   // ===== ÉVÉNEMENTS =====
