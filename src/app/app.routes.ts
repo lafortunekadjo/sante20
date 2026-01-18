@@ -323,33 +323,33 @@ export const routes: Routes = [
               },
 
               // // Gestion des caisses
-              // {
-              //   path: 'caisses',
-              //   component: CaissesComponent,
-              //   data: { title: 'Gestion des caisses' }
-              // },
-              // {
-              //   path: 'caisses/:id',
-              //   component: CaisseDetailComponent,
-              //   data: { title: 'Détail de la caisse' }
-              // },
+               {
+                path: 'caisses',
+                 component: CaissesComponent,
+                data: { title: 'Gestion des caisses' }
+               },
+               {
+                path: 'caisses/:id',
+                 component: CaisseDetailComponent,
+                data: { title: 'Détail de la caisse' }
+               },
 
               // // Historique et rapports
-              // {
-              //   path: 'mouvements',
-              //   component: MouvementsHistoriqueComponent,
-              //   data: { title: 'Historique des mouvements' }
-              // },
-              // {
-              //   path: 'bilan',
-              //   component: BilanComponent,
-              //   data: { title: 'Bilan financier' }
-              // },
-              // {
-              //   path: 'echeancier',
-              //   component: EcheancierComponent,
-              //   data: { title: 'Échéancier des cotisations' }
-              // }
+               {
+                 path: 'mouvements',
+                 component: MouvementsHistoriqueComponent,
+                data: { title: 'Historique des mouvements' }
+               },
+               {
+                 path: 'bilan',
+                 component: BilanComponent,
+                 data: { title: 'Bilan financier' }
+               },
+               {
+                 path: 'echeancier',
+                component: EcheancierComponent,
+                 data: { title: 'Échéancier des cotisations' }
+               }
             ]
           },
 
