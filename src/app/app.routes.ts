@@ -57,6 +57,12 @@ import { FinancialDashboardComponent } from "./modules/responsable/components/fi
 import { SortieCaisseComponent } from "./modules/responsable/components/sortie-caisse/sortie-caisse.component";
 import { TypeContributionComponent } from "./modules/responsable/components/type-contribution/type-contribution.component";
 
+import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
+import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
+import { MouvementsHistoriqueComponent } from "./modules/responsable/components/mouvements-historique/mouvements-historique.component";
+import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
+import { EcheancierComponent } from "./modules/responsable/components/echeancier/echeancier.component";
+
 // ==================== FINANCES - NOUVEAUX COMPOSANTS ====================
 
 
