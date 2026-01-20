@@ -9,7 +9,7 @@ import { environment } from '../../environment';
 // ==================== INTERFACES ====================
 
 export interface Exercice {
-  id?: number;
+  id: number;
   libelle: string;
   annee: number;
   dateDebut: string;
@@ -229,6 +229,7 @@ export interface SortieCaisseRequest {
   providedIn: 'root'
 })
 export class FinancesService {
+ 
 
   private baseUrl = environment.apiUrl;
 
@@ -331,6 +332,10 @@ export class FinancesService {
     return this.http.get<Caisse[]>(`${this.baseUrl}/caisses/exercice/${exerciceId}`);
   }
 
+  getCaissesByGroupe(groupeId: number): Observable<Caisse[]> {
+  return this.http.get<Caisse[]>(`${this.baseUrl}/caisses/groupe/${groupeId}`);
+}
+
   /**
    * GET /api/caisses/solde-global
    * Récupérer le solde global
@@ -398,7 +403,7 @@ export class FinancesService {
    * GET /api/caisses/mouvements/exercice/{exerciceId}
    * Récupérer tous les mouvements d'un exercice
    */
-  getMouvementsExercice(exerciceId: number): Observable<MouvementCaisse[]> {
+  getMouvementsExercice(exerciceId: number | undefined): Observable<MouvementCaisse[]> {
     return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/mouvements/exercice/${exerciceId}`);
   }
 
@@ -444,6 +449,25 @@ export class FinancesService {
   deleteTypeContribution(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/types-contributions/${id}`);
   }
+
+
+    // Types Depenses
+getTypesDepenses(groupeId: number | null): Observable<TypeDepense[]> {
+  const params = groupeId ? `?groupeId=${groupeId}` : '';
+  return this.http.get<TypeDepense[]>(`${this.baseUrl}/types-depenses${params}`);
+}
+
+createTypeDepense(data: Partial<TypeDepense>): Observable<TypeDepense> {
+  return this.http.post<TypeDepense>(`${this.baseUrl}/types-depenses`, data);
+}
+
+// updateTypeDepense(id: number, data: Partial<TypeDepense>): Observable<TypeDepense> {
+//   return this.http.put<TypeDepense>(`${this.apiUrl}/types-depenses/${id}`, data);
+// }
+
+deleteTypeDepense(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.baseUrl}/types-depenses/${id}`);
+}
 
   // ==================== STATISTIQUES ====================
   // Backend: CaisseController.java
@@ -716,4 +740,7 @@ export class FinancesService {
     };
     return labels[statut] || statut;
   }
+
+
+
 }

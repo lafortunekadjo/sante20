@@ -170,8 +170,8 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadMouvements(exerciceId: number): void {
-    this.financesService.getMouvementsByExercice(exerciceId)
+  loadMouvements(exerciceId: number | undefined): void {
+    this.financesService.getMouvementsExercice(exerciceId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (mouvements) => {

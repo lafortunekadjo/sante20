@@ -1,28 +1,26 @@
-<!-- caisses.component.html -->
-<div class="caisses-container">
+<!-- caisse-detail.component.html -->
+<div class="caisse-detail-container">
 
   <!-- Header -->
-  <div class="page-header">
+  <div class="page-header" *ngIf="caisse" [style.--caisse-color]="caisse.couleur">
     <div class="header-content">
       <div class="header-main">
+        <button mat-icon-button class="back-btn" routerLink="/responsable/finances/caisses">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-icon" [style.background-color]="caisse.couleur">
+          <mat-icon>{{ caisse.icone || 'account_balance_wallet' }}</mat-icon>
+        </div>
         <div class="header-text">
-          <h1 class="page-title">
-            <mat-icon class="header-icon">account_balance</mat-icon>
-            Gestion des Caisses
-          </h1>
-          <p class="page-subtitle">Vue d'ensemble de toutes les caisses de l'exercice</p>
+          <h1 class="page-title">{{ caisse.nom }}</h1>
+          <p class="page-subtitle">{{ getTypeLibelle(caisse.type) }} • {{ caisse.exercice?.libelle }}</p>
         </div>
       </div>
 
-      <div class="header-stats" *ngIf="caisses.length > 0">
+      <div class="header-stats">
         <div class="stat-item">
-          <span class="stat-number">{{ caisses.length }}</span>
-          <span class="stat-label">Caisses</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number solde">{{ formatMontant(soldeTotal) }}</span>
-          <span class="stat-label">Solde Total</span>
+          <span class="stat-number">{{ formatMontant(caisse.soldeActuel) }}</span>
+          <span class="stat-label">Solde actuel</span>
         </div>
       </div>
     </div>
@@ -34,231 +32,233 @@
       <mat-spinner diameter="60"></mat-spinner>
     </div>
     <div class="loading-content">
-      <h3>Chargement des caisses...</h3>
+      <h3>Chargement des détails...</h3>
       <p>Veuillez patienter</p>
     </div>
   </div>
 
   <!-- Contenu principal -->
-  <div *ngIf="!isLoading && exerciceActif" class="content">
+  <div *ngIf="!isLoading && caisse" class="content">
 
-    <!-- Carte résumé global -->
-    <div class="summary-card">
-      <div class="summary-header">
-        <div class="summary-icon">
+    <!-- Cartes statistiques -->
+    <div class="stats-grid">
+      <div class="stat-card solde">
+        <div class="stat-icon" [style.background-color]="caisse.couleur">
           <mat-icon>account_balance_wallet</mat-icon>
         </div>
-        <div class="summary-info">
-          <span class="summary-label">Solde Global - {{ exerciceActif.libelle }}</span>
-          <span class="summary-value">{{ formatMontant(soldeTotal) }}</span>
+        <div class="stat-content">
+          <span class="stat-label">Solde Actuel</span>
+          <span class="stat-value">{{ formatMontant(caisse.soldeActuel) }}</span>
         </div>
-        <button mat-icon-button (click)="refreshData()" matTooltip="Actualiser">
-          <mat-icon>refresh</mat-icon>
-        </button>
       </div>
 
-      <div class="summary-stats">
-        <div class="stat-box entrees">
+      <div class="stat-card entrees">
+        <div class="stat-icon">
           <mat-icon>trending_up</mat-icon>
-          <div class="stat-content">
-            <span class="stat-label">Total Entrées</span>
-            <span class="stat-value">{{ formatMontant(totalEntrees) }}</span>
-          </div>
         </div>
-        <div class="stat-box sorties">
+        <div class="stat-content">
+          <span class="stat-label">Total Entrées</span>
+          <span class="stat-value">{{ formatMontant(caisse.totalEntrees) }}</span>
+          <span class="stat-sub">{{ stats.nbEntrees }} opérations</span>
+        </div>
+      </div>
+
+      <div class="stat-card sorties">
+        <div class="stat-icon">
           <mat-icon>trending_down</mat-icon>
-          <div class="stat-content">
-            <span class="stat-label">Total Sorties</span>
-            <span class="stat-value">{{ formatMontant(totalSorties) }}</span>
-          </div>
         </div>
-        <div class="stat-box balance">
-          <mat-icon>swap_vert</mat-icon>
-          <div class="stat-content">
-            <span class="stat-label">Balance</span>
-            <span class="stat-value" [class.positive]="totalEntrees > totalSorties" [class.negative]="totalSorties > totalEntrees">
-              {{ formatMontant(totalEntrees - totalSorties) }}
-            </span>
-          </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Sorties</span>
+          <span class="stat-value">{{ formatMontant(caisse.totalSorties) }}</span>
+          <span class="stat-sub">{{ stats.nbSorties }} opérations</span>
+        </div>
+      </div>
+
+      <div class="stat-card reporte">
+        <div class="stat-icon">
+          <mat-icon>history</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Solde Reporté</span>
+          <span class="stat-value">{{ formatMontant(caisse.soldeReporte) }}</span>
+          <span class="stat-sub">Exercice précédent</span>
         </div>
       </div>
     </div>
 
     <!-- Actions rapides -->
     <div class="quick-actions">
-      <button mat-raised-button color="primary" routerLink="/responsable/finances/entree">
+      <button mat-raised-button color="primary" 
+              [routerLink]="['/responsable/finances/entree']" 
+              [queryParams]="{caisseId: caisse.id}">
         <mat-icon>add_circle</mat-icon>
         Nouvelle Entrée
       </button>
-      <button mat-raised-button color="warn" routerLink="/responsable/finances/sortie">
+      <button mat-raised-button color="warn" 
+              [routerLink]="['/responsable/finances/sortie']" 
+              [queryParams]="{caisseId: caisse.id}">
         <mat-icon>remove_circle</mat-icon>
         Nouvelle Sortie
       </button>
-      <button mat-stroked-button routerLink="/responsable/finances/mouvements">
-        <mat-icon>history</mat-icon>
-        Historique
+      <button mat-stroked-button (click)="exportData()">
+        <mat-icon>download</mat-icon>
+        Exporter
       </button>
     </div>
 
-    <!-- Grille des caisses -->
-    <div class="caisses-section">
+    <!-- Section mouvements -->
+    <div class="mouvements-section">
       <div class="section-header">
-        <div class="header-icon-wrapper">
-          <mat-icon>account_balance</mat-icon>
+        <div class="header-icon-wrapper" [style.background-color]="caisse.couleur">
+          <mat-icon>history</mat-icon>
         </div>
         <div class="header-text">
-          <h2>Détail des Caisses</h2>
-          <span class="badge">{{ caisses.length }}</span>
+          <h2>Historique des Mouvements</h2>
+          <span class="badge">{{ mouvements.length }}</span>
         </div>
       </div>
 
-      <div class="caisses-grid" *ngIf="caisses.length > 0">
-        <div class="caisse-card" 
-             *ngFor="let caisse of caisses"
-             [style.--caisse-color]="caisse.couleur"
-             [class.alerte]="isEnAlerte(caisse)"
-             [class.objectif-atteint]="isObjectifAtteint(caisse)">
-          
-          <!-- Header de la carte -->
-          <div class="caisse-header">
-            <div class="caisse-icon" [style.background-color]="caisse.couleur">
-              <mat-icon>{{ caisse.icone || 'account_balance_wallet' }}</mat-icon>
-            </div>
-            <div class="caisse-title">
-              <h3>{{ caisse.nom }}</h3>
-              <span class="caisse-type">{{ getTypeLibelle(caisse.type) }}</span>
-            </div>
-            <button mat-icon-button [matMenuTriggerFor]="caisseMenu" class="caisse-menu-btn">
-              <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #caisseMenu="matMenu">
-              <button mat-menu-item [routerLink]="['/responsable/finances/caisses', caisse.id]">
-                <mat-icon>visibility</mat-icon>
-                <span>Voir les détails</span>
-              </button>
-              <button mat-menu-item [routerLink]="['/responsable/finances/entree']" [queryParams]="{caisseId: caisse.id}">
-                <mat-icon>add_circle</mat-icon>
-                <span>Nouvelle entrée</span>
-              </button>
-              <button mat-menu-item [routerLink]="['/responsable/finances/sortie']" [queryParams]="{caisseId: caisse.id}">
-                <mat-icon>remove_circle</mat-icon>
-                <span>Nouvelle sortie</span>
-              </button>
-            </mat-menu>
-          </div>
+      <!-- Filtres -->
+      <div class="filters-bar">
+        <div class="filter-chips">
+          <mat-chip-listbox>
+            <mat-chip-option [selected]="filterType === 'ALL'" (click)="setFilter('ALL')">
+              Tous
+            </mat-chip-option>
+            <mat-chip-option [selected]="filterType === 'ENTREE'" (click)="setFilter('ENTREE')" class="entree-chip">
+              <mat-icon>arrow_upward</mat-icon>
+              Entrées ({{ stats.nbEntrees }})
+            </mat-chip-option>
+            <mat-chip-option [selected]="filterType === 'SORTIE'" (click)="setFilter('SORTIE')" class="sortie-chip">
+              <mat-icon>arrow_downward</mat-icon>
+              Sorties ({{ stats.nbSorties }})
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+      </div>
 
-          <!-- Corps de la carte -->
-          <div class="caisse-body">
-            <!-- Solde actuel -->
-            <div class="caisse-solde">
-              <span class="solde-label">Solde actuel</span>
-              <span class="solde-amount" [class.negative]="caisse.soldeActuel < 0">
-                {{ formatMontant(caisse.soldeActuel) }}
+      <!-- Vue mobile en cartes -->
+      <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
+        <div class="mouvement-card" 
+             *ngFor="let mouvement of dataSource.data | slice:0:10"
+             [class]="getMouvementClass(mouvement)">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="mouvement-icon" [class]="getMouvementClass(mouvement)">
+                <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+              </div>
+              <div class="title-content">
+                <h4>{{ mouvement.libelle }}</h4>
+                <span class="date">{{ formatDate(mouvement.dateMouvement) }}</span>
+              </div>
+            </div>
+            <div class="card-montant">
+              <span class="montant" [class]="getMouvementClass(mouvement)">
+                {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
               </span>
             </div>
-
-            <!-- Alerte seuil minimum -->
-            <div class="alerte-box" *ngIf="isEnAlerte(caisse)">
-              <mat-icon>warning</mat-icon>
-              <span>Solde en dessous du seuil ({{ formatMontant(caisse.seuilAlerteMin) }})</span>
-            </div>
-
-            <!-- Objectif atteint -->
-            <div class="objectif-box" *ngIf="isObjectifAtteint(caisse)">
-              <mat-icon>emoji_events</mat-icon>
-              <span>Objectif atteint !</span>
-            </div>
-
-            <!-- Barre de progression -->
-            <div class="caisse-progress" *ngIf="soldeTotal > 0">
-              <div class="progress-bar">
-                <div class="progress-fill" 
-                     [style.width.%]="getProgressPercentage(caisse)"
-                     [style.background-color]="caisse.couleur">
-                </div>
-              </div>
-              <span class="progress-label">{{ getProgressPercentage(caisse) | number:'1.1-1' }}% du total</span>
-            </div>
-
-            <!-- Objectif si défini -->
-            <div class="objectif-progress" *ngIf="getObjectifPercentage(caisse) !== null">
-              <div class="progress-header">
-                <span class="progress-title">Objectif</span>
-                <span class="progress-value">{{ getObjectifPercentage(caisse) | number:'1.0-0' }}%</span>
-              </div>
-              <div class="progress-bar objectif">
-                <div class="progress-fill" 
-                     [style.width.%]="getObjectifPercentage(caisse)"
-                     [class.complete]="isObjectifAtteint(caisse)">
-                </div>
-              </div>
-              <span class="objectif-label">{{ formatMontant(caisse.soldeActuel) }} / {{ formatMontant(caisse.seuilAlerteMax) }}</span>
-            </div>
-
-            <!-- Détails entrées/sorties -->
-            <div class="caisse-details">
-              <div class="detail-item entree">
-                <mat-icon>arrow_upward</mat-icon>
-                <div class="detail-content">
-                  <span class="detail-label">Entrées</span>
-                  <span class="detail-value">{{ formatMontant(caisse.totalEntrees) }}</span>
-                </div>
-              </div>
-              <div class="detail-item sortie">
-                <mat-icon>arrow_downward</mat-icon>
-                <div class="detail-content">
-                  <span class="detail-label">Sorties</span>
-                  <span class="detail-value">{{ formatMontant(caisse.totalSorties) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Solde reporté -->
-            <div class="solde-reporte" *ngIf="caisse.soldeReporte > 0">
-              <mat-icon>history</mat-icon>
-              <span>Report: {{ formatMontant(caisse.soldeReporte) }}</span>
-            </div>
           </div>
-
-          <!-- Footer de la carte -->
-          <div class="caisse-footer">
-            <button mat-button color="primary" [routerLink]="['/responsable/finances/caisses', caisse.id]">
-              <mat-icon>visibility</mat-icon>
-              Voir détails
-            </button>
+          <div class="card-content">
+            <div class="info-row" *ngIf="getMembreNom(mouvement) !== '-'">
+              <span class="label">{{ mouvement.typeMouvement === 'ENTREE' ? 'Membre' : 'Bénéficiaire' }}:</span>
+              <span class="value">{{ getMembreNom(mouvement) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Référence:</span>
+              <span class="value ref">{{ mouvement.reference }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Statut:</span>
+              <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
+                {{ mouvement.statut }}
+              </span>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- Vue desktop tableau -->
+      <div class="desktop-table-view" *ngIf="dataSource.data.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort class="mouvements-table">
+          
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <td mat-cell *matCellDef="let mouvement">
+              {{ formatDate(mouvement.dateMouvement) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="type-cell" [class]="getMouvementClass(mouvement)">
+                <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+                <span>{{ mouvement.typeMouvement === 'ENTREE' ? 'Entrée' : 'Sortie' }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="libelle">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="libelle-cell">
+                <span class="libelle">{{ mouvement.libelle }}</span>
+                <span class="reference">{{ mouvement.reference }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="membre">
+            <th mat-header-cell *matHeaderCellDef>Membre / Bénéficiaire</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="membre-cell" *ngIf="getMembreNom(mouvement) !== '-'">
+                <mat-icon>person</mat-icon>
+                <span>{{ getMembreNom(mouvement) }}</span>
+              </div>
+              <span *ngIf="getMembreNom(mouvement) === '-'">-</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="montant">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <span class="montant" [class]="getMouvementClass(mouvement)">
+                {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="statut">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
+                {{ mouvement.statut }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
       </div>
 
       <!-- État vide -->
-      <div class="empty-state" *ngIf="caisses.length === 0">
-        <div class="empty-illustration">
-          <mat-icon class="empty-icon">account_balance</mat-icon>
-        </div>
-        <div class="empty-content">
-          <h3 class="empty-title">Aucune caisse configurée</h3>
-          <p class="empty-text">Les caisses seront créées automatiquement lors de la configuration de l'exercice.</p>
+      <div class="empty-mouvements" *ngIf="dataSource.data.length === 0">
+        <mat-icon>inbox</mat-icon>
+        <p>Aucun mouvement enregistré pour cette caisse</p>
+        <div class="empty-actions">
+          <button mat-raised-button color="primary" 
+                  [routerLink]="['/responsable/finances/entree']" 
+                  [queryParams]="{caisseId: caisse.id}">
+            <mat-icon>add</mat-icon>
+            Enregistrer une entrée
+          </button>
         </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- Pas d'exercice actif -->
-  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
-    <div class="empty-illustration">
-      <mat-icon class="empty-icon">event_busy</mat-icon>
-    </div>
-    <div class="empty-content">
-      <h3 class="empty-title">Aucun exercice actif</h3>
-      <p class="empty-text">Créez un exercice comptable pour gérer vos caisses.</p>
-      <div class="empty-actions">
-        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
-          <mat-icon>add</mat-icon>
-          Créer un exercice
-        </button>
-      </div>
-    </div>
   </div>
 
 </div>

@@ -2,8 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../environment';
-import { Sanction } from '../models/sanction.model';
-import { TypeSanction } from '../models/typeSanction.model';
+import { Sanction, TypeSanction } from '../models/sanction.model';
+
 
 @Injectable({
   providedIn: 'root'
@@ -71,6 +71,7 @@ export class SanctionService {
    * @returns Observable avec le type de sanction mis à jour
    */
   updateTypeSanction(id: number, typeSanction: any): Observable<any> {
+    console.log(typeSanction)
     return this.http.put(`${environment.apiUrl}/type-sanctions/${id}`, typeSanction);
   }
 

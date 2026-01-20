@@ -47,7 +47,9 @@ interface TypeDepense {
   couleur?: string;
   necessiteValidation?: boolean;
   seuilValidation?: number;
+  
 }
+
 
 @Component({
   selector: 'app-sortie-caisse',
@@ -83,9 +85,13 @@ interface TypeDepense {
 export class SortieCaisseComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-
+  showForm: boolean = false;
   isLoading = true;
   isSaving = false;
+
+  toggleForm() {
+    this.showForm = !this.showForm;
+  }
 
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
@@ -274,6 +280,7 @@ export class SortieCaisseComponent implements OnInit {
         this.resetForm();
         this.loadData();
         this.isSaving = false;
+        this.showForm = false;
       },
       error: (err) => {
         console.error('Erreur enregistrement:', err);

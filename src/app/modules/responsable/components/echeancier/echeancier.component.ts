@@ -28,6 +28,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { MatDividerModule } from '@angular/material/divider';
 
 // Interfaces
 interface Echeance {
@@ -45,6 +46,7 @@ interface Echeance {
   reporte: boolean;
   exonere: boolean;
 }
+
 
 interface Exercice {
   id: number;
@@ -80,7 +82,8 @@ interface TypeContribution {
     MatMenuModule,
     MatBadgeModule,
     MatDialogModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDividerModule
   ],
   templateUrl: './echeancier.component.html',
   styleUrls: ['./echeancier.component.scss']
@@ -95,8 +98,8 @@ export class EcheancierComponent implements OnInit, OnDestroy {
   // États
   isLoading = true;
   exerciceActif: Exercice | null = null;
-  typesContributions: TypeContribution[] = [];
-  echeances: Echeance[] = [];
+  typesContributions: any[] = [];
+  echeances: any[] = [];
 
   // Table
   displayedColumns = ['membre', 'type', 'periode', 'montant', 'paye', 'reste', 'statut', 'actions'];

@@ -26,6 +26,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { trigger, transition, style, animate, stagger, query } from '@angular/animations';
 import { Subject, forkJoin } from 'rxjs';
@@ -36,14 +37,21 @@ import { applyPlugin } from 'jspdf-autotable';
 // Models
 import { Match } from '../../../../core/models/match.model';
 import { Membre } from '../../../../core/models/membre.model';
-import { Sanction } from '../../../../core/models/sanction.model';
+import { Sanction, SanctionHelpers } from '../../../../core/models/sanction.model';
 import { TypeSanction } from '../../../../core/models/typeSanction.model';
 
 // Services
 import { SanctionService } from '../../../../core/services/sanction.service';
+import { SanctionFinanceService } from '../../../../core/services/sanction-finance.service';
+import { FinancesService, Caisse } from '../../../../core/services/finances.service';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { MembreService } from '../../../../core/services/membre.service';
+import { AuthService } from '../../../../core/services/auth.service';
+
+// Components
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { SanctionPaymentDialogComponent, PaymentDialogData } from '../sanction-payment-dialog/sanction-payment-dialog.component';
+
 
 applyPlugin(jsPDF);
 
@@ -62,12 +70,14 @@ interface SanctionFilters {
 interface SanctionStats {
   total: number;
   payees: number;
+  partielles: number;
   nonPayees: number;
   montantTotal: number;
   montantPaye: number;
   montantRestant: number;
+  tauxRecouvrement: number;
   parType: { type: string; count: number; montant: number }[];
-  parMembre: { membre: string; membreId: number; count: number; montant: number; paye: number }[];
+  parMembre: { membre: Membre; count: number; montant: number; paye: number; restant: number }[];
 }
 
 interface GroupedSanction {
@@ -77,6 +87,7 @@ interface GroupedSanction {
   totalPaye: number;
   totalRestant: number;
   countPayees: number;
+  countPartielles: number;
   countNonPayees: number;
   expanded: boolean;
 }
@@ -122,6 +133,7 @@ interface ExportOptions {
     MatSlideToggleModule,
     MatDividerModule,
     MatTabsModule,
+    MatProgressBarModule,
     TranslateModule
   ],
   animations: [
@@ -179,10 +191,11 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   membres: Membre[] = [];
   typeSanctions: TypeSanction[] = [];
   matches: Match[] = [];
+  caisses: Caisse[] = []; // Nouveau: caisses disponibles
   
   // Table
   dataSource = new MatTableDataSource<Sanction>([]);
-  displayedColumns = ['select', 'membre', 'typeSanction', 'dateSanction', 'match', 'montant', 'etat', 'actions'];
+  displayedColumns = ['select', 'membre', 'typeSanction', 'dateSanction', 'match', 'montant', 'paiement', 'etat', 'actions'];
 
   // Sélection multiple
   selectedSanctions: Set<number> = new Set();
@@ -195,10 +208,12 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   stats: SanctionStats = {
     total: 0,
     payees: 0,
+    partielles: 0,
     nonPayees: 0,
     montantTotal: 0,
     montantPaye: 0,
     montantRestant: 0,
+    tauxRecouvrement: 0,
     parType: [],
     parMembre: []
   };
@@ -224,8 +239,8 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   quickFilters = [
     { label: 'Toutes', value: 'all', icon: 'list', count: 0 },
     { label: 'Non payées', value: 'unpaid', icon: 'schedule', count: 0 },
+    { label: 'Partielles', value: 'partial', icon: 'timelapse', count: 0 },
     { label: 'Payées', value: 'paid', icon: 'check_circle', count: 0 },
-    { label: 'Cette semaine', value: 'week', icon: 'date_range', count: 0 },
     { label: 'Ce mois', value: 'month', icon: 'calendar_today', count: 0 }
   ];
   activeQuickFilter = 'all';
@@ -233,8 +248,11 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private sanctionService: SanctionService,
+    private sanctionFinanceService: SanctionFinanceService,
+    private financesService: FinancesService,
     private presenceService: PresenceService,
     private membreService: MembreService,
+    private authService: AuthService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private translate: TranslateService
@@ -274,17 +292,20 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadData(): void {
     this.isLoading = true;
+    const groupeId = this.authService.getGroupe();
     
-    forkJoin([
-      this.sanctionService.getSanctionsAll(),
-      this.membreService.getGroupMembers(),
-      this.sanctionService.getTypeSanctions()
-    ]).pipe(takeUntil(this.destroy$))
+    forkJoin({
+      sanctions: this.sanctionService.getSanctionsAll(),
+      membres: this.membreService.getGroupMembers(),
+      typeSanctions: this.sanctionService.getTypeSanctions(),
+      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : []
+    }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ([sanctions, membres, typeSanctions]) => {
+        next: ({ sanctions, membres, typeSanctions, caisses }) => {
           this.allSanctions = sanctions;
           this.membres = membres;
           this.typeSanctions = typeSanctions;
+          this.caisses = caisses;
           
           this.applyFilters();
           this.calculateStats();
@@ -335,7 +356,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    // Statut
+    // Statut - Modifié pour gérer PARTIELLE
     if (filters.status && filters.status !== 'ALL') {
       filtered = filtered.filter(s => s.etat === filters.status);
     }
@@ -375,7 +396,6 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.filteredSanctions = filtered;
     this.dataSource.data = filtered;
     this.updateGroupedSanctions();
-    this.calculateFilteredStats();
 
     if (this.paginator) {
       this.paginator.firstPage();
@@ -402,6 +422,9 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'unpaid':
         filtered = filtered.filter(s => s.etat === 'NON_PAYEE');
         break;
+      case 'partial':
+        filtered = filtered.filter(s => s.etat === 'PARTIELLE');
+        break;
       case 'paid':
         filtered = filtered.filter(s => s.etat === 'PAYEE');
         break;
@@ -418,18 +441,16 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.filteredSanctions = filtered;
     this.dataSource.data = filtered;
     this.updateGroupedSanctions();
-    this.calculateFilteredStats();
   }
 
   updateQuickFilterCounts(): void {
     const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     this.quickFilters[0].count = this.allSanctions.length;
     this.quickFilters[1].count = this.allSanctions.filter(s => s.etat === 'NON_PAYEE').length;
-    this.quickFilters[2].count = this.allSanctions.filter(s => s.etat === 'PAYEE').length;
-    this.quickFilters[3].count = this.allSanctions.filter(s => new Date(s.dateSanction) >= weekAgo).length;
+    this.quickFilters[2].count = this.allSanctions.filter(s => s.etat === 'PARTIELLE').length;
+    this.quickFilters[3].count = this.allSanctions.filter(s => s.etat === 'PAYEE').length;
     this.quickFilters[4].count = this.allSanctions.filter(s => new Date(s.dateSanction) >= monthStart).length;
   }
 
@@ -470,20 +491,25 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   // ============ STATISTIQUES ============
 
   calculateStats(): void {
+    const parMembre = this.calculateStatsByMembre();
+    
     this.stats = {
       total: this.allSanctions.length,
       payees: this.allSanctions.filter(s => s.etat === 'PAYEE').length,
+      partielles: this.allSanctions.filter(s => s.etat === 'PARTIELLE').length,
       nonPayees: this.allSanctions.filter(s => s.etat === 'NON_PAYEE').length,
       montantTotal: this.allSanctions.reduce((sum, s) => sum + (s.montant || 0), 0),
-      montantPaye: this.allSanctions.filter(s => s.etat === 'PAYEE').reduce((sum, s) => sum + (s.montant || 0), 0),
-      montantRestant: this.allSanctions.filter(s => s.etat === 'NON_PAYEE').reduce((sum, s) => sum + (s.montant || 0), 0),
+      montantPaye: this.allSanctions.reduce((sum, s) => sum + (s.montantPaye || 0), 0),
+      montantRestant: this.allSanctions.reduce((sum, s) => sum + this.calculerResteAPayer(s), 0),
+      tauxRecouvrement: 0,
       parType: this.calculateStatsByType(),
-      parMembre: this.calculateStatsByMembre()
+      parMembre: parMembre
     };
-  }
 
-  calculateFilteredStats(): void {
-    // Stats sur les données filtrées (affichées dans le header)
+    // Calculer le taux de recouvrement
+    if (this.stats.montantTotal > 0) {
+      this.stats.tauxRecouvrement = (this.stats.montantPaye / this.stats.montantTotal) * 100;
+    }
   }
 
   calculateStatsByType(): { type: string; count: number; montant: number }[] {
@@ -505,26 +531,38 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     return Array.from(typeMap.values()).sort((a, b) => b.count - a.count);
   }
 
-  calculateStatsByMembre(): { membre: string; membreId: number; count: number; montant: number; paye: number }[] {
-    const membreMap = new Map<number, { membre: string; membreId: number; count: number; montant: number; paye: number }>();
+  calculateStatsByMembre(): { membre: Membre; count: number; montant: number; paye: number; restant: number }[] {
+    const membreMap = new Map<number, { membre: Membre; count: number; montant: number; paye: number; restant: number }>();
     
     this.allSanctions.forEach(s => {
       const membreId = typeof s.membre === 'number' ? s.membre : (s.membre as Membre)?.id;
-      const membreName = this.getMembreName(s.membre);
       
+      if (!membreId) return;
+
       if (!membreMap.has(membreId)) {
-        membreMap.set(membreId, { membre: membreName, membreId, count: 0, montant: 0, paye: 0 });
+        const membre = typeof s.membre === 'object'
+          ? s.membre
+          : this.membres.find(m => m.id === membreId);
+
+        if (!membre) return;
+
+        membreMap.set(membreId, {
+          membre: membre as Membre,
+          count: 0,
+          montant: 0,
+          paye: 0,
+          restant: 0
+        });
       }
       
       const stat = membreMap.get(membreId)!;
       stat.count++;
       stat.montant += s.montant || 0;
-      if (s.etat === 'PAYEE') {
-        stat.paye += s.montant || 0;
-      }
+      stat.paye += s.montantPaye || 0;
+      stat.restant += this.calculerResteAPayer(s);
     });
 
-    return Array.from(membreMap.values()).sort((a, b) => b.montant - a.montant);
+    return Array.from(membreMap.values()).sort((a, b) => b.restant - a.restant);
   }
 
   // ============ GROUPEMENT PAR MEMBRE ============
@@ -544,6 +582,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
           totalPaye: 0,
           totalRestant: 0,
           countPayees: 0,
+          countPartielles: 0,
           countNonPayees: 0,
           expanded: false
         });
@@ -552,12 +591,14 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       const group = membreMap.get(membreId)!;
       group.sanctions.push(s);
       group.totalMontant += s.montant || 0;
+      group.totalPaye += s.montantPaye || 0;
+      group.totalRestant += this.calculerResteAPayer(s);
       
       if (s.etat === 'PAYEE') {
-        group.totalPaye += s.montant || 0;
         group.countPayees++;
+      } else if (s.etat === 'PARTIELLE') {
+        group.countPartielles++;
       } else {
-        group.totalRestant += s.montant || 0;
         group.countNonPayees++;
       }
     });
@@ -585,7 +626,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.selectAll) {
       this.filteredSanctions.forEach(s => {
         if (s.etat !== 'PAYEE') {
-          this.selectedSanctions.add(s.id);
+          this.selectedSanctions.add(s.id!);
         }
       });
     } else {
@@ -594,10 +635,10 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleSelection(sanction: Sanction): void {
-    if (this.selectedSanctions.has(sanction.id)) {
-      this.selectedSanctions.delete(sanction.id);
+    if (this.selectedSanctions.has(sanction.id!)) {
+      this.selectedSanctions.delete(sanction.id!);
     } else {
-      this.selectedSanctions.add(sanction.id);
+      this.selectedSanctions.add(sanction.id!);
     }
     this.updateSelectAllState();
   }
@@ -608,7 +649,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isSelected(sanction: Sanction): boolean {
-    return this.selectedSanctions.has(sanction.id);
+    return this.selectedSanctions.has(sanction.id!);
   }
 
   getSelectedCount(): number {
@@ -617,47 +658,8 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getSelectedTotal(): number {
     return this.filteredSanctions
-      .filter(s => this.selectedSanctions.has(s.id))
-      .reduce((sum, s) => sum + (s.montant || 0), 0);
-  }
-
-  paySelectedSanctions(): void {
-    if (this.selectedSanctions.size === 0) return;
-
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: { 
-        message: `Voulez-vous marquer ${this.selectedSanctions.size} sanction(s) comme payée(s) ?
-                  Montant total: ${this.formatMontant(this.getSelectedTotal())}`
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.isLoading = true;
-        const ids = Array.from(this.selectedSanctions);
-        
-        // Payer les sanctions sélectionnées en séquence
-        this.payMultipleSanctions(ids, 0);
-      }
-    });
-  }
-
-  private payMultipleSanctions(ids: number[], index: number): void {
-    if (index >= ids.length) {
-      this.loadData();
-      this.selectedSanctions.clear();
-      this.selectAll = false;
-      this.showSuccess(`${ids.length} sanction(s) payée(s) avec succès`);
-      return;
-    }
-
-    this.sanctionService.payerSanction(ids[index]).subscribe({
-      next: () => this.payMultipleSanctions(ids, index + 1),
-      error: (err) => {
-        console.error('Erreur paiement sanction:', err);
-        this.payMultipleSanctions(ids, index + 1);
-      }
-    });
+      .filter(s => this.selectedSanctions.has(s.id!))
+      .reduce((sum, s) => sum + this.calculerResteAPayer(s), 0);
   }
 
   // ============ CRUD SANCTIONS ============
@@ -672,7 +674,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       montant: 0,
       commentaire: '',
       etat: 'NON_PAYEE',
-      totalPaiements: 0,
+      montantPaye: 0,
       equipeMatch: '',
       selectedDate: ''
     };
@@ -737,7 +739,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editRow(sanction: Sanction): void {
-    this.editingRows.set(sanction.id, true);
+    this.editingRows.set(sanction.id!, true);
     this.editSanction = { 
       ...sanction,
       dateSanction: new Date(sanction.dateSanction)
@@ -766,10 +768,10 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       etat: this.editSanction.etat
     };
 
-    this.sanctionService.updateSanction(sanction.id, payload).subscribe({
+    this.sanctionService.updateSanction(sanction.id!, payload).subscribe({
       next: () => {
         this.loadData();
-        this.editingRows.delete(sanction.id);
+        this.editingRows.delete(sanction.id!);
         this.showSuccess('Sanction mise à jour');
       },
       error: (err) => {
@@ -781,12 +783,12 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancelEdit(sanction: Sanction): void {
-    this.editingRows.delete(sanction.id);
+    this.editingRows.delete(sanction.id!);
     this.editSanction = {};
   }
 
   isEditing(sanction: Sanction): boolean {
-    return this.editingRows.get(sanction.id) || false;
+    return this.editingRows.get(sanction.id!) || false;
   }
 
   openDeleteDialog(sanction: Sanction): void {
@@ -799,7 +801,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.deleteSanction(sanction.id);
+        this.deleteSanction(sanction.id!);
       }
     });
   }
@@ -819,271 +821,83 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ============ PAIEMENT DE SANCTION (NOUVEAU) ============
+
+  /**
+   * Ouvre le dialog de paiement avec liaison financière
+   */
   openPayDialog(sanction: Sanction): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: { 
-        message: `Marquer la sanction de ${this.getMembreName(sanction.membre)} comme payée ?
-                  Montant: ${this.formatMontant(sanction.montant)}`
-      }
+    const dialogRef = this.dialog.open(SanctionPaymentDialogComponent, {
+      width: '550px',
+      maxWidth: '95vw',
+      data: {
+        sanction: sanction,
+        caisses: this.caisses
+      } as PaymentDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.payerSanction(sanction.id);
+      if (result?.success) {
+        this.loadData();
+        this.showSuccess('Paiement enregistré avec succès');
       }
     });
   }
 
-  payerSanction(id: number): void {
-    this.isLoading = true;
-    this.sanctionService.payerSanction(id).subscribe({
-      next: () => {
-        this.loadData();
-        this.showSuccess('Sanction payée avec succès');
+  /**
+   * Affiche l'historique des paiements d'une sanction
+   */
+  showPaymentHistory(sanction: Sanction): void {
+    this.sanctionFinanceService.getHistoriquePaiements(sanction.id!).subscribe({
+      next: (paiements) => {
+        // TODO: Ouvrir un dialog avec l'historique des paiements
+        console.log('Historique paiements:', paiements);
       },
       error: (err) => {
-        console.error('Erreur paiement:', err);
-        this.isLoading = false;
-        this.showError('Erreur lors du paiement');
+        console.error('Erreur chargement historique:', err);
+        this.showError('Erreur lors du chargement de l\'historique');
       }
     });
   }
 
-  // ============ EXPORT PDF ============
+  // ============ HELPERS PAIEMENT ============
 
-  toggleExportDialog(): void {
-    this.showExportDialog = !this.showExportDialog;
+  /**
+   * Calcule le reste à payer pour une sanction
+   */
+  calculerResteAPayer(sanction: Sanction): number {
+    const montant = sanction.montant || 0;
+    const paye = sanction.montantPaye || 0;
+    return Math.max(0, montant - paye);
   }
 
-  exportToPDF(): void {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let yPos = 20;
-
-    // ===== EN-TÊTE =====
-    doc.setFillColor(102, 126, 234);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RAPPORT DES SANCTIONS', pageWidth / 2, 18, { align: 'center' });
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    const today = new Date().toLocaleDateString('fr-FR', { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-    });
-    doc.text(`Généré le ${today}`, pageWidth / 2, 30, { align: 'center' });
-
-    // Période si filtre de dates actif
-    const filters = this.filterForm.value;
-    if (filters.dateDebut || filters.dateFin) {
-      const debut = filters.dateDebut ? new Date(filters.dateDebut).toLocaleDateString('fr-FR') : 'Début';
-      const fin = filters.dateFin ? new Date(filters.dateFin).toLocaleDateString('fr-FR') : 'Aujourd\'hui';
-      doc.text(`Période: ${debut} - ${fin}`, pageWidth / 2, 36, { align: 'center' });
-    }
-
-    yPos = 50;
-
-    // ===== RÉSUMÉ STATISTIQUES =====
-    if (this.exportOptions.includeStats) {
-      doc.setTextColor(50, 50, 50);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RÉSUMÉ', 14, yPos);
-      yPos += 8;
-
-      // Boîtes de stats
-      const boxWidth = (pageWidth - 38) / 4;
-      const boxHeight = 25;
-      const statsData = [
-        { label: 'Total', value: this.filteredSanctions.length.toString(), color: [102, 126, 234] },
-        { label: 'Non payées', value: this.filteredSanctions.filter(s => s.etat === 'NON_PAYEE').length.toString(), color: [245, 158, 11] },
-        { label: 'Payées', value: this.filteredSanctions.filter(s => s.etat === 'PAYEE').length.toString(), color: [16, 185, 129] },
-        { label: 'Montant dû', value: this.formatMontant(this.filteredSanctions.filter(s => s.etat === 'NON_PAYEE').reduce((s, x) => s + x.montant, 0)), color: [239, 68, 68] }
-      ];
-
-      statsData.forEach((stat, i) => {
-        const x = 14 + (i * (boxWidth + 4));
-        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
-        doc.roundedRect(x, yPos, boxWidth, boxHeight, 3, 3, 'F');
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.text(stat.label, x + boxWidth / 2, yPos + 8, { align: 'center' });
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text(stat.value, x + boxWidth / 2, yPos + 18, { align: 'center' });
-        doc.setFont('helvetica', 'normal');
-      });
-
-      yPos += boxHeight + 15;
-    }
-
-    // ===== EXPORT GROUPÉ PAR MEMBRE =====
-    if (this.exportOptions.groupByMembre) {
-      this.exportGroupedPDF(doc, yPos);
-    } else {
-      this.exportFlatPDF(doc, yPos);
-    }
-
-    // ===== FOOTER =====
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text(
-        `Page ${i} sur ${pageCount}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
-    }
-
-    // Téléchargement
-    const filename = `sanctions_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
-    this.showSuccess('PDF exporté avec succès');
-    this.showExportDialog = false;
+  /**
+   * Calcule le pourcentage payé
+   */
+  calculerPourcentagePaye(sanction: Sanction): number {
+    if (!sanction.montant || sanction.montant <= 0) return 100;
+    const paye = sanction.montantPaye || 0;
+    return Math.min(100, (paye / sanction.montant) * 100);
   }
 
-  private exportGroupedPDF(doc: jsPDF, startY: number): void {
-    let yPos = startY;
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DÉTAIL PAR MEMBRE', 14, yPos);
-    yPos += 10;
-
-    this.groupedSanctions.forEach((group, groupIndex) => {
-      // Filtrer selon les options
-      let sanctions = group.sanctions;
-      if (!this.exportOptions.includePayees) {
-        sanctions = sanctions.filter(s => s.etat !== 'PAYEE');
-      }
-      if (!this.exportOptions.includeNonPayees) {
-        sanctions = sanctions.filter(s => s.etat !== 'NON_PAYEE');
-      }
-
-      if (sanctions.length === 0) return;
-
-      // Vérifier espace page
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      // En-tête membre
-      doc.setFillColor(240, 242, 245);
-      doc.roundedRect(14, yPos, pageWidth - 28, 12, 2, 2, 'F');
-      
-      doc.setTextColor(50, 50, 50);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      const membreName = `${group.membre.nom} ${group.membre.prenom}`;
-      doc.text(membreName, 18, yPos + 8);
-
-      // Stats membre
-      const statsText = `${sanctions.length} sanction(s) | Dû: ${this.formatMontant(group.totalRestant)}`;
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(statsText, pageWidth - 18, yPos + 8, { align: 'right' });
-      
-      yPos += 16;
-
-      // Tableau des sanctions du membre
-      const tableData = sanctions.map(s => [
-        this.getTypeSanctionName(s.typeSanction),
-        new Date(s.dateSanction).toLocaleDateString('fr-FR'),
-        this.formatMontant(s.montant),
-        s.etat === 'PAYEE' ? 'Payée' : 'Non payée',
-        s.commentaire || '-'
-      ]);
-
-      (doc as any).autoTable({
-        startY: yPos,
-        head: [['Type', 'Date', 'Montant', 'Statut', 'Commentaire']],
-        body: tableData,
-        theme: 'plain',
-        margin: { left: 18, right: 18 },
-        styles: {
-          fontSize: 8,
-          cellPadding: 2
-        },
-        headStyles: {
-          fillColor: [255, 255, 255],
-          textColor: [100, 100, 100],
-          fontStyle: 'bold',
-          lineWidth: 0.1,
-          lineColor: [200, 200, 200]
-        },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 30, halign: 'right' },
-          3: { cellWidth: 25, halign: 'center' },
-          4: { cellWidth: 'auto' }
-        },
-        didParseCell: (data: any) => {
-          if (data.column.index === 3 && data.cell.section === 'body') {
-            data.cell.styles.textColor = data.cell.raw === 'Payée' ? [16, 185, 129] : [245, 158, 11];
-            data.cell.styles.fontStyle = 'bold';
-          }
-        }
-      });
-
-      yPos = (doc as any).lastAutoTable.finalY + 10;
-    });
+  /**
+   * Obtient la classe CSS pour l'état de paiement
+   */
+  getPaymentClass(sanction: Sanction): string {
+    const pct = this.calculerPourcentagePaye(sanction);
+    if (pct >= 100) return 'payment-complete';
+    if (pct > 0) return 'payment-partial';
+    return 'payment-none';
   }
 
-  private exportFlatPDF(doc: jsPDF, startY: number): void {
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('LISTE DES SANCTIONS', 14, startY);
-
-    let sanctions = this.filteredSanctions;
-    if (!this.exportOptions.includePayees) {
-      sanctions = sanctions.filter(s => s.etat !== 'PAYEE');
-    }
-    if (!this.exportOptions.includeNonPayees) {
-      sanctions = sanctions.filter(s => s.etat !== 'NON_PAYEE');
-    }
-
-    const tableData = sanctions.map(s => [
-      this.getMembreName(s.membre),
-      this.getTypeSanctionName(s.typeSanction),
-      new Date(s.dateSanction).toLocaleDateString('fr-FR'),
-      this.formatMontant(s.montant),
-      s.etat === 'PAYEE' ? 'Payée' : 'Non payée'
-    ]);
-
-    (doc as any).autoTable({
-      startY: startY + 8,
-      head: [['Membre', 'Type', 'Date', 'Montant', 'Statut']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: {
-        fillColor: [102, 126, 234],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        3: { halign: 'right' },
-        4: { halign: 'center' }
-      },
-      didParseCell: (data: any) => {
-        if (data.column.index === 4 && data.cell.section === 'body') {
-          data.cell.styles.textColor = data.cell.raw === 'Payée' ? [16, 185, 129] : [245, 158, 11];
-          data.cell.styles.fontStyle = 'bold';
-        }
-      }
-    });
+  /**
+   * Obtient le libellé du paiement
+   */
+  getPaymentLabel(sanction: Sanction): string {
+    const pct = Math.round(this.calculerPourcentagePaye(sanction));
+    if (pct >= 100) return 'Payée';
+    if (pct > 0) return `${pct}%`;
+    return 'Non payée';
   }
 
   // ============ HELPERS ============
@@ -1138,11 +952,19 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getStatusIcon(etat: string): string {
-    return etat === 'PAYEE' ? 'check_circle' : 'schedule';
+    switch (etat) {
+      case 'PAYEE': return 'check_circle';
+      case 'PARTIELLE': return 'timelapse';
+      default: return 'schedule';
+    }
   }
 
   getStatusClass(etat: string): string {
-    return etat === 'PAYEE' ? 'status-paid' : 'status-unpaid';
+    switch (etat) {
+      case 'PAYEE': return 'status-paid';
+      case 'PARTIELLE': return 'status-partial';
+      default: return 'status-unpaid';
+    }
   }
 
   setupCustomSorting(): void {
@@ -1151,6 +973,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
         case 'membre': return this.getMembreName(item.membre);
         case 'typeSanction': return this.getTypeSanctionName(item.typeSanction);
         case 'dateSanction': return new Date(item.dateSanction).getTime();
+        case 'paiement': return this.calculerPourcentagePaye(item);
         default: return (item as any)[property];
       }
     };
@@ -1170,6 +993,197 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.viewMode === 'grouped') {
       this.updateGroupedSanctions();
     }
+  }
+
+  // ============ EXPORT PDF ============
+
+  toggleExportDialog(): void {
+    this.showExportDialog = !this.showExportDialog;
+  }
+
+  exportToPDF(): void {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPos = 20;
+
+    // En-tête
+    doc.setFillColor(102, 126, 234);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RAPPORT DES SANCTIONS', pageWidth / 2, 18, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const today = new Date().toLocaleDateString('fr-FR', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    doc.text(`Généré le ${today}`, pageWidth / 2, 30, { align: 'center' });
+
+    yPos = 50;
+
+    // Stats
+    if (this.exportOptions.includeStats) {
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RÉSUMÉ', 14, yPos);
+      yPos += 10;
+
+      const boxWidth = (pageWidth - 38) / 4;
+      const boxHeight = 25;
+      const statsData = [
+        { label: 'Total', value: this.stats.total.toString(), color: [102, 126, 234] },
+        { label: 'Non payées', value: this.stats.nonPayees.toString(), color: [245, 158, 11] },
+        { label: 'Partielles', value: this.stats.partielles.toString(), color: [139, 92, 246] },
+        { label: 'Montant dû', value: this.formatMontant(this.stats.montantRestant), color: [239, 68, 68] }
+      ];
+
+      statsData.forEach((stat, i) => {
+        const x = 14 + (i * (boxWidth + 4));
+        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
+        doc.roundedRect(x, yPos, boxWidth, boxHeight, 3, 3, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.text(stat.label, x + boxWidth / 2, yPos + 8, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(stat.value, x + boxWidth / 2, yPos + 18, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+      });
+
+      yPos += boxHeight + 15;
+    }
+
+    // Export data
+    if (this.exportOptions.groupByMembre) {
+      this.exportGroupedPDF(doc, yPos);
+    } else {
+      this.exportFlatPDF(doc, yPos);
+    }
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Page ${i} sur ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+
+    const filename = `sanctions_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    this.showSuccess('PDF exporté avec succès');
+    this.showExportDialog = false;
+  }
+
+  private exportGroupedPDF(doc: jsPDF, startY: number): void {
+    // Implementation...
+    let yPos = startY;
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DÉTAIL PAR MEMBRE', 14, yPos);
+    yPos += 10;
+
+    this.groupedSanctions.forEach((group) => {
+      let sanctions = group.sanctions;
+      if (!this.exportOptions.includePayees) {
+        sanctions = sanctions.filter(s => s.etat !== 'PAYEE');
+      }
+      if (!this.exportOptions.includeNonPayees) {
+        sanctions = sanctions.filter(s => s.etat !== 'NON_PAYEE');
+      }
+
+      if (sanctions.length === 0) return;
+
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFillColor(240, 242, 245);
+      doc.roundedRect(14, yPos, pageWidth - 28, 12, 2, 2, 'F');
+      
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      const membreName = `${group.membre.nom} ${group.membre.prenom}`;
+      doc.text(membreName, 18, yPos + 8);
+
+      const statsText = `${sanctions.length} sanction(s) | Dû: ${this.formatMontant(group.totalRestant)}`;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(statsText, pageWidth - 18, yPos + 8, { align: 'right' });
+      
+      yPos += 16;
+
+      const tableData = sanctions.map(s => [
+        this.getTypeSanctionName(s.typeSanction),
+        new Date(s.dateSanction).toLocaleDateString('fr-FR'),
+        this.formatMontant(s.montant),
+        this.formatMontant(s.montantPaye || 0),
+        this.getPaymentLabel(s)
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Type', 'Date', 'Montant', 'Payé', 'Statut']],
+        body: tableData,
+        theme: 'plain',
+        margin: { left: 18, right: 18 },
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: {
+          fillColor: [255, 255, 255],
+          textColor: [100, 100, 100],
+          fontStyle: 'bold'
+        }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    });
+  }
+
+  private exportFlatPDF(doc: jsPDF, startY: number): void {
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LISTE DES SANCTIONS', 14, startY);
+
+    let sanctions = this.filteredSanctions;
+    if (!this.exportOptions.includePayees) {
+      sanctions = sanctions.filter(s => s.etat !== 'PAYEE');
+    }
+    if (!this.exportOptions.includeNonPayees) {
+      sanctions = sanctions.filter(s => s.etat !== 'NON_PAYEE');
+    }
+
+    const tableData = sanctions.map(s => [
+      this.getMembreName(s.membre),
+      this.getTypeSanctionName(s.typeSanction),
+      new Date(s.dateSanction).toLocaleDateString('fr-FR'),
+      this.formatMontant(s.montant),
+      this.formatMontant(s.montantPaye || 0),
+      this.getPaymentLabel(s)
+    ]);
+
+    (doc as any).autoTable({
+      startY: startY + 8,
+      head: [['Membre', 'Type', 'Date', 'Montant', 'Payé', 'Statut']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [102, 126, 234],
+        textColor: 255,
+        fontStyle: 'bold'
+      }
+    });
   }
 
   // ============ NOTIFICATIONS ============

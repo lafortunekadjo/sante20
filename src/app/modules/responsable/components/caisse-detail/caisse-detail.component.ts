@@ -21,14 +21,27 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { Caisse, FinancesService } from '../../../../core/services/finances.service';
+import { FinancesService } from '../../../../core/services/finances.service';
 
-// Services
 
 
 // Interfaces
-
-
+interface Caisse {
+  id: number;
+  nom: string;
+  description?: string;
+  type: string;
+  soldeActuel: number;
+  soldeReporte: number;
+  totalEntrees: number;
+  totalSorties: number;
+  couleur: string;
+  icone: string;
+  actif: boolean;
+  seuilAlerteMin?: number;
+  seuilAlerteMax?: number;
+  exercice?: any;
+}
 
 interface MouvementCaisse {
   id: number;
@@ -80,8 +93,8 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
   // États
   isLoading = true;
   caisseId: number | null = null;
-  caisse: Caisse | null = null;
-  mouvements: MouvementCaisse[] = [];
+  caisse: any | null = null;
+  mouvements: any[] = [];
 
   // Table
   displayedColumns = ['date', 'type', 'libelle', 'membre', 'montant', 'statut'];
@@ -123,7 +136,7 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
 
-    // Charger les détails de la caisse
+    // Charger les informations de la caisse
     this.financesService.getCaisseById(this.caisseId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -132,8 +145,8 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
           this.loadMouvements();
         },
         error: () => {
-          this.isLoading = false;
-          this.showError('Erreur lors du chargement de la caisse');
+          // Si getCaisseById n'est pas disponible, charger quand même les mouvements
+          this.loadMouvements();
         }
       });
   }
@@ -141,11 +154,18 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
   loadMouvements(): void {
     if (!this.caisseId) return;
 
+    // Utiliser getMouvementsByCaisse qui charge tous les mouvements
     this.financesService.getMouvementsByCaisse(this.caisseId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (mouvements) => {
           this.mouvements = mouvements;
+          
+          // Extraire les infos de la caisse depuis le premier mouvement si pas encore chargées
+          if (!this.caisse && mouvements.length > 0 && mouvements[0].caisse) {
+            this.caisse = mouvements[0].caisse as Caisse;
+          }
+          
           this.applyFilter();
           this.calculateStats();
           this.isLoading = false;

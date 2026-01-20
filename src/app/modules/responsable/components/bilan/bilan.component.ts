@@ -22,6 +22,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { FinancesService } from '../../../../core/services/finances.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 // Interfaces
 interface Exercice {
@@ -116,16 +117,16 @@ interface StatistiquesBilan {
 export class BilanComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
-
+  Math = Math;
   // États
   isLoading = true;
   exercices: Exercice[] = [];
   selectedExerciceId: number | null = null;
-  bilanData: BilanData | null = null;
+  bilanData: any | null = null;
 
   constructor(
     private financesService: FinancesService,
-    private groupeService: GroupeService,
+    private authService: AuthService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -140,7 +141,7 @@ export class BilanComponent implements OnInit, OnDestroy {
 
   loadData(): void {
     this.isLoading = true;
-    const groupeId = this.groupeService.getGroupeConn();
+    const groupeId = this.authService.getGroupe();
 
     if (!groupeId) {
       this.isLoading = false;

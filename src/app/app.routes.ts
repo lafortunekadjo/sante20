@@ -56,6 +56,12 @@ import { ExerciceManagementComponent } from "./modules/responsable/components/ex
 import { FinancialDashboardComponent } from "./modules/responsable/components/financial-dashboard/financial-dashboard.component";
 import { SortieCaisseComponent } from "./modules/responsable/components/sortie-caisse/sortie-caisse.component";
 import { TypeContributionComponent } from "./modules/responsable/components/type-contribution/type-contribution.component";
+import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
+import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
+import { CaissesComponent } from "./modules/responsable/components/caisses/caisses.component";
+import { EcheancierComponent } from "./modules/responsable/components/echeancier/echeancier.component";
+import { MouvementsHistoriqueComponent } from "./modules/responsable/components/mouvements-historique/mouvements-historique.component";
+import { TypeDepenseComponent } from "./modules/responsable/components/type-depense/type-depense.component";
 
 // ==================== FINANCES - NOUVEAUX COMPOSANTS ====================
 
@@ -250,6 +256,12 @@ export const routes: Routes = [
             component: PresenceFormComponent,
             canActivate: [RoleGuard]
           },
+           {
+                path: 'finances/caisses/:id',
+                component: CaisseDetailComponent,
+                data: { title: 'Détail de la caisse' },
+                canActivate: [RoleGuard]
+              },
           {
             path: 'equipes',
             component: PaiementSanctionFormComponent,
@@ -322,34 +334,37 @@ export const routes: Routes = [
                 data: { title: 'Types de contributions' }
               },
 
-              // // Gestion des caisses
-              // {
-              //   path: 'caisses',
-              //   component: CaissesComponent,
-              //   data: { title: 'Gestion des caisses' }
-              // },
-              // {
-              //   path: 'caisses/:id',
-              //   component: CaisseDetailComponent,
-              //   data: { title: 'Détail de la caisse' }
-              // },
+              // Gestion des caisses
+              {
+                path: 'caisses',
+                component: CaissesComponent,
+                data: { title: 'Gestion des caisses' }
+              },
+             
 
-              // // Historique et rapports
-              // {
-              //   path: 'mouvements',
-              //   component: MouvementsHistoriqueComponent,
-              //   data: { title: 'Historique des mouvements' }
-              // },
-              // {
-              //   path: 'bilan',
-              //   component: BilanComponent,
-              //   data: { title: 'Bilan financier' }
-              // },
-              // {
-              //   path: 'echeancier',
-              //   component: EcheancierComponent,
-              //   data: { title: 'Échéancier des cotisations' }
-              // }
+              // Historique et rapports
+              {
+                path: 'mouvements',
+                component: MouvementsHistoriqueComponent,
+                data: { title: 'Historique des mouvements' }
+              },
+              {
+                path: 'bilan',
+                component: BilanComponent,
+                data: { title: 'Bilan financier' }
+              },
+              {
+                path: 'echeancier',
+                component: EcheancierComponent,
+                data: { title: 'Échéancier des cotisations' }
+              },
+                // Types de depense
+              {
+                path: 'types-depenses',
+                component: TypeDepenseComponent,
+                data: { title: 'Types de depenses' }
+              },
+
             ]
           },
 

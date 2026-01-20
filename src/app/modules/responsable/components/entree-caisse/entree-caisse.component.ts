@@ -72,7 +72,7 @@ export class EntreeCaisseComponent implements OnInit {
 
   isLoading = true;
   isSaving = false;
-  showForm = true;
+  showForm = false;
 
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
@@ -99,6 +99,10 @@ export class EntreeCaisseComponent implements OnInit {
     private router: Router
   ) {
     this.initForm();
+  }
+
+  toggleForm() {
+    this.showForm = !this.showForm;
   }
 
   ngOnInit(): void {
@@ -237,11 +241,13 @@ export class EntreeCaisseComponent implements OnInit {
         this.resetForm();
         this.loadData(); // Recharger les dernières entrées
         this.isSaving = false;
+        this.showForm = false;
       },
       error: (err) => {
         console.error('Erreur enregistrement:', err);
         this.showError(err.error?.message || 'Erreur lors de l\'enregistrement');
         this.isSaving = false;
+        
       }
     });
   }
