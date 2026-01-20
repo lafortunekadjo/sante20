@@ -63,6 +63,12 @@ import { EcheancierComponent } from "./modules/responsable/components/echeancier
 import { MouvementsHistoriqueComponent } from "./modules/responsable/components/mouvements-historique/mouvements-historique.component";
 import { TypeDepenseComponent } from "./modules/responsable/components/type-depense/type-depense.component";
 
+//import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
+//import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
+//import { MouvementsHistoriqueComponent } from "./modules/responsable/components/mouvements-historique/mouvements-historique.component";
+//import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
+//import { EcheancierComponent } from "./modules/responsable/components/echeancier/echeancier.component";
+
 // ==================== FINANCES - NOUVEAUX COMPOSANTS ====================
 
 
@@ -334,6 +340,7 @@ export const routes: Routes = [
                 data: { title: 'Types de contributions' }
               },
 
+
               // Gestion des caisses
               {
                 path: 'caisses',
@@ -364,6 +371,7 @@ export const routes: Routes = [
                 component: TypeDepenseComponent,
                 data: { title: 'Types de depenses' }
               },
+
 
             ]
           },
