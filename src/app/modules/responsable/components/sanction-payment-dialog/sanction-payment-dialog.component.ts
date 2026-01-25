@@ -376,6 +376,42 @@ export interface PaymentDialogData {
       }
     }
 
+    /* styles-dialog.css */
+
+/* Structure principale du dialog */
+.payment-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh; /* limite à 90% de la hauteur de l’écran */
+}
+
+/* Header et actions fixes */
+.payment-dialog .dialog-header,
+.payment-dialog .dialog-actions {
+  flex-shrink: 0;
+}
+
+/* Contenu scrollable */
+.payment-dialog .dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+/* Responsive sur petit écran */
+@media (max-width: 600px) {
+  .payment-dialog {
+    max-width: 100%;
+    min-width: 100%;
+    border-radius: 0; /* plein écran */
+  }
+
+  .dialog-content {
+    padding: 12px;
+  }
+}
+
+
     // Dark theme
     :host-context(.dark-theme) {
       .dialog-header {
