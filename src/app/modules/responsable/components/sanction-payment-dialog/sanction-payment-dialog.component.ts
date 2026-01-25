@@ -62,10 +62,7 @@ export interface PaymentDialogData {
 
       <!-- Résumé de la sanction -->
       <div class="sanction-summary">
-        <div class="summary-row">
-          <span class="label">Type de sanction</span>
-          <span class="value">{{ data.sanction.typeSanction }}</span>
-        </div>
+
         <div class="summary-row">
           <span class="label">Date</span>
           <span class="value">{{ data.sanction.dateSanction | date:'dd/MM/yyyy' }}</span>
@@ -78,10 +75,7 @@ export interface PaymentDialogData {
           <span class="label">Déjà payé</span>
           <span class="value paid">{{ formatMontant(data.sanction.montantPaye) }}</span>
         </div>
-        <div class="summary-row highlight">
-          <span class="label">Reste à payer</span>
-          <span class="value remaining">{{ formatMontant(resteAPayer) }}</span>
-        </div>
+       
       </div>
 
       <mat-divider></mat-divider>
