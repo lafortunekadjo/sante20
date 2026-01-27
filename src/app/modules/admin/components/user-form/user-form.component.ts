@@ -88,7 +88,7 @@ export class UserFormComponent implements OnInit, AfterViewInit {
     active: true,
     membre: 0,
     motDePasse: '',
-    groupe: null,
+    groupe: 0,
     profilePhotoUrl: ''
   };
   
