@@ -22,7 +22,7 @@ export class UserService {
       return this.http.get<User[]>(`${environment.apiUrl}/user/allNotDelete2`);
     }
 
-    createUser(user: User): Observable<User> {
+    createUser(user: any): Observable<User> {
       console.log(user)
     return this.http.post<User>(`${environment.apiUrl}/user/create`, user).pipe(
       catchError(err => {
@@ -34,7 +34,7 @@ export class UserService {
 
   
 
-  createUser2(user: User): Observable<User> {
+  createUser2(user: any): Observable<User> {
       console.log(user)
     return this.http.post<User>(`${environment.apiUrl}/user/create2`, user).pipe(
       catchError(err => {
