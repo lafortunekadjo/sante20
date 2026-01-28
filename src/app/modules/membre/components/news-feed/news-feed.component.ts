@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { forkJoin, Observable, BehaviorSubject, of, Subject } from 'rxjs';
+import { forkJoin, Observable, BehaviorSubject, of, Subject, lastValueFrom } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { Match, TypeMatch } from '../../../../core/models/match.model';
@@ -31,6 +31,7 @@ import { MatMenuModule } from "@angular/material/menu";
 import { TranslateModule } from '@ngx-translate/core';
 import { CalendarComponent } from '../../../responsable/components/calendar/calendar.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { PresenceService } from '../../../../core/services/presence.service';
 
 // // Interface Exercice
 // interface Exercice {
@@ -53,6 +54,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatProgressSpinnerModule,
     MatIconModule,
     MatTooltipModule,
+    
     MatMenuModule,
     TranslateModule
   ],
@@ -96,6 +98,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private groupeService: GroupeService,
     private financesService: FinancesService,
     private authService: AuthService,
+    private presenceService: PresenceService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {
@@ -592,13 +595,27 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       maxHeight: '90vh',
       data: {
         match: match,
-        presences: this.allPresences$,
+         presences: this.getPresenceByMatch(match),
         equipeNames: this.getEquipeNames(match)
       },
       panelClass: 'modern-dialog',
       autoFocus: false
     });
   }
+
+  
+ async getPresenceByMatch(match: Match): Promise<Presence[]> {
+  if (!match?.id) return [];
+  
+  try {
+    // On convertit l'Observable en Promesse pour "attendre" le résultat
+    const presences = await lastValueFrom(this.presenceService.getPresencesByMatch(match.groupe.id, match.id));
+    return presences;
+  } catch (error) {
+    console.error('Erreur de récupération', error);
+    return [];
+  }
+}
 
   viewContributions(contributionId: number) {
     this.generalService.getContributionIndividuellesByContributionId(contributionId).subscribe({
