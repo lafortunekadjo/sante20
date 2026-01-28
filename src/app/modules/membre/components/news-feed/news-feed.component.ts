@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { forkJoin, Observable, BehaviorSubject, of, Subject } from 'rxjs';
+import { forkJoin, Observable, BehaviorSubject, of, Subject, lastValueFrom } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { Match, TypeMatch } from '../../../../core/models/match.model';
@@ -31,6 +31,7 @@ import { MatMenuModule } from "@angular/material/menu";
 import { TranslateModule } from '@ngx-translate/core';
 import { CalendarComponent } from '../../../responsable/components/calendar/calendar.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { PresenceService } from '../../../../core/services/presence.service';
 
 // // Interface Exercice
 // interface Exercice {
@@ -96,6 +97,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private groupeService: GroupeService,
     private financesService: FinancesService,
     private authService: AuthService,
+    private presenceService: PresenceService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {
@@ -179,15 +181,15 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   // ===== MÉTHODE CLÉ: Obtenir les noms d'équipes selon le type de match =====
 
-  getEquipeNames(match: Match): [string, string] {
+  getEquipeNames(match: any): [string, string] {
     if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
 
     switch (match.typeMatch) {
       case 'INTERNE':
       case 'DUEL':
         return [
-          match.equipe1?.nom || 'Équipe 1',
-          match.equipe2?.nom || 'Équipe 2'
+          match.equipe1Nom || 'Équipe 1',
+          match.equipe2Nom || 'Équipe 2'
         ];
 
       case 'AMICAL':
@@ -584,20 +586,68 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     }
   }
 
-  openPresenceDialog(match: Match): void {
-    this.dialog.open(MatchPresenceDialogComponent, {
-      width: '800px',
-      maxWidth: '95vw',
-      maxHeight: '90vh',
-      data: {
-        match: match,
-        presences: this.allPresences$,
-        equipeNames: this.getEquipeNames(match)
-      },
-      panelClass: 'modern-dialog',
-      autoFocus: false
-    });
+//  async openPresenceDialog(match: Match): Promise<void> {
+//   // 1. On récupère les données avant (le dialogue ne s'ouvre pas encore)
+//   const presencesRecues = await this.getPresenceByMatch(match);
+  
+//   // 2. On ouvre le dialogue avec les données réelles
+//   this.dialog.open(MatchPresenceDialogComponent, {
+//     width: '800px',
+//     maxWidth: '95vw',
+//     maxHeight: '90vh',
+//     data: {
+//       match: match,
+//       presences: presencesRecues, // Ici c'est un Presence[] et non une Promise
+//       equipeNames: this.getEquipeNames(match)
+//     },
+//     panelClass: 'modern-dialog',
+//     autoFocus: false
+//   });
+// }
+
+async openPresenceDialog(match: Match): Promise<void> {
+  document.body.style.cursor = 'wait'; // Curseur de chargement
+  try {
+    const presencesRecues = await this.getPresenceByMatch(match);
+    this.dialog.open(MatchPresenceDialogComponent, { width: '800px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    data: {
+      match: match,
+      presences: presencesRecues, // Ici c'est un Presence[] et non une Promise
+      equipeNames: this.getEquipeNames(match)
+    },
+    panelClass: 'modern-dialog',
+    autoFocus: false });
+  } finally {
+    document.body.style.cursor = 'default';
   }
+}
+
+ async getPresenceByMatch(match: Match): Promise<Presence[]> {
+  if (!match?.id) return [];
+  
+  try {
+    console.log(match)
+    const presences = await lastValueFrom(this.presenceService.getPresencesByMatch(this.groupeActif?.id, match.id));
+    return presences;
+  } catch (error) {
+    console.error('Erreur de récupération', error);
+    return [];
+  }
+}
+
+// getPresenceByMatch(match: Match): void {
+//   if (!match?.id) return;
+
+//   this.presenceService.getPresencesByMatch(match.groupe.id, match.id).subscribe({
+//     next: (data) => {
+//       this.presences = data;
+//       console.log('Présences récupérées', data);
+//     },
+//     error: (err) => console.error('Erreur lors de la récupération', err)
+//   });
+// }
 
   viewContributions(contributionId: number) {
     this.generalService.getContributionIndividuellesByContributionId(contributionId).subscribe({

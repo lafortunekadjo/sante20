@@ -136,7 +136,6 @@ export class MatchPresenceDialogComponent implements OnInit {
   }
 
   filterPresences(): void {
-    console.log(this.presencesList)
     console.log(this.data.presences)
     let filtered = [...this.presencesList];
 

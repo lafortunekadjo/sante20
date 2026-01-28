@@ -27,7 +27,7 @@ export class PresenceService {
     return this.http.post<Presence>(`${environment.apiUrl}/groupes/${groupeId}/matchs/${matchId}/presences`, presence);
   }
 
-  getPresencesByMatch(groupeId: number, matchId: number): Observable<Presence[]> {
+  getPresencesByMatch(groupeId: number | null | undefined, matchId: number): Observable<Presence[]> {
     return this.http.get<Presence[]>(`${environment.apiUrl}/groupes/${groupeId}/matchs/${matchId}/presences`);
   }
 

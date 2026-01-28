@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../environment';
@@ -19,12 +19,34 @@ export class MatchService {
   
   
   
-  // updateMatch(id: number, matchToSave: Match) : Observable<Match> {
-  //   return this.http.put<Match>(`${environment.apiUrl}/groupes/${id}`, matchToSave)
-  // }
-  // deleteMatch(id: number) {
-  //   return this.http.delete<void>(`${environment.apiUrl}/match/${id}`);
-  // }
+  getMatchesByDateRange(startDate: string, endDate: string): Observable<Match[]> {
+  const params = new HttpParams()
+    .set('startDate', startDate)
+    .set('endDate', endDate);
+    
+  return this.http.get<Match[]>(`${environment.apiUrl}/match/by-date-range`, { params });
+}
+
+/**
+ * Récupère les matchs pour un exercice spécifique
+ * 
+ * @param exerciceId ID de l'exercice
+ * @returns Observable<Match[]>
+ */
+getMatchesByExercice(exerciceId: number): Observable<Match[]> {
+  return this.http.get<Match[]>(`${environment.apiUrl}/match/exercice/${exerciceId}`);
+}
+
+/**
+ * Récupère les matchs de l'exercice en cours du groupe
+ * 
+ * @param groupeId ID du groupe
+ * @returns Observable<Match[]>
+ */
+getMatchesForCurrentExercice(groupeId: number): Observable<Match[]> {
+  return this.http.get<Match[]>(`${environment.apiUrl}/match/groupe/${groupeId}/current-exercice`);
+}
+
 
     updateGroupe(id: number, groupe: any): Observable<Groupe> {
     return this.http.put<Groupe>(`${environment.apiUrl}/groupes/${id}`, groupe);
