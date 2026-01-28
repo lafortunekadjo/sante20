@@ -179,7 +179,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   // ===== MÉTHODE CLÉ: Obtenir les noms d'équipes selon le type de match =====
 
-  getEquipeNames(match: Match): [string, string] {
+  getEquipeNames(match: any): [string, string] {
     console.log(match)
     if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
 
