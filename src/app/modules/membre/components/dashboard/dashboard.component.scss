@@ -24,16 +24,31 @@
   }
 }
 
-// ===== FILTRES HARMONISÉS =====
+// ===== FILTRES AMÉLIORÉS =====
 .filters-container {
   @include card-base;
   margin-bottom: $spacing-2xl;
   overflow: hidden;
 
+  @include mobile {
+    margin-bottom: $spacing-xl;
+  }
+
   .filters-header {
-    padding: $spacing-xl $spacing-xl $spacing-lg;
+    padding: $spacing-xl;
     border-bottom: 1px solid var(--divider-color);
     background: var(--background-tertiary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-lg;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: $spacing-lg;
+    }
 
     .filters-title {
       display: flex;
@@ -54,44 +69,349 @@
         color: var(--text-primary);
       }
     }
-  }
 
-  .filter-chips {
-    padding: $spacing-xl;
-
-    .date-filter-form {
+    .current-period-badge {
       display: flex;
       align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-lg;
+      background: rgba(var(--primary-rgb), 0.1);
+      border-radius: $border-radius-full;
+      font-size: $font-size-sm;
+      color: var(--primary-color);
+      font-weight: $font-weight-medium;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      .period-type-chip {
+        padding: 2px $spacing-sm;
+        border-radius: $border-radius-sm;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &.season {
+          background: var(--primary-color);
+          color: white;
+        }
+
+        &.custom {
+          background: $warning-color;
+          color: white;
+        }
+      }
+    }
+  }
+
+  .filters-body {
+    padding: $spacing-xl;
+
+    @include mobile {
+      padding: $spacing-lg;
+    }
+  }
+}
+
+// ===== TOGGLE MODE FILTRAGE =====
+.filter-mode-toggle {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid var(--divider-color);
+
+  @include mobile {
+    flex-direction: column;
+  }
+
+  button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-lg;
+    border-radius: $border-radius-lg;
+    font-weight: $font-weight-medium;
+    transition: $transition-base;
+    border: 2px solid var(--border-color);
+    background: var(--background-secondary);
+    color: var(--text-secondary);
+
+    @include mobile {
+      padding: $spacing-md;
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    &.active {
+      border-color: var(--primary-color);
+      background: var(--primary-color);
+      color: white;
+
+      &:hover {
+        background: var(--primary-dark);
+      }
+    }
+  }
+}
+
+// ===== FILTRE PAR SAISON =====
+.season-filter {
+  animation: fadeSlideIn 0.3s ease;
+
+  .season-select {
+    width: 100%;
+    max-width: 500px;
+
+    @include mobile {
+      max-width: 100%;
+    }
+  }
+
+  .selected-season-trigger {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    .season-name {
+      font-weight: $font-weight-semibold;
+    }
+
+    .current-badge {
+      padding: 2px $spacing-sm;
+      background: $success-color;
+      color: white;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-bold;
+      text-transform: uppercase;
+    }
+  }
+}
+
+// ===== OPTIONS DU SELECT SAISON =====
+.season-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-sm 0;
+  width: 100%;
+
+  .season-option-main {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    mat-icon {
+      color: var(--text-tertiary);
+      font-size: 24px;
+
+      &.active-icon {
+        color: $success-color;
+      }
+    }
+
+    .season-option-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .season-name {
+        font-weight: $font-weight-semibold;
+        color: var(--text-primary);
+        font-size: $font-size-md;
+      }
+
+      .season-period {
+        font-size: $font-size-xs;
+        color: var(--text-tertiary);
+      }
+    }
+  }
+
+  .season-option-badges {
+    display: flex;
+    gap: $spacing-xs;
+
+    .badge {
+      padding: 2px $spacing-sm;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+
+      &.current {
+        background: rgba($success-color, 0.1);
+        color: $success-color;
+      }
+
+      &.closed {
+        background: rgba(var(--text-tertiary-rgb), 0.1);
+        color: var(--text-tertiary);
+      }
+    }
+  }
+}
+
+// ===== INFO SAISON SÉLECTIONNÉE =====
+.season-info-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  margin-top: $spacing-xl;
+  padding: $spacing-xl;
+  background: var(--background-tertiary);
+  border-radius: $border-radius-xl;
+  border: 1px solid var(--border-color);
+
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    text-align: center;
+  }
+
+  .season-info-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex: 1;
+
+    @include mobile {
+      flex-direction: column;
+      gap: $spacing-xs;
+    }
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      color: var(--primary-color);
+
+      &.active {
+        color: $success-color;
+      }
+    }
+
+    .info-content {
+      display: flex;
+      flex-direction: column;
+
+      .info-label {
+        font-size: $font-size-xs;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .info-value {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        color: var(--text-primary);
+
+        &.active {
+          color: $success-color;
+        }
+      }
+    }
+  }
+
+  .season-info-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--divider-color);
+
+    @include mobile {
+      width: 60%;
+      height: 1px;
+    }
+  }
+}
+
+// ===== FILTRE PAR DATES =====
+.date-range-filter {
+  animation: fadeSlideIn 0.3s ease;
+
+  .date-filter-form {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-lg;
+    flex-wrap: wrap;
+
+    @include mobile {
+      flex-direction: column;
       gap: $spacing-md;
-      flex-wrap: wrap;
+    }
+
+    .date-field {
+      flex: 1;
+      min-width: 300px;
 
       @include mobile {
-        flex-direction: column;
-        align-items: stretch;
+        min-width: 100%;
+        width: 100%;
       }
+    }
 
-      .date-field {
-        flex: 1;
-        min-width: 300px;
+    .action-buttons {
+      display: flex;
+      gap: $spacing-md;
+      padding-top: $spacing-sm;
 
-        @include mobile {
-          min-width: auto;
-          width: 100%;
-        }
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: $spacing-sm;
+      @include mobile {
+        width: 100%;
+        justify-content: stretch;
 
         button {
-          transition: $transition-base;
-
-          &:hover {
-            transform: scale(1.1);
-          }
+          flex: 1;
         }
       }
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: $spacing-md $spacing-xl;
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+  }
+
+  .date-filter-help {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    padding: $spacing-md $spacing-lg;
+    background: rgba($info-color, 0.1);
+    border-radius: $border-radius-md;
+    color: $info-color;
+    font-size: $font-size-sm;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
   }
 }
@@ -220,7 +540,7 @@
   }
 
   .highlight-header {
-    background: linear-gradient(135deg, $accent-orange 0%, $accent-orange-dark 100%);
+    background: linear-gradient(135deg, $accent-orange 0%, darken($accent-orange, 15%) 100%);
     padding: $spacing-2xl;
     display: flex;
     align-items: center;
@@ -279,7 +599,6 @@
         font-size: $font-size-2xl;
         font-weight: $font-weight-bold;
         margin: 0 0 $spacing-sm 0;
-        text-shadow: $text-shadow;
 
         @include mobile {
           font-size: $font-size-xl;
@@ -370,7 +689,6 @@
         margin: 0;
         text-transform: uppercase;
         letter-spacing: 2px;
-        text-shadow: $text-shadow;
 
         @include mobile {
           font-size: $font-size-2xl;
@@ -409,7 +727,7 @@
       }
 
       &.victories .stat-icon {
-        background: linear-gradient(135deg, $success-color, $success-color);
+        background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
       }
 
       &.matches .stat-icon {
@@ -417,11 +735,11 @@
       }
 
       &.win-rate .stat-icon {
-        background: linear-gradient(135deg, $info-color, $info-color);
+        background: linear-gradient(135deg, $info-color, darken($info-color, 10%));
       }
 
       &.goals .stat-icon {
-        background: linear-gradient(135deg, $error-color, $error-color);
+        background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
       }
 
       .stat-icon {
@@ -646,7 +964,7 @@
     position: absolute;
     top: -10px;
     right: -10px;
-    background: linear-gradient(135deg, $accent-orange, $accent-orange-light);
+    background: linear-gradient(135deg, $accent-orange, lighten($accent-orange, 15%));
     width: 80px;
     height: 80px;
     border-radius: 50%;
@@ -734,16 +1052,12 @@
       }
 
       &.gold {
-        background: linear-gradient(135deg, $accent-orange, $accent-orange-light);
+        background: linear-gradient(135deg, $accent-orange, lighten($accent-orange, 15%));
       }
 
       &.silver {
         background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
         color: #666;
-      }
-
-      &.bronze {
-        background: linear-gradient(135deg, #cd7f32, #e8a87c);
       }
 
       &.star {
@@ -890,11 +1204,11 @@
   }
 
   &.success-gradient::before {
-    background: linear-gradient(135deg, $success-color, $success-color);
+    background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
   }
 
   &.warning-gradient::before {
-    background: linear-gradient(135deg, $warning-color, $warning-color);
+    background: linear-gradient(135deg, $warning-color, darken($warning-color, 10%));
   }
 
   .metric-header {
@@ -943,7 +1257,7 @@
   }
 
   .metric-badge {
-    background: linear-gradient(135deg, $error-color, $error-color);
+    background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
     color: white;
     font-weight: $font-weight-semibold;
     min-width: 24px;
@@ -965,10 +1279,6 @@
       background-clip: text;
       line-height: 1;
       margin-bottom: $spacing-sm;
-
-      @include mobile {
-        font-size: $font-size-3xl;
-      }
     }
 
     .metric-label {
@@ -1222,15 +1532,15 @@
   }
 
   &.paid-theme .card-header-modern {
-    background: linear-gradient(135deg, $success-color, $success-color);
+    background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
   }
 
   &.unpaid-theme .card-header-modern {
-    background: linear-gradient(135deg, $error-color, $error-color);
+    background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
   }
 
   &.cards-theme .card-header-modern {
-    background: linear-gradient(135deg, $warning-color, $warning-color);
+    background: linear-gradient(135deg, $warning-color, darken($warning-color, 10%));
   }
 }
 
@@ -1281,6 +1591,17 @@
 }
 
 // ===== ANIMATIONS =====
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }

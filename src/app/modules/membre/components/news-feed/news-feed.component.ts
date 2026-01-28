@@ -4,8 +4,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { forkJoin, Observable, BehaviorSubject, of } from 'rxjs';
-import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
+import { forkJoin, Observable, BehaviorSubject, of, Subject } from 'rxjs';
+import { catchError, finalize, map, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { Match, TypeMatch } from '../../../../core/models/match.model';
 import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
@@ -18,6 +18,7 @@ import { MatchService } from '../../../../core/services/match.service';
 import { ContributionService } from '../../../../core/services/contribution.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
+import { Exercice, FinancesService } from '../../../../core/services/finances.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MediaPreviewDialogComponent } from '../media-preview-dialog/media-preview-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -31,6 +32,15 @@ import { TranslateModule } from '@ngx-translate/core';
 import { CalendarComponent } from '../../../responsable/components/calendar/calendar.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+// // Interface Exercice
+// interface Exercice {
+//   id: number;
+//   nom: string;
+//   dateDebut: string;
+//   dateFin: string;
+//   actif: boolean;
+//   cloture: boolean;
+// }
 
 @Component({
   selector: 'app-news-feed',
@@ -50,6 +60,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrls: ['./news-feed.component.scss']
 })
 export class NewsFeedComponent implements OnInit, OnDestroy {
+  
+  private destroy$ = new Subject<void>();
+  
   isLoading: boolean = true;
   currentEvents: Evenement[] = [];
   recentMatches: Match[] = [];
@@ -69,6 +82,11 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   
   // Groupe actif pour les matchs amicaux
   groupeActif: Groupe | null = null;
+  
+  // ✅ NOUVEAU: Exercice en cours
+  exerciceEnCours: Exercice | null = null;
+  exerciceDateDebut: Date | null = null;
+  exerciceDateFin: Date | null = null;
 
   constructor(
     private generalService: GeneralService,
@@ -76,6 +94,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private contributionService: ContributionService,
     private membreService: MembreService,
     private groupeService: GroupeService,
+    private financesService: FinancesService,
     private authService: AuthService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
@@ -84,27 +103,78 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadGroupeActif();
-    this.loadFeedData();
+    this.loadGroupeAndExercice();
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.allPresences$.complete();
     Object.values(this.mediaBlobUrls).forEach(({ url }) => window.URL.revokeObjectURL(url));
   }
 
-  // ===== CHARGEMENT DU GROUPE ACTIF =====
+  // ===== CHARGEMENT DU GROUPE ET DE L'EXERCICE EN COURS =====
   
-  private loadGroupeActif(): void {
+  private loadGroupeAndExercice(): void {
     const userId = this.authService.getUserId();
-    if (userId) {
-      this.groupeService.getGroupe(userId).subscribe({
-        next: (groupe) => {
-          this.groupeActif = groupe;
-        },
-        error: (err) => console.error('Erreur chargement groupe:', err)
-      });
+    const groupeId = this.authService.getGroupe();
+    
+    if (!userId || !groupeId) {
+      console.error('User ID ou Groupe ID non trouvé');
+      this.loadFeedData();
+      return;
     }
+
+    // Charger le groupe et l'exercice en parallèle
+    forkJoin({
+      groupe: this.groupeService.getGroupe(userId),
+      exercice: this.financesService.getExerciceActif(groupeId).pipe(
+        catchError(err => {
+          console.warn('Pas d\'exercice actif trouvé:', err);
+          return of(null);
+        })
+      )
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: ({ groupe, exercice }) => {
+        this.groupeActif = groupe;
+        
+        if (exercice) {
+          this.exerciceEnCours = exercice;
+          this.exerciceDateDebut = new Date(exercice.dateDebut);
+          this.exerciceDateFin = new Date(exercice.dateFin);
+          
+          console.log('Exercice en cours:', exercice.libelle);
+          console.log('Période:', this.exerciceDateDebut, '-', this.exerciceDateFin);
+        }
+        
+        this.loadFeedData();
+      },
+      error: (err) => {
+        console.error('Erreur chargement groupe/exercice:', err);
+        this.loadFeedData();
+      }
+    });
+  }
+
+  // ===== MÉTHODE CLÉ: Vérifier si une date est dans l'exercice en cours =====
+  
+  private isDateInCurrentExercice(date: Date | string): boolean {
+    if (!this.exerciceDateDebut || !this.exerciceDateFin) {
+      return true; // Si pas d'exercice défini, tout afficher
+    }
+    
+    const checkDate = typeof date === 'string' ? new Date(date) : date;
+    checkDate.setHours(0, 0, 0, 0);
+    
+    const start = new Date(this.exerciceDateDebut);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(this.exerciceDateFin);
+    end.setHours(23, 59, 59, 999);
+    
+    return checkDate >= start && checkDate <= end;
   }
 
   // ===== MÉTHODE CLÉ: Obtenir les noms d'équipes selon le type de match =====
@@ -175,6 +245,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     return labels[type] || 'Match';
   }
 
+  // ===== FILTRER LES MATCHS RÉCENTS (MODIFIÉ POUR EXERCICE) =====
+  
   private filterAndSortRecentMatches(matches: Match[], allPresences: Presence[], today: Date): Match[] {
     const playedMatchIds = new Set<number>();
     
@@ -184,15 +256,24 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       }
     }
 
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 60);
+    // Filtrer par exercice en cours si disponible
+    const startDate = this.exerciceDateDebut || new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const endDate = this.exerciceDateFin || today;
     
     return matches
       .filter(m => {
         const matchDate = new Date(m.dateMatch);
-        const isRecent = matchDate >= thirtyDaysAgo && matchDate <= today;
+        
+        // Le match doit être dans l'exercice en cours
+        const isInExercice = this.isDateInCurrentExercice(matchDate);
+        
+        // Le match doit avoir été joué
         const hasBeenPlayed = playedMatchIds.has(m.id);
-        return isRecent && hasBeenPlayed;
+        
+        // Le match ne doit pas être dans le futur
+        const isNotFuture = matchDate <= today;
+        
+        return isInExercice && hasBeenPlayed && isNotFuture;
       })
       .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
   }
@@ -210,6 +291,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     this.showAllMatches = !this.showAllMatches;
   }
 
+  // ===== CHARGEMENT DES DONNÉES (MODIFIÉ POUR EXERCICE) =====
+  
   loadFeedData(): void {
     this.isLoading = true;
 
@@ -231,30 +314,39 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         const typedPresences: Presence[] = presences;
         const typedContributions: Contribution[] = contributions;
         
-        this.currentEvents = events.filter(e => e.estContributionOuverte && new Date(e.dateEvenement) <= today);
-        this.recentMatches = this.filterAndSortRecentMatches(matches, presences, new Date());
-        this.allMatches=matches
+        // ✅ FILTRER les événements par exercice en cours
+        this.currentEvents = events.filter(e => {
+          const eventDate = new Date(e.dateEvenement);
+          return e.estContributionOuverte && 
+                 eventDate <= today && 
+                 this.isDateInCurrentExercice(eventDate);
+        });
+        
+        // ✅ FILTRER les matchs par exercice en cours
+        this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
+        this.allMatches = matches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
 
+        // ✅ FILTRER les contributions par exercice en cours
         this.ongoingContributions = typedContributions
+          .filter(contrib => {
+            const delaiDate = new Date(contrib.delaiContribution);
+            return delaiDate >= today && this.isDateInCurrentExercice(contrib.delaiContribution);
+          })
           .map(contrib => ({
             contribution: contrib,
             individuelles: Array.isArray(this.contributionService.getContributionsIndividuellesById(contrib.id || 0)) 
               ? this.contributionService.getContributionsIndividuellesById(contrib.id || 0) 
               : []
-          }))
-          .filter(c => new Date(c.contribution.delaiContribution) >= today);
-        console.log(typedMembres)
+          }));
+        
+        // Anniversaires (pas de filtre exercice - toujours pertinent)
         this.upcomingBirthdays = typedMembres
             .filter(m => !!m.dateNaissance)
             .map(m => {
                 const birthDate = new Date(m.dateNaissance);
-                
-                // 1. Définir l'anniversaire pour l'année en cours (à minuit)
                 const nextBirthDate = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-                nextBirthDate.setHours(0, 0, 0, 0); // <-- Bonne pratique : S'assurer que la date d'anniv est aussi à minuit
+                nextBirthDate.setHours(0, 0, 0, 0);
                 
-                // 2. Si l'anniversaire est déjà passé (nextBirthDate < today), on passe à l'année suivante.
-                // Puisque today est à minuit, cette comparaison est fiable.
                 if (nextBirthDate < today) {
                     nextBirthDate.setFullYear(today.getFullYear() + 1);
                 }
@@ -262,31 +354,36 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
                 return { membre: m, date: nextBirthDate };
             })
             .filter(b => {
-                // 1. Calculer la date limite (30 jours après 'today' à minuit)
                 const thirtyDaysLater = new Date(today);
                 thirtyDaysLater.setDate(today.getDate() + 30);
-                // thirtyDaysLater est déjà à minuit, donc cela correspond au début du 30e jour après aujourd'hui.
-                
-                // 2. Filtrer : La date doit être >= aujourd'hui ET <= 30 jours plus tard
                 return b.date >= today && b.date <= thirtyDaysLater;
             })
             .sort((a, b) => a.date.getTime() - b.date.getTime());
         
         this.groupAnnouncements = [];
         
+        // ✅ CALCULER LES STATS UNIQUEMENT SUR L'EXERCICE EN COURS
+        const presencesExercice = typedPresences.filter(p => {
+          if (!p.match?.dateMatch) return false;
+          return this.isDateInCurrentExercice(p.match.dateMatch);
+        });
+        
         const scorerMap = new Map<number, number>();
         const passerMap = new Map<number, number>();
-        typedPresences.forEach(p => {
+        
+        presencesExercice.forEach(p => {
           if (p.membre?.id) {
             scorerMap.set(p.membre.id, (scorerMap.get(p.membre.id) || 0) + (p.buts || 0));
             passerMap.set(p.membre.id, (passerMap.get(p.membre.id) || 0) + (p.passes || 0));
           }
         });
+        
         this.topScorers = Array.from(scorerMap.entries())
           .map(([id, buts]) => ({ membre: typedMembres.find(m => m.id === id)!, buts }))
           .filter(s => s.membre && s.buts > 0)
           .sort((a, b) => b.buts - a.buts)
           .slice(0, 5);
+          
         this.topPassers = Array.from(passerMap.entries())
           .map(([id, passes]) => ({ membre: typedMembres.find(m => m.id === id)!, passes }))
           .filter(p => p.membre && p.passes > 0)
@@ -347,20 +444,15 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== MÉTHODE CORRIGÉE: Calcul du score =====
+  // ===== MÉTHODE: Calcul du score =====
 
   getScore(match: Match): string {
-    const presences = this.allPresences$.value;
-    const [team1, team2] = this.getEquipeNames(match);
-    
     let team1Score = match.scoreEquipe1;
     let team2Score = match.scoreEquipe2;
-
-    
     return `${team1Score} - ${team2Score}`;
   }
 
-  // ===== MÉTHODE CORRIGÉE: Liste des buteurs =====
+  // ===== MÉTHODE: Liste des buteurs =====
 
   getButeurs(match: Match): string {
     const presences = this.allPresences$.value;
@@ -389,7 +481,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     return buteursList.length > 0 ? buteursList.join(', ') : 'Aucun buteur';
   }
 
-  // ===== MÉTHODE CORRIGÉE: Liste des passeurs =====
+  // ===== MÉTHODE: Liste des passeurs =====
 
   getPasseurs(match: Match): string {
     const presences = this.allPresences$.value;
@@ -400,7 +492,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       .join(', ') || 'Aucun passeur';
   }
 
-  // ===== MÉTHODE CORRIGÉE: Homme du match =====
+  // ===== MÉTHODE: Homme du match =====
 
   getHommeDuMatch(match: Match): string {
     const presences = this.allPresences$.value;
@@ -500,7 +592,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       data: {
         match: match,
         presences: this.allPresences$,
-        equipeNames: this.getEquipeNames(match) // Passer les noms d'équipes
+        equipeNames: this.getEquipeNames(match)
       },
       panelClass: 'modern-dialog',
       autoFocus: false
@@ -605,45 +697,69 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     return false;
   }
 
-// Méthode pour ouvrir le calendrier depuis news-feed
-openCalendar(): void {
-  // Utiliser allMatches si chargés, sinon recentMatches
-  const matches = this.allMatches.length > 0 ? this.allMatches : this.recentMatches;
-  
-  if (!matches || matches.length === 0) {
-    // Essayer de charger les matchs
-    this.matchService.getAllMatches().subscribe({
+  // Méthode pour ouvrir le calendrier depuis news-feed
+  openCalendar(): void {
+    const matches = this.allMatches.length > 0 ? this.allMatches : this.recentMatches;
+    
+    if (!matches || matches.length === 0) {
+      this.matchService.getAllMatches().subscribe({
+        next: (loadedMatches) => {
+          // Filtrer par exercice en cours
+          const filteredMatches = loadedMatches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
+          this.openCalendarDialog(filteredMatches);
+        },
+        error: () => {
+          this.snackBar.open('Impossible de charger les matchs', 'Fermer', { duration: 3000 });
+        }
+      });
+      return;
+    }
+    
+    this.openCalendarDialog(matches);
+  }
 
-      next: (loadedMatches) => {
-        this.openCalendarDialog(loadedMatches);
-      },
-      error: () => {
-        this.snackBar.open('Impossible de charger les matchs', 'Fermer', { duration: 3000 });
+  private openCalendarDialog(matches: Match[]): void {
+    const sortedMatches = [...matches].sort((a, b) => 
+      new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime()
+    );
+
+    this.dialog.open(CalendarComponent, {
+      width: '95vw',
+      maxWidth: '900px',
+      height: '85vh',
+      maxHeight: '700px',
+      panelClass: 'calendar-dialog',
+      data: { 
+        matches: sortedMatches,
+        jourDeMatch: this.groupeActif?.jourMatch || 'Dimanche',
+        groupeActif: this.groupeActif,
+        exerciceEnCours: this.exerciceEnCours
       }
     });
-    return;
   }
   
-  this.openCalendarDialog(matches);
+  // ===== GETTER: Nom de l'exercice en cours =====
+  
+  get exerciceNom(): string {
+    return this.exerciceEnCours?.libelle || 'Saison en cours';
+  }
+  
+  // ===== GETTER: Période de l'exercice formatée =====
+  
+  get exercicePeriode(): string {
+    if (!this.exerciceEnCours) return '';
+    
+    const debut = new Date(this.exerciceEnCours.dateDebut).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const fin = new Date(this.exerciceEnCours.dateFin).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    
+    return `${debut} - ${fin}`;
+  }
 }
-
-private openCalendarDialog(matches: Match[]): void {
-  const sortedMatches = [...matches].sort((a, b) => 
-    new Date(a.dateMatch).getTime() - new Date(b.dateMatch).getTime()
-  );
-
-  this.dialog.open(CalendarComponent, {
-    width: '95vw',
-    maxWidth: '900px',
-    height: '85vh',
-    maxHeight: '700px',
-    panelClass: 'calendar-dialog',
-    data: { 
-      matches: sortedMatches,
-      jourDeMatch: this.groupeActif?.jourMatch || 'Dimanche',
-      groupeActif: this.groupeActif
-    }
-  });
-}
-}
-

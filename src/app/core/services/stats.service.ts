@@ -68,19 +68,43 @@ export class StatsService {
     );
   }
 
-   // Stats du joueur avec filtre de dates
-  getResponsableStats2(startDate?: Date, endDate?: Date): Observable<MemberStats> {
-    let params = new HttpParams();
+  //  // Stats du joueur avec filtre de dates
+  // getResponsableStats2(startDate?: Date, endDate?: Date): Observable<MemberStats> {
+  //   let params = new HttpParams();
     
-    if (startDate) {
-      params = params.set('startDate', startDate.toISOString());
-    }
-    if (endDate) {
-      params = params.set('endDate', endDate.toISOString());
-    }
+  //   if (startDate) {
+  //     params = params.set('startDate', startDate.toISOString());
+  //   }
+  //   if (endDate) {
+  //     params = params.set('endDate', endDate.toISOString());
+  //   }
     
-    return this.http.get<MemberStats>(`${environment.apiUrl}/membre/stats`, { params });
+  //   return this.http.get<MemberStats>(`${environment.apiUrl}/membre/stats`, { params });
+  // }
+
+  // Dans le service stats.service.ts ou lors de l'appel API
+
+getResponsableStats2(startDate?: Date, endDate?: Date): Observable<MemberStats> {
+  let params = new HttpParams();
+  
+  if (startDate) {
+    // Formater en YYYY-MM-DD uniquement
+    params = params.set('startDate', this.formatDateForApi(startDate));
   }
+  if (endDate) {
+    params = params.set('endDate', this.formatDateForApi(endDate));
+  }
+  
+  return this.http.get<MemberStats>(`${environment.apiUrl}/membre/stats`, { params });
+}
+
+// Méthode helper pour formater la date
+private formatDateForApi(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`; // Format: 2025-01-01
+}
 
   // Récupérer les stats mensuelles
   getMonthlyStats(month: string): Observable<MonthlyStats> {

@@ -189,6 +189,15 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     };
   }
 
+compareUsers(u1: any, u2: any): boolean {
+  // Gère les cas null/undefined
+  if (!u1 || !u2) return u1 === u2;
+  // Compare uniquement par ID, peu importe la complexité de l'objet
+  const id1 = typeof u1 === 'object' ? u1.id : u1;
+  const id2 = typeof u2 === 'object' ? u2.id : u2;
+  return id1 === id2;
+}
+
   // ===== MÉTHODES UTILITAIRES =====
 
   private getEmptyMembre(): Membre {
@@ -340,7 +349,8 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
         const membreUserIds = new Set(
           membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []
         );
-        this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
+        
+        // this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
         this.equipes = equipes || [];
         this.editingRows = new Array(membres?.length || 0).fill(false);
         
@@ -476,6 +486,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
       this.expandedRowIndex = globalIndex;
       if (this.dataSource.data[globalIndex]) {
         this.editMembre = { ...this.dataSource.data[globalIndex] };
+        console.log(this.editMembre)
       }
     }
   }

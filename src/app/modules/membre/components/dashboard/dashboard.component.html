@@ -1,6 +1,6 @@
 <div class="dashboard-container">
 
-  <!-- Header harmonisé avec le système cohérent -->
+  <!-- ============ HEADER ============ -->
   <div class="page-header">
     <div class="header-background"></div>
     <div class="header-content">
@@ -29,7 +29,7 @@
     </div>
   </div>
   
-  <!-- Loading harmonisé -->
+  <!-- ============ LOADING ============ -->
   <div *ngIf="isLoading" class="loading-container">
     <div class="loading-spinner">
       <mat-spinner diameter="50"></mat-spinner>
@@ -40,44 +40,162 @@
     </div>
   </div>
 
-  <!-- Content -->
+  <!-- ============ CONTENT ============ -->
   <div *ngIf="!isLoading" class="content">
     
-    <!-- Filtres harmonisés -->
+    <!-- ===== SECTION FILTRES AMÉLIORÉE ===== -->
     <div class="filters-container">
       <div class="filters-header">
         <div class="filters-title">
-          <mat-icon>date_range</mat-icon>
+          <mat-icon>tune</mat-icon>
           <h3>{{ 'dashboard.filters.title' | translate }}</h3>
         </div>
+        
+        <!-- Indicateur de période actuelle -->
+        <div class="current-period-badge" *ngIf="!isLoadingExercices">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ getCurrentPeriodLabel() }}</span>
+          <span class="period-type-chip" [class.season]="filterMode === 'season'" [class.custom]="filterMode === 'dateRange'">
+            {{ filterMode === 'season' ? ('dashboard.filters.season' | translate) : ('dashboard.filters.custom' | translate) }}
+          </span>
+        </div>
       </div>
-      <div class="filter-chips">
-        <!-- Filtre de dates -->
-        <form [formGroup]="dateRangeForm" class="date-filter-form">
-          <mat-form-field appearance="outline" class="date-field">
-            <mat-label>{{ 'dashboard.filters.dateRange' | translate }}</mat-label>
-            <mat-date-range-input [rangePicker]="picker">
-              <input matStartDate formControlName="start" placeholder="{{ 'dashboard.filters.from' | translate }}">
-              <input matEndDate formControlName="end" placeholder="{{ 'dashboard.filters.to' | translate }}">
-            </mat-date-range-input>
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-date-range-picker #picker></mat-date-range-picker>
+
+      <div class="filters-body">
+        <!-- Toggle Mode de filtrage -->
+        <div class="filter-mode-toggle">
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'season'"
+                  (click)="onFilterModeChange('season')"
+                  [matTooltip]="'dashboard.filters.seasonTooltip' | translate">
+            <mat-icon>event_note</mat-icon>
+            <span>{{ 'dashboard.filters.bySeason' | translate }}</span>
+          </button>
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'dateRange'"
+                  (click)="onFilterModeChange('dateRange')"
+                  [matTooltip]="'dashboard.filters.dateRangeTooltip' | translate">
+            <mat-icon>date_range</mat-icon>
+            <span>{{ 'dashboard.filters.byDateRange' | translate }}</span>
+          </button>
+        </div>
+
+        <!-- Sélecteur de Saison/Exercice -->
+        <div class="season-filter" *ngIf="filterMode === 'season'" [@fadeSlideIn]>
+          <mat-form-field appearance="outline" class="season-select">
+            <mat-label>{{ 'dashboard.filters.selectSeason' | translate }}</mat-label>
+            <mat-icon matPrefix>sports_soccer</mat-icon>
+            <mat-select [(ngModel)]="selectedExerciceId" 
+                        (selectionChange)="onExerciceChange($event.value)"
+                        [disabled]="isLoadingExercices">
+              <mat-select-trigger *ngIf="getSelectedExercice() as exercice">
+                <div class="selected-season-trigger">
+                  <span class="season-name">{{ exercice.libelle }}</span>
+                  <span class="current-badge" *ngIf="isCurrentExercice(exercice)">
+                    {{ 'dashboard.filters.current' | translate }}
+                  </span>
+                </div>
+              </mat-select-trigger>
+              
+              <mat-option *ngFor="let exercice of exercices" [value]="exercice.id">
+                <div class="season-option">
+                  <div class="season-option-main">
+                    <mat-icon [class.active-icon]="isCurrentExercice(exercice)">
+                      {{ isCurrentExercice(exercice) ? 'sports_soccer' : 'history' }}
+                    </mat-icon>
+                    <div class="season-option-info">
+                      <span class="season-name">{{ exercice.libelle }}</span>
+                      <span class="season-period">{{ formatExercicePeriod(exercice) }}</span>
+                    </div>
+                  </div>
+                  <div class="season-option-badges">
+                    <span class="badge current" *ngIf="isCurrentExercice(exercice)">
+                      {{ 'dashboard.filters.inProgress' | translate }}
+                    </span>
+                    <span class="badge closed" *ngIf="exercice.cloture">
+                      {{ 'dashboard.filters.closed' | translate }}
+                    </span>
+                  </div>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="getSelectedExercice() as exercice">
+              {{ formatExercicePeriod(exercice) }}
+            </mat-hint>
           </mat-form-field>
-          <div class="action-buttons">
-            <button mat-icon-button color="primary" (click)="applyDateFilter()" [disabled]="dateRangeForm.invalid" 
-                    [matTooltip]="'dashboard.filters.apply' | translate">
-              <mat-icon>search</mat-icon>
-            </button>
-            <button mat-icon-button (click)="resetDateFilter()" 
-                    [matTooltip]="'dashboard.filters.reset' | translate">
-              <mat-icon>refresh</mat-icon>
-            </button>
+
+          <!-- Info saison sélectionnée -->
+          <div class="season-info-card" *ngIf="getSelectedExercice() as exercice">
+            <div class="season-info-item">
+              <mat-icon>event</mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.startDate' | translate }}</span>
+                <span class="info-value">{{ exercice.dateDebut | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div class="season-info-divider"></div>
+            <div class="season-info-item">
+              <mat-icon>event</mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.endDate' | translate }}</span>
+                <span class="info-value">{{ exercice.dateFin | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div class="season-info-divider"></div>
+            <div class="season-info-item">
+              <mat-icon [class.active]="isCurrentExercice(exercice)">
+                {{ isCurrentExercice(exercice) ? 'play_circle' : 'check_circle' }}
+              </mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.status' | translate }}</span>
+                <span class="info-value" [class.active]="isCurrentExercice(exercice)">
+                  {{ isCurrentExercice(exercice) ? ('dashboard.filters.active' | translate) : ('dashboard.filters.finished' | translate) }}
+                </span>
+              </div>
+            </div>
           </div>
-        </form>
+        </div>
+
+        <!-- Filtre par plage de dates -->
+        <div class="date-range-filter" *ngIf="filterMode === 'dateRange'" [@fadeSlideIn]>
+          <form [formGroup]="dateRangeForm" class="date-filter-form">
+            <mat-form-field appearance="outline" class="date-field">
+              <mat-label>{{ 'dashboard.filters.dateRange' | translate }}</mat-label>
+              <mat-date-range-input [rangePicker]="picker">
+                <input matStartDate formControlName="start" placeholder="{{ 'dashboard.filters.from' | translate }}">
+                <input matEndDate formControlName="end" placeholder="{{ 'dashboard.filters.to' | translate }}">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-date-range-picker #picker></mat-date-range-picker>
+              <mat-hint>{{ 'dashboard.filters.selectPeriod' | translate }}</mat-hint>
+            </mat-form-field>
+            
+            <div class="action-buttons">
+              <button mat-raised-button color="primary" 
+                      (click)="applyDateFilter()" 
+                      [disabled]="dateRangeForm.invalid || !hasDateFilter()">
+                <mat-icon>search</mat-icon>
+                {{ 'dashboard.filters.apply' | translate }}
+              </button>
+              <button mat-stroked-button 
+                      (click)="resetDateFilter()"
+                      [matTooltip]="'dashboard.filters.backToSeason' | translate">
+                <mat-icon>refresh</mat-icon>
+                {{ 'dashboard.filters.reset' | translate }}
+              </button>
+            </div>
+          </form>
+
+          <!-- Message d'aide -->
+          <div class="date-filter-help">
+            <mat-icon>info</mat-icon>
+            <span>{{ 'dashboard.filters.dateFilterHelp' | translate }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- SECTION: Stats Mensuelles -->
+    <!-- ===== SECTION: Stats Mensuelles ===== -->
     <div class="monthly-stats-section" *ngIf="hasMonthlyStats()">
       <div class="section-header">
         <div class="header-icon-wrapper">
@@ -85,7 +203,7 @@
         </div>
         <div class="header-text">
           <h2>{{ 'dashboard.monthly.title' | translate }}</h2>
-          <span class="badge">{{ getAvailableMonthsCount() }}</span>
+          <span class="badge">{{ getAvailableMonthsCount() }} {{ 'dashboard.monthly.months' | translate }}</span>
         </div>
       </div>
 
@@ -103,7 +221,7 @@
         </form>
       </div>
 
-      <!-- Meilleure équipe du mois ou message d'égalité -->
+      <!-- Meilleure équipe du mois -->
       <div *ngIf="shouldShowBestTeam()" class="monthly-highlight-card best-team-card">
         <div class="highlight-header">
           <div class="header-icon-wrapper trophy-icon">
@@ -296,7 +414,7 @@
       </div>
     </div>
 
-    <!-- Section des métriques personnelles -->
+    <!-- ===== Section des métriques personnelles ===== -->
     <div class="metrics-section">
       <div class="section-header">
         <div class="header-icon-wrapper">
@@ -368,7 +486,7 @@
       </div>
     </div>
 
-    <!-- Section sanctions harmonisée -->
+    <!-- ===== Section sanctions ===== -->
     <div class="sanctions-section" *ngIf="stats.sanctions">
       <div class="section-header">
         <div class="header-icon-wrapper">
@@ -463,12 +581,16 @@
     </div>
   </div>
 
-  <!-- Footer harmonisé -->
+  <!-- ============ FOOTER ============ -->
   <div class="dashboard-footer">
     <div class="footer-stats">
       <div class="footer-item">
         <mat-icon>update</mat-icon>
         <span>{{ 'dashboard.member.lastUpdate' | translate }}: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="footer-item" *ngIf="getSelectedExercice() as exercice">
+        <mat-icon>sports_soccer</mat-icon>
+        <span>{{ exercice.libelle }}</span>
       </div>
       <div class="footer-item">
         <mat-icon>person</mat-icon>

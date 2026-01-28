@@ -110,7 +110,7 @@ export interface MemberStats {
   totalPlayingTime: number;
 
     // Nouvelles propriétés pour les stats mensuelles
-  monthlyStats: MonthlyStats;
+  monthlyStats: MonthlyStats | null;
   availableMonths: Array<{ value: string; label: string }>; // Liste des mois disponibles
 }
 
