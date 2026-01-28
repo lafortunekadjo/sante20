@@ -62,10 +62,7 @@ export interface PaymentDialogData {
 
       <!-- Résumé de la sanction -->
       <div class="sanction-summary">
-        <div class="summary-row">
-          <span class="label">Type de sanction</span>
-          <span class="value">{{ data.sanction.typeSanction }}</span>
-        </div>
+
         <div class="summary-row">
           <span class="label">Date</span>
           <span class="value">{{ data.sanction.dateSanction | date:'dd/MM/yyyy' }}</span>
@@ -78,10 +75,7 @@ export interface PaymentDialogData {
           <span class="label">Déjà payé</span>
           <span class="value paid">{{ formatMontant(data.sanction.montantPaye) }}</span>
         </div>
-        <div class="summary-row highlight">
-          <span class="label">Reste à payer</span>
-          <span class="value remaining">{{ formatMontant(resteAPayer) }}</span>
-        </div>
+       
       </div>
 
       <mat-divider></mat-divider>
@@ -381,6 +375,42 @@ export interface PaymentDialogData {
         height: 20px;
       }
     }
+
+    /* styles-dialog.css */
+
+/* Structure principale du dialog */
+.payment-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh; /* limite à 90% de la hauteur de l’écran */
+}
+
+/* Header et actions fixes */
+.payment-dialog .dialog-header,
+.payment-dialog .dialog-actions {
+  flex-shrink: 0;
+}
+
+/* Contenu scrollable */
+.payment-dialog .dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+/* Responsive sur petit écran */
+@media (max-width: 600px) {
+  .payment-dialog {
+    max-width: 100%;
+    min-width: 100%;
+    border-radius: 0; /* plein écran */
+  }
+
+  .dialog-content {
+    padding: 12px;
+  }
+}
+
 
     // Dark theme
     :host-context(.dark-theme) {

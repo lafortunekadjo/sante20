@@ -44,7 +44,8 @@ export class MembreService {
       equipe: membre.equipe?.id || null,
       groupe: membre.groupe.id,
       user: membre.user?.id,
-      active: membre.active
+      active: membre.active,
+       customRole:membre.roleCustom?.id || null
     };
     console.log(payload)
     return this.http.post<Membre>(`${environment.apiUrl}/membres`, payload).pipe(
@@ -118,7 +119,8 @@ export class MembreService {
       equipe: membre.equipe?.id || null,
       groupe: membre.groupe.id,
       user: membre.user.id || null,
-      active: membre.true
+      active: membre.true,
+        customRole:membre.roleCustom?.id || null
     };
     return this.http.post<Membre>(this.apiUrl, payload);
   }
@@ -138,7 +140,10 @@ export class MembreService {
       user: membre.user?.id || null,
       active: true,
       sexe:membre.sexe,
+
       customRole:membre.roleCustom?.id || null
+
+
     };
     console.log(payload)
     return this.http.put<Membre>(`${this.apiUrl}/${id}`, payload);
