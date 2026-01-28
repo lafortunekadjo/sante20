@@ -54,6 +54,7 @@ import { PresenceService } from '../../../../core/services/presence.service';
     MatProgressSpinnerModule,
     MatIconModule,
     MatTooltipModule,
+    
     MatMenuModule,
     TranslateModule
   ],
@@ -586,6 +587,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     }
   }
 
+
 //  async openPresenceDialog(match: Match): Promise<void> {
 //   // 1. On récupère les données avant (le dialogue ne s'ouvre pas encore)
 //   const presencesRecues = await this.getPresenceByMatch(match);
@@ -621,8 +623,8 @@ async openPresenceDialog(match: Match): Promise<void> {
     autoFocus: false });
   } finally {
     document.body.style.cursor = 'default';
-  }
-}
+
+  }}
 
  async getPresenceByMatch(match: Match): Promise<Presence[]> {
   if (!match?.id) return [];
@@ -648,6 +650,9 @@ async openPresenceDialog(match: Match): Promise<void> {
 //     error: (err) => console.error('Erreur lors de la récupération', err)
 //   });
 // }
+
+  
+
 
   viewContributions(contributionId: number) {
     this.generalService.getContributionIndividuellesByContributionId(contributionId).subscribe({
