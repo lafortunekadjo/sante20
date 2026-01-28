@@ -187,8 +187,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       case 'INTERNE':
       case 'DUEL':
         return [
-          match.equipe1?.nom || 'Équipe 1',
-          match.equipe2?.nom || 'Équipe 2'
+          match.equipe1Nom || 'Équipe 1',
+          match.equipe2Nom || 'Équipe 2'
         ];
 
       case 'AMICAL':
