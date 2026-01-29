@@ -1,172 +1,469 @@
-<div class="dashboard-container">
-  <!-- Date filter container -->
-  <mat-card class="date-filter-card">
-    <form [formGroup]="dateRangeForm" class="date-filter-form">
-      <mat-form-field appearance="outline" class="date-field">
-        <mat-label>Date de début</mat-label>
-        <input matInput [matDatepicker]="startDatePicker" formControlName="start">
-        <mat-datepicker-toggle matIconSuffix [for]="startDatePicker"></mat-datepicker-toggle>
-        <mat-datepicker #startDatePicker></mat-datepicker>
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="date-field">
-        <mat-label>Date de fin</mat-label>
-        <input matInput [matDatepicker]="endDatePicker" formControlName="end">
-        <mat-datepicker-toggle matIconSuffix [for]="endDatePicker"></mat-datepicker-toggle>
-        <mat-datepicker #endDatePicker></mat-datepicker>
-      </mat-form-field>
-      <div class="date-buttons">
-        <button mat-raised-button color="primary" (click)="applyDateFilter()">Appliquer</button>
-        <button mat-stroked-button color="basic" (click)="resetDateFilter()">Réinitialiser</button>
+<div class="admin-dashboard">
+  <!-- ============ HEADER ============ -->
+  <div class="dashboard-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon>admin_panel_settings</mat-icon>
+            Tableau de bord Administrateur
+          </h1>
+          <p class="page-subtitle">Vue d'ensemble de la plateforme My2-0</p>
+        </div>
+        <div class="header-actions">
+          <button mat-icon-button matTooltip="Actualiser" (click)="refreshStats()">
+            <mat-icon>refresh</mat-icon>
+          </button>
+          <button mat-icon-button [matMenuTriggerFor]="exportMenu" matTooltip="Exporter">
+            <mat-icon>download</mat-icon>
+          </button>
+          <mat-menu #exportMenu="matMenu">
+            <button mat-menu-item (click)="exportStats()">
+              <mat-icon>table_chart</mat-icon>
+              <span>Exporter en Excel</span>
+            </button>
+            <button mat-menu-item>
+              <mat-icon>picture_as_pdf</mat-icon>
+              <span>Exporter en PDF</span>
+            </button>
+          </mat-menu>
+        </div>
       </div>
-    </form>
-  </mat-card>
-
-  <!-- Stats grid -->
-  <mat-grid-list cols="4" rowHeight="100px" gutterSize="16px">
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header">
-          <mat-icon>groups</mat-icon>
-          <mat-card-title>Total groupes</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.totalGroups || 0 }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header">
-          <mat-icon>person</mat-icon>
-          <mat-card-title>Total utilisateurs</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.totalUsers || 0 }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header">
-          <mat-icon>attach_money</mat-icon>
-          <mat-card-title>Contributions totales</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.totalContributions | currencyXAF }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header">
-          <mat-icon>sports_soccer</mat-icon>
-          <mat-card-title>Total matchs</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.totalMatches || 0 }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header paid-sanctions">
-          <mat-icon>check_circle</mat-icon>
-          <mat-card-title>Sanctions payées</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.paidSanctions?.amount | currencyXAF }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-
-    <mat-grid-tile>
-      <mat-card class="stat-card">
-        <mat-card-header class="stat-header unpaid-sanctions">
-          <mat-icon>warning</mat-icon>
-          <mat-card-title>Sanctions non payées</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="stat-content">
-          <h2>{{ stats.unpaidSanctions?.amount | currencyXAF }}</h2>
-        </mat-card-content>
-      </mat-card>
-    </mat-grid-tile>
-  </mat-grid-list>
-
-  <!-- Charts grid -->
-  <div class="charts-grid">
-    <mat-card class="chart-card">
-      <mat-card-header class="chart-header">
-        <mat-card-title>Répartition des rôles</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="chart-content">
-        <canvas baseChart [data]="donutChartData" [type]="donutChartType" [options]="donutChartOptions"></canvas>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="chart-card">
-      <mat-card-header class="chart-header">
-        <mat-card-title>Contributions par groupe</mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="chart-content">
-        <canvas baseChart [data]="barChartData" [type]="barChartType" [options]="barChartOptions"></canvas>
-      </mat-card-content>
-    </mat-card>
+      
+      <!-- Stats rapides dans le header -->
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalGroups }}</span>
+          <span class="stat-label">Groupes</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalUsers }}</span>
+          <span class="stat-label">Utilisateurs</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalMatches }}</span>
+          <span class="stat-label">Matchs</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Users table and recent activity list -->
-  <div class="table-and-list-grid">
-    <mat-card class="users-table-card">
-      <mat-card-header class="users-table-header">
-        <mat-card-title>Utilisateurs par groupe</mat-card-title>
-        <mat-form-field appearance="fill" class="group-select">
-          <mat-label>Sélectionner un groupe</mat-label>
-          <mat-select [value]="selectedGroup" (selectionChange)="selectGroup($event.value)">
-            <mat-option *ngFor="let group of stats.usersByGroup" [value]="group">
-              {{ group.groupName }} ({{ group.userCount }})
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </mat-card-header>
-      <mat-card-content class="table-content">
-        <table mat-table [dataSource]="selectedGroup?.users">
-          <ng-container matColumnDef="id">
-            <th mat-header-cell *matHeaderCellDef> ID </th>
-            <td mat-cell *matCellDef="let user"> {{ user.id }} </td>
-          </ng-container>
+  <!-- ============ LOADING ============ -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement des statistiques...</p>
+  </div>
 
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef> Nom </th>
-            <td mat-cell *matCellDef="let user"> {{ user.name }} </td>
-          </ng-container>
+  <!-- ============ CONTENT ============ -->
+  <div *ngIf="!isLoading" class="dashboard-content" [@fadeSlideIn]>
+    
+    <!-- ===== FILTRES ===== -->
+    <div class="filters-section">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <span>Filtres</span>
+        </div>
+        <div class="current-period-badge">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ getCurrentPeriodLabel() }}</span>
+        </div>
+      </div>
+      
+      <div class="filters-body">
+        <!-- Toggle Mode -->
+        <div class="filter-mode-toggle">
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'period'"
+                  (click)="onFilterModeChange('period')">
+            <mat-icon>date_range</mat-icon>
+            Période prédéfinie
+          </button>
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'dateRange'"
+                  (click)="onFilterModeChange('dateRange')">
+            <mat-icon>edit_calendar</mat-icon>
+            Dates personnalisées
+          </button>
+        </div>
+        
+        <!-- Périodes prédéfinies -->
+        <div class="period-selector" *ngIf="filterMode === 'period'">
+          <mat-chip-listbox [(value)]="selectedPeriod" (change)="onPeriodChange($event.value)">
+            <mat-chip-option *ngFor="let period of periods" [value]="period.value">
+              {{ period.label }}
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+        
+        <!-- Dates personnalisées -->
+        <div class="date-range-form" *ngIf="filterMode === 'dateRange'" [formGroup]="dateRangeForm">
+          <mat-form-field appearance="outline">
+            <mat-label>Date de début</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="start">
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>Date de fin</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="end">
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+          
+          <div class="date-actions">
+            <button mat-raised-button color="primary" (click)="applyDateFilter()">
+              <mat-icon>search</mat-icon>
+              Appliquer
+            </button>
+            <button mat-stroked-button (click)="resetDateFilter()">
+              <mat-icon>refresh</mat-icon>
+              Réinitialiser
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef> Rôle </th>
-            <td mat-cell *matCellDef="let user"> {{ user.role }} </td>
-          </ng-container>
+    <!-- ===== KPI CARDS ===== -->
+    <div class="kpi-grid">
+      <!-- Groupes -->
+      <div class="kpi-card groups">
+        <div class="kpi-icon">
+          <mat-icon>groups</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value" [@countUp]="stats.totalGroups">{{ stats.totalGroups }}</span>
+          <span class="kpi-label">Groupes actifs</span>
+          <div class="kpi-trend positive" *ngIf="stats.activeGroups > 0">
+            <mat-icon>trending_up</mat-icon>
+            <span>{{ stats.activeGroups }} actifs</span>
+          </div>
+        </div>
+      </div>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
+      <!-- Utilisateurs -->
+      <div class="kpi-card users">
+        <div class="kpi-icon">
+          <mat-icon>person</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.totalUsers }}</span>
+          <span class="kpi-label">Utilisateurs</span>
+          <div class="kpi-trend positive" *ngIf="stats.newUsersThisMonth > 0">
+            <mat-icon>trending_up</mat-icon>
+            <span>+{{ stats.newUsersThisMonth }} ce mois</span>
+          </div>
+        </div>
+      </div>
 
-    <mat-card class="activity-list-card">
-      <mat-card-header class="activity-header">
-        <mat-card-title>Activité récente</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-list>
-          <mat-list-item *ngFor="let activity of stats.recentActivity">
-            <mat-icon matListItemAvatar>history</mat-icon>
-            <div matListItemTitle>{{ activity.date | date: 'mediumDate' }}</div>
-            <div matListItemLine>{{ activity.action }}</div>
-          </mat-list-item>
-        </mat-list>
-      </mat-card-content>
-    </mat-card>
+      <!-- Contributions -->
+      <div class="kpi-card contributions">
+        <div class="kpi-icon">
+          <mat-icon>payments</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.totalContributions | currencyXAF }}</span>
+          <span class="kpi-label">Contributions</span>
+          <div class="kpi-secondary">
+            <span>Moy: {{ stats.avgContributionPerGroup | currencyXAF }}/groupe</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matchs -->
+      <div class="kpi-card matches">
+        <div class="kpi-icon">
+          <mat-icon>sports_soccer</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.totalMatches }}</span>
+          <span class="kpi-label">Matchs joués</span>
+          <div class="kpi-trend positive" *ngIf="stats.matchesThisMonth > 0">
+            <mat-icon>trending_up</mat-icon>
+            <span>{{ stats.matchesThisMonth }} ce mois</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sanctions Payées -->
+      <div class="kpi-card sanctions-paid">
+        <div class="kpi-icon">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.paidSanctions?.amount | currencyXAF }}</span>
+          <span class="kpi-label">Sanctions payées</span>
+          <div class="kpi-badge success">
+            {{ stats.paidSanctions?.count || 0 }} sanctions
+          </div>
+        </div>
+      </div>
+
+      <!-- Sanctions Non Payées -->
+      <div class="kpi-card sanctions-unpaid">
+        <div class="kpi-icon">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.unpaidSanctions?.amount | currencyXAF }}</span>
+          <span class="kpi-label">Sanctions en attente</span>
+          <div class="kpi-badge warning">
+            {{ stats.unpaidSanctions?.count || 0 }} sanctions
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PROGRESS SANCTIONS ===== -->
+    <div class="sanctions-progress-card">
+      <div class="sanctions-progress-header">
+        <h3>
+          <mat-icon>gavel</mat-icon>
+          Taux de recouvrement des sanctions
+        </h3>
+        <span class="progress-percentage">{{ getSanctionsPaidPercentage() }}%</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="getSanctionsPaidPercentage()"></div>
+      </div>
+      <div class="sanctions-summary">
+        <div class="summary-item paid">
+          <mat-icon>check_circle</mat-icon>
+          <span>Payées: {{ stats.paidSanctions?.amount | currencyXAF }}</span>
+        </div>
+        <div class="summary-item unpaid">
+          <mat-icon>pending</mat-icon>
+          <span>En attente: {{ stats.unpaidSanctions?.amount | currencyXAF }}</span>
+        </div>
+        <div class="summary-item total">
+          <mat-icon>account_balance</mat-icon>
+          <span>Total: {{ getTotalSanctionsAmount() | currencyXAF }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHARTS SECTION ===== -->
+    <div class="charts-grid">
+      <!-- Répartition des rôles -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>
+            <mat-icon>pie_chart</mat-icon>
+            Répartition des rôles
+          </h3>
+        </div>
+        <div class="chart-body">
+          <canvas baseChart
+                  [data]="donutChartData"
+                  [type]="donutChartType"
+                  [options]="donutChartOptions">
+          </canvas>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-color admin"></span>
+            <span>Admins: {{ stats.usersByRole?.admin || 0 }}</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color responsable"></span>
+            <span>Responsables: {{ stats.usersByRole?.responsable || 0 }}</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color membre"></span>
+            <span>Membres: {{ stats.usersByRole?.membre || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contributions par groupe -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>
+            <mat-icon>bar_chart</mat-icon>
+            Contributions par groupe
+          </h3>
+        </div>
+        <div class="chart-body">
+          <canvas baseChart
+                  [data]="barChartData"
+                  [type]="barChartType"
+                  [options]="barChartOptions">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Évolution croissance -->
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>
+            <mat-icon>show_chart</mat-icon>
+            Évolution de la plateforme
+          </h3>
+        </div>
+        <div class="chart-body">
+          <canvas baseChart
+                  [data]="lineChartData"
+                  [type]="lineChartType"
+                  [options]="lineChartOptions">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Évolution sanctions -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>
+            <mat-icon>stacked_bar_chart</mat-icon>
+            Évolution des sanctions
+          </h3>
+        </div>
+        <div class="chart-body">
+          <canvas baseChart
+                  [data]="sanctionsChartData"
+                  [type]="barChartType"
+                  [options]="barChartOptions">
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOP GROUPES ===== -->
+    <div class="top-groups-section" *ngIf="stats?.topContributingGroups?.length > 0">
+      <h3 class="section-title">
+        <mat-icon>emoji_events</mat-icon>
+        Top groupes contributeurs
+      </h3>
+      <div class="top-groups-grid">
+        <div class="top-group-card" *ngFor="let group of stats.topContributingGroups; let i = index">
+          <div class="rank" [class]="'rank-' + (i + 1)">
+            <span>#{{ i + 1 }}</span>
+          </div>
+          <div class="group-info">
+            <span class="group-name">{{ group.groupName }}</span>
+            <span class="group-amount">{{ group.totalContributions | currencyXAF }}</span>
+          </div>
+          <div class="group-stats">
+            <div class="mini-stat">
+              <mat-icon>person</mat-icon>
+              <span>{{ group.memberCount }}</span>
+            </div>
+            <div class="mini-stat">
+              <mat-icon>sports_soccer</mat-icon>
+              <span>{{ group.matchCount }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TABLE ET ACTIVITÉ ===== -->
+    <div class="table-activity-grid">
+      <!-- Table utilisateurs par groupe -->
+      <div class="users-table-card">
+        <div class="table-header">
+          <h3>
+            <mat-icon>people</mat-icon>
+            Utilisateurs par groupe
+          </h3>
+          <mat-form-field appearance="outline" class="group-select">
+            <mat-label>Sélectionner un groupe</mat-label>
+            <mat-select [value]="selectedGroup" (selectionChange)="selectGroup($event.value)">
+              <mat-option *ngFor="let group of stats.usersByGroup" [value]="group">
+                <div class="group-option">
+                  <span>{{ group.groupName }}</span>
+                  <span class="user-count">{{ group.userCount }} membres</span>
+                </div>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        
+        <div class="table-body">
+          <table mat-table [dataSource]="usersDataSource" matSort>
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+              <td mat-cell *matCellDef="let user">{{ user.id }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+              <td mat-cell *matCellDef="let user">{{ user.name }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="role">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Rôle</th>
+              <td mat-cell *matCellDef="let user">
+                <span class="role-badge" [ngClass]="getRoleClass(user.role)">
+                  {{ user.role }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let user">
+                <span class="status-badge" [ngClass]="getStatusClass(user.status || 'actif')">
+                  {{ user.status || 'Actif' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let user">
+                <button mat-icon-button matTooltip="Voir profil">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+          
+          <mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+        </div>
+        
+        <!-- Empty state -->
+        <div class="empty-table" *ngIf="!selectedGroup || selectedGroup.users?.length === 0">
+          <mat-icon>people_outline</mat-icon>
+          <p>Sélectionnez un groupe pour voir ses membres</p>
+        </div>
+      </div>
+
+      <!-- Activité récente -->
+      <div class="activity-card">
+        <div class="activity-header">
+          <h3>
+            <mat-icon>history</mat-icon>
+            Activité récente
+          </h3>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let activity of stats.recentActivity">
+            <div class="activity-icon" [ngClass]="getActivityColor(activity.type)">
+              <mat-icon>{{ getActivityIcon(activity.type) }}</mat-icon>
+            </div>
+            <div class="activity-content">
+              <span class="activity-action">{{ activity.action }}</span>
+              <span class="activity-date">{{ activity.date | date:'dd MMM yyyy à HH:mm' }}</span>
+              <span class="activity-group" *ngIf="activity.groupName">{{ activity.groupName }}</span>
+            </div>
+          </div>
+          
+          <!-- Empty state -->
+          <div class="empty-activity" *ngIf="!stats.recentActivity || stats.recentActivity.length === 0">
+            <mat-icon>inbox</mat-icon>
+            <p>Aucune activité récente</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>

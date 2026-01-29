@@ -39,6 +39,8 @@ export interface PresenceDialogData {
     id: number;
     dateMatch: Date;
     adversaire: string;
+    arbitrePrincipal?: any;    // Nouveau
+    rapporteur?: any;
   };
   presences: Presence[] | any;
 }
@@ -101,6 +103,28 @@ export class MatchPresenceDialogComponent implements OnInit {
     this.extractTeams();
     this.filterPresences();
   }
+
+  // À ajouter dans la classe MatchPresenceDialogComponent
+
+/**
+ * Vérifie si un nom (arbitre/rapporteur) est déjà listé parmi les joueurs qui ont joué
+ */
+isOfficialAlsoPlayer(name: string | undefined): boolean {
+  if (!name) return false;
+  return this.presencesList.some(p => 
+    this.getPlayerName(p).toLowerCase().trim() === name.toLowerCase().trim() && p.aJoue
+  );
+}
+
+/**
+ * Retourne vrai si on doit afficher la section des officiels
+ */
+hasSpecificOfficials(): boolean {
+  console.log(this.data.match)
+  const hasArbitre = this.data.match.arbitrePrincipal && !this.isOfficialAlsoPlayer(this.data.match.arbitrePrincipal.nom);
+  const hasRapporteur = this.data.match.rapporteur && !this.isOfficialAlsoPlayer(this.data.match.rapporteur.nom);
+  return !!(hasArbitre || hasRapporteur);
+}
 
   // ===== NORMALISATION DES DONNÉES =====
 

@@ -24,7 +24,7 @@ export class MatchService {
     .set('startDate', startDate)
     .set('endDate', endDate);
     
-  return this.http.get<Match[]>(`${environment.apiUrl}/match/by-date-range`, { params });
+  return this.http.get<Match[]>(`${environment.apiUrl}/matchs/by-date-range`, { params });
 }
 
 /**

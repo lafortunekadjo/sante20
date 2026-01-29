@@ -89,6 +89,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exerciceEnCours: Exercice | null = null;
   exerciceDateDebut: Date | null = null;
   exerciceDateFin: Date | null = null;
+  isOpeningDialog = false;
 
   constructor(
     private generalService: GeneralService,
@@ -457,51 +458,70 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   // ===== MÉTHODE: Liste des buteurs =====
 
-  getButeurs(match: Match): string {
-    const presences = this.allPresences$.value;
-    const matchPresences = presences.filter(p => p.match?.id === match.id);
-    
-    const buteursList: string[] = [];
+getButeurs(match: Match): string {
+  const presences = this.allPresences$.value;
+  const matchPresences = presences.filter(p => p.match?.id === match.id);
+  
+  const buteursList: string[] = [];
 
-    matchPresences.forEach(p => {
-      const totalButs = (p.buts || 0) + (p.penalti || 0);
+  matchPresences.forEach(p => {
+    // 1. Détermination du nom (Occasionnel prioritaire, puis Membre, sinon Inconnu)
+    const displayName = p.nomOccasionnel 
+      ? p.nomOccasionnel 
+      : (p.membre ? `${p.membre.prenom} ${p.membre.nom}` : 'Joueur inconnu');
 
-      if (totalButs > 0) {
-        let butsDetails = `${p.buts || 0}`;
-        if ((p.penalti || 0) > 0) {
-          butsDetails += (p.buts || 0) > 0 ? `, ${p.penalti}p` : `${p.penalti}p`;
-        }
-        
-        const details = `(${butsDetails}) - ${p.equipeMatch}`;
-        buteursList.push(`${p.membre?.prenom} ${p.membre?.nom} ${details}`);
+    const totalButs = (p.buts || 0) + (p.penalti || 0);
+
+    // 2. Gestion des buts classiques et penalties
+    if (totalButs > 0) {
+      let butsDetails = `${p.buts || 0}`;
+      if ((p.penalti || 0) > 0) {
+        butsDetails += (p.buts || 0) > 0 ? `, ${p.penalti}p` : `${p.penalti}p`;
       }
       
-      if ((p.butsContreSonCamp || 0) > 0) {
-        buteursList.push(`${p.membre?.prenom} ${p.membre?.nom} (BCSC) - ${p.equipeMatch}`);
-      }
-    });
+      const details = `(${butsDetails}) - ${p.equipeMatch}`;
+      buteursList.push(`${displayName} ${details}`);
+    }
+    
+    // 3. Gestion des buts contre son camp (BCSC)
+    if ((p.butsContreSonCamp || 0) > 0) {
+      buteursList.push(`${displayName} (BCSC) - ${p.equipeMatch}`);
+    }
+  });
 
-    return buteursList.length > 0 ? buteursList.join(', ') : 'Aucun buteur';
-  }
-
+  return buteursList.length > 0 ? buteursList.join(', ') : 'Aucun buteur';
+}
   // ===== MÉTHODE: Liste des passeurs =====
 
-  getPasseurs(match: Match): string {
-    const presences = this.allPresences$.value;
-    
-    return presences
-      .filter(p => p.match?.id === match.id && (p.passes || 0) > 0)
-      .map(p => `${p.membre?.prenom} ${p.membre?.nom} (${p.passes}) - ${p.equipeMatch}`)
-      .join(', ') || 'Aucun passeur';
-  }
+getPasseurs(match: Match): string {
+  const presences = this.allPresences$.value;
+  
+  const passeurs = presences
+    .filter(p => p.match?.id === match.id && (p.passes || 0) > 0)
+    .map(p => {
+      // Priorité au nom occasionnel, sinon prénom + nom du membre
+      const displayName = p.nomOccasionnel 
+        ? p.nomOccasionnel 
+        : (p.membre ? `${p.membre.prenom} ${p.membre.nom}` : 'Joueur inconnu');
+        
+      return `${displayName} (${p.passes}) - ${p.equipeMatch}`;
+    });
+
+  return passeurs.length > 0 ? passeurs.join(', ') : 'Aucun passeur';
+}
 
   // ===== MÉTHODE: Homme du match =====
 
-  getHommeDuMatch(match: Match): string {
-    const presences = this.allPresences$.value;
-    const found = presences.find(p => p.match?.id === match.id && p.estHommeDuMatch);
-    return found ? `${found.membre?.prenom} ${found.membre?.nom}` : 'Non défini';
-  }
+getHommeDuMatch(match: Match): string {
+  const presences = this.allPresences$.value;
+  const found = presences.find(p => p.match?.id === match.id && p.estHommeDuMatch);
+  
+  if (!found) return 'Non défini';
+
+  return found.nomOccasionnel 
+    ? found.nomOccasionnel 
+    : (found.membre ? `${found.membre.prenom} ${found.membre.nom}` : 'Inconnu');
+}
 
   getMembreName(id: number): Observable<string> {
     return this.allMembres$.pipe(
@@ -511,6 +531,12 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       })
     );
   }
+
+  private getDisplayName(p: any): string {
+  if (p.nomOccasionnel) return p.nomOccasionnel;
+  if (p.membre) return `${p.membre.prenom || ''} ${p.membre.nom || ''}`.trim();
+  return 'Joueur inconnu';
+}
 
   getTotalContributions(contribution: Contribution): number {
     const individuelles = this.contributionService.getContributionsIndividuellesById(contribution.id || 0) || [];
@@ -608,7 +634,9 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 // }
 
 async openPresenceDialog(match: Match): Promise<void> {
-  document.body.style.cursor = 'wait'; // Curseur de chargement
+ if (this.isOpeningDialog) return;
+
+  this.isOpeningDialog = true; // Active le spinner sur le bouton
   try {
     const presencesRecues = await this.getPresenceByMatch(match);
     this.dialog.open(MatchPresenceDialogComponent, { width: '800px',
@@ -622,7 +650,7 @@ async openPresenceDialog(match: Match): Promise<void> {
     panelClass: 'modern-dialog',
     autoFocus: false });
   } finally {
-    document.body.style.cursor = 'default';
+    this.isOpeningDialog = false; // Désactive le spinner
 
   }}
 
