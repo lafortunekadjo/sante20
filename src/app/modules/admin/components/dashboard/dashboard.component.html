@@ -92,7 +92,7 @@
         
         <!-- Périodes prédéfinies -->
         <div class="period-selector" *ngIf="filterMode === 'period'">
-          <mat-chip-listbox [(value)]="selectedPeriod" (change)="onPeriodChange($event.value)">
+         <mat-chip-listbox [value]="selectedPeriod" (change)="onPeriodChange($event.value)">
             <mat-chip-option *ngFor="let period of periods" [value]="period.value">
               {{ period.label }}
             </mat-chip-option>
@@ -196,7 +196,7 @@
           <mat-icon>check_circle</mat-icon>
         </div>
         <div class="kpi-content">
-          <span class="kpi-value">{{ stats.paidSanctions?.amount | currencyXAF }}</span>
+          <span class="kpi-value">{{ (stats?.paidSanctions?.amount || 0)| currencyXAF }}</span>
           <span class="kpi-label">Sanctions payées</span>
           <div class="kpi-badge success">
             {{ stats.paidSanctions?.count || 0 }} sanctions
@@ -210,7 +210,8 @@
           <mat-icon>warning</mat-icon>
         </div>
         <div class="kpi-content">
-          <span class="kpi-value">{{ stats.unpaidSanctions?.amount | currencyXAF }}</span>
+          <span class="kpi-value">{{ (stats.unpaidSanctions?.amount || 0) | currencyXAF }}</span>
+          
           <span class="kpi-label">Sanctions en attente</span>
           <div class="kpi-badge warning">
             {{ stats.unpaidSanctions?.count || 0 }} sanctions
@@ -232,13 +233,14 @@
         <div class="progress-bar" [style.width.%]="getSanctionsPaidPercentage()"></div>
       </div>
       <div class="sanctions-summary">
+      
         <div class="summary-item paid">
           <mat-icon>check_circle</mat-icon>
-          <span>Payées: {{ stats.paidSanctions?.amount | currencyXAF }}</span>
+          <span>Payées: {{ (stats.paidSanctions?.amount || 0) | currencyXAF }}</span>
         </div>
         <div class="summary-item unpaid">
           <mat-icon>pending</mat-icon>
-          <span>En attente: {{ stats.unpaidSanctions?.amount | currencyXAF }}</span>
+          <span>En attente: {{ (stats.unpaidSanctions?.amount || 0) | currencyXAF }}</span>
         </div>
         <div class="summary-item total">
           <mat-icon>account_balance</mat-icon>
@@ -333,13 +335,13 @@
     </div>
 
     <!-- ===== TOP GROUPES ===== -->
-    <div class="top-groups-section" *ngIf="stats?.topContributingGroups?.length > 0">
+    <div class="top-groups-section" *ngIf="(stats?.topContributingGroups?.length ?? 0) > 0">
       <h3 class="section-title">
         <mat-icon>emoji_events</mat-icon>
         Top groupes contributeurs
       </h3>
       <div class="top-groups-grid">
-        <div class="top-group-card" *ngFor="let group of stats.topContributingGroups; let i = index">
+        <div class="top-group-card" *ngFor="let group of stats?.topContributingGroups; let i = index">
           <div class="rank" [class]="'rank-' + (i + 1)">
             <span>#{{ i + 1 }}</span>
           </div>

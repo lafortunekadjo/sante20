@@ -36,7 +36,7 @@ interface AdminStats {
   totalContributions: number;
   totalMatches: number;
   paidSanctions: { amount: number | null; count: number };
-  unpaidSanctions: { amount: number; count: number };
+  unpaidSanctions?: { amount: number; count: number };
   usersByRole: { admin: number; responsable: number; membre: number };
   usersByGroup: GroupUsers[];
   contributionsByGroup: ContributionByGroup[];
@@ -158,6 +158,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+
+  donutChartType = 'doughnut' as const; // Plus simple et sûr
+  donutChartData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  
+  barChartType = 'bar' as const;
+  barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
+  
+  lineChartType = 'line' as const;
+  lineChartData: ChartData<'line'> = { labels: [], datasets: [] };
   
   // États
   isLoading = true;
@@ -175,8 +184,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   displayedColumns = ['id', 'name', 'role', 'status', 'actions'];
   
   // Graphiques
-  donutChartType: ChartType = 'doughnut';
-  donutChartData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  // donutChartType: ChartType = 'doughnut';
+  // donutChartData: ChartData<'doughnut'> = { labels: [], datasets: [] };
   donutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -186,10 +195,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   };
   
 // 1. Force la valeur à être strictement 'bar' avec "as const"
-barChartType: ChartType = 'bar' as const;
+// barChartType: ChartType = 'bar' as const;
 
 // 2. Le reste de ta configuration est correct
-barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
+// barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
 
 barChartOptions: ChartConfiguration<'bar'>['options'] = {
   responsive: true,
@@ -202,8 +211,8 @@ barChartOptions: ChartConfiguration<'bar'>['options'] = {
   }
 };
   
-  lineChartType: ChartType = 'line';
-  lineChartData: ChartData<'line'> = { labels: [], datasets: [] };
+  // lineChartType: ChartType = 'line';
+  // lineChartData: ChartData<'line'> = { labels: [], datasets: [] };
   lineChartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
