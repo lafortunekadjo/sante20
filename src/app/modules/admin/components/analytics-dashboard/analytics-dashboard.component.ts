@@ -19,7 +19,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSliderModule } from '@angular/material/slider';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartType, ChartData } from 'chart.js';
+import { ChartConfiguration, ChartType, ChartData, ArcElement, BarController, BarElement, CategoryScale, Chart, DoughnutController, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
 import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -84,6 +84,12 @@ interface ConversionFunnel {
   count: number;
   rate: number;
 }
+  Chart.register(
+  LineController, LineElement, PointElement, LinearScale, CategoryScale, 
+  BarController, BarElement, 
+  DoughnutController, ArcElement, 
+  Legend, Tooltip
+);
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -110,6 +116,7 @@ interface ConversionFunnel {
     MatSliderModule,
     BaseChartDirective
   ],
+
   animations: [
     trigger('fadeSlideIn', [
       transition(':enter', [
@@ -132,6 +139,7 @@ interface ConversionFunnel {
   styleUrl: './analytics-dashboard.component.scss'
 })
 export class AnalyticsDashboardComponent implements OnInit, OnDestroy {
+  
   
   private destroy$ = new Subject<void>();
   

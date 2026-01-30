@@ -61,9 +61,9 @@ export class GroupeDetailsDialogComponent implements OnInit {
    */
   getMapUrl(): SafeResourceUrl {
    
-    const lat = this.data.groupe.stade.stadiumLat;
-    const lng = this.data.groupe.stade.stadiumLon;
-    const label = encodeURIComponent(this.data.groupe.stade.nom);
+    const lat = this.data.groupe?.stade?.stadiumLat;
+    const lng = this.data.groupe?.stade?.stadiumLon;
+    const label = encodeURIComponent(this.data.groupe?.stade?.nom);
     
     // URL Google Maps Embed (gratuit, sans API key)
     const url = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
@@ -77,7 +77,7 @@ export class GroupeDetailsDialogComponent implements OnInit {
   openInGoogleMaps(): void {
     const lat = this.data.groupe.stade.stadiumLat;
     const lng = this.data.groupe.stade.stadiumLon;
-    const label = encodeURIComponent(this.data.groupe.stade.nom);
+    const label = encodeURIComponent(this.data.groupe?.stade?.nom);
     
     // URL pour ouvrir Google Maps avec un marqueur
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
