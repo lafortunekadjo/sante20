@@ -478,11 +478,11 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   saveUser(): void {
     if (this.isCreateFormValid()) {
       this.isLoading = true;
-      
+      console.log(this.newUser)
       const userData = {
         ...this.newUser,
         roles: this.rolesToApiFormat(this.selectedRolesArray),
-        groupe: this.newUser.groupe.id ? { id: this.newUser.groupe.id } : null
+        // groupe: this.newUser.groupe.id ? { id: this.newUser.groupe.id } : null
       };
 
       this.adminService.createUser(userData)
