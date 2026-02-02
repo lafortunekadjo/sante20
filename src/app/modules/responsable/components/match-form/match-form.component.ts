@@ -725,7 +725,15 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.loadDataForSelectedExercice();
+        this.matchService.updateMatch(match.id, match).subscribe({
+          next: () => {
+            this.showSnackbar('Match modifié avec succès', 'success');
+            this.loadDataForSelectedExercice();
+          },
+          error: (err) => {
+            this.showSnackbar('Erreur lors de la modification du match', 'error');
+          }
+        });
       }
     });
   }
@@ -748,7 +756,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
             this.loadDataForSelectedExercice();
           },
           error: (err) => {
-            console.error('Erreur lors de la suppression:', err);
+           
             this.showSnackbar('Erreur lors de la suppression du match', 'error');
           }
         });
