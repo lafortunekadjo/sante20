@@ -63,6 +63,8 @@ import { EcheancierComponent } from "./modules/responsable/components/echeancier
 import { MouvementsHistoriqueComponent } from "./modules/responsable/components/mouvements-historique/mouvements-historique.component";
 import { TypeDepenseComponent } from "./modules/responsable/components/type-depense/type-depense.component";
 import { AnalyticsDashboardComponent } from "./modules/admin/components/analytics-dashboard/analytics-dashboard.component";
+import { NotificationComponent } from "./shared/components/notification/notification.component";
+import { NotificationsPageComponent } from "./modules/responsable/components/notifications-page/notifications-page.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -104,6 +106,10 @@ export const routes: Routes = [
       {
         path: 'home',
         component: HomeComponent,
+      },
+        {
+        path: 'notifications',
+        component: NotificationsPageComponent,
       },
 
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================

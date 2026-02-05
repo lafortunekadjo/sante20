@@ -725,7 +725,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.matchService.updateMatch(match.id, match).subscribe({
+        this.matchService.updateMatch(match.id, result).subscribe({
           next: () => {
             this.showSnackbar('Match modifié avec succès', 'success');
             this.loadDataForSelectedExercice();
@@ -769,6 +769,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleCreateRow() {
+    console.log(this.showCreateRow)
     this.showCreateRow = !this.showCreateRow;
     if (!this.showCreateRow) {
       this.newMatch = this.getEmptyMatch();
@@ -1057,4 +1058,178 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   getMatchInfo(match: Match): string {
     return this.getMatchDisplayName(match);
   }
+
+  onTypeChange() {
+    const type = this.newMatch.typeMatch;
+    
+    this.newMatch.equipe1 = undefined;
+    this.newMatch.equipe2 = undefined;
+    this.newMatch.sourceAdversaire = undefined;
+    this.newMatch.groupeAdverse = undefined;
+    this.newMatch.nomAdversaireManuel = '';
+    this.membresAnniversaireSelected = [];
+    this.selectedSourceAdversaire = 'MANUEL';
+
+    if (type === 'INTERNE') {
+      this.setRandomTeams();
+    } else if (type === 'AMICAL') {
+      this.newMatch.sourceAdversaire = 'MANUEL';
+    } else if (type === 'ANNIVERSAIRE') {
+      this.setRandomTeams();
+    }
+    
+    this.updateEquipesForForfait();
+  }
+
+  setRandomTeams() {
+    if (this.equipes.length >= 2) {
+      const shuffled = [...this.equipes].sort(() => Math.random() - 0.5);
+      this.newMatch.equipe1 = shuffled[0];
+      this.newMatch.equipe2 = shuffled[1];
+      this.updateEquipesForForfait();
+    }
+  }
+
+  onSourceAdversaireChange() {
+    this.newMatch.sourceAdversaire = this.selectedSourceAdversaire;
+    this.newMatch.groupeAdverse = undefined;
+    this.newMatch.nomAdversaireManuel = '';
+  }
+
+  filterGroupes() {
+    if (!this.groupeSearch.trim()) {
+      this.groupesFiltres = this.allGroupes.slice(0, 10);
+    } else {
+      const search = this.groupeSearch.toLowerCase();
+      this.groupesFiltres = this.allGroupes
+        .filter(g => g.nom.toLowerCase().includes(search))
+        .slice(0, 10);
+    }
+  }
+
+  selectGroupeAdverse(groupe: Groupe) {
+    this.newMatch.groupeAdverse = groupe;
+    this.groupeSearch = '';
+    this.updateEquipesForForfait();
+  }
+
+  get filteredMembres(): Membre[] {
+    if (!this.membreSearch.trim()) {
+      return this.membres.filter(m => 
+        !this.membresAnniversaireSelected.some(s => s.id === m.id)
+      ).slice(0, 10);
+    }
+    const search = this.membreSearch.toLowerCase();
+    return this.membres
+      .filter(m => 
+        !this.membresAnniversaireSelected.some(s => s.id === m.id) &&
+        (`${m.nom} ${m.prenom}`.toLowerCase().includes(search))
+      )
+      .slice(0, 10);
+  }
+
+  addMembreAnniversaire(membre: Membre) {
+    if (!this.membresAnniversaireSelected.some(m => m.id === membre.id)) {
+      this.membresAnniversaireSelected.push(membre);
+      this.newMatch.membresAnniversaire = this.membresAnniversaireSelected;
+      this.membreSearch = '';
+    }
+  }
+
+  removeMembreAnniversaire(membre: Membre) {
+    this.membresAnniversaireSelected = this.membresAnniversaireSelected.filter(m => m.id !== membre.id);
+    this.newMatch.membresAnniversaire = this.membresAnniversaireSelected;
+  }
+
+  updateEquipesForForfait() {
+    const [team1, team2] = this.getEquipeNamesFromNewMatch();
+    this.equipesForForfait = [team1, team2].filter(t => t && t.trim() !== '');
+  }
+
+  getEquipeNamesFromNewMatch(): [string, string] {
+    const type = this.newMatch.typeMatch;
+    
+    switch (type) {
+      case 'INTERNE':
+      case 'DUEL':
+        return [
+          this.newMatch.equipe1?.nom || '',
+          this.newMatch.equipe2?.nom || ''
+        ];
+      case 'AMICAL':
+        const local = this.groupes?.abreviation || this.groupes?.nom || 'Locale';
+        let adverse = '';
+        if (this.newMatch.groupeAdverse) {
+          adverse = this.newMatch.groupeAdverse.abreviation || this.newMatch.groupeAdverse.nom;
+        } else if (this.newMatch.nomAdversaireManuel) {
+          adverse = this.newMatch.nomAdversaireManuel;
+        }
+        return [local, adverse];
+      case 'ANNIVERSAIRE':
+        return ['Équipe Fêtés', 'Équipe Adverses'];
+      default:
+        return ['', ''];
+    }
+  }
+
+  onForfaitChange() {
+    if (this.newMatch.forfait) {
+      this.updateEquipesForForfait();
+    } else {
+      this.newMatch.equipeForfait = '';
+    }
+  }
+
+  onAdversaireManuelInput() {
+    this.updateEquipesForForfait();
+  }
+
+  // getMembreName(membre: number | Membre | null): string {
+  //   if (membre === null) return '-';
+  //   if (typeof membre === 'number') {
+  //     const foundMembre = this.membres.find(m => m.id === membre);
+  //     return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : '-';
+  //   }
+  //   return `${membre?.nom} ${membre?.prenom}`;
+  // }
+
+  isDateValid(date: string | undefined): boolean {
+    if (!date) return false;
+    try {
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime());
+    } catch {
+      return false;
+    }
+  }
+
+  // isCreateFormValid(): boolean {
+  //   if (!this.newMatch.typeMatch || !this.isDateValid(this.newMatch.dateMatch)) {
+  //     return false;
+  //   }
+
+  //   const type = this.newMatch.typeMatch;
+
+  //   switch (type) {
+  //     case 'INTERNE':
+  //     case 'DUEL':
+  //       return !!this.newMatch.equipe1 && !!this.newMatch.equipe2 &&
+  //              this.newMatch.equipe1.id !== this.newMatch.equipe2?.id;
+      
+  //     case 'AMICAL':
+  //       if (this.selectedSourceAdversaire === 'GROUPE_EXISTANT') {
+  //         return !!this.newMatch.groupeAdverse;
+  //       }
+  //       if (this.selectedSourceAdversaire === 'MANUEL') {
+  //         return !!this.newMatch.nomAdversaireManuel?.trim();
+  //       }
+  //       return false;
+      
+  //     case 'ANNIVERSAIRE':
+  //       return this.membresAnniversaireSelected.length > 0;
+      
+  //     default:
+  //       return false;
+  //   }
+  // }
 }

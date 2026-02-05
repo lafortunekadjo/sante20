@@ -77,6 +77,7 @@ getMatchesForCurrentExercice(groupeId: number): Observable<Match[]> {
   }
 
   updateMatch(id: number, match: any): Observable<Match> {
+    console.log(match)
     return this.http.put<Match>(`${this.matchUrl}/${id}`, match);
   }
 

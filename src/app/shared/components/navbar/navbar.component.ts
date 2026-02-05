@@ -27,6 +27,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter, finalize, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
+import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
+
+// ✅ AJOUT : Import du composant NotificationBell
+
 
 @Component({
   selector: 'app-navbar',
@@ -46,7 +50,8 @@ import { Subject } from 'rxjs';
     RouterModule,
     TranslateModule,
     MatTooltipModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    NotificationBellComponent  // ✅ AJOUT
   ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
@@ -67,7 +72,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   currentLanguage: Language = 'fr';
   currentRoute: string = '';
 
-  // ✅ AJOUT : Subject pour nettoyer les subscriptions
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -78,16 +82,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private dialog: MatDialog, 
     private equipeService: GeneralService,
     private snackBar: MatSnackBar
-  ) {
-    // ❌ SUPPRIMER : Ne pas charger ici, attendre ngOnInit
-    // this.roles = this.authService.getRoles();
-    // if (this.roles.length > 0) {
-    //   this.selectedRole = this.roles[0];
-    // }
-  }
+  ) {}
 
   ngOnInit() {
-    // ✅ AJOUT : S'abonner aux changements d'état utilisateur
+    // S'abonner aux changements d'état utilisateur
     this.authService.isUserReady$
       .pipe(takeUntil(this.destroy$))
       .subscribe(isReady => {
@@ -121,27 +119,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.refreshUserData();
   }
 
-  // ✅ AJOUT : Implémenter OnDestroy
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  /**
-   * ✅ NOUVELLE MÉTHODE : Rafraîchit toutes les données utilisateur
-   * Appelée à chaque changement d'état d'authentification
-   */
   refreshUserData(): void {
     console.log('Navbar: Refreshing user data...');
     
-    // Recharger les rôles depuis le service
     this.roles = this.authService.getRoles() || [];
     this.selectedRole = this.authService.getCurrentRole() || this.roles[0] || null;
-    
-    // Recharger les infos utilisateur
     this.user = this.authService.getUser();
-    
-    // Recharger la photo de profil
     this.loadProfilePhoto();
     
     console.log('Navbar: User data refreshed', {
@@ -151,23 +139,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
   
-  /**
-   * @deprecated Utiliser refreshUserData() à la place
-   */
   loadUserData(): void {
     this.refreshUserData();
   }
 
-  /**
-   * Charge la photo de profil depuis le localStorage ou le service
-   */
   loadProfilePhoto(): void {
     const storedUrl = localStorage.getItem('profilUrl');
     
     if (storedUrl) {
       this.userProfileImage = this.getFullImageUrl(storedUrl);
     } else {
-      // Fallback : charger via le service
       this.authService.getProfilePhoto2().subscribe({
         next: (url: SafeUrl) => {
           this.userProfileImage = url as string;
@@ -180,18 +161,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Retourne l'URL complète de l'image
-   */
   getFullImageUrl(url: string): string {
     if (!url) return '';
-    
-    // Si c'est déjà une URL complète (Cloudinary)
     if (url.startsWith('http')) {
       return url;
     }
-    
-    // Sinon, c'est un chemin relatif (ancien format) - ne devrait plus arriver avec Cloudinary
     return url;
   }
   
@@ -212,9 +186,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Ouvre le dialog d'édition de photo de profil
-   */
   openProfileImageEdit(): void {
     const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, {
       width: '600px',
@@ -234,9 +205,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Upload la photo de profil vers le serveur
-   */
   uploadProfilePhoto(file: File, previewUrl: string): void {
     if (!this.user?.userId) {
       this.snackBar.open('Erreur : utilisateur non identifié', 'Fermer', {
@@ -248,7 +216,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.isUploadingPhoto = true;
     
-    // Mise à jour immédiate de l'affichage avec la prévisualisation
     const previousImage = this.userProfileImage;
     this.userProfileImage = previewUrl;
 
@@ -256,7 +223,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
       finalize(() => this.isUploadingPhoto = false)
     ).subscribe({
       next: (response: any) => {
-        // Extraire l'URL du message de réponse
         let serverUrl = this.extractUrlFromResponse(response);
         
         if (serverUrl) {
@@ -265,14 +231,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
         }
         
         this.snackBar.open('Photo de profil mise à jour avec succès !', 'Fermer', {
-          duration: 4000,
+          duration: 3000,
           panelClass: ['snackbar-success']
         });
       },
-      error: (err) => {
-        console.error('Erreur lors de l\'upload:', err);
-        
-        // Restaurer l'ancienne photo en cas d'erreur
+      error: (error) => {
+        console.error('Erreur upload photo:', error);
         this.userProfileImage = previousImage;
         
         this.snackBar.open('Erreur lors de la mise à jour de la photo', 'Fermer', {
@@ -283,18 +247,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Extrait l'URL Cloudinary de la réponse du serveur
-   */
   private extractUrlFromResponse(response: any): string | null {
     if (!response) return null;
 
-    // Si la réponse contient directement une URL
     if (response.url && response.url.startsWith('http')) {
       return response.url;
     }
 
-    // Si l'URL est dans le message (format: "... URL: https://...")
     if (response.message && typeof response.message === 'string') {
       const urlMatch = response.message.match(/https?:\/\/[^\s]+/);
       if (urlMatch) {
@@ -302,7 +261,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Si la réponse est une chaîne directe
     if (typeof response === 'string' && response.startsWith('http')) {
       return response;
     }
@@ -315,7 +273,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       if (this.user && this.user.userId) {
-        // Créer une prévisualisation
         const reader = new FileReader();
         reader.onload = (e) => {
           const previewUrl = e.target?.result as string;
@@ -404,7 +361,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    // ✅ Réinitialiser les données locales avant le logout
     this.user = null;
     this.roles = [];
     this.selectedRole = null;
@@ -453,7 +409,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Appel du service avec l'équipe sélectionnée (peut être null)
       const result = await this.authService.checkIn(
         checkInResult.equipe?.id || null,
         checkInResult.hasPlayed

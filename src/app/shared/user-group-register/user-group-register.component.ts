@@ -65,10 +65,10 @@ export class UserGroupRegisterComponent  implements OnInit {
   disciplines = [
     { value: 'FOOTBALL', label: 'Football', icon: 'sports_soccer' },
     { value: 'BASKETBALL', label: 'Basketball', icon: 'sports_basketball' },
-    { value: 'VOLLEYBALL', label: 'Volleyball', icon: 'sports_volleyball' },
-    { value: 'HANDBALL', label: 'Handball', icon: 'sports_handball' },
-    { value: 'TENNIS', label: 'Tennis', icon: 'sports_tennis' },
-    { value: 'AUTRE', label: 'Autre', icon: 'sports' }
+    // { value: 'VOLLEYBALL', label: 'Volleyball', icon: 'sports_volleyball' },
+    // { value: 'HANDBALL', label: 'Handball', icon: 'sports_handball' },
+    // { value: 'TENNIS', label: 'Tennis', icon: 'sports_tennis' },
+    // { value: 'AUTRE', label: 'Autre', icon: 'sports' }
   ];
 
   constructor(
@@ -117,18 +117,18 @@ export class UserGroupRegisterComponent  implements OnInit {
         this.isLoading = false;
       }),
       catchError(err => {
-        console.error('Erreur lors de la création du groupe:', err);
+      
         const errorMessage = err.error?.message || 'Erreur lors de la création. Veuillez réessayer.';
         this.showError(errorMessage);
         return of(null);
       })
     ).subscribe(response => {
       if (response) {
-        console.log('Groupe créé avec succès:', response);
+       
         this.showSuccess('Groupe créé avec succès !');
+        window.location.reload();
+        this.router.navigate(['/responsable/configuration']);
         
-        // Rafraîchir les données utilisateur et recharger la page
-        this.refreshAndRedirect(response);
       }
     });
   }
@@ -136,22 +136,30 @@ export class UserGroupRegisterComponent  implements OnInit {
   /**
    * Rafraîchir les données et rediriger
    */
-  private refreshAndRedirect(groupeResponse: any): void {
-    // Option 1: Mettre à jour le localStorage et recharger complètement
-    // C'est la méthode la plus sûre pour s'assurer que tout est synchronisé
+private refreshAndRedirect(groupeResponse: any): void {
+  // 1. Mettre à jour l'utilisateur dans le stockage local
+  // C'est l'étape la plus importante pour que le menu change au rechargement
+  const currentUser = this.authService.getUser(); // Supposons que tu as cette méthode
+  if (currentUser) {
+    currentUser.role = 'RESPONSABLE'; // On met à jour le rôle manuellement
+    currentUser.groupeId = groupeResponse.id; // On lie le nouveau groupe
     
-    // Si l'API retourne les nouvelles infos utilisateur avec le groupe
-    // if (groupeResponse.groupe) {
-    //   // Mettre à jour le groupe dans le localStorage
-    //   this.authService.se (groupeResponse.groupe);
-    // }
-
-    // Afficher un message et recharger après un court délai
-    setTimeout(() => {
-      // Recharger complètement la page pour rafraîchir le menu et l'état
-      window.location.href = '/dashboard';
-    }, 1500);
+    // On sauvegarde l'utilisateur mis à jour
+    localStorage.setItem('user', JSON.stringify(currentUser));
   }
+
+  // 2. Afficher un toast ou message de succès (Optionnel)
+  // this.toastService.success('Groupe créé ! Redirection...');
+
+  // 3. Rechargement complet
+  setTimeout(() => {
+    // Option A : Redirection forcée vers une URL spécifique (Nettoie l'état Angular)
+    window.location.href = '/responsable/configuration';
+    
+    // Option B : Si tu es déjà sur la bonne URL mais que tu veux juste recharger
+    // window.location.reload();
+  }, 1500);
+}
 
   /**
    * Générer automatiquement l'abréviation
