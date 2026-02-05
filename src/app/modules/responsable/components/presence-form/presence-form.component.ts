@@ -29,6 +29,9 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Match } from '../../../../core/models/match.model';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas'
+import { MatchImageService } from '../../../../core/services/match-image.service';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-presence-form',
@@ -47,7 +50,10 @@ import html2canvas from 'html2canvas'
     MatExpansionModule,
     MatSnackBarModule,
     MatTabsModule,
-    RouterModule
+    RouterModule,
+    MatMenuTrigger,
+    MatMenuModule,
+    MatDividerModule
   ],
   templateUrl: './presence-form.component.html',
   styleUrls: ['./presence-form.component.scss']
@@ -60,6 +66,10 @@ export class PresenceFormComponent implements OnInit {
   match: Match | null = null;
   groupeActif: Groupe | null = null;
   groupeAdverse: Groupe | null = null;
+
+  // Ajouter cette propriété
+isGeneratingImage = false;
+selectedImageFormat: 'full' | 'story' | 'square' = 'full';
   
   // Membres des deux groupes
   membres: Membre[] = [];
@@ -89,7 +99,8 @@ export class PresenceFormComponent implements OnInit {
     private authService: AuthService,
     private route: ActivatedRoute,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private matchImageService: MatchImageService
   ) {}
 
   ngOnInit(): void {
@@ -1242,5 +1253,522 @@ private showSnackbar(message: string, type: 'success' | 'error'): void {
   });
 }
 
+get cscPlayers(): Presence[] {
+  return this.dataSource.data.filter(p => p.butsContreSonCamp && p.butsContreSonCamp > 0);
+}
+
+getTotalCSCForAll(): number {
+  return this.dataSource.data.reduce((sum, p) => sum + (p.butsContreSonCamp || 0), 0);
+}
+
+// ============================================================
+// 1. TÉLÉCHARGER AVEC CHOIX DU FORMAT
+// ============================================================
+
+// async downloadMatchSheetAsImage(format: 'full' | 'story' = 'full'): Promise<void> {
+//   if (this.isGeneratingImage) return;
+  
+//   this.isGeneratingImage = true;
+//   this.showSnackbar('Génération de l\'image...', 'success');
+
+//   try {
+//     // Sélectionner le bon template selon le format
+//     const elementId = format === 'story' ? 'print-match-story' : 'print-match-image';
+//     const element = document.getElementById(elementId);
+    
+//     if (!element) {
+//       // Fallback sur l'ancien template
+//       const fallback = document.getElementById('print-match-section');
+//       if (!fallback) throw new Error('Élément non trouvé');
+//       await this.captureAndDownload(fallback, format);
+//       return;
+//     }
+
+//     await this.captureAndDownload(element, format);
+
+//   } catch (error) {
+//     console.error('Erreur génération image:', error);
+//     this.isGeneratingImage = false;
+//     this.showSnackbar('Erreur lors de la génération', 'error');
+//   }
+// }
+
+private async captureAndDownload(element: HTMLElement, format: string): Promise<void> {
+  // Rendre visible temporairement
+  const originalDisplay = element.style.display;
+  element.style.display = 'block';
+  element.style.position = 'absolute';
+  element.style.left = '-9999px';
+  element.style.top = '0';
+
+  // Attendre le rendu
+  await new Promise(resolve => setTimeout(resolve, 150));
+
+  try {
+    // Capturer avec html2canvas
+    const canvas = await html2canvas(element, {
+      scale: 3, // Haute résolution pour les réseaux sociaux
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null, // Transparent pour garder le gradient
+      logging: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight
+    });
+
+    // Télécharger
+    const link = document.createElement('a');
+    link.download = this.getImageFileName(`match-${format}`);
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+
+    this.isGeneratingImage = false;
+    this.showSnackbar('Image téléchargée !', 'success');
+
+  } finally {
+    // Restaurer l'état
+    element.style.display = originalDisplay;
+    element.style.position = '';
+    element.style.left = '';
+    element.style.top = '';
+  }
+}
+
+// ============================================================
+// 2. PARTAGER DIRECTEMENT (Mobile)
+// ============================================================
+
+async shareMatchImage(format: 'full' | 'story' = 'full'): Promise<void> {
+  if (this.isGeneratingImage) return;
+
+  // Vérifier support
+  if (!navigator.share) {
+    this.showSnackbar('Partage non disponible, téléchargement...', 'success');
+    await this.downloadMatchSheetAsImage(format);
+    return;
+  }
+
+  this.isGeneratingImage = true;
+  this.showSnackbar('Préparation...', 'success');
+
+  try {
+    const elementId = format === 'story' ? 'print-match-story' : 'print-match-image';
+    const element = document.getElementById(elementId) || document.getElementById('print-match-section');
+    
+    if (!element) throw new Error('Élément non trouvé');
+
+    // Rendre visible
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    const canvas = await html2canvas(element, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false
+    });
+
+    element.style.display = 'none';
+
+    // Convertir en blob
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Erreur blob')), 'image/png', 1.0);
+    });
+
+    const file = new File([blob], this.getImageFileName(`match-${format}`), { type: 'image/png' });
+
+    // Texte de partage
+    const score1 = this.getMatchScore(this.equipeNames[0]);
+    const score2 = this.getMatchScore(this.equipeNames[1]);
+    const shareText = `⚽ ${this.equipeNames[0]} ${score1} - ${score2} ${this.equipeNames[1]}\n📅 ${this.formatDateForShare()}\n\n#${this.groupeActif?.nom?.replace(/\s+/g, '')} #My20`;
+
+    const shareData: ShareData = {
+      title: `Match ${this.groupeActif?.nom}`,
+      text: shareText,
+      files: [file]
+    };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      this.showSnackbar('Partagé !', 'success');
+    } else {
+      // Partage texte seul + téléchargement image
+      await navigator.share({ title: shareData.title, text: shareData.text });
+      const link = document.createElement('a');
+      link.download = this.getImageFileName(`match-${format}`);
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    }
+
+    this.isGeneratingImage = false;
+
+  } catch (error: any) {
+    this.isGeneratingImage = false;
+    if (error.name !== 'AbortError') {
+      this.showSnackbar('Erreur lors du partage', 'error');
+    }
+  }
+}
+
+// ============================================================
+// 3. COPIER DANS LE PRESSE-PAPIER
+// ============================================================
+
+async copyMatchImageToClipboard(format: 'full' | 'story' = 'full'): Promise<void> {
+  if (this.isGeneratingImage) return;
+
+  if (!navigator.clipboard?.write) {
+    this.showSnackbar('Copie non supportée sur ce navigateur', 'error');
+    return;
+  }
+
+  this.isGeneratingImage = true;
+  this.showSnackbar('Copie en cours...', 'success');
+
+  try {
+    const elementId = format === 'story' ? 'print-match-story' : 'print-match-image';
+    const element = document.getElementById(elementId) || document.getElementById('print-match-section');
+    
+    if (!element) throw new Error('Élément non trouvé');
+
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    const canvas = await html2canvas(element, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false
+    });
+
+    element.style.display = 'none';
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Erreur')), 'image/png', 1.0);
+    });
+
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]);
+
+    this.isGeneratingImage = false;
+    this.showSnackbar('Image copiée ! Collez avec Ctrl+V', 'success');
+
+  } catch (error) {
+    console.error('Erreur copie:', error);
+    this.isGeneratingImage = false;
+    this.showSnackbar('Erreur lors de la copie', 'error');
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+private getImageFileName(prefix: string): string {
+  const groupeName = this.groupeActif?.nom?.replace(/[^a-zA-Z0-9]/g, '-') || 'groupe';
+  const score = `${this.getMatchScore(this.equipeNames[0])}-${this.getMatchScore(this.equipeNames[1])}`;
+  const dateFile = this.match?.dateMatch 
+    ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+    : new Date().toISOString().split('T')[0];
+  
+  return `${prefix}-${groupeName}-${score}-${dateFile}.png`;
+}
+
+private formatDateForShare(): string {
+  if (!this.match?.dateMatch) return '';
+  return new Date(this.match.dateMatch).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+downloadMatchSheetAsImage(format: 'full' | 'story' = 'full'): void {
+  if (!this.match?.id) return;
+  this.matchImageService.downloadMatchImage(this.match.id, format);
+}
+
+shareMatchSheetAsImage(format: 'full' | 'story' = 'full'): void {
+  if (!this.match?.id) return;
+  this.matchImageService.shareMatchImage(this.match.id, format);
+}
+//   if (this.isGeneratingPdf) return;
+  
+//   this.isGeneratingPdf = true;
+//   this.showSnackbar('Génération de l\'image...', 'success');
+
+//   try {
+//     // Récupérer l'élément à capturer
+//     const element = document.getElementById('print-match-section');
+    
+//     if (!element) {
+//       throw new Error('Élément non trouvé');
+//     }
+
+//     // Rendre visible temporairement
+//     element.style.display = 'block';
+//     element.style.position = 'absolute';
+//     element.style.left = '-9999px';
+//     element.style.top = '0';
+
+//     // Attendre le rendu
+//     await new Promise(resolve => setTimeout(resolve, 100));
+
+//     // Capturer avec html2canvas
+//     const canvas = await html2canvas(element, {
+//       scale: 2, // Haute résolution
+//       useCORS: true,
+//       allowTaint: true,
+//       backgroundColor: '#ffffff',
+//       logging: false,
+//       width: element.scrollWidth,
+//       height: element.scrollHeight
+//     });
+
+//     // Cacher l'élément
+//     element.style.display = 'none';
+
+//     // Convertir en image et télécharger
+//     const link = document.createElement('a');
+//     link.download = this.getImageFileName('feuille-match');
+//     link.href = canvas.toDataURL('image/png', 1.0);
+//     link.click();
+
+//     this.isGeneratingPdf = false;
+//     this.showSnackbar('Image téléchargée avec succès !', 'success');
+
+//   } catch (error) {
+//     console.error('Erreur génération image:', error);
+//     this.isGeneratingPdf = false;
+//     this.showSnackbar('Erreur lors de la génération de l\'image', 'error');
+//   }
+// }
+
+// ============================================================
+// 2. TÉLÉCHARGER LA FICHE DE PRÉSENCE EN IMAGE
+// ============================================================
+
+async downloadPresenceSheetAsImage(): Promise<void> {
+  if (this.isGeneratingPdf) return;
+  
+  this.isGeneratingPdf = true;
+  this.showSnackbar('Génération de l\'image...', 'success');
+
+  try {
+    const element = document.getElementById('print-presence-section');
+    
+    if (!element) {
+      throw new Error('Élément non trouvé');
+    }
+
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    element.style.display = 'none';
+
+    const link = document.createElement('a');
+    link.download = this.getImageFileName('fiche-presence');
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+
+    this.isGeneratingPdf = false;
+    this.showSnackbar('Image téléchargée avec succès !', 'success');
+
+  } catch (error) {
+    console.error('Erreur génération image:', error);
+    this.isGeneratingPdf = false;
+    this.showSnackbar('Erreur lors de la génération de l\'image', 'error');
+  }
+}
+
+// ============================================================
+// 3. PARTAGER L'IMAGE (Web Share API)
+// ============================================================
+
+// async shareMatchSheetAsImage(): Promise<void> {
+//   if (this.isGeneratingPdf) return;
+
+//   // Vérifier si le partage est supporté
+//   if (!navigator.share || !navigator.canShare) {
+//     this.showSnackbar('Le partage n\'est pas disponible sur ce navigateur', 'error');
+//     // Fallback: télécharger
+//     await this.downloadMatchSheetAsImage();
+//     return;
+//   }
+
+//   this.isGeneratingPdf = true;
+//   this.showSnackbar('Préparation du partage...', 'success');
+
+//   try {
+//     const element = document.getElementById('print-match-section');
+    
+//     if (!element) {
+//       throw new Error('Élément non trouvé');
+//     }
+
+//     element.style.display = 'block';
+//     element.style.position = 'absolute';
+//     element.style.left = '-9999px';
+//     element.style.top = '0';
+
+//     await new Promise(resolve => setTimeout(resolve, 100));
+
+//     const canvas = await html2canvas(element, {
+//       scale: 2,
+//       useCORS: true,
+//       allowTaint: true,
+//       backgroundColor: '#ffffff',
+//       logging: false
+//     });
+
+//     element.style.display = 'none';
+
+//     // Convertir canvas en blob
+//     const blob = await new Promise<Blob>((resolve, reject) => {
+//       canvas.toBlob(blob => {
+//         if (blob) resolve(blob);
+//         else reject(new Error('Erreur conversion blob'));
+//       }, 'image/png', 1.0);
+//     });
+
+//     // Créer le fichier
+//     const file = new File([blob], this.getImageFileName('feuille-match'), { 
+//       type: 'image/png' 
+//     });
+
+//     // Vérifier si on peut partager ce type de fichier
+//     const shareData = {
+//       title: `Feuille de match - ${this.groupeActif?.nom}`,
+//       text: `${this.equipeNames[0]} ${this.getMatchScore(this.equipeNames[0])} - ${this.getMatchScore(this.equipeNames[1])} ${this.equipeNames[1]}`,
+//       files: [file]
+//     };
+
+//     if (navigator.canShare(shareData)) {
+//       await navigator.share(shareData);
+//       this.showSnackbar('Partagé avec succès !', 'success');
+//     } else {
+//       // Fallback si les fichiers ne sont pas supportés
+//       await navigator.share({
+//         title: shareData.title,
+//         text: shareData.text
+//       });
+//       // Télécharger aussi l'image
+//       const link = document.createElement('a');
+//       link.download = this.getImageFileName('feuille-match');
+//       link.href = canvas.toDataURL('image/png', 1.0);
+//       link.click();
+//     }
+
+//     this.isGeneratingPdf = false;
+
+//   } catch (error: any) {
+//     console.error('Erreur partage:', error);
+//     this.isGeneratingPdf = false;
+    
+//     if (error.name !== 'AbortError') {
+//       this.showSnackbar('Erreur lors du partage', 'error');
+//     }
+//   }
+// }
+
+// ============================================================
+// 4. COPIER L'IMAGE DANS LE PRESSE-PAPIER
+// ============================================================
+
+async copyMatchSheetToClipboard(): Promise<void> {
+  if (this.isGeneratingPdf) return;
+
+  // Vérifier si le clipboard est supporté
+  if (!navigator.clipboard || !navigator.clipboard.write) {
+    this.showSnackbar('La copie n\'est pas disponible sur ce navigateur', 'error');
+    return;
+  }
+
+  this.isGeneratingPdf = true;
+  this.showSnackbar('Copie en cours...', 'success');
+
+  try {
+    const element = document.getElementById('print-match-section');
+    
+    if (!element) {
+      throw new Error('Élément non trouvé');
+    }
+
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    element.style.display = 'none';
+
+    // Convertir en blob
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('Erreur conversion blob'));
+      }, 'image/png', 1.0);
+    });
+
+    // Copier dans le presse-papier
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'image/png': blob
+      })
+    ]);
+
+    this.isGeneratingPdf = false;
+    this.showSnackbar('Image copiée ! Collez-la dans WhatsApp, Facebook, etc.', 'success');
+
+  } catch (error) {
+    console.error('Erreur copie:', error);
+    this.isGeneratingPdf = false;
+    this.showSnackbar('Erreur lors de la copie', 'error');
+  }
+}
+
+// ============================================================
+// 5. HELPER: Nom du fichier image
+// ============================================================
+
+// private getImageFileName(prefix: string): string {
+//   const groupeName = this.groupeActif?.nom?.replace(/\s+/g, '-') || 'groupe';
+//   const dateFile = this.match?.dateMatch 
+//     ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+//     : new Date().toISOString().split('T')[0];
+//   const score = `${this.getMatchScore(this.equipeNames[0])}-${this.getMatchScore(this.equipeNames[1])}`;
+  
+//   return `${prefix}-${groupeName}-${score}-${dateFile}.png`;
+// }
  
 }

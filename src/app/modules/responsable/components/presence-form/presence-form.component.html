@@ -591,7 +591,36 @@
         <mat-icon>arrow_back</mat-icon>
         Retour
       </button>
+      <!-- Menu d'export image -->
+<button mat-stroked-button [matMenuTriggerFor]="exportMenu" color="primary">
+  <mat-icon>image</mat-icon>
+  Exporter
+</button>
+
+<mat-menu #exportMenu="matMenu">
+  <button mat-menu-item (click)="downloadMatchSheetAsImage('full')">
+    <mat-icon>aspect_ratio</mat-icon>
+    <span>Image complète</span>
+  </button>
+  
+  <button mat-menu-item (click)="downloadMatchSheetAsImage('story')">
+    <mat-icon>stay_current_portrait</mat-icon>
+    <span>Format Story</span>
+  </button>
+  
+  <mat-divider></mat-divider>
+  
+  <button mat-menu-item (click)="shareMatchSheetAsImage('full')">
+    <mat-icon>share</mat-icon>
+    <span>Partager...</span>
+  </button>
+</mat-menu>
+
       <div class="primary-actions">
+
+    
+
+
         <button mat-stroked-button color="primary" (click)="downloadMatchSheetAsPdf()">
           <mat-icon>picture_as_pdf</mat-icon>
           Feuille de Match (PDF)
@@ -975,5 +1004,354 @@
     <div>Total: <strong>{{ dataSource.data.length }}</strong> inscrits</div>
     <div>{{ equipeNames[0] }}: <strong>{{ equipe1Count }}</strong> · {{ equipeNames[1] }}: <strong>{{ equipe2Count }}</strong></div>
     <div>{{ today | date:'dd/MM/yyyy' }}</div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- FEUILLE DE MATCH - VERSION IMAGE (Format carré pour réseaux sociaux) -->
+<!-- ============================================================ -->
+<div id="print-match-image" 
+     style="display: none; 
+            width: 600px; 
+            font-family: 'Segoe UI', 'Roboto', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+            color: white; 
+            padding: 0; 
+            overflow: hidden;">
+  
+  <!-- ===== HEADER AVEC LOGO ===== -->
+  <div style="background: linear-gradient(90deg, #43a047 0%, #2e7d32 100%); 
+              padding: 20px; 
+              text-align: center;">
+    
+    <!-- Logo groupe -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+      <img *ngIf="groupeActif?.profilePhotoUrl" 
+           [src]="groupeActif?.profilePhotoUrl" 
+           alt="Logo" 
+           style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
+      <div *ngIf="!groupeActif?.profilePhotoUrl" 
+           style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.2); 
+                  color: white; display: flex; align-items: center; justify-content: center; 
+                  font-weight: bold; font-size: 16px; border: 2px solid white;">
+        {{ groupeActif?.abreviation || groupeActif?.nom?.substring(0,3) }}
+      </div>
+      <div>
+        <div style="font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+          Feuille de Match
+        </div>
+        <div style="font-size: 12px; opacity: 0.9;">{{ groupeActif?.nom }}</div>
+      </div>
+    </div>
+    
+    <!-- Badge type match + Date -->
+    <div style="display: flex; justify-content: center; gap: 15px; font-size: 11px;">
+      <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 12px;">
+        {{ match?.typeMatch }}
+      </span>
+      <span style="opacity: 0.9;">
+        {{ match?.dateMatch | date:'EEEE d MMMM yyyy' | titlecase }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== SCORE CENTRAL ===== -->
+  <div style="background: #1a1a2e; padding: 25px 20px; text-align: center;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+      
+      <!-- Équipe 1 -->
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #64b5f6;">
+          {{ equipeNames[0] }}
+        </div>
+        <div style="font-size: 48px; font-weight: 800; color: #64b5f6;">
+          {{ getMatchScore(equipeNames[0]) }}
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 5px;">
+          {{ equipe1Count }} joueurs
+        </div>
+      </div>
+      
+      <!-- VS -->
+      <div style="font-size: 20px; color: #666; font-weight: 300;">VS</div>
+      
+      <!-- Équipe 2 -->
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef5350;">
+          {{ equipeNames[1] }}
+        </div>
+        <div style="font-size: 48px; font-weight: 800; color: #ef5350;">
+          {{ getMatchScore(equipeNames[1]) }}
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 5px;">
+          {{ equipe2Count }} joueurs
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATISTIQUES ===== -->
+  <div style="background: #16213e; padding: 15px 20px;">
+    
+    <!-- Buteurs -->
+    <div *ngIf="buteursPlayers.length > 0" style="margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 16px;">⚽</span>
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">Buteurs</span>
+      </div>
+      <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+        <span *ngFor="let p of buteursPlayers; let last = last">
+          <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+            {{ getMembreNameAbbreviated(p) }}
+          </span>
+          <span *ngIf="(p.buts || 0) + (p.penalti || 0) > 1" style="color: #888;"> 
+            ({{ (p.buts || 0) + (p.penalti || 0) }})
+          </span>
+          <span *ngIf="p.penalti && p.penalti > 0" style="color: #ffd54f; font-size: 10px;"> P</span>
+          <span *ngIf="!last" style="color: #444;"> · </span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Passeurs -->
+    <div *ngIf="passeursPlayers.length > 0" style="margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 16px;">👟</span>
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">Passes décisives</span>
+      </div>
+      <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+        <span *ngFor="let p of passeursPlayers; let last = last">
+          <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+            {{ getMembreNameAbbreviated(p) }}
+          </span>
+          <span *ngIf="p.passes > 1" style="color: #888;"> ({{ p.passes }})</span>
+          <span *ngIf="!last" style="color: #444;"> · </span>
+        </span>
+      </div>
+    </div>
+
+    <!-- CSC -->
+    <div *ngIf="getTotalCSCForAll() > 0" style="margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 16px;">🥅</span>
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">CSC</span>
+      </div>
+      <div style="font-size: 13px; line-height: 1.6; padding-left: 24px; color: #ef5350;">
+        <span *ngFor="let p of cscPlayers; let last = last">
+          {{ getMembreNameAbbreviated(p) }}
+          <span *ngIf="p.butsContreSonCamp > 1"> ({{ p.butsContreSonCamp }})</span>
+          <span *ngIf="!last"> · </span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Cartons -->
+    <div *ngIf="hasSanctions()" style="margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="font-size: 16px;">🟨</span>
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">Sanctions</span>
+      </div>
+      <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+        <!-- Jaunes -->
+        <span *ngIf="getTotalCartonsJaunes() > 0">
+          <span *ngFor="let p of cartonsJaunesPlayers; let last = last">
+            <span style="color: #ffd54f;">{{ getMembreNameAbbreviated(p) }}</span>
+            <span *ngIf="p.cartonsJaunes > 1" style="color: #888;"> ({{ p.cartonsJaunes }})</span>
+            <span *ngIf="!last" style="color: #444;"> · </span>
+          </span>
+        </span>
+        <!-- Séparateur -->
+        <span *ngIf="getTotalCartonsJaunes() > 0 && getTotalCartonsRouges() > 0" style="color: #444;"> | </span>
+        <!-- Rouges -->
+        <span *ngIf="getTotalCartonsRouges() > 0">
+          <span *ngFor="let p of cartonsRougesPlayers; let last = last">
+            <span style="color: #f44336;">🟥 {{ getMembreNameAbbreviated(p) }}</span>
+            <span *ngIf="!last" style="color: #444;"> · </span>
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MVP ===== -->
+  <div style="background: linear-gradient(90deg, #1a1a2e 0%, #0f3460 50%, #1a1a2e 100%); 
+              padding: 15px 20px; 
+              display: flex; 
+              justify-content: space-between; 
+              align-items: center;">
+    
+    <!-- MVP Équipe 1 -->
+    <div style="text-align: center; flex: 1;">
+      <div style="font-size: 10px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+        ⭐ MVP {{ equipeNames[0] }}
+      </div>
+      <div style="font-size: 14px; font-weight: 600; color: white;">
+        {{ getMvpEquipeFor(equipeNames[0]) || '-' }}
+      </div>
+    </div>
+    
+    <!-- Homme du Match (centre) -->
+    <div style="text-align: center; flex: 1; padding: 10px; 
+                background: linear-gradient(135deg, #ffd700 0%, #ffab00 100%); 
+                border-radius: 8px; margin: 0 10px;">
+      <div style="font-size: 10px; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+        👑 Homme du Match
+      </div>
+      <div style="font-size: 16px; font-weight: 700; color: #1a1a2e;">
+        {{ getHommeDuMatch() || '-' }}
+      </div>
+    </div>
+    
+    <!-- MVP Équipe 2 -->
+    <div style="text-align: center; flex: 1;">
+      <div style="font-size: 10px; color: #ef5350; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+        ⭐ MVP {{ equipeNames[1] }}
+      </div>
+      <div style="font-size: 14px; font-weight: 600; color: white;">
+        {{ getMvpEquipeFor(equipeNames[1]) || '-' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMPOSITIONS ===== -->
+  <div style="background: #1a1a2e; padding: 15px 20px; display: flex; gap: 15px;">
+    
+    <!-- Équipe 1 -->
+    <div style="flex: 1;">
+      <div style="font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; 
+                  margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #333;">
+        {{ equipeNames[0] }}
+      </div>
+      <div style="font-size: 11px; line-height: 1.8; color: #ccc;">
+        <div *ngFor="let p of equipe1Players">
+          <span *ngIf="p.estCapitaine" style="color: #ffd54f;">©</span>
+          <span *ngIf="p.estGardien" style="color: #81d4fa;">🧤</span>
+          {{ getMembreNameAbbreviated(p) }}
+          <span *ngIf="p.estHommeDuMatchEq" style="color: #ffd54f;">⭐</span>
+          <span *ngIf="p.estHommeDuMatch" style="color: #ffd700;">👑</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Équipe 2 -->
+    <div style="flex: 1;">
+      <div style="font-size: 11px; color: #ef5350; text-transform: uppercase; letter-spacing: 1px; 
+                  margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #333;">
+        {{ equipeNames[1] }}
+      </div>
+      <div style="font-size: 11px; line-height: 1.8; color: #ccc;">
+        <div *ngFor="let p of equipe2Players">
+          <span *ngIf="p.estCapitaine" style="color: #ffd54f;">©</span>
+          <span *ngIf="p.estGardien" style="color: #81d4fa;">🧤</span>
+          {{ getMembreNameAbbreviated(p) }}
+          <span *ngIf="p.estHommeDuMatchEq" style="color: #ffd54f;">⭐</span>
+          <span *ngIf="p.estHommeDuMatch" style="color: #ffd700;">👑</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div style="background: #0f0f1a; padding: 12px 20px; 
+              display: flex; justify-content: space-between; align-items: center;">
+    <div style="font-size: 10px; color: #666;">
+      © = Capitaine · ⭐ = MVP Équipe · 👑 = HDM · 🧤 = Gardien
+    </div>
+    <div style="font-size: 10px; color: #43a047; font-weight: 600;">
+      My2-0 · {{ today | date:'dd/MM/yyyy HH:mm' }}
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- VERSION COMPACTE (Format story Instagram/WhatsApp) -->
+<!-- ============================================================ -->
+<div id="print-match-story" 
+     style="display: none; 
+            width: 400px; 
+            font-family: 'Segoe UI', 'Roboto', sans-serif; 
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); 
+            color: white; 
+            padding: 0;">
+  
+  <!-- Header -->
+  <div style="padding: 20px; text-align: center;">
+    <div style="font-size: 11px; color: #43a047; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">
+      {{ match?.typeMatch }}
+    </div>
+    <div style="font-size: 12px; color: #888;">
+      {{ match?.dateMatch | date:'d MMM yyyy' }}
+    </div>
+  </div>
+
+  <!-- Score -->
+  <div style="padding: 30px 20px; text-align: center;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 25px;">
+      <div style="flex: 1; text-align: right;">
+        <div style="font-size: 16px; font-weight: 600; color: #64b5f6; margin-bottom: 10px;">
+          {{ equipeNames[0] }}
+        </div>
+        <div style="font-size: 56px; font-weight: 800; color: #64b5f6;">
+          {{ getMatchScore(equipeNames[0]) }}
+        </div>
+      </div>
+      
+      <div style="font-size: 24px; color: #444;">-</div>
+      
+      <div style="flex: 1; text-align: left;">
+        <div style="font-size: 16px; font-weight: 600; color: #ef5350; margin-bottom: 10px;">
+          {{ equipeNames[1] }}
+        </div>
+        <div style="font-size: 56px; font-weight: 800; color: #ef5350;">
+          {{ getMatchScore(equipeNames[1]) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buteurs (simplifié) -->
+  <div *ngIf="buteursPlayers.length > 0" 
+       style="padding: 15px 20px; background: rgba(0,0,0,0.2); text-align: center;">
+    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+      ⚽ Buteurs
+    </div>
+    <div style="font-size: 12px; line-height: 1.8;">
+      <span *ngFor="let p of buteursPlayers; let last = last">
+        <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+          {{ getMembreNameAbbreviated(p) }}
+        </span>
+        <span *ngIf="(p.buts || 0) + (p.penalti || 0) > 1" style="color: #888;"> 
+          ({{ (p.buts || 0) + (p.penalti || 0) }})
+        </span>
+        <span *ngIf="!last" style="color: #333;"> · </span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Homme du Match -->
+  <div *ngIf="getHommeDuMatch()" 
+       style="padding: 15px 20px; text-align: center;">
+    <div style="display: inline-block; padding: 10px 25px; 
+                background: linear-gradient(135deg, #ffd700 0%, #ffab00 100%); 
+                border-radius: 25px;">
+      <div style="font-size: 10px; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px;">
+        👑 Homme du Match
+      </div>
+      <div style="font-size: 16px; font-weight: 700; color: #1a1a2e; margin-top: 3px;">
+        {{ getHommeDuMatch() }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding: 15px 20px; text-align: center;">
+    <div style="font-size: 14px; font-weight: 600; color: #43a047;">
+      {{ groupeActif?.nom }}
+    </div>
+    <div style="font-size: 10px; color: #666; margin-top: 3px;">
+      My2-0
+    </div>
   </div>
 </div>
