@@ -157,16 +157,44 @@
               <span class="team-initial">{{ getTeamInitial(equipe) }}</span>
             </div>
             <div class="team-info">
-              <h3 class="team-name" *ngIf="!editingRows[i]">{{ equipe.nom }}</h3>
-              <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="edit-name-field">
-                <input matInput [(ngModel)]="editEquipe.nom" required>
-              </mat-form-field>
-              <div class="team-meta">
-                <span class="member-count">
-                  <mat-icon>people</mat-icon>
-                  {{ getFullMembersByEquipeId(equipe.id).length }} {{ 'equipe.members' | translate }}
-                </span>
-              </div>
+              <!-- Mode lecture -->
+              <ng-container *ngIf="!editingRows[i]">
+                <h3 class="team-name">{{ equipe.nom }}</h3>
+                <div class="team-meta">
+                  <span class="member-count">
+                    <mat-icon>people</mat-icon>
+                    {{ getFullMembersByEquipeId(equipe.id).length }} {{ 'equipe.members' | translate }}
+                  </span>
+                  <!-- Afficher la couleur actuelle -->
+                  <span class="team-color-badge" *ngIf="equipe.couleur" [style.background]="equipe.couleur">
+                  </span>
+                </div>
+              </ng-container>
+              
+              <!-- Mode édition -->
+              <ng-container *ngIf="editingRows[i]">
+                <mat-form-field appearance="outline" class="edit-name-field">
+                  <mat-label>{{ 'equipe.teamName' | translate }}</mat-label>
+                  <input matInput [(ngModel)]="editEquipe.nom" required (click)="$event.stopPropagation()">
+                </mat-form-field>
+                
+                <!-- Color picker en mode édition -->
+                <div class="color-picker-section edit-mode" (click)="$event.stopPropagation()">
+                  <label class="color-label">{{ 'equipe.teamColor' | translate }}</label>
+                  <div class="color-options">
+                    <button 
+                      *ngFor="let color of teamColors" 
+                      type="button"
+                      class="color-option"
+                      [style.background]="color.gradient"
+                      [class.selected]="editEquipe.couleur === color.value"
+                      (click)="selectEditColor(color.value); $event.stopPropagation()"
+                      [matTooltip]="color.name">
+                      <mat-icon *ngIf="editEquipe.couleur === color.value">check</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
             </div>
           </div>
           

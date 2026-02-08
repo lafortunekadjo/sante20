@@ -200,6 +200,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   // Sélection multiple
   selectedSanctions: Set<number> = new Set();
   selectAll = false;
+  currentYear = new Date().getFullYear();
 
   // Formulaire filtres
   filterForm: FormGroup;
@@ -273,6 +274,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.restorePreferences();
+    this.initFiltersWithCurrentYear();
     this.loadData();
     this.setupFilterListener();
   }
@@ -287,6 +289,19 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  isCurrentYearFilterActive(): boolean {
+  const filters = this.filterForm.value;
+  if (!filters.dateDebut || !filters.dateFin) return false;
+  
+  const start = new Date(filters.dateDebut);
+  const end = new Date(filters.dateFin);
+  
+  // Retourne vrai si le filtre correspond au 01/01 au 31/12 de l'année en cours
+  return start.getFullYear() === this.currentYear && 
+         start.getMonth() === 0 && 
+         end.getMonth() === 11;
+}
 
   // ============ CHARGEMENT DONNÉES ============
 
@@ -494,13 +509,13 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const parMembre = this.calculateStatsByMembre();
     
     this.stats = {
-      total: this.allSanctions.length,
-      payees: this.allSanctions.filter(s => s.etat === 'PAYEE').length,
-      partielles: this.allSanctions.filter(s => s.etat === 'PARTIELLE').length,
-      nonPayees: this.allSanctions.filter(s => s.etat === 'NON_PAYEE').length,
-      montantTotal: this.allSanctions.reduce((sum, s) => sum + (s.montant || 0), 0),
-      montantPaye: this.allSanctions.reduce((sum, s) => sum + (s.montantPaye || 0), 0),
-      montantRestant: this.allSanctions.reduce((sum, s) => sum + this.calculerResteAPayer(s), 0),
+      total: this.filteredSanctions.length,
+      payees: this.filteredSanctions.filter(s => s.etat === 'PAYEE').length,
+      partielles: this.filteredSanctions.filter(s => s.etat === 'PARTIELLE').length,
+      nonPayees: this.filteredSanctions.filter(s => s.etat === 'NON_PAYEE').length,
+      montantTotal: this.filteredSanctions.reduce((sum, s) => sum + (s.montant || 0), 0),
+      montantPaye: this.filteredSanctions.reduce((sum, s) => sum + (s.montantPaye || 0), 0),
+      montantRestant: this.filteredSanctions.reduce((sum, s) => sum + this.calculerResteAPayer(s), 0),
       tauxRecouvrement: 0,
       parType: this.calculateStatsByType(),
       parMembre: parMembre
@@ -938,10 +953,17 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       : name.substring(0, 2).toUpperCase();
   }
 
-  formatMontant(montant: number | undefined): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
-  }
+formatMontant(montant: number | undefined | null): string {
+  if (montant === undefined || montant === null) return '0 FCFA';
+  
+  // On arrondit pour éviter les virgules si nécessaire
+  const valeur = Math.round(montant);
+  
+  // Formate avec l'espace des milliers (fr-FR)
+  // const montantFormate = new Intl.NumberFormat('fr-FR').format(valeur);
+  
+  return `${valeur} FCFA`;
+}
 
   formatDate(date: string | Date): string {
     return new Date(date).toLocaleDateString('fr-FR');
@@ -1032,6 +1054,11 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       doc.setFont('helvetica', 'bold');
       doc.text('RÉSUMÉ', 14, yPos);
       yPos += 10;
+      // Si stats.montantRestant est une String comme "2 / 500 FCFA"
+// On extrait uniquement les chiffres de la fin
+  
+
+
 
       const boxWidth = (pageWidth - 38) / 4;
       const boxHeight = 25;
@@ -1039,7 +1066,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
         { label: 'Total', value: this.stats.total.toString(), color: [102, 126, 234] },
         { label: 'Non payées', value: this.stats.nonPayees.toString(), color: [245, 158, 11] },
         { label: 'Partielles', value: this.stats.partielles.toString(), color: [139, 92, 246] },
-        { label: 'Montant dû', value: this.formatMontant(this.stats.montantRestant), color: [239, 68, 68] }
+      { label: 'Montant dû', value: this.formatMontant(this.stats.montantRestant), color: [239, 68, 68] }
       ];
 
       statsData.forEach((stat, i) => {
@@ -1150,27 +1177,40 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private exportFlatPDF(doc: jsPDF, startY: number): void {
+  private initFiltersWithCurrentYear(): void {
+  const currentYear = new Date().getFullYear();
+  this.filterForm.patchValue({
+    dateDebut: new Date(currentYear, 0, 1), // 1er Janvier
+    dateFin: new Date(currentYear, 11, 31)   // 31 Décembre
+  }, { emitEvent: false }); // On ne déclenche pas le filtre avant le chargement des données
+}
+
+// Dans sanction-form.component.ts
+
+exportFlatPDF(doc: jsPDF, startY: number): void {
     doc.setTextColor(50, 50, 50);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('LISTE DES SANCTIONS', 14, startY);
+    
+    // Titre dynamique pour préciser la période si besoin
+    doc.text('LISTE DES SANCTIONS FILTRÉES', 14, startY);
 
-    let sanctions = this.filteredSanctions;
-    if (!this.exportOptions.includePayees) {
-      sanctions = sanctions.filter(s => s.etat !== 'PAYEE');
-    }
-    if (!this.exportOptions.includeNonPayees) {
-      sanctions = sanctions.filter(s => s.etat !== 'NON_PAYEE');
+    // Utiliser DIRECTEMENT this.filteredSanctions au lieu de recalculer
+    const sanctionsToExport = this.filteredSanctions;
+
+    if (sanctionsToExport.length === 0) {
+      doc.setFontSize(10);
+      doc.text('Aucune sanction ne correspond aux filtres actuels.', 14, startY + 10);
+      return;
     }
 
-    const tableData = sanctions.map(s => [
+    const tableData = sanctionsToExport.map(s => [
       this.getMembreName(s.membre),
       this.getTypeSanctionName(s.typeSanction),
       new Date(s.dateSanction).toLocaleDateString('fr-FR'),
       this.formatMontant(s.montant),
       this.formatMontant(s.montantPaye || 0),
-      this.getPaymentLabel(s)
+      this.getPaymentLabel(s) // Utilise ton label existant (Payé, Partiel, etc.)
     ]);
 
     (doc as any).autoTable({
@@ -1179,12 +1219,12 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       body: tableData,
       theme: 'striped',
       headStyles: {
-        fillColor: [102, 126, 234],
-        textColor: 255,
-        fontStyle: 'bold'
-      }
+        fillColor: [102, 126, 234], // Ton $primary du SCSS
+        textColor: 255
+      },
+      styles: { fontSize: 9 }
     });
-  }
+}
 
   // ============ NOTIFICATIONS ============
 

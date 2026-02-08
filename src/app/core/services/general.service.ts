@@ -84,11 +84,11 @@ export class GeneralService {
   }
 
   createEquipe(equipe: Equipe): Observable<Equipe> {
-    return this.http.post<TypeSanction>(this.equipeUrl, equipe);
+    return this.http.post<Equipe>(this.equipeUrl, equipe);
   }
 
   updateEquipe(id: number, equipe: Equipe): Observable<Equipe> {
-    return this.http.put<TypeSanction>(`${this.equipeUrl}/${id}`, equipe);
+    return this.http.put<Equipe>(`${this.equipeUrl}/${id}`, equipe);
   }
 
   desactivateEquipe(id: number): Observable<void> {

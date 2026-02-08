@@ -514,7 +514,7 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
             );
             
             if (foundEquipe) {
-              equipeToAssign = { id: foundEquipe.id, nom: foundEquipe.nom };
+              equipeToAssign = { id: foundEquipe.id, nom: foundEquipe.nom, couleur: foundEquipe.couleu };
               console.log(`🏆 Équipe "${data.equipe}" trouvée avec ID:`, foundEquipe.id);
             } else {
               console.warn(`⚠️ Équipe "${data.equipe}" non trouvée. Équipes disponibles: ${equipes.map(e => e.nom).join(', ')}`);
@@ -601,7 +601,7 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
     };
   }
 
-  private buildMembreFromData2(data: ExcelRowData, groupe: any, user: User ): Membre {
+  private buildMembreFromData2(data: ExcelRowData, groupe: any, user: User ): any {
     return {
       id: 0,
       nom: data.nom!,

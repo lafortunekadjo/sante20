@@ -101,7 +101,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
   searchQuery = '';
   
   newEquipe: Equipe & { couleur?: string } = { id: 0, nom: '', couleur: '' };
-  editEquipe: Equipe = { id: 0, nom: '' };
+  editEquipe: Equipe = { id: 0, nom: '', couleur: '' };
   editingRows: boolean[] = [];
   
   allMembres: Membre[] = [];
@@ -115,14 +115,43 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
 
   // Couleurs disponibles pour les équipes
   teamColors: TeamColor[] = [
-    { name: 'Bleu', value: 'blue', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { name: 'Vert', value: 'green', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
-    { name: 'Orange', value: 'orange', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
-    { name: 'Rouge', value: 'red', gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' },
-    { name: 'Violet', value: 'purple', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' },
-    { name: 'Rose', value: 'pink', gradient: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)' },
-    { name: 'Cyan', value: 'cyan', gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' },
-    { name: 'Indigo', value: 'indigo', gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }
+    // === COULEURS PRIMAIRES ===
+    { name: 'Rouge', value: '#DC2626', gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' },
+    { name: 'Bleu', value: '#2563EB', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' },
+    { name: 'Vert', value: '#16A34A', gradient: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' },
+    { name: 'Jaune', value: '#EAB308', gradient: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)' },
+    
+    // === COULEURS SECONDAIRES ===
+    { name: 'Orange', value: '#EA580C', gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' },
+    { name: 'Violet', value: '#7C3AED', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' },
+    { name: 'Rose', value: '#DB2777', gradient: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)' },
+    { name: 'Cyan', value: '#0891B2', gradient: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' },
+    
+    // === COULEURS VIVES ===
+    { name: 'Lime', value: '#65A30D', gradient: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)' },
+    { name: 'Émeraude', value: '#059669', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' },
+    { name: 'Turquoise', value: '#0D9488', gradient: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)' },
+    { name: 'Corail', value: '#F43F5E', gradient: 'linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)' },
+    
+    // === COULEURS PROFONDES ===
+    { name: 'Indigo', value: '#4F46E5', gradient: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' },
+    { name: 'Fuchsia', value: '#C026D3', gradient: 'linear-gradient(135deg, #d946ef 0%, #c026d3 100%)' },
+    { name: 'Bordeaux', value: '#9F1239', gradient: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)' },
+    { name: 'Marine', value: '#1E40AF', gradient: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)' },
+    
+    // === COULEURS CHAUDES ===
+    { name: 'Ambre', value: '#D97706', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
+    { name: 'Or', value: '#CA8A04', gradient: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' },
+    
+    // === COULEURS FROIDES ===
+    { name: 'Azur', value: '#0284C7', gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)' },
+    { name: 'Saphir', value: '#1D4ED8', gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' },
+    
+    // === COULEURS CLASSIQUES FOOTBALL ===
+    { name: 'Blanc', value: '#E5E7EB', gradient: 'linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%)' },
+    { name: 'Noir', value: '#374151', gradient: 'linear-gradient(135deg, #4b5563 0%, #374151 100%)' },
+    { name: 'Gris', value: '#6B7280', gradient: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' },
+    { name: 'Argent', value: '#94A3B8', gradient: 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)' }
   ];
 
   constructor(
@@ -233,7 +262,17 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
 
   editRow(index: number, equipe: Equipe): void {
     this.editingRows = this.editingRows.map((_, i) => i === index);
-    this.editEquipe = { ...equipe };
+    // Copier l'équipe avec sa couleur
+    this.editEquipe = { 
+      id: equipe.id, 
+      nom: equipe.nom, 
+      couleur: equipe.couleur || '' 
+    };
+  }
+
+  // ===== NOUVELLE MÉTHODE: Sélection de couleur en mode édition =====
+  selectEditColor(colorValue: string): void {
+    this.editEquipe.couleur = colorValue;
   }
 
   isEditFormValid(): boolean {
@@ -258,7 +297,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
 
   cancelEdit(index: number): void {
     this.editingRows[index] = false;
-    this.editEquipe = { id: 0, nom: '' };
+    this.editEquipe = { id: 0, nom: '', couleur: '' };
   }
 
   openDeleteDialog(equipe: Equipe): void {
@@ -363,12 +402,14 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
     this.selectedMembersToAdd.forEach(membreId => {
       const membre = this.allMembres.find(m => m.id === membreId);
       if (membre) {
-        // Appel au service pour assigner le membre à l'équipe
         this.equipeService.assignMemberToTeam(membreId, equipeId).subscribe({
           next: () => {
             completed++;
-            // Mettre à jour localement
-            membre.equipe = { id: equipeId, nom: this.selectedEquipeForAdd!.nom };
+            membre.equipe = { 
+              id: equipeId, 
+              nom: this.selectedEquipeForAdd!.nom, 
+              couleur: this.selectedEquipeForAdd!.couleur 
+            };
             
             if (completed + errors === this.selectedMembersToAdd.length) {
               this.finishAddMembers(completed, errors);
@@ -400,7 +441,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
       this.showSnackbar('equipe.membersAddedError', 'error');
     }
 
-    this.loadMembres(); // Recharger pour être sûr d'avoir les données à jour
+    this.loadMembres();
   }
 
   removeMemberFromTeam(membre: Membre, equipe: Equipe): void {
@@ -461,10 +502,16 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
   }
 
   getTeamGradient(equipe: Equipe): string {
-    // Si l'équipe a une couleur définie
-    const colorDef = this.teamColors.find(c => c.value === (equipe as any).couleur);
-    if (colorDef) {
-      return colorDef.gradient;
+    // Si l'équipe a une couleur définie, chercher le gradient correspondant
+    if (equipe.couleur) {
+      const colorDef = this.teamColors.find(c => c.value === equipe.couleur);
+      if (colorDef) {
+        return colorDef.gradient;
+      }
+      // Si la couleur est un hex direct, créer un gradient
+      if (equipe.couleur.startsWith('#')) {
+        return `linear-gradient(135deg, ${equipe.couleur} 0%, ${this.darkenColor(equipe.couleur, 20)} 100%)`;
+      }
     }
     
     // Sinon, générer un gradient basé sur le nom
@@ -484,18 +531,33 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
   }
 
   getTeamColor(equipe: Equipe): string {
-    const colorMap: { [key: string]: string } = {
-      'blue': '#667eea',
-      'green': '#10b981',
-      'orange': '#f59e0b',
-      'red': '#ef4444',
-      'purple': '#8b5cf6',
-      'pink': '#ec4899',
-      'cyan': '#06b6d4',
-      'indigo': '#6366f1'
-    };
+    // Si l'équipe a une couleur définie
+    if (equipe.couleur) {
+      // Si c'est déjà un hex, le retourner directement
+      if (equipe.couleur.startsWith('#')) {
+        return equipe.couleur;
+      }
+      // Chercher dans teamColors
+      const colorDef = this.teamColors.find(c => c.value === equipe.couleur);
+      if (colorDef) {
+        return colorDef.value;
+      }
+    }
     
-    return colorMap[(equipe as any).couleur] || '#667eea';
+    // Fallback basé sur le nom
+    const defaultColors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1'];
+    const index = equipe.nom.charCodeAt(0) % defaultColors.length;
+    return defaultColors[index];
+  }
+
+  // Méthode utilitaire pour assombrir une couleur hex
+  private darkenColor(hex: string, percent: number): string {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max((num >> 16) - amt, 0);
+    const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
+    const B = Math.max((num & 0x0000FF) - amt, 0);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   }
 
   // ===== SNACKBAR =====
