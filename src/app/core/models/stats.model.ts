@@ -77,6 +77,7 @@ export interface Stats {
 
   // Autres propriétés existantes
   totalSanction?: any;
+  totalGoal?:number;
 }
 export interface Sanctions {
   paid: { amount: number; count: number };

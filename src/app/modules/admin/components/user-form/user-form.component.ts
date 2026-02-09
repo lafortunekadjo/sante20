@@ -28,6 +28,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { PasswordResetResultDialogComponent, PasswordResetDialogData } from '../../../users/password-reset-result-dialog/password-reset-result-dialog.component';
+import { AuthService } from '../../../../core/services/auth.service';
 
 // Interface pour les rôles
 interface RoleObject {
@@ -104,6 +105,9 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   hidePassword = true;
   viewMode: 'grid' | 'list' = 'grid';
+  isAdmin=false;
+  currentUser: any; // Pour stocker l'utilisateur connecté
+  isResponsable: boolean = false;
   
   // Filtres
   searchTerm = '';
@@ -146,12 +150,16 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private adminService: UserService,
     private groupService: GroupeService,
+    private authService: AuthService,
     private router: Router,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
+   // this.currentUser = this.authService.ge; // Ou ta méthode pour récupérer le user
+    this.isResponsable = this.authService.isResponsable();
+      this.isAdmin = this.authService.isAdmin();
     this.loadData();
     this.setupSearch();
   }
@@ -197,7 +205,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading = true;
     forkJoin([
       this.adminService.getAllUsers(),
-      this.groupService.getAllGroupes()
+      this.groupService.getAllGroupes(),
+      
     ]).pipe(takeUntil(this.destroy$))
     .subscribe({
       next: ([users, groupes]) => {
@@ -478,6 +487,9 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   saveUser(): void {
     if (this.isCreateFormValid()) {
       this.isLoading = true;
+      if (!this.isAdmin){
+        this.newUser.groupe = this.authService.getCurrentGroupeId();
+      }
       console.log(this.newUser)
       const userData = {
         ...this.newUser,

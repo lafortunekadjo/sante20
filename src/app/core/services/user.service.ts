@@ -32,6 +32,10 @@ export class UserService {
     );
   }
 
+    // getuserByGroup(userId: number): Observable<User> {
+    //   return this.http.get<User>(`${environment.apiUrl}/user/${userId}`);
+    // }
+
   
 
   createUser2(user: any): Observable<User> {

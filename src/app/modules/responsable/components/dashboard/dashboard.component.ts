@@ -141,7 +141,8 @@ export class RDashboardComponent implements OnInit, OnDestroy {
     activePlayers: 0,
     participationRate: 0,
     bestPerformingTeam: '',
-    teamComparison: []
+    teamComparison: [],
+    totalGoal:0
   };
 
   // Configuration des graphiques
@@ -420,6 +421,8 @@ export class RDashboardComponent implements OnInit, OnDestroy {
             bestPerformingTeam: data.bestPerformingTeam || '',
             bestTeamTotalGoals: data.bestTeamTotalGoals || 0,
             teamComparison: data.teamComparison || [],
+            totalGoal:data.totalGoal || 0,
+
             
             // Finances
             totalDues: data.totalDues || 0,
