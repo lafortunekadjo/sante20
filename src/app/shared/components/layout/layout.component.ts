@@ -23,6 +23,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
 import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 import { TranslateModule } from '@ngx-translate/core';
+import { OnboardingService } from '../../../core/services/onboarding.service';
 
 @Component({
   selector: 'app-layout',
@@ -82,28 +83,37 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private roleCustomService: RoleCustomService,
     private router: Router,
     private dialog: MatDialog,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
+    public onboardingService: OnboardingService
   ) {}
 
   ngOnInit(): void {
+    
     this.setupResponsiveLayout();
 
     // Logique dépendante de l'état d'authentification
-    this.authStatusSubscription = this.authService.isUserReady$
-      .subscribe(isReady => {
-        if (isReady && this.authService.isLoggedIn()) {
-          this.isLoggedIn = true;
-          this.loadUserData();
-          this.setupRoles();
-          this.checkUserGroupStatus(); // ✅ Vérifier si l'utilisateur a un groupe
-          this.loadMenusCommuns();     // ✅ Charger les menus APRÈS avoir vérifié le groupe
-          this.loadUserMenus();
-          this.setupGroupeSubscription();
-        } else if (isReady && !this.authService.isLoggedIn()) {
-          this.isLoggedIn = false;
-          this.resetUserSpecificState();
-        }
-      });
+   this.authStatusSubscription = this.authService.isUserReady$
+    .subscribe(isReady => {
+      if (isReady && this.authService.isLoggedIn()) {
+        this.isLoggedIn = true;
+        this.loadUserData();
+        this.setupRoles();
+        
+        // --- NOUVELLE LOGIQUE DE SURVEILLANCE DU GROUPE ---
+        this.authService.currentGroupeId$.subscribe(groupId => {
+          this.userHasGroup = !!groupId; 
+          
+          // On recharge tout dès que le groupId change (passe de null à un ID)
+          this.loadMenusCommuns(); 
+          this.loadUserMenus();    // Relance l'appel API vers /user-menus
+        });
+        // --------------------------------------------------
+
+      } else if (isReady && !this.authService.isLoggedIn()) {
+        this.isLoggedIn = false;
+        this.resetUserSpecificState();
+      }
+    });
 
     // S'abonner aux changements de menus
     this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
@@ -113,7 +123,30 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.menuCategories = [];
       }
     });
+    this.checkOnboardingStatus();
   }
+
+  private checkOnboardingStatus(): void {
+  // On récupère l'étape actuelle
+  const currentStep = this.onboardingService.getStep();
+
+  // Si on est encore à l'étape "Créer compte" alors qu'on est déjà dans le layout (donc connecté)
+  // Ou si c'est une nouvelle connexion
+  if (currentStep === 'CREATE_ACCOUNT' || currentStep === 'NONE') {
+    if (this.isMobile) {
+      this.onboardingService.setStep('OPEN_MENU');
+    } else {
+      this.onboardingService.setStep('CREATE_GROUPE');
+    }
+  }
+}
+
+stopOnboarding(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation(); // Empêche de cliquer sur le lien du menu derrière
+  this.onboardingService.stopTemporarily(); 
+  // Ou this.onboardingService.complete(); si tu ne veux plus jamais la voir
+}
 
   /**
    * ✅ Vérifier si l'utilisateur appartient à un groupe
@@ -387,8 +420,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  onNavClick(): void {
+  onNavClick(menuCode: string): void {
     this.closeSidebar();
+    // Si on clique sur le bouton mis en évidence, on avance l'onboarding
+  if (menuCode === 'CREATEG' && this.onboardingService.getStep() === 'CREATE_GROUPE') {
+    // On peut soit laisser l'étape telle quelle jusqu'à la réussite du formulaire
+    // soit marquer une étape intermédiaire.
+  }
   }
 
   openProfileEdit(): void {

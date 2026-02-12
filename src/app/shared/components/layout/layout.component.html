@@ -47,27 +47,34 @@
             <a 
               routerLink="/home" 
               routerLinkActive="active"
-              (click)="onNavClick()"
+              (click)="onNavClick('home')"
               class="nav-item">
               <mat-icon>home</mat-icon>
               <span>{{ 'admin.home' | translate }}</span>
               <div class="nav-indicator"></div>
             </a>
 
-            <!-- Menus communs dynamiques (gérés dans le TS) -->
-            <a 
-              *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
-              [routerLink]="menu.route" 
-              routerLinkActive="active"
-              (click)="onNavClick()"
-              class="nav-item"
-              [matTooltip]="menu.description"
-              matTooltipPosition="right"
-              matTooltipShowDelay="500">
-              <mat-icon>{{ menu.icone }}</mat-icon>
-              <span>{{ menu.label }}</span>
-              <div class="nav-indicator"></div>
-            </a>
+          <a 
+            *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
+            [routerLink]="menu.route" 
+            routerLinkActive="active"
+            (click)="onNavClick(menu.code)"
+            class="nav-item"
+            [class.onboarding-highlight]="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE'"
+            [matTooltip]="menu.description">
+            
+            <mat-icon>{{ menu.icone }}</mat-icon>
+            <span>{{ menu.label }}</span>
+            <div class="nav-indicator"></div>
+
+            <div class="onboarding-tooltip right-side" 
+                *ngIf="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE'">
+              <p>🏆 <b>Dernière étape !</b> Créez votre groupe pour débloquer toutes les fonctionnalités.</p>
+              <button class="btn-got-it" (click)="stopOnboarding($event)">
+                J'ai compris
+              </button>
+            </div>
+          </a>
 
           </div>
 
@@ -82,7 +89,7 @@
             <a 
               routerLink="/admin/dashboard" 
               routerLinkActive="active"
-              (click)="onNavClick()"
+              (click)="onNavClick('dashboard')"
               class="nav-item admin-item">
               <mat-icon>dashboard</mat-icon>
               <span>{{ 'admin.dashboard' | translate }}</span>
@@ -92,7 +99,7 @@
             <a 
               routerLink="/admin/groupes" 
               routerLinkActive="active"
-              (click)="onNavClick()"
+              (click)="onNavClick('groupe')"
               class="nav-item admin-item">
               <mat-icon>group</mat-icon>
               <span>{{ 'admin.groups' | translate }}</span>
@@ -102,7 +109,7 @@
             <a 
               routerLink="/admin/utilisateurs" 
               routerLinkActive="active"
-              (click)="onNavClick()"
+              (click)="onNavClick('user')"
               class="nav-item admin-item">
               <mat-icon>person</mat-icon>
               <span>{{ 'admin.users' | translate }}</span>
@@ -126,7 +133,7 @@
                 *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
                 [routerLink]="menu.route" 
                 routerLinkActive="active"
-                (click)="onNavClick()"
+                (click)="onNavClick(menu.code)"
                 class="nav-item category-item"
                 [matTooltip]="menu.description"
                 matTooltipPosition="right"

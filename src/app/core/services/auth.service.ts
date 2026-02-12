@@ -128,6 +128,26 @@ export class AuthService {
     }
   }
 
+// auth.service.ts
+
+/**
+ * Met à jour manuellement l'ID du groupe dans l'application et le stockage local
+ */
+updateGroupeId(newId: number): void {
+  // 1. On met à jour le BehaviorSubject pour que les menus réagissent immédiatement
+  this.currentGroupeIdSubject.next(newId);
+  
+  // 2. On met à jour l'objet utilisateur dans le localStorage
+  // On utilise 'auth-user' car c'est la clé standard, 
+  // vérifie si tu as une constante nommée USER_KEY en haut de ton fichier.
+  const userJson = localStorage.getItem('auth-user'); 
+  if (userJson) {
+    const user = JSON.parse(userJson);
+    user.groupeId = newId;
+    localStorage.setItem('auth-user', JSON.stringify(user));
+  }
+}
+
   /**
    * Charge les données utilisateur depuis localStorage
    */

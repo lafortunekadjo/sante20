@@ -28,6 +28,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { filter, finalize, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
+import { OnboardingService } from '../../../core/services/onboarding.service';
 
 // ✅ AJOUT : Import du composant NotificationBell
 
@@ -78,6 +79,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     private settingsService: SettingsService,
     public memberService: MembreService, 
+    public onboardingService: OnboardingService,
     public router: Router, 
     private dialog: MatDialog, 
     private equipeService: GeneralService,
@@ -491,4 +493,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
         return 'Changer le thème';
     }
   }
+
+  // Gérer le clic sur le menu pour l'onboarding
+handleMenuClick() {
+  this.toggleMenu.emit();
+  
+ // Dans ton composant de login ou de navigation (après connexion réussie)
+if (window.innerWidth > 992) {
+  // Sur PC : On saute l'étape "Ouvrir Menu" car il est déjà ouvert
+  this.onboardingService.setStep('CREATE_GROUPE');
+} else {
+  // Sur Mobile : On demande d'abord d'ouvrir le menu
+  this.onboardingService.setStep('OPEN_MENU');
+}
+}
+
+skipOnboarding(event: Event) {
+  event.stopPropagation(); // Évite de déclencher le clic du bouton derrière
+  this.onboardingService.complete();
+}
 }

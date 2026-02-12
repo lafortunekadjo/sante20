@@ -16,6 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { finalize, catchError, of } from 'rxjs';
 import { Ville } from '../../core/models/ville';
+import { OnboardingService } from '../../core/services/onboarding.service';
 
 interface GroupeRequest {
   nom: string;
@@ -75,7 +76,8 @@ export class UserGroupRegisterComponent  implements OnInit {
     private snackBar: MatSnackBar,
     private groupeService: GroupeService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private onboardingService : OnboardingService
   ) {}
 
   ngOnInit(): void {
@@ -102,36 +104,41 @@ export class UserGroupRegisterComponent  implements OnInit {
   /**
    * Soumettre le formulaire
    */
-  onSubmit(isValid: boolean | null): void {
-    if (!isValid || this.isLoading) {
-      if (!isValid) {
-        this.showError('Veuillez remplir tous les champs obligatoires.');
+// user-group-register.component.ts
+
+onSubmit(isValid: boolean | null): void {
+  if (!isValid || this.isLoading) return;
+
+  this.isLoading = true;
+
+  this.groupeService.addGroupe(this.groupData).pipe(
+    finalize(() => this.isLoading = false),
+    catchError(err => {
+      this.showError(err.error?.message || 'Erreur lors de la création');
+      return of(null);
+    })
+  ).subscribe(response => {
+    if (response) {
+      this.showSuccess('Groupe créé avec succès !');
+
+      // ✅ 1. Mettre à jour manuellement le BehaviorSubject du groupe dans AuthService
+      // Cela évite d'attendre que l'API réponde au prochain rafraîchissement
+      if (response.id) {
+         this.authService.updateGroupeId(response.id); 
       }
-      return;
+
+      // ✅ 2. Terminer l'onboarding
+      this.onboardingService.complete();
+
+      // ✅ 3. Laisser un peu de temps au backend pour stabiliser la DB (important !)
+      // et à l'utilisateur pour voir le message de succès
+      setTimeout(() => {
+        // Redirection brutale vers la config
+        window.location.href = '/responsable/configuration';
+      }, 1500);
     }
-
-    this.isLoading = true;
-
-    this.groupeService.addGroupe(this.groupData).pipe(
-      finalize(() => {
-        this.isLoading = false;
-      }),
-      catchError(err => {
-      
-        const errorMessage = err.error?.message || 'Erreur lors de la création. Veuillez réessayer.';
-        this.showError(errorMessage);
-        return of(null);
-      })
-    ).subscribe(response => {
-      if (response) {
-       
-        this.showSuccess('Groupe créé avec succès !');
-        window.location.reload();
-        this.router.navigate(['/responsable/configuration']);
-        
-      }
-    });
-  }
+  });
+}
 
   /**
    * Rafraîchir les données et rediriger
