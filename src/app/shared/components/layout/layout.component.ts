@@ -107,6 +107,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.loadMenusCommuns();
         this.loadUserMenus();
         this.setupGroupeSubscription();
+        console.log(this.isAdmin)
       } else if (isReady && !this.authService.isLoggedIn()) {
         this.isLoggedIn = false;
         this.resetUserSpecificState();

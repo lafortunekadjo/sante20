@@ -108,6 +108,134 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
     this.loadData(matchId);
   }
 
+
+  // Couleurs par défaut des équipes (RGB)
+team1Color: number[] = [25, 118, 210];   // Bleu par défaut
+team2Color: number[] = [211, 47, 47];    // Rouge par défaut
+
+// Couleurs light pour les fonds
+team1ColorLight: number[] = [227, 242, 253];  // Bleu clair
+team2ColorLight: number[] = [255, 235, 238];  // Rouge clair
+
+// ===== AJOUTER CETTE MÉTHODE DANS ngOnInit OU loadData =====
+
+/**
+ * Initialise les couleurs des équipes depuis le match
+ * À appeler après avoir chargé le match
+ */
+private initTeamColors(): void {
+  // Équipe 1
+  if (this.match?.equipe1?.couleur) {
+    this.team1Color = this.hexToRgb(this.match.equipe1.couleur);
+    this.team1ColorLight = this.lightenColor(this.team1Color, 0.85);
+  } else if (this.match?.equipe1?.couleur) {
+    this.team1Color = this.hexToRgb(this.match.equipe1.couleur);
+    this.team1ColorLight = this.lightenColor(this.team1Color, 0.85);
+  }
+
+  // Équipe 2
+  if (this.match?.equipe2?.couleur) {
+    this.team2Color = this.hexToRgb(this.match.equipe2.couleur);
+    this.team2ColorLight = this.lightenColor(this.team2Color, 0.85);
+  } else if (this.match?.equipe2?.couleur) {
+    this.team2Color = this.hexToRgb(this.match.equipe2.couleur);
+    this.team2ColorLight = this.lightenColor(this.team2Color, 0.85);
+  }
+
+  console.log('[Colors] Team1:', this.team1Color, 'Team2:', this.team2Color);
+}
+
+/**
+ * Convertit une couleur hex en RGB
+ */
+private hexToRgb(hex: string): number[] {
+  if (!hex) return [128, 128, 128]; // Gris par défaut
+  
+  // Nettoyer le hex
+  hex = hex.replace('#', '');
+  
+  // Gérer les formats courts (ex: "fff")
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  return [isNaN(r) ? 128 : r, isNaN(g) ? 128 : g, isNaN(b) ? 128 : b];
+}
+
+/**
+ * Éclaircit une couleur pour les fonds
+ */
+private lightenColor(rgb: number[], factor: number): number[] {
+  return rgb.map(c => Math.round(c + (255 - c) * factor));
+}
+
+/**
+ * Assombrit une couleur pour les textes sur fond clair
+ */
+private darkenColor(rgb: number[], factor: number): number[] {
+  return rgb.map(c => Math.round(c * (1 - factor)));
+}
+
+
+// ============================================================
+// FEUILLE DE MATCH PDF - AVEC COULEURS DYNAMIQUES
+// ============================================================
+
+// async downloadMatchSheetAsPdf(): Promise<void> {
+//   const element = document.getElementById('print-section');
+//   if (!element) return;
+
+//   this.isLoading = true;
+  
+//   try {
+//     element.style.display = 'block';
+//     element.style.position = 'absolute';
+//     element.style.left = '-9999px';
+//     element.style.width = '210mm';
+
+//     await new Promise(resolve => setTimeout(resolve, 500));
+
+//     const canvas = await html2canvas(element, {
+//       scale: 2,
+//       useCORS: true,
+//       logging: false,
+//       allowTaint: true,
+//       backgroundColor: '#ffffff'
+//     });
+
+//     const imgData = canvas.toDataURL('image/jpeg', 0.7);
+
+//     const pdf = new jsPDF({
+//       orientation: 'portrait',
+//       unit: 'mm',
+//       format: 'a4',
+//       compress: true
+//     });
+
+//     const pdfWidth = pdf.internal.pageSize.getWidth();
+//     const imgWidth = pdfWidth - 20;
+//     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+//     pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+    
+//     pdf.save(`Match_${Date.now()}.pdf`);
+
+//     element.style.display = 'none';
+//     canvas.width = 0;
+//     canvas.height = 0;
+
+//   } catch (error) {
+//     console.error('Erreur PDF:', error);
+//   } finally {
+//     this.isLoading = false;
+//   }
+// }
+
+
   // ===== GETTERS =====
 
   get equipe1Players(): Presence[] {
@@ -223,7 +351,7 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
     ).subscribe({
       next: ({ presences }) => {
         this.dataSource.data = presences.map(p => ({ ...p, present: true }));
-        
+          this.initTeamColors();
         this.assignDefaultTeams();
         
         const presentMemberIds = presences
@@ -944,18 +1072,169 @@ async downloadMatchSheetAsPdf(): Promise<void> {
 }
 
 // ===== HELPER: Générer tableau d'équipe =====
+// private generateTeamTablePdf(
+//   doc: jsPDF, 
+//   equipeName: string, 
+//   x: number, 
+//   y: number, 
+//   width: number, 
+//   color: number[],
+//   isTeam1: boolean
+// ): void {
+//   const players = this.getPlayersAJoue(equipeName);
+
+//   // Header coloré
+//   doc.setFillColor(color[0], color[1], color[2]);
+//   doc.roundedRect(x, y, width, 9, 2, 2, 'F');
+  
+//   doc.setTextColor(255, 255, 255);
+//   doc.setFontSize(9);
+//   doc.setFont('helvetica', 'bold');
+//   doc.text(this.truncateText(equipeName, 15), x + 5, y + 6);
+//   doc.setFontSize(8);
+//   doc.text(`${players.length}`, x + width - 10, y + 6);
+
+//   // Capitaine
+//   y += 10;
+//   doc.setFillColor(250, 250, 250);
+//   doc.rect(x, y, width, 6, 'F');
+//   doc.setTextColor(100, 100, 100);
+//   doc.setFontSize(7);
+//   doc.setFont('helvetica', 'normal');
+//   doc.text('Cap: ' + this.truncateText(this.getCapitaine(equipeName), 22), x + 2, y + 4);
+
+//   // En-têtes colonnes
+//   y += 7;
+//   doc.setFillColor(245, 245, 245);
+//   doc.rect(x, y, width, 5, 'F');
+//   doc.setFontSize(6);
+//   doc.setFont('helvetica', 'bold');
+//   doc.setTextColor(80, 80, 80);
+  
+//   const cols = [
+//     { label: '#', width: 6 },
+//     { label: 'Joueur', width: width - 48 },
+//     { label: 'B', width: 7 },
+//     { label: 'P', width: 7 },
+//     { label: 'PD', width: 7 },
+//     { label: 'CSC', width: 7 },
+//     { label: 'CJ', width: 7 },
+//     { label: 'CR', width: 7 }
+//   ];
+  
+//   let colX = x;
+//   cols.forEach(col => {
+//     doc.text(col.label, colX + col.width / 2, y + 3.5, { align: 'center' });
+//     colX += col.width;
+//   });
+
+//   // Lignes des joueurs
+//   y += 5;
+//   doc.setFont('helvetica', 'normal');
+//   doc.setFontSize(7);
+
+//   players.forEach((p, index) => {
+//     const rowY = y + (index * 6);
+    
+//     // Fond alterné ou spécial
+//     if (p.estCapitaine) {
+//       doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+//     } else if (p.estHommeDuMatch) {
+//       doc.setFillColor(255, 248, 225);
+//     } else if (index % 2 === 0) {
+//       doc.setFillColor(252, 252, 252);
+//     } else {
+//       doc.setFillColor(255, 255, 255);
+//     }
+//     doc.rect(x, rowY, width, 6, 'F');
+
+//     colX = x;
+    
+//     // #
+//     doc.setTextColor(150, 150, 150);
+//     doc.text(`${index + 1}`, colX + 3, rowY + 4, { align: 'center' });
+//     colX += cols[0].width;
+    
+//     // Nom
+//     doc.setTextColor(51, 51, 51);
+//     let name = this.truncateText(this.getMembreNameAbbreviated(p), 16);
+//     if (p.estCapitaine) name += ' (C)';
+//     if (p.estHommeDuMatchEq) name += ' ★';
+//     if (p.estHommeDuMatch) name += ' ♛';
+//     doc.text(name, colX + 1, rowY + 4);
+//     colX += cols[1].width;
+
+//     // Stats
+//     const stats = [
+//       { value: p.buts || 0, color: color },
+//       { value: p.penalti || 0, color: color },
+//       { value: p.passes || 0, color: [67, 160, 71] },
+//       { value: p.butsContreSonCamp || 0, color: [198, 40, 40] },
+//       { value: p.cartonsJaunes || 0, color: [249, 168, 37] },
+//       { value: p.cartonsRouges || 0, color: [198, 40, 40] }
+//     ];
+
+//     stats.forEach((stat, i) => {
+//       if (stat.value > 0) {
+//         doc.setTextColor(stat.color[0], stat.color[1], stat.color[2]);
+//         doc.setFont('helvetica', 'bold');
+//       } else {
+//         doc.setTextColor(200, 200, 200);
+//         doc.setFont('helvetica', 'normal');
+//       }
+//       doc.text(stat.value > 0 ? `${stat.value}` : '-', colX + cols[i + 2].width / 2, rowY + 4, { align: 'center' });
+//       colX += cols[i + 2].width;
+//     });
+//   });
+
+//   // Total
+//   const totalY = y + (players.length * 6);
+//   doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+//   doc.rect(x, totalY, width, 6, 'F');
+  
+//   // Ligne de séparation colorée
+//   doc.setDrawColor(color[0], color[1], color[2]);
+//   doc.setLineWidth(0.5);
+//   doc.line(x, totalY, x + width, totalY);
+  
+//   doc.setFont('helvetica', 'bold');
+//   doc.setTextColor(color[0], color[1], color[2]);
+//   doc.text('TOTAL', x + cols[0].width + 10, totalY + 4);
+
+//   colX = x + cols[0].width + cols[1].width;
+//   const totals = [
+//     this.getTotalButs(equipeName),
+//     this.getTotalPenaltis(equipeName),
+//     this.getTotalPasses(equipeName),
+//     this.getTotalCSC(equipeName),
+//     this.getTotalCartons(equipeName, 'JAUNES'),
+//     this.getTotalCartons(equipeName, 'ROUGES')
+//   ];
+//   const totalColors = [color, color, [67, 160, 71], [198, 40, 40], [249, 168, 37], [198, 40, 40]];
+  
+//   totals.forEach((t, i) => {
+//     doc.setTextColor(totalColors[i][0], totalColors[i][1], totalColors[i][2]);
+//     doc.text(`${t}`, colX + cols[i + 2].width / 2, totalY + 4, { align: 'center' });
+//     colX += cols[i + 2].width;
+//   });
+// }
+
+
 private generateTeamTablePdf(
   doc: jsPDF, 
   equipeName: string, 
   x: number, 
   y: number, 
   width: number, 
-  color: number[],
+  color: number[],  // ✅ Couleur dynamique passée en paramètre
   isTeam1: boolean
 ): void {
   const players = this.getPlayersAJoue(equipeName);
+  
+  // Couleur light pour les fonds
+  const colorLight = this.lightenColor(color, 0.85);
 
-  // Header coloré
+  // Header coloré avec la couleur de l'équipe
   doc.setFillColor(color[0], color[1], color[2]);
   doc.roundedRect(x, y, width, 9, 2, 2, 'F');
   
@@ -968,9 +1247,9 @@ private generateTeamTablePdf(
 
   // Capitaine
   y += 10;
-  doc.setFillColor(250, 250, 250);
+  doc.setFillColor(colorLight[0], colorLight[1], colorLight[2]);
   doc.rect(x, y, width, 6, 'F');
-  doc.setTextColor(100, 100, 100);
+  doc.setTextColor(color[0], color[1], color[2]);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.text('Cap: ' + this.truncateText(this.getCapitaine(equipeName), 22), x + 2, y + 4);
@@ -1008,11 +1287,11 @@ private generateTeamTablePdf(
   players.forEach((p, index) => {
     const rowY = y + (index * 6);
     
-    // Fond alterné ou spécial
+    // Fond alterné avec couleur de l'équipe
     if (p.estCapitaine) {
-      doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+      doc.setFillColor(colorLight[0], colorLight[1], colorLight[2]);
     } else if (p.estHommeDuMatch) {
-      doc.setFillColor(255, 248, 225);
+      doc.setFillColor(255, 248, 225); // Doré pour HDM
     } else if (index % 2 === 0) {
       doc.setFillColor(252, 252, 252);
     } else {
@@ -1036,11 +1315,11 @@ private generateTeamTablePdf(
     doc.text(name, colX + 1, rowY + 4);
     colX += cols[1].width;
 
-    // Stats
+    // Stats avec couleur de l'équipe pour les buts
     const stats = [
-      { value: p.buts || 0, color: color },
-      { value: p.penalti || 0, color: color },
-      { value: p.passes || 0, color: [67, 160, 71] },
+      { value: p.buts || 0, color: color },           // ✅ Couleur équipe
+      { value: p.penalti || 0, color: color },        // ✅ Couleur équipe
+      { value: p.passes || 0, color: [67, 160, 71] }, // Vert
       { value: p.butsContreSonCamp || 0, color: [198, 40, 40] },
       { value: p.cartonsJaunes || 0, color: [249, 168, 37] },
       { value: p.cartonsRouges || 0, color: [198, 40, 40] }
@@ -1059,9 +1338,9 @@ private generateTeamTablePdf(
     });
   });
 
-  // Total
+  // Total avec couleur de l'équipe
   const totalY = y + (players.length * 6);
-  doc.setFillColor(isTeam1 ? 227 : 255, isTeam1 ? 242 : 235, isTeam1 ? 253 : 238);
+  doc.setFillColor(colorLight[0], colorLight[1], colorLight[2]);
   doc.rect(x, totalY, width, 6, 'F');
   
   // Ligne de séparation colorée
@@ -1092,6 +1371,152 @@ private generateTeamTablePdf(
 }
 
 // ===== FICHE DE PRÉSENCE =====
+// async downloadPresenceSheetAsPdf(): Promise<void> {
+//   if (this.isGeneratingPdf) return;
+  
+//   this.isGeneratingPdf = true;
+//   this.showSnackbar('Génération du PDF...', 'success');
+
+//   setTimeout(() => {
+//     try {
+//       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+//       const pageWidth = doc.internal.pageSize.getWidth();
+//       const pageHeight = doc.internal.pageSize.getHeight();
+//       const margin = 10;
+//       let y = margin;
+
+//       // ===== HEADER VERT =====
+//       doc.setFillColor(67, 160, 71);
+//       doc.rect(0, 0, pageWidth, 28, 'F');
+      
+//       doc.setTextColor(255, 255, 255);
+//       doc.setFontSize(16);
+//       doc.setFont('helvetica', 'bold');
+//       doc.text('FICHE DE PRÉSENCE', pageWidth / 2, 12, { align: 'center' });
+      
+//       doc.setFontSize(10);
+//       doc.setFont('helvetica', 'normal');
+//       doc.text(this.groupeActif?.nom || '', pageWidth / 2, 19, { align: 'center' });
+      
+//       const matchDate = this.match?.dateMatch 
+//         ? new Date(this.match.dateMatch).toLocaleDateString('fr-FR', { 
+//             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+//           })
+//         : '';
+//       doc.setFontSize(8);
+//       doc.text(`${this.match?.typeMatch || ''} - ${matchDate}`, pageWidth / 2, 25, { align: 'center' });
+
+//       y = 35;
+
+//       // ===== OFFICIELS =====
+//       doc.setFontSize(8);
+//       doc.setTextColor(100, 100, 100);
+//       const arbitre = this.getArbitrePrincipal() || '____________';
+//       const assistant = this.getArbitreAssistant() || '____________';
+//       const rapporteur = this.getRapporteur() || '____________';
+//       doc.text(`Arbitre: ${arbitre}   |   Assistant: ${assistant}   |   Rapporteur: ${rapporteur}`, pageWidth / 2, y, { align: 'center' });
+
+//       y += 8;
+
+//       // ===== TABLEAU DE PRÉSENCE avec autoTable =====
+//       const tableData: any[][] = [];
+      
+//       this.dataSource.data.forEach((p, i) => {
+//         tableData.push([
+//           (i + 1).toString(),
+//           this.getMembreName(p),
+//           p.equipeMatch || '',
+//           '' // Signature vide
+//         ]);
+//       });
+
+//       // Ajouter des lignes vides
+//       for (let i = 0; i < 5; i++) {
+//         tableData.push(['', '', '', '']);
+//       }
+
+//       (doc as any).autoTable({
+//         startY: y,
+//         head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
+//         body: tableData,
+//         theme: 'grid',
+//         headStyles: {
+//           fillColor: [67, 160, 71],
+//           textColor: 255,
+//           fontStyle: 'bold',
+//           fontSize: 9,
+//           halign: 'center',
+//           cellPadding: 3
+//         },
+//         columnStyles: {
+//           0: { cellWidth: 12, halign: 'center', fontSize: 9 },
+//           1: { cellWidth: 75, fontSize: 9 },
+//           2: { cellWidth: 40, halign: 'center', fontSize: 8 },
+//           3: { cellWidth: 50 }
+//         },
+//         bodyStyles: {
+//           fontSize: 9,
+//           cellPadding: 2,
+//           minCellHeight: 8
+//         },
+//         alternateRowStyles: {
+//           fillColor: [245, 245, 245]
+//         },
+//         didParseCell: (data: any) => {
+//           // Colorer les badges équipe
+//           if (data.column.index === 2 && data.cell.section === 'body' && data.cell.raw) {
+//             if (data.cell.raw === this.equipeNames[0]) {
+//               data.cell.styles.textColor = [25, 118, 210];
+//               data.cell.styles.fontStyle = 'bold';
+//             } else if (data.cell.raw === this.equipeNames[1]) {
+//               data.cell.styles.textColor = [211, 47, 47];
+//               data.cell.styles.fontStyle = 'bold';
+//             }
+//           }
+//         },
+//         margin: { left: margin, right: margin }
+//       });
+
+//       // ===== FOOTER =====
+//       const finalY = (doc as any).lastAutoTable.finalY + 10;
+      
+//       doc.setFontSize(9);
+//       doc.setTextColor(51, 51, 51);
+//       doc.text(`Total: `, margin, finalY);
+//       doc.setTextColor(67, 160, 71);
+//       doc.setFont('helvetica', 'bold');
+//       doc.text(`${this.dataSource.data.length}`, margin + 12, finalY);
+//       doc.setFont('helvetica', 'normal');
+//       doc.setTextColor(51, 51, 51);
+//       doc.text(' inscrits', margin + 18, finalY);
+      
+//       // Compteurs par équipe
+//       doc.setTextColor(25, 118, 210);
+//       doc.text(`${this.equipeNames[0]}: ${this.equipe1Count}`, pageWidth / 2 - 25, finalY);
+      
+//       doc.setTextColor(211, 47, 47);
+//       doc.text(`${this.equipeNames[1]}: ${this.equipe2Count}`, pageWidth / 2 + 25, finalY);
+      
+//       doc.setTextColor(67, 160, 71);
+//       doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth - margin, finalY, { align: 'right' });
+
+//       // ===== TÉLÉCHARGEMENT =====
+//       const dateFile = this.match?.dateMatch 
+//         ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
+//         : 'match';
+//       doc.save(`fiche-presence-${this.groupeActif?.nom}-${dateFile}.pdf`);
+      
+//       this.isGeneratingPdf = false;
+//       this.showSnackbar('PDF téléchargé avec succès !', 'success');
+
+//     } catch (error) {
+//       console.error('Erreur génération PDF:', error);
+//       this.isGeneratingPdf = false;
+//       this.showSnackbar('Erreur lors de la génération du PDF', 'error');
+//     }
+//   }, 50);
+// }
+
 async downloadPresenceSheetAsPdf(): Promise<void> {
   if (this.isGeneratingPdf) return;
   
@@ -1106,10 +1531,16 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
       const margin = 10;
       let y = margin;
 
-      // ===== HEADER VERT =====
-      doc.setFillColor(67, 160, 71);
-      doc.rect(0, 0, pageWidth, 28, 'F');
+      // ===== HEADER avec dégradé des deux couleurs d'équipes =====
+      // Fond principal avec couleur équipe 1
+      doc.setFillColor(this.team1Color[0], this.team1Color[1], this.team1Color[2]);
+      doc.rect(0, 0, pageWidth / 2, 28, 'F');
       
+      // Deuxième moitié avec couleur équipe 2
+      doc.setFillColor(this.team2Color[0], this.team2Color[1], this.team2Color[2]);
+      doc.rect(pageWidth / 2, 0, pageWidth / 2, 28, 'F');
+      
+      // Titre centré
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
@@ -1139,7 +1570,7 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
 
       y += 8;
 
-      // ===== TABLEAU DE PRÉSENCE avec autoTable =====
+      // ===== TABLEAU DE PRÉSENCE avec couleurs dynamiques =====
       const tableData: any[][] = [];
       
       this.dataSource.data.forEach((p, i) => {
@@ -1156,13 +1587,20 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
         tableData.push(['', '', '', '']);
       }
 
+      // Couleurs pour le header du tableau (mélange des deux équipes)
+      const headerColor = [
+        Math.round((this.team1Color[0] + this.team2Color[0]) / 2),
+        Math.round((this.team1Color[1] + this.team2Color[1]) / 2),
+        Math.round((this.team1Color[2] + this.team2Color[2]) / 2)
+      ];
+
       (doc as any).autoTable({
         startY: y,
         head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
         body: tableData,
         theme: 'grid',
         headStyles: {
-          fillColor: [67, 160, 71],
+          fillColor: headerColor,  // ✅ Couleur dynamique
           textColor: 255,
           fontStyle: 'bold',
           fontSize: 9,
@@ -1184,13 +1622,13 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
           fillColor: [245, 245, 245]
         },
         didParseCell: (data: any) => {
-          // Colorer les badges équipe
+          // ✅ Colorer les badges équipe avec les vraies couleurs
           if (data.column.index === 2 && data.cell.section === 'body' && data.cell.raw) {
             if (data.cell.raw === this.equipeNames[0]) {
-              data.cell.styles.textColor = [25, 118, 210];
+              data.cell.styles.textColor = this.team1Color;  // ✅ Couleur équipe 1
               data.cell.styles.fontStyle = 'bold';
             } else if (data.cell.raw === this.equipeNames[1]) {
-              data.cell.styles.textColor = [211, 47, 47];
+              data.cell.styles.textColor = this.team2Color;  // ✅ Couleur équipe 2
               data.cell.styles.fontStyle = 'bold';
             }
           }
@@ -1198,27 +1636,29 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
         margin: { left: margin, right: margin }
       });
 
-      // ===== FOOTER =====
+      // ===== FOOTER avec couleurs dynamiques =====
       const finalY = (doc as any).lastAutoTable.finalY + 10;
       
       doc.setFontSize(9);
       doc.setTextColor(51, 51, 51);
       doc.text(`Total: `, margin, finalY);
-      doc.setTextColor(67, 160, 71);
+      
+      // Couleur mélangée pour le total
+      doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.setFont('helvetica', 'bold');
       doc.text(`${this.dataSource.data.length}`, margin + 12, finalY);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(51, 51, 51);
       doc.text(' inscrits', margin + 18, finalY);
       
-      // Compteurs par équipe
-      doc.setTextColor(25, 118, 210);
+      // Compteurs par équipe avec couleurs dynamiques
+      doc.setTextColor(this.team1Color[0], this.team1Color[1], this.team1Color[2]);
       doc.text(`${this.equipeNames[0]}: ${this.equipe1Count}`, pageWidth / 2 - 25, finalY);
       
-      doc.setTextColor(211, 47, 47);
+      doc.setTextColor(this.team2Color[0], this.team2Color[1], this.team2Color[2]);
       doc.text(`${this.equipeNames[1]}: ${this.equipe2Count}`, pageWidth / 2 + 25, finalY);
       
-      doc.setTextColor(67, 160, 71);
+      doc.setTextColor(100, 100, 100);
       doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth - margin, finalY, { align: 'right' });
 
       // ===== TÉLÉCHARGEMENT =====
@@ -1770,5 +2210,26 @@ async copyMatchSheetToClipboard(): Promise<void> {
   
 //   return `${prefix}-${groupeName}-${score}-${dateFile}.png`;
 // }
+
+
+ get team1HexColor(): string {
+    return this.rgbToHex(this.team1Color);
+  }
+  
+  get team2HexColor(): string {
+    return this.rgbToHex(this.team2Color);
+  }
+  
+  get team1LightHexColor(): string {
+    return this.rgbToHex(this.team1ColorLight);
+  }
+  
+  get team2LightHexColor(): string {
+    return this.rgbToHex(this.team2ColorLight);
+  }
+  
+  private rgbToHex(rgb: number[]): string {
+    return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+  }
  
 }
