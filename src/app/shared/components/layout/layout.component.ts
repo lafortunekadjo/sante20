@@ -1,3 +1,9 @@
+// ============================================================
+// LAYOUT COMPONENT - VERSION FINALE CORRIGÉE
+// - Scroll du menu réparé
+// - Mise à jour des rôles après refresh
+// ============================================================
+
 import { Component, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -15,7 +21,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { Subscription, distinctUntilChanged, skip } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleCustomService } from '../../../core/services/role-custom.service';
@@ -58,7 +64,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   roles: string[] = [];
   selectedRole: string = '';
   
-  // ✅ État du groupe utilisateur
+  // État du groupe utilisateur
   userHasGroup: boolean = false;
 
   // Menus dynamiques
@@ -77,6 +83,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private menusSubscription?: Subscription;
   private groupeSubscription?: Subscription;
   private authStatusSubscription?: Subscription;
+  private menuRefreshSubscription?: Subscription;
 
   constructor(
     public authService: AuthService,
@@ -88,34 +95,43 @@ export class LayoutComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    
     this.setupResponsiveLayout();
 
-    // Logique dépendante de l'état d'authentification
-   this.authStatusSubscription = this.authService.isUserReady$
-    .subscribe(isReady => {
+    // Initialisation quand l'utilisateur est prêt
+    this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady => {
       if (isReady && this.authService.isLoggedIn()) {
         this.isLoggedIn = true;
         this.loadUserData();
         this.setupRoles();
-        
-        // --- NOUVELLE LOGIQUE DE SURVEILLANCE DU GROUPE ---
-        this.authService.currentGroupeId$.subscribe(groupId => {
-          this.userHasGroup = !!groupId; 
-          
-          // On recharge tout dès que le groupId change (passe de null à un ID)
-          this.loadMenusCommuns(); 
-          this.loadUserMenus();    // Relance l'appel API vers /user-menus
-        });
-        // --------------------------------------------------
-
+        this.updateGroupStatus();
+        this.loadMenusCommuns();
+        this.loadUserMenus();
+        this.setupGroupeSubscription();
       } else if (isReady && !this.authService.isLoggedIn()) {
         this.isLoggedIn = false;
         this.resetUserSpecificState();
       }
     });
 
-    // S'abonner aux changements de menus
+    // ✅ S'abonner au signal de refresh (émis après création de groupe)
+    this.menuRefreshSubscription = this.authService.forceMenuRefresh$.pipe(
+      skip(1), // Ignorer la valeur initiale
+      distinctUntilChanged()
+    ).subscribe(() => {
+      console.log('[LayoutComponent] Signal de refresh reçu');
+      
+      // ✅ IMPORTANT: Recharger aussi les rôles !
+      this.setupRoles();
+      
+      // Mettre à jour l'état du groupe
+      this.updateGroupStatus();
+      
+      // Recharger les menus
+      this.loadMenusCommuns();
+      this.loadUserMenus();
+    });
+
+    // S'abonner aux changements de menus du service
     this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
       if (menus && menus.length > 0) {
         this.organiserMenusParCategorie(menus);
@@ -123,102 +139,35 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.menuCategories = [];
       }
     });
+
     this.checkOnboardingStatus();
   }
 
-  private checkOnboardingStatus(): void {
-  // On récupère l'étape actuelle
-  const currentStep = this.onboardingService.getStep();
-
-  // Si on est encore à l'étape "Créer compte" alors qu'on est déjà dans le layout (donc connecté)
-  // Ou si c'est une nouvelle connexion
-  if (currentStep === 'CREATE_ACCOUNT' || currentStep === 'NONE') {
-    if (this.isMobile) {
-      this.onboardingService.setStep('OPEN_MENU');
-    } else {
-      this.onboardingService.setStep('CREATE_GROUPE');
-    }
-  }
-}
-
-stopOnboarding(event: Event): void {
-  event.preventDefault();
-  event.stopPropagation(); // Empêche de cliquer sur le lien du menu derrière
-  this.onboardingService.stopTemporarily(); 
-  // Ou this.onboardingService.complete(); si tu ne veux plus jamais la voir
-}
-
   /**
-   * ✅ Vérifier si l'utilisateur appartient à un groupe
+   * ✅ Mettre à jour l'état userHasGroup
    */
-  checkUserGroupStatus(): void {
-    const groupe = this.authService.getGroupe();
-    this.userHasGroup = groupe !== null && groupe !== undefined;
-    console.log('User has group:', this.userHasGroup, groupe);
+  private updateGroupStatus(): void {
+    const groupeId = this.authService.getGroupe();
+    this.userHasGroup = groupeId !== null && groupeId !== undefined && groupeId > 0;
+    this.currentGroupeId = groupeId;
+    console.log('[LayoutComponent] userHasGroup:', this.userHasGroup, 'groupeId:', groupeId);
   }
 
   /**
-   * Encapsule l'abonnement aux changements de groupe.
+   * ✅ Configuration des rôles - MISE À JOUR pour relire depuis AuthService
    */
-  setupGroupeSubscription(): void {
-    if (this.groupeSubscription) {
-      this.groupeSubscription.unsubscribe();
-    }
-    
-    this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
-      if (groupeId !== this.currentGroupeId) {
-        this.currentGroupeId = groupeId;
-        
-        // ✅ Mettre à jour l'état du groupe et recharger les menus
-        this.checkUserGroupStatus();
-        this.loadMenusCommuns();
-        
-        if (this.isLoggedIn) {
-          this.loadUserMenus();
-        }
-      }
-    });
-  }
-  
-  /**
-   * Nettoie les états spécifiques à l'utilisateur lors de la déconnexion
-   */
-  resetUserSpecificState(): void {
-    this.user = null;
-    this.roles = [];
-    this.isAdmin = false;
-    this.isResponsable = false;
-    this.isMembre = false;
-    this.userHasGroup = false; // ✅ Reset
-    this.menuCategories = [];
-    this.menusCommuns = [];
-    this.currentGroupeId = null;
-
-    if (this.groupeSubscription) {
-      this.groupeSubscription.unsubscribe();
-      this.groupeSubscription = undefined;
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (this.menusSubscription) {
-      this.menusSubscription.unsubscribe();
-    }
-    if (this.groupeSubscription) {
-      this.groupeSubscription.unsubscribe();
-    }
-    if (this.authStatusSubscription) {
-      this.authStatusSubscription.unsubscribe();
-    }
-  }
-
   setupRoles(): void {
+    // Relire les rôles depuis AuthService (qui les a depuis localStorage)
     this.roles = this.authService.getRoles();
     
+    console.log('[LayoutComponent] setupRoles - Rôles:', this.roles);
+    
+    // Reset
     this.isAdmin = false;
     this.isResponsable = false;
     this.isMembre = false;
 
+    // Déterminer le rôle principal
     if (this.roles.includes('RESPONSABLE') || this.roles.includes('ROLE_RESPONSABLE')) {
       this.selectedRole = 'RESPONSABLE';
       this.isResponsable = true;
@@ -229,6 +178,70 @@ stopOnboarding(event: Event): void {
       this.selectedRole = 'MEMBRE';
       this.isMembre = true;
     }
+    
+    console.log('[LayoutComponent] isResponsable:', this.isResponsable);
+  }
+
+  setupGroupeSubscription(): void {
+    if (this.groupeSubscription) {
+      this.groupeSubscription.unsubscribe();
+    }
+    
+    this.groupeSubscription = this.authService.currentGroupeId$.pipe(
+      distinctUntilChanged()
+    ).subscribe(groupeId => {
+      console.log('[LayoutComponent] currentGroupeId$ changé:', groupeId);
+      
+      if (groupeId !== this.currentGroupeId) {
+        this.currentGroupeId = groupeId;
+        this.userHasGroup = !!groupeId && groupeId > 0;
+        
+        this.loadMenusCommuns();
+        
+        if (this.isLoggedIn && this.isResponsable) {
+          this.loadUserMenus();
+        }
+      }
+    });
+  }
+
+  private checkOnboardingStatus(): void {
+    const currentStep = this.onboardingService.getStep();
+    if (currentStep === 'CREATE_ACCOUNT' || currentStep === 'NONE') {
+      if (this.isMobile) {
+        this.onboardingService.setStep('OPEN_MENU');
+      } else {
+        this.onboardingService.setStep('CREATE_GROUPE');
+      }
+    }
+  }
+
+  stopOnboarding(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.onboardingService.stopTemporarily();
+  }
+
+  resetUserSpecificState(): void {
+    this.user = null;
+    this.roles = [];
+    this.isAdmin = false;
+    this.isResponsable = false;
+    this.isMembre = false;
+    this.userHasGroup = false;
+    this.menuCategories = [];
+    this.menusCommuns = [];
+    this.currentGroupeId = null;
+
+    this.groupeSubscription?.unsubscribe();
+    this.groupeSubscription = undefined;
+  }
+
+  ngOnDestroy(): void {
+    this.menusSubscription?.unsubscribe();
+    this.groupeSubscription?.unsubscribe();
+    this.authStatusSubscription?.unsubscribe();
+    this.menuRefreshSubscription?.unsubscribe();
   }
 
   setupResponsiveLayout(): void {
@@ -250,10 +263,9 @@ stopOnboarding(event: Event): void {
   }
 
   /**
-   * ✅ Charger les menus communs avec logique conditionnelle
+   * Charger les menus communs
    */
   loadMenusCommuns(): void {
-    // Menus toujours visibles
     const baseMenus: Menu[] = [
       {
         id: 1,
@@ -279,7 +291,7 @@ stopOnboarding(event: Event): void {
       }
     ];
 
-    // ✅ Menu "Créer un groupe" - seulement si l'utilisateur N'A PAS de groupe
+    // Menu "Créer un groupe" - seulement si pas de groupe
     if (!this.userHasGroup) {
       baseMenus.push({
         id: 6,
@@ -294,7 +306,7 @@ stopOnboarding(event: Event): void {
       });
     }
 
-    // ✅ Menus visibles seulement si l'utilisateur A un groupe
+    // Menus visibles seulement si groupe existe
     if (this.userHasGroup) {
       baseMenus.push(
         {
@@ -322,17 +334,24 @@ stopOnboarding(event: Event): void {
       );
     }
 
-    // Trier par ordre
     this.menusCommuns = baseMenus.sort((a, b) => a.ordre - b.ordre);
-    
-    console.log('Menus communs chargés:', this.menusCommuns.map(m => m.code));
+    console.log('[LayoutComponent] Menus communs chargés:', this.menusCommuns.map(m => m.code));
   }
 
   /**
-   * Charger les menus de l'utilisateur pour le groupe actuel (si responsable)
+   * Charger les menus utilisateur (si responsable)
    */
   loadUserMenus(): void {
+    console.log('[LayoutComponent] loadUserMenus - isResponsable:', this.isResponsable, 'userHasGroup:', this.userHasGroup);
+    
     if (!this.isResponsable) {
+      console.log('[LayoutComponent] Pas responsable, skip loadUserMenus');
+      this.menuCategories = [];
+      return;
+    }
+
+    if (!this.userHasGroup) {
+      console.log('[LayoutComponent] Pas de groupe, skip loadUserMenus');
       this.menuCategories = [];
       return;
     }
@@ -341,21 +360,18 @@ stopOnboarding(event: Event): void {
 
     this.roleCustomService.getUserMenus().subscribe({
       next: (userMenus) => {
-        console.log('Les menus:', userMenus);
+        console.log('[LayoutComponent] Menus utilisateur reçus:', userMenus);
         this.organiserMenusParCategorie(userMenus.menus);
         this.isLoadingMenus = false;
       },
       error: (err) => {
-        console.error('Erreur chargement menus:', err);
+        console.error('[LayoutComponent] Erreur chargement menus:', err);
         this.menuCategories = [];
         this.isLoadingMenus = false;
       }
     });
   }
 
-  /**
-   * Organiser les menus par catégorie
-   */
   organiserMenusParCategorie(menus: Menu[]): void {
     const categoriesMap = new Map<string, Menu[]>();
 
@@ -386,8 +402,7 @@ stopOnboarding(event: Event): void {
       });
   }
 
-  // ===== HELPERS POUR LE TRACKING =====
-
+  // Helpers
   trackByMenuId(index: number, menu: Menu): any {
     return menu.id;
   }
@@ -396,15 +411,12 @@ stopOnboarding(event: Event): void {
     return category.code;
   }
 
-  // ===== HELPERS POUR LES FONCTIONS D'UI =====
-
   getCurrentDate(): Date {
     return new Date();
   }
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
-    
     if (this.sidenav) {
       this.sidenav.toggle();
     }
@@ -413,7 +425,6 @@ stopOnboarding(event: Event): void {
   closeSidebar(): void {
     if (this.isMobile) {
       this.sidebarOpen = false;
-      
       if (this.sidenav) {
         this.sidenav.close();
       }
@@ -422,11 +433,9 @@ stopOnboarding(event: Event): void {
 
   onNavClick(menuCode: string): void {
     this.closeSidebar();
-    // Si on clique sur le bouton mis en évidence, on avance l'onboarding
-  if (menuCode === 'CREATEG' && this.onboardingService.getStep() === 'CREATE_GROUPE') {
-    // On peut soit laisser l'étape telle quelle jusqu'à la réussite du formulaire
-    // soit marquer une étape intermédiaire.
-  }
+    if (menuCode === 'CREATEG' && this.onboardingService.getStep() === 'CREATE_GROUPE') {
+      // Avancer l'onboarding
+    }
   }
 
   openProfileEdit(): void {

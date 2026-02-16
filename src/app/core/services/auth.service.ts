@@ -72,6 +72,9 @@ export class AuthService {
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
+  private forceMenuRefreshSubject = new BehaviorSubject<number>(0);
+public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
+
   // BehaviorSubject pour la gestion d'état réactif
   private currentGroupeIdSubject = new BehaviorSubject<number | null>(null);
   public currentGroupeId$ = this.currentGroupeIdSubject.asObservable();
@@ -133,20 +136,13 @@ export class AuthService {
 /**
  * Met à jour manuellement l'ID du groupe dans l'application et le stockage local
  */
-updateGroupeId(newId: number): void {
-  // 1. On met à jour le BehaviorSubject pour que les menus réagissent immédiatement
-  this.currentGroupeIdSubject.next(newId);
+// updateGroupeId(newId: number): void {
+//   this.currentGroupeIdSubject.next(newId);
+//   localStorage.setItem(this.GROUPE_ID_KEY, newId.toString());
   
-  // 2. On met à jour l'objet utilisateur dans le localStorage
-  // On utilise 'auth-user' car c'est la clé standard, 
-  // vérifie si tu as une constante nommée USER_KEY en haut de ton fichier.
-  const userJson = localStorage.getItem('auth-user'); 
-  if (userJson) {
-    const user = JSON.parse(userJson);
-    user.groupeId = newId;
-    localStorage.setItem('auth-user', JSON.stringify(user));
-  }
-}
+//   // ✅ Émettre le signal de refresh
+//   this.forceMenuRefreshSubject.next(this.forceMenuRefreshSubject.value + 1);
+// }
 
   /**
    * Charge les données utilisateur depuis localStorage
@@ -692,4 +688,99 @@ updateGroupeId(newId: number): void {
       { params: { tel } }
     );
   }
+
+
+  /**
+ * ✅ Rafraîchit les informations utilisateur depuis le serveur.
+ * Utile après création d'un groupe quand le backend change le rôle.
+ * 
+ * @returns Observable qui émet quand les infos sont rafraîchies
+ */
+refreshUserInfo(): Observable<any> {
+  const token = this.getToken();
+  if (!token) {
+    return throwError(() => new Error('Token manquant.'));
+  }
+
+  const authHeaders = new HttpHeaders({
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  });
+
+  return this.http.get<any>(this.userInfoUrl, {
+    headers: authHeaders,
+    withCredentials: true
+  }).pipe(
+    tap(userInfo => {
+      console.log('[AuthService] refreshUserInfo - Données reçues:', userInfo);
+      
+      // Mettre à jour toutes les propriétés
+      this.userId = userInfo.id || null;
+      this.passwordResetRequired = userInfo.passwordResetRequired || false;
+      this.roles = userInfo.roles || [];
+      this.username = userInfo.username || null;
+      
+      // Mettre à jour le rôle courant
+      // Si on était CANDIDAT et qu'on est maintenant RESPONSABLE, changer
+      if (this.roles.includes('RESPONSABLE') || this.roles.includes('ROLE_RESPONSABLE')) {
+        this.currentRole = 'RESPONSABLE';
+      } else if (!this.currentRole || !this.roles.includes(this.currentRole)) {
+        this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
+      }
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl || '');
+      
+      localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
+        userId: this.userId,
+        roles: this.roles,
+        username: this.username,
+        currentRole: this.currentRole
+      }));
+      
+      console.log('[AuthService] refreshUserInfo - Rôles mis à jour:', this.roles);
+      console.log('[AuthService] refreshUserInfo - Rôle courant:', this.currentRole);
+    }),
+    // Aussi rafraîchir le groupe
+    switchMap(() => this.fetchUserGroup().pipe(
+      catchError(() => of(null))
+    )),
+    // Émettre le signal de refresh pour les menus
+    tap(() => {
+      this.forceMenuRefreshSubject.next(this.forceMenuRefreshSubject.value + 1);
+    })
+  );
+}
+
+// ============================================================
+// AUSSI MODIFIER updateGroupeId POUR ÊTRE SÛR
+// ============================================================
+
+/**
+ * Met à jour l'ID du groupe et déclenche un refresh des menus
+ */
+updateGroupeId(newId: number): void {
+  console.log('[AuthService] updateGroupeId:', newId);
+  
+  // 1. Mettre à jour le BehaviorSubject
+  this.currentGroupeIdSubject.next(newId);
+  
+  // 2. Sauvegarder dans localStorage
+  localStorage.setItem(this.GROUPE_ID_KEY, newId.toString());
+  
+  // 3. Mettre à jour userInfo si existant
+  const userInfoJson = localStorage.getItem(this.USER_INFO_KEY);
+  if (userInfoJson) {
+    try {
+      const userInfo = JSON.parse(userInfoJson);
+      userInfo.groupeId = newId;
+      localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo));
+    } catch (e) {
+      console.error('Erreur lors de la mise à jour de userInfo:', e);
+    }
+  }
+  
+  // 4. Émettre le signal de refresh
+  this.forceMenuRefreshSubject.next(this.forceMenuRefreshSubject.value + 1);
+}
 }
