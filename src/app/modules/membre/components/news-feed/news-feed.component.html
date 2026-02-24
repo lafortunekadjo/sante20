@@ -31,6 +31,16 @@
     </div>
   </div>
 
+
+
+   <!-- ✅ AJOUT: Bannière publicitaire en haut du feed -->
+ <app-publicite-banner 
+    position="HEADER"
+    [ville]="userVille"
+    [closable]="true"
+    pageSource="news-feed">
+  </app-publicite-banner>
+
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
     <div class="loading-spinner">
@@ -61,65 +71,93 @@
     </div>
     
     <div class="feed-grid">
-      <!-- Section Événements en Cours -->
-      <div class="feed-section events-section">
+    
+
+        <!-- Section Contributions -->
+      <div class="feed-section contributions-section" *ngIf="ongoingContributions.length>0" >
         <div class="section-header">
           <div class="header-icon-wrapper">
-            <mat-icon>event</mat-icon>
+            <mat-icon>account_balance_wallet</mat-icon>
           </div>
           <div class="header-text">
-            <h2>{{ 'feed.sections.events.title' | translate }}</h2>
-            <span class="badge">{{ currentEvents?.length || 0 }}</span>
+            <h2>{{ 'feed.sections.contributions.title' | translate }}</h2>
+            <span class="badge">{{ ongoingContributions?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="demande-card event-card" *ngFor="let event of currentEvents">
-              <div class="card-ribbon">{{ 'feed.sections.events.ongoing_ribbon' | translate }}</div>
+            <div class="demande-card contribution-card" *ngFor="let contrib of ongoingContributions">
               <div class="demande-header">
                 <div class="groupe-info">
                   <div class="groupe-avatar">
-                    <mat-icon class="discipline-icon">celebration</mat-icon>
+                    <mat-icon class="discipline-icon">payments</mat-icon>
                   </div>
                   <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ event.nomEvenement }}</h3>
-                    <p class="groupe-discipline">{{ event.typeEvenement }}</p>
+                    <h3 class="groupe-nom">{{ contrib.contribution.nom }}</h3>
+                    <p class="groupe-discipline">{{ 'feed.sections.contributions.target' | translate }}</p>
                   </div>
                 </div>
               </div>
               <div class="demande-content">
-                <p class="card-description">{{ event.description }}</p>
-                <div class="additional-info" *ngIf="event.estContributionOuverte">
-                  <div class="info-card">
-                    <mat-icon>schedule</mat-icon>
+                <div class="contribution-progress">
+                  <div class="progress-info">
+                    <!-- <span class="current-amount">{{ contrib.contribution?.montantCollecteActuel | number }} FCFA</span>
+                    <span class="target-amount">/ {{ contrib.contribution?.montantCible | number }} FCFA</span> -->
+                  </div>
+                </div>
+                <div class="contributors-list">
+                  <div class="contributor-item" *ngFor="let indiv of (contrib.individuelles || []) | slice:0:3">
+                    <div class="contributor-avatar">
+                      {{ (getMembreName(indiv.membre) | async)?.charAt(0) }}
+                    </div>
+                    <div class="contributor-info">
+                      <span class="contributor-name">{{ getMembreName(indiv.membre) | async }}</span>
+                      <span class="contributor-amount">{{ indiv.montant | number }} FCFA</span>
+                    </div>
+                  </div>
+                  <span class="more-contributors" *ngIf="contrib.individuelles.length > 3">
+                    {{ 'feed.sections.contributions.contributors_count' | translate: { count: contrib.individuelles.length - 3 } }}
+                  </span>
+                </div>
+                <div class="additional-info">
+                  <div class="info-card deadline">
+                    <mat-icon>alarm</mat-icon>
                     <div>
-                      <span class="info-label">{{ 'feed.sections.events.contribution_deadline' | translate }}</span>
-                      <span class="info-value">{{ event.dateCreation | date:'dd/MM/yyyy' }}</span>
+                      <span class="info-label">{{ 'feed.sections.contributions.deadline' | translate }}</span>
+                      <span class="info-value">{{ contrib.contribution.delaiContribution | date:'dd/MM/yyyy' }}</span>
                     </div>
                   </div>
                 </div>
               </div>
               <div class="demande-actions">
                 <div class="primary-actions">
-                  <button mat-raised-button color="primary">
-                    <mat-icon>visibility</mat-icon>
-                    <span>{{ 'common.viewDetails' | translate }}</span>
+                  <button mat-raised-button color="accent" (click)="viewContributions(contrib.contribution.id!)">
+                    <mat-icon>add_circle</mat-icon>
+                    <span>{{ 'feed.sections.contributions.view_button' | translate }}</span>
                   </button>
                 </div>
               </div>
             </div>
-            <div class="empty-state" *ngIf="currentEvents.length === 0">
+            <div class="empty-state" *ngIf="ongoingContributions?.length === 0">
               <div class="empty-illustration">
-                <mat-icon class="empty-icon">event_busy</mat-icon>
+                <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
               </div>
               <div class="empty-content">
-                <h3 class="empty-title">{{ 'feed.sections.events.empty' | translate }}</h3>
+                <h3 class="empty-title">{{ 'feed.sections.contributions.empty' | translate }}</h3>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+       <div class="feed-section ad-section" [style.display]="canShowFeedAd ? 'block' : 'none'">
+       <app-publicite-feed 
+          [ville]="userVille"
+          [compact]="true"
+          (adsLoaded)="canShowFeedAd = $any($event)"> 
+      </app-publicite-feed>
+      </div>
+    
       <!-- Section Derniers Matchs -->
       <div class="feed-section matches-section">
         <div class="section-header">
@@ -146,7 +184,14 @@
         
         <div class="section-content">
           <div class="card-list">
-            <div class="demande-card match-card" *ngFor="let match of matchesToDisplay">
+            <div class="demande-card match-card" *ngFor="let match of matchesToDisplay ; let i = index">
+            <app-publicite-feed 
+                *ngIf="(i + 1) % 3 === 0"
+                [ville]="userVille"
+                [compact]="true"
+               >
+              </app-publicite-feed>
+
               <div class="demande-header">
                 <div class="groupe-info">
                   <div class="groupe-avatar">
@@ -263,126 +308,71 @@
         </div>
       </div>
 
-      <!-- Section Contributions -->
-      <div class="feed-section contributions-section">
+      <!-- Section Événements en Cours -->
+      <div class="feed-section events-section" *ngIf="currentEvents.length>0">
         <div class="section-header">
           <div class="header-icon-wrapper">
-            <mat-icon>account_balance_wallet</mat-icon>
+            <mat-icon>event</mat-icon>
           </div>
           <div class="header-text">
-            <h2>{{ 'feed.sections.contributions.title' | translate }}</h2>
-            <span class="badge">{{ ongoingContributions?.length || 0 }}</span>
+            <h2>{{ 'feed.sections.events.title' | translate }}</h2>
+            <span class="badge">{{ currentEvents?.length || 0 }}</span>
           </div>
         </div>
         <div class="section-content">
           <div class="card-list">
-            <div class="demande-card contribution-card" *ngFor="let contrib of ongoingContributions">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar">
-                    <mat-icon class="discipline-icon">payments</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ contrib.contribution.commentaire }}</h3>
-                    <p class="groupe-discipline">{{ 'feed.sections.contributions.target' | translate }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="contribution-progress">
-                  <div class="progress-info">
-                    <span class="current-amount">{{ contrib.contribution?.montantCollecteActuel | number }} FCFA</span>
-                    <span class="target-amount">/ {{ contrib.contribution?.montantCible | number }} FCFA</span>
-                  </div>
-                </div>
-                <div class="contributors-list">
-                  <div class="contributor-item" *ngFor="let indiv of (contrib.individuelles || []) | slice:0:3">
-                    <div class="contributor-avatar">
-                      {{ (getMembreName(indiv.idMembre) | async)?.charAt(0) }}
-                    </div>
-                    <div class="contributor-info">
-                      <span class="contributor-name">{{ getMembreName(indiv.idMembre) | async }}</span>
-                      <span class="contributor-amount">{{ indiv.montant | number }} FCFA</span>
-                    </div>
-                  </div>
-                  <span class="more-contributors" *ngIf="contrib.individuelles.length > 3">
-                    {{ 'feed.sections.contributions.contributors_count' | translate: { count: contrib.individuelles.length - 3 } }}
-                  </span>
-                </div>
-                <div class="additional-info">
-                  <div class="info-card deadline">
-                    <mat-icon>alarm</mat-icon>
-                    <div>
-                      <span class="info-label">{{ 'feed.sections.contributions.deadline' | translate }}</span>
-                      <span class="info-value">{{ contrib.contribution.delaiContribution | date:'dd/MM/yyyy' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-actions">
-                <div class="primary-actions">
-                  <button mat-raised-button color="accent" (click)="viewContributions(contrib.contribution.id!)">
-                    <mat-icon>add_circle</mat-icon>
-                    <span>{{ 'feed.sections.contributions.view_button' | translate }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="empty-state" *ngIf="ongoingContributions?.length === 0">
-              <div class="empty-illustration">
-                <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
-              </div>
-              <div class="empty-content">
-                <h3 class="empty-title">{{ 'feed.sections.contributions.empty' | translate }}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section Anniversaires -->
-      <div class="feed-section birthdays-section full-width">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>cake</mat-icon>
-          </div>
-          <div class="header-text">
-            <h2>{{ 'feed.sections.birthdays.title' | translate }}</h2>
-            <span class="badge">{{ upcomingBirthdays?.length || 0 }}</span>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="card-list horizontal-list">
-            <div class="demande-card birthday-card" *ngFor="let birthday of upcomingBirthdays">
+            <div class="demande-card event-card" *ngFor="let event of currentEvents">
+              <div class="card-ribbon">{{ 'feed.sections.events.ongoing_ribbon' | translate }}</div>
               <div class="demande-header">
                 <div class="groupe-info">
                   <div class="groupe-avatar">
                     <mat-icon class="discipline-icon">celebration</mat-icon>
                   </div>
                   <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ birthday.membre.prenom }} {{ birthday.membre.nom }}</h3>
-                    <p class="groupe-discipline">{{ birthday.date | date:'dd MMMM' }}</p>
+                    <h3 class="groupe-nom">{{ event.nomEvenement }}</h3>
+                    <p class="groupe-discipline">{{ event.typeEvenement }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="demande-content">
+                <p class="card-description">{{ event.description }}</p>
+                <div class="additional-info" *ngIf="event.estContributionOuverte">
+                  <div class="info-card">
+                    <mat-icon>schedule</mat-icon>
+                    <div>
+                      <span class="info-label">{{ 'feed.sections.events.contribution_deadline' | translate }}</span>
+                      <span class="info-value">{{ event.dateCreation | date:'dd/MM/yyyy' }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
               <div class="demande-actions">
-                <div class="secondary-actions">
-                  <button mat-icon-button color="primary">
-                    <mat-icon>card_giftcard</mat-icon>
+                <div class="primary-actions">
+                  <button mat-raised-button color="primary">
+                    <mat-icon>visibility</mat-icon>
+                    <span>{{ 'common.viewDetails' | translate }}</span>
                   </button>
                 </div>
               </div>
             </div>
-            <div class="empty-state" *ngIf="upcomingBirthdays?.length === 0">
+            <div class="empty-state" *ngIf="currentEvents.length === 0">
               <div class="empty-illustration">
-                <mat-icon class="empty-icon">cake</mat-icon>
+                <mat-icon class="empty-icon">event_busy</mat-icon>
               </div>
               <div class="empty-content">
-                <h3 class="empty-title">{{ 'feed.sections.birthdays.empty' | translate }}</h3>
+                <h3 class="empty-title">{{ 'feed.sections.events.empty' | translate }}</h3>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+    <!-- ✅ PUB 4: Avant section Statistiques (full width) -->
+      <div class="feed-section ad-section full-width">
+        <app-publicite-feed 
+          [ville]="userVille"
+          pageSource="news-feed-stats">
+        </app-publicite-feed>
       </div>
 
       <!-- Section Statistiques (de l'exercice en cours) -->
@@ -445,6 +435,69 @@
         </div>
       </div>
 
+         <!-- Section Anniversaires -->
+      <div class="feed-section birthdays-section full-width" *ngIf="upcomingBirthdays.length>0">
+        <div class="section-header">
+          <div class="header-icon-wrapper">
+            <mat-icon>cake</mat-icon>
+          </div>
+          <div class="header-text">
+            <h2>{{ 'feed.sections.birthdays.title' | translate }}</h2>
+            <span class="badge">{{ upcomingBirthdays?.length || 0 }}</span>
+          </div>
+        </div>
+       <div class="section-content">
+  <div class="card-list horizontal-list">
+    <div class="demande-card birthday-card" *ngFor="let birthday of upcomingBirthdays">
+      <div class="demande-header">
+        <div class="groupe-info">
+          
+          <div class="groupe-avatar profile-container">
+            <img *ngIf="birthday.membre.user.profilePhotoUrl" 
+                 [src]="birthday.membre.user.profilePhotoUrl" 
+                 class="profile-img" 
+                 alt="Photo de {{ birthday.membre.prenom }}">
+            
+            <div *ngIf="!birthday.membre.user.profilePhotoUrl" class="avatar-placeholder">
+              {{ birthday.membre.prenom?.charAt(0) }}{{ birthday.membre.nom?.charAt(0) }}
+            </div>
+
+            <div class="birthday-badge">
+              <mat-icon>celebration</mat-icon>
+            </div>
+          </div>
+
+          <div class="groupe-details">
+            <h3 class="groupe-nom">{{ birthday.membre.prenom }} {{ birthday.membre.nom }}</h3>
+            <p class="groupe-discipline">
+              <mat-icon class="mini-icon">cake</mat-icon>
+              {{ birthday.date | date:'dd MMMM' }}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="demande-actions">
+        <div class="secondary-actions">
+          <button mat-icon-button color="primary" [matTooltip]="'Souhaiter un anniversaire'">
+            <mat-icon>card_giftcard</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="upcomingBirthdays?.length === 0">
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">cake</mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'feed.sections.birthdays.empty' | translate }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+      </div>
+
       <!-- Section Annonces -->
       <div class="feed-section announcements-section full-width">
         <div class="section-header">
@@ -495,4 +548,13 @@
       </div>
     </div>
   </div>
+
+   <div class="feed-footer-ad">
+      <app-publicite-banner 
+        position="FOOTER"
+        [ville]="userVille"
+        [closable]="false"
+        pageSource="news-feed-footer">
+      </app-publicite-banner>
+    </div>
 </div>

@@ -18,7 +18,7 @@ import { MatchService } from '../../../../core/services/match.service';
 import { ContributionService } from '../../../../core/services/contribution.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
-import { Exercice, FinancesService } from '../../../../core/services/finances.service';
+import { Exercice, FinancesService, MouvementCaisse, TypeContribution } from '../../../../core/services/finances.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MediaPreviewDialogComponent } from '../media-preview-dialog/media-preview-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -32,6 +32,9 @@ import { TranslateModule } from '@ngx-translate/core';
 import { CalendarComponent } from '../../../responsable/components/calendar/calendar.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PresenceService } from '../../../../core/services/presence.service';
+import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
+import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
+import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 
 // // Interface Exercice
 // interface Exercice {
@@ -54,9 +57,12 @@ import { PresenceService } from '../../../../core/services/presence.service';
     MatProgressSpinnerModule,
     MatIconModule,
     MatTooltipModule,
-    
+   
     MatMenuModule,
-    TranslateModule
+    TranslateModule,
+     PubliciteBannerComponent,
+    PubliciteAffichageComponent,
+    PubliciteFeedComponent
   ],
   templateUrl: './news-feed.component.html',
   styleUrls: ['./news-feed.component.scss']
@@ -65,10 +71,13 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
   
+    // ✅ AJOUT: Ville pour ciblage publicitaire
+    public canShowFeedAd = false;
+  userVille: string | undefined;
   isLoading: boolean = true;
   currentEvents: Evenement[] = [];
   recentMatches: Match[] = [];
-  ongoingContributions: { contribution: Contribution; individuelles: ContributionIndividuelle[] }[] = [];
+  ongoingContributions: { contribution: TypeContribution; individuelles: MouvementCaisse[] }[] = [];
   upcomingBirthdays: { membre: Membre; date: Date }[] = [];
   groupAnnouncements: Announcement[] = [];
   topScorers: { membre: Membre; buts: number }[] = [];
@@ -84,9 +93,12 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   
   // Groupe actif pour les matchs amicaux
   groupeActif: Groupe | null = null;
+    groupeId: number | null = null;
+    
   
   // ✅ NOUVEAU: Exercice en cours
   exerciceEnCours: Exercice | null = null;
+  exerciceId: number | undefined 
   exerciceDateDebut: Date | null = null;
   exerciceDateFin: Date | null = null;
   isOpeningDialog = false;
@@ -101,14 +113,19 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private presenceService: PresenceService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private financeService: FinancesService,
+
   ) {
     this.allMembres$ = this.membreService.getAllMembres();
   }
 
   ngOnInit(): void {
+    this.groupeId = this.authService.getGroupe();
     this.loadGroupeAndExercice();
   }
+
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -122,6 +139,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   private loadGroupeAndExercice(): void {
     const userId = this.authService.getUserId();
     const groupeId = this.authService.getGroupe();
+
+   
     
     if (!userId || !groupeId) {
       console.error('User ID ou Groupe ID non trouvé');
@@ -146,11 +165,16 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         
         if (exercice) {
           this.exerciceEnCours = exercice;
+          this.exerciceId=exercice.id
           this.exerciceDateDebut = new Date(exercice.dateDebut);
           this.exerciceDateFin = new Date(exercice.dateFin);
           
           console.log('Exercice en cours:', exercice.libelle);
           console.log('Période:', this.exerciceDateDebut, '-', this.exerciceDateFin);
+        }
+
+          if (groupe?.ville) {
+          this.userVille = groupe.ville.nom;
         }
         
         this.loadFeedData();
@@ -295,15 +319,19 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     this.showAllMatches = !this.showAllMatches;
   }
 
+  
+
+  
+
   // ===== CHARGEMENT DES DONNÉES (MODIFIÉ POUR EXERCICE) =====
   
   loadFeedData(): void {
     this.isLoading = true;
-
+this.ongoingContributions = [];
     const mainData$ = forkJoin({
       events: this.generalService.getAllEvenements(),
       matches: this.matchService.getAllMatches(),
-      contributions: this.contributionService.getAllContributions(),
+      contributions: this.financeService.getTypesContributionByExercice(this.exerciceId),
       membres: this.membreService.getAllMembres(),
       presences: this.matchService.getAllPresences()
     });
@@ -316,7 +344,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         today.setHours(0, 0, 0, 0);
         const typedMembres: Membre[] = membres;
         const typedPresences: Presence[] = presences;
-        const typedContributions: Contribution[] = contributions;
+        const typedContributions: TypeContribution[] = contributions;
         
         // ✅ FILTRER les événements par exercice en cours
         this.currentEvents = events.filter(e => {
@@ -330,39 +358,33 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
         this.allMatches = matches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
 
-        // ✅ FILTRER les contributions par exercice en cours
-        this.ongoingContributions = typedContributions
-          .filter(contrib => {
-            const delaiDate = new Date(contrib.delaiContribution);
-            return delaiDate >= today && this.isDateInCurrentExercice(contrib.delaiContribution);
-          })
-          .map(contrib => ({
-            contribution: contrib,
-            individuelles: Array.isArray(this.contributionService.getContributionsIndividuellesById(contrib.id || 0)) 
-              ? this.contributionService.getContributionsIndividuellesById(contrib.id || 0) 
-              : []
-          }));
+        const observables = typedContributions.filter(contrib => 
+          contrib.actif === true) 
+          .map(contrib => this.financeService.getHistoriqueContrib(contrib.id || 0).pipe( map(individuelles => ({
+             contribution: contrib, individuelles })) ) ); 
+             forkJoin(observables).subscribe(results => { this.ongoingContributions = results; });
+
         
         // Anniversaires (pas de filtre exercice - toujours pertinent)
-        this.upcomingBirthdays = typedMembres
-            .filter(m => !!m.dateNaissance)
-            .map(m => {
-                const birthDate = new Date(m.dateNaissance);
-                const nextBirthDate = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-                nextBirthDate.setHours(0, 0, 0, 0);
-                
-                if (nextBirthDate < today) {
-                    nextBirthDate.setFullYear(today.getFullYear() + 1);
-                }
-                
-                return { membre: m, date: nextBirthDate };
-            })
-            .filter(b => {
-                const thirtyDaysLater = new Date(today);
-                thirtyDaysLater.setDate(today.getDate() + 30);
-                return b.date >= today && b.date <= thirtyDaysLater;
-            })
-            .sort((a, b) => a.date.getTime() - b.date.getTime());
+     // Anniversaires (les 10 prochains)
+          this.upcomingBirthdays = typedMembres
+              .filter(m => !!m.dateNaissance)
+              .map(m => {
+                  const birthDate = new Date(m.dateNaissance);
+                  const nextBirthDate = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+                  nextBirthDate.setHours(0, 0, 0, 0);
+                  
+                  // Si l'anniversaire est déjà passé cette année, on prend celui de l'année prochaine
+                  if (nextBirthDate < today) {
+                      nextBirthDate.setFullYear(today.getFullYear() + 1);
+                  }
+                  
+                  return { membre: m, date: nextBirthDate };
+              })
+              // On trie d'abord par date la plus proche
+              .sort((a, b) => a.date.getTime() - b.date.getTime())
+              // On ne garde que les 10 premiers de la liste triée
+              .slice(0, 10);
         
         this.groupAnnouncements = [];
         
@@ -683,7 +705,7 @@ async openPresenceDialog(match: Match): Promise<void> {
 
 
   viewContributions(contributionId: number) {
-    this.generalService.getContributionIndividuellesByContributionId(contributionId).subscribe({
+    this.financeService.getMouvementsByContribution(contributionId).subscribe({
       next: (contributions: any[]) => {
         const groupedMap = new Map<number, {
           montant: number,

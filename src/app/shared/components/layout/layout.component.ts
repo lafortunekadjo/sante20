@@ -1,7 +1,5 @@
 // ============================================================
-// LAYOUT COMPONENT - VERSION FINALE CORRIGÉE
-// - Scroll du menu réparé
-// - Mise à jour des rôles après refresh
+// LAYOUT COMPONENT - AVEC INTÉGRATION PUBLICITÉS
 // ============================================================
 
 import { Component, ViewChild, OnInit, OnDestroy } from '@angular/core';
@@ -30,6 +28,13 @@ import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
 import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 import { TranslateModule } from '@ngx-translate/core';
 import { OnboardingService } from '../../../core/services/onboarding.service';
+import { PubliciteAffichageService } from '../../../core/services/publicite-affichage.service';
+import { PubliciteBannerComponent } from '../../../modules/publicite/publicite-banner/publicite-banner.component';
+import { PubliciteSidebarComponent } from '../../../modules/publicite/publicite-sidebar/publicite-sidebar.component';
+import { PubliciteSplashComponent } from '../../../modules/publicite/publicite-splash/publicite-splash.component';
+import { SplashScreenService } from '../../../core/services/splash-screen.service';
+
+
 
 @Component({
   selector: 'app-layout',
@@ -49,7 +54,10 @@ import { OnboardingService } from '../../../core/services/onboarding.service';
     MatDividerModule,
     MatTooltipModule,
     NavbarComponent,
-    TranslateModule
+    TranslateModule,
+    // ✅ COMPOSANTS PUBLICITÉ
+    PubliciteSplashComponent,
+    PubliciteBannerComponent,
   ],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']
@@ -59,6 +67,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   // Rôles et permissions
   isAdmin: boolean = false;
+  isPartenaire: boolean = false;
   isResponsable: boolean = false;
   isMembre: boolean = false;
   roles: string[] = [];
@@ -80,6 +89,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
   currentGroupeId: number | null = null;
   isLoggedIn = false;
 
+  // ✅ PUBLICITÉS - Ville pour ciblage
+  userVille: string | undefined;
+
   private menusSubscription?: Subscription;
   private groupeSubscription?: Subscription;
   private authStatusSubscription?: Subscription;
@@ -91,13 +103,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
-    public onboardingService: OnboardingService
+    public onboardingService: OnboardingService,
+    private publiciteService: PubliciteAffichageService, // ✅ INJECTION SERVICE PUB
+    private splashService: SplashScreenService
   ) {}
 
   ngOnInit(): void {
     this.setupResponsiveLayout();
 
-    // Initialisation quand l'utilisateur est prêt
     this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady => {
       if (isReady && this.authService.isLoggedIn()) {
         this.isLoggedIn = true;
@@ -107,32 +120,26 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.loadMenusCommuns();
         this.loadUserMenus();
         this.setupGroupeSubscription();
-        console.log(this.isAdmin)
+        
+        // ✅ PUBLICITÉS - Récupérer la ville de l'utilisateur et afficher splash
+        this.setupPublicites();
       } else if (isReady && !this.authService.isLoggedIn()) {
         this.isLoggedIn = false;
         this.resetUserSpecificState();
       }
     });
 
-    // ✅ S'abonner au signal de refresh (émis après création de groupe)
     this.menuRefreshSubscription = this.authService.forceMenuRefresh$.pipe(
-      skip(1), // Ignorer la valeur initiale
+      skip(1),
       distinctUntilChanged()
     ).subscribe(() => {
       console.log('[LayoutComponent] Signal de refresh reçu');
-      
-      // ✅ IMPORTANT: Recharger aussi les rôles !
       this.setupRoles();
-      
-      // Mettre à jour l'état du groupe
       this.updateGroupStatus();
-      
-      // Recharger les menus
       this.loadMenusCommuns();
       this.loadUserMenus();
     });
 
-    // S'abonner aux changements de menus du service
     this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
       if (menus && menus.length > 0) {
         this.organiserMenusParCategorie(menus);
@@ -144,9 +151,29 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.checkOnboardingStatus();
   }
 
-  /**
-   * ✅ Mettre à jour l'état userHasGroup
-   */
+  // ✅ NOUVELLE MÉTHODE - Configuration des publicités
+  // private setupPublicites(): void {
+  //   // Récupérer la ville depuis le profil utilisateur ou le groupe
+  //   const user = this.authService.getUser();
+  //   this.userVille = user?.ville || user?.groupe?.ville;
+    
+  //   // Afficher le splash screen (une fois par jour)
+  //   setTimeout(() => {
+  //     this.publiciteService.showSplash();
+  //   }, 1000); // Délai pour laisser la page se charger
+  // }
+
+  private setupPublicites(): void {
+    const userVille = this.authService.getUser()?.ville || '';
+    
+    // // Splash au login (1x/jour)
+    // this.splashService.checkAndShowLoginSplash(userVille);
+    
+    // // Splash après 10 min (1x/session)
+    // this.splashService.startUsageTimer(10, userVille);
+  }
+
+
   private updateGroupStatus(): void {
     const groupeId = this.authService.getGroupe();
     this.userHasGroup = groupeId !== null && groupeId !== undefined && groupeId > 0;
@@ -154,33 +181,30 @@ export class LayoutComponent implements OnInit, OnDestroy {
     console.log('[LayoutComponent] userHasGroup:', this.userHasGroup, 'groupeId:', groupeId);
   }
 
-  /**
-   * ✅ Configuration des rôles - MISE À JOUR pour relire depuis AuthService
-   */
   setupRoles(): void {
-    // Relire les rôles depuis AuthService (qui les a depuis localStorage)
     this.roles = this.authService.getRoles();
     
     console.log('[LayoutComponent] setupRoles - Rôles:', this.roles);
     
-    // Reset
     this.isAdmin = false;
     this.isResponsable = false;
     this.isMembre = false;
 
-    // Déterminer le rôle principal
     if (this.roles.includes('RESPONSABLE') || this.roles.includes('ROLE_RESPONSABLE')) {
       this.selectedRole = 'RESPONSABLE';
       this.isResponsable = true;
     } else if (this.roles.includes('ADMIN') || this.roles.includes('ROLE_ADMIN')) {
       this.selectedRole = 'ADMIN';
       this.isAdmin = true;
+    } else if (this.roles.includes('PARTENAIRE') || this.roles.includes('ROLE_PARTENAIRE')) {
+      this.selectedRole = 'PARTENAIRE';
+      this.isPartenaire = true;
     } else if (this.roles.includes('MEMBRE') || this.roles.includes('ROLE_MEMBRE')) {
       this.selectedRole = 'MEMBRE';
       this.isMembre = true;
     }
     
-    console.log('[LayoutComponent] isResponsable:', this.isResponsable);
+
   }
 
   setupGroupeSubscription(): void {
@@ -228,11 +252,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.roles = [];
     this.isAdmin = false;
     this.isResponsable = false;
+    this.isPartenaire = false;
     this.isMembre = false;
     this.userHasGroup = false;
     this.menuCategories = [];
     this.menusCommuns = [];
     this.currentGroupeId = null;
+    this.userVille = undefined; // ✅ Reset ville
 
     this.groupeSubscription?.unsubscribe();
     this.groupeSubscription = undefined;
@@ -243,6 +269,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.groupeSubscription?.unsubscribe();
     this.authStatusSubscription?.unsubscribe();
     this.menuRefreshSubscription?.unsubscribe();
+    // this.splashService.cancelUsageTimer();
   }
 
   setupResponsiveLayout(): void {
@@ -263,9 +290,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.userProfileImage = this.user?.profileImage || null;
   }
 
-  /**
-   * Charger les menus communs
-   */
   loadMenusCommuns(): void {
     const baseMenus: Menu[] = [
       {
@@ -289,10 +313,20 @@ export class LayoutComponent implements OnInit, OnDestroy {
         ordre: 6,
         actif: true,
         categorie: 'COMMUN'
+      },
+         {
+        id: 11,
+        code: 'INV',
+        label: 'Invitation a rejoindre',
+        icone: 'lightbulb',
+        route: '/responsable/invitations',
+        description: 'Envoyez des invitations a rejoindre le groupe',
+        ordre: 6,
+        actif: true,
+        categorie: 'COMMUN'
       }
     ];
 
-    // Menu "Créer un groupe" - seulement si pas de groupe
     if (!this.userHasGroup) {
       baseMenus.push({
         id: 6,
@@ -307,9 +341,19 @@ export class LayoutComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Menus visibles seulement si groupe existe
     if (this.userHasGroup) {
       baseMenus.push(
+        {
+          id: 10,
+          code: 'TB',
+          label: 'Tableau de bord',
+          icone: 'newspaper',
+          route: '/membre',
+          description: 'Tableau de bord du membre',
+          ordre: 1,
+          actif: true,
+          categorie: 'COMMUN'
+        },
         {
           id: 3,
           code: 'ACTUALITES',
@@ -339,9 +383,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
     console.log('[LayoutComponent] Menus communs chargés:', this.menusCommuns.map(m => m.code));
   }
 
-  /**
-   * Charger les menus utilisateur (si responsable)
-   */
   loadUserMenus(): void {
     console.log('[LayoutComponent] loadUserMenus - isResponsable:', this.isResponsable, 'userHasGroup:', this.userHasGroup);
     
@@ -465,4 +506,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.roleCustomService.clearUserMenus();
     this.router.navigate(['/']);
   }
+
+  // private setupPublicites(): void {
+  //   const userVille = this.authService.getUser()?.ville || '';
+    
+  //   // Splash au login (1x/jour)
+  //   this.splashService.checkAndShowLoginSplash(userVille);
+    
+  //   // Splash après 10 min (1x/session)
+  //   this.splashService.startUsageTimer(10, userVille);
+  // }
 }

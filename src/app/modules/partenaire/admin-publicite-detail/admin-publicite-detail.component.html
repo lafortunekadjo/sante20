@@ -1,0 +1,277 @@
+<!-- Détail Publicité Admin -->
+<div class="detail-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && publicite">
+
+    <!-- Header -->
+    <header class="page-header">
+      <button mat-icon-button (click)="goBack()" class="back-btn">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+
+      <div class="header-info">
+        <div class="pub-image" *ngIf="publicite.imageUrl">
+          <img [src]="publicite.imageUrl" [alt]="publicite.titre">
+        </div>
+        <div class="pub-placeholder" *ngIf="!publicite.imageUrl">
+          <mat-icon>campaign</mat-icon>
+        </div>
+
+        <div class="header-text">
+          <div class="header-title">
+            <h1>{{ publicite.titre }}</h1>
+            <span class="status-badge" [ngClass]="getStatutClass(publicite.statut)">
+              <mat-icon>{{ getStatutIcon(publicite.statut) }}</mat-icon>
+              {{ getStatutLabel(publicite.statut) }}
+            </span>
+          </div>
+          <p class="header-meta">
+            <a [routerLink]="['/admin/partenaires', publicite.partenaireId]" class="partenaire-link">
+              {{ publicite.partenaireNom }}
+            </a>
+            <span class="separator">•</span>
+            <span>{{ publicite.entrepriseNom }}</span>
+            <span class="separator">•</span>
+            <span class="emplacement">{{ getEmplacementLabel(publicite.emplacement) }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Actions selon statut -->
+        <ng-container *ngIf="publicite.statut === 'EN_ATTENTE'">
+          <button mat-raised-button color="primary" (click)="approuver()">
+            <mat-icon>check_circle</mat-icon>
+            Approuver
+          </button>
+          <button mat-stroked-button color="warn" (click)="rejeter()">
+            <mat-icon>cancel</mat-icon>
+            Rejeter
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="publicite.statut === 'ACTIVE'">
+          <button mat-stroked-button (click)="pauser()">
+            <mat-icon>pause</mat-icon>
+            Mettre en pause
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="publicite.statut === 'PAUSEE'">
+          <button mat-raised-button color="primary" (click)="reprendre()">
+            <mat-icon>play_arrow</mat-icon>
+            Réactiver
+          </button>
+        </ng-container>
+
+        <button mat-icon-button [matMenuTriggerFor]="actionsMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #actionsMenu="matMenu">
+          <button mat-menu-item [routerLink]="['/admin/partenaires', publicite.partenaireId]">
+            <mat-icon>business</mat-icon>
+            <span>Voir le partenaire</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="supprimer()" class="delete-item">
+            <mat-icon>delete</mat-icon>
+            <span>Supprimer</span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
+
+    <!-- Alerte en attente -->
+    <div class="alert-banner pending" *ngIf="publicite.statut === 'EN_ATTENTE'">
+      <mat-icon>hourglass_empty</mat-icon>
+      <span>Cette publicité est <strong>en attente de validation</strong></span>
+      <div class="alert-actions">
+        <button mat-stroked-button (click)="approuver()">
+          <mat-icon>check</mat-icon> Approuver
+        </button>
+        <button mat-stroked-button (click)="rejeter()">
+          <mat-icon>close</mat-icon> Rejeter
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats KPIs -->
+    <div class="kpi-cards">
+      <div class="kpi-card">
+        <mat-icon>visibility</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(publicite.totalImpressions) }}</span>
+          <span class="kpi-label">Impressions</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <mat-icon>touch_app</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(publicite.totalClics) }}</span>
+          <span class="kpi-label">Clics</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <mat-icon>trending_up</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ calculateCTR() }}%</span>
+          <span class="kpi-label">Taux de clics</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="content-grid">
+
+      <!-- Aperçu -->
+      <div class="content-card preview-card">
+        <div class="card-header">
+          <mat-icon>image</mat-icon>
+          <h3>Aperçu</h3>
+        </div>
+        <div class="card-body">
+          <div class="preview-image" *ngIf="publicite.imageUrl">
+            <img [src]="publicite.imageUrl" [alt]="publicite.titre">
+          </div>
+          <div class="preview-placeholder" *ngIf="!publicite.imageUrl">
+            <mat-icon>image</mat-icon>
+            <span>Aucune image</span>
+          </div>
+          <div class="preview-meta">
+            <span class="meta-item">
+              <mat-icon>aspect_ratio</mat-icon>
+              {{ getEmplacementLabel(publicite.emplacement) }}
+              <span *ngIf="getEmplacementDimensions(publicite.emplacement)">
+                ({{ getEmplacementDimensions(publicite.emplacement) }}px)
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations -->
+      <div class="content-card info-card">
+        <div class="card-header">
+          <mat-icon>info</mat-icon>
+          <h3>Informations</h3>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="label">Titre</span>
+            <span class="value">{{ publicite.titre }}</span>
+          </div>
+          <div class="info-row" *ngIf="publicite.description">
+            <span class="label">Description</span>
+            <span class="value">{{ publicite.description }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Partenaire</span>
+            <a class="value link" [routerLink]="['/admin/partenaires', publicite.partenaireId]">
+              {{ publicite.partenaireNom }}
+            </a>
+          </div>
+          <div class="info-row">
+            <span class="label">Entreprise</span>
+            <span class="value">{{ publicite.entrepriseNom }}</span>
+          </div>
+          <div class="info-row" *ngIf="publicite.lienCible">
+            <span class="label">Lien cible</span>
+            <a class="value link external" [href]="publicite.lienCible" target="_blank">
+              {{ publicite.lienCible }}
+              <mat-icon>open_in_new</mat-icon>
+            </a>
+          </div>
+          <mat-divider></mat-divider>
+          <div class="info-row">
+            <span class="label">Emplacement</span>
+            <span class="value">{{ getEmplacementLabel(publicite.emplacement) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date début</span>
+            <span class="value">{{ formatDate(publicite.dateDebut) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date fin</span>
+            <span class="value">{{ publicite.dateFin ? formatDate(publicite.dateFin) : 'Illimitée' }}</span>
+          </div>
+          <div class="info-row" *ngIf="publicite.villesCibles?.length">
+            <span class="label">Villes cibles</span>
+            <div class="value cities">
+              <span class="city-chip" *ngFor="let ville of publicite.villesCibles">
+                {{ ville }}
+              </span>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="label">Priorité</span>
+            <span class="value">{{ publicite.priorite || 0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Évolution -->
+    <div class="content-card evolution-card" *ngIf="!isLoadingStats && evolution.length > 0">
+      <div class="card-header">
+        <mat-icon>show_chart</mat-icon>
+        <h3>Évolution sur 30 jours</h3>
+      </div>
+      <div class="card-body">
+        <div class="mini-chart">
+          <div 
+            class="chart-bar"
+            *ngFor="let jour of evolution"
+            [matTooltip]="(jour.date | date:'dd/MM') + ': ' + (jour.impressions || 0) + ' imp. / ' + (jour.clics || 0) + ' clics'">
+            <div class="bar-fill" [style.height.%]="getBarHeight(jour.impressions || 0)"></div>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <span>{{ evolution[0]?.date | date:'dd/MM' }}</span>
+          <span>{{ evolution[evolution.length - 1]?.date | date:'dd/MM' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats détaillées -->
+    <div class="content-card stats-card" *ngIf="!isLoadingStats && stats">
+      <div class="card-header">
+        <mat-icon>bar_chart</mat-icon>
+        <h3>Statistiques détaillées</h3>
+      </div>
+      <div class="card-body">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Impressions totales</span>
+            <span class="stat-value">{{ formatNumber(stats.totalImpressions) }}</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Clics totaux</span>
+            <span class="stat-value">{{ formatNumber(stats.totalClics) }}</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">CTR global</span>
+            <span class="stat-value">{{ stats.tauxClics | number:'1.2-2' }}%</span>
+          </div>
+          <div class="stat-box" *ngIf="stats.impressionsPeriode !== undefined">
+            <span class="stat-label">Impressions (30j)</span>
+            <span class="stat-value">{{ formatNumber(stats.impressionsPeriode) }}</span>
+          </div>
+          <div class="stat-box" *ngIf="stats.clicsPeriode !== undefined">
+            <span class="stat-label">Clics (30j)</span>
+            <span class="stat-value">{{ formatNumber(stats.clicsPeriode) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

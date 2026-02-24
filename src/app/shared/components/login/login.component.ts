@@ -148,6 +148,8 @@ export class LoginComponent implements OnInit {
     } else if (roles.includes('CANDIDAT')) {
       console.log('Connexion réussie pour le membre');
       this.router.navigate(['/explorer']);
+    } else if (roles.includes('PARTENAIRE')) {
+       this.router.navigate(['/partenaire/dashboard']);
     } else {
       // Aucun rôle reconnu - retour à la connexion
       console.warn('Aucun rôle valide trouvé');

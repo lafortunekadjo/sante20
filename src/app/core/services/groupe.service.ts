@@ -61,7 +61,7 @@ export class GroupeService {
     return this.http.get<Groupe>(`${environment.apiUrl}/groupes/connect`);
   }
 
-  getGroupe(id: number): Observable<Groupe> {
+  getGroupe(id: number | null): Observable<Groupe> {
     return this.http.get<Groupe>(`${environment.apiUrl}/groupes/${id}`);
   }
 

@@ -1,0 +1,296 @@
+<!-- Liste des partenaires - Admin -->
+<div class="partenaires-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <mat-icon class="header-icon">handshake</mat-icon>
+        <div class="header-text">
+          <h1>Gestion des partenaires</h1>
+          <p>Gérez les partenaires publicitaires de la plateforme</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button mat-stroked-button (click)="exportList()" matTooltip="Exporter en Excel">
+          <mat-icon>download</mat-icon>
+          Exporter
+        </button>
+        <button mat-raised-button color="primary" routerLink="/admin/partenaires/new">
+          <mat-icon>add</mat-icon>
+          Nouveau partenaire
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Cards -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total partenaires</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.actifs }}</span>
+        <span class="stat-label">Actifs</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon suspended">
+        <mat-icon>pause_circle</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.suspendus }}</span>
+        <span class="stat-label">Suspendus</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.warning]="stats.expirantBientot > 0">
+      <div class="stat-icon expiring">
+        <mat-icon>schedule</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ stats.expirantBientot }}</span>
+        <span class="stat-label">Expirent bientôt</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Rechercher</mat-label>
+      <input 
+        matInput 
+        [value]="searchQuery"
+        (input)="onSearch($event)"
+        placeholder="Nom, email, contact...">
+      <mat-icon matPrefix>search</mat-icon>
+      <button 
+        mat-icon-button 
+        matSuffix 
+        *ngIf="searchQuery"
+        (click)="searchQuery = ''; loadPartenaires()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Statut</mat-label>
+      <mat-select [(ngModel)]="selectedStatut" (selectionChange)="onStatutChange()">
+        <mat-option *ngFor="let statut of statuts" [value]="statut.value">
+          {{ statut.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Type de contrat</mat-label>
+      <mat-select [(ngModel)]="selectedType" (selectionChange)="onTypeChange()">
+        <mat-option *ngFor="let type of typesContrat" [value]="type.value">
+          {{ type.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button 
+      mat-icon-button 
+      *ngIf="hasActiveFilters()"
+      (click)="clearFilters()"
+      matTooltip="Effacer les filtres">
+      <mat-icon>filter_alt_off</mat-icon>
+    </button>
+
+    <span class="results-count">
+      {{ totalElements }} partenaire{{ totalElements > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement des partenaires...</p>
+  </div>
+
+  <!-- Tableau -->
+  <div class="table-container" *ngIf="!isLoading">
+    <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)">
+
+      <!-- Nom -->
+      <ng-container matColumnDef="nom">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Partenaire</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="partenaire-cell">
+            <div class="partenaire-avatar">
+              {{ p.nom?.charAt(0)?.toUpperCase() }}
+            </div>
+            <div class="partenaire-info">
+              <a [routerLink]="['/admin/partenaires', p.id]" class="partenaire-name">
+                {{ p.nom }}
+              </a>
+              <span class="partenaire-email">{{ p.email }}</span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Contact -->
+      <ng-container matColumnDef="contact">
+        <th mat-header-cell *matHeaderCellDef>Contact</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="contact-cell">
+            <span class="contact-name">{{ p.personneContact }}</span>
+            <span class="contact-phone">{{ p.telephone }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Type Contrat -->
+      <ng-container matColumnDef="typeContrat">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Contrat</th>
+        <td mat-cell *matCellDef="let p">
+          <span class="type-badge" [ngClass]="getTypeContratClass(p.typeContrat)">
+            {{ p.typeContrat }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Statut -->
+      <ng-container matColumnDef="statut">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+        <td mat-cell *matCellDef="let p">
+          <span class="status-badge" [ngClass]="getStatutClass(p.statut)">
+            {{ getStatutLabel(p.statut) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Limites -->
+      <ng-container matColumnDef="limites">
+        <th mat-header-cell *matHeaderCellDef>Utilisation</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="limites-cell">
+            <div class="limite-item" matTooltip="Entreprises">
+              <mat-icon>business</mat-icon>
+              <span>{{ p.nombreEntreprises || 0 }}/{{ p.maxEntreprises }}</span>
+            </div>
+            <div class="limite-item" matTooltip="Publicités actives">
+              <mat-icon>campaign</mat-icon>
+              <span>{{ p.nombrePublicitesActives || 0 }}/{{ p.maxPublicitesActives }}</span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Date fin contrat -->
+      <ng-container matColumnDef="dateFinContrat">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Échéance</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="date-cell" 
+            [class.expiring]="isExpiringSoon(p.dateFinContrat)"
+            [class.expired]="isExpired(p.dateFinContrat)">
+            <mat-icon *ngIf="isExpiringSoon(p.dateFinContrat)">warning</mat-icon>
+            <mat-icon *ngIf="isExpired(p.dateFinContrat)">error</mat-icon>
+            <span>{{ formatDate(p.dateFinContrat) }}</span>
+            <small *ngIf="isExpiringSoon(p.dateFinContrat)">
+              ({{ getDaysUntilExpiration(p.dateFinContrat) }}j)
+            </small>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="actions-cell">
+            <button mat-icon-button [routerLink]="['/admin/partenaires', p.id]" matTooltip="Voir détails">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button [routerLink]="['/admin/partenaires', p.id, 'edit']" matTooltip="Modifier">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button [matMenuTriggerFor]="actionMenu" (menuOpened)="selectedPartenaire = p">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- No data row -->
+      <tr class="mat-row no-data-row" *matNoDataRow>
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+          <div class="empty-state">
+            <mat-icon>search_off</mat-icon>
+            <p *ngIf="hasActiveFilters()">Aucun partenaire trouvé avec ces critères</p>
+            <p *ngIf="!hasActiveFilters()">Aucun partenaire enregistré</p>
+            <button mat-raised-button color="primary" routerLink="/admin/partenaires/new" *ngIf="!hasActiveFilters()">
+              <mat-icon>add</mat-icon>
+              Ajouter un partenaire
+            </button>
+            <button mat-stroked-button (click)="clearFilters()" *ngIf="hasActiveFilters()">
+              Effacer les filtres
+            </button>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Menu d'actions (en dehors du tableau) -->
+    <mat-menu #actionMenu="matMenu">
+      <ng-template matMenuContent>
+        <button mat-menu-item [routerLink]="['/admin/partenaires', selectedPartenaire?.id]">
+          <mat-icon>visibility</mat-icon>
+          <span>Voir détails</span>
+        </button>
+        <button mat-menu-item [routerLink]="['/admin/partenaires', selectedPartenaire?.id, 'edit']">
+          <mat-icon>edit</mat-icon>
+          <span>Modifier</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item 
+          *ngIf="selectedPartenaire?.statut === 'SUSPENDU' || selectedPartenaire?.statut === 'EN_ATTENTE'"
+          (click)="activerPartenaire(selectedPartenaire!)">
+          <mat-icon>check_circle</mat-icon>
+          <span>Activer</span>
+        </button>
+        <button mat-menu-item 
+          *ngIf="selectedPartenaire?.statut === 'ACTIF'"
+          (click)="suspendrePartenaire(selectedPartenaire!)">
+          <mat-icon>pause_circle</mat-icon>
+          <span>Suspendre</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="deletePartenaire(selectedPartenaire!)" class="delete-action">
+          <mat-icon>delete</mat-icon>
+          <span>Supprimer</span>
+        </button>
+      </ng-template>
+    </mat-menu>
+
+    <!-- Pagination -->
+    <mat-paginator 
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageIndex]="pageIndex"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="onPageChange($event)"
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
+</div>

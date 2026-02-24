@@ -29,6 +29,10 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { MatBottomSheet, MatBottomSheetModule, MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
+import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
+import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
+import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
+import { GroupeService } from '../../../../core/services/groupe.service';
 
 @Component({
   selector: 'app-objectifs',
@@ -55,7 +59,10 @@ import { TranslateModule } from '@ngx-translate/core';
     MatListModule,
     MatBottomSheetModule,
     MatTooltipModule,
-    TranslateModule
+    TranslateModule,
+        PubliciteBannerComponent,
+        PubliciteAffichageComponent,
+        PubliciteFeedComponent
   ],
   animations: [
     trigger('slideDown', [
@@ -79,6 +86,7 @@ export class ObjectifsComponent implements OnInit {
   isLoading = true;
   showForm = false;
   editingObjectif: Objectif | null = null;
+   userVille: string | undefined;
 
   constructor(
     private fb: FormBuilder,
@@ -88,7 +96,8 @@ export class ObjectifsComponent implements OnInit {
     private authService: AuthService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private bottomSheet: MatBottomSheet
+    private bottomSheet: MatBottomSheet,
+    private groupeService: GroupeService,
   ) {
     this.objectifForm = this.fb.group({
       type: ['', Validators.required],
@@ -129,21 +138,33 @@ export class ObjectifsComponent implements OnInit {
     );
   }
 
-  loadObjectifs(): void {
-    this.isLoading = true;
-    this.objectifsService.getObjectifsByMembre(this.membreId).subscribe(
-      data => {
-        this.objectifs = data;
-        this.calculateProgress();
-        this.isLoading = false;
-      },
-      error => {
-        console.error('Erreur lors du chargement des objectifs', error);
-        this.isLoading = false;
-      }
-    );
-  }
+ loadObjectifs(): void {
+  const userId = this.authService.getUserId();
+  this.isLoading = true;
 
+  // On lance les deux appels en parallèle
+  forkJoin({
+    objectifs: this.objectifsService.getObjectifsByMembre(this.membreId),
+    groupe: this.groupeService.getGroupe(userId)
+  }).subscribe({
+    next: ({ objectifs, groupe }) => {
+      // 1. Mise à jour des objectifs
+      this.objectifs = objectifs || [];
+      this.calculateProgress();
+
+      // 2. Mise à jour de la ville depuis le groupe
+      if (groupe && groupe.ville) {
+        this.userVille = groupe.ville.nom;
+      }
+
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement des objectifs ou du groupe', error);
+      this.isLoading = false;
+    }
+  });
+}
   calculateProgress(): void {
     const presenceObservables = this.objectifs.map(o =>
       this.presenceService.getPresencesByMembreId(this.membreId)

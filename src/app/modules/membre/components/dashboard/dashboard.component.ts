@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Subject } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 // Angular Material
@@ -44,6 +44,9 @@ import { MemberStats, MonthlyStats } from '../../../../core/models/stats.model';
 // i18n
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
+import { GroupeService } from '../../../../core/services/groupe.service';
+import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
 
 // Register Chart.js components
 Chart.register(
@@ -106,7 +109,9 @@ type FilterMode = 'season' | 'dateRange';
     // Charts
     BaseChartDirective,
     // i18n
-    TranslateModule
+    TranslateModule,
+    PubliciteFeedComponent,
+    PubliciteBannerComponent
   ],
     animations: [
     trigger('fadeSlideIn', [
@@ -236,13 +241,15 @@ export class MDashboardComponent implements OnInit, OnDestroy {
 
   donutChartType: ChartType = 'doughnut';
   barChartType: ChartType = 'bar';
+  userVille: any;
 
   constructor(
     private dashboardService: StatsService,
     private financesService: FinancesService,
     private authService: AuthService,
     private fb: FormBuilder,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private groupeService: GroupeService
   ) {
     this.dateRangeForm = this.fb.group({
       start: [null],
@@ -270,22 +277,28 @@ export class MDashboardComponent implements OnInit, OnDestroy {
   /**
    * Charge la liste des exercices (saisons) du groupe
    */
-  private loadExercices(): void {
-    this.isLoadingExercices = true;
-    const groupeId = this.authService.getGroupe();
+private loadExercices(): void {
+  this.isLoadingExercices = true;
+  const groupeId = this.authService.getGroupe();
+  const userId = this.authService.getUserId();
 
-    if (!groupeId) {
-      console.error('Groupe ID not found');
-      this.isLoadingExercices = false;
-      this.isLoading = false;
-      return;
-    }
+  if (!groupeId) {
+    console.error('Groupe ID not found');
+    this.isLoadingExercices = false;
+    this.isLoading = false;
+    return;
+  }
 
-    this.financesService.getExercicesByGroupe(groupeId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (exercices) => {
-          // Trier par date de début décroissante (plus récent en premier)
+  // Utilisation de forkJoin pour lancer les deux appels en parallèle
+  forkJoin({
+    exercices: this.financesService.getExercicesByGroupe(groupeId),
+    groupe: this.groupeService.getGroupe(userId)
+  })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ({ exercices, groupe }) => { // Déstructuration du résultat
+        // 1. Gérer les exercices
+        if (exercices) {
           this.exercices = exercices.sort((a, b) => 
             new Date(b.dateDebut).getTime() - new Date(a.dateDebut).getTime()
           );
@@ -293,27 +306,31 @@ export class MDashboardComponent implements OnInit, OnDestroy {
           // Trouver l'exercice actif (non clôturé)
           this.currentExercice = this.exercices.find(e => e.actif && !e.cloture) || null;
           
-          // Sélectionner l'exercice actif par défaut
+          // Sélectionner l'exercice actif par défaut ou le plus récent
           if (this.currentExercice) {
             this.selectedExerciceId = this.currentExercice.id;
           } else if (this.exercices.length > 0) {
-            // Sinon, prendre le plus récent
             this.selectedExerciceId = this.exercices[0].id;
           }
-
-          this.isLoadingExercices = false;
-
-          // Charger les stats avec l'exercice sélectionné
-          this.loadStatsForSelectedExercice();
-          this.loadAvailableMonths();
-        },
-        error: (err) => {
-          console.error('Erreur lors du chargement des exercices:', err);
-          this.isLoadingExercices = false;
-          this.isLoading = false;
         }
-      });
-  }
+
+        // 2. Gérer les infos de ville du groupe
+        if (groupe && groupe.ville) {
+          this.userVille = groupe.ville.nom;
+        }
+
+        // 3. Finalisation du chargement
+        this.isLoadingExercices = false;
+        this.loadStatsForSelectedExercice();
+        this.loadAvailableMonths();
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des données:', err);
+        this.isLoadingExercices = false;
+        this.isLoading = false;
+      }
+    });
+}
 
   // ============ GESTION DU MODE DE FILTRAGE ============
 

@@ -59,6 +59,7 @@ export interface TypeContribution {
   actif: boolean;
   caisse?: Caisse;
   exercice?: Exercice;
+  delaiContribution: Date
 }
 
 export type FrequenceContribution = 'UNIQUE' | 'PAR_MATCH' | 'HEBDOMADAIRE' | 'MENSUELLE' | 'TRIMESTRIELLE' | 'SEMESTRIELLE' | 'ANNUELLE' | 'PONCTUELLE';
@@ -278,6 +279,12 @@ export class FinancesService {
     return this.getTypesContributionByExercice(exerciceId);
   }
 
+    getMouvementsByContribution(contributionId: number): Observable<MouvementCaisse[]> {
+    return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/${contributionId}/historique/contrib`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   /**
    * GET /api/exercices/{exerciceId}
    * Récupérer un exercice par son ID
@@ -394,9 +401,12 @@ export class FinancesService {
    */
   getHistoriqueCaisse(caisseId: number, debut: string, fin: string): Observable<MouvementCaisse[]> {
     const params = new HttpParams()
-      .set('debut', debut)
-      .set('fin', fin);
     return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/${caisseId}/historique`, { params });
+  }
+
+    getHistoriqueContrib(contribId: number): Observable<MouvementCaisse[]> {
+    
+    return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/${contribId}/historique/contrib`);
   }
 
   /**
@@ -423,6 +433,7 @@ export class FinancesService {
    * Créer un type de contribution
    */
   creerTypeContribution(data: any): Observable<TypeContribution> {
+        console.log(data)
     return this.http.post<TypeContribution>(`${this.baseUrl}/types-contributions`, data);
   }
 
@@ -430,7 +441,7 @@ export class FinancesService {
    * GET /api/types-contributions/exercice/{exerciceId}
    * Récupérer les types de contribution d'un exercice
    */
-  getTypesContributionByExercice(exerciceId: number): Observable<TypeContribution[]> {
+  getTypesContributionByExercice(exerciceId: number | undefined): Observable<TypeContribution[]> {
     return this.http.get<TypeContribution[]>(`${this.baseUrl}/types-contributions/exercice/${exerciceId}`);
   }
 
@@ -439,6 +450,7 @@ export class FinancesService {
    * Mettre à jour un type de contribution
    */
   updateTypeContribution(id: number, data: any): Observable<TypeContribution> {
+    console.log(data)
     return this.http.put<TypeContribution>(`${this.baseUrl}/types-contributions/${id}`, data);
   }
 

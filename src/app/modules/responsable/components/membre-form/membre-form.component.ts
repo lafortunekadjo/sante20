@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -168,7 +168,8 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     private snackBar: MatSnackBar,
     private roleCustomService: RoleCustomService,
     private authService: AuthService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -190,12 +191,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   }
 
 compareUsers(u1: any, u2: any): boolean {
-  // Gère les cas null/undefined
-  if (!u1 || !u2) return u1 === u2;
-  // Compare uniquement par ID, peu importe la complexité de l'objet
-  const id1 = typeof u1 === 'object' ? u1.id : u1;
-  const id2 = typeof u2 === 'object' ? u2.id : u2;
-  return id1 === id2;
+  return u1 && u2 ? u1.id === u2.id : u1 === u2;
 }
 
   // ===== MÉTHODES UTILITAIRES =====
@@ -349,17 +345,17 @@ compareUsers(u1: any, u2: any): boolean {
         const membreUserIds = new Set(
           membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []
         );
-        
         // this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
         this.equipes = equipes || [];
         this.editingRows = new Array(membres?.length || 0).fill(false);
-        
+        this.users = users || [];
         if (this.groupe) {
           this.newMembre.groupe = this.groupe;
         }
-        
+       
         this.applyFilters();
         this.isLoading = false;
+         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);

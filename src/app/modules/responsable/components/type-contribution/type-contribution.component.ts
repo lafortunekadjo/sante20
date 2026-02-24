@@ -31,6 +31,7 @@ import {
 } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 
 @Component({
   selector: 'app-type-contribution',
@@ -55,7 +56,8 @@ import { ConfirmationDialogComponent } from '../../../../shared/components/confi
     MatSnackBarModule,
     MatTooltipModule,
     MatChipsModule,
-    TranslateModule
+    TranslateModule,
+    MatDatepickerModule
   ],
   templateUrl: './type-contribution.component.html',
   styleUrl: './type-contribution.component.scss'
@@ -114,6 +116,7 @@ export class TypeContributionComponent implements OnInit {
     this.groupeId = this.authService.getGroupe();
     if (this.groupeId) {
       this.loadData();
+      console.log(this.typesContributions)
     } else {
       this.isLoading = false;
     }
@@ -133,7 +136,9 @@ export class TypeContributionComponent implements OnInit {
       lieEvenement: [false],
       majStatutMembre: [false],
       champStatutMembre: [null],
-      reportable: [true]
+      reportable: [true],
+      actif: [true],
+      delai: []
     });
   }
 
@@ -179,6 +184,7 @@ export class TypeContributionComponent implements OnInit {
   }
 
   editType(type: TypeContribution): void {
+    console.log(type)
     this.editingId = type.id!;
     this.showCreateForm = true;
     this.typeForm.patchValue({
@@ -194,7 +200,10 @@ export class TypeContributionComponent implements OnInit {
       lieEvenement: type.lieEvenement,
       majStatutMembre: type.majStatutMembre,
       champStatutMembre: type.champStatutMembre,
-      reportable: type.reportable
+      reportable: type.reportable,
+      delai: type.delaiContribution,
+      actif: type.actif
+      
     });
   }
 
@@ -204,9 +213,16 @@ export class TypeContributionComponent implements OnInit {
     this.isSaving = true;
     const formData = this.typeForm.value;
 
+    if (formData.delai) {
+    const d = new Date(formData.delai);
+    formData.delai = d.toISOString().split('T')[0];
+  }
+
     const data = {
       ...formData,
-      exerciceId: this.exerciceActif.id
+      exerciceId: this.exerciceActif.id,
+      
+      delaiContribution: formData.delai
     };
 
     const request = this.editingId

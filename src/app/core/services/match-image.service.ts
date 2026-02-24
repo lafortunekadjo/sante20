@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { environment } from '../../environment';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { FileOpener } from '@capacitor-community/file-opener';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 
 @Injectable({
   providedIn: 'root'
@@ -20,63 +24,109 @@ export class MatchImageService {
    * @param matchId ID du match
    * @param format 'full' ou 'story'
    */
-  downloadMatchImage(matchId: number, format: 'full' | 'story' = 'full'): void {
-    this.snackBar.open('Génération de l\'image...', '', { duration: 2000 });
+ downloadMatchImage(matchId: number, format: 'full' | 'story' = 'full'): void {
+  this.snackBar.open('Génération de l\'image...', '', { duration: 2000 });
 
-    this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
-      responseType: 'blob'
-    }).subscribe({
-      next: (blob) => {
-        // Créer un lien de téléchargement
+  this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
+    responseType: 'blob'
+  }).subscribe({
+    next: async (blob) => {
+      const fileName = `feuille-match-${matchId}-${format}.png`;
+
+      if (Capacitor.isNativePlatform()) {
+        // --- LOGIQUE MOBILE (Android/APK) ---
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64data = reader.result as string;
+
+          try {
+            // 1. Enregistrer le fichier
+            const savedFile = await Filesystem.writeFile({
+              path: fileName,
+              data: base64data,
+              directory: Directory.Documents,
+              recursive: true
+            });
+
+            // 2. Ouvrir le fichier pour que l'utilisateur puisse le voir/partager
+            await FileOpener.open({
+              filePath: savedFile.uri,
+              contentType: 'image/png'
+            });
+
+            this.snackBar.open('Image enregistrée dans Documents', '✓', { duration: 3000 });
+          } catch (error) {
+            console.error('Erreur stockage mobile:', error);
+            this.snackBar.open('Erreur d\'enregistrement sur le téléphone', '✕', { duration: 3000 });
+          }
+        };
+      } else {
+        // --- LOGIQUE WEB (Navigateur) ---
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `feuille-match-${matchId}-${format}.png`;
+        link.download = fileName;
         link.click();
-        
-        // Nettoyer
         window.URL.revokeObjectURL(url);
-        
+
         this.snackBar.open('Image téléchargée !', '✓', { 
           duration: 3000,
           panelClass: 'snackbar-success'
         });
-      },
-      error: (err) => {
-        console.error('Erreur téléchargement image:', err);
-        this.snackBar.open('Erreur lors du téléchargement', '✕', { 
-          duration: 3000,
-          panelClass: 'snackbar-error'
-        });
       }
-    });
-  }
-
+    },
+    error: (err) => {
+      console.error('Erreur téléchargement image:', err);
+      this.snackBar.open('Erreur lors du téléchargement', '✕', { 
+        duration: 3000,
+        panelClass: 'snackbar-error'
+      });
+    }
+  });
+}
   /**
    * Partager l'image (mobile)
    */
   async shareMatchImage(matchId: number, format: 'full' | 'story' = 'full'): Promise<void> {
-    // Vérifier si Web Share API est disponible
-    if (!navigator.share) {
-      this.snackBar.open('Partage non disponible, téléchargement...', '', { duration: 2000 });
-      this.downloadMatchImage(matchId, format);
-      return;
-    }
+  try {
+    this.snackBar.open('Préparation du partage...', '', { duration: 2000 });
 
-    try {
-      this.snackBar.open('Préparation du partage...', '', { duration: 2000 });
+    // 1. Récupérer l'image depuis ton API
+    const blob = await this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
+      responseType: 'blob'
+    }).toPromise();
 
-      // Récupérer l'image comme blob
-      const blob = await this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
-        responseType: 'blob'
-      }).toPromise();
+    if (!blob) throw new Error('Erreur récupération image');
 
-      if (!blob) throw new Error('Erreur récupération image');
+    const fileName = `match-${matchId}-${format}.png`;
 
-      // Créer un fichier à partir du blob
-      const file = new File([blob], `match-${matchId}.png`, { type: 'image/png' });
+    // 2. Logique MOBILE (Capacitor)
+    if (Capacitor.isNativePlatform()) {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
 
-      // Vérifier si on peut partager des fichiers
+        // On doit d'abord enregistrer le fichier temporairement pour pouvoir le partager
+        const savedFile = await Filesystem.writeFile({
+          path: `tmp_${fileName}`, // préfixe tmp pour indiquer un fichier temporaire
+          data: base64data,
+          directory: Directory.Cache // On utilise le dossier Cache pour ne pas encombrer le téléphone
+        });
+
+        // Appel de la feuille de partage native
+        await Share.share({
+          title: 'Feuille de match',
+          text: 'Voici le résumé du match !',
+          url: savedFile.uri, // Capacitor utilise l'URI interne du fichier enregistré
+          dialogTitle: 'Partager via',
+        });
+      };
+    } 
+    // 3. Logique WEB (Navigator Share API)
+    else if (navigator.share) {
+      const file = new File([blob], fileName, { type: 'image/png' });
       const shareData: ShareData = {
         title: 'Feuille de match',
         files: [file]
@@ -84,19 +134,22 @@ export class MatchImageService {
 
       if (navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
-        this.snackBar.open('Partagé !', '✓', { duration: 2000 });
       } else {
-        // Fallback: téléchargement
         this.downloadMatchImage(matchId, format);
       }
+    } 
+    // 4. Fallback (Téléchargement si rien n'est dispo)
+    else {
+      this.downloadMatchImage(matchId, format);
+    }
 
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Erreur partage:', error);
-        this.snackBar.open('Erreur lors du partage', '✕', { duration: 3000 });
-      }
+  } catch (error: any) {
+    if (error.name !== 'AbortError') {
+      console.error('Erreur partage:', error);
+      this.snackBar.open('Erreur lors du partage', '✕', { duration: 3000 });
     }
   }
+}
 
   /**
    * Obtenir l'URL de l'image (pour affichage preview)

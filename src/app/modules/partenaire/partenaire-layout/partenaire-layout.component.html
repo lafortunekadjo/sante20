@@ -1,0 +1,238 @@
+<!-- Layout Espace Partenaire My2-0 -->
+<div class="partenaire-container">
+  
+  <!-- Navbar Partenaire -->
+  <header class="partenaire-navbar">
+    <div class="navbar-content">
+      
+      <!-- Logo et titre -->
+      <div class="navbar-brand">
+        <button 
+          mat-icon-button 
+          class="menu-toggle"
+          (click)="toggleSidebar()"
+          [class.active]="sidebarOpen">
+          <mat-icon>{{ sidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
+        </button>
+        
+        <a routerLink="/partenaire/dashboard" class="brand-link">
+          <div class="brand-logo">
+            <mat-icon>handshake</mat-icon>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">My2-0</span>
+            <span class="brand-subtitle">{{ 'partenaire.nav.gestion' | translate }}</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Spacer -->
+      <div class="navbar-spacer"></div>
+
+      <!-- Actions navbar -->
+      <div class="navbar-actions">
+        
+        <!-- Statut contrat -->
+        <div 
+          class="contract-status"
+          [ngClass]="getContractStatusClass()"
+          *ngIf="partenaire"
+          [matTooltip]="partenaire.dateFinContrat ? ('partenaire.dashboard.contract.daysRemaining' | translate) + ': ' + getDaysRemaining() : ''">
+          <mat-icon>{{ getDaysRemaining() > 30 ? 'verified' : 'warning' }}</mat-icon>
+          <span class="status-text" *ngIf="!isMobile">
+            {{ getDaysRemaining() > 0 
+              ? (getDaysRemaining() + ' ' + ('partenaire.dashboard.contract.daysRemaining' | translate))
+              : ('partenaire.dashboard.contract.expired' | translate) }}
+          </span>
+        </div>
+
+        <!-- Sélecteur de langue -->
+        <button mat-icon-button [matMenuTriggerFor]="langMenu" matTooltip="Langue">
+          <mat-icon>language</mat-icon>
+        </button>
+        <mat-menu #langMenu="matMenu">
+          <button mat-menu-item (click)="switchLanguage('fr')" [class.active]="currentLang === 'fr'">
+            <span class="flag-icon">🇫🇷</span>
+            <span>Français</span>
+            <mat-icon *ngIf="currentLang === 'fr'">check</mat-icon>
+          </button>
+          <button mat-menu-item (click)="switchLanguage('en')" [class.active]="currentLang === 'en'">
+            <span class="flag-icon">🇬🇧</span>
+            <span>English</span>
+            <mat-icon *ngIf="currentLang === 'en'">check</mat-icon>
+          </button>
+        </mat-menu>
+
+        <!-- Toggle thème -->
+        <button 
+          mat-icon-button 
+        
+          [matTooltip]="isDarkTheme ? 'Mode clair' : 'Mode sombre'">
+          <mat-icon>{{ isDarkTheme ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+        <!-- Aide -->
+        <button mat-icon-button (click)="openHelp()" matTooltip="Aide">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+
+        <!-- Menu utilisateur -->
+        <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-menu-trigger">
+          <div class="user-avatar-small">
+            <span>{{ getInitials() }}</span>
+          </div>
+        </button>
+        <mat-menu #userMenu="matMenu" class="user-dropdown-menu">
+          <div class="user-menu-header">
+            <div class="user-avatar-large">
+              <span>{{ getInitials() }}</span>
+            </div>
+            <div class="user-info-menu">
+              <span class="user-name">{{ user?.prenom }} {{ user?.nom }}</span>
+              <span class="user-email">{{ user?.email }}</span>
+              <span class="user-role-badge">{{ userRole }}</span>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <button mat-menu-item routerLink="/partenaire/parametres">
+            <mat-icon>settings</mat-icon>
+            <span>{{ 'partenaire.nav.parametres' | translate }}</span>
+          </button>
+          <button mat-menu-item (click)="openHelp()">
+            <mat-icon>help_outline</mat-icon>
+            <span>{{ 'partenaire.nav.aide' | translate }}</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="logout()" class="logout-item">
+            <mat-icon>logout</mat-icon>
+            <span>Déconnexion</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout principal -->
+  <div class="main-layout">
+    
+    <!-- Overlay mobile -->
+    <div 
+      class="sidebar-overlay" 
+      [class.active]="sidebarOpen && isMobile"
+      (click)="closeSidebar()">
+    </div>
+
+    <!-- Sidebar -->
+    <aside 
+      class="sidebar"
+      [class.open]="sidebarOpen"
+      [class.mobile]="isMobile">
+
+      <!-- Info Partenaire -->
+      <div class="partenaire-info" *ngIf="partenaire">
+        <div class="partenaire-logo">
+          <mat-icon>business</mat-icon>
+        </div>
+        <div class="partenaire-details">
+          <span class="partenaire-name">{{ partenaire.nom }}</span>
+          <span class="partenaire-type">{{ partenaire.typeContrat }}</span>
+        </div>
+      </div>
+
+      <mat-divider class="header-divider"></mat-divider>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav" [class.loading]="isLoading">
+        
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="sidebar-loading">
+          <mat-spinner diameter="32"></mat-spinner>
+          <span>{{ 'partenaire.common.loading' | translate }}</span>
+        </div>
+
+        <!-- Menu par catégorie -->
+        <ng-container *ngIf="!isLoading">
+          <div 
+            class="nav-section" 
+            *ngFor="let category of menuCategories; trackBy: trackByCategory">
+            
+            <div class="section-title">
+              <mat-icon>{{ category.icon }}</mat-icon>
+              <span>{{ category.label | translate }}</span>
+            </div>
+
+            <a 
+              *ngFor="let item of category.items; trackBy: trackByItem"
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: item.id === 'dashboard' }"
+              (click)="onNavClick(item)"
+              class="nav-item"
+              [class.has-badge]="item.badge">
+              
+              <mat-icon>{{ item.icon }}</mat-icon>
+              <span>{{ item.label | translate }}</span>
+              
+              <!-- Badge notification -->
+              <span 
+                *ngIf="item.badge" 
+                class="nav-badge"
+                [class.warn]="item.badgeColor === 'warn'">
+                {{ item.badge }}
+              </span>
+              
+              <div class="nav-indicator"></div>
+            </a>
+
+            <mat-divider class="section-divider"></mat-divider>
+          </div>
+        </ng-container>
+      </nav>
+
+      <!-- Footer sidebar -->
+      <div class="sidebar-footer">
+        <mat-divider></mat-divider>
+        
+        <!-- Utilisateur connecté -->
+        <div class="user-info" (click)="openProfile()">
+          <div class="user-avatar">
+            <span>{{ getInitials() }}</span>
+            <div class="status-indicator online"></div>
+          </div>
+          <div class="user-details">
+            <span class="user-name">{{ user?.prenom }} {{ user?.nom }}</span>
+            <span class="user-role">{{ userRole }}</span>
+          </div>
+          <mat-icon class="edit-icon">chevron_right</mat-icon>
+        </div>
+
+        <!-- Version app -->
+        <div class="app-info">
+          <div class="version-info">
+            <span class="app-version">My2-0 Partenaires v1.0</span>
+          </div>
+          <div class="footer-links">
+            <button mat-icon-button (click)="openHelp()" matTooltip="Aide">
+              <mat-icon>help_outline</mat-icon>
+            </button>
+            <button mat-icon-button routerLink="/partenaire/parametres" matTooltip="Paramètres">
+              <mat-icon>settings</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="copyright">
+          © {{ getCurrentYear() }} My2-0. Tous droits réservés.
+        </div>
+      </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="main-content">
+      <div class="page-content">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+</div>

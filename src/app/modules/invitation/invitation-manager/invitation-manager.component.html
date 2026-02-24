@@ -1,0 +1,223 @@
+<!-- ============================================================
+     MY2-0 - GESTION DES INVITATIONS (RESPONSABLE)
+     Template HTML - invitation-manager.component.html
+     ============================================================ -->
+
+<div class="invitation-manager">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1>
+          <mat-icon>link</mat-icon>
+          Invitations
+        </h1>
+        <p>Invitez des membres à rejoindre votre groupe</p>
+      </div>
+      
+      <!-- Stats rapides -->
+      <div class="header-stats" *ngIf="stats">
+        <div class="stat-item" [class.highlight]="stats.totalDemandesEnAttente > 0">
+          <span class="stat-number">{{ stats.totalDemandesEnAttente }}</span>
+          <span class="stat-label">En attente</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalMembresViaInvitation }}</span>
+          <span class="stat-label">Via invitation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Contenu -->
+  <div class="content" *ngIf="!isLoading">
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="activeTab" class="custom-tabs">
+      
+      <!-- ===== TAB 1: LIEN D'INVITATION ===== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>link</mat-icon>
+          <span>Lien d'invitation</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Card principale -->
+          <mat-card class="invitation-card">
+            <mat-card-content>
+              
+              <!-- Statut de l'invitation -->
+              <div class="invitation-status">
+                <div class="status-badge" [class.active]="invitation?.isValide" [class.inactive]="!invitation?.isValide">
+                  <mat-icon>{{ invitation?.isValide ? 'check_circle' : 'cancel' }}</mat-icon>
+                  <span>{{ invitation?.isValide ? 'Active' : 'Inactive' }}</span>
+                </div>
+                <span class="usage-count" *ngIf="invitation">
+                  {{ invitation.nombreUtilisations }} utilisation{{ invitation.nombreUtilisations > 1 ? 's' : '' }}
+                </span>
+              </div>
+
+              <!-- Code -->
+              <div class="code-section">
+                <label>Code d'invitation</label>
+                <div class="code-display">
+                  <span class="code-text">{{ invitation?.code }}</span>
+                  <button mat-icon-button matTooltip="Copier le code" (click)="copierCode()">
+                    <mat-icon>content_copy</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Lien -->
+              <div class="link-section">
+                <label>Lien de partage</label>
+                <div class="link-display">
+                  <input type="text" [value]="invitation?.lienComplet" readonly>
+                  <button mat-icon-button matTooltip="Copier le lien" (click)="copierLien()" [disabled]="isCopying">
+                    <mat-icon>{{ isCopying ? 'check' : 'content_copy' }}</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Actions de partage -->
+              <div class="share-actions">
+                <button mat-flat-button color="primary" (click)="partagerWhatsApp()" class="whatsapp-btn">
+                  <mat-icon>chat</mat-icon>
+                  Partager sur WhatsApp
+                </button>
+                <button mat-stroked-button (click)="partagerNatif()">
+                  <mat-icon>share</mat-icon>
+                  Autres options
+                </button>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              <!-- Actions de gestion -->
+              <div class="management-actions">
+                <button mat-button color="warn" (click)="regenererCode()" [disabled]="isRegenerating">
+                  <mat-spinner diameter="18" *ngIf="isRegenerating"></mat-spinner>
+                  <mat-icon *ngIf="!isRegenerating">refresh</mat-icon>
+                  Régénérer le code
+                </button>
+              </div>
+
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Instructions -->
+          <mat-card class="instructions-card">
+            <mat-card-content>
+              <h3>
+                <mat-icon>info</mat-icon>
+                Comment ça marche ?
+              </h3>
+              <ol>
+                <li>
+                  <strong>Partagez le lien</strong> sur votre groupe WhatsApp ou par SMS
+                </li>
+                <li>
+                  <strong>Le membre clique</strong> et crée son compte avec ses informations
+                </li>
+                <li>
+                  <strong>Vous recevez une notification</strong> de demande d'adhésion
+                </li>
+                <li>
+                  <strong>Validez la demande</strong> et le membre rejoint automatiquement le groupe
+                </li>
+              </ol>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- ===== TAB 2: DEMANDES EN ATTENTE ===== -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon [matBadge]="demandesEnAttente.length" 
+                    [matBadgeHidden]="demandesEnAttente.length === 0"
+                    matBadgeColor="warn"
+                    matBadgeSize="small">
+            person_add
+          </mat-icon>
+          <span>Demandes</span>
+        </ng-template>
+
+        <div class="tab-content">
+          
+          <!-- Liste des demandes -->
+          <div class="demandes-list" *ngIf="demandesEnAttente.length > 0">
+            
+            <mat-card class="demande-card" *ngFor="let demande of demandesEnAttente">
+              <mat-card-content>
+                <div class="demande-row">
+                  
+                  <!-- Avatar -->
+                  <div class="demande-avatar">
+                    <img *ngIf="demande.photoUrl" [src]="demande.photoUrl" [alt]="demande.prenom">
+                    <div class="avatar-placeholder" *ngIf="!demande.photoUrl">
+                      {{ getInitials(demande.prenom, demande.nom) }}
+                    </div>
+                  </div>
+
+                  <!-- Infos -->
+                  <div class="demande-info">
+                    <h4>{{ demande.prenom }} {{ demande.nom }}</h4>
+                    <p class="demande-meta">
+                      <span><mat-icon>email</mat-icon> {{ demande.email }}</span>
+                      <span *ngIf="demande.telephone"><mat-icon>phone</mat-icon> {{ demande.telephone }}</span>
+                    </p>
+                    <p class="demande-time">
+                      <mat-icon>schedule</mat-icon>
+                      {{ getTimeAgo(demande.createdAt) }}
+                    </p>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="demande-actions">
+                    <button mat-flat-button color="primary" 
+                            (click)="accepterDemande(demande)"
+                            [disabled]="isProcessing[demande.id]">
+                      <mat-spinner diameter="18" *ngIf="isProcessing[demande.id]"></mat-spinner>
+                      <mat-icon *ngIf="!isProcessing[demande.id]">check</mat-icon>
+                      Accepter
+                    </button>
+                    <button mat-stroked-button color="warn" 
+                            (click)="refuserDemande(demande)"
+                            [disabled]="isProcessing[demande.id]">
+                      <mat-icon>close</mat-icon>
+                      Refuser
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Message optionnel -->
+                <div class="demande-message" *ngIf="demande.message">
+                  <mat-icon>format_quote</mat-icon>
+                  <p>{{ demande.message }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- État vide -->
+          <div class="empty-state" *ngIf="demandesEnAttente.length === 0">
+            <div class="empty-icon">
+              <mat-icon>inbox</mat-icon>
+            </div>
+            <h3>Aucune demande en attente</h3>
+            <p>Les nouvelles demandes d'adhésion apparaîtront ici</p>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

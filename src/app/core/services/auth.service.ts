@@ -624,6 +624,13 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     return roles.some(role => rolesResponsable.includes(role));
   }
 
+     
+  isPartenaire(): boolean {
+    const roles = this.getRoles();
+    const rolesResponsable = ['PARTENAIRE'];
+    return roles.some(role => rolesResponsable.includes(role));
+  }
+
     isCandidat(): boolean {
     const roles = this.getRoles();
     const rolesResponsable = ['CANDIDAT'];

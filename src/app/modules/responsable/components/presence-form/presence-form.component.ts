@@ -32,6 +32,9 @@ import html2canvas from 'html2canvas'
 import { MatchImageService } from '../../../../core/services/match-image.service';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { FileOpener } from '@capacitor-community/file-opener';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-presence-form',
@@ -1022,33 +1025,33 @@ async downloadMatchSheetAsPdf(): Promise<void> {
   const element = document.getElementById('print-section');
   if (!element) return;
 
-  this.isLoading = true; // Activer un spinner pour bloquer les clics multiples
+  this.isLoading = true; 
   
   try {
-    // 1. On prépare l'élément
+    // 1. Préparation de l'élément (identique à ton code)
     element.style.display = 'block';
     element.style.position = 'absolute';
     element.style.left = '-9999px';
     element.style.width = '210mm';
 
-    // On attend un peu pour laisser le processeur respirer avant le gros calcul
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // 2. Capture de l'élément
     const canvas = await html2canvas(element, {
-      scale: 2, // 2 est le compromis idéal. 3 est trop lourd pour les mobiles.
+      scale: 2, 
       useCORS: true,
       logging: false,
       allowTaint: true,
       backgroundColor: '#ffffff'
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.7); // JPEG à 70% est BEAUCOUP plus léger que PNG
+    const imgData = canvas.toDataURL('image/jpeg', 0.7);
 
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
-      compress: true // Active la compression interne du PDF
+      compress: true 
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -1057,15 +1060,50 @@ async downloadMatchSheetAsPdf(): Promise<void> {
 
     pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
     
-    pdf.save(`Match_${Date.now()}.pdf`);
+    const fileName = `Match_${Date.now()}.pdf`;
 
-    // 2. NETTOYAGE CRUCIAL POUR LA MÉMOIRE
+    // 3. DISTINCTION MOBILE VS WEB
+    if (Capacitor.isNativePlatform()) {
+      // --- LOGIQUE MOBILE (Android/APK) ---
+      
+      // On récupère le PDF en base64 (on enlève le préfixe data:application/pdf;base64,)
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+      try {
+        // Enregistrement dans le dossier Documents
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: pdfBase64,
+          directory: Directory.Documents,
+          recursive: true
+        });
+
+        // Ouverture immédiate pour que l'utilisateur voie son fichier
+        await FileOpener.open({
+          filePath: savedFile.uri,
+          contentType: 'application/pdf'
+        });
+
+        this.showSnackbar('PDF enregistré dans vos documents', 'success');
+      } catch (err) {
+        console.error('Erreur stockage Android:', err);
+        this.showSnackbar('Erreur lors de l\'enregistrement sur le téléphone', 'error');
+      }
+
+    } else {
+      // --- LOGIQUE WEB CLASSIQUE ---
+      pdf.save(fileName);
+      this.showSnackbar('Téléchargement lancé', 'success');
+    }
+
+    // 4. NETTOYAGE (Crucial)
     element.style.display = 'none';
     canvas.width = 0;
-    canvas.height = 0; // Libère la mémoire du canvas immédiatement
+    canvas.height = 0;
 
   } catch (error) {
     console.error('Erreur PDF:', error);
+    this.showSnackbar('Erreur lors de la génération du PDF', 'error');
   } finally {
     this.isLoading = false;
   }
@@ -1523,24 +1561,21 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
   this.isGeneratingPdf = true;
   this.showSnackbar('Génération du PDF...', 'success');
 
-  setTimeout(() => {
+  // Petit délai pour laisser l'UI respirer
+  setTimeout(async () => {
     try {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
       let y = margin;
 
-      // ===== HEADER avec dégradé des deux couleurs d'équipes =====
-      // Fond principal avec couleur équipe 1
+      // ===== HEADER (Dégradé couleurs équipes) =====
       doc.setFillColor(this.team1Color[0], this.team1Color[1], this.team1Color[2]);
       doc.rect(0, 0, pageWidth / 2, 28, 'F');
       
-      // Deuxième moitié avec couleur équipe 2
       doc.setFillColor(this.team2Color[0], this.team2Color[1], this.team2Color[2]);
       doc.rect(pageWidth / 2, 0, pageWidth / 2, 28, 'F');
       
-      // Titre centré
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
@@ -1570,24 +1605,19 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
 
       y += 8;
 
-      // ===== TABLEAU DE PRÉSENCE avec couleurs dynamiques =====
+      // ===== TABLEAU =====
       const tableData: any[][] = [];
-      
       this.dataSource.data.forEach((p, i) => {
         tableData.push([
           (i + 1).toString(),
           this.getMembreName(p),
           p.equipeMatch || '',
-          '' // Signature vide
+          ''
         ]);
       });
 
-      // Ajouter des lignes vides
-      for (let i = 0; i < 5; i++) {
-        tableData.push(['', '', '', '']);
-      }
+      for (let i = 0; i < 5; i++) { tableData.push(['', '', '', '']); }
 
-      // Couleurs pour le header du tableau (mélange des deux équipes)
       const headerColor = [
         Math.round((this.team1Color[0] + this.team2Color[0]) / 2),
         Math.round((this.team1Color[1] + this.team2Color[1]) / 2),
@@ -1599,83 +1629,72 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
         head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
         body: tableData,
         theme: 'grid',
-        headStyles: {
-          fillColor: headerColor,  // ✅ Couleur dynamique
-          textColor: 255,
-          fontStyle: 'bold',
-          fontSize: 9,
-          halign: 'center',
-          cellPadding: 3
-        },
-        columnStyles: {
-          0: { cellWidth: 12, halign: 'center', fontSize: 9 },
-          1: { cellWidth: 75, fontSize: 9 },
-          2: { cellWidth: 40, halign: 'center', fontSize: 8 },
-          3: { cellWidth: 50 }
-        },
-        bodyStyles: {
-          fontSize: 9,
-          cellPadding: 2,
-          minCellHeight: 8
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245]
-        },
+        headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+        columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 1: { cellWidth: 75 }, 2: { cellWidth: 40, halign: 'center' }, 3: { cellWidth: 50 } },
         didParseCell: (data: any) => {
-          // ✅ Colorer les badges équipe avec les vraies couleurs
           if (data.column.index === 2 && data.cell.section === 'body' && data.cell.raw) {
             if (data.cell.raw === this.equipeNames[0]) {
-              data.cell.styles.textColor = this.team1Color;  // ✅ Couleur équipe 1
+              data.cell.styles.textColor = this.team1Color;
               data.cell.styles.fontStyle = 'bold';
             } else if (data.cell.raw === this.equipeNames[1]) {
-              data.cell.styles.textColor = this.team2Color;  // ✅ Couleur équipe 2
+              data.cell.styles.textColor = this.team2Color;
               data.cell.styles.fontStyle = 'bold';
             }
           }
-        },
-        margin: { left: margin, right: margin }
+        }
       });
 
-      // ===== FOOTER avec couleurs dynamiques =====
+      // ===== FOOTER =====
       const finalY = (doc as any).lastAutoTable.finalY + 10;
-      
       doc.setFontSize(9);
       doc.setTextColor(51, 51, 51);
       doc.text(`Total: `, margin, finalY);
-      
-      // Couleur mélangée pour le total
       doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.setFont('helvetica', 'bold');
       doc.text(`${this.dataSource.data.length}`, margin + 12, finalY);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(51, 51, 51);
-      doc.text(' inscrits', margin + 18, finalY);
       
-      // Compteurs par équipe avec couleurs dynamiques
-      doc.setTextColor(this.team1Color[0], this.team1Color[1], this.team1Color[2]);
-      doc.text(`${this.equipeNames[0]}: ${this.equipe1Count}`, pageWidth / 2 - 25, finalY);
-      
-      doc.setTextColor(this.team2Color[0], this.team2Color[1], this.team2Color[2]);
-      doc.text(`${this.equipeNames[1]}: ${this.equipe2Count}`, pageWidth / 2 + 25, finalY);
-      
-      doc.setTextColor(100, 100, 100);
-      doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth - margin, finalY, { align: 'right' });
+      const dateFile = this.match?.dateMatch ? new Date(this.match.dateMatch).toISOString().split('T')[0] : 'match';
+      const fileName = `fiche-presence-${this.groupeActif?.nom}-${dateFile}.pdf`;
 
-      // ===== TÉLÉCHARGEMENT =====
-      const dateFile = this.match?.dateMatch 
-        ? new Date(this.match.dateMatch).toISOString().split('T')[0] 
-        : 'match';
-      doc.save(`fiche-presence-${this.groupeActif?.nom}-${dateFile}.pdf`);
+      // ===== GESTION MOBILE VS WEB =====
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Extraire le Base64 du PDF
+          const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+          // Enregistrer le fichier
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: pdfBase64,
+            directory: Directory.Documents,
+            recursive: true
+          });
+
+          // Ouvrir le PDF
+          await FileOpener.open({
+            filePath: savedFile.uri,
+            contentType: 'application/pdf'
+          });
+
+          this.showSnackbar('PDF enregistré et ouvert', 'success');
+        } catch (err) {
+          console.error('Erreur stockage mobile:', err);
+          this.showSnackbar('Erreur lors de l\'enregistrement sur mobile', 'error');
+        }
+      } else {
+        // Logique Web classique
+        doc.save(fileName);
+        this.showSnackbar('PDF téléchargé !', 'success');
+      }
       
       this.isGeneratingPdf = false;
-      this.showSnackbar('PDF téléchargé avec succès !', 'success');
 
     } catch (error) {
-      console.error('Erreur génération PDF:', error);
+      console.error('Erreur PDF:', error);
       this.isGeneratingPdf = false;
-      this.showSnackbar('Erreur lors de la génération du PDF', 'error');
+      this.showSnackbar('Erreur lors de la génération', 'error');
     }
-  }, 50);
+  }, 100);
 }
 
 // ===== HELPER: Tronquer texte =====

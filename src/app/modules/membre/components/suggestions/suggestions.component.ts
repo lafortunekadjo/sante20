@@ -20,6 +20,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
+import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
+import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
+import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 
 @Component({
   selector: 'app-suggestions',
@@ -40,7 +43,11 @@ import { MatListModule } from '@angular/material/list';
     MatDialogModule,
     MatDatepickerModule,
     MatExpansionModule, // Ajouté,
-    MatListModule],
+    MatListModule,
+      PubliciteBannerComponent,
+      PubliciteAffichageComponent,
+      PubliciteFeedComponent
+  ],
   templateUrl: './suggestions.component.html',
   styleUrl: './suggestions.component.scss'
 })
@@ -48,6 +55,7 @@ export class SuggestionsComponent implements OnInit {
   suggestionForm: FormGroup;
   membreId!: number;
   userId: number | null = null;
+  userVille: string | undefined;
 
   constructor(
     private fb: FormBuilder,

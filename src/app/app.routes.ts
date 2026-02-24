@@ -65,6 +65,22 @@ import { TypeDepenseComponent } from "./modules/responsable/components/type-depe
 import { AnalyticsDashboardComponent } from "./modules/admin/components/analytics-dashboard/analytics-dashboard.component";
 import { NotificationComponent } from "./shared/components/notification/notification.component";
 import { NotificationsPageComponent } from "./modules/responsable/components/notifications-page/notifications-page.component";
+import { PartenaireLayoutComponent } from "./modules/partenaire/partenaire-layout/partenaire-layout.component";
+import { PartenaireDashboardComponent } from "../app/modules/partenaire/partenaire-dashboard/partenaire-dashboard.component";
+import { EntreprisesListComponent } from "../app/modules/partenaire/entreprises-list/entreprises-list.component";
+import { EntrepriseFormComponent } from "../app/modules/partenaire/entreprise-form/entreprise-form.component";
+import { PublicitesListComponent } from "./modules/partenaire/publicites-list/publicites-list.component";
+import { PubliciteFormComponent } from "./modules/partenaire/publicite-form/publicite-form.component";
+import { PartenaireFormComponent } from "./modules/partenaire/partenaire-form/partenaire-form.component";
+import { PartenairesListComponent } from "./modules/partenaire/partenaires-list/partenaires-list.component";
+import { PartenaireDetailComponent } from "./modules/partenaire/partenaire-detail/partenaire-detail.component";
+import { StatistiquesComponent } from "./modules/partenaire/statistiques/statistiques.component";
+import { PubliciteDetailComponent } from "./modules/partenaire/publicite-detail/publicite-detail.component";
+import { EntrepriseDetailComponent } from "./modules/partenaire/entreprise-detail/entreprise-detail.component";
+import { AdminPublicitesListComponent } from "./modules/partenaire/admin-publicites-list/admin-publicites-list.component";
+import { AdminStatsComponent } from "./modules/partenaire/admin-stats/admin-stats.component";
+import { AdminPubliciteDetailComponent } from "./modules/partenaire/admin-publicite-detail/admin-publicite-detail.component";
+import { AdminPartenaireDashboardComponent } from "./modules/partenaire/admin-partenaire-dashboard/admin-partenaire-dashboard.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -110,6 +126,18 @@ export const routes: Routes = [
         {
         path: 'notifications',
         component: NotificationsPageComponent,
+      },
+
+       {
+        path: 'join/:code',
+        loadComponent: () => import('../app/modules/invitation/join/join.component')
+          .then(m => m.JoinComponent),
+        title: 'Rejoindre un groupe - My 2.0'
+      },
+      // Route alternative avec juste le code (sans /join)
+      {
+        path: 'j/:code',
+        redirectTo: 'join/:code'
       },
 
       // ==================== ROUTES COMMUNES (tous les utilisateurs connectés) ====================
@@ -188,6 +216,112 @@ export const routes: Routes = [
             path: 'utilisateurs',
             component: UserFormComponent
           },
+           {
+            path: 'partenaires',
+            component: PartenairesListComponent
+          },
+          
+           {
+            path: 'partenaires/new',
+            component: PartenaireFormComponent
+          },
+          {
+            path: 'partenaires/:id',
+            component: PartenaireDetailComponent
+          },
+          {
+            path: 'partenaires/:id/edit',
+           component: PartenaireFormComponent
+          },
+           // Publicités
+          {
+            path: 'publicites',  
+            children: [
+              {
+                path: '',
+                component: AdminPublicitesListComponent           
+              },
+               {
+                path: 'dashboard1',
+                component: AdminPartenaireDashboardComponent
+              },
+                {
+                path: 'stats',
+                component: AdminStatsComponent           
+              },
+                {
+                path: ':id',
+                component: AdminPubliciteDetailComponent           
+              },
+                {
+                path: 'dashboard',
+                component: AdminPartenaireDashboardComponent
+              },
+            
+            ]
+          },
+
+    
+
+
+          {
+            path: '',
+            redirectTo: 'dashboard',
+            pathMatch: 'full'
+          }
+        ]
+      },
+       // ==================== ROUTES ADMIN ====================
+      {
+        path: 'partenaire',
+        canActivate: [RoleGuard],
+        data: { roles: ['PARTENAIRE', 'ROLE_PARTENAIRE'] },
+        children: [
+          {
+            path: 'dashboard',
+            component: PartenaireDashboardComponent
+          },
+          {
+            path: 'entreprise',
+            component: EntreprisesListComponent
+          },
+           {
+            path: 'entreprises/new',
+            component: EntrepriseFormComponent
+          },
+           {
+            path: 'publicite',
+            component: PublicitesListComponent
+          },
+           {
+            path: 'publicite/new',
+            component: PubliciteFormComponent
+          },
+         {
+            path: 'publicites/:id',
+            component: PubliciteDetailComponent
+          },
+          {
+            path: 'publicite/:id/edit',
+           component: PubliciteFormComponent
+          },
+          
+           {
+            path: 'statistiques',
+            component: StatistiquesComponent
+          },
+           {
+            path: 'entreprises/:id', 
+            component: EntrepriseDetailComponent
+          },
+           {
+            path: 'entreprises/:id/edit',
+           component: EntrepriseFormComponent
+          },
+          //  {
+          //   path: 'publicite/new',
+          //   component: PubliciteFormComponent
+          // },
           {
             path: '',
             redirectTo: 'dashboard',
@@ -284,6 +418,13 @@ export const routes: Routes = [
             path: 'evenements',
             component: EvenementComponent,
             canActivate: [MenuGuard]
+          },
+
+           {
+            path: 'invitations',
+            loadComponent: () => import('../app/modules/invitation/invitation-manager/invitation-manager.component')
+              .then(m => m.InvitationManagerComponent),
+            title: 'Gestion des invitations - My 2.0'
           },
 
           // ==================== FINANCES (ANCIEN SYSTÈME) ====================
@@ -405,6 +546,140 @@ export const routes: Routes = [
       }
     ]
   },
+
+  // {
+  //   path: 'partenaire',
+  //   component: PartenaireLayoutComponent,
+  //   canActivate: [RoleGuard],
+  //   data: { roles: ['PARTENAIRE', 'ROLE_PARTENAIRE'] },
+  //   children: [
+  //     {
+  //       path: '',
+  //       redirectTo: 'dashboard',
+  //       pathMatch: 'full'
+  //     },
+  //     {
+  //       path: 'dashboard',
+  //       loadComponent: () => 
+  //         import('../app/modules/partenaire/partenaire-dashboard/partenaire-dashboard.component')
+  //           .then(m => m.PartenaireDashboardComponent),
+  //       data: { title: 'Dashboard' }
+  //     },
+  //     {
+  //       path: 'entreprises',
+  //       children: [
+  //         {
+  //           path: '',
+  //           loadComponent: () => 
+  //             import('../app/modules/partenaire/entreprises-list/entreprises-list.component')
+  //               .then(m => m.EntreprisesListComponent),
+  //           data: { title: 'Mes entreprises' }
+  //         },
+  //         {
+  //           path: 'new',
+  //           loadComponent: () => 
+  //             import('../app/modules/partenaire/entreprise-form/entreprise-form.component')
+  //               .then(m => m.EntrepriseFormComponent),
+  //           data: { title: 'Nouvelle entreprise' }
+  //         },
+  //         // {
+  //         //   path: ':id',
+  //         //   loadComponent: () => 
+  //         //     import('../app/modules/partenaire/entreprise-detail/entreprise-detail.component')
+  //         //       .then(m => m.EntrepriseDetailComponent),
+  //         //   data: { title: 'Détail entreprise' }
+  //         // },
+  //         {
+  //           path: ':id/edit',
+  //           loadComponent: () => 
+  //             import('../app/modules/partenaire/entreprise-form/entreprise-form.component')
+  //               .then(m => m.EntrepriseFormComponent),
+  //           data: { title: 'Modifier entreprise' }
+  //         }
+  //       ]
+  //     },
+  //     // {
+  //     //   path: 'publicites',
+  //     //   children: [
+  //     //     {
+  //     //       path: '',
+  //     //       loadComponent: () => 
+  //     //         import('../app/modules/partenaire/publicites-list/publicites-list.component')
+  //     //           .then(m => m.PublicitesListComponent),
+  //     //       data: { title: 'Mes publicités' }
+  //     //     },
+  //     //     {
+  //     //       path: 'new',
+  //     //       loadComponent: () => 
+  //     //         import('../app/modules/partenaire/publicite-form/publicite-form.component')
+  //     //           .then(m => m.PubliciteFormComponent),
+  //     //       data: { title: 'Nouvelle publicité' }
+  //     //     },
+  //     //     {
+  //     //       path: ':id',
+  //     //       loadComponent: () => 
+  //     //         import('../app/modules/partenaire/publicite-detail/publicite-detail.component')
+  //     //           .then(m => m.PubliciteDetailComponent),
+  //     //       data: { title: 'Détail publicité' }
+  //     //     },
+  //     //     {
+  //     //       path: ':id/edit',
+  //     //       loadComponent: () => 
+  //     //         import('../app/modules/partenaire/publicite-form/publicite-form.component')
+  //     //           .then(m => m.PubliciteFormComponent),
+  //     //       data: { title: 'Modifier publicité' }
+  //     //     }
+  //     //   ]
+  //     // },
+  //     // {
+  //     //   path: 'statistiques',
+  //     //   loadComponent: () => 
+  //     //     import('../app/modules/partenaire/statistiques.component')
+  //     //       .then(m => m.StatistiquesComponent),
+  //     //   data: { title: 'Statistiques' }
+  //     // },
+  // //     {
+  // //       path: 'utilisateurs',
+  // //       loadComponent: () => 
+  // //         import('./pages/utilisateurs/utilisateurs.component')
+  // //           .then(m => m.UtilisateursComponent),
+  // //       canActivate: [PartenaireAuthGuard],
+  // //       data: { 
+  // //         title: 'Utilisateurs',
+  // //         requiresAdmin: true 
+  // //       }
+  // //     },
+  // //     {
+  // //       path: 'parametres',
+  // //       loadComponent: () => 
+  // //         import('./pages/parametres/parametres.component')
+  // //           .then(m => m.ParametresComponent),
+  // //       data: { title: 'Paramètres' }
+  // //     }
+  // //   ]
+  // // },
+  // // {
+  // //   path: 'login',
+  // //   loadComponent: () => 
+  // //     import('./pages/login/login.component')
+  // //       .then(m => m.PartenaireLoginComponent),
+  // //   data: { title: 'Connexion Partenaire' }
+  // // },
+  // // {
+  // //   path: 'forgot-password',
+  // //   loadComponent: () => 
+  // //     import('./pages/forgot-password/forgot-password.component')
+  // //       .then(m => m.ForgotPasswordComponent),
+  // //   data: { title: 'Mot de passe oublié' }
+  // // },
+  // // {
+  // //   path: 'reset-password',
+  // //   loadComponent: () => 
+  // //     import('./pages/reset-password/reset-password.component')
+  // //       .then(m => m.ResetPasswordComponent),
+  // //   data: { title: 'Réinitialiser mot de passe' }
+  // // }
+  //   ]},
 
   // Route par défaut - redirection vers accueil public
   { path: '**', redirectTo: '/home' }
