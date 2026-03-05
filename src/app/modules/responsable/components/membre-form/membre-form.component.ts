@@ -37,6 +37,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ImportResult } from '../../../../core/services/excel-import.service';
 import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-dialog.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-membre-form',
@@ -64,7 +65,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     MatMenuModule,
     MatChipsModule,
     MatTooltipModule,
-    TranslateModule
+    TranslateModule,
+    RouterModule
   ],
   templateUrl: './membre-form.component.html',
   styleUrls: ['./membre-form.component.scss'],
