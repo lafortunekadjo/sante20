@@ -294,6 +294,8 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
       dateFin: this.form.value.dateFin?.toISOString() || undefined,
       villesCibles: villesCibles,
       priorite: this.form.value.priorite
+  
+
     };
 
     if (this.isEditMode && this.publiciteId) {
@@ -304,7 +306,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
   }
 
   private createPublicite(request: CreatePubliciteRequest, asBrouillon: boolean): void {
-    this.partenaireService.createPublicite(request).subscribe({
+    this.partenaireService.createPublicite(request, asBrouillon).subscribe({
       next: (publicite) => {
         if (this.imageFile) {
           this.uploadImage(publicite.id, asBrouillon);
@@ -325,7 +327,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
   }
 
   private updatePublicite(request: CreatePubliciteRequest, asBrouillon: boolean): void {
-    this.partenaireService.updatePublicite(this.publiciteId!, request).subscribe({
+    this.partenaireService.updatePublicite(this.publiciteId!, request, asBrouillon).subscribe({
       next: (publicite) => {
         if (this.imageFile) {
           this.uploadImage(publicite.id, asBrouillon);
@@ -357,7 +359,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.snackBar.open('Publicité créée mais erreur lors de l\'upload de l\'image', 'OK', { duration: 5000 });
-        this.router.navigate(['/partenaire/publicites']);
+        this.router.navigate(['/partenaire/publicite']);
       }
     });
   }
@@ -377,7 +379,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
   // ============================================================
 
   cancel(): void {
-    this.router.navigate(['/partenaire/publicites']);
+    this.router.navigate(['/partenaire/publicite']);
   }
 
   getTitle(): string {

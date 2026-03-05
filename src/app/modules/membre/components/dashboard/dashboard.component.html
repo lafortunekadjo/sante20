@@ -205,7 +205,7 @@
     </div>
 
     <!-- ===== SECTION: Stats Mensuelles ===== -->
-    <div class="monthly-stats-section" *ngIf="hasMonthlyStats()">
+    <div class="monthly-stats-section" *ngIf="hasMonthlyStats()" >
       <div class="section-header">
         <div class="header-icon-wrapper">
           <mat-icon>emoji_events</mat-icon>
@@ -493,10 +493,7 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- ===== Section sanctions ===== -->
-    <div class="sanctions-section" *ngIf="stats.sanctions">
+        <div class="sanctions-section" *ngIf="stats.sanctions">
       <div class="section-header">
         <div class="header-icon-wrapper">
           <mat-icon>gavel</mat-icon>
@@ -551,7 +548,7 @@
             </div>
           </div>
         </div>
-<app-publicite-feed [ville]="userVille"></app-publicite-feed>
+
         <!-- Cartons -->
         <div class="sanction-card cards-theme">
           <div class="card-header-modern">
@@ -588,7 +585,51 @@
         </div>
       </div>
     </div>
+    </div>
+
+
   </div>
+<div class="contributions-grid">
+  <div class="contribution-item" *ngFor="let contrib of contributionsEnCours">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="title-group">
+        <h6 class="mb-0 text-truncate" [matTooltip]="contrib.libelle">
+          {{ contrib.libelle }}
+          <mat-icon *ngIf="contrib.enAlerte" class="alerte-icon">warning</mat-icon>
+        </h6>
+      </div>
+      <span class="badge" [ngClass]="getStatusClass(contrib)">
+        {{ getStatusLabel(contrib) }}
+      </span>
+    </div>
+
+    <div class="amount-row d-flex justify-content-between align-items-baseline mb-2">
+      <div class="amount-detail">
+        <span class="amount-value text-success">{{ contrib.montantVerse | number }}</span>
+        <span class="amount-separator">/</span>
+        <span class="amount-total">{{ contrib.montantObjectif | number }}</span>
+        <span class="amount-currency">FCFA</span>
+      </div>
+      <div class="amount-percentage">
+        {{ (contrib.montantVerse / contrib.montantObjectif) | percent:'1.0-0' }}
+      </div>
+    </div>
+
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar" 
+           [ngClass]="{'bg-success': getStatusLabel(contrib) === 'Payé', 'bg-warning': getStatusLabel(contrib) === 'Partiel'}"
+           [style.width.%]="(contrib.montantVerse / contrib.montantObjectif) * 100">
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-muted text-xs">{{ contrib.delaiContribution | date:'dd/MM' }}</small>
+      <small class="text-danger Reste-text" *ngIf="contrib.montantVerse < contrib.montantObjectif">
+        -{{ (contrib.montantObjectif - contrib.montantVerse) | number }}
+      </small>
+    </div>
+  </div>
+</div>
 
   <!-- ============ FOOTER ============ -->
   <div class="dashboard-footer">

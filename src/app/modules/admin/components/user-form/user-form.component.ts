@@ -29,6 +29,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { PasswordResetResultDialogComponent, PasswordResetDialogData } from '../../../users/password-reset-result-dialog/password-reset-result-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { PartenaireService } from '../../../../core/services/partenaire.service';
+import { AdminPartenaireService, PartenaireListParams } from '../../../../core/services/admin-partenaire.service';
+import { PartenaireDTO } from '../../../../core/models/partenaire.model';
 
 // Interface pour les rôles
 interface RoleObject {
@@ -43,6 +46,7 @@ interface UserStats {
   inactifs: number;
   admins: number;
   responsables: number;
+   partenaires: number;
   membres: number;
   sansGroupe: number;
 }
@@ -121,6 +125,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   editingRows: boolean[] = [];
   selectedRolesArray: string[] = [];
   editSelectedRolesArray: string[] = [];
+  partenaires: PartenaireDTO [] = [];
   
   // Statistiques
   stats: UserStats = {
@@ -130,7 +135,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     admins: 0,
     responsables: 0,
     membres: 0,
-    sansGroupe: 0
+    sansGroupe: 0,
+    partenaires: 0
   };
   
   newUser: any = {
@@ -142,7 +148,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     membre: 0,
     motDePasse: '',
     groupe: 0,
-    profilePhotoUrl: ''
+    profilePhotoUrl: '',
+    partenaire:0
   };
   
   editUser: any = {} as any;
@@ -153,7 +160,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private partenaireService: AdminPartenaireService
   ) {}
 
   ngOnInit(): void {
@@ -161,7 +169,9 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isResponsable = this.authService.isResponsable();
       this.isAdmin = this.authService.isAdmin();
     this.loadData();
+
     this.setupSearch();
+    console.log(this.isAdmin)
   }
 
   ngAfterViewInit(): void {
@@ -216,6 +226,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.calculateStats();
         this.applyFilters();
         this.isLoading = false;
+        this.loadPartenaires();
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données:', err);
@@ -245,6 +256,26 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
+   public loadPartenaires(): void {
+     this.isLoading = true;
+ 
+     const params: PartenaireListParams = {
+     
+     };
+ 
+     const sub = this.partenaireService.getPartenaires(params).subscribe({
+       next: (response) => {
+         this.partenaires = response.content;
+         this.isLoading = false;
+       },
+       error: (err) => {
+         console.error('Erreur chargement partenaires:', err);
+         this.isLoading = false;
+         this.snackBar.open('Erreur lors du chargement', 'OK', { duration: 3000 });
+       }
+     });
+   }
+
   // ===== STATISTIQUES =====
 
   private calculateStats(): void {
@@ -256,6 +287,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       inactifs: users.filter(u => !u.active).length,
       admins: users.filter(u => this.hasRole(u, 'ADMIN')).length,
       responsables: users.filter(u => this.hasRole(u, 'RESPONSABLE')).length,
+      partenaires: users.filter(u => this.hasRole(u, 'PARTENAIRE')).length,
       membres: users.filter(u => this.hasRole(u, 'MEMBRE')).length,
       sansGroupe: users.filter(u => !this.getGroupeId(u)).length
     };
@@ -374,7 +406,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const roleMap: { [key: string]: number } = {
       'ADMIN': 1,
       'RESPONSABLE': 2,
-      'MEMBRE': 3
+      'MEMBRE': 3,
+      'PARTENAIRE': 4
     };
     
     return rolesArray.map(role => ({
@@ -388,6 +421,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'ADMIN': return 'admin_panel_settings';
       case 'RESPONSABLE': return 'supervisor_account';
       case 'MEMBRE': return 'person';
+      case 'PARTENAIRE': return 'person';
       default: return 'person';
     }
   }
@@ -397,6 +431,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'ADMIN': return 'admin';
       case 'RESPONSABLE': return 'responsable';
       case 'MEMBRE': return 'membre';
+      case 'PARTENAIRE': return 'partenaire';
       default: return 'membre';
     }
   }
@@ -528,7 +563,8 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       membre: 0,
       motDePasse: '',
       groupe: 0,
-      profilePhotoUrl: ''
+      profilePhotoUrl: '',
+      partenaire:0
     };
     this.selectedRolesArray = [];
   }

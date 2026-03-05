@@ -88,6 +88,13 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     this.initializeAuthState();
   }
 
+   canCreateAds(): boolean {
+    const roles = this.getRoles();
+    const rolesResponsable = ['PARTENAIRE', 'ROLE_PARTENAIRE'];
+    return roles.some(role => rolesResponsable.includes(role));
+  }
+
+
 
   /**
    * Initialise l'état du service à partir du localStorage au chargement.

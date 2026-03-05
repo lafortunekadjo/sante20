@@ -257,14 +257,15 @@ export class PartenaireAuthService {
    */
   canCreateAds(): boolean {
     const role = this.getRole();
-    return role === 'ADMIN_PARTENAIRE' || role === 'GESTIONNAIRE';
+    console.log(role)
+    return role === 'ADMIN_PARTENAIRE' || role === 'GESTIONNAIRE' || role === 'PARTENAIRE' || role === 'ROLE_PARTENAIRE';
   }
 
   /**
    * Vérifier si l'utilisateur peut gérer les utilisateurs
    */
   canManageUsers(): boolean {
-    return this.getRole() === 'ADMIN_PARTENAIRE';
+    return this.getRole() === 'PARTENAIRE';
   }
 
   /**

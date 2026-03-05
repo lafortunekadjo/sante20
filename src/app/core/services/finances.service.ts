@@ -425,6 +425,11 @@ export class FinancesService {
     return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/mouvements/membre/${membreId}`);
   }
 
+   getMouvementsMembre2(): Observable<MouvementCaisse[]> {
+    return this.http.get<MouvementCaisse[]>(`${this.baseUrl}/caisses/mouvements/membre`);
+  }
+
+
   // ==================== TYPES DE CONTRIBUTION ====================
   // Backend: TypeContributionController.java
 

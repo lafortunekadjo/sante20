@@ -166,14 +166,17 @@ export class PartenaireService {
   /**
    * Créer une publicité
    */
-  createPublicite(request: CreatePubliciteRequest): Observable<PubliciteDTO> {
+  createPublicite(request: CreatePubliciteRequest, asBrouillon: boolean): Observable<PubliciteDTO> {
+    request.status = asBrouillon;
     return this.http.post<PubliciteDTO>(`${this.API_URL}/publicites`, request);
   }
 
   /**
    * Mettre à jour une publicité
    */
-  updatePublicite(id: number, request: UpdatePubliciteRequest): Observable<PubliciteDTO> {
+  updatePublicite(id: number, request: UpdatePubliciteRequest, asBrouillon: boolean): Observable<PubliciteDTO> {
+    request.soumettre = !asBrouillon;
+    console.log(request)
     return this.http.put<PubliciteDTO>(`${this.API_URL}/publicites/${id}`, request);
   }
 

@@ -12,7 +12,7 @@ export interface Groupe {
   stade: Stade;
   jourMatch: string;
   typeEquipe: string;
-  modeEquipe: 'STATIQUE' | 'DYNAMIQUE';
+  modeEquipes: 'STATIQUE' | 'DYNAMIQUE';
   fraisAdhesion: number;
   profilePhotoUrl: string;
   heureMatch:string;

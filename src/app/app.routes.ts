@@ -94,8 +94,8 @@ import { AdminPartenaireDashboardComponent } from "./modules/partenaire/admin-pa
 
 export const routes: Routes = [
 
-  { path: 'generator', component: QrGeneratorComponent },
-  { path: 'dashboard', component: QrDashboardComponent },
+  // { path: 'generator', component: QrGeneratorComponent },
+  // { path: 'dashboard', component: QrDashboardComponent },
 
   // ==================== ROUTES PROTÉGÉES (avec Layout et authentification) ====================
   

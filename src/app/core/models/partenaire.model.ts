@@ -171,6 +171,7 @@ export interface CreatePubliciteRequest {
   dateFin?: string;
   villesCibles?: string[];
   priorite?: number;
+  status?: boolean;
 }
 
 export interface UpdatePubliciteRequest {
@@ -181,7 +182,7 @@ export interface UpdatePubliciteRequest {
   dateFin?: string;
   villesCibles?: string[];
   priorite?: number;
-  statut?: StatutPublicite;
+  soumettre?: boolean;
 }
 
 export type EmplacementPublicite = 

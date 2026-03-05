@@ -265,7 +265,7 @@ export class GroupeFormDialogComponent implements OnInit {
       jourMatch: [groupe?.jourMatch || 'Dimanche'],
       heureMatch: [groupe?.heureMatch || ''],
       typeEquipe: [groupe?.typeEquipe || ''],
-      modeEquipe: [groupe?.modeEquipe || 'STATIQUE'],
+      modeEquipe: [groupe?.modeEquipes || 'STATIQUE'],
       fraisAdhesion: [groupe?.fraisAdhesion || 0],
       isActive: [groupe?.isActive ?? true],
       isPublic: [groupe?.isPublic ?? true]

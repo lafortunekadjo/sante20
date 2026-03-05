@@ -1,1 +1,35 @@
-<p>publicite-splash works!</p>
+<div class="splash-container">
+  <div class="progress-bar" [style.width.%]="(countdown / 3) * 100" *ngIf="!canSkip"></div>
+
+  <div class="splash-header">
+    <div class="ad-label">Publicité</div>
+    <button class="close-btn" [class.active]="canSkip" (click)="close()" [disabled]="!canSkip">
+      <span *ngIf="!canSkip">Fermeture dans {{ countdown }}s</span>
+      <span *ngIf="canSkip">✕ Fermer</span>
+    </button>
+  </div>
+
+  <a class="splash-body" [href]="publicite?.lienCible" target="_blank" (click)="onAdClick($event)">
+    <div class="img-wrapper">
+      <img [src]="publicite?.imageUrl" [class.loaded]="imageLoaded" (load)="onImageLoad()">
+      <div class="loader" *ngIf="!imageLoaded">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    </div>
+  </a>
+
+  <div class="splash-footer" *ngIf="publicite">
+    <div class="brand-info">
+      <img *ngIf="publicite.entrepriseLogoUrl" [src]="publicite.entrepriseLogoUrl" class="brand-logo">
+      <div class="brand-text">
+        <span class="brand-name">{{ publicite.entrepriseNom }}</span>
+        <span class="ad-title">{{ publicite.titre }}</span>
+      </div>
+    </div>
+
+    <a [href]="publicite?.lienCible" target="_blank" class="cta-button" (click)="onAdClick($event)">
+      En savoir plus
+      <mat-icon>open_in_new</mat-icon>
+    </a>
+  </div>
+</div>

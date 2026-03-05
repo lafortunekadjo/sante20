@@ -209,7 +209,7 @@ compareUsers(u1: any, u2: any): boolean {
       equipe: null,
       groupe: {
         id: 0, nom: '', discipline: '', ville1: 0, stade2: 0, isActive: true,
-        jourMatch: '', typeEquipe: '', modeEquipe: 'STATIQUE', fraisAdhesion: 0,
+        jourMatch: '', typeEquipe: '', modeEquipes: 'STATIQUE', fraisAdhesion: 0,
         ville: { id: 0, nom: '' },
         stade: { id: 0, nom: '', stadiumLat: 0, stadiumLon: 0, radius: 0 },
         profilePhotoUrl: '', heureMatch: '', isPublic: false, abreviation: ''

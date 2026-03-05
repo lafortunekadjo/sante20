@@ -107,7 +107,7 @@ export class GroupeConfigComponent implements OnInit {
       stade: [null, Validators.required],
       jourMatch: ['', Validators.required],
       typeEquipe: [''],
-      modeEquipe: ['STATIQUE'],
+      modeEquipes: ['STATIQUE'],
       fraisAdhesion: [0, [Validators.required, Validators.min(0)]],
       heureMatch: [null, Validators.required],
       abreviation: [''],

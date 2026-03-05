@@ -36,6 +36,9 @@ import { SplashScreenService } from '../../../core/services/splash-screen.servic
 
 
 
+
+
+
 @Component({
   selector: 'app-layout',
   standalone: true,
@@ -163,15 +166,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
   //   }, 1000); // Délai pour laisser la page se charger
   // }
 
-  private setupPublicites(): void {
-    const userVille = this.authService.getUser()?.ville || '';
+  // private setupPublicites(): void {
+  //   const userVille = this.authService.getUser()?.ville || '';
     
-    // // Splash au login (1x/jour)
-    // this.splashService.checkAndShowLoginSplash(userVille);
+  //   // // Splash au login (1x/jour)
+  //   // this.splashService.checkAndShowLoginSplash(userVille);
     
-    // // Splash après 10 min (1x/session)
-    // this.splashService.startUsageTimer(10, userVille);
-  }
+  //   // // Splash après 10 min (1x/session)
+  //   // this.splashService.startUsageTimer(10, userVille);
+  // }
 
 
   private updateGroupStatus(): void {
@@ -507,13 +510,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
-  // private setupPublicites(): void {
-  //   const userVille = this.authService.getUser()?.ville || '';
+  private setupPublicites(): void {
+    const userVille = this.authService.getUser()?.ville || '';
     
-  //   // Splash au login (1x/jour)
-  //   this.splashService.checkAndShowLoginSplash(userVille);
+    // Splash au login (1x/jour)
+    this.splashService.checkAndShowLoginSplash(userVille);
     
-  //   // Splash après 10 min (1x/session)
-  //   this.splashService.startUsageTimer(10, userVille);
-  // }
+    // Splash après 10 min (1x/session)
+    this.splashService.startUsageTimer(10, userVille);
+  }
 }

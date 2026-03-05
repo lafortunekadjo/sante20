@@ -275,7 +275,7 @@ export class GroupeListComponent implements OnInit, AfterViewInit, OnDestroy {
       isActive: true,
       jourMatch: 'Dimanche',
       typeEquipe: '',
-      modeEquipe: 'STATIQUE',
+      modeEquipes: 'STATIQUE',
       fraisAdhesion: 0,
       profilePhotoUrl: '',
       heureMatch: '',

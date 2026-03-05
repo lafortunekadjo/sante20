@@ -24,6 +24,7 @@ import { PubliciteDTO, EntrepriseDTO, StatutPublicite, STATUTS_PUBLICITE, EMPLAC
 import { PartenaireAuthService } from '../../../core/services/partenaire-auth.service';
 import { PartenaireService } from '../../../core/services/partenaire.service';
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 
 
@@ -73,7 +74,7 @@ export class PublicitesListComponent implements OnInit, OnDestroy {
 
   constructor(
     private partenaireService: PartenaireService,
-    private authService: PartenaireAuthService,
+    private authService: AuthService,
     private translateService: TranslateService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
@@ -242,6 +243,7 @@ export class PublicitesListComponent implements OnInit, OnDestroy {
   // ============================================================
 
   canCreate(): boolean {
+    console.log(this.authService.canCreateAds())
     return this.authService.canCreateAds() && this.entreprises.length > 0;
   }
 

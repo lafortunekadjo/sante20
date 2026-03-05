@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 
 // Angular Material
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +35,7 @@ import { BaseChartDirective } from 'ng2-charts';
 
 // Services
 import { StatsService } from '../../../../core/services/stats.service';
-import { Exercice, FinancesService } from '../../../../core/services/finances.service';
+import { Exercice, FinancesService, MouvementCaisse, TypeContribution } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 
 // Models
@@ -135,6 +135,11 @@ export class MDashboardComponent implements OnInit, OnDestroy {
   isLoading = true;
   isLoadingExercices = false;
   currentDate: Date = new Date();
+  isStatique = false;
+
+  mouvementsMembre: MouvementCaisse[] = [];
+  contributionsAffichees: any[] = [];
+  contributions: any[] = [];
 
   // Mode de filtrage
   filterMode: FilterMode = 'season';
@@ -147,7 +152,7 @@ export class MDashboardComponent implements OnInit, OnDestroy {
   // Formulaires
   dateRangeForm: FormGroup;
   monthFilterForm: FormGroup;
-  
+  contributionsEnCours: any[] = [];
   // Mois sélectionné
   selectedMonth: string = '';
 
@@ -160,6 +165,7 @@ export class MDashboardComponent implements OnInit, OnDestroy {
     recentMatches: [],
     topAssists: [],
     passesByMatch: [],
+    
     totalPasses: 0,
     goalsScored: 0,
     sanctions: { 
@@ -249,7 +255,8 @@ export class MDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private fb: FormBuilder,
     private translate: TranslateService,
-    private groupeService: GroupeService
+    private groupeService: GroupeService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.dateRangeForm = this.fb.group({
       start: [null],
@@ -265,12 +272,33 @@ export class MDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadExercices();
+  
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  // Dans votre classe DashboardComponent
+
+getStatusLabel(contribution: any): string {
+  const verse = contribution.montantVerse || 0;
+  const total = contribution.montantObjectif || contribution.montantFixe;
+
+  if (verse <= 0) return 'Non payé';
+  if (verse < total) return 'Partiel';
+  return 'Payé';
+}
+
+getStatusClass(contribution: any): string {
+  const verse = contribution.montantVerse || 0;
+  const total = contribution.montantObjectif || contribution.montantFixe;
+
+  if (verse <= 0) return 'badge-danger'; // Rouge
+  if (verse < total) return 'badge-warning'; // Orange/Jaune
+  return 'badge-success'; // Vert
+}
 
   // ============ CHARGEMENT DES EXERCICES ============
 
@@ -292,6 +320,7 @@ private loadExercices(): void {
   // Utilisation de forkJoin pour lancer les deux appels en parallèle
   forkJoin({
     exercices: this.financesService.getExercicesByGroupe(groupeId),
+  
     groupe: this.groupeService.getGroupe(userId)
   })
     .pipe(takeUntil(this.destroy$))
@@ -306,6 +335,9 @@ private loadExercices(): void {
           // Trouver l'exercice actif (non clôturé)
           this.currentExercice = this.exercices.find(e => e.actif && !e.cloture) || null;
           
+          this.loadContribution();
+      //    this.loadMouvements();
+          
           // Sélectionner l'exercice actif par défaut ou le plus récent
           if (this.currentExercice) {
             this.selectedExerciceId = this.currentExercice.id;
@@ -316,7 +348,12 @@ private loadExercices(): void {
 
         // 2. Gérer les infos de ville du groupe
         if (groupe && groupe.ville) {
+          console.log('le groupe', groupe)
           this.userVille = groupe.ville.nom;
+          
+        }
+        if(groupe && groupe.modeEquipes == 'STATIQUE'){
+          this.isStatique = true
         }
 
         // 3. Finalisation du chargement
@@ -357,6 +394,123 @@ private loadExercices(): void {
     }
   }
 
+getMontantVerse(typeContributionId: number): number {
+  return this.mouvementsMembre
+    .filter(m => 
+      m.typeContribution?.id === typeContributionId && 
+      m.typeMouvement === 'ENTREE' && 
+      m.statut === 'VALIDE' // On ne compte que ce qui est validé
+    )
+    .reduce((sum, m) => sum + m.montant, 0);
+}
+/**
+ * Détermine si une contribution est en retard ou proche de l'échéance
+ */
+isEnAlerte(contrib: any): boolean {
+  const montantVerse = this.getMontantVerse(contrib.id);
+  const montantTotal = contrib.montantStandard || 0;
+  
+  if (montantVerse >= montantTotal) return false;
+
+  const echeance = new Date(contrib.delaiContribution);
+  const aujourdhui = new Date();
+  const diffTime = echeance.getTime() - aujourdhui.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays <= 7; // Alerte si l'échéance est dans 7 jours ou moins
+}
+
+calculerStatusContributions(): void {
+  if (!this.contributions || !this.mouvementsMembre) return;
+console.log(this.contributions)
+  // On transforme les types de contributions en objets enrichis pour le dashboard
+  this.contributionsEnCours = this.contributions.map(contrib => {
+    const montantVerse = this.getMontantVerse(contrib.id!);
+    // Ici on utilise montantStandard (de TypeContribution) comme objectif
+    const montantObjectif = contrib.montantStandard || 0;
+    
+    return {
+      ...contrib,
+      libelle: contrib.nom, // Pour correspondre au HTML
+      montantVerse: montantVerse,
+      montantObjectif: montantObjectif,
+      enAlerte: this.isEnAlerte(contrib)
+    };
+  });
+
+  console.log(this.contributions)
+  
+  this.cdr.markForCheck();
+}
+
+/**
+ * Charge les contributions et les mouvements financiers pour calculer les statuts
+ */
+loadContribution(): void {
+  // On s'assure d'avoir l'ID de l'exercice
+  const exerciceId = this.currentExercice?.id || undefined;
+  
+  if (!exerciceId) {
+    console.warn("Impossible de charger les contributions : ID exercice manquant");
+    return;
+  }
+
+  this.isLoading = true;
+
+  // On charge les types et les mouvements en parallèle
+  forkJoin({
+    types: this.financesService.getTypesContributionsByExercice(exerciceId),
+    mouvements: this.financesService.getMouvementsMembre2()
+  })
+  .pipe(takeUntil(this.destroy$))
+  .subscribe({
+    next: (res) => {
+      this.contributions = res.types;
+      this.mouvementsMembre = res.mouvements;
+
+      // On lance le calcul pour remplir 'contributionsEnCours'
+      this.calculerStatusContributions();
+      
+      this.isLoading = false;
+      this.cdr.markForCheck(); // On notifie Angular du changement
+      
+      console.log('Contributions chargées et calculées', res );
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement des contributions:', err);
+      this.isLoading = false;
+      this.cdr.markForCheck();
+    }
+  });
+}
+
+private loadMouvements(): void {
+  this.isLoading = true; // Optionnel : pour afficher un spinner
+  
+  this.financesService.getMouvementsMembre2().subscribe({
+    next: (mouvements) => {
+      this.mouvementsMembre = mouvements;
+      
+      // Sécurité : On ne calcule que si on a déjà les types de contributions
+      if (this.contributions && this.contributions.length > 0) {
+        this.calculerStatusContributions();
+      }
+      
+      this.isLoading = false;
+      this.cdr.markForCheck();
+
+      // Logs à l'intérieur du 'next' pour voir les vraies données
+      console.log('Contributions initiales:', this.mouvementsMembre);
+      console.log('Contributions calculées pour affichage:', this.contributions);
+    },
+    error: (err) => {
+      console.error('Erreur chargement mouvements:', err);
+      this.isLoading = false;
+      this.cdr.markForCheck();
+    }
+  });
+}
+
   /**
    * Charge les stats pour l'exercice sélectionné
    */
@@ -365,6 +519,9 @@ private loadExercices(): void {
       this.isLoading = false;
       return;
     }
+
+        // Dans votre méthode d'initialisation (ex: loadDashboardData)
+   
 
     const exercice = this.exercices.find(e => e.id === this.selectedExerciceId);
     if (!exercice) {
@@ -532,14 +689,14 @@ private loadExercices(): void {
    * Détermine s'il faut afficher la meilleure équipe
    */
   shouldShowBestTeam(): boolean {
-    return !!(this.stats.monthlyStats?.bestTeam && this.stats.monthlyStats.bestTeam.teamName);
+    return !!(this.stats.monthlyStats?.bestTeam && this.stats.monthlyStats.bestTeam.teamName) && this.isStatique;
   }
 
   /**
    * Vérifie si des stats mensuelles sont disponibles
    */
   hasMonthlyStats(): boolean {
-    return !!this.stats.monthlyStats && this.getFilteredAvailableMonths().length > 0;
+    return !!this.stats.monthlyStats && this.getFilteredAvailableMonths().length > 0 && this.isStatique;
   }
 
   /**
