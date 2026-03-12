@@ -139,15 +139,16 @@ export class RxStompService implements OnDestroy {
   /**
    * Obtenir l'URL WebSocket
    */
-  private getWsUrl(): string {
-    // Option 1: URL définie dans environment
-    if ((environment as any).wsUrl) {
-      return (environment as any).wsUrl;
-    }
-    
-    // Option 2: Dériver de l'URL de l'API
-    const apiUrl = environment.apiUrl || 'http://localhost:8080/api';
-    const baseUrl = apiUrl.replace('/api', '');
-    return `${baseUrl}/ws`;
-  }
+ /**
+ * Obtenir l'URL pour SockJS (Doit impérativement être http ou https)
+ */
+private getWsUrl(): string {
+  // On définit l'URL de base manuellement ou via environment
+  const baseUrl = "http://localhost:8000"; 
+  
+  // On ajoute /api/ws (qui doit correspondre exactement au backend)
+  const endpoint = "/api/ws";
+  
+  return baseUrl + endpoint;
+}
 }

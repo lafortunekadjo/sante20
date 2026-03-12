@@ -1,34 +1,62 @@
 // sortie-caisse.component.scss
-@import '../../../../../variables';
+@use '../../../../../variables' as *;
 
+// ===== THEMING =====
+:host {
+  --error-color: #{$error-color};
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --accent-color: #{$accent-orange};
+  --accent-dark: #{$accent-orange-dark};
+
+  // Mode clair
+  --text-primary: #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --text-tertiary: #{$light-text-tertiary};
+  --border-color: #{$light-border};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary: #{$light-bg-secondary};
+  --background-tertiary: #{$light-bg-tertiary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary: #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --text-tertiary: #{$dark-text-tertiary};
+  --border-color: #{$dark-border};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary: #{$dark-bg-secondary};
+  --background-tertiary: #{$dark-bg-tertiary};
+}
+
+// ===== CONTAINER =====
 .sortie-caisse-container {
   @include page-container;
 }
 
-// ===== HEADER =====
+// ===== HEADER (gradient rouge pour les sorties) =====
 .page-header {
   @include page-header;
-  // Override gradient pour les sorties (rouge)
   background: linear-gradient(135deg, $error-color 0%, darken($error-color, 15%) 100%);
 
-  .header-icon.sortie {
-    color: white;
-  }
+  .header-icon.sortie { color: white; }
 
   .header-actions {
     button {
       background: rgba(255, 255, 255, 0.15);
       color: white;
       border-color: rgba(255, 255, 255, 0.3);
+      transition: background $transition-fast;
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.25);
-      }
+      &:hover { background: rgba(255, 255, 255, 0.25); }
 
-      mat-icon {
-        margin-right: $spacing-sm;
-      }
+      mat-icon { margin-right: $spacing-sm; }
     }
+
+    .add-btn { margin-right: $spacing-sm; }
   }
 }
 
@@ -37,7 +65,7 @@
   @include loading-state;
 }
 
-// ===== ÉTAT VIDE =====
+// ===== ÉTAT VIDE (pas d'exercice) =====
 .empty-state {
   @include empty-state;
   margin: $spacing-3xl auto;
@@ -74,9 +102,7 @@
 .content {
   padding: $spacing-2xl;
 
-  @include mobile {
-    padding: $spacing-lg;
-  }
+  @include mobile { padding: $spacing-lg; }
 }
 
 // ===== SECTION SORTIES EN ATTENTE =====
@@ -91,15 +117,11 @@
     padding-bottom: $spacing-md;
     border-bottom: 2px solid var(--border-color);
 
-    &.warning {
-      .header-icon-wrapper {
-        background: linear-gradient(135deg, $warning-color 0%, darken($warning-color, 15%) 100%);
-      }
-
-      .badge.warning {
-        background: $warning-color;
-      }
+    &.warning .header-icon-wrapper {
+      background: linear-gradient(135deg, $warning-color 0%, darken($warning-color, 15%) 100%);
     }
+
+    &.warning .badge.warning { background: $warning-color; }
 
     .header-icon-wrapper {
       width: 40px;
@@ -108,11 +130,7 @@
       @include flex-center;
       color: white;
 
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
     }
 
     .header-text {
@@ -143,9 +161,7 @@
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: $spacing-lg;
 
-    @include mobile {
-      grid-template-columns: 1fr;
-    }
+    @include mobile { grid-template-columns: 1fr; }
   }
 
   .pending-card {
@@ -196,11 +212,7 @@
         font-size: $font-size-sm;
         color: var(--text-secondary);
 
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
       }
     }
 
@@ -223,17 +235,22 @@
 // ===== SECTION FORMULAIRE =====
 .form-section {
   margin-bottom: $spacing-2xl;
+  animation: slideDown $transition-base ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .modern-card {
   @include card-base;
   overflow: hidden;
 
-  &.form-card {
-    border-top: 4px solid $error-color;
-  }
+  &.form-card { border-top: 4px solid $error-color; }
 }
 
+// ===== CARD HEADER / BODY / FOOTER =====
 .card-header {
   display: flex;
   align-items: center;
@@ -253,11 +270,7 @@
       background: linear-gradient(135deg, $error-color 0%, darken($error-color, 15%) 100%);
     }
 
-    mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-    }
+    mat-icon { font-size: 24px; width: 24px; height: 24px; }
   }
 
   .card-title-group {
@@ -278,9 +291,7 @@
   }
 }
 
-.card-body {
-  padding: $spacing-xl;
-}
+.card-body { padding: $spacing-xl; }
 
 .card-footer {
   display: flex;
@@ -300,9 +311,7 @@
       gap: $spacing-sm;
     }
 
-    .save-btn {
-      min-width: 200px;
-    }
+    .save-btn { min-width: 200px; }
   }
 }
 
@@ -318,9 +327,7 @@
   }
 
   .form-field {
-    &.full-width {
-      grid-column: 1 / -1;
-    }
+    &.full-width { grid-column: 1 / -1; }
 
     mat-icon[matPrefix] {
       color: var(--text-secondary);
@@ -329,7 +336,7 @@
   }
 }
 
-// ===== OPTION CAISSE DANS SELECT =====
+// ===== OPTIONS SELECT =====
 .caisse-option {
   display: flex;
   align-items: center;
@@ -342,11 +349,7 @@
     @include flex-center;
     color: white;
 
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
   }
 
   .caisse-info {
@@ -362,10 +365,37 @@
       font-size: $font-size-xs;
       color: $success-color;
 
-      &.low {
-        color: $warning-color;
-      }
+      &.low { color: $warning-color; }
     }
+  }
+}
+
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+  .validation-icon {
+    margin-left: auto;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: $warning-color;
+  }
+}
+
+.membre-option {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
   }
 }
 
@@ -383,6 +413,7 @@
     border-radius: $border-radius-md;
     color: $success-color;
     font-size: $font-size-sm;
+    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
 
     &.low {
       background: rgba($warning-color, 0.1);
@@ -390,65 +421,19 @@
       color: $warning-color;
     }
 
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    strong {
-      font-weight: $font-weight-bold;
-    }
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    strong { font-weight: $font-weight-bold; }
   }
 }
 
-// ===== OPTION TYPE DANS SELECT =====
-.type-option {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-  }
-
-  .validation-icon {
-    margin-left: auto;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: $warning-color;
-  }
-}
-
-// ===== OPTION MEMBRE DANS AUTOCOMPLETE =====
-.membre-option {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--text-secondary);
-  }
-}
-
-// ===== HINT D'ERREUR =====
+// ===== HINT ERREUR SOLDE =====
 .error-hint {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
   color: $error-color !important;
 
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-  }
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 
 // ===== SECTION HISTORIQUE =====
@@ -473,11 +458,7 @@
         background: linear-gradient(135deg, $error-color 0%, darken($error-color, 15%) 100%);
       }
 
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
     }
 
     .header-text {
@@ -508,11 +489,7 @@
       align-items: center;
       gap: $spacing-xs;
 
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
     }
   }
 }
@@ -521,9 +498,7 @@
 .mobile-cards-view {
   display: none;
 
-  @include mobile {
-    display: block;
-  }
+  @include mobile { display: block; }
 
   .sortie-card {
     @include card-base;
@@ -555,11 +530,7 @@
             color: $error-color;
           }
 
-          mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-          }
+          mat-icon { font-size: 18px; width: 18px; height: 18px; }
         }
 
         .title-content {
@@ -577,15 +548,11 @@
         }
       }
 
-      .card-montant {
-        .montant {
-          font-size: $font-size-lg;
-          font-weight: $font-weight-bold;
+      .card-montant .montant {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
 
-          &.sortie {
-            color: $error-color;
-          }
-        }
+        &.sortie { color: $error-color; }
       }
     }
 
@@ -599,9 +566,7 @@
         padding: $spacing-sm 0;
         border-bottom: 1px solid var(--border-color);
 
-        &:last-child {
-          border-bottom: none;
-        }
+        &:last-child { border-bottom: none; }
 
         .label {
           font-size: $font-size-sm;
@@ -623,9 +588,7 @@
   @include card-base;
   overflow: hidden;
 
-  @include mobile {
-    display: none;
-  }
+  @include mobile { display: none; }
 
   .sorties-table {
     width: 100%;
@@ -646,9 +609,7 @@
       font-size: $font-size-sm;
     }
 
-    tr.mat-row:hover {
-      background: var(--background-tertiary);
-    }
+    tr.mat-row:hover { background: var(--background-tertiary); }
 
     .beneficiaire-cell {
       display: flex;
@@ -671,11 +632,7 @@
         width: 36px;
         height: 36px;
 
-        mat-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-        }
+        mat-icon { font-size: 18px; width: 18px; height: 18px; }
       }
     }
   }
@@ -708,11 +665,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-  }
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
 
   &.valide {
     background: rgba($success-color, 0.1);
@@ -724,7 +677,8 @@
     color: $warning-color;
   }
 
-  &.rejete, &.annule {
+  &.rejete,
+  &.annule {
     background: rgba($error-color, 0.1);
     color: $error-color;
   }
@@ -733,9 +687,7 @@
 .montant {
   font-weight: $font-weight-bold;
 
-  &.sortie {
-    color: $error-color;
-  }
+  &.sortie { color: $error-color; }
 }
 
 // ===== ÉTAT VIDE HISTORIQUE =====
@@ -757,22 +709,4 @@
     margin: 0;
     font-size: $font-size-md;
   }
-}
-.form-section {
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.add-btn {
-  margin-right: 10px;
 }

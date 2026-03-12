@@ -1,4 +1,6 @@
+<!-- type-depense.component.html -->
 <div class="type-depense-container">
+
   <!-- Header -->
   <div class="page-header">
     <div class="header-content">
@@ -6,13 +8,13 @@
         <mat-icon>category</mat-icon>
       </div>
       <div class="header-text">
-        <h1>Types de Dépenses</h1>
-        <p>Gérez les catégories de dépenses pour votre groupe</p>
+        <h1>{{ 'type_depense.titre' | translate }}</h1>
+        <p>{{ 'type_depense.sous_titre' | translate }}</p>
       </div>
     </div>
     <button mat-raised-button color="primary" (click)="openForm()" [disabled]="showForm">
       <mat-icon>add</mat-icon>
-      Nouveau type
+      {{ 'type_depense.actions.nouveau_type' | translate }}
     </button>
   </div>
 
@@ -24,7 +26,7 @@
       </div>
       <div class="stat-content">
         <span class="stat-value">{{ totalTypes }}</span>
-        <span class="stat-label">Total</span>
+        <span class="stat-label">{{ 'commun.table.total' | translate }}</span>
       </div>
     </div>
     <div class="stat-card">
@@ -33,7 +35,7 @@
       </div>
       <div class="stat-content">
         <span class="stat-value">{{ typesActifs }}</span>
-        <span class="stat-label">Actifs</span>
+        <span class="stat-label">{{ 'type_depense.stats.actifs' | translate }}</span>
       </div>
     </div>
     <div class="stat-card">
@@ -42,7 +44,7 @@
       </div>
       <div class="stat-content">
         <span class="stat-value">{{ typesGeneriques }}</span>
-        <span class="stat-label">Génériques</span>
+        <span class="stat-label">{{ 'type_depense.stats.generiques' | translate }}</span>
       </div>
     </div>
     <div class="stat-card">
@@ -51,7 +53,7 @@
       </div>
       <div class="stat-content">
         <span class="stat-value">{{ typesAvecValidation }}</span>
-        <span class="stat-label">Avec validation</span>
+        <span class="stat-label">{{ 'type_depense.stats.avec_validation' | translate }}</span>
       </div>
     </div>
   </div>
@@ -61,7 +63,7 @@
     <mat-card-header>
       <mat-card-title>
         <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
-        {{ isEditing ? 'Modifier le type de dépense' : 'Nouveau type de dépense' }}
+        {{ (isEditing ? 'type_depense.formulaire.titre_modifier' : 'type_depense.formulaire.titre_creer') | translate }}
       </mat-card-title>
       <button mat-icon-button (click)="closeForm()" class="close-btn">
         <mat-icon>close</mat-icon>
@@ -71,20 +73,29 @@
     <mat-card-content>
       <form [formGroup]="typeForm" (ngSubmit)="saveType()">
         <div class="form-grid">
+
           <!-- Nom -->
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nom du type</mat-label>
-            <input matInput formControlName="nom" placeholder="Ex: Achat équipement">
+            <mat-label>{{ 'type_contribution.champs.nom' | translate }}</mat-label>
+            <input matInput formControlName="nom"
+                   [placeholder]="'type_depense.champs.nom_placeholder' | translate">
             <mat-icon matPrefix>label</mat-icon>
-            <mat-error *ngIf="typeForm.get('nom')?.hasError('required')">Le nom est requis</mat-error>
-            <mat-error *ngIf="typeForm.get('nom')?.hasError('minlength')">Minimum 2 caractères</mat-error>
-            <mat-error *ngIf="typeForm.get('nom')?.hasError('maxlength')">Maximum 50 caractères</mat-error>
+            <mat-error *ngIf="typeForm.get('nom')?.hasError('required')">
+              {{ 'type_contribution.erreurs.nom_requis' | translate }}
+            </mat-error>
+            <mat-error *ngIf="typeForm.get('nom')?.hasError('minlength')">
+              {{ 'commun.erreurs.min_2_caracteres' | translate }}
+            </mat-error>
+            <mat-error *ngIf="typeForm.get('nom')?.hasError('maxlength')">
+              {{ 'commun.erreurs.max_50_caracteres' | translate }}
+            </mat-error>
           </mat-form-field>
 
           <!-- Description -->
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Description (optionnel)</mat-label>
-            <textarea matInput formControlName="description" rows="2" placeholder="Description du type de dépense"></textarea>
+            <mat-label>{{ 'type_depense.champs.description_optionnel' | translate }}</mat-label>
+            <textarea matInput formControlName="description" rows="2"
+                      [placeholder]="'type_depense.champs.description_placeholder' | translate"></textarea>
             <mat-icon matPrefix>description</mat-icon>
             <mat-hint align="end">{{ typeForm.get('description')?.value?.length || 0 }}/200</mat-hint>
           </mat-form-field>
@@ -92,7 +103,7 @@
           <!-- Icône et Couleur -->
           <div class="form-row">
             <mat-form-field appearance="outline">
-              <mat-label>Icône</mat-label>
+              <mat-label>{{ 'type_depense.champs.icone' | translate }}</mat-label>
               <mat-select formControlName="icone">
                 <mat-option *ngFor="let icon of icones" [value]="icon.value">
                   <mat-icon>{{ icon.value }}</mat-icon>
@@ -103,7 +114,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Couleur</mat-label>
+              <mat-label>{{ 'type_depense.champs.couleur' | translate }}</mat-label>
               <mat-select formControlName="couleur">
                 <mat-option *ngFor="let color of couleurs" [value]="color.value">
                   <span class="color-preview" [style.background]="color.value"></span>
@@ -118,49 +129,61 @@
           <div class="options-section">
             <div class="option-item">
               <mat-slide-toggle formControlName="isGenerique" color="primary">
-                Type générique (disponible pour tous les groupes)
+                {{ 'type_depense.options.generique' | translate }}
               </mat-slide-toggle>
-              <mat-icon matTooltip="Les types génériques sont partagés entre tous les groupes" class="info-icon">info</mat-icon>
+              <mat-icon [matTooltip]="'type_depense.options.generique_tooltip' | translate"
+                        class="info-icon">info</mat-icon>
             </div>
 
             <div class="option-item">
               <mat-slide-toggle formControlName="necessiteValidation" color="accent">
-                Nécessite une validation
+                {{ 'type_depense.options.necessite_validation' | translate }}
               </mat-slide-toggle>
-              <mat-icon matTooltip="Les dépenses de ce type nécessiteront une validation admin" class="info-icon">info</mat-icon>
+              <mat-icon [matTooltip]="'type_depense.options.necessite_validation_tooltip' | translate"
+                        class="info-icon">info</mat-icon>
             </div>
 
             <!-- Seuil de validation -->
-            <mat-form-field appearance="outline" *ngIf="typeForm.get('necessiteValidation')?.value" class="seuil-field" @fadeIn>
-              <mat-label>Seuil de validation (FCFA)</mat-label>
+            <mat-form-field appearance="outline"
+                            *ngIf="typeForm.get('necessiteValidation')?.value"
+                            class="seuil-field"
+                            @fadeIn>
+              <mat-label>{{ 'type_depense.champs.seuil_validation' | translate }}</mat-label>
               <input matInput type="number" formControlName="seuilValidation" placeholder="50000">
               <mat-icon matPrefix>attach_money</mat-icon>
-              <mat-hint>Montant minimum nécessitant une validation</mat-hint>
+              <mat-hint>{{ 'type_depense.hints.seuil_validation' | translate }}</mat-hint>
             </mat-form-field>
 
             <div class="option-item">
               <mat-slide-toggle formControlName="actif" color="primary">
-                Type actif
+                {{ 'type_depense.options.actif' | translate }}
               </mat-slide-toggle>
             </div>
           </div>
         </div>
 
-        <!-- Preview -->
+        <!-- Aperçu -->
         <div class="preview-section">
-          <span class="preview-label">Aperçu :</span>
+          <span class="preview-label">{{ 'commun.apercu' | translate }}</span>
           <div class="type-preview" [style.borderColor]="typeForm.get('couleur')?.value">
-            <mat-icon [style.color]="typeForm.get('couleur')?.value">{{ typeForm.get('icone')?.value }}</mat-icon>
-            <span>{{ typeForm.get('nom')?.value || 'Nom du type' }}</span>
+            <mat-icon [style.color]="typeForm.get('couleur')?.value">
+              {{ typeForm.get('icone')?.value }}
+            </mat-icon>
+            <span>{{ typeForm.get('nom')?.value || ('type_depense.champs.nom_placeholder_preview' | translate) }}</span>
           </div>
         </div>
 
         <!-- Actions -->
         <div class="form-actions">
-          <button mat-button type="button" (click)="closeForm()">Annuler</button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="isSaving || typeForm.invalid">
+          <button mat-button type="button" (click)="closeForm()">
+            {{ 'commun.actions.annuler' | translate }}
+          </button>
+          <button mat-raised-button color="primary" type="submit"
+                  [disabled]="isSaving || typeForm.invalid">
             <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
-            <span *ngIf="!isSaving">{{ isEditing ? 'Modifier' : 'Créer' }}</span>
+            <span *ngIf="!isSaving">
+              {{ (isEditing ? 'commun.actions.modifier' : 'commun.actions.creer') | translate }}
+            </span>
           </button>
         </div>
       </form>
@@ -171,8 +194,9 @@
   <mat-card class="filters-card">
     <div class="filters-row">
       <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Rechercher</mat-label>
-        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" placeholder="Nom ou description">
+        <mat-label>{{ 'commun.filtres.rechercher' | translate }}</mat-label>
+        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearch()"
+               [placeholder]="'type_depense.filtres.recherche_placeholder' | translate">
         <mat-icon matPrefix>search</mat-icon>
         <button mat-icon-button matSuffix *ngIf="searchTerm" (click)="searchTerm = ''; onSearch()">
           <mat-icon>close</mat-icon>
@@ -180,41 +204,50 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Statut</mat-label>
+        <mat-label>{{ 'utilisateurs.filtres.statut' | translate }}</mat-label>
         <mat-select [(ngModel)]="filterActif" (ngModelChange)="onFilterChange()">
-          <mat-option value="all">Tous</mat-option>
-          <mat-option value="actif">Actifs uniquement</mat-option>
-          <mat-option value="inactif">Inactifs uniquement</mat-option>
+          <mat-option value="all">{{ 'commun.filtres.tous' | translate }}</mat-option>
+          <mat-option value="actif">{{ 'type_depense.filtres.actifs_uniquement' | translate }}</mat-option>
+          <mat-option value="inactif">{{ 'type_depense.filtres.inactifs_uniquement' | translate }}</mat-option>
         </mat-select>
       </mat-form-field>
 
-      <span class="results-count">{{ dataSource.data.length }} résultat(s)</span>
+      <span class="results-count">
+        {{ 'echeancier.resultats' | translate: { count: dataSource.data.length } }}
+      </span>
     </div>
   </mat-card>
 
   <!-- Loading -->
   <div class="loading-container" *ngIf="isLoading">
     <mat-spinner diameter="50"></mat-spinner>
-    <p>Chargement des types de dépenses...</p>
+    <p>{{ 'type_depense.chargement' | translate }}</p>
   </div>
 
   <!-- Tableau -->
   <mat-card class="table-card" *ngIf="!isLoading">
-    <!-- Empty State -->
+
+    <!-- État vide -->
     <div class="empty-state" *ngIf="dataSource.data.length === 0">
       <mat-icon>category</mat-icon>
-      <h3>Aucun type de dépense</h3>
-      <p *ngIf="searchTerm || filterActif !== 'all'">Aucun résultat avec ces filtres</p>
-      <p *ngIf="!searchTerm && filterActif === 'all'">Commencez par créer votre premier type de dépense</p>
-      <button mat-raised-button color="primary" (click)="openForm()" *ngIf="!searchTerm && filterActif === 'all'">
+      <h3>{{ 'type_depense.vide.titre' | translate }}</h3>
+      <p *ngIf="searchTerm || filterActif !== 'all'">
+        {{ 'commun.filtres.aucun_resultat' | translate }}
+      </p>
+      <p *ngIf="!searchTerm && filterActif === 'all'">
+        {{ 'type_depense.vide.description' | translate }}
+      </p>
+      <button mat-raised-button color="primary" (click)="openForm()"
+              *ngIf="!searchTerm && filterActif === 'all'">
         <mat-icon>add</mat-icon>
-        Créer un type
+        {{ 'type_depense.actions.creer_type' | translate }}
       </button>
     </div>
 
-    <!-- Table -->
+    <!-- Tableau -->
     <div class="table-container" *ngIf="dataSource.data.length > 0">
       <table mat-table [dataSource]="dataSource" matSort>
+
         <!-- Icône -->
         <ng-container matColumnDef="icone">
           <th mat-header-cell *matHeaderCellDef></th>
@@ -227,18 +260,20 @@
 
         <!-- Nom -->
         <ng-container matColumnDef="nom">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'type_contribution.table.nom' | translate }}</th>
           <td mat-cell *matCellDef="let type">
             <div class="type-name">
               <span class="name">{{ type.nom }}</span>
-              <mat-chip *ngIf="type.isGenerique" class="chip-generique">Générique</mat-chip>
+              <mat-chip *ngIf="type.isGenerique" class="chip-generique">
+                {{ 'type_depense.badges.generique' | translate }}
+              </mat-chip>
             </div>
           </td>
         </ng-container>
 
         <!-- Description -->
         <ng-container matColumnDef="description">
-          <th mat-header-cell *matHeaderCellDef>Description</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'commun.champs.description' | translate }}</th>
           <td mat-cell *matCellDef="let type">
             <span class="description">{{ type.description || '-' }}</span>
           </td>
@@ -246,12 +281,12 @@
 
         <!-- Validation -->
         <ng-container matColumnDef="validation">
-          <th mat-header-cell *matHeaderCellDef>Validation</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'type_depense.table.validation' | translate }}</th>
           <td mat-cell *matCellDef="let type">
             <div class="validation-info" *ngIf="type.necessiteValidation">
               <mat-icon class="validation-icon">verified_user</mat-icon>
               <span *ngIf="type.seuilValidation">≥ {{ formatMontant(type.seuilValidation) }}</span>
-              <span *ngIf="!type.seuilValidation">Toujours</span>
+              <span *ngIf="!type.seuilValidation">{{ 'type_depense.validation.toujours' | translate }}</span>
             </div>
             <span class="no-validation" *ngIf="!type.necessiteValidation">-</span>
           </td>
@@ -259,10 +294,10 @@
 
         <!-- Statut -->
         <ng-container matColumnDef="statut">
-          <th mat-header-cell *matHeaderCellDef>Statut</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'utilisateurs.filtres.statut' | translate }}</th>
           <td mat-cell *matCellDef="let type">
             <mat-chip [class.chip-actif]="type.actif" [class.chip-inactif]="!type.actif">
-              {{ type.actif ? 'Actif' : 'Inactif' }}
+              {{ (type.actif ? 'type_depense.statut.actif' : 'type_depense.statut.inactif') | translate }}
             </mat-chip>
           </td>
         </ng-container>
@@ -271,33 +306,36 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let type">
-            <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Actions">
+            <button mat-icon-button [matMenuTriggerFor]="menu"
+                    [matTooltip]="'commun.table.actions' | translate">
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #menu="matMenu">
               <button mat-menu-item (click)="openForm(type)">
                 <mat-icon>edit</mat-icon>
-                <span>Modifier</span>
+                <span>{{ 'commun.actions.modifier' | translate }}</span>
               </button>
               <button mat-menu-item (click)="toggleActif(type)">
                 <mat-icon>{{ type.actif ? 'visibility_off' : 'visibility' }}</mat-icon>
-                <span>{{ type.actif ? 'Désactiver' : 'Activer' }}</span>
+                <span>{{ (type.actif ? 'type_depense.actions.desactiver' : 'type_depense.actions.activer') | translate }}</span>
               </button>
               <mat-divider></mat-divider>
-              <button mat-menu-item (click)="deleteType(type)" class="delete-action" [disabled]="type.isGenerique">
+              <button mat-menu-item (click)="deleteType(type)" class="delete-action"
+                      [disabled]="type.isGenerique">
                 <mat-icon>delete</mat-icon>
-                <span>Supprimer</span>
+                <span>{{ 'commun.actions.supprimer' | translate }}</span>
               </button>
             </mat-menu>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
             [class.row-inactive]="!row.actif"></tr>
       </table>
 
       <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
     </div>
   </mat-card>
+
 </div>

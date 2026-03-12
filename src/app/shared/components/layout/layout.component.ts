@@ -60,7 +60,7 @@ import { SplashScreenService } from '../../../core/services/splash-screen.servic
     TranslateModule,
     // ✅ COMPOSANTS PUBLICITÉ
     PubliciteSplashComponent,
-    PubliciteBannerComponent,
+    // PubliciteBannerComponent,
   ],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']

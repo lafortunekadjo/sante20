@@ -1,6 +1,40 @@
 // type-contribution.component.scss
-@import '../../../../../variables';
+@use '../../../../../variables' as *;
 
+// ===== THEMING =====
+:host {
+  --primary-color: #{$primary-blue};
+  --primary-dark: #{$primary-blue-dark};
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --info-color: #{$info-color};
+  --accent-color: #{$accent-orange};
+  --accent-dark: #{$accent-orange-dark};
+
+  // Mode clair
+  --text-primary: #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --text-tertiary: #{$light-text-tertiary};
+  --border-color: #{$light-border};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary: #{$light-bg-secondary};
+  --background-tertiary: #{$light-bg-tertiary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary: #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --text-tertiary: #{$dark-text-tertiary};
+  --border-color: #{$dark-border};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary: #{$dark-bg-secondary};
+  --background-tertiary: #{$dark-bg-tertiary};
+}
+
+// ===== CONTAINER =====
 .type-contribution-container {
   @include page-container;
 }
@@ -61,18 +95,12 @@
 // ===== FORMULAIRE CRÉATION =====
 .create-form-container {
   margin-bottom: $spacing-2xl;
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown $transition-base ease-out;
+}
 
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .modern-card {
@@ -84,6 +112,7 @@
   }
 }
 
+// ===== CARD HEADER / BODY / FOOTER =====
 .card-header {
   display: flex;
   align-items: center;
@@ -161,7 +190,8 @@
   }
 
   .form-field {
-    &.full-width {
+    &.full-width,
+    &.w-full {
       grid-column: 1 / -1;
     }
   }
@@ -247,7 +277,7 @@
             display: block;
             font-size: $font-size-xs;
             color: var(--text-secondary);
-            margin-top: 2px;
+            margin-top: $spacing-xs;
           }
         }
       }
@@ -308,9 +338,7 @@
 .mobile-cards-view {
   display: none;
 
-  @include mobile {
-    display: block;
-  }
+  @include mobile { display: block; }
 
   .type-card {
     @include card-base;
@@ -344,13 +372,11 @@
           }
         }
 
-        .title-content {
-          h4 {
-            margin: 0 0 $spacing-xs 0;
-            font-size: $font-size-md;
-            font-weight: $font-weight-semibold;
-            color: var(--text-primary);
-          }
+        .title-content h4 {
+          margin: 0 0 $spacing-xs 0;
+          font-size: $font-size-md;
+          font-weight: $font-weight-semibold;
+          color: var(--text-primary);
         }
       }
 
@@ -399,17 +425,15 @@
       }
 
       .options-tags {
-        mat-chip-set {
-          mat-chip {
-            font-size: $font-size-xs;
-            height: 28px;
+        mat-chip-set mat-chip {
+          font-size: $font-size-xs;
+          height: 28px;
 
-            mat-icon {
-              font-size: 14px;
-              width: 14px;
-              height: 14px;
-              margin-right: $spacing-xs;
-            }
+          mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+            margin-right: $spacing-xs;
           }
         }
       }
@@ -422,14 +446,11 @@
   @include card-base;
   overflow: hidden;
 
-  @include mobile {
-    display: none;
-  }
+  @include mobile { display: none; }
 
   .types-table {
     width: 100%;
 
-    // Header du tableau
     th.mat-header-cell {
       background: var(--background-tertiary);
       color: var(--text-primary);
@@ -439,7 +460,6 @@
       border-bottom: 2px solid var(--border-color);
     }
 
-    // Cellules
     td.mat-cell {
       padding: $spacing-lg;
       border-bottom: 1px solid var(--border-color);
@@ -447,12 +467,10 @@
       font-size: $font-size-sm;
     }
 
-    // Lignes au survol
     tr.mat-row:hover {
       background: var(--background-tertiary);
     }
 
-    // Nom du type avec icône
     .type-name {
       display: flex;
       align-items: center;
@@ -472,12 +490,9 @@
         }
       }
 
-      span {
-        font-weight: $font-weight-medium;
-      }
+      span { font-weight: $font-weight-medium; }
     }
 
-    // Options sous forme d'icônes
     .options-icons {
       display: flex;
       gap: $spacing-sm;
@@ -487,14 +502,12 @@
         width: 18px;
         height: 18px;
         opacity: 0.8;
+        transition: opacity $transition-fast;
 
-        &:hover {
-          opacity: 1;
-        }
+        &:hover { opacity: 1; }
       }
     }
 
-    // Actions
     .action-buttons {
       display: flex;
       gap: $spacing-xs;
@@ -512,7 +525,6 @@
     }
   }
 
-  // Pagination
   mat-paginator {
     background: var(--background-tertiary);
     border-top: 1px solid var(--border-color);
@@ -549,6 +561,35 @@
   margin: $spacing-3xl auto;
   max-width: 500px;
 
+  // Pas d'exercice actif (format simplifié sans .empty-content)
+  > .empty-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: var(--text-tertiary);
+    opacity: 0.6;
+    margin-bottom: $spacing-xl;
+  }
+
+  > h3 {
+    margin: 0 0 $spacing-md 0;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+  }
+
+  > p {
+    margin: 0 0 $spacing-xl 0;
+    color: var(--text-secondary);
+  }
+
+  > button {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  // Format avec .empty-content (état vide avec filtres)
   .empty-content {
     .empty-title {
       margin: 0 0 $spacing-md 0;
@@ -564,12 +605,10 @@
       max-width: 400px;
     }
 
-    .empty-actions {
-      button {
-        display: flex;
-        align-items: center;
-        gap: $spacing-sm;
-      }
+    .empty-actions button {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
     }
   }
 }

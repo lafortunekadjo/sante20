@@ -32,6 +32,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { PartenaireService } from '../../../../core/services/partenaire.service';
 import { AdminPartenaireService, PartenaireListParams } from '../../../../core/services/admin-partenaire.service';
 import { PartenaireDTO } from '../../../../core/models/partenaire.model';
+import { TranslateModule } from '@ngx-translate/core';
 
 // Interface pour les rôles
 interface RoleObject {
@@ -74,7 +75,8 @@ interface UserStats {
     MatSnackBarModule,
     FormsModule,
     MatProgressSpinnerModule,
-    RouterModule
+    RouterModule,
+    TranslateModule
   ],
   animations: [
     trigger('fadeSlideIn', [

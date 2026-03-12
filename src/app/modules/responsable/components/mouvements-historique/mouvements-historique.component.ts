@@ -24,6 +24,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Caisse, Exercice, FinancesService, MouvementCaisse } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 // Services
 
@@ -55,7 +56,8 @@ import { AuthService } from '../../../../core/services/auth.service';
     MatChipsModule,
     MatTooltipModule,
     MatMenuModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    TranslateModule
   ],
   templateUrl: './mouvements-historique.component.html',
   styleUrls: ['./mouvements-historique.component.scss']

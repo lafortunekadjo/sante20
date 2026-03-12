@@ -25,6 +25,7 @@ import { GroupeService } from '../../../../core/services/groupe.service';
 import { QuestionCandidatureService } from '../../../../core/services/question-candidature.service';
 import { finalize } from 'rxjs/operators';
 import { environment } from '../../../../environment';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 @Component({
@@ -48,7 +49,8 @@ import { environment } from '../../../../environment';
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatDividerModule,
-    DragDropModule
+    DragDropModule,
+    TranslateModule
   ],
   templateUrl: './groupe-config.component.html',
   styleUrl: './groupe-config.component.scss'

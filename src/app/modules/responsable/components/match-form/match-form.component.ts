@@ -445,7 +445,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${team1} vs ${team2}`;
   }
 
-  getTypeMatchLabel(type: TypeMatch | undefined): string {
+  getTypeMatchLabel(type: string): string {
     if (!type) return 'Match';
     const labels: Record<TypeMatch, string> = {
       'INTERNE': 'Match Interne',
@@ -453,8 +453,13 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       'AMICAL': 'Match Amical',
       'ANNIVERSAIRE': 'Match Anniversaire'
     };
-    return labels[type] || 'Match';
+    return `MATCH.TYPES.${type}`;
   }
+
+  // Au lieu de retourner "Interne"
+// getTypeMatchLabel(type: string) {
+//   return `MATCH.TYPES.${type}`; // Retourne 'MATCH.TYPES.INTERNE'
+// }
 
   getMembreName(membre: Membre | null): string {
     return membre ? `${membre.prenom} ${membre.nom}` : '-';

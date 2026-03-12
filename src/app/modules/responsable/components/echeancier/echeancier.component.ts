@@ -29,6 +29,7 @@ import { GroupeService } from '../../../../core/services/groupe.service';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatDividerModule } from '@angular/material/divider';
+import { TranslateModule } from '@ngx-translate/core';
 
 // Interfaces
 interface Echeance {
@@ -83,7 +84,8 @@ interface TypeContribution {
     MatBadgeModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatDividerModule
+    MatDividerModule,
+    TranslateModule
   ],
   templateUrl: './echeancier.component.html',
   styleUrls: ['./echeancier.component.scss']

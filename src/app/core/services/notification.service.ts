@@ -113,37 +113,40 @@ export class NotificationService implements OnDestroy {
   // WEBSOCKET - Temps réel
   // ============================================================
 
-  private initWebSocket(): void {
-    // Vérifier si le service WebSocket est disponible
-    if (!this.rxStompService) {
-      console.warn('RxStompService non disponible');
-      return;
-    }
-
-    // S'abonner aux notifications en temps réel
-    this.rxStompService.watch('/user/queue/notifications')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((message: IMessage) => {
-        try {
-          const notification: AppNotification = JSON.parse(message.body);
-          this.handleNewNotification(notification);
-        } catch (e) {
-          console.error('Erreur parsing notification:', e);
-        }
-      });
-
-    // S'abonner aux mises à jour du badge
-    this.rxStompService.watch('/user/queue/notifications/badge')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((message: IMessage) => {
-        try {
-          const data = JSON.parse(message.body);
-          this.unreadCountSubject.next(data.unreadCount);
-        } catch (e) {
-          console.error('Erreur parsing badge:', e);
-        }
-      });
+private initWebSocket(): void {
+  // 1. Vérifier si le service WebSocket est disponible
+  if (!this.rxStompService) {
+    console.warn('[NotificationService] RxStompService non disponible');
+    return;
   }
+
+  /**
+   * 2. S'abonner aux notifications en temps réel
+   * Le typage <AppNotification> indique au service de parser le JSON automatiquement
+   */
+  this.rxStompService.watch<AppNotification>('/user/queue/notifications')
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (notification: AppNotification) => {
+        console.log('[NotificationService] Nouvelle notification reçue:', notification);
+        this.handleNewNotification(notification);
+      },
+      error: (err) => console.error('[NotificationService] Erreur flux notifications:', err)
+    });
+
+  /**
+   * 3. S'abonner aux mises à jour du badge (compteur non lu)
+   */
+  this.rxStompService.watch<{ unreadCount: number }>('/user/queue/notifications/badge')
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (data) => {
+        console.log('[NotificationService] Nouveau compte non lu:', data.unreadCount);
+        this.unreadCountSubject.next(data.unreadCount);
+      },
+      error: (err) => console.error('[NotificationService] Erreur flux badge:', err)
+    });
+}
 
   private handleNewNotification(notification: AppNotification): void {
     // Ajouter au début de la liste

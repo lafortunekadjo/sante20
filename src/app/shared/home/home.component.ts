@@ -10,6 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRippleModule } from '@angular/material/core';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface Feature {
   icon: string;
@@ -48,7 +49,8 @@ interface FAQ {
     MatTabsModule,
     MatChipsModule,
     MatDividerModule,
-    MatRippleModule
+    MatRippleModule,
+    TranslateModule
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']

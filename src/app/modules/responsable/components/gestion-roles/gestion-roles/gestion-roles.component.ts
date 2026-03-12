@@ -24,6 +24,7 @@ import { finalize } from 'rxjs';
 import { Menu, MenuCategorie } from '../../../../../core/models/menu.model';
 import { RoleCustom, CreateRoleCustomDTO } from '../../../../../core/models/role-custom.model';
 import { RoleCustomService } from '../../../../../core/services/role-custom.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-gestion-roles',
@@ -45,7 +46,8 @@ import { RoleCustomService } from '../../../../../core/services/role-custom.serv
     MatDividerModule,
     MatSlideToggleModule,
     MatDialogModule,
-    MatBadgeModule
+    MatBadgeModule,
+    TranslateModule
   ],
   templateUrl: './gestion-roles.component.html',
   styleUrl: './gestion-roles.component.scss'

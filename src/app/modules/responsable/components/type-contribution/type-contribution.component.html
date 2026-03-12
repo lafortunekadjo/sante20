@@ -8,16 +8,16 @@
         <div class="header-text">
           <h1 class="page-title">
             <mat-icon class="header-icon">category</mat-icon>
-            Types de Contributions
+            {{ 'type_contribution.titre' | translate }}
           </h1>
-          <p class="page-subtitle">Configurez les différents types de cotisations et contributions</p>
+          <p class="page-subtitle">{{ 'type_contribution.sous_titre' | translate }}</p>
         </div>
       </div>
 
       <div class="header-stats" *ngIf="typesContributions.length > 0">
         <div class="stat-item">
           <span class="stat-number">{{ typesContributions.length }}</span>
-          <span class="stat-label">Types actifs</span>
+          <span class="stat-label">{{ 'type_contribution.stats.types_actifs' | translate }}</span>
         </div>
       </div>
     </div>
@@ -29,7 +29,7 @@
       <mat-spinner diameter="60"></mat-spinner>
     </div>
     <div class="loading-content">
-      <h3>Chargement...</h3>
+      <h3>{{ 'commun.chargement' | translate }}</h3>
     </div>
   </div>
 
@@ -38,12 +38,12 @@
 
     <!-- Bouton créer -->
     <div class="action-controls">
-      <button mat-raised-button 
-              color="primary" 
+      <button mat-raised-button
+              color="primary"
               (click)="toggleCreateForm()"
               class="create-button">
         <mat-icon>{{ showCreateForm ? 'close' : 'add' }}</mat-icon>
-        {{ showCreateForm ? 'Annuler' : 'Nouveau Type' }}
+        {{ (showCreateForm ? 'commun.actions.annuler' : 'type_contribution.actions.nouveau_type') | translate }}
       </button>
     </div>
 
@@ -55,27 +55,30 @@
             <mat-icon>{{ editingId ? 'edit' : 'add_circle' }}</mat-icon>
           </div>
           <div class="card-title-group">
-            <h3 class="card-title">{{ editingId ? 'Modifier le type' : 'Nouveau type de contribution' }}</h3>
-            <p class="card-subtitle">Définissez les caractéristiques de ce type de cotisation</p>
+            <h3 class="card-title">
+              {{ (editingId ? 'type_contribution.formulaire.titre_modifier' : 'type_contribution.formulaire.titre_creer') | translate }}
+            </h3>
+            <p class="card-subtitle">{{ 'type_contribution.formulaire.sous_titre' | translate }}</p>
           </div>
         </div>
 
         <form [formGroup]="typeForm" class="card-body">
           <div class="form-grid">
-            
+
             <!-- Nom -->
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Nom du type</mat-label>
-              <input matInput formControlName="nom" placeholder="Ex: Cotisation mensuelle">
+              <mat-label>{{ 'type_contribution.champs.nom' | translate }}</mat-label>
+              <input matInput formControlName="nom"
+                     [placeholder]="'type_contribution.champs.nom_placeholder' | translate">
               <mat-icon matPrefix>label</mat-icon>
               <mat-error *ngIf="typeForm.get('nom')?.hasError('required')">
-                Le nom est requis
+                {{ 'type_contribution.erreurs.nom_requis' | translate }}
               </mat-error>
             </mat-form-field>
 
             <!-- Fréquence -->
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Fréquence</mat-label>
+              <mat-label>{{ 'type_contribution.champs.frequence' | translate }}</mat-label>
               <mat-select formControlName="frequence" required>
                 <mat-option *ngFor="let freq of frequences" [value]="freq.value">
                   {{ freq.label }}
@@ -86,25 +89,25 @@
 
             <!-- Montant standard -->
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Montant standard</mat-label>
+              <mat-label>{{ 'type_contribution.champs.montant_standard' | translate }}</mat-label>
               <input matInput type="number" formControlName="montantStandard" min="0">
-              <span matSuffix>FCFA</span>
+              <span matSuffix>{{ 'commun.devise' | translate }}</span>
               <mat-icon matPrefix>payments</mat-icon>
-              <mat-hint>Montant suggéré par défaut</mat-hint>
+              <mat-hint>{{ 'type_contribution.hints.montant_standard' | translate }}</mat-hint>
             </mat-form-field>
 
             <!-- Montant minimum -->
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Montant minimum</mat-label>
+              <mat-label>{{ 'type_contribution.champs.montant_minimum' | translate }}</mat-label>
               <input matInput type="number" formControlName="montantMinimum" min="0">
-              <span matSuffix>FCFA</span>
+              <span matSuffix>{{ 'commun.devise' | translate }}</span>
               <mat-icon matPrefix>trending_down</mat-icon>
-              <mat-hint>Montant minimum accepté</mat-hint>
+              <mat-hint>{{ 'type_contribution.hints.montant_minimum' | translate }}</mat-hint>
             </mat-form-field>
 
             <!-- Caisse de destination -->
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Caisse de destination</mat-label>
+              <mat-label>{{ 'finances.entree.formulaire.caisse_destination' | translate }}</mat-label>
               <mat-select formControlName="caisseId" required>
                 <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
                   <div class="caisse-option">
@@ -117,68 +120,62 @@
               </mat-select>
               <mat-icon matPrefix>account_balance</mat-icon>
               <mat-error *ngIf="typeForm.get('caisseId')?.hasError('required')">
-                Sélectionnez une caisse
+                {{ 'finances.entree.erreurs.caisse_requise' | translate }}
               </mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="form-field w-full"  *ngIf="typeForm.get('frequence')?.value === 'PONCTUELLE'">
-                <mat-label>Délai de contribution</mat-label>
-                <input matInput [matDatepicker]="picker" formControlName="delai" placeholder="Choisissez une date">
-                <mat-hint>Date limite de contribution</mat-hint>
-                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                <mat-datepicker #picker></mat-datepicker>
-                <mat-icon matPrefix>event</mat-icon>
-                
-                <!-- Optionnel : Message d'erreur -->
-                @if (typeForm.get('delai')?.hasError('required')) {
-                  <mat-error>Le délai est obligatoire</mat-error>
-                }
-              </mat-form-field>
-
-            <!-- Jour d'échéance (pour mensuelle) -->
-            <mat-form-field appearance="outline" class="form-field" 
-                           *ngIf="typeForm.get('frequence')?.value === 'MENSUELLE'">
-              <mat-label>Jour d'échéance</mat-label>
-              <input matInput type="number" formControlName="jourEcheance" min="1" max="31">
+            <!-- Délai (PONCTUELLE) -->
+            <mat-form-field appearance="outline" class="form-field w-full"
+                            *ngIf="typeForm.get('frequence')?.value === 'PONCTUELLE'">
+              <mat-label>{{ 'type_contribution.champs.delai' | translate }}</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="delai"
+                     [placeholder]="'type_contribution.hints.delai_placeholder' | translate">
+              <mat-hint>{{ 'type_contribution.hints.delai' | translate }}</mat-hint>
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
               <mat-icon matPrefix>event</mat-icon>
-              <mat-hint>Jour du mois pour l'échéance</mat-hint>
+              @if (typeForm.get('delai')?.hasError('required')) {
+                <mat-error>{{ 'type_contribution.erreurs.delai_requis' | translate }}</mat-error>
+              }
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Montant minimum</mat-label>
-              <input matInput type="number" formControlName="montantMinimum" min="0">
-              <span matSuffix>FCFA</span>
-              <mat-icon matPrefix>trending_down</mat-icon>
-              <mat-hint>Montant minimum accepté</mat-hint>
+            <!-- Jour d'échéance (MENSUELLE) -->
+            <mat-form-field appearance="outline" class="form-field"
+                            *ngIf="typeForm.get('frequence')?.value === 'MENSUELLE'">
+              <mat-label>{{ 'type_contribution.champs.jour_echeance' | translate }}</mat-label>
+              <input matInput type="number" formControlName="jourEcheance" min="1" max="31">
+              <mat-icon matPrefix>event</mat-icon>
+              <mat-hint>{{ 'type_contribution.hints.jour_echeance' | translate }}</mat-hint>
             </mat-form-field>
 
             <!-- Description -->
             <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>Description</mat-label>
+              <mat-label>{{ 'commun.champs.description' | translate }}</mat-label>
               <textarea matInput formControlName="description" rows="2"></textarea>
               <mat-icon matPrefix>description</mat-icon>
             </mat-form-field>
 
             <!-- Options -->
             <div class="form-field full-width options-section">
-              <h4>Options</h4>
+              <h4>{{ 'commun.options' | translate }}</h4>
               <div class="options-grid">
+
                 <mat-checkbox formControlName="obligatoire" color="primary">
                   <div class="checkbox-content">
                     <mat-icon>priority_high</mat-icon>
                     <div>
-                      <span>Obligatoire</span>
-                      <small>Tous les membres doivent payer</small>
+                      <span>{{ 'type_contribution.options.obligatoire' | translate }}</span>
+                      <small>{{ 'type_contribution.options.obligatoire_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
 
                 <mat-checkbox formControlName="actif" color="primary">
                   <div class="checkbox-content">
-                    <mat-icon>priority_high</mat-icon>
+                    <mat-icon>check_circle</mat-icon>
                     <div>
-                      <span>Active</span>
-                      <small>Cette contribution est en cours</small>
+                      <span>{{ 'type_contribution.options.actif' | translate }}</span>
+                      <small>{{ 'type_contribution.options.actif_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
@@ -187,8 +184,8 @@
                   <div class="checkbox-content">
                     <mat-icon>auto_mode</mat-icon>
                     <div>
-                      <span>Générer automatiquement</span>
-                      <small>Créer les échéances automatiquement</small>
+                      <span>{{ 'type_contribution.options.generer_auto' | translate }}</span>
+                      <small>{{ 'type_contribution.options.generer_auto_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
@@ -197,8 +194,8 @@
                   <div class="checkbox-content">
                     <mat-icon>event</mat-icon>
                     <div>
-                      <span>Lié à un événement</span>
-                      <small>Ex: mariage, décès, naissance</small>
+                      <span>{{ 'type_contribution.options.lie_evenement' | translate }}</span>
+                      <small>{{ 'type_contribution.options.lie_evenement_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
@@ -207,8 +204,8 @@
                   <div class="checkbox-content">
                     <mat-icon>redo</mat-icon>
                     <div>
-                      <span>Reportable</span>
-                      <small>Peut être reporté à l'exercice suivant</small>
+                      <span>{{ 'type_contribution.options.reportable' | translate }}</span>
+                      <small>{{ 'type_contribution.options.reportable_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
@@ -217,17 +214,17 @@
                   <div class="checkbox-content">
                     <mat-icon>person_pin</mat-icon>
                     <div>
-                      <span>Mettre à jour statut membre</span>
-                      <small>Marquer le membre comme à jour après paiement</small>
+                      <span>{{ 'type_contribution.options.maj_statut' | translate }}</span>
+                      <small>{{ 'type_contribution.options.maj_statut_hint' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
               </div>
 
               <!-- Champ statut membre -->
-              <mat-form-field appearance="outline" class="form-field" 
-                             *ngIf="typeForm.get('majStatutMembre')?.value">
-                <mat-label>Champ à mettre à jour</mat-label>
+              <mat-form-field appearance="outline" class="form-field"
+                              *ngIf="typeForm.get('majStatutMembre')?.value">
+                <mat-label>{{ 'type_contribution.champs.champ_statut' | translate }}</mat-label>
                 <mat-select formControlName="champStatutMembre">
                   <mat-option *ngFor="let champ of champsStatut" [value]="champ.value">
                     {{ champ.label }}
@@ -241,16 +238,18 @@
 
         <div class="card-footer">
           <div class="primary-actions">
-            <button mat-raised-button 
-                    color="primary" 
+            <button mat-raised-button
+                    color="primary"
                     (click)="saveType()"
                     [disabled]="typeForm.invalid || isSaving">
               <mat-icon>{{ isSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-              {{ isSaving ? 'Enregistrement...' : (editingId ? 'Modifier' : 'Créer') }}
+              {{ isSaving
+                  ? ('commun.actions.enregistrement_en_cours' | translate)
+                  : ((editingId ? 'commun.actions.modifier' : 'commun.actions.creer') | translate) }}
             </button>
             <button mat-stroked-button (click)="toggleCreateForm()">
               <mat-icon>close</mat-icon>
-              Annuler
+              {{ 'commun.actions.annuler' | translate }}
             </button>
           </div>
         </div>
@@ -264,7 +263,7 @@
           <mat-icon>list</mat-icon>
         </div>
         <div class="header-text">
-          <h2>Types configurés</h2>
+          <h2>{{ 'type_contribution.liste.titre' | translate }}</h2>
           <span class="badge">{{ typesContributions.length }}</span>
         </div>
       </div>
@@ -284,10 +283,12 @@
                 </div>
               </div>
               <div class="card-actions">
-                <button mat-icon-button color="primary" (click)="editType(type)" matTooltip="Modifier">
+                <button mat-icon-button color="primary" (click)="editType(type)"
+                        [matTooltip]="'commun.actions.modifier' | translate">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteType(type)" matTooltip="Supprimer">
+                <button mat-icon-button color="warn" (click)="deleteType(type)"
+                        [matTooltip]="'commun.actions.supprimer' | translate">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -296,11 +297,11 @@
             <div class="card-content">
               <div class="info-grid">
                 <div class="info-item" *ngIf="type.montantStandard">
-                  <label>Montant standard</label>
+                  <label>{{ 'type_contribution.champs.montant_standard' | translate }}</label>
                   <span class="montant">{{ formatMontant(type.montantStandard) }}</span>
                 </div>
                 <div class="info-item">
-                  <label>Caisse</label>
+                  <label>{{ 'finances.caisse.titre' | translate }}</label>
                   <span class="caisse-badge" [style.background-color]="getCaisseColor(type.caisse)">
                     {{ type.caisse?.nom }}
                   </span>
@@ -311,19 +312,19 @@
                 <mat-chip-set>
                   <mat-chip *ngIf="type.obligatoire" color="warn">
                     <mat-icon>priority_high</mat-icon>
-                    Obligatoire
+                    {{ 'type_contribution.options.obligatoire' | translate }}
                   </mat-chip>
                   <mat-chip *ngIf="type.genererEcheancesAuto" color="primary">
                     <mat-icon>auto_mode</mat-icon>
-                    Auto
+                    {{ 'type_contribution.options.auto' | translate }}
                   </mat-chip>
                   <mat-chip *ngIf="type.lieEvenement">
                     <mat-icon>event</mat-icon>
-                    Événement
+                    {{ 'type_contribution.options.evenement' | translate }}
                   </mat-chip>
                   <mat-chip *ngIf="type.majStatutMembre" color="accent">
                     <mat-icon>sync</mat-icon>
-                    MAJ statut
+                    {{ 'type_contribution.options.maj_statut_court' | translate }}
                   </mat-chip>
                 </mat-chip-set>
               </div>
@@ -334,9 +335,9 @@
         <!-- Vue desktop tableau -->
         <div class="desktop-table-view">
           <table mat-table [dataSource]="dataSource" matSort class="types-table">
-            
+
             <ng-container matColumnDef="nom">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'type_contribution.table.nom' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 <div class="type-name">
                   <div class="type-icon-small" [style.background-color]="getCaisseColor(type.caisse)">
@@ -348,21 +349,21 @@
             </ng-container>
 
             <ng-container matColumnDef="frequence">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Fréquence</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'type_contribution.champs.frequence' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 <span class="frequence-badge">{{ getFrequenceLabel(type.frequence) }}</span>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="montant">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.champs.montant' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 {{ formatMontant(type.montantStandard) }}
               </td>
             </ng-container>
 
             <ng-container matColumnDef="caisse">
-              <th mat-header-cell *matHeaderCellDef>Caisse</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'finances.caisse.titre' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 <span class="caisse-badge" [style.background-color]="getCaisseColor(type.caisse)">
                   {{ type.caisse?.nom }}
@@ -371,25 +372,34 @@
             </ng-container>
 
             <ng-container matColumnDef="options">
-              <th mat-header-cell *matHeaderCellDef>Options</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'commun.options' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 <div class="options-icons">
-                  <mat-icon *ngIf="type.obligatoire" matTooltip="Obligatoire" color="warn">priority_high</mat-icon>
-                  <mat-icon *ngIf="type.genererEcheancesAuto" matTooltip="Auto-génération" color="primary">auto_mode</mat-icon>
-                  <mat-icon *ngIf="type.lieEvenement" matTooltip="Lié événement">event</mat-icon>
-                  <mat-icon *ngIf="type.majStatutMembre" matTooltip="MAJ statut" color="accent">sync</mat-icon>
+                  <mat-icon *ngIf="type.obligatoire"
+                            [matTooltip]="'type_contribution.options.obligatoire' | translate"
+                            color="warn">priority_high</mat-icon>
+                  <mat-icon *ngIf="type.genererEcheancesAuto"
+                            [matTooltip]="'type_contribution.options.generer_auto' | translate"
+                            color="primary">auto_mode</mat-icon>
+                  <mat-icon *ngIf="type.lieEvenement"
+                            [matTooltip]="'type_contribution.options.lie_evenement' | translate">event</mat-icon>
+                  <mat-icon *ngIf="type.majStatutMembre"
+                            [matTooltip]="'type_contribution.options.maj_statut' | translate"
+                            color="accent">sync</mat-icon>
                 </div>
               </td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.actions' | translate }}</th>
               <td mat-cell *matCellDef="let type">
                 <div class="action-buttons">
-                  <button mat-icon-button color="primary" (click)="editType(type)" matTooltip="Modifier">
+                  <button mat-icon-button color="primary" (click)="editType(type)"
+                          [matTooltip]="'commun.actions.modifier' | translate">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="deleteType(type)" matTooltip="Supprimer">
+                  <button mat-icon-button color="warn" (click)="deleteType(type)"
+                          [matTooltip]="'commun.actions.supprimer' | translate">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
@@ -411,12 +421,12 @@
         <mat-icon class="empty-icon">category</mat-icon>
       </div>
       <div class="empty-content">
-        <h3 class="empty-title">Aucun type configuré</h3>
-        <p class="empty-text">Créez des types de contribution pour structurer les cotisations de votre groupe.</p>
+        <h3 class="empty-title">{{ 'type_contribution.vide.titre' | translate }}</h3>
+        <p class="empty-text">{{ 'type_contribution.vide.description' | translate }}</p>
         <div class="empty-actions">
           <button mat-raised-button color="primary" (click)="toggleCreateForm()">
             <mat-icon>add</mat-icon>
-            Créer un type
+            {{ 'type_contribution.actions.creer_type' | translate }}
           </button>
         </div>
       </div>
@@ -427,11 +437,11 @@
   <!-- Pas d'exercice -->
   <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
     <mat-icon class="empty-icon">event_busy</mat-icon>
-    <h3>Aucun exercice actif</h3>
-    <p>Créez un exercice pour configurer les types de contribution.</p>
+    <h3>{{ 'finances.exercice.aucun_actif' | translate }}</h3>
+    <p>{{ 'type_contribution.vide.aucun_exercice' | translate }}</p>
     <button mat-raised-button color="primary" routerLink="/finances/exercices">
       <mat-icon>add</mat-icon>
-      Créer un exercice
+      {{ 'finances.exercice.creer' | translate }}
     </button>
   </div>
 

@@ -23,6 +23,7 @@ import { MatListModule } from '@angular/material/list';
 import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-suggestions',
@@ -46,7 +47,8 @@ import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/public
     MatListModule,
       PubliciteBannerComponent,
       PubliciteAffichageComponent,
-      PubliciteFeedComponent
+      PubliciteFeedComponent,
+      TranslateModule
   ],
   templateUrl: './suggestions.component.html',
   styleUrl: './suggestions.component.scss'

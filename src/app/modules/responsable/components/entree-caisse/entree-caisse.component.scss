@@ -1,6 +1,35 @@
 // entree-caisse.component.scss
-@import '../../../../../variables';
+@use '../../../../../variables' as *;
 
+// ===== THEMING =====
+:host {
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --info-color: #{$info-color};
+  --error-color: #{$error-color};
+
+  // Mode clair
+  --text-primary: #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --border-color: #{$light-border};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary: #{$light-bg-secondary};
+  --background-tertiary: #{$light-bg-tertiary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary: #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --border-color: #{$dark-border};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary: #{$dark-bg-secondary};
+  --background-tertiary: #{$dark-bg-tertiary};
+}
+
+// ===== CONTAINER =====
 .entree-caisse-container {
   @include page-container;
 }
@@ -8,7 +37,6 @@
 // ===== HEADER =====
 .page-header {
   @include page-header;
-  // Override gradient pour les entrées (vert)
   background: linear-gradient(135deg, $success-color 0%, darken($success-color, 15%) 100%);
 
   .header-icon.entree {
@@ -90,6 +118,7 @@
 // ===== SECTION FORMULAIRE =====
 .form-section {
   margin-bottom: $spacing-2xl;
+  animation: slideDown $transition-base ease-out;
 }
 
 .form-card {
@@ -102,7 +131,11 @@
     align-items: center;
     gap: $spacing-lg;
     padding: $spacing-xl;
-    background: linear-gradient(135deg, rgba($success-color, 0.08) 0%, rgba($success-color, 0.03) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba($success-color, 0.08) 0%,
+      rgba($success-color, 0.03) 100%
+    );
     border-bottom: 1px solid var(--border-color);
 
     .card-icon {
@@ -215,7 +248,7 @@
   }
 }
 
-// ===== OPTIONS MEMBRE DANS AUTOCOMPLETE =====
+// ===== OPTIONS MEMBRE =====
 .membre-option {
   display: flex;
   align-items: center;
@@ -229,7 +262,7 @@
   }
 }
 
-// ===== OPTIONS TYPE CONTRIBUTION DANS SELECT =====
+// ===== OPTIONS TYPE CONTRIBUTION =====
 .type-option {
   display: flex;
   align-items: center;
@@ -273,7 +306,7 @@
   }
 }
 
-// ===== OPTIONS CAISSE DANS SELECT =====
+// ===== OPTIONS CAISSE =====
 .caisse-option {
   display: flex;
   align-items: center;
@@ -652,6 +685,34 @@
   border-radius: $border-radius-full;
 }
 
+// ===== STATUT BADGES =====
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-full;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &.valide {
+    background: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.en_attente,
+  &.pending {
+    background: rgba($warning-color, 0.1);
+    color: $warning-color;
+  }
+}
+
 // ===== ÉTAT VIDE HISTORIQUE =====
 .empty-history {
   @include card-base;
@@ -672,10 +733,13 @@
     font-size: $font-size-md;
   }
 }
-.form-section {
-  animation: slideDown 0.3s ease-out;
+
+// ===== BOUTON AJOUT =====
+.add-btn {
+  margin-right: $spacing-sm;
 }
 
+// ===== ANIMATIONS =====
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -685,8 +749,4 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.add-btn {
-  margin-right: 10px;
 }

@@ -69,6 +69,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   success = false;
   error = '';
   isMobile = false;
+   isMembre: boolean = false;
   currentTheme: Theme = 'light';
   currentLanguage: Language = 'fr';
   currentRoute: string = '';
@@ -139,6 +140,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
       selectedRole: this.selectedRole,
       user: this.user
     });
+     if (this.roles.includes('MEMBRE') || this.roles.includes('ROLE_MEMBRE')) {
+      this.selectedRole = 'MEMBRE';
+      this.isMembre = true;
+    }
+    
   }
   
   loadUserData(): void {

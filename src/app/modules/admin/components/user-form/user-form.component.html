@@ -7,26 +7,26 @@
         <div class="header-text">
           <h1 class="page-title">
             <mat-icon>people</mat-icon>
-            Gestion des Utilisateurs
+            {{ 'utilisateurs.titre' | translate }}
           </h1>
-          <p class="page-subtitle">Gérez les comptes utilisateurs de la plateforme My2-0</p>
+          <p class="page-subtitle">{{ 'utilisateurs.sous_titre' | translate }}</p>
         </div>
         <div class="header-actions">
           <button mat-raised-button class="create-btn" (click)="toggleCreateRow()">
             <mat-icon>person_add</mat-icon>
-            Nouvel utilisateur
+            {{ 'utilisateurs.actions.nouvel_utilisateur' | translate }}
           </button>
-          <button mat-icon-button [matMenuTriggerFor]="exportMenu" matTooltip="Exporter">
+          <button mat-icon-button [matMenuTriggerFor]="exportMenu" [matTooltip]="'commun.actions.exporter' | translate">
             <mat-icon>download</mat-icon>
           </button>
           <mat-menu #exportMenu="matMenu">
             <button mat-menu-item (click)="exportToExcel()">
               <mat-icon>table_chart</mat-icon>
-              <span>Excel</span>
+              <span>{{ 'commun.export.excel' | translate }}</span>
             </button>
             <button mat-menu-item (click)="exportToCSV()">
               <mat-icon>description</mat-icon>
-              <span>CSV</span>
+              <span>{{ 'commun.export.csv' | translate }}</span>
             </button>
           </mat-menu>
         </div>
@@ -36,32 +36,32 @@
       <div class="header-stats">
         <div class="stat-item">
           <span class="stat-number">{{ stats.total }}</span>
-          <span class="stat-label">Total</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.total' | translate }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item active">
           <span class="stat-number">{{ stats.actifs }}</span>
-          <span class="stat-label">Actifs</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.actifs' | translate }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item inactive">
           <span class="stat-number">{{ stats.inactifs }}</span>
-          <span class="stat-label">Inactifs</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.inactifs' | translate }}</span>
         </div>
         <div class="stat-divider"></div>
-        <div class="stat-item admin">
+        <div class="stat-item admin" *ngIf="isAdmin">
           <span class="stat-number">{{ stats.admins }}</span>
-          <span class="stat-label">Admins</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.admins' | translate }}</span>
         </div>
-        <div class="stat-divider"></div>
+        <div class="stat-divider" *ngIf="isAdmin"></div>
         <div class="stat-item responsable">
           <span class="stat-number">{{ stats.responsables }}</span>
-          <span class="stat-label">Responsables</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.responsables' | translate }}</span>
         </div>
-         <div class="stat-divider"></div>
-        <div class="stat-item partenaire">
+        <div class="stat-divider" *ngIf="isAdmin"></div>
+        <div class="stat-item partenaire" *ngIf="isAdmin">
           <span class="stat-number">{{ stats.partenaires }}</span>
-          <span class="stat-label">Partenaires</span>
+          <span class="stat-label">{{ 'utilisateurs.stats.partenaires' | translate }}</span>
         </div>
       </div>
     </div>
@@ -70,7 +70,7 @@
   <!-- ============ LOADING ============ -->
   <div *ngIf="isLoading" class="loading-container">
     <mat-spinner diameter="50"></mat-spinner>
-    <p>Chargement des utilisateurs...</p>
+    <p>{{ 'utilisateurs.chargement' | translate }}</p>
   </div>
 
   <!-- ============ CONTENT ============ -->
@@ -81,71 +81,72 @@
       <div class="filters-header">
         <div class="filters-title">
           <mat-icon>filter_list</mat-icon>
-          <span>Filtres</span>
+          <span>{{ 'commun.filtres.titre' | translate }}</span>
         </div>
         <div class="results-count">
-          {{ filteredUsers.length }} utilisateur(s) trouvé(s)
+          {{ 'utilisateurs.filtres.resultats' | translate: { count: filteredUsers.length } }}
         </div>
       </div>
       
       <div class="filters-body">
         <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Rechercher</mat-label>
+          <mat-label>{{ 'commun.filtres.rechercher' | translate }}</mat-label>
           <mat-icon matPrefix>search</mat-icon>
           <input matInput 
                  [value]="searchTerm" 
                  (input)="onSearchChange($any($event.target).value)"
-                 placeholder="Nom, email, groupe...">
+                 [placeholder]="'utilisateurs.filtres.recherche_placeholder' | translate">
           <button mat-icon-button matSuffix *ngIf="searchTerm" (click)="onSearchChange('')">
             <mat-icon>close</mat-icon>
           </button>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Rôle</mat-label>
+          <mat-label>{{ 'utilisateurs.filtres.role' | translate }}</mat-label>
           <mat-select [(ngModel)]="roleFilter" (selectionChange)="applyFilters()">
-            <mat-option value="ALL">Tous les rôles</mat-option>
-            <mat-option value="ADMIN">
+            <mat-option value="ALL">{{ 'utilisateurs.filtres.tous_roles' | translate }}</mat-option>
+            <mat-option value="ADMIN" *ngIf="isAdmin">
               <div class="option-content">
                 <mat-icon>admin_panel_settings</mat-icon>
-                <span>Administrateur</span>
+                <span>{{ 'utilisateurs.roles.admin' | translate }}</span>
               </div>
             </mat-option>
             <mat-option value="RESPONSABLE">
               <div class="option-content">
                 <mat-icon>supervisor_account</mat-icon>
-                <span>Responsable</span>
+                <span>{{ 'utilisateurs.roles.responsable' | translate }}</span>
               </div>
             </mat-option>
             <mat-option value="MEMBRE">
               <div class="option-content">
                 <mat-icon>person</mat-icon>
-                <span>Membre</span>
+                <span>{{ 'utilisateurs.roles.membre' | translate }}</span>
               </div>
             </mat-option>
-               <mat-option value="PARTENAIRE">
+            <mat-option value="PARTENAIRE" *ngIf="isAdmin">
               <div class="option-content">
                 <mat-icon>person</mat-icon>
-                <span>Partenaire</span>
+                <span>{{ 'utilisateurs.roles.partenaire' | translate }}</span>
               </div>
             </mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Statut</mat-label>
+          <mat-label>{{ 'utilisateurs.filtres.statut' | translate }}</mat-label>
           <mat-select [(ngModel)]="statusFilter" (selectionChange)="applyFilters()">
-            <mat-option value="ALL">Tous</mat-option>
-            <mat-option value="ACTIVE">Actifs</mat-option>
-            <mat-option value="INACTIVE">Inactifs</mat-option>
+            <mat-option value="ALL">{{ 'commun.filtres.tous' | translate }}</mat-option>
+            <mat-option value="ACTIVE">{{ 'utilisateurs.stats.actifs' | translate }}</mat-option>
+            <mat-option value="INACTIVE">{{ 'utilisateurs.stats.inactifs' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field *ngif(isAdmin)appearance="outline" class="filter-field">
-          <mat-label>Groupe</mat-label>
+        <!-- CORRIGÉ: *ngif(isAdmin) → *ngIf="isAdmin" -->
+        <mat-form-field *ngIf="isAdmin" appearance="outline" class="filter-field">
+          <mat-label>{{ 'utilisateurs.filtres.groupe' | translate }}</mat-label>
           <mat-select [(ngModel)]="groupeFilter" (selectionChange)="applyFilters()">
-            <mat-option value="ALL">Tous les groupes</mat-option>
-            <mat-option value="0">Sans groupe</mat-option>
+            <mat-option value="ALL">{{ 'utilisateurs.filtres.tous_groupes' | translate }}</mat-option>
+            <mat-option value="0">{{ 'utilisateurs.filtres.sans_groupe' | translate }}</mat-option>
             <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">
               {{ groupe.nom }}
             </mat-option>
@@ -153,17 +154,17 @@
         </mat-form-field>
 
         <div class="filter-actions">
-          <button mat-stroked-button (click)="resetFilters()" *ngIf="hasActiveFilters()" matTooltip="Réinitialiser">
+          <button mat-stroked-button (click)="resetFilters()" *ngIf="hasActiveFilters()" [matTooltip]="'commun.actions.reinitialiser' | translate">
             <mat-icon>refresh</mat-icon>
-            Réinitialiser
+            {{ 'commun.actions.reinitialiser' | translate }}
           </button>
         </div>
 
         <mat-button-toggle-group [(ngModel)]="viewMode" class="view-toggle">
-          <mat-button-toggle value="grid" matTooltip="Vue cartes">
+          <mat-button-toggle value="grid" [matTooltip]="'utilisateurs.vues.cartes' | translate">
             <mat-icon>grid_view</mat-icon>
           </mat-button-toggle>
-          <mat-button-toggle value="list" matTooltip="Vue tableau">
+          <mat-button-toggle value="list" [matTooltip]="'utilisateurs.vues.tableau' | translate">
             <mat-icon>view_list</mat-icon>
           </mat-button-toggle>
         </mat-button-toggle-group>
@@ -173,19 +174,19 @@
       <div class="active-filters" *ngIf="hasActiveFilters()">
         <mat-chip-set>
           <mat-chip *ngIf="searchTerm" (removed)="onSearchChange('')">
-            Recherche: "{{ searchTerm }}"
+            {{ 'utilisateurs.filtres.chip_recherche' | translate: { terme: searchTerm } }}
             <mat-icon matChipRemove>cancel</mat-icon>
           </mat-chip>
           <mat-chip *ngIf="roleFilter !== 'ALL'" (removed)="roleFilter = 'ALL'; applyFilters()">
-            Rôle: {{ roleFilter }}
+            {{ 'utilisateurs.filtres.chip_role' | translate: { role: roleFilter } }}
             <mat-icon matChipRemove>cancel</mat-icon>
           </mat-chip>
           <mat-chip *ngIf="statusFilter !== 'ALL'" (removed)="statusFilter = 'ALL'; applyFilters()">
-            {{ statusFilter === 'ACTIVE' ? 'Actifs' : 'Inactifs' }}
+            {{ statusFilter === 'ACTIVE' ? ('utilisateurs.stats.actifs' | translate) : ('utilisateurs.stats.inactifs' | translate) }}
             <mat-icon matChipRemove>cancel</mat-icon>
           </mat-chip>
           <mat-chip *ngIf="groupeFilter !== 'ALL'" (removed)="groupeFilter = 'ALL'; applyFilters()">
-            {{ groupeFilter === '0' ? 'Sans groupe' : 'Groupe filtré' }}
+            {{ groupeFilter === '0' ? ('utilisateurs.filtres.sans_groupe' | translate) : ('utilisateurs.filtres.groupe_filtre' | translate) }}
             <mat-icon matChipRemove>cancel</mat-icon>
           </mat-chip>
         </mat-chip-set>
@@ -199,78 +200,78 @@
           <mat-icon>person_add</mat-icon>
         </div>
         <div class="create-title">
-          <h3>Nouvel utilisateur</h3>
-          <p>Remplissez les informations ci-dessous</p>
+          <h3>{{ 'utilisateurs.creation.titre' | translate }}</h3>
+          <p>{{ 'utilisateurs.creation.sous_titre' | translate }}</p>
         </div>
       </div>
       
       <div class="create-form">
         <mat-form-field appearance="outline">
-          <mat-label>Nom d'utilisateur</mat-label>
+          <mat-label>{{ 'utilisateurs.champs.nom_utilisateur' | translate }}</mat-label>
           <mat-icon matPrefix>person</mat-icon>
-          <input matInput [(ngModel)]="newUser.username" required placeholder="johndoe">
-          <mat-error *ngIf="!newUser.username">Le nom d'utilisateur est requis</mat-error>
+          <input matInput [(ngModel)]="newUser.username" required [placeholder]="'utilisateurs.champs.nom_utilisateur_placeholder' | translate">
+          <mat-error *ngIf="!newUser.username">{{ 'utilisateurs.erreurs.nom_requis' | translate }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
+          <mat-label>{{ 'utilisateurs.champs.email' | translate }}</mat-label>
           <mat-icon matPrefix>email</mat-icon>
-          <input matInput type="email" [(ngModel)]="newUser.email" placeholder="john.doe@example.com">
+          <input matInput type="email" [(ngModel)]="newUser.email" [placeholder]="'utilisateurs.champs.email_placeholder' | translate">
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Mot de passe</mat-label>
+          <mat-label>{{ 'utilisateurs.champs.mot_de_passe' | translate }}</mat-label>
           <mat-icon matPrefix>lock</mat-icon>
           <input matInput [type]="hidePassword ? 'password' : 'text'" [(ngModel)]="newUser.motDePasse" required>
           <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
             <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
-          <mat-error *ngIf="!newUser.motDePasse">Le mot de passe est requis</mat-error>
+          <mat-error *ngIf="!newUser.motDePasse">{{ 'utilisateurs.erreurs.mot_de_passe_requis' | translate }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Rôles</mat-label>
+          <mat-label>{{ 'utilisateurs.champs.roles' | translate }}</mat-label>
           <mat-icon matPrefix>admin_panel_settings</mat-icon>
           <mat-select [(ngModel)]="selectedRolesArray" multiple required (selectionChange)="onRoleSelectionChange()">
-            <mat-option value="ADMIN">Administrateur</mat-option>
-            <mat-option value="RESPONSABLE">Responsable</mat-option>
-            <mat-option value="MEMBRE">Membre</mat-option>
-             <mat-option value="PARTENAIRE">Partenaire</mat-option>
+            <mat-option value="ADMIN" *ngIf="isAdmin">{{ 'utilisateurs.roles.admin' | translate }}</mat-option>
+            <mat-option value="RESPONSABLE">{{ 'utilisateurs.roles.responsable' | translate }}</mat-option>
+            <mat-option value="MEMBRE">{{ 'utilisateurs.roles.membre' | translate }}</mat-option>
+            <mat-option value="PARTENAIRE" *ngIf="isAdmin">{{ 'utilisateurs.roles.partenaire' | translate }}</mat-option>
           </mat-select>
-          <mat-error *ngIf="selectedRolesArray.length === 0">Au moins un rôle requis</mat-error>
+          <mat-error *ngIf="selectedRolesArray.length === 0">{{ 'utilisateurs.erreurs.role_requis' | translate }}</mat-error>
         </mat-form-field>
 
         <mat-form-field *ngIf="isAdmin" appearance="outline">
-          <mat-label>Groupe</mat-label>
+          <mat-label>{{ 'utilisateurs.champs.groupe' | translate }}</mat-label>
           <mat-icon matPrefix>groups</mat-icon>
           <mat-select [(ngModel)]="newUser.groupe">
-            <mat-option [value]="null">Aucun groupe</mat-option>
+            <mat-option [value]="null">{{ 'utilisateurs.filtres.aucun_groupe' | translate }}</mat-option>
             <mat-option *ngFor="let groupe of groupes" [value]="groupe.id">{{ groupe.nom }}</mat-option>
           </mat-select>
         </mat-form-field>
 
-         <mat-form-field *ngIf="isAdmin" appearance="outline">
-          <mat-label>Partenaire</mat-label>
+        <mat-form-field *ngIf="isAdmin" appearance="outline">
+          <mat-label>{{ 'utilisateurs.champs.partenaire' | translate }}</mat-label>
           <mat-icon matPrefix>groups</mat-icon>
           <mat-select [(ngModel)]="newUser.partenaire">
-            <mat-option [value]="null">Aucun partenaire</mat-option>
+            <mat-option [value]="null">{{ 'utilisateurs.filtres.aucun_partenaire' | translate }}</mat-option>
             <mat-option *ngFor="let partenaire of partenaires" [value]="partenaire.id">{{ partenaire.nom }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <div class="checkbox-field">
-          <mat-checkbox [(ngModel)]="newUser.active" color="primary">Compte actif</mat-checkbox>
+          <mat-checkbox [(ngModel)]="newUser.active" color="primary">{{ 'utilisateurs.champs.compte_actif' | translate }}</mat-checkbox>
         </div>
       </div>
       
       <div class="create-actions">
         <button mat-stroked-button (click)="cancelCreate()">
           <mat-icon>close</mat-icon>
-          Annuler
+          {{ 'commun.actions.annuler' | translate }}
         </button>
         <button mat-raised-button color="primary" [disabled]="!isCreateFormValid()" (click)="saveUser()">
           <mat-icon>save</mat-icon>
-          Créer l'utilisateur
+          {{ 'utilisateurs.actions.creer_utilisateur' | translate }}
         </button>
       </div>
     </div>
@@ -294,14 +295,14 @@
             <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="inline-field">
               <input matInput [(ngModel)]="editUser.username" required>
             </mat-form-field>
-            <p class="user-email" *ngIf="!editingRows[i]">{{ user.email || 'Pas d\'email' }}</p>
+            <p class="user-email" *ngIf="!editingRows[i]">{{ user.email || ('utilisateurs.champs.pas_email' | translate) }}</p>
             <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="inline-field">
               <input matInput type="email" [(ngModel)]="editUser.email">
             </mat-form-field>
           </div>
           <span class="status-badge" [class.active]="user.active" [class.inactive]="!user.active">
             <mat-icon>{{ user.active ? 'check_circle' : 'block' }}</mat-icon>
-            {{ user.active ? 'Actif' : 'Inactif' }}
+            {{ user.active ? ('utilisateurs.statut.actif' | translate) : ('utilisateurs.statut.inactif' | translate) }}
           </span>
         </div>
 
@@ -327,49 +328,49 @@
         <!-- Contenu édition -->
         <div class="card-content edit-mode" *ngIf="editingRows[i]">
           <mat-form-field appearance="outline">
-            <mat-label>Rôles</mat-label>
+            <mat-label>{{ 'utilisateurs.champs.roles' | translate }}</mat-label>
             <mat-select [(ngModel)]="editSelectedRolesArray" multiple (selectionChange)="onEditRoleSelectionChange()">
-              <mat-option value="ADMIN">Administrateur</mat-option>
-              <mat-option value="RESPONSABLE">Responsable</mat-option>
-              <mat-option value="MEMBRE">Membre</mat-option>
+              <mat-option value="ADMIN">{{ 'utilisateurs.roles.admin' | translate }}</mat-option>
+              <mat-option value="RESPONSABLE">{{ 'utilisateurs.roles.responsable' | translate }}</mat-option>
+              <mat-option value="MEMBRE">{{ 'utilisateurs.roles.membre' | translate }}</mat-option>
             </mat-select>
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Groupe</mat-label>
+            <mat-label>{{ 'utilisateurs.champs.groupe' | translate }}</mat-label>
             <mat-select [(ngModel)]="editUser.groupe" [compareWith]="compareGroupe">
-              <mat-option [value]="null">Aucun</mat-option>
+              <mat-option [value]="null">{{ 'commun.filtres.aucun' | translate }}</mat-option>
               <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <mat-checkbox [(ngModel)]="editUser.active">Compte actif</mat-checkbox>
+          <mat-checkbox [(ngModel)]="editUser.active">{{ 'utilisateurs.champs.compte_actif' | translate }}</mat-checkbox>
         </div>
 
         <!-- Actions -->
         <div class="card-actions">
           <ng-container *ngIf="!editingRows[i]">
-            <button mat-icon-button matTooltip="Modifier" (click)="editRow(i, user)">
+            <button mat-icon-button [matTooltip]="'commun.actions.modifier' | translate" (click)="editRow(i, user)">
               <mat-icon>edit</mat-icon>
             </button>
-            <button mat-icon-button matTooltip="Réinitialiser le mot de passe" (click)="resetPassword(user)">
+            <button mat-icon-button [matTooltip]="'utilisateurs.actions.reinit_mdp' | translate" (click)="resetPassword(user)">
               <mat-icon>lock_reset</mat-icon>
             </button>
             <button mat-icon-button 
-                    [matTooltip]="user.active ? 'Désactiver' : 'Activer'"
+                    [matTooltip]="(user.active ? 'utilisateurs.actions.desactiver' : 'utilisateurs.actions.activer') | translate"
                     [color]="user.active ? 'warn' : 'primary'"
                     (click)="openToggleActiveDialog(user)">
               <mat-icon>{{ user.active ? 'block' : 'check_circle' }}</mat-icon>
             </button>
-            <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="openDeleteDialog(user)">
+            <button mat-icon-button [matTooltip]="'commun.actions.supprimer' | translate" color="warn" (click)="openDeleteDialog(user)">
               <mat-icon>delete</mat-icon>
             </button>
           </ng-container>
           <ng-container *ngIf="editingRows[i]">
             <button mat-raised-button color="primary" [disabled]="!isEditFormValid()" (click)="saveEdit(i)">
               <mat-icon>save</mat-icon>
-              Enregistrer
+              {{ 'commun.actions.enregistrer' | translate }}
             </button>
             <button mat-stroked-button (click)="cancelEdit(i)">
-              Annuler
+              {{ 'commun.actions.annuler' | translate }}
             </button>
           </ng-container>
         </div>
@@ -382,7 +383,7 @@
         
         <!-- Username -->
         <ng-container matColumnDef="username">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Utilisateur</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'utilisateurs.table.utilisateur' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index">
             <div class="user-cell" *ngIf="!editingRows[i]">
               <div class="user-avatar-small" [style.background-color]="getUserColor(user)" [class.inactive]="!user.active">
@@ -402,7 +403,7 @@
 
         <!-- Email -->
         <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">Email</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">{{ 'utilisateurs.champs.email' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index" class="hide-mobile">
             <span *ngIf="!editingRows[i]">{{ user.email || '-' }}</span>
             <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="inline-edit">
@@ -413,7 +414,7 @@
 
         <!-- Roles -->
         <ng-container matColumnDef="roles">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Rôles</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'utilisateurs.champs.roles' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index">
             <div class="role-chips" *ngIf="!editingRows[i]">
               <span class="role-chip" 
@@ -424,9 +425,9 @@
             </div>
             <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="inline-edit">
               <mat-select [(ngModel)]="editSelectedRolesArray" multiple (selectionChange)="onEditRoleSelectionChange()">
-                <mat-option value="ADMIN">Admin</mat-option>
-                <mat-option value="RESPONSABLE">Responsable</mat-option>
-                <mat-option value="MEMBRE">Membre</mat-option>
+                <mat-option value="ADMIN">{{ 'utilisateurs.roles.admin' | translate }}</mat-option>
+                <mat-option value="RESPONSABLE">{{ 'utilisateurs.roles.responsable' | translate }}</mat-option>
+                <mat-option value="MEMBRE">{{ 'utilisateurs.roles.membre' | translate }}</mat-option>
               </mat-select>
             </mat-form-field>
           </td>
@@ -434,12 +435,12 @@
 
         <!-- Groupe -->
         <ng-container matColumnDef="groupe">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">Groupe</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="hide-mobile">{{ 'utilisateurs.champs.groupe' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index" class="hide-mobile">
             <span *ngIf="!editingRows[i]" class="groupe-name">{{ getGroupeName(user) }}</span>
             <mat-form-field *ngIf="editingRows[i]" appearance="outline" class="inline-edit">
               <mat-select [(ngModel)]="editUser.groupe" [compareWith]="compareGroupe">
-                <mat-option [value]="null">Aucun</mat-option>
+                <mat-option [value]="null">{{ 'commun.filtres.aucun' | translate }}</mat-option>
                 <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
               </mat-select>
             </mat-form-field>
@@ -448,14 +449,14 @@
 
         <!-- Active -->
         <ng-container matColumnDef="active">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'utilisateurs.filtres.statut' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index">
             <span class="status-badge table-badge" 
                   [class.active]="user.active" 
                   [class.inactive]="!user.active" 
                   *ngIf="!editingRows[i]">
               <mat-icon>{{ user.active ? 'check_circle' : 'block' }}</mat-icon>
-              {{ user.active ? 'Actif' : 'Inactif' }}
+              {{ user.active ? ('utilisateurs.statut.actif' | translate) : ('utilisateurs.statut.inactif' | translate) }}
             </span>
             <mat-checkbox *ngIf="editingRows[i]" [(ngModel)]="editUser.active"></mat-checkbox>
           </td>
@@ -463,29 +464,29 @@
 
         <!-- Actions -->
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.actions' | translate }}</th>
           <td mat-cell *matCellDef="let user; let i = index">
             <div class="table-actions" *ngIf="!editingRows[i]">
-              <button mat-icon-button matTooltip="Modifier" (click)="editRow(i, user)">
+              <button mat-icon-button [matTooltip]="'commun.actions.modifier' | translate" (click)="editRow(i, user)">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button mat-icon-button matTooltip="Réinitialiser le mot de passe" (click)="resetPassword(user)">
+              <button mat-icon-button [matTooltip]="'utilisateurs.actions.reinit_mdp' | translate" (click)="resetPassword(user)">
                 <mat-icon>lock_reset</mat-icon>
               </button>
               <button mat-icon-button 
-                      [matTooltip]="user.active ? 'Désactiver' : 'Activer'"
+                      [matTooltip]="(user.active ? 'utilisateurs.actions.desactiver' : 'utilisateurs.actions.activer') | translate"
                       (click)="openToggleActiveDialog(user)">
                 <mat-icon>{{ user.active ? 'block' : 'check_circle' }}</mat-icon>
               </button>
-              <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="openDeleteDialog(user)">
+              <button mat-icon-button [matTooltip]="'commun.actions.supprimer' | translate" color="warn" (click)="openDeleteDialog(user)">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
             <div class="table-actions" *ngIf="editingRows[i]">
-              <button mat-icon-button color="primary" [disabled]="!isEditFormValid()" (click)="saveEdit(i)" matTooltip="Enregistrer">
+              <button mat-icon-button color="primary" [disabled]="!isEditFormValid()" (click)="saveEdit(i)" [matTooltip]="'commun.actions.enregistrer' | translate">
                 <mat-icon>save</mat-icon>
               </button>
-              <button mat-icon-button (click)="cancelEdit(i)" matTooltip="Annuler">
+              <button mat-icon-button (click)="cancelEdit(i)" [matTooltip]="'commun.actions.annuler' | translate">
                 <mat-icon>cancel</mat-icon>
               </button>
             </div>
@@ -504,15 +505,15 @@
     <!-- ===== ÉTAT VIDE ===== -->
     <div class="empty-state" *ngIf="filteredUsers.length === 0">
       <mat-icon>people_outline</mat-icon>
-      <h3>Aucun utilisateur trouvé</h3>
-      <p>{{ hasActiveFilters() ? 'Aucun utilisateur ne correspond à vos critères.' : 'Commencez par créer un utilisateur.' }}</p>
+      <h3>{{ 'utilisateurs.vide.titre' | translate }}</h3>
+      <p>{{ hasActiveFilters() ? ('utilisateurs.vide.aucun_resultat' | translate) : ('utilisateurs.vide.commencer' | translate) }}</p>
       <button mat-raised-button color="primary" (click)="toggleCreateRow()" *ngIf="!hasActiveFilters()">
         <mat-icon>person_add</mat-icon>
-        Créer un utilisateur
+        {{ 'utilisateurs.actions.creer_utilisateur' | translate }}
       </button>
       <button mat-stroked-button (click)="resetFilters()" *ngIf="hasActiveFilters()">
         <mat-icon>refresh</mat-icon>
-        Réinitialiser les filtres
+        {{ 'utilisateurs.filtres.reinitialiser' | translate }}
       </button>
     </div>
 

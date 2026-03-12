@@ -6,8 +6,8 @@
     <div class="header-content">
       <mat-icon class="header-icon">admin_panel_settings</mat-icon>
       <div>
-        <h1 class="page-title">Gestion des Rôles</h1>
-        <p class="page-subtitle">Créez et gérez les rôles personnalisés de votre groupe</p>
+        <h1 class="page-title">{{ 'roles.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'roles.subtitle' | translate }}</p>
       </div>
     </div>
     <div class="header-actions">
@@ -16,9 +16,9 @@
         color="accent"
         (click)="createDefaultRoles()"
         *ngIf="roles.length === 0"
-        matTooltip="Créer les rôles standards">
+        [matTooltip]="'roles.actions.createDefaultTooltip' | translate">
         <mat-icon>auto_fix_high</mat-icon>
-        Rôles par défaut
+        {{ 'roles.actions.defaultRoles' | translate }}
       </button>
       <button 
         mat-raised-button 
@@ -26,7 +26,7 @@
         (click)="openRoleForm()"
         *ngIf="!showRoleForm">
         <mat-icon>add</mat-icon>
-        Nouveau rôle
+        {{ 'roles.actions.newRole' | translate }}
       </button>
     </div>
   </div>
@@ -34,7 +34,7 @@
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
     <mat-spinner diameter="50"></mat-spinner>
-    <p class="loading-text">Chargement des rôles...</p>
+    <p class="loading-text">{{ 'roles.loading' | translate }}</p>
   </div>
 
   <!-- Content -->
@@ -45,7 +45,7 @@
       <mat-card-header>
         <mat-card-title class="card-title">
           <mat-icon>{{ editingRole ? 'edit' : 'add_circle' }}</mat-icon>
-          {{ editingRole ? 'Modifier le rôle' : 'Nouveau rôle' }}
+          {{ editingRole ? ('roles.form.editTitle' | translate) : ('roles.form.createTitle' | translate) }}
         </mat-card-title>
       </mat-card-header>
 
@@ -56,29 +56,29 @@
           <div class="form-section">
             <h3 class="section-title">
               <mat-icon>info</mat-icon>
-              Informations générales
+              {{ 'roles.form.sections.general' | translate }}
             </h3>
 
             <div class="form-grid">
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Nom du rôle</mat-label>
-                <input matInput formControlName="nom" placeholder="Ex: Président, Trésorier">
+                <mat-label>{{ 'roles.form.name' | translate }}</mat-label>
+                <input matInput formControlName="nom" [placeholder]="'roles.form.namePlaceholder' | translate">
                 <mat-icon matPrefix>badge</mat-icon>
                 <mat-error *ngIf="roleForm.get('nom')?.hasError('required')">
-                  Le nom est requis
+                  {{ 'roles.form.errors.nameRequired' | translate }}
                 </mat-error>
                 <mat-error *ngIf="roleForm.get('nom')?.hasError('minlength')">
-                  Minimum 3 caractères
+                  {{ 'roles.form.errors.nameMinLength' | translate }}
                 </mat-error>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Description</mat-label>
+                <mat-label>{{ 'roles.form.description' | translate }}</mat-label>
                 <textarea 
                   matInput 
                   formControlName="description" 
                   rows="2"
-                  placeholder="Décrivez les responsabilités de ce rôle"></textarea>
+                  [placeholder]="'roles.form.descriptionPlaceholder' | translate"></textarea>
                 <mat-icon matPrefix>description</mat-icon>
               </mat-form-field>
             </div>
@@ -90,12 +90,12 @@
           <div class="form-section">
             <h3 class="section-title">
               <mat-icon>palette</mat-icon>
-              Apparence
+              {{ 'roles.form.sections.appearance' | translate }}
             </h3>
 
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Couleur</mat-label>
+                <mat-label>{{ 'roles.form.color' | translate }}</mat-label>
                 <mat-select formControlName="couleur">
                   <mat-option *ngFor="let couleur of couleursPredefinies" [value]="couleur.valeur">
                     <div class="color-option">
@@ -110,7 +110,7 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Icône</mat-label>
+                <mat-label>{{ 'roles.form.icon' | translate }}</mat-label>
                 <mat-select formControlName="icone">
                   <mat-option *ngFor="let icone of iconesPredefinies" [value]="icone">
                     <div class="icon-option">
@@ -123,17 +123,17 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Niveau hiérarchique</mat-label>
+                <mat-label>{{ 'roles.form.level' | translate }}</mat-label>
                 <input matInput type="number" formControlName="niveau" min="0" max="100">
                 <mat-icon matPrefix>stairs</mat-icon>
-                <mat-hint>0 = niveau le plus élevé</mat-hint>
+                <mat-hint>{{ 'roles.form.levelHint' | translate }}</mat-hint>
               </mat-form-field>
 
               <!-- Prévisualisation -->
               <div class="role-preview">
                 <mat-chip [style.background-color]="roleForm.get('couleur')?.value">
                   <mat-icon [style.color]="'white'">{{ roleForm.get('icone')?.value }}</mat-icon>
-                  <span [style.color]="'white'">{{ roleForm.get('nom')?.value || 'Aperçu' }}</span>
+                  <span [style.color]="'white'">{{ roleForm.get('nom')?.value || ('roles.form.preview' | translate) }}</span>
                 </mat-chip>
               </div>
             </div>
@@ -145,7 +145,7 @@
           <div class="form-section">
             <h3 class="section-title">
               <mat-icon>lock_open</mat-icon>
-              Permissions - Menus accessibles
+              {{ 'roles.form.sections.permissions' | translate }}
               <span class="badge">{{ selectedMenuIds().length }} / {{ menus.length }}</span>
             </h3>
 
@@ -157,16 +157,13 @@
                       {{ categorie.icone }}
                     </mat-icon>
                     <span>{{ categorie.label }}</span>
-                    <!-- <span class="category-count">
-                    {{  categorie.menus.filter(m => isMenuSelected(m.id)).length + ' / ' + categorie.menus.length }}
-                    </span> -->
                 </mat-panel-title>
                   <mat-panel-description>
                     <button 
                       mat-icon-button 
                       type="button"
                       (click)="$event.stopPropagation(); selectAllMenusInCategory(categorie)"
-                      [matTooltip]="isCategoryFullySelected(categorie) ? 'Tout désélectionner' : 'Tout sélectionner'">
+                      [matTooltip]="isCategoryFullySelected(categorie) ? ('roles.form.deselectAll' | translate) : ('roles.form.selectAll' | translate)">
                       <mat-icon>
                         {{ isCategoryFullySelected(categorie) ? 'check_box' : 
                            isCategoryPartiallySelected(categorie) ? 'indeterminate_check_box' : 
@@ -197,7 +194,7 @@
 
             <div *ngIf="selectedMenuIds().length === 0" class="warning-box">
               <mat-icon>warning</mat-icon>
-              <span>Vous devez sélectionner au moins un menu</span>
+              <span>{{ 'roles.form.errors.noMenuSelected' | translate }}</span>
             </div>
           </div>
 
@@ -210,14 +207,14 @@
               [disabled]="roleForm.invalid || isSaving || selectedMenuIds().length === 0">
               <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
               <mat-icon *ngIf="!isSaving">{{ editingRole ? 'save' : 'add' }}</mat-icon>
-              <span>{{ isSaving ? 'Enregistrement...' : (editingRole ? 'Enregistrer' : 'Créer le rôle') }}</span>
+              <span>{{ isSaving ? ('common.saving' | translate) : (editingRole ? ('common.save' | translate) : ('roles.form.createBtn' | translate)) }}</span>
             </button>
             <button 
               mat-stroked-button 
               type="button"
               (click)="closeRoleForm()">
               <mat-icon>close</mat-icon>
-              Annuler
+              {{ 'common.cancel' | translate }}
             </button>
           </div>
 
@@ -231,14 +228,14 @@
       <!-- État vide -->
       <div *ngIf="roles.length === 0 && !showRoleForm" class="empty-state">
         <mat-icon class="empty-icon">admin_panel_settings</mat-icon>
-        <h3 class="empty-title">Aucun rôle configuré</h3>
-        <p class="empty-text">Créez des rôles personnalisés pour mieux organiser votre groupe</p>
+        <h3 class="empty-title">{{ 'roles.empty.title' | translate }}</h3>
+        <p class="empty-text">{{ 'roles.empty.description' | translate }}</p>
         <button 
           mat-raised-button 
           color="primary"
           (click)="createDefaultRoles()">
           <mat-icon>auto_fix_high</mat-icon>
-          Créer les rôles par défaut
+          {{ 'roles.actions.createDefault' | translate }}
         </button>
       </div>
 
@@ -254,40 +251,40 @@
               <mat-icon class="role-icon">{{ role.icone }}</mat-icon>
               <div class="role-title-section">
                 <mat-card-title>{{ role.nom }}</mat-card-title>
-                <mat-card-subtitle>Niveau {{ role.niveau }}</mat-card-subtitle>
+                <mat-card-subtitle>{{ 'roles.card.level' | translate }} {{ role.niveau }}</mat-card-subtitle>
               </div>
               <mat-chip *ngIf="role.systeme" class="system-chip">
                 <mat-icon>lock</mat-icon>
-                Système
+                {{ 'roles.card.system' | translate }}
               </mat-chip>
             </div>
           </mat-card-header>
 
           <mat-card-content>
-            <p class="role-description">{{ role.description || 'Aucune description' }}</p>
+            <p class="role-description">{{ role.description || ('roles.card.noDescription' | translate) }}</p>
 
             <div class="role-stats">
               <div class="stat-item">
                 <mat-icon>groups</mat-icon>
-                <span>{{ role.nombreMembres }} membre(s)</span>
+                <span>{{ role.nombreMembres }} {{ 'roles.card.members' | translate }}</span>
               </div>
               <div class="stat-item">
                 <mat-icon>menu</mat-icon>
-                <span>{{ role.menus.length }} menu(s)</span>
+                <span>{{ role.menus.length }} {{ 'roles.card.menus' | translate }}</span>
               </div>
             </div>
 
             <mat-divider></mat-divider>
 
             <div class="role-menus">
-              <h4>Menus accessibles :</h4>
+              <h4>{{ 'roles.card.accessibleMenus' | translate }}</h4>
               <mat-chip-set class="menus-chips">
                 <mat-chip *ngFor="let menu of role.menus.slice(0, 5)">
                   <mat-icon>{{ menu.icone }}</mat-icon>
                   {{ menu.label }}
                 </mat-chip>
                 <mat-chip *ngIf="role.menus.length > 5" class="more-chip">
-                  +{{ role.menus.length - 5 }} autres
+                  +{{ role.menus.length - 5 }} {{ 'roles.card.others' | translate }}
                 </mat-chip>
               </mat-chip-set>
             </div>
@@ -296,27 +293,27 @@
           <mat-card-actions>
             <button 
               mat-icon-button 
-              matTooltip="Modifier"
+              [matTooltip]="'common.edit' | translate"
               (click)="editRole(role)"
               [disabled]="role.systeme">
               <mat-icon>edit</mat-icon>
             </button>
             <button 
               mat-icon-button 
-              matTooltip="Dupliquer"
+              [matTooltip]="'common.duplicate' | translate"
               (click)="duplicateRole(role)">
               <mat-icon>content_copy</mat-icon>
             </button>
             <button 
               mat-icon-button 
-              [matTooltip]="role.actif ? 'Désactiver' : 'Activer'"
+              [matTooltip]="role.actif ? ('common.deactivate' | translate) : ('common.activate' | translate)"
               (click)="toggleRoleStatus(role)"
               [disabled]="role.systeme">
               <mat-icon>{{ role.actif ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
             <button 
               mat-icon-button 
-              matTooltip="Supprimer"
+              [matTooltip]="'common.delete' | translate"
               color="warn"
               (click)="deleteRole(role)"
               [disabled]="role.systeme || role.nombreMembres > 0">

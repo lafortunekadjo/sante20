@@ -1,6 +1,40 @@
 // echeancier.component.scss
-@import '../../../../../variables';
+@use '../../../../../variables' as *;
 
+// ===== THEMING =====
+:host {
+  --primary-color: #{$primary-blue};
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --error-color: #{$error-color};
+  --info-color: #{$info-color};
+  --emerald-color: #{$secondary-emerald};
+  --accent-color: #{$accent-orange};
+
+  // Mode clair
+  --text-primary: #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --text-tertiary: #{$light-text-tertiary};
+  --border-color: #{$light-border};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary: #{$light-bg-secondary};
+  --background-tertiary: #{$light-bg-tertiary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary: #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --text-tertiary: #{$dark-text-tertiary};
+  --border-color: #{$dark-border};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary: #{$dark-bg-secondary};
+  --background-tertiary: #{$dark-bg-tertiary};
+}
+
+// ===== CONTAINER =====
 .echeancier-container {
   @include page-container;
 }
@@ -11,10 +45,8 @@
   background: linear-gradient(135deg, $secondary-emerald 0%, darken($secondary-emerald, 15%) 100%);
 
   .header-stats {
-    .stat-item.warning {
-      .stat-number {
-        color: lighten($warning-color, 30%);
-      }
+    .stat-item.warning .stat-number {
+      color: lighten($warning-color, 30%);
     }
   }
 }
@@ -123,18 +155,13 @@
         height: 100%;
         background: $secondary-emerald;
         border-radius: $border-radius-full;
-        transition: width 0.5s ease;
+        transition: width $transition-slow ease;
       }
     }
   }
 
-  &.paye .stat-value {
-    color: $success-color;
-  }
-
-  &.restant .stat-value {
-    color: $warning-color;
-  }
+  &.paye    .stat-value { color: $success-color; }
+  &.restant .stat-value { color: $warning-color; }
 }
 
 // ===== SECTION FILTRES =====
@@ -161,9 +188,7 @@
         font-weight: $font-weight-semibold;
         color: var(--text-primary);
 
-        mat-icon {
-          color: $primary-blue;
-        }
+        mat-icon { color: var(--primary-color); }
       }
     }
 
@@ -172,18 +197,11 @@
       grid-template-columns: 2fr 1fr 1fr;
       gap: $spacing-md;
 
-      @include tablet {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      @include mobile {
-        grid-template-columns: 1fr;
-      }
+      @include tablet { grid-template-columns: 1fr 1fr; }
+      @include mobile { grid-template-columns: 1fr; }
 
       .filter-field.search-field {
-        @include tablet {
-          grid-column: 1 / -1;
-        }
+        @include tablet { grid-column: 1 / -1; }
       }
 
       .option-icon {
@@ -193,11 +211,11 @@
         margin-right: $spacing-xs;
         vertical-align: middle;
 
-        &.paye { color: $success-color; }
-        &.partiel { color: $info-color; }
+        &.paye      { color: $success-color; }
+        &.partiel   { color: $info-color; }
         &.en-attente { color: var(--text-secondary); }
         &.en-retard { color: $error-color; }
-        &.exonere { color: $secondary-emerald; }
+        &.exonere   { color: $secondary-emerald; }
       }
     }
   }
@@ -233,10 +251,7 @@
 
     @include mobile {
       width: 100%;
-
-      button {
-        flex: 1;
-      }
+      button { flex: 1; }
     }
 
     button {
@@ -251,21 +266,19 @@
 .mobile-cards-view {
   display: none;
 
-  @include mobile {
-    display: block;
-  }
+  @include mobile { display: block; }
 
   .echeance-card {
     @include card-base;
     margin-bottom: $spacing-md;
     overflow: hidden;
 
-    &.paye { border-left: 4px solid $success-color; }
-    &.partiel { border-left: 4px solid $info-color; }
+    &.paye      { border-left: 4px solid $success-color; }
+    &.partiel   { border-left: 4px solid $info-color; }
     &.en-attente { border-left: 4px solid var(--text-tertiary); }
     &.en-retard { border-left: 4px solid $error-color; }
-    &.exonere { border-left: 4px solid $secondary-emerald; }
-    &.reporte { border-left: 4px solid $accent-orange; }
+    &.exonere   { border-left: 4px solid $secondary-emerald; }
+    &.reporte   { border-left: 4px solid $accent-orange; }
 
     .card-header {
       display: flex;
@@ -289,13 +302,11 @@
           color: var(--text-secondary);
         }
 
-        .membre-details {
-          h4 {
-            margin: 0 0 $spacing-xs 0;
-            font-size: $font-size-md;
-            font-weight: $font-weight-semibold;
-            color: var(--text-primary);
-          }
+        .membre-details h4 {
+          margin: 0 0 $spacing-xs 0;
+          font-size: $font-size-md;
+          font-weight: $font-weight-semibold;
+          color: var(--text-primary);
         }
       }
     }
@@ -347,7 +358,7 @@
             color: var(--text-primary);
           }
 
-          &.paye .montant-value { color: $success-color; }
+          &.paye  .montant-value { color: $success-color; }
           &.reste .montant-value { color: $warning-color; }
         }
       }
@@ -367,9 +378,10 @@
           .progress-fill {
             height: 100%;
             border-radius: $border-radius-full;
+            transition: width $transition-slow ease;
 
-            &.paye { background: $success-color; }
-            &.partiel { background: $info-color; }
+            &.paye      { background: $success-color; }
+            &.partiel   { background: $info-color; }
             &.en-attente { background: var(--text-tertiary); }
             &.en-retard { background: $error-color; }
           }
@@ -427,9 +439,7 @@
   @include card-base;
   overflow: hidden;
 
-  @include mobile {
-    display: none;
-  }
+  @include mobile { display: none; }
 
   .echeances-table {
     width: 100%;
@@ -451,16 +461,11 @@
     }
 
     tr.mat-row {
-      &:hover {
-        background: var(--background-tertiary);
-      }
+      &:hover { background: var(--background-tertiary); }
 
       &.en-retard {
         background: rgba($error-color, 0.03);
-
-        &:hover {
-          background: rgba($error-color, 0.06);
-        }
+        &:hover { background: rgba($error-color, 0.06); }
       }
     }
 
@@ -499,15 +504,14 @@
 
     .montant {
       font-weight: $font-weight-semibold;
-
-      &.paye { color: $success-color; }
+      &.paye  { color: $success-color; }
       &.reste { color: $warning-color; }
     }
 
     .retard-badge {
       display: inline-flex;
       align-items: center;
-      padding: 2px 6px;
+      padding: $spacing-xs $spacing-sm;
       background: $error-color;
       color: white;
       font-size: $font-size-xs;
@@ -550,35 +554,12 @@
     height: 14px;
   }
 
-  &.paye {
-    background: rgba($success-color, 0.1);
-    color: $success-color;
-  }
-
-  &.partiel {
-    background: rgba($info-color, 0.1);
-    color: $info-color;
-  }
-
-  &.en-attente {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--text-secondary);
-  }
-
-  &.en-retard {
-    background: rgba($error-color, 0.1);
-    color: $error-color;
-  }
-
-  &.exonere {
-    background: rgba($secondary-emerald, 0.1);
-    color: $secondary-emerald;
-  }
-
-  &.reporte {
-    background: rgba($accent-orange, 0.1);
-    color: $accent-orange;
-  }
+  &.paye      { background: rgba($success-color, 0.1); color: $success-color; }
+  &.partiel   { background: rgba($info-color, 0.1); color: $info-color; }
+  &.en-attente { background: rgba(0, 0, 0, 0.05); color: var(--text-secondary); }
+  &.en-retard { background: rgba($error-color, 0.1); color: $error-color; }
+  &.exonere   { background: rgba($secondary-emerald, 0.1); color: $secondary-emerald; }
+  &.reporte   { background: rgba($accent-orange, 0.1); color: $accent-orange; }
 }
 
 // ===== ÉTAT VIDE =====

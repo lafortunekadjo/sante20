@@ -8,21 +8,23 @@
         <div class="header-text">
           <h1 class="page-title">
             <mat-icon class="header-icon">history</mat-icon>
-            Historique des Mouvements
+            {{ 'mouvements.titre' | translate }}
           </h1>
-          <p class="page-subtitle">Consultez et recherchez tous les mouvements de caisse</p>
+          <p class="page-subtitle">{{ 'mouvements.sous_titre' | translate }}</p>
         </div>
       </div>
 
       <!-- Sélecteur d'exercice -->
       <div class="exercice-selector" *ngIf="exercices.length > 0">
         <mat-form-field appearance="outline" class="exercice-select">
-          <mat-label>Exercice</mat-label>
+          <mat-label>{{ 'finances.exercice.label' | translate }}</mat-label>
           <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
             <mat-option *ngFor="let ex of exercices" [value]="ex.id">
               <div class="exercice-option">
                 <span>{{ ex.libelle }}</span>
-                <span class="exercice-badge actif" *ngIf="ex.actif">Actif</span>
+                <span class="exercice-badge actif" *ngIf="ex.actif">
+                  {{ 'finances.exercice.actif' | translate }}
+                </span>
               </div>
             </mat-option>
           </mat-select>
@@ -37,8 +39,8 @@
       <mat-spinner diameter="60"></mat-spinner>
     </div>
     <div class="loading-content">
-      <h3>Chargement de l'historique...</h3>
-      <p>Veuillez patienter</p>
+      <h3>{{ 'mouvements.chargement' | translate }}</h3>
+      <p>{{ 'commun.patienter' | translate }}</p>
     </div>
   </div>
 
@@ -52,7 +54,7 @@
           <mat-icon>swap_vert</mat-icon>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Total Mouvements</span>
+          <span class="stat-label">{{ 'mouvements.stats.total' | translate }}</span>
           <span class="stat-value">{{ mouvements.length }}</span>
         </div>
       </div>
@@ -62,9 +64,9 @@
           <mat-icon>trending_up</mat-icon>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Total Entrées</span>
+          <span class="stat-label">{{ 'mouvements.stats.total_entrees' | translate }}</span>
           <span class="stat-value">{{ formatMontant(stats.totalEntrees) }}</span>
-          <span class="stat-sub">{{ stats.nbEntrees }} opérations</span>
+          <span class="stat-sub">{{ 'mouvements.stats.nb_operations' | translate: { count: stats.nbEntrees } }}</span>
         </div>
       </div>
 
@@ -73,18 +75,20 @@
           <mat-icon>trending_down</mat-icon>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Total Sorties</span>
+          <span class="stat-label">{{ 'mouvements.stats.total_sorties' | translate }}</span>
           <span class="stat-value">{{ formatMontant(stats.totalSorties) }}</span>
-          <span class="stat-sub">{{ stats.nbSorties }} opérations</span>
+          <span class="stat-sub">{{ 'mouvements.stats.nb_operations' | translate: { count: stats.nbSorties } }}</span>
         </div>
       </div>
 
-      <div class="stat-card balance" [class.positive]="stats.balance >= 0" [class.negative]="stats.balance < 0">
+      <div class="stat-card balance"
+           [class.positive]="stats.balance >= 0"
+           [class.negative]="stats.balance < 0">
         <div class="stat-icon">
           <mat-icon>account_balance</mat-icon>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Balance</span>
+          <span class="stat-label">{{ 'mouvements.stats.balance' | translate }}</span>
           <span class="stat-value">{{ formatMontant(stats.balance) }}</span>
         </div>
       </div>
@@ -96,43 +100,45 @@
         <div class="filters-header">
           <div class="filters-title">
             <mat-icon>filter_list</mat-icon>
-            <span>Filtres</span>
+            <span>{{ 'commun.filtres.titre' | translate }}</span>
           </div>
           <button mat-button color="primary" (click)="resetFilters()">
             <mat-icon>refresh</mat-icon>
-            Réinitialiser
+            {{ 'utilisateurs.filtres.reinitialiser' | translate }}
           </button>
         </div>
 
         <form [formGroup]="filterForm" class="filters-grid">
+
           <!-- Recherche -->
           <mat-form-field appearance="outline" class="filter-field search-field">
-            <mat-label>Rechercher</mat-label>
-            <input matInput formControlName="search" placeholder="Libellé, référence, membre...">
+            <mat-label>{{ 'commun.filtres.rechercher' | translate }}</mat-label>
+            <input matInput formControlName="search"
+                   [placeholder]="'mouvements.filtres.recherche_placeholder' | translate">
             <mat-icon matPrefix>search</mat-icon>
           </mat-form-field>
 
           <!-- Type -->
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Type</mat-label>
+            <mat-label>{{ 'mouvements.filtres.type' | translate }}</mat-label>
             <mat-select formControlName="type">
-              <mat-option value="ALL">Tous</mat-option>
+              <mat-option value="ALL">{{ 'commun.filtres.tous' | translate }}</mat-option>
               <mat-option value="ENTREE">
                 <mat-icon class="option-icon entree">arrow_upward</mat-icon>
-                Entrées
+                {{ 'mouvements.type.entree' | translate }}
               </mat-option>
               <mat-option value="SORTIE">
                 <mat-icon class="option-icon sortie">arrow_downward</mat-icon>
-                Sorties
+                {{ 'mouvements.type.sortie' | translate }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
           <!-- Caisse -->
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Caisse</mat-label>
+            <mat-label>{{ 'finances.caisse.titre' | translate }}</mat-label>
             <mat-select formControlName="caisseId">
-              <mat-option [value]="null">Toutes les caisses</mat-option>
+              <mat-option [value]="null">{{ 'mouvements.filtres.toutes_caisses' | translate }}</mat-option>
               <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
                 {{ caisse.nom }}
               </mat-option>
@@ -141,7 +147,7 @@
 
           <!-- Date début -->
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Date début</mat-label>
+            <mat-label>{{ 'mouvements.filtres.date_debut' | translate }}</mat-label>
             <input matInput [matDatepicker]="pickerDebut" formControlName="dateDebut">
             <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
             <mat-datepicker #pickerDebut></mat-datepicker>
@@ -149,7 +155,7 @@
 
           <!-- Date fin -->
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Date fin</mat-label>
+            <mat-label>{{ 'mouvements.filtres.date_fin' | translate }}</mat-label>
             <input matInput [matDatepicker]="pickerFin" formControlName="dateFin">
             <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
             <mat-datepicker #pickerFin></mat-datepicker>
@@ -157,13 +163,13 @@
 
           <!-- Statut -->
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Statut</mat-label>
+            <mat-label>{{ 'utilisateurs.filtres.statut' | translate }}</mat-label>
             <mat-select formControlName="statut">
-              <mat-option value="ALL">Tous</mat-option>
-              <mat-option value="VALIDE">Validé</mat-option>
-              <mat-option value="EN_ATTENTE">En attente</mat-option>
-              <mat-option value="REJETE">Rejeté</mat-option>
-              <mat-option value="ANNULE">Annulé</mat-option>
+              <mat-option value="ALL">{{ 'commun.filtres.tous' | translate }}</mat-option>
+              <mat-option value="VALIDE">{{ 'finances.statut.valide' | translate }}</mat-option>
+              <mat-option value="EN_ATTENTE">{{ 'finances.statut.en_attente' | translate }}</mat-option>
+              <mat-option value="REJETE">{{ 'finances.statut.rejete' | translate }}</mat-option>
+              <mat-option value="ANNULE">{{ 'finances.statut.annule' | translate }}</mat-option>
             </mat-select>
           </mat-form-field>
         </form>
@@ -174,29 +180,30 @@
     <div class="actions-bar">
       <div class="results-count">
         <mat-icon>list</mat-icon>
-        <span>{{ dataSource.data.length }} résultat(s)</span>
+        <span>{{ 'echeancier.resultats' | translate: { count: dataSource.data.length } }}</span>
       </div>
       <div class="actions-buttons">
         <button mat-stroked-button (click)="exportData()">
           <mat-icon>download</mat-icon>
-          Exporter
+          {{ 'commun.export.exporter' | translate }}
         </button>
         <button mat-raised-button color="primary" routerLink="/responsable/finances/entree">
           <mat-icon>add_circle</mat-icon>
-          Nouvelle Entrée
+          {{ 'mouvements.actions.nouvelle_entree' | translate }}
         </button>
         <button mat-raised-button color="warn" routerLink="/responsable/finances/sortie">
           <mat-icon>remove_circle</mat-icon>
-          Nouvelle Sortie
+          {{ 'mouvements.actions.nouvelle_sortie' | translate }}
         </button>
       </div>
     </div>
 
     <!-- Section tableau -->
     <div class="table-section">
+
       <!-- Vue mobile en cartes -->
       <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
-        <div class="mouvement-card" 
+        <div class="mouvement-card"
              *ngFor="let mouvement of dataSource.data | slice:0:20"
              [class]="getMouvementClass(mouvement)">
           <div class="card-header">
@@ -217,19 +224,23 @@
           </div>
           <div class="card-content">
             <div class="info-row">
-              <span class="label">Caisse:</span>
+              <span class="label">{{ 'finances.caisse.titre' | translate }}:</span>
               <span class="value caisse-badge" [style.background-color]="mouvement.caisse?.couleur">
                 {{ mouvement.caisse?.nom }}
               </span>
             </div>
             <div class="info-row" *ngIf="getMembreNom(mouvement) !== '-'">
-              <span class="label">{{ mouvement.typeMouvement === 'ENTREE' ? 'Membre' : 'Bénéficiaire' }}:</span>
+              <span class="label">
+                {{ (mouvement.typeMouvement === 'ENTREE'
+                    ? 'mouvements.table.membre'
+                    : 'sortie_caisse.table.beneficiaire') | translate }}:
+              </span>
               <span class="value">{{ getMembreNom(mouvement) }}</span>
             </div>
             <div class="info-row">
-              <span class="label">Statut:</span>
+              <span class="label">{{ 'utilisateurs.filtres.statut' | translate }}:</span>
               <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
-                {{ mouvement.statut }}
+                {{ ('finances.statut.' + mouvement.statut.toLowerCase()) | translate }}
               </span>
             </div>
           </div>
@@ -239,26 +250,28 @@
       <!-- Vue desktop tableau -->
       <div class="desktop-table-view" *ngIf="dataSource.data.length > 0">
         <table mat-table [dataSource]="dataSource" matSort class="mouvements-table">
-          
+
           <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.table.date' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               {{ formatDate(mouvement.dateMouvement) }}
             </td>
           </ng-container>
 
           <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'mouvements.filtres.type' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <div class="type-cell" [class]="getMouvementClass(mouvement)">
                 <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
-                <span>{{ mouvement.typeMouvement === 'ENTREE' ? 'Entrée' : 'Sortie' }}</span>
+                <span>{{ (mouvement.typeMouvement === 'ENTREE'
+                          ? 'mouvements.type.entree'
+                          : 'mouvements.type.sortie') | translate }}</span>
               </div>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="libelle">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie_caisse.table.libelle' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <div class="libelle-cell">
                 <span class="libelle">{{ mouvement.libelle }}</span>
@@ -268,7 +281,7 @@
           </ng-container>
 
           <ng-container matColumnDef="caisse">
-            <th mat-header-cell *matHeaderCellDef>Caisse</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'finances.caisse.titre' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <span class="caisse-badge" [style.background-color]="mouvement.caisse?.couleur">
                 {{ mouvement.caisse?.nom }}
@@ -277,7 +290,7 @@
           </ng-container>
 
           <ng-container matColumnDef="membre">
-            <th mat-header-cell *matHeaderCellDef>Membre / Bénéficiaire</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'mouvements.table.membre_beneficiaire' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <div class="membre-cell" *ngIf="getMembreNom(mouvement) !== '-'">
                 <mat-icon>person</mat-icon>
@@ -288,7 +301,7 @@
           </ng-container>
 
           <ng-container matColumnDef="montant">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.champs.montant' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <span class="montant" [class]="getMouvementClass(mouvement)">
                 {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
@@ -297,24 +310,25 @@
           </ng-container>
 
           <ng-container matColumnDef="statut">
-            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'utilisateurs.filtres.statut' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
               <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
-                {{ mouvement.statut }}
+                {{ ('finances.statut.' + mouvement.statut.toLowerCase()) | translate }}
               </span>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.actions' | translate }}</th>
             <td mat-cell *matCellDef="let mouvement">
-              <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Actions">
+              <button mat-icon-button [matMenuTriggerFor]="actionMenu"
+                      [matTooltip]="'commun.table.actions' | translate">
                 <mat-icon>more_vert</mat-icon>
               </button>
               <mat-menu #actionMenu="matMenu">
                 <button mat-menu-item (click)="viewDetail(mouvement)">
                   <mat-icon>visibility</mat-icon>
-                  <span>Voir détails</span>
+                  <span>{{ 'mouvements.actions.voir_details' | translate }}</span>
                 </button>
               </mat-menu>
             </td>
@@ -327,18 +341,18 @@
         <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons></mat-paginator>
       </div>
 
-      <!-- État vide -->
+      <!-- État vide (filtres) -->
       <div class="empty-state" *ngIf="dataSource.data.length === 0">
         <div class="empty-illustration">
           <mat-icon class="empty-icon">inbox</mat-icon>
         </div>
         <div class="empty-content">
-          <h3 class="empty-title">Aucun mouvement trouvé</h3>
-          <p class="empty-text">Aucun mouvement ne correspond à vos critères de recherche.</p>
+          <h3 class="empty-title">{{ 'mouvements.vide.titre' | translate }}</h3>
+          <p class="empty-text">{{ 'mouvements.vide.description' | translate }}</p>
           <div class="empty-actions">
             <button mat-stroked-button (click)="resetFilters()">
               <mat-icon>refresh</mat-icon>
-              Réinitialiser les filtres
+              {{ 'mouvements.vide.reinitialiser' | translate }}
             </button>
           </div>
         </div>
@@ -353,12 +367,12 @@
       <mat-icon class="empty-icon">event_busy</mat-icon>
     </div>
     <div class="empty-content">
-      <h3 class="empty-title">Aucun exercice actif</h3>
-      <p class="empty-text">Créez un exercice comptable pour consulter l'historique.</p>
+      <h3 class="empty-title">{{ 'finances.exercice.aucun_actif' | translate }}</h3>
+      <p class="empty-text">{{ 'mouvements.vide.aucun_exercice' | translate }}</p>
       <div class="empty-actions">
         <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
           <mat-icon>add</mat-icon>
-          Créer un exercice
+          {{ 'finances.exercice.creer' | translate }}
         </button>
       </div>
     </div>
