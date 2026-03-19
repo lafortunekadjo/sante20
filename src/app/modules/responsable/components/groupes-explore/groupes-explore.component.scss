@@ -1,5 +1,40 @@
-@import '../../../../../variables';
-@import '../../../../../styles.scss';
+// groupes-explore.component.scss
+@use '../../../../../variables' as *;
+
+// ===== THEMING =====
+:host {
+  --primary-color: #{$primary-blue};
+  --primary-dark: #{$primary-blue-dark};
+  --primary-light: #{$primary-blue-light};
+  --accent-color: #{$secondary-emerald};
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --error-color: #{$error-color};
+
+  // Mode clair
+  --text-primary: #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --text-tertiary: #{$light-text-tertiary};
+  --border-color: #{$light-border};
+  --divider-color: #{$light-border};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary: #{$light-bg-secondary};
+  --background-tertiary: #{$light-bg-tertiary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary: #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --text-tertiary: #{$dark-text-tertiary};
+  --border-color: #{$dark-border};
+  --divider-color: #{$dark-border};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary: #{$dark-bg-secondary};
+  --background-tertiary: #{$dark-bg-tertiary};
+}
 
 // ===== CONTAINER PRINCIPAL =====
 .explore-container {
@@ -8,14 +43,12 @@
   padding: $spacing-2xl;
   animation: fadeIn 0.4s ease-out;
 
-  @include mobile {
-    padding: $spacing-lg;
-  }
+  @include mobile { padding: $spacing-lg; }
 }
 
-// ===== HEADER AMÉLIORÉ =====
+// ===== HEADER =====
 .page-header {
- position: relative;
+  position: relative;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
   padding: $spacing-3xl;
@@ -32,10 +65,7 @@
 
   .header-background {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     opacity: 0.5;
   }
@@ -65,11 +95,7 @@
         color: var(--accent-color);
         filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 
-        @include mobile {
-          font-size: 48px;
-          width: 48px;
-          height: 48px;
-        }
+        @include mobile { font-size: 48px; width: 48px; height: 48px; }
       }
 
       .header-text {
@@ -79,9 +105,7 @@
           font-weight: $font-weight-bold;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
-          @include mobile {
-            font-size: $font-size-2xl;
-          }
+          @include mobile { font-size: $font-size-2xl; }
         }
 
         .page-subtitle {
@@ -90,9 +114,7 @@
           opacity: 0.9;
           font-weight: $font-weight-medium;
 
-          @include mobile {
-            font-size: $font-size-md;
-          }
+          @include mobile { font-size: $font-size-md; }
         }
       }
     }
@@ -106,10 +128,7 @@
       padding: $spacing-lg $spacing-xl;
       border-radius: $border-radius-lg;
 
-      @include mobile {
-        justify-content: center;
-        width: 100%;
-      }
+      @include mobile { justify-content: center; width: 100%; }
 
       .stat-item {
         text-align: center;
@@ -139,22 +158,6 @@
   }
 }
 
-.card-image {
-  height: 180px; /* Exemple de hauteur */
-  background-size: cover;
-  background-position: center;
-  /* ... autres styles ... */
-}
-
-/* Style pour centrer le texte du placeholder (doit être en positionnement absolu si l'image-overlay est absolue) */
-.no-image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 // ===== CONTRÔLES DE RECHERCHE =====
 .search-controls {
   display: flex;
@@ -172,9 +175,7 @@
     width: 100%;
 
     ::ng-deep {
-      .mat-mdc-form-field-wrapper {
-        padding-bottom: 0;
-      }
+      .mat-mdc-form-field-wrapper { padding-bottom: 0; }
 
       .mdc-notched-outline {
         border-color: var(--border-color);
@@ -191,54 +192,48 @@
         font-weight: $font-weight-medium;
       }
 
-      .mat-mdc-input-element {
-        font-size: $font-size-lg;
-      }
+      .mat-mdc-input-element { font-size: $font-size-lg; }
     }
   }
 
-  .quick-filters {
-    .quick-chips {
+  .quick-filters .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+
+    .quick-chip {
       display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-sm;
+      align-items: center;
+      gap: $spacing-xs;
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid var(--border-color);
+      border-radius: $border-radius-xl;
+      background: var(--background-primary);
+      color: var(--text-secondary);
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      transition: $transition-base;
+      cursor: pointer;
 
-      .quick-chip {
-        display: flex;
-        align-items: center;
-        gap: $spacing-xs;
-        padding: $spacing-sm $spacing-md;
-        border: 1px solid var(--border-color);
-        border-radius: $border-radius-xl;
-        background: var(--background-primary);
-        color: var(--text-secondary);
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
-        transition: $transition-base;
-        cursor: pointer;
+      &:hover {
+        border-color: var(--primary-color);
+        background: var(--background-tertiary);
+        transform: translateY(-1px);
+      }
 
-        &:hover {
-          border-color: var(--primary-color);
-          background: var(--background-tertiary);
-          transform: translateY(-1px);
-        }
+      &.mat-mdc-chip-selected {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
 
-        &.mat-mdc-chip-selected {
-          background: var(--primary-color);
-          color: white;
-          border-color: var(--primary-color);
+        mat-icon { color: white; }
+      }
 
-          mat-icon {
-            color: white;
-          }
-        }
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-          color: var(--primary-color);
-        }
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: var(--primary-color);
       }
     }
   }
@@ -248,22 +243,16 @@
   @include flex-between;
   gap: $spacing-lg;
 
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  @include mobile { flex-direction: column; align-items: stretch; }
 
   .action-buttons {
     display: flex;
     gap: $spacing-md;
     align-items: center;
 
-    @include mobile {
-      flex-wrap: wrap;
-    }
+    @include mobile { flex-wrap: wrap; }
 
     .filter-btn {
-      @include button-states(var(--background-primary), var(--text-primary));
       border: 2px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -274,27 +263,22 @@
 
       &.active-filters {
         border-color: var(--accent-color);
-        background: rgba(16, 185, 129, 0.1);
+        background: rgba($secondary-emerald, 0.1);
         color: var(--accent-color);
 
-        mat-icon {
-          color: var(--accent-color);
-        }
+        mat-icon { color: var(--accent-color); }
       }
 
       .expand-icon {
         margin-left: $spacing-xs;
         transition: transform $transition-base;
 
-        &.expanded {
-          transform: rotate(180deg);
-        }
+        &.expanded { transform: rotate(180deg); }
       }
     }
 
     .reset-btn,
     .export-btn {
-      @include button-states(var(--background-tertiary), var(--text-primary));
       border: 1px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -303,9 +287,7 @@
       height: 48px;
 
       .btn-text {
-        @include mobile {
-          display: none;
-        }
+        @include mobile { display: none; }
       }
     }
   }
@@ -318,24 +300,20 @@
     .sort-field {
       min-width: 160px;
 
-      @include mobile {
-        min-width: 140px;
-      }
+      @include mobile { min-width: 140px; }
     }
 
     .view-toggle {
       border: 1px solid var(--border-color);
       border-radius: $border-radius-md;
 
-      ::ng-deep {
-        .mat-button-toggle {
-          border: none;
-          color: var(--text-secondary);
+      ::ng-deep .mat-button-toggle {
+        border: none;
+        color: var(--text-secondary);
 
-          &.mat-button-toggle-checked {
-            background: var(--primary-color);
-            color: white;
-          }
+        &.mat-button-toggle-checked {
+          background: var(--primary-color);
+          color: white;
         }
       }
     }
@@ -399,12 +377,7 @@
         font-size: $font-size-sm;
         border-radius: $border-radius-lg;
 
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-          color: white;
-        }
+        mat-icon { font-size: 16px; width: 16px; height: 16px; color: white; }
       }
     }
   }
@@ -418,19 +391,12 @@
       gap: $spacing-lg;
       margin-bottom: $spacing-xl;
 
-      @include mobile {
-        grid-template-columns: 1fr;
-      }
+      @include mobile { grid-template-columns: 1fr; }
 
       .filter-field {
         ::ng-deep {
-          .mdc-notched-outline {
-            border-color: var(--border-color);
-          }
-
-          .mdc-text-field--focused .mdc-notched-outline {
-            border-color: var(--primary-color);
-          }
+          .mdc-notched-outline { border-color: var(--border-color); }
+          .mdc-text-field--focused .mdc-notched-outline { border-color: var(--primary-color); }
         }
       }
     }
@@ -463,35 +429,21 @@
         gap: $spacing-lg;
         margin-bottom: $spacing-lg;
 
-        @include mobile {
-          flex-direction: column;
-          gap: $spacing-md;
-        }
+        @include mobile { flex-direction: column; gap: $spacing-md; }
 
-        .price-input {
-          flex: 1;
-          min-width: 120px;
-        }
+        .price-input { flex: 1; min-width: 120px; }
 
         .range-separator {
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          @include flex-center;
           width: 32px;
           height: 32px;
           border-radius: $border-radius-full;
           background: var(--primary-color);
           color: white;
 
-          mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-          }
+          mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
-          @include mobile {
-            display: none;
-          }
+          @include mobile { display: none; }
         }
       }
 
@@ -566,16 +518,12 @@
       align-items: center;
       gap: $spacing-xs;
       padding: $spacing-xs $spacing-sm;
-      background: rgba(16, 185, 129, 0.1);
+      background: rgba($secondary-emerald, 0.1);
       border-radius: $border-radius-sm;
       font-size: $font-size-sm;
       color: var(--accent-color);
 
-      .filter-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
+      .filter-icon { font-size: 16px; width: 16px; height: 16px; }
     }
   }
 
@@ -583,9 +531,7 @@
     display: flex;
     gap: $spacing-sm;
 
-    @include mobile {
-      width: 100%;
-    }
+    @include mobile { width: 100%; }
 
     .select-action,
     .compare-action {
@@ -596,9 +542,7 @@
       font-size: $font-size-sm;
       border-color: var(--border-color);
 
-      @include mobile {
-        flex: 1;
-      }
+      @include mobile { flex: 1; }
     }
   }
 }
@@ -611,9 +555,7 @@
   gap: $spacing-xl;
 
   .loading-spinner {
-    ::ng-deep mat-spinner circle {
-      stroke: var(--primary-color);
-    }
+    ::ng-deep mat-spinner circle { stroke: var(--primary-color); }
   }
 
   .loading-content {
@@ -641,17 +583,15 @@
   gap: $spacing-2xl;
   margin-bottom: $spacing-3xl;
 
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-lg;
-  }
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-lg; }
 }
 
+// ===== CARTE GROUPE =====
 .groupe-card {
   @include card-base;
   position: relative;
   overflow: hidden;
-  transition: all $transition-base;
+  transition: transform $transition-base, box-shadow $transition-base;
   cursor: pointer;
 
   &:hover {
@@ -661,7 +601,7 @@
 
   &.selected {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 0 0 2px rgba($primary-blue, 0.2);
   }
 
   .card-selector {
@@ -673,11 +613,7 @@
     border-radius: $border-radius-full;
     padding: $spacing-xs;
 
-    ::ng-deep {
-      .mdc-checkbox {
-        padding: $spacing-xs;
-      }
-    }
+    ::ng-deep .mdc-checkbox { padding: $spacing-xs; }
   }
 
   .card-image {
@@ -686,6 +622,12 @@
     background-position: center;
     position: relative;
     background-color: var(--background-tertiary);
+
+    .no-image-placeholder {
+      width: 100%;
+      height: 100%;
+      @include flex-center;
+    }
 
     .image-overlay {
       position: absolute;
@@ -723,26 +665,11 @@
       background: white;
       box-shadow: $shadow-md;
 
-      &.available {
-        background: var(--success-color);
-        color: white;
-      }
+      &.available { background: var(--success-color); color: white; }
+      &.limited   { background: var(--warning-color); color: white; }
+      &.full      { background: var(--error-color);   color: white; }
 
-      &.limited {
-        background: var(--warning-color);
-        color: white;
-      }
-
-      &.full {
-        background: var(--error-color);
-        color: white;
-      }
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
     }
   }
 
@@ -767,11 +694,7 @@
         font-size: $font-size-sm;
         color: var(--text-secondary);
 
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
       }
     }
 
@@ -797,9 +720,7 @@
         }
 
         &.price-item {
-          mat-icon {
-            color: var(--success-color);
-          }
+          mat-icon { color: var(--success-color); }
 
           .price-amount {
             font-weight: $font-weight-bold;
@@ -827,23 +748,15 @@
         margin-bottom: $spacing-xs;
         font-size: $font-size-sm;
 
-        .capacity-text {
-          color: var(--text-secondary);
-        }
-
-        .capacity-percentage {
-          font-weight: $font-weight-semibold;
-          color: var(--text-primary);
-        }
+        .capacity-text    { color: var(--text-secondary); }
+        .capacity-percentage { font-weight: $font-weight-semibold; color: var(--text-primary); }
       }
 
       .capacity-bar {
         height: 6px;
         border-radius: $border-radius-sm;
 
-        ::ng-deep .mdc-linear-progress__bar-inner {
-          border-radius: $border-radius-sm;
-        }
+        ::ng-deep .mdc-linear-progress__bar-inner { border-radius: $border-radius-sm; }
       }
     }
   }
@@ -855,7 +768,6 @@
     gap: $spacing-md;
 
     .primary-action {
-      @include button-states(var(--primary-color));
       display: flex;
       align-items: center;
       gap: $spacing-xs;
@@ -864,10 +776,7 @@
       border-radius: $border-radius-lg;
       flex: 1;
 
-      &:disabled {
-        background-color: var(--text-tertiary);
-        color: white;
-      }
+      &:disabled { background-color: var(--text-tertiary); color: white; }
     }
 
     .secondary-actions {
@@ -881,19 +790,240 @@
         color: var(--text-secondary);
         transition: $transition-base;
 
-        &:hover {
-          background-color: var(--background-tertiary);
-          color: var(--primary-color);
+        &:hover { background-color: var(--background-tertiary); color: var(--primary-color); }
+        &.active { color: var(--accent-color); }
+
+        mat-icon { font-size: 20px; width: 20px; height: 20px; }
+      }
+    }
+  }
+}
+
+// ===== VUE LISTE =====
+.groupes-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-3xl;
+}
+
+.groupe-list-item {
+  @include card-base;
+  transition: transform $transition-base, box-shadow $transition-base;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: $shadow-lg;
+    transform: translateX(4px);
+  }
+
+  &.selected {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba($primary-blue, 0.2);
+  }
+
+  .list-item-content {
+    display: flex;
+    gap: $spacing-xl;
+    padding: $spacing-xl;
+    align-items: flex-start;
+
+    @include mobile { flex-direction: column; padding: $spacing-lg; gap: $spacing-lg; }
+
+    .list-selector {
+      flex-shrink: 0;
+      margin-top: $spacing-sm;
+    }
+
+    .list-item-image {
+      width: 180px;
+      height: 140px;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      border-radius: $border-radius-lg;
+      position: relative;
+      background-color: var(--background-tertiary);
+
+      @include mobile { width: 100%; height: 200px; }
+
+      .discipline-chip-small {
+        position: absolute;
+        top: $spacing-sm;
+        left: $spacing-sm;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        font-size: $font-size-xs;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: $border-radius-lg;
+
+        mat-icon { font-size: 14px; width: 14px; height: 14px; }
+      }
+
+      .availability-badge-small {
+        position: absolute;
+        bottom: $spacing-sm;
+        right: $spacing-sm;
+        width: 28px;
+        height: 28px;
+        @include flex-center;
+        border-radius: $border-radius-full;
+        background: white;
+        box-shadow: $shadow-md;
+
+        &.available { background: var(--success-color); color: white; }
+        &.limited   { background: var(--warning-color); color: white; }
+        &.full      { background: var(--error-color);   color: white; }
+
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      }
+    }
+
+    .list-item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-md;
+      min-width: 0;
+
+      .list-item-title {
+        margin: 0;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: var(--text-primary);
+        @include text-truncate;
+      }
+
+      .list-item-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-lg $spacing-xl;
+
+        @include mobile { flex-direction: column; gap: $spacing-sm; }
+
+        .detail-item {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          font-size: $font-size-sm;
+          color: var(--text-primary);
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+          }
+
+          span { @include text-truncate; }
+        }
+      }
+
+      .list-item-description {
+        margin: 0;
+        font-size: $font-size-sm;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .list-capacity-indicator {
+        .capacity-label {
+          display: block;
+          font-size: $font-size-xs;
+          color: var(--text-secondary);
+          margin-bottom: $spacing-xs;
         }
 
-        &.active {
-          color: var(--accent-color);
+        .capacity-bar-small {
+          height: 4px;
+          border-radius: $border-radius-sm;
+
+          ::ng-deep .mdc-linear-progress__bar-inner { border-radius: $border-radius-sm; }
+        }
+      }
+    }
+
+    .list-item-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: $spacing-md;
+      flex-shrink: 0;
+
+      @include mobile { align-items: stretch; width: 100%; }
+
+      .frais-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: $spacing-md $spacing-lg;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-radius: $border-radius-lg;
+        min-width: 100px;
+        text-align: center;
+
+        .frais-amount {
+          font-size: $font-size-xl;
+          font-weight: $font-weight-bold;
+          line-height: 1;
         }
 
-        mat-icon {
-          font-size: 20px;
-          width: 20px;
-          height: 20px;
+        .frais-currency {
+          font-size: $font-size-xs;
+          opacity: 0.9;
+          margin-top: $spacing-xs;
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+        align-items: flex-end;
+
+        @include mobile { align-items: stretch; }
+
+        .adhesion-btn {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          padding: $spacing-md $spacing-lg;
+          font-weight: $font-weight-medium;
+          border-radius: $border-radius-lg;
+          min-width: 140px;
+
+          @include mobile { width: 100%; }
+
+          &:disabled { background-color: var(--text-tertiary); color: white; }
+        }
+
+        .secondary-actions-list {
+          display: flex;
+          gap: $spacing-xs;
+
+          @include mobile { justify-content: center; }
+
+          button {
+            width: 40px;
+            height: 40px;
+            border-radius: $border-radius-md;
+            color: var(--text-secondary);
+            transition: $transition-base;
+
+            &:hover { background-color: var(--background-tertiary); color: var(--primary-color); }
+            &.active { color: var(--accent-color); }
+
+            mat-icon { font-size: 20px; width: 20px; height: 20px; }
+          }
         }
       }
     }
@@ -969,73 +1099,69 @@
 
 // ===== ANIMATIONS =====
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.groupe-card {
-  animation: slideInFromLeft 0.5s ease-out;
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-// Animation en cascade pour les cartes
+.groupe-card { animation: slideInFromLeft 0.5s ease-out; }
+
 @for $i from 1 through 12 {
   .groupe-card:nth-child(#{$i}) {
     animation-delay: #{$i * 0.1}s;
   }
 }
 
-// ===== RESPONSIVE DESIGN =====
+// ===== RESPONSIVE SUPPLÉMENTAIRE =====
 @media (max-width: 480px) {
-  .explore-container {
-    padding: $spacing-md;
-  }
+  .explore-container { padding: $spacing-md; }
 
   .groupe-card {
-    .card-content {
-      padding: $spacing-lg;
-    }
+    .card-content { padding: $spacing-lg; }
 
     .card-actions {
       flex-direction: column;
       padding: $spacing-lg !important;
 
-      .primary-action {
-        width: 100%;
-      }
+      .primary-action { width: 100%; }
 
       .secondary-actions {
         justify-content: center;
         width: 100%;
 
-        button {
-          flex: 1;
-          max-width: 48px;
-        }
+        button { flex: 1; max-width: 48px; }
       }
     }
   }
 
-  .search-controls {
-    .controls-section {
-      .action-buttons {
-        .filter-btn,
-        .reset-btn,
-        .export-btn {
-          flex: 1;
-          min-width: 0;
+  .search-controls .controls-section .action-buttons {
+    .filter-btn,
+    .reset-btn,
+    .export-btn {
+      flex: 1;
+      min-width: 0;
 
-          span {
-            display: none;
-          }
-        }
-      }
+      span { display: none; }
     }
+  }
+}
+
+@media (max-width: 640px) {
+  .groupe-list-item .list-item-content {
+    .list-item-image .discipline-chip-small {
+      font-size: $font-size-xs;
+      padding: $spacing-xs;
+
+      mat-icon { font-size: 12px; width: 12px; height: 12px; }
+    }
+
+    .list-item-info .list-item-title { font-size: $font-size-lg; }
+
+    .list-item-actions .frais-badge .frais-amount { font-size: $font-size-lg; }
   }
 }
 
@@ -1047,358 +1173,23 @@
     transition: none !important;
   }
 
-  .groupe-card:hover {
-    transform: none !important;
-  }
+  .groupe-card:hover { transform: none !important; }
 }
 
-// Mode haute densité
+// ===== MODE HAUTE DENSITÉ =====
 .dense-mode {
   .groupe-card {
-    .card-content {
-      padding: $spacing-lg;
-    }
+    .card-content { padding: $spacing-lg; }
 
     .groupe-details .detail-item {
       gap: $spacing-xs;
       font-size: $font-size-xs;
 
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
     }
   }
 
-  .search-controls {
-    gap: $spacing-md;
-  }
+  .search-controls { gap: $spacing-md; }
 
-  .filters-panel .filters-content {
-    padding: $spacing-lg;
-  }
-}
-
-// ===== STYLES POUR LA VUE LISTE =====
-// Ajoute ces styles à ton fichier explorer.component.scss
-
-.groupes-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-3xl;
-}
-
-.groupe-list-item {
-  @include card-base;
-  transition: all $transition-base;
-  cursor: pointer;
-
-  &:hover {
-    box-shadow: $shadow-lg;
-    transform: translateX(4px);
-  }
-
-  &.selected {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-  }
-
-  .list-item-content {
-    display: flex;
-    gap: $spacing-xl;
-    padding: $spacing-xl;
-    align-items: flex-start;
-
-    @include mobile {
-      flex-direction: column;
-      padding: $spacing-lg;
-      gap: $spacing-lg;
-    }
-
-    .list-selector {
-      flex-shrink: 0;
-      margin-top: $spacing-sm;
-    }
-
-    .list-item-image {
-      width: 180px;
-      height: 140px;
-      flex-shrink: 0;
-      background-size: cover;
-      background-position: center;
-      border-radius: $border-radius-lg;
-      position: relative;
-      background-color: var(--background-tertiary);
-
-      @include mobile {
-        width: 100%;
-        height: 200px;
-      }
-
-      .discipline-chip-small {
-        position: absolute;
-        top: $spacing-sm;
-        left: $spacing-sm;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        gap: $spacing-xs;
-        font-size: $font-size-xs;
-        padding: $spacing-xs $spacing-sm;
-        border-radius: $border-radius-lg;
-
-        mat-icon {
-          font-size: 14px;
-          width: 14px;
-          height: 14px;
-        }
-      }
-
-      .availability-badge-small {
-        position: absolute;
-        bottom: $spacing-sm;
-        right: $spacing-sm;
-        width: 28px;
-        height: 28px;
-        @include flex-center;
-        border-radius: $border-radius-full;
-        background: white;
-        box-shadow: $shadow-md;
-
-        &.available {
-          background: var(--success-color);
-          color: white;
-        }
-
-        &.limited {
-          background: var(--warning-color);
-          color: white;
-        }
-
-        &.full {
-          background: var(--error-color);
-          color: white;
-        }
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
-      }
-    }
-
-    .list-item-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-md;
-      min-width: 0;
-
-      .list-item-title {
-        margin: 0;
-        font-size: $font-size-xl;
-        font-weight: $font-weight-bold;
-        color: var(--text-primary);
-        @include text-truncate;
-      }
-
-      .list-item-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $spacing-lg $spacing-xl;
-
-        @include mobile {
-          flex-direction: column;
-          gap: $spacing-sm;
-        }
-
-        .detail-item {
-          display: flex;
-          align-items: center;
-          gap: $spacing-sm;
-          font-size: $font-size-sm;
-          color: var(--text-primary);
-
-          mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-            color: var(--text-secondary);
-            flex-shrink: 0;
-          }
-
-          span {
-            @include text-truncate;
-          }
-        }
-      }
-
-      .list-item-description {
-        margin: 0;
-        font-size: $font-size-sm;
-        color: var(--text-secondary);
-        line-height: 1.6;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .list-capacity-indicator {
-        .capacity-label {
-          display: block;
-          font-size: $font-size-xs;
-          color: var(--text-secondary);
-          margin-bottom: $spacing-xs;
-        }
-
-        .capacity-bar-small {
-          height: 4px;
-          border-radius: $border-radius-sm;
-
-          ::ng-deep .mdc-linear-progress__bar-inner {
-            border-radius: $border-radius-sm;
-          }
-        }
-      }
-    }
-
-    .list-item-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: $spacing-md;
-      flex-shrink: 0;
-
-      @include mobile {
-        align-items: stretch;
-        width: 100%;
-      }
-
-      .frais-badge {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: $spacing-md $spacing-lg;
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-        color: white;
-        border-radius: $border-radius-lg;
-        min-width: 100px;
-        text-align: center;
-
-        .frais-amount {
-          font-size: $font-size-xl;
-          font-weight: $font-weight-bold;
-          line-height: 1;
-        }
-
-        .frais-currency {
-          font-size: $font-size-xs;
-          opacity: 0.9;
-          margin-top: $spacing-xs;
-        }
-      }
-
-      .action-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: $spacing-sm;
-        align-items: flex-end;
-
-        @include mobile {
-          align-items: stretch;
-        }
-
-        .adhesion-btn {
-          @include button-states(var(--primary-color));
-          display: flex;
-          align-items: center;
-          gap: $spacing-sm;
-          padding: $spacing-md $spacing-lg;
-          font-weight: $font-weight-medium;
-          border-radius: $border-radius-lg;
-          min-width: 140px;
-
-          @include mobile {
-            width: 100%;
-          }
-
-          &:disabled {
-            background-color: var(--text-tertiary);
-            color: white;
-          }
-        }
-
-        .secondary-actions-list {
-          display: flex;
-          gap: $spacing-xs;
-
-          @include mobile {
-            justify-content: center;
-          }
-
-          button {
-            width: 40px;
-            height: 40px;
-            border-radius: $border-radius-md;
-            color: var(--text-secondary);
-            transition: $transition-base;
-
-            &:hover {
-              background-color: var(--background-tertiary);
-              color: var(--primary-color);
-            }
-
-            &.active {
-              color: var(--accent-color);
-            }
-
-            mat-icon {
-              font-size: 20px;
-              width: 20px;
-              height: 20px;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-// ===== RESPONSIVE POUR LA LISTE =====
-@media (max-width: 640px) {
-  .groupe-list-item {
-    .list-item-content {
-      .list-item-image {
-        .discipline-chip-small {
-          font-size: $font-size-xs;
-          padding: $spacing-xs;
-
-          mat-icon {
-            font-size: 12px;
-            width: 12px;
-            height: 12px;
-          }
-        }
-      }
-
-      .list-item-info {
-        .list-item-title {
-          font-size: $font-size-lg;
-        }
-      }
-
-      .list-item-actions {
-        .frais-badge {
-          .frais-amount {
-            font-size: $font-size-lg;
-          }
-        }
-      }
-    }
-  }
+  .filters-panel .filters-content { padding: $spacing-lg; }
 }

@@ -95,7 +95,6 @@ type FilterMode = 'season' | 'dateRange';
     MatSnackBarModule,
     FormsModule,
     RouterModule,
-    EquipeFilterPipe,
     TranslateModule
   ],
   animations: [

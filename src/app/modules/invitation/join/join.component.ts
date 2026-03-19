@@ -17,6 +17,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InvitationPublic, InvitationService, CreateDemandeAdhesionRequest } from '../../../core/services/invitation.service';
 import { MatDivider } from '@angular/material/divider';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 @Component({
@@ -34,7 +35,8 @@ import { MatDivider } from '@angular/material/divider';
     MatProgressSpinnerModule,
     MatStepperModule,
     MatSnackBarModule,
-    MatDivider
+    MatDivider,
+    TranslateModule
   ],
   templateUrl: './join.component.html',
   styleUrls: ['./join.component.scss']

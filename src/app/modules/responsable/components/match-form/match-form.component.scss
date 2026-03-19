@@ -1,15 +1,66 @@
-@import '../../../../../variables';
+// match-form.component.scss
+@use '../../../../../variables' as *;
 
-// ============================================================
-// MATCH-FORM COMPONENT - STYLES COMPLETS
-// ============================================================
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
+:host {
+  // Couleurs de marque
+  --primary-color:   #{$primary-blue};
+  --primary-dark:    #{$primary-blue-dark};
+  --primary-light:   #{$primary-blue-light};
+  --accent-color:    #{$secondary-emerald};
+  --success-color:   #{$success-color};
+  --warning-color:   #{$warning-color};
+  --error-color:     #{$error-color};
+  --info-color:      #{$info-color};
 
-.match-form-container {
-  min-height: 100vh;
-  background: var(--background-primary);
+  // Violet form header (fixe, hors thème)
+  --form-header-bg:  linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+
+  // Texte — mode clair
+  --text-primary:    #{$light-text-primary};
+  --text-secondary:  #{$light-text-secondary};
+  --text-tertiary:   #{$light-text-tertiary};
+
+  // Fonds — mode clair
+  --bg-primary:      #{$light-bg-primary};
+  --bg-secondary:    #{$light-bg-secondary};
+  --bg-tertiary:     #{$light-bg-tertiary};
+
+  // Bordures — mode clair
+  --border-color:    #{$light-border};
+  --divider-color:   #{$light-border};
 }
 
-// ===== HEADER =====
+// Dark mode overrides (4 sélecteurs)
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:    #{$dark-text-primary};
+  --text-secondary:  #{$dark-text-secondary};
+  --text-tertiary:   #{$dark-text-tertiary};
+
+  --bg-primary:      #{$dark-bg-primary};
+  --bg-secondary:    #{$dark-bg-secondary};
+  --bg-tertiary:     #{$dark-bg-tertiary};
+
+  --border-color:    #{$dark-border};
+  --divider-color:   #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER
+// ===================================================
+.match-form-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+// ===================================================
+// HEADER
+// ===================================================
 .page-header {
   position: relative;
   padding: $spacing-3xl $spacing-2xl;
@@ -21,6 +72,7 @@
     position: absolute;
     inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
   }
 
   .header-content {
@@ -32,17 +84,15 @@
     max-width: 1400px;
     margin: 0 auto;
 
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-xl;
-      text-align: center;
-    }
+    @include mobile { flex-direction: column; gap: $spacing-xl; text-align: center; }
   }
 
   .page-title {
     margin: 0 0 $spacing-sm;
     font-size: $font-size-3xl;
     font-weight: $font-weight-bold;
+
+    @include mobile { font-size: $font-size-2xl; }
   }
 
   .page-subtitle {
@@ -56,9 +106,7 @@
     align-items: center;
     gap: $spacing-xl;
 
-    @include mobile {
-      gap: $spacing-lg;
-    }
+    @include mobile { gap: $spacing-lg; }
 
     .stat-item {
       display: flex;
@@ -66,19 +114,17 @@
       align-items: center;
       text-align: center;
 
-      &.season-info {
-        .stat-number {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
+      &.season-info .stat-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-        .season-icon {
-          font-size: 32px;
-          width: 32px;
-          height: 32px;
-          animation: pulse-icon 2s ease-in-out infinite;
-        }
+      .season-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        animation: pulse-icon 2s ease-in-out infinite;
       }
 
       .stat-number {
@@ -100,7 +146,9 @@
   }
 }
 
-// ===== LOADING =====
+// ===================================================
+// LOADING
+// ===================================================
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -110,43 +158,33 @@
   gap: $spacing-xl;
 
   .loading-spinner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    ::ng-deep mat-spinner circle { stroke: var(--primary-color); }
   }
 
   .loading-content {
     text-align: center;
 
-    h3 {
-      margin: 0 0 $spacing-sm;
-      color: var(--text-primary);
-    }
-
-    p {
-      margin: 0;
-      color: var(--text-secondary);
-    }
+    h3 { margin: 0 0 $spacing-sm; color: var(--text-primary); font-size: $font-size-lg; }
+    p  { margin: 0; color: var(--text-secondary); }
   }
 }
 
-// ===== CONTENT =====
+// ===================================================
+// CONTENT
+// ===================================================
 .content {
   padding: $spacing-2xl;
   max-width: 1400px;
   margin: 0 auto;
 
-  @include mobile {
-    padding: $spacing-lg;
-  }
+  @include mobile { padding: $spacing-lg; }
 }
 
-// ============================================================
+// ===================================================
 // SÉLECTEUR DE SAISON
-// ============================================================
-
+// ===================================================
 .season-selector-container {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border-radius: $border-radius-2xl;
   border: 1px solid var(--border-color);
   margin-bottom: $spacing-2xl;
@@ -161,28 +199,16 @@
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
 
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-lg;
-      text-align: center;
-    }
+    @include mobile { flex-direction: column; gap: $spacing-lg; text-align: center; }
 
     .season-title {
       display: flex;
       align-items: center;
       gap: $spacing-md;
 
-      mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
+      mat-icon { font-size: 28px; width: 28px; height: 28px; }
 
-      h3 {
-        margin: 0;
-        font-size: $font-size-xl;
-        font-weight: $font-weight-bold;
-      }
+      h3 { margin: 0; font-size: $font-size-xl; font-weight: $font-weight-bold; }
     }
 
     .current-period-badge {
@@ -195,11 +221,7 @@
       font-size: $font-size-sm;
       font-weight: $font-weight-medium;
 
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
       .period-type-chip {
         padding: 2px $spacing-sm;
@@ -208,13 +230,8 @@
         font-weight: $font-weight-bold;
         text-transform: uppercase;
 
-        &.season {
-          background: rgba(255, 255, 255, 0.3);
-        }
-
-        &.custom {
-          background: #f59e0b;
-        }
+        &.season { background: rgba(255, 255, 255, 0.3); }
+        &.custom  { background: #{$warning-color}; }
       }
     }
   }
@@ -222,21 +239,17 @@
   .season-selector-body {
     padding: $spacing-xl;
 
-    @include mobile {
-      padding: $spacing-lg;
-    }
+    @include mobile { padding: $spacing-lg; }
   }
 }
 
-// ===== TOGGLE MODE FILTRAGE =====
+// ===== Toggle mode filtrage =====
 .filter-mode-toggle {
   display: flex;
   gap: $spacing-md;
   margin-bottom: $spacing-xl;
 
-  @include mobile {
-    flex-direction: column;
-  }
+  @include mobile { flex-direction: column; }
 
   button {
     flex: 1;
@@ -246,22 +259,18 @@
     gap: $spacing-sm;
     padding: $spacing-lg;
     border-radius: $border-radius-lg;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-weight: $font-weight-medium;
+    transition: $transition-base;
     border: 2px solid var(--border-color);
-    background: var(--background-primary);
+    background: var(--bg-primary);
     color: var(--text-secondary);
 
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     &:hover {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      background: rgba(59, 130, 246, 0.05);
+      background: rgba($primary-blue, 0.05);
     }
 
     &.active {
@@ -269,21 +278,23 @@
       background: var(--primary-color);
       color: white;
 
-      &:hover {
-        background: var(--primary-dark);
-      }
+      &:hover { background: var(--primary-dark); }
     }
   }
 }
 
-// ===== SÉLECTEUR DE SAISON =====
+// ===== Sélecteur de saison =====
 .season-select-wrapper {
   .season-select {
     width: 100%;
     max-width: 500px;
 
-    @include mobile {
-      max-width: 100%;
+    @include mobile { max-width: 100%; }
+
+    ::ng-deep {
+      .mdc-notched-outline  { border-color: var(--border-color); }
+      .mdc-floating-label   { color: var(--text-secondary); }
+      .mat-mdc-select-value { color: var(--text-primary); }
     }
   }
 
@@ -292,23 +303,21 @@
     align-items: center;
     gap: $spacing-md;
 
-    .season-name {
-      font-weight: 600;
-    }
+    .season-name { font-weight: $font-weight-semibold; color: var(--text-primary); }
 
     .current-badge {
       padding: 2px $spacing-sm;
-      background: #22c55e;
+      background: #{$success-color};
       color: white;
       border-radius: $border-radius-sm;
       font-size: $font-size-xs;
-      font-weight: 700;
+      font-weight: $font-weight-bold;
       text-transform: uppercase;
     }
   }
 }
 
-// ===== OPTIONS DU SELECT =====
+// ===== Options du select saison =====
 .season-option {
   display: flex;
   justify-content: space-between;
@@ -325,9 +334,7 @@
       color: var(--text-tertiary);
       font-size: 24px;
 
-      &.active-icon {
-        color: #22c55e;
-      }
+      &.active-icon { color: #{$success-color}; }
     }
 
     .season-option-info {
@@ -335,58 +342,39 @@
       flex-direction: column;
       gap: 2px;
 
-      .season-name {
-        font-weight: 600;
-        color: var(--text-primary);
-      }
-
-      .season-period {
-        font-size: $font-size-xs;
-        color: var(--text-tertiary);
-      }
+      .season-name   { font-weight: $font-weight-semibold; color: var(--text-primary); }
+      .season-period { font-size: $font-size-xs; color: var(--text-tertiary); }
     }
   }
 
   .season-option-badges {
     display: flex;
-    gap: 4px;
+    gap: $spacing-xs;
 
     .badge {
       padding: 2px $spacing-sm;
       border-radius: $border-radius-sm;
       font-size: $font-size-xs;
-      font-weight: 600;
+      font-weight: $font-weight-semibold;
 
-      &.current {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-      }
-
-      &.closed {
-        background: rgba(107, 114, 128, 0.1);
-        color: #6b7280;
-      }
+      &.current { background: rgba($success-color, 0.15); color: #{$success-color}; }
+      &.closed  { background: rgba($light-text-tertiary, 0.15); color: var(--text-tertiary); }
     }
   }
 }
 
-// ===== CARTE INFO SAISON =====
+// ===== Carte info saison =====
 .season-info-card {
   display: flex;
   align-items: center;
   gap: $spacing-lg;
   margin-top: $spacing-xl;
   padding: $spacing-xl;
-  background: var(--background-tertiary);
+  background: var(--bg-tertiary);
   border-radius: $border-radius-xl;
   border: 1px solid var(--border-color);
 
-  @include mobile {
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-lg;
-    text-align: center;
-  }
+  @include mobile { flex-direction: column; gap: $spacing-md; padding: $spacing-lg; text-align: center; }
 
   .season-info-item {
     display: flex;
@@ -394,10 +382,7 @@
     gap: $spacing-md;
     flex: 1;
 
-    @include mobile {
-      flex-direction: column;
-      gap: 4px;
-    }
+    @include mobile { flex-direction: column; gap: $spacing-xs; }
 
     mat-icon {
       font-size: 24px;
@@ -405,9 +390,7 @@
       height: 24px;
       color: var(--primary-color);
 
-      &.active {
-        color: #22c55e;
-      }
+      &.active { color: #{$success-color}; }
     }
 
     .info-content {
@@ -423,12 +406,10 @@
 
       .info-value {
         font-size: $font-size-md;
-        font-weight: 600;
+        font-weight: $font-weight-semibold;
         color: var(--text-primary);
 
-        &.active {
-          color: #22c55e;
-        }
+        &.active { color: #{$success-color}; }
       }
     }
   }
@@ -438,14 +419,11 @@
     height: 40px;
     background: var(--divider-color);
 
-    @include mobile {
-      width: 60%;
-      height: 1px;
-    }
+    @include mobile { width: 60%; height: 1px; }
   }
 }
 
-// ===== FILTRE PAR DATES =====
+// ===== Filtre par plage de dates =====
 .date-range-filter {
   .date-filter-form {
     display: flex;
@@ -453,18 +431,18 @@
     gap: $spacing-lg;
     flex-wrap: wrap;
 
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-md;
-    }
+    @include mobile { flex-direction: column; gap: $spacing-md; }
 
     .date-field {
       flex: 1;
       min-width: 200px;
 
-      @include mobile {
-        min-width: 100%;
-        width: 100%;
+      @include mobile { min-width: 100%; width: 100%; }
+
+      ::ng-deep {
+        .mdc-notched-outline  { border-color: var(--border-color); }
+        .mdc-floating-label   { color: var(--text-secondary); }
+        .mat-mdc-input-element{ color: var(--text-primary); }
       }
     }
 
@@ -473,20 +451,9 @@
       gap: $spacing-md;
       padding-top: $spacing-sm;
 
-      @include mobile {
-        width: 100%;
+      @include mobile { width: 100%; button { flex: 1; } }
 
-        button {
-          flex: 1;
-        }
-      }
-
-      button {
-        display: flex;
-        align-items: center;
-        gap: $spacing-sm;
-        padding: $spacing-md $spacing-xl;
-      }
+      button { display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-md $spacing-xl; }
     }
   }
 
@@ -496,20 +463,17 @@
     gap: $spacing-sm;
     margin-top: $spacing-lg;
     padding: $spacing-md $spacing-lg;
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba($primary-blue, 0.08);
     border-radius: $border-radius-md;
-    color: #3b82f6;
+    color: var(--primary-color);
     font-size: $font-size-sm;
+    border: 1px solid rgba($primary-blue, 0.15);
 
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+    mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
   }
 }
 
-// ===== STATISTIQUES RAPIDES =====
+// ===== Stats rapides =====
 .season-stats {
   display: flex;
   gap: $spacing-md;
@@ -517,55 +481,33 @@
   padding: $spacing-xl;
   padding-top: $spacing-lg;
   border-top: 1px solid var(--divider-color);
-  background: var(--background-tertiary);
+  background: var(--bg-tertiary);
 
-  @include mobile {
-    justify-content: center;
-    padding: $spacing-lg;
-  }
+  @include mobile { justify-content: center; padding: $spacing-lg; }
 
   .stat-chip {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
-    background: var(--background-primary);
+    background: var(--bg-primary);
     border-radius: $border-radius-full;
     font-size: $font-size-sm;
-    font-weight: 500;
+    font-weight: $font-weight-medium;
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
-    &.played {
-      background: rgba(34, 197, 94, 0.1);
-      border-color: #22c55e;
-      color: #22c55e;
-    }
-
-    &.upcoming {
-      background: rgba(59, 130, 246, 0.1);
-      border-color: #3b82f6;
-      color: #3b82f6;
-    }
-
-    &.missed {
-      background: rgba(245, 158, 11, 0.1);
-      border-color: #f59e0b;
-      color: #f59e0b;
-    }
+    &.played  { background: rgba($success-color, 0.1); border-color: #{$success-color}; color: #{$success-color}; }
+    &.upcoming{ background: rgba($primary-blue, 0.1);  border-color: #{$primary-blue};  color: #{$primary-blue}; }
+    &.missed  { background: rgba($warning-color, 0.1); border-color: #{$warning-color}; color: #{$warning-color}; }
   }
 }
 
-// ============================================================
-// ACTIONS BAR
-// ============================================================
-
+// ===================================================
+// BARRE D'ACTIONS
+// ===================================================
 .actions-bar {
   display: flex;
   justify-content: space-between;
@@ -574,10 +516,7 @@
   flex-wrap: wrap;
   gap: $spacing-lg;
 
-  @include mobile {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  @include mobile { flex-direction: column; align-items: stretch; }
 
   .actions-left,
   .actions-right {
@@ -585,27 +524,34 @@
     align-items: center;
     gap: $spacing-md;
 
-    @include mobile {
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+    @include mobile { justify-content: center; flex-wrap: wrap; }
   }
 
   .view-toggle {
+    border: 1px solid var(--border-color);
     border-radius: $border-radius-md;
+    overflow: hidden;
+
+    ::ng-deep .mat-button-toggle {
+      border: none;
+      color: var(--text-secondary);
+      background: var(--bg-primary);
+
+      &.mat-button-toggle-checked {
+        background: var(--primary-color);
+        color: white;
+      }
+    }
   }
 
-  button.active {
-    color: var(--primary-color);
-  }
+  button.active { color: var(--primary-color); }
 }
 
-// ============================================================
-// FILTRES PANEL
-// ============================================================
-
+// ===================================================
+// PANEL FILTRES
+// ===================================================
 .filters-panel {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border-radius: $border-radius-xl;
   border: 1px solid var(--border-color);
   margin-bottom: $spacing-xl;
@@ -618,121 +564,458 @@
     padding: $spacing-xl;
     flex-wrap: wrap;
 
-    @include mobile {
-      flex-direction: column;
-    }
+    @include mobile { flex-direction: column; }
 
     .filter-field {
       flex: 1;
       min-width: 200px;
 
-      @include mobile {
-        min-width: 100%;
-        width: 100%;
+      @include mobile { min-width: 100%; width: 100%; }
+
+      ::ng-deep {
+        .mdc-notched-outline  { border-color: var(--border-color); }
+        .mdc-floating-label   { color: var(--text-secondary); }
+        .mat-mdc-select-value { color: var(--text-primary); }
+        .mat-mdc-input-element{ color: var(--text-primary); }
       }
     }
   }
 }
 
-// ============================================================
-// VUE CARTES
-// ============================================================
+// ===================================================
+// FORMULAIRE DE CRÉATION / ÉDITION
+// ===================================================
+.create-form {
+  background: var(--bg-secondary);
+  border-radius: $border-radius-xl;
+  border: 1px solid var(--border-color);
+  margin-bottom: $spacing-2xl;
+  overflow: hidden;
+  box-shadow: $shadow-md;
 
+  .form-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-xl $spacing-2xl;
+    background: var(--form-header-bg);
+    color: white;
+
+    mat-icon { font-size: 28px; width: 28px; height: 28px; }
+    h3       { margin: 0; font-size: $font-size-lg; font-weight: $font-weight-semibold; }
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xl;
+    padding: $spacing-2xl;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+
+    @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+
+    .form-field {
+      width: 100%;
+
+      ::ng-deep {
+        .mdc-notched-outline  { border-color: var(--border-color); }
+        .mdc-floating-label   { color: var(--text-secondary); }
+        .mat-mdc-select-value { color: var(--text-primary); }
+        .mat-mdc-input-element{ color: var(--text-primary); }
+        .mat-icon             { color: var(--text-secondary); }
+      }
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    padding: $spacing-xl $spacing-2xl;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+
+    @include mobile { flex-direction: column; }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-md $spacing-2xl;
+      border-radius: $border-radius-lg;
+      font-weight: $font-weight-medium;
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+      @include mobile { width: 100%; justify-content: center; }
+
+      &:disabled { background: var(--border-color); color: var(--text-tertiary); }
+    }
+  }
+}
+
+// Sections communes du formulaire étendu
+.teams-section,
+.adversaire-section,
+.anniversaire-section,
+.officials-section,
+.forfait-section {
+  padding: $spacing-2xl;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-of-type { border-bottom: none; }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: 0 0 $spacing-xl;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: var(--text-primary);
+
+  mat-icon { font-size: 22px; width: 22px; height: 22px; color: #6366f1; }
+}
+
+.section-desc {
+  margin: -#{$spacing-md} 0 $spacing-xl;
+  font-size: $font-size-sm;
+  color: var(--text-secondary);
+}
+
+// Grille équipes
+.teams-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: $spacing-xl;
+  align-items: stretch;
+
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-lg; }
+}
+
+.team-card {
+  background: var(--bg-primary);
+  border-radius: $border-radius-lg;
+  padding: $spacing-xl;
+  border: 2px solid var(--border-color);
+  transition: $transition-base;
+
+  &:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  }
+
+  &.team-1 {
+    border-top: 4px solid #{$primary-blue};
+    .team-header .team-label { background: rgba($primary-blue, 0.1); color: #{$primary-blue}; }
+    .team-color { background: #{$primary-blue}; }
+  }
+
+  &.team-2 {
+    border-top: 4px solid #{$error-color};
+    .team-header .team-label { background: rgba($error-color, 0.1); color: #{$error-color}; }
+    .team-color { background: #{$error-color}; }
+  }
+
+  .team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-lg;
+
+    .team-label {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      padding: $spacing-xs $spacing-md;
+      border-radius: $border-radius-full;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+    }
+
+    .team-color {
+      width: 24px;
+      height: 24px;
+      border-radius: $border-radius-full;
+      border: 2px solid white;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  mat-form-field { width: 100%; }
+
+  .score-field { margin-top: $spacing-lg; }
+}
+
+.vs-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  color: var(--text-tertiary);
+  padding: 0 $spacing-sm;
+
+  @include mobile {
+    padding: $spacing-sm 0;
+
+    &::before, &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+      margin: 0 $spacing-lg;
+    }
+  }
+}
+
+// Section adversaire
+.adversaire-section {
+  .source-option {
+    flex: 1;
+    min-width: 180px;
+    padding: $spacing-lg $spacing-xl;
+    border: 2px solid var(--border-color);
+    border-radius: $border-radius-lg;
+    background: var(--bg-primary);
+    transition: $transition-base;
+    cursor: pointer;
+
+    &:hover { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); }
+    &.mat-mdc-radio-checked { border-color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+
+    mat-icon { margin-right: $spacing-sm; vertical-align: middle; color: #6366f1; }
+  }
+
+  .selected-groupe {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    background: rgba($success-color, 0.1);
+    border: 1px solid #{$success-color};
+    border-radius: $border-radius-lg;
+    margin-bottom: $spacing-lg;
+
+    mat-icon { color: #{$success-color}; }
+    span { flex: 1; font-weight: $font-weight-medium; }
+  }
+
+  .groupes-list {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: $border-radius-lg;
+
+    .groupe-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      padding: $spacing-md $spacing-lg;
+      cursor: pointer;
+      transition: $transition-base;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child { border-bottom: none; }
+      &:hover { background: rgba(99, 102, 241, 0.05); }
+
+      .groupe-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: $border-radius-lg;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: $font-weight-semibold;
+        font-size: $font-size-md;
+        flex-shrink: 0;
+      }
+
+      .groupe-info {
+        flex: 1;
+
+        .groupe-nom  { display: block; font-weight: $font-weight-medium; color: var(--text-primary); }
+        .groupe-ville{ display: block; font-size: $font-size-xs; color: var(--text-secondary); }
+      }
+    }
+  }
+
+  .invitation-info .info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    background: rgba($primary-blue, 0.08);
+    border: 1px solid rgba($primary-blue, 0.2);
+    border-radius: $border-radius-lg;
+
+    mat-icon { color: var(--primary-color); flex-shrink: 0; }
+    p { margin: 0; font-size: $font-size-sm; color: var(--text-secondary); line-height: 1.5; }
+  }
+}
+
+// Section anniversaire
+.anniversaire-section {
+  .membres-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: $border-radius-lg;
+    margin-top: $spacing-md;
+
+    .membre-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      padding: $spacing-sm $spacing-lg;
+      cursor: pointer;
+      transition: $transition-base;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child { border-bottom: none; }
+      &:hover { background: rgba($warning-color, 0.08); mat-icon { color: #{$warning-color}; } }
+
+      .membre-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: $border-radius-full;
+        background: linear-gradient(135deg, #{$accent-orange} 0%, #{$accent-orange-dark} 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+        flex-shrink: 0;
+      }
+
+      span { flex: 1; font-size: $font-size-sm; color: var(--text-primary); }
+      mat-icon { color: var(--text-tertiary); font-size: 20px; width: 20px; height: 20px; }
+    }
+  }
+
+  .teams-config {
+    margin-top: $spacing-2xl;
+    padding-top: $spacing-2xl;
+    border-top: 1px dashed var(--border-color);
+
+    h5 { margin: 0 0 $spacing-lg; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-secondary); }
+  }
+}
+
+// Section forfait
+.forfait-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xl;
+  padding: $spacing-xl $spacing-2xl;
+  background: rgba($warning-color, 0.05);
+  border: 1px solid rgba($warning-color, 0.2);
+  border-radius: $border-radius-lg;
+  margin: 0 $spacing-2xl $spacing-2xl;
+
+  mat-checkbox { font-weight: $font-weight-medium; }
+
+  .forfait-field { flex: 1; min-width: 200px; max-width: 300px; }
+}
+
+// Section officiels
+.officials-section {
+  .officials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-xl;
+
+    @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+
+  .official-group {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $border-radius-lg;
+    padding: $spacing-lg;
+
+    .official-label {
+      display: block;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      color: var(--text-secondary);
+      margin-bottom: $spacing-md;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    mat-form-field { width: 100%; margin-bottom: $spacing-sm; &:last-child { margin-bottom: 0; } }
+  }
+}
+
+// ===================================================
+// VUE CARTES
+// ===================================================
 .matches-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: $spacing-xl;
 
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-lg;
-  }
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-lg; }
 }
 
 .match-card {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border-radius: $border-radius-xl;
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: transform $transition-base, box-shadow $transition-base;
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: $shadow-xl;
   }
 
-  &.played {
-    border-left: 4px solid #22c55e;
-  }
-
-  &.missed {
-    border-left: 4px solid #f59e0b;
-  }
-
-  &.future {
-    border-left: 4px solid #3b82f6;
-  }
+  &.played  { border-left: 4px solid #{$success-color}; }
+  &.missed  { border-left: 4px solid #{$warning-color}; }
+  &.future  { border-left: 4px solid #{$primary-blue}; }
 
   .match-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: $spacing-lg;
-    background: var(--background-tertiary);
+    background: var(--bg-tertiary);
     border-bottom: 1px solid var(--divider-color);
 
     .match-type-badge {
       padding: 4px $spacing-md;
       border-radius: $border-radius-full;
       font-size: $font-size-xs;
-      font-weight: 700;
+      font-weight: $font-weight-bold;
       text-transform: uppercase;
 
-      &.interne {
-        background: rgba(59, 130, 246, 0.1);
-        color: #3b82f6;
-      }
-
-      &.duel {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-      }
-
-      &.amical {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-      }
-
-      &.anniversaire {
-        background: rgba(249, 115, 22, 0.1);
-        color: #f97316;
-      }
+      &.interne     { background: rgba($primary-blue, 0.1);  color: #{$primary-blue}; }
+      &.duel        { background: rgba($warning-color, 0.1); color: #{$warning-color}; }
+      &.amical      { background: rgba($success-color, 0.1); color: #{$success-color}; }
+      &.anniversaire{ background: rgba($accent-orange, 0.1); color: #{$accent-orange}; }
     }
 
     .match-status {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: $spacing-xs;
       font-size: $font-size-sm;
-      font-weight: 500;
+      font-weight: $font-weight-medium;
 
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
-      &.status-played {
-        color: #22c55e;
-      }
-
-      &.status-missed {
-        color: #f59e0b;
-      }
-
-      &.status-future {
-        color: #3b82f6;
-      }
+      &.status-played { color: #{$success-color}; }
+      &.status-missed { color: #{$warning-color}; }
+      &.status-future { color: #{$primary-blue}; }
     }
   }
 
@@ -747,11 +1030,7 @@
       color: var(--text-secondary);
       font-size: $font-size-sm;
 
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
     }
 
     .match-teams {
@@ -763,7 +1042,7 @@
 
       .team-name {
         font-size: $font-size-lg;
-        font-weight: 600;
+        font-weight: $font-weight-semibold;
         color: var(--text-primary);
         text-align: center;
         flex: 1;
@@ -771,10 +1050,10 @@
 
       .vs {
         font-size: $font-size-sm;
-        font-weight: 700;
+        font-weight: $font-weight-bold;
         color: var(--text-tertiary);
         padding: 4px $spacing-sm;
-        background: var(--background-tertiary);
+        background: var(--bg-tertiary);
         border-radius: $border-radius-sm;
       }
     }
@@ -788,16 +1067,13 @@
 
       .score {
         font-size: $font-size-2xl;
-        font-weight: 700;
+        font-weight: $font-weight-bold;
         color: var(--text-primary);
         min-width: 40px;
         text-align: center;
       }
 
-      .separator {
-        font-size: $font-size-xl;
-        color: var(--text-tertiary);
-      }
+      .separator { font-size: $font-size-xl; color: var(--text-tertiary); }
     }
 
     .match-lieu {
@@ -808,11 +1084,7 @@
       color: var(--text-secondary);
       font-size: $font-size-sm;
 
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
     }
   }
 
@@ -822,46 +1094,49 @@
     gap: $spacing-sm;
     padding: $spacing-lg;
     border-top: 1px solid var(--divider-color);
-    background: var(--background-tertiary);
+    background: var(--bg-tertiary);
+
+    button {
+      color: var(--text-secondary);
+      transition: $transition-base;
+
+      &:hover { color: var(--primary-color); background: rgba($primary-blue, 0.08); }
+      &[color="primary"] { color: var(--primary-color); }
+      &[color="warn"]    { &:hover { color: var(--error-color); background: rgba($error-color, 0.08); } }
+    }
   }
 }
 
-// ===== EMPTY STATE =====
+// ===================================================
+// ÉTAT VIDE
+// ===================================================
 .empty-state {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-4xl;
+  padding: $spacing-4xl $spacing-2xl;
   text-align: center;
 
   mat-icon {
-    font-size: 64px;
-    width: 64px;
-    height: 64px;
+    font-size: 72px;
+    width: 72px;
+    height: 72px;
     color: var(--text-tertiary);
     margin-bottom: $spacing-xl;
+    opacity: 0.6;
   }
 
-  h3 {
-    margin: 0 0 $spacing-sm;
-    color: var(--text-primary);
-    font-size: $font-size-xl;
-  }
-
-  p {
-    margin: 0 0 $spacing-xl;
-    color: var(--text-secondary);
-  }
+  h3 { margin: 0 0 $spacing-sm; font-size: $font-size-xl; font-weight: $font-weight-semibold; color: var(--text-primary); }
+  p  { margin: 0 0 $spacing-xl; color: var(--text-secondary); max-width: 400px; }
 }
 
-// ============================================================
+// ===================================================
 // VUE LISTE / TABLE
-// ============================================================
-
+// ===================================================
 .matches-table-container {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border-radius: $border-radius-xl;
   border: 1px solid var(--border-color);
   overflow: hidden;
@@ -869,1192 +1144,97 @@
   .matches-table {
     width: 100%;
 
+    ::ng-deep {
+      .mat-mdc-header-cell { color: var(--text-secondary); background: var(--bg-tertiary); font-weight: $font-weight-semibold; }
+      .mat-mdc-cell        { color: var(--text-primary); border-bottom-color: var(--divider-color); }
+      .mat-mdc-row:hover .mat-mdc-cell { background: var(--bg-tertiary); }
+    }
+
     .type-badge {
       padding: 4px $spacing-md;
       border-radius: $border-radius-full;
       font-size: $font-size-xs;
-      font-weight: 600;
+      font-weight: $font-weight-semibold;
 
-      &.interne { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-      &.duel { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-      &.amical { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-      &.anniversaire { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+      &.interne     { background: rgba($primary-blue, 0.1);  color: #{$primary-blue}; }
+      &.duel        { background: rgba($warning-color, 0.1); color: #{$warning-color}; }
+      &.amical      { background: rgba($success-color, 0.1); color: #{$success-color}; }
+      &.anniversaire{ background: rgba($accent-orange, 0.1); color: #{$accent-orange}; }
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: $spacing-xs;
       padding: 4px $spacing-md;
       border-radius: $border-radius-full;
       font-size: $font-size-xs;
-      font-weight: 600;
+      font-weight: $font-weight-semibold;
 
-      mat-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
 
-      &.status-played { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-      &.status-missed { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-      &.status-future { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+      &.status-played { background: rgba($success-color, 0.1); color: #{$success-color}; }
+      &.status-missed { background: rgba($warning-color, 0.1); color: #{$warning-color}; }
+      &.status-future { background: rgba($primary-blue, 0.1);  color: #{$primary-blue}; }
     }
+  }
+
+  ::ng-deep mat-paginator {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--divider-color);
+    color: var(--text-secondary);
   }
 }
 
-// ============================================================
-// ANIMATIONS
-// ============================================================
-
-@keyframes pulse-icon {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
-
-// ============================================================
-// VARIABLES (si non définis dans _variables.scss)
-// ============================================================
-
-$spacing-xs: 4px !default;
-$spacing-sm: 8px !default;
-$spacing-md: 12px !default;
-$spacing-lg: 16px !default;
-$spacing-xl: 24px !default;
-$spacing-2xl: 32px !default;
-$spacing-3xl: 48px !default;
-$spacing-4xl: 64px !default;
-
-$font-size-xs: 0.75rem !default;
-$font-size-sm: 0.875rem !default;
-$font-size-md: 1rem !default;
-$font-size-lg: 1.125rem !default;
-$font-size-xl: 1.25rem !default;
-$font-size-2xl: 1.5rem !default;
-$font-size-3xl: 1.875rem !default;
-
-$font-weight-medium: 500 !default;
-$font-weight-semibold: 600 !default;
-$font-weight-bold: 700 !default;
-
-$border-radius-sm: 4px !default;
-$border-radius-md: 8px !default;
-$border-radius-lg: 12px !default;
-$border-radius-xl: 16px !default;
-$border-radius-2xl: 24px !default;
-$border-radius-full: 9999px !default;
-
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !default;
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !default;
-
-// Responsive mixin
-@mixin mobile {
-  @media (max-width: 768px) {
-    @content;
-  }
-}
-
-    .dialog-container {
-      min-width: 600px;
-      max-width: 800px;
-      
-      @media (max-width: 768px) {
-        min-width: unset;
-        width: 100%;
-      }
-    }
-
-    .dialog-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      color: white;
-      margin: -24px -24px 0 -24px;
-
-      &.type-interne { background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); }
-      &.type-duel { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); }
-      &.type-amical { background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); }
-      &.type-anniversaire { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); }
-
-      .header-content {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-
-        mat-icon {
-          font-size: 36px;
-          width: 36px;
-          height: 36px;
-        }
-
-        h2 {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 600;
-        }
-
-        .match-date {
-          font-size: 14px;
-          opacity: 0.9;
-        }
-      }
-      
-      .close-btn {
-        color: white;
-      }
-    }
-
-    mat-dialog-content {
-      padding: 0 !important;
-      max-height: 60vh;
-      overflow-y: auto;
-    }
-
-    .tab-content {
-      padding: 20px;
-    }
-
-    .form-row {
-      margin-bottom: 16px;
-
-      &.two-cols {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        
-        @media (max-width: 600px) {
-          grid-template-columns: 1fr;
-        }
-      }
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    // Teams section
-    .teams-section, .amical-section, .anniversaire-section {
-      padding: 16px;
-      background: #f5f5f5;
-      border-radius: 8px;
-    }
-
-    .teams-grid {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 16px;
-      align-items: start;
-      
-      @media (max-width: 600px) {
-        grid-template-columns: 1fr;
-      }
-    }
-    
-    .teams-row {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      
-      > * {
-        flex: 1;
-        min-width: 200px;
-      }
-    }
-
-    .team-card, .local-team, .adverse-team {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      text-align: center;
-
-      &.team-1 {
-        border-top: 4px solid #fdd835;
-      }
-
-      &.team-2 {
-        border-top: 4px solid #f44336;
-      }
-
-      .team-badge, .team-label {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        background: #e0e0e0;
-      }
-      
-      .team-name {
-        font-size: 18px;
-        font-weight: 600;
-        margin: 8px 0 16px;
-        color: #1976d2;
-      }
-
-      mat-form-field {
-        width: 100%;
-      }
-
-      .score-field {
-        margin-top: 12px;
-      }
-    }
-
-    .vs-badge {
-      font-size: 24px;
-      font-weight: 700;
-      color: #757575;
-      align-self: center;
-      
-      @media (max-width: 600px) {
-        text-align: center;
-        padding: 8px 0;
-      }
-    }
-
-    .random-btn {
-      text-align: center;
-      margin-top: 16px;
-    }
-    
-    .source-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    // Current value display
-    .current-value {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 8px;
-      padding: 8px;
-      background: rgba(76, 175, 80, 0.1);
-      border-radius: 4px;
-      font-size: 12px;
-      color: #4caf50;
-      
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
-    }
-    
-    .no-selection {
-      padding: 16px;
-      text-align: center;
-      color: #757575;
-      font-style: italic;
-    }
-
-    // Forfait section
-    .forfait-section {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      background: rgba(255, 152, 0, 0.1);
-      border-radius: 8px;
-      margin-top: 16px;
-      border: 1px solid rgba(255, 152, 0, 0.3);
-    }
-
-    // Officials section
-    .officials-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .official-card {
-      background: #f5f5f5;
-      padding: 16px;
-      border-radius: 8px;
-
-      &.highlighted {
-        background: rgba(76, 175, 80, 0.1);
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      .official-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        font-weight: 600;
-        flex-wrap: wrap;
-
-        mat-icon {
-          color: #1976d2;
-        }
-
-        .required-badge {
-          font-size: 10px;
-          background: #4caf50;
-          color: white;
-          padding: 2px 8px;
-          border-radius: 8px;
-          margin-left: auto;
-        }
-      }
-
-      mat-form-field {
-        width: 100%;
-      }
-      
-      .or-divider {
-        text-align: center;
-        color: #757575;
-        font-size: 12px;
-        margin: 8px 0;
-      }
-    }
-
-    .info-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: rgba(33, 150, 243, 0.1);
-      border-radius: 8px;
-      margin-top: 16px;
-
-      mat-icon {
-        color: #2196f3;
-      }
-
-      span {
-        font-size: 14px;
-        color: #757575;
-      }
-    }
-
-    // Status tab
-    .status-summary {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .status-card {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 20px;
-      border-radius: 12px;
-
-      mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-      }
-
-      &.status-played {
-        background: rgba(76, 175, 80, 0.1);
-        color: #4caf50;
-      }
-
-      &.status-missed {
-        background: rgba(255, 152, 0, 0.1);
-        color: #ff9800;
-      }
-
-      &.status-future {
-        background: rgba(33, 150, 243, 0.1);
-        color: #2196f3;
-      }
-
-      .status-info {
-        h3 {
-          margin: 0;
-          font-size: 20px;
-        }
-
-        p {
-          margin: 4px 0 0;
-          font-size: 14px;
-          opacity: 0.8;
-        }
-      }
-    }
-
-    .status-checklist {
-      background: #f5f5f5;
-      padding: 16px;
-      border-radius: 8px;
-
-      h4 {
-        margin: 0 0 12px;
-        font-size: 14px;
-        color: #757575;
-      }
-
-      .checklist-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 0;
-        color: #757575;
-
-        mat-icon {
-          font-size: 20px;
-          width: 20px;
-          height: 20px;
-        }
-
-        &.completed {
-          color: #4caf50;
-        }
-      }
-    }
-
-    .quick-actions {
-      h4 {
-        margin: 0 0 12px;
-        font-size: 14px;
-        color: #757575;
-      }
-    }
-
-    // Birthday members
-    .birthday-members {
-      h4 {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0 0 12px;
-
-        mat-icon {
-          color: #ff9800;
-        }
-      }
-
-      mat-chip-set {
-        margin-bottom: 12px;
-      }
-    }
-
-    mat-dialog-actions {
-      padding: 16px 24px;
-      border-top: 1px solid #e0e0e0;
-    }
-
-    .option-icon {
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-
-    .score-field {
-      max-width: 120px;
-      margin: 0 auto;
-    }
-  // ============================================================
-// MATCH-FORM - STYLES DU FORMULAIRE DE CRÉATION
-// À ajouter/remplacer dans match-form_component.scss
-// ============================================================
-
-// ===== FORMULAIRE DE CRÉATION =====
-.create-form {
-  background: var(--background-secondary);
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 24px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-
-  // Header du formulaire
-  .form-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 20px 24px;
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    color: white;
-
-    mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-    }
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-    }
-  }
-
-  // Contenu du formulaire
-  .form-content {
-    padding: 24px;
-  }
-
-  // Grille principale du formulaire
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    padding: 24px;
-    background: var(--background-tertiary);
-    border-bottom: 1px solid var(--border-color);
-
-    @media (max-width: 900px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-    }
-
-    .form-field {
-      width: 100%;
-    }
-  }
-}
-
-// ===== SECTIONS DU FORMULAIRE =====
-.teams-section,
-.adversaire-section,
-.anniversaire-section,
-.officials-section,
-.forfait-section {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-color);
-
-  &:last-of-type {
-    border-bottom: none;
-  }
-}
-
-// ===== TITRE DE SECTION =====
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 20px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-
-  mat-icon {
-    font-size: 22px;
-    width: 22px;
-    height: 22px;
-    color: #6366f1;
-  }
-}
-
-.section-desc {
-  margin: -12px 0 20px;
-  font-size: 14px;
+// ===================================================
+// OPTION ICON (mat-select)
+// ===================================================
+.option-icon {
+  margin-right: $spacing-sm;
+  vertical-align: middle;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
   color: var(--text-secondary);
 }
 
-// ===== GRILLE DES ÉQUIPES =====
-.teams-grid {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 20px;
-  align-items: stretch;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+// ===================================================
+// ANIMATIONS
+// ===================================================
+@keyframes pulse-icon {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.1); opacity: 0.8; }
 }
 
-// ===== CARTE D'ÉQUIPE =====
-.team-card {
-  background: var(--background-primary);
-  border-radius: 12px;
-  padding: 20px;
-  border: 2px solid var(--border-color);
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: #6366f1;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
-  }
-
-  &.team-1 {
-    border-top: 4px solid #3b82f6;
-
-    .team-header .team-label {
-      background: rgba(59, 130, 246, 0.1);
-      color: #3b82f6;
-    }
-
-    .team-color {
-      background: #3b82f6;
-    }
-  }
-
-  &.team-2 {
-    border-top: 4px solid #ef4444;
-
-    .team-header .team-label {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
-    }
-
-    .team-color {
-      background: #ef4444;
-    }
-  }
-
-  .team-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-
-    .team-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .team-color {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  mat-form-field {
-    width: 100%;
-  }
-
-  .score-field {
-    margin-top: 16px;
-  }
-}
-
-// ===== SÉPARATEUR VS =====
-.vs-separator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text-tertiary);
-  padding: 0 10px;
-
-  @media (max-width: 768px) {
-    padding: 10px 0;
-    
-    &::before,
-    &::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border-color);
-      margin: 0 16px;
-    }
-  }
-}
-
-// ===== BOUTON TIRAGE ALÉATOIRE =====
-.random-btn-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px dashed var(--border-color);
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    border-radius: 25px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    
-    mat-icon {
-      font-size: 20px;
-    }
-
-    &:hover {
-      background: rgba(99, 102, 241, 0.1);
-      color: #6366f1;
-      border-color: #6366f1;
-    }
-  }
-}
-
-// ===== SECTION ADVERSAIRE (AMICAL) =====
-.adversaire-section {
-  .source-options {
-    margin-bottom: 24px;
-
-    mat-radio-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-
-      @media (max-width: 600px) {
-        flex-direction: column;
-      }
-    }
-
-    .source-option {
-      flex: 1;
-      min-width: 180px;
-      padding: 16px 20px;
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--background-primary);
-      transition: all 0.2s ease;
-      cursor: pointer;
-
-      &:hover {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.05);
-      }
-
-      &.mat-mdc-radio-checked {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.1);
-      }
-
-      mat-icon {
-        margin-right: 8px;
-        vertical-align: middle;
-        color: #6366f1;
-      }
-    }
-  }
-
-  .adversaire-input,
-  .groupe-selection {
-    margin-top: 16px;
-  }
-
-  .selected-groupe {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid #22c55e;
-    border-radius: 10px;
-    margin-bottom: 16px;
-
-    mat-icon {
-      color: #22c55e;
-    }
-
-    span {
-      flex: 1;
-      font-weight: 500;
-    }
-  }
-
-  .groupes-list {
-    max-height: 240px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-
-    .groupe-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      border-bottom: 1px solid var(--border-color);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.05);
-      }
-
-      .groupe-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 16px;
-      }
-
-      .groupe-info {
-        flex: 1;
-
-        .groupe-nom {
-          display: block;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-
-        .groupe-ville {
-          display: block;
-          font-size: 12px;
-          color: var(--text-secondary);
-        }
-      }
-    }
-  }
-
-  .invitation-info {
-    .info-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 16px;
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px solid rgba(59, 130, 246, 0.2);
-      border-radius: 10px;
-
-      mat-icon {
-        color: #3b82f6;
-        flex-shrink: 0;
-      }
-
-      p {
-        margin: 0;
-        font-size: 14px;
-        color: var(--text-secondary);
-        line-height: 1.5;
-      }
-    }
-  }
-
-  .score-field {
-    max-width: 200px;
-    margin-top: 20px;
-  }
-}
-
-// ===== SECTION ANNIVERSAIRE =====
-.anniversaire-section {
-  .selected-membres {
-    margin-bottom: 20px;
-
-    mat-chip-set {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    mat-chip {
-      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-      color: white;
-    }
-  }
-
-  .membres-list {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    margin-top: 12px;
-
-    .membre-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      border-bottom: 1px solid var(--border-color);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &:hover {
-        background: rgba(249, 115, 22, 0.1);
-
-        mat-icon {
-          color: #f97316;
-        }
-      }
-
-      .membre-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
-      }
-
-      span {
-        flex: 1;
-        font-size: 14px;
-      }
-
-      mat-icon {
-        color: var(--text-tertiary);
-        font-size: 20px;
-      }
-    }
-  }
-
-  .teams-config {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px dashed var(--border-color);
-
-    h5 {
-      margin: 0 0 16px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-  }
-}
-
-// ===== SECTION FORFAIT =====
-.forfait-section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 24px;
-  background: rgba(245, 158, 11, 0.05);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 12px;
-  margin: 0 24px 24px;
-
-  mat-checkbox {
-    font-weight: 500;
-  }
-
-  .forfait-field {
-    flex: 1;
-    min-width: 200px;
-    max-width: 300px;
-  }
-}
-
-// ===== SECTION OFFICIELS =====
-.officials-section {
-  .officials-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-
-    @media (max-width: 900px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .official-group {
-    background: var(--background-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-
-    .official-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    mat-form-field {
-      width: 100%;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
-}
-
-// ===== CHAMP COMMENTAIRE =====
-.full-width {
-  width: 100%;
-  padding: 0 24px;
-  margin-bottom: 24px;
-}
-
-// ===== ACTIONS DU FORMULAIRE =====
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  background: var(--background-tertiary);
-  border-top: 1px solid var(--border-color);
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    border-radius: 10px;
-    font-weight: 500;
-
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    &[color="primary"] {
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      
-      &:not(:disabled):hover {
-        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-      }
-
-      &:disabled {
-        background: var(--border-color);
-        color: var(--text-tertiary);
-      }
-    }
-  }
-}
-
-// ===== ÉTAT VIDE =====
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px;
-  text-align: center;
-  grid-column: 1 / -1;
-
-  mat-icon {
-    font-size: 72px;
-    width: 72px;
-    height: 72px;
-    color: var(--text-tertiary);
-    margin-bottom: 16px;
-  }
-
-  h3 {
-    margin: 0 0 8px;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  p {
-    margin: 0 0 24px;
-    color: var(--text-secondary);
-    max-width: 400px;
-  }
-}
-
-// ===== ANIMATIONS =====
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-// ===== OPTION D'ICÔNE DANS SELECT =====
-.option-icon {
-  margin-right: 10px;
-  vertical-align: middle;
-  font-size: 20px;
-  color: var(--text-secondary);
-}
-
-// ===== RESPONSIVE GÉNÉRAL =====
+// ===================================================
+// RESPONSIVE MOBILE (600px)
+// ===================================================
 @media (max-width: 600px) {
   .create-form {
-    margin: 0 -16px 24px;
+    margin: 0 -#{$spacing-lg} $spacing-2xl;
     border-radius: 0;
     border-left: none;
     border-right: none;
 
-    .form-header {
-      padding: 16px 20px;
-
-      h3 {
-        font-size: 16px;
-      }
-    }
-
-    .form-grid {
-      padding: 20px;
-      gap: 16px;
-    }
+    .form-header      { padding: $spacing-lg $spacing-xl; h3 { font-size: $font-size-md; } }
+    .form-grid        { padding: $spacing-xl; gap: $spacing-lg; }
+    .form-actions     { padding: $spacing-lg $spacing-xl; flex-direction: column; button { width: 100%; justify-content: center; } }
 
     .teams-section,
     .adversaire-section,
     .anniversaire-section,
-    .officials-section {
-      padding: 20px;
-    }
+    .officials-section { padding: $spacing-xl; }
 
-    .forfait-section {
-      margin: 0 20px 20px;
-    }
-
-    .full-width {
-      padding: 0 20px;
-    }
-
-    .form-actions {
-      padding: 16px 20px;
-      flex-direction: column;
-
-      button {
-        width: 100%;
-        justify-content: center;
-      }
-    }
+    .forfait-section { margin: 0 $spacing-xl $spacing-xl; }
   }
 }

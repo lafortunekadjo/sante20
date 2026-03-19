@@ -1,80 +1,163 @@
-// ============================================================
-// MY2-0 - GESTION DES INVITATIONS (RESPONSABLE)
-// Styles SCSS - invitation-manager.component.scss
-// ============================================================
+// invitation-manager.component.scss
+@use '../../../../variables' as *;
 
-.invitation-manager {
-  padding: 24px;
-  max-width: 900px;
-  margin: 0 auto;
+// ===================================================
+// VARIABLES LOCALES — couleurs spécifiques à ce composant
+// absentes de _variables.scss
+// ===================================================
+
+// Vert WhatsApp (marque fixe, hors thème)
+$whatsapp-green:      #25d366;
+$whatsapp-green-dark: #128c7e;
+
+// Bleu code d'invitation (fixe, hors thème)
+$code-bg-light:   #f0f9ff;
+$code-bg-dark-m:  #e0f2fe;  // gradient fin
+$code-border:     #0ea5e9;
+$code-text-color: #0369a1;
+
+// Jaune instructions (fixe, hors thème)
+$instr-bg-from:  #fefce8;
+$instr-bg-to:    #fef9c3;
+$instr-border:   #fde047;
+$instr-title:    #854d0e;
+$instr-icon:     #eab308;
+$instr-text:     #713f12;
+
+// Statut actif / inactif (badges — sémantiques fixes)
+$status-active-bg:   #dcfce7;
+$status-active-text: #16a34a;
+$status-inactive-bg: #fee2e2;
+$status-inactive-text:#dc2626;
+
+// Highlight stat (avertissement doux)
+$highlight-bg-from: #fef3c7;
+$highlight-bg-to:   #fde68a;
+$highlight-number:  #d97706;
+
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
+:host {
+  --primary-color:      #{$primary-blue};
+  --primary-dark:       #{$primary-blue-dark};
+  --accent-color:       #{$secondary-emerald};
+  --success-color:      #{$success-color};
+  --warning-color:      #{$warning-color};
+  --error-color:        #{$error-color};
+
+  // Texte — mode clair
+  --text-primary:       #{$light-text-primary};
+  --text-secondary:     #{$light-text-secondary};
+  --text-tertiary:      #{$light-text-tertiary};
+
+  // Fonds — mode clair
+  --bg-primary:         #{$light-bg-primary};
+  --bg-secondary:       #{$light-bg-secondary};
+  --bg-tertiary:        #{$light-bg-tertiary};
+
+  // Bordures — mode clair
+  --border-color:       #{$light-border};
 }
 
-// ===== HEADER =====
+// Dark mode (4 sélecteurs)
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:       #{$dark-text-primary};
+  --text-secondary:     #{$dark-text-secondary};
+  --text-tertiary:      #{$dark-text-tertiary};
+
+  --bg-primary:         #{$dark-bg-primary};
+  --bg-secondary:       #{$dark-bg-secondary};
+  --bg-tertiary:        #{$dark-bg-tertiary};
+
+  --border-color:       #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER
+// ===================================================
+.invitation-manager {
+  padding: $spacing-2xl;
+  max-width: 900px;
+  margin: 0 auto;
+
+  @include mobile { padding: $spacing-lg; }
+}
+
+// ===================================================
+// HEADER
+// ===================================================
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: $spacing-3xl;
+
+  @include mobile { margin-bottom: $spacing-2xl; }
 
   .header-content {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 24px;
+    gap: $spacing-2xl;
     flex-wrap: wrap;
 
-    @media (max-width: 600px) {
-      flex-direction: column;
-    }
+    @include mobile { flex-direction: column; }
   }
 
   .header-text {
     h1 {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 28px;
-      font-weight: 700;
+      gap: $spacing-md;
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-bold;
       color: var(--text-primary);
-      margin: 0 0 8px;
+      margin: 0 0 $spacing-sm;
 
-      mat-icon {
-        color: var(--primary-color);
-      }
+      mat-icon { color: var(--primary-color); }
+
+      @include mobile { font-size: $font-size-2xl; }
     }
 
     p {
       color: var(--text-secondary);
       margin: 0;
-      font-size: 15px;
+      font-size: $font-size-md;
     }
   }
 
   .header-stats {
     display: flex;
-    gap: 24px;
+    gap: $spacing-2xl;
+
+    @include mobile { width: 100%; justify-content: space-around; }
 
     .stat-item {
       text-align: center;
-      padding: 12px 20px;
-      background: var(--background-secondary);
-      border-radius: 12px;
+      padding: $spacing-md $spacing-xl;
+      background: var(--bg-secondary);
+      border-radius: $border-radius-lg;
       min-width: 100px;
 
+      @include mobile { min-width: 80px; padding: $spacing-sm $spacing-md; }
+
       &.highlight {
-        background: linear-gradient(135deg, #fef3c7, #fde68a);
-        
-        .stat-number {
-          color: #d97706;
-        }
+        background: linear-gradient(135deg, $highlight-bg-from, $highlight-bg-to);
+        .stat-number { color: $highlight-number; }
       }
 
       .stat-number {
         display: block;
-        font-size: 28px;
-        font-weight: 700;
+        font-size: $font-size-3xl;
+        font-weight: $font-weight-bold;
         color: var(--primary-color);
+
+        @include mobile { font-size: $font-size-2xl; }
       }
 
       .stat-label {
-        font-size: 12px;
+        font-size: $font-size-xs;
         color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -83,253 +166,243 @@
   }
 }
 
-// ===== LOADING =====
+// ===================================================
+// LOADING
+// ===================================================
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
-  gap: 16px;
+  padding: $spacing-3xl;
+  gap: $spacing-lg;
 
-  p {
-    color: var(--text-secondary);
-  }
+  p { color: var(--text-secondary); margin: 0; }
 }
 
-// ===== TABS =====
+// ===================================================
+// TABS
+// ===================================================
 .custom-tabs {
   ::ng-deep {
-    .mat-mdc-tab {
-      min-width: 140px;
-    }
+    .mat-mdc-tab { min-width: 140px; }
+    .mat-mdc-tab-label-container { padding: 0 $spacing-lg; }
+    .mat-mdc-tab .mdc-tab__content { gap: $spacing-sm; }
 
-    .mat-mdc-tab-label-container {
-      padding: 0 16px;
+    // Dark mode tab strip
+    .mat-mdc-tab-header       { background: var(--bg-primary); }
+    .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab__text-label {
+      color: var(--text-secondary);
     }
-
-    .mat-mdc-tab .mdc-tab__content {
-      gap: 8px;
+    .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+      color: var(--primary-color);
     }
   }
 }
 
-.tab-content {
-  padding-top: 24px;
-}
+.tab-content { padding-top: $spacing-2xl; }
 
-// ===== INVITATION CARD =====
+// ===================================================
+// INVITATION CARD
+// ===================================================
 .invitation-card {
-  border-radius: 16px;
-  margin-bottom: 24px;
+  border-radius: $border-radius-xl;
+  margin-bottom: $spacing-2xl;
+  background: var(--bg-primary);
 
-  mat-card-content {
-    padding: 24px;
-  }
+  mat-card-content { padding: $spacing-2xl; }
 
+  // ----- Statut -----
   .invitation-status {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
+    margin-bottom: $spacing-2xl;
 
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-lg;
+      border-radius: $border-radius-full;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
 
-      &.active {
-        background: #dcfce7;
-        color: #16a34a;
-      }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
-      &.inactive {
-        background: #fee2e2;
-        color: #dc2626;
-      }
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
+      &.active  { background: $status-active-bg;   color: $status-active-text; }
+      &.inactive{ background: $status-inactive-bg; color: $status-inactive-text; }
     }
 
-    .usage-count {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
+    .usage-count { color: var(--text-secondary); font-size: $font-size-sm; }
   }
 
+  // ----- Code & Lien — label commun -----
   .code-section,
   .link-section {
-    margin-bottom: 20px;
+    margin-bottom: $spacing-xl;
 
     label {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
       color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      margin-bottom: $spacing-sm;
     }
   }
 
+  // ----- Affichage du code -----
   .code-display {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-    border: 2px dashed #0ea5e9;
-    border-radius: 12px;
-    padding: 16px 20px;
+    gap: $spacing-md;
+    background: linear-gradient(135deg, $code-bg-light, $code-bg-dark-m);
+    border: 2px dashed $code-border;
+    border-radius: $border-radius-lg;
+    padding: $spacing-lg $spacing-xl;
 
     .code-text {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-bold;
       font-family: 'Courier New', monospace;
       letter-spacing: 4px;
-      color: #0369a1;
+      color: $code-text-color;
       flex: 1;
+
+      @include mobile { font-size: $font-size-xl; letter-spacing: 2px; }
     }
   }
 
+  // ----- Affichage du lien -----
   .link-display {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: var(--background-secondary);
-    border-radius: 12px;
-    padding: 4px 4px 4px 16px;
+    gap: $spacing-sm;
+    background: var(--bg-secondary);
+    border-radius: $border-radius-lg;
+    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-lg;
 
     input {
       flex: 1;
       border: none;
       background: transparent;
-      font-size: 14px;
+      font-size: $font-size-sm;
       color: var(--text-primary);
       outline: none;
     }
   }
 
+  // ----- Actions de partage -----
   .share-actions {
     display: flex;
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: $spacing-md;
+    margin-bottom: $spacing-2xl;
     flex-wrap: wrap;
 
-    button {
-      border-radius: 12px;
-      padding: 12px 24px;
+    @include mobile { flex-direction: column; }
 
-      mat-icon {
-        margin-right: 8px;
-      }
+    button {
+      border-radius: $border-radius-lg;
+      padding: $spacing-md $spacing-2xl;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      @include mobile { width: 100%; justify-content: center; }
     }
 
     .whatsapp-btn {
-      background: #25D366;
-      color: white;
-
-      &:hover {
-        background: #128C7E;
-      }
+      background: $whatsapp-green !important;
+      color: white !important;
+      &:hover { background: $whatsapp-green-dark !important; }
     }
   }
 
+  // ----- Gestion -----
   .management-actions {
-    padding-top: 16px;
+    padding-top: $spacing-lg;
     display: flex;
     justify-content: flex-end;
 
     button {
-      mat-spinner {
-        margin-right: 8px;
-      }
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      mat-spinner { flex-shrink: 0; }
     }
   }
 }
 
-// ===== INSTRUCTIONS =====
+// ===================================================
+// INSTRUCTIONS CARD (fond jaune fixe — indépendant du thème)
+// ===================================================
 .instructions-card {
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fefce8, #fef9c3);
-  border: 1px solid #fde047;
+  border-radius: $border-radius-xl;
+  background: linear-gradient(135deg, $instr-bg-from, $instr-bg-to) !important;
+  border: 1px solid $instr-border;
 
-  mat-card-content {
-    padding: 24px;
-  }
+  mat-card-content { padding: $spacing-2xl; }
 
   h3 {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #854d0e;
-    margin: 0 0 16px;
+    gap: $spacing-sm;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $instr-title;
+    margin: 0 0 $spacing-lg;
 
-    mat-icon {
-      color: #eab308;
-    }
+    mat-icon { color: $instr-icon; }
   }
 
   ol {
     margin: 0;
-    padding-left: 20px;
-    color: #713f12;
+    padding-left: $spacing-xl;
+    color: $instr-text;
 
     li {
-      margin-bottom: 12px;
+      margin-bottom: $spacing-md;
       line-height: 1.5;
 
-      &:last-child {
-        margin-bottom: 0;
-      }
+      &:last-child { margin-bottom: 0; }
 
-      strong {
-        color: #854d0e;
-      }
+      strong { color: $instr-title; }
     }
   }
 }
 
-// ===== DEMANDES =====
+// ===================================================
+// LISTE DES DEMANDES
+// ===================================================
 .demandes-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $spacing-lg;
 }
 
 .demande-card {
-  border-radius: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: $border-radius-xl;
+  background: var(--bg-primary);
+  transition: transform $transition-base, box-shadow $transition-base;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: $shadow-lg;
   }
 
-  mat-card-content {
-    padding: 20px;
-  }
+  mat-card-content { padding: $spacing-xl; }
 
   .demande-row {
     display: flex;
-    gap: 16px;
+    gap: $spacing-lg;
     align-items: center;
 
-    @media (max-width: 600px) {
-      flex-direction: column;
-      align-items: flex-start;
-    }
+    @include mobile { flex-direction: column; align-items: flex-start; }
   }
 
+  // Avatar
   .demande-avatar {
     width: 56px;
     height: 56px;
@@ -338,132 +411,120 @@
     img {
       width: 100%;
       height: 100%;
-      border-radius: 50%;
+      border-radius: $border-radius-full;
       object-fit: cover;
     }
 
     .avatar-placeholder {
       width: 100%;
       height: 100%;
-      border-radius: 50%;
+      border-radius: $border-radius-full;
       background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      font-weight: 600;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-semibold;
     }
   }
 
+  // Infos
   .demande-info {
     flex: 1;
     min-width: 0;
 
     h4 {
-      margin: 0 0 6px;
-      font-size: 18px;
-      font-weight: 600;
+      margin: 0 0 $spacing-xs;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
       color: var(--text-primary);
     }
 
     .demande-meta {
       display: flex;
-      gap: 16px;
+      gap: $spacing-lg;
       flex-wrap: wrap;
-      margin: 0 0 4px;
+      margin: 0 0 $spacing-xs;
       color: var(--text-secondary);
-      font-size: 14px;
+      font-size: $font-size-sm;
 
       span {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: $spacing-xs;
 
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
       }
     }
 
     .demande-time {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: $spacing-xs;
       margin: 0;
       color: var(--text-tertiary);
-      font-size: 13px;
+      font-size: $font-size-xs;
 
-      mat-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
     }
   }
 
+  // Actions accepter / refuser
   .demande-actions {
     display: flex;
-    gap: 12px;
+    gap: $spacing-md;
     flex-shrink: 0;
 
-    @media (max-width: 600px) {
-      width: 100%;
-      margin-top: 12px;
-    }
+    @include mobile { width: 100%; margin-top: $spacing-md; }
 
     button {
-      border-radius: 10px;
-      padding: 10px 20px;
+      border-radius: $border-radius-lg;
+      padding: $spacing-sm $spacing-xl;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
 
-      @media (max-width: 600px) {
-        flex: 1;
-      }
+      @include mobile { flex: 1; justify-content: center; }
 
-      mat-spinner {
-        margin-right: 8px;
-      }
+      mat-spinner { flex-shrink: 0; }
     }
   }
 
+  // Message optionnel
   .demande-message {
     display: flex;
-    gap: 12px;
-    margin-top: 16px;
-    padding-top: 16px;
+    gap: $spacing-md;
+    margin: $spacing-lg (-$spacing-xl) (-$spacing-xl);
+    padding: $spacing-lg $spacing-xl;
     border-top: 1px solid var(--border-color);
-    background: var(--background-secondary);
-    margin: 16px -20px -20px;
-    padding: 16px 20px;
-    border-radius: 0 0 16px 16px;
+    background: var(--bg-secondary);
+    border-radius: 0 0 $border-radius-xl $border-radius-xl;
 
-    mat-icon {
-      color: var(--text-tertiary);
-      flex-shrink: 0;
-    }
+    mat-icon { color: var(--text-tertiary); flex-shrink: 0; }
 
     p {
       margin: 0;
       color: var(--text-secondary);
       font-style: italic;
-      font-size: 14px;
+      font-size: $font-size-sm;
     }
   }
 }
 
-// ===== EMPTY STATE =====
+// ===================================================
+// ÉTAT VIDE
+// ===================================================
 .empty-state {
   text-align: center;
-  padding: 60px 24px;
+  padding: $spacing-3xl $spacing-2xl;
 
   .empty-icon {
     width: 80px;
     height: 80px;
-    margin: 0 auto 24px;
-    background: var(--background-secondary);
-    border-radius: 50%;
+    margin: 0 auto $spacing-2xl;
+    background: var(--bg-secondary);
+    border-radius: $border-radius-full;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -477,59 +538,23 @@
   }
 
   h3 {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
     color: var(--text-primary);
-    margin: 0 0 8px;
+    margin: 0 0 $spacing-sm;
   }
 
   p {
     color: var(--text-secondary);
     margin: 0;
-    font-size: 15px;
+    font-size: $font-size-md;
   }
 }
 
-// ===== RESPONSIVE =====
-@media (max-width: 600px) {
-  .invitation-manager {
-    padding: 16px;
-  }
-
-  .page-header {
-    margin-bottom: 24px;
-
-    .header-text h1 {
-      font-size: 22px;
-    }
-
-    .header-stats {
-      width: 100%;
-      justify-content: space-around;
-
-      .stat-item {
-        min-width: 80px;
-        padding: 10px 12px;
-
-        .stat-number {
-          font-size: 22px;
-        }
-      }
-    }
-  }
-
-  .invitation-card {
-    .code-display .code-text {
-      font-size: 20px;
-      letter-spacing: 2px;
-    }
-
-    .share-actions {
-      flex-direction: column;
-
-      button {
-        width: 100%;
-      }
-    }
-  }
+// ===================================================
+// DIVIDER dark mode
+// ===================================================
+mat-divider {
+  border-color: var(--border-color) !important;
+  margin: $spacing-2xl 0;
 }

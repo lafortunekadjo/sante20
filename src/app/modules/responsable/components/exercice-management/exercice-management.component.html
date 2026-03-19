@@ -8,21 +8,21 @@
         <div class="header-text">
           <h1 class="page-title">
             <mat-icon class="header-icon">calendar_today</mat-icon>
-            Gestion des Exercices
+            {{ 'exercice.titre' | translate }}
           </h1>
-          <p class="page-subtitle">Créez et gérez les exercices comptables de votre groupe</p>
+          <p class="page-subtitle">{{ 'exercice.sous_titre' | translate }}</p>
         </div>
       </div>
 
       <div class="header-stats" *ngIf="exercices.length > 0">
         <div class="stat-item">
           <span class="stat-number">{{ exercices.length }}</span>
-          <span class="stat-label">Exercices</span>
+          <span class="stat-label">{{ 'exercice.stats.exercices' | translate }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
           <span class="stat-number">{{ exerciceActif ? 1 : 0 }}</span>
-          <span class="stat-label">Actif</span>
+          <span class="stat-label">{{ 'exercice.stats.actif' | translate }}</span>
         </div>
       </div>
     </div>
@@ -34,7 +34,7 @@
       <mat-spinner diameter="60"></mat-spinner>
     </div>
     <div class="loading-content">
-      <h3>Chargement des exercices...</h3>
+      <h3>{{ 'exercice.loading' | translate }}</h3>
     </div>
   </div>
 
@@ -49,23 +49,23 @@
         </div>
         <div class="header-info">
           <h2>{{ exerciceActif.libelle }}</h2>
-          <span class="badge actif">Exercice Actif</span>
+          <span class="badge actif">{{ 'exercice.actif.badge' | translate }}</span>
         </div>
         <div class="header-actions">
-          <button mat-stroked-button 
-                  color="primary" 
+          <button mat-stroked-button
+                  color="primary"
                   [routerLink]="['/responsable/finances/dashboard']"
-                  matTooltip="Voir le tableau de bord">
+                  [matTooltip]="'exercice.actif.voir_dashboard' | translate">
             <mat-icon>dashboard</mat-icon>
-            Dashboard
+            {{ 'exercice.actif.dashboard' | translate }}
           </button>
-          <button mat-raised-button 
-                  color="warn" 
+          <button mat-raised-button
+                  color="warn"
                   (click)="openCloseDialog(exerciceActif)"
                   *ngIf="!exerciceActif.cloture"
-                  matTooltip="Clôturer cet exercice">
+                  [matTooltip]="'exercice.actif.cloture_tooltip' | translate">
             <mat-icon>lock</mat-icon>
-            Clôturer
+            {{ 'exercice.actif.cloturer' | translate }}
           </button>
         </div>
       </div>
@@ -75,7 +75,7 @@
           <div class="info-item">
             <mat-icon>date_range</mat-icon>
             <div class="info-content">
-              <span class="info-label">Période</span>
+              <span class="info-label">{{ 'exercice.fields.periode' | translate }}</span>
               <span class="info-value">
                 {{ exerciceActif.dateDebut | date:'dd/MM/yyyy' }} - {{ exerciceActif.dateFin | date:'dd/MM/yyyy' }}
               </span>
@@ -84,14 +84,14 @@
           <div class="info-item">
             <mat-icon>account_balance_wallet</mat-icon>
             <div class="info-content">
-              <span class="info-label">Solde reporté</span>
+              <span class="info-label">{{ 'exercice.fields.solde_reporte' | translate }}</span>
               <span class="info-value">{{ formatMontant(exerciceActif.soldeReporte) }}</span>
             </div>
           </div>
           <div class="info-item" *ngIf="exerciceActif.soldeFinal">
             <mat-icon>savings</mat-icon>
             <div class="info-content">
-              <span class="info-label">Solde final</span>
+              <span class="info-label">{{ 'exercice.fields.solde_final' | translate }}</span>
               <span class="info-value">{{ formatMontant(exerciceActif.soldeFinal) }}</span>
             </div>
           </div>
@@ -101,17 +101,17 @@
 
     <!-- Bouton créer -->
     <div class="action-controls">
-      <button mat-raised-button 
-              color="primary" 
+      <button mat-raised-button
+              color="primary"
               (click)="toggleCreateForm()"
               [disabled]="exerciceActif && !exerciceActif.cloture"
               class="create-button">
         <mat-icon>{{ showCreateForm ? 'close' : 'add' }}</mat-icon>
-        {{ showCreateForm ? 'Annuler' : 'Nouvel Exercice' }}
+        {{ (showCreateForm ? 'exercice.actions.annuler' : 'exercice.actions.nouvel_exercice') | translate }}
       </button>
       <span class="hint" *ngIf="exerciceActif && !exerciceActif.cloture">
         <mat-icon>info</mat-icon>
-        Clôturez l'exercice actif pour en créer un nouveau
+        {{ 'exercice.actions.hint_cloture' | translate }}
       </span>
     </div>
 
@@ -123,53 +123,49 @@
             <mat-icon>add_circle</mat-icon>
           </div>
           <div class="card-title-group">
-            <h3 class="card-title">Créer un nouvel exercice</h3>
-            <p class="card-subtitle">Définissez les paramètres de l'exercice comptable</p>
+            <h3 class="card-title">{{ 'exercice.create.titre' | translate }}</h3>
+            <p class="card-subtitle">{{ 'exercice.create.sous_titre' | translate }}</p>
           </div>
         </div>
 
         <form [formGroup]="createForm" class="card-body">
           <div class="form-grid">
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Année</mat-label>
-              <input matInput 
-                     type="number" 
-                     formControlName="annee" 
-                     (change)="onYearChange()"
-                     min="2000" 
-                     max="2100">
+              <mat-label>{{ 'exercice.fields.annee' | translate }}</mat-label>
+              <input matInput type="number" formControlName="annee"
+                     (change)="onYearChange()" min="2000" max="2100">
               <mat-icon matPrefix>event</mat-icon>
               <mat-error *ngIf="createForm.get('annee')?.hasError('required')">
-                L'année est requise
+                {{ 'exercice.errors.annee_requise' | translate }}
               </mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Libellé</mat-label>
+              <mat-label>{{ 'exercice.fields.libelle' | translate }}</mat-label>
               <input matInput formControlName="libelle">
               <mat-icon matPrefix>label</mat-icon>
               <mat-error *ngIf="createForm.get('libelle')?.hasError('required')">
-                Le libellé est requis
+                {{ 'exercice.errors.libelle_requis' | translate }}
               </mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Date de début</mat-label>
+              <mat-label>{{ 'exercice.fields.date_debut' | translate }}</mat-label>
               <input matInput [matDatepicker]="dateDebut" formControlName="dateDebut">
               <mat-datepicker-toggle matSuffix [for]="dateDebut"></mat-datepicker-toggle>
               <mat-datepicker #dateDebut></mat-datepicker>
               <mat-error *ngIf="createForm.get('dateDebut')?.hasError('required')">
-                La date de début est requise
+                {{ 'exercice.errors.date_debut_requise' | translate }}
               </mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Date de fin</mat-label>
+              <mat-label>{{ 'exercice.fields.date_fin' | translate }}</mat-label>
               <input matInput [matDatepicker]="dateFin" formControlName="dateFin">
               <mat-datepicker-toggle matSuffix [for]="dateFin"></mat-datepicker-toggle>
               <mat-datepicker #dateFin></mat-datepicker>
               <mat-error *ngIf="createForm.get('dateFin')?.hasError('required')">
-                La date de fin est requise
+                {{ 'exercice.errors.date_fin_requise' | translate }}
               </mat-error>
             </mat-form-field>
 
@@ -177,7 +173,7 @@
               <mat-checkbox formControlName="reporterImpayes" color="primary">
                 <div class="checkbox-content">
                   <mat-icon>redo</mat-icon>
-                  <span>Reporter les impayés de l'exercice précédent</span>
+                  <span>{{ 'exercice.create.reporter_impayes' | translate }}</span>
                 </div>
               </mat-checkbox>
             </div>
@@ -186,16 +182,15 @@
 
         <div class="card-footer">
           <div class="primary-actions">
-            <button mat-raised-button 
-                    color="primary" 
+            <button mat-raised-button color="primary"
                     (click)="creerExercice()"
                     [disabled]="createForm.invalid || isCreating">
               <mat-icon>{{ isCreating ? 'hourglass_empty' : 'save' }}</mat-icon>
-              {{ isCreating ? 'Création...' : 'Créer l\'exercice' }}
+              {{ (isCreating ? 'exercice.create.en_cours' : 'exercice.create.confirmer') | translate }}
             </button>
             <button mat-stroked-button (click)="toggleCreateForm()">
               <mat-icon>close</mat-icon>
-              Annuler
+              {{ 'exercice.actions.annuler' | translate }}
             </button>
           </div>
         </div>
@@ -210,60 +205,66 @@
             <mat-icon>lock</mat-icon>
           </div>
           <div class="card-title-group">
-            <h3 class="card-title">Clôturer l'exercice {{ selectedExercice.libelle }}</h3>
-            <p class="card-subtitle">Cette action est irréversible</p>
+            <h3 class="card-title">
+              {{ 'exercice.cloture.titre' | translate:{ libelle: selectedExercice.libelle } }}
+            </h3>
+            <p class="card-subtitle">{{ 'exercice.cloture.sous_titre' | translate }}</p>
           </div>
         </div>
 
         <div class="card-body">
+
           <!-- Aperçu du bilan -->
           <div class="bilan-preview" *ngIf="bilanPreview">
             <h4>
               <mat-icon>assessment</mat-icon>
-              Aperçu du Bilan
+              {{ 'exercice.bilan.titre' | translate }}
             </h4>
-            
+
             <div class="bilan-grid">
               <div class="bilan-item">
-                <span class="bilan-label">Solde initial</span>
+                <span class="bilan-label">{{ 'exercice.bilan.solde_initial' | translate }}</span>
                 <span class="bilan-value">{{ formatMontant(bilanPreview.soldeInitial) }}</span>
               </div>
               <div class="bilan-item entree">
-                <span class="bilan-label">Total entrées</span>
+                <span class="bilan-label">{{ 'exercice.bilan.total_entrees' | translate }}</span>
                 <span class="bilan-value">+{{ formatMontant(bilanPreview.totalEntrees) }}</span>
               </div>
               <div class="bilan-item sortie">
-                <span class="bilan-label">Total sorties</span>
+                <span class="bilan-label">{{ 'exercice.bilan.total_sorties' | translate }}</span>
                 <span class="bilan-value">-{{ formatMontant(bilanPreview.totalSorties) }}</span>
               </div>
               <div class="bilan-item solde-final">
-                <span class="bilan-label">Solde final</span>
+                <span class="bilan-label">{{ 'exercice.bilan.solde_final' | translate }}</span>
                 <span class="bilan-value">{{ formatMontant(bilanPreview.soldeFinal) }}</span>
               </div>
             </div>
 
-            <div class="impayes-section" *ngIf="bilanPreview.totalImpayesAdhesion > 0 || bilanPreview.totalImpayesCotisations > 0 || bilanPreview.totalImpayesSanctions > 0">
+            <div class="impayes-section"
+                 *ngIf="bilanPreview.totalImpayesAdhesion > 0
+                     || bilanPreview.totalImpayesCotisations > 0
+                     || bilanPreview.totalImpayesSanctions > 0">
               <h5>
                 <mat-icon>warning</mat-icon>
-                Impayés détectés
+                {{ 'exercice.impayes.titre' | translate }}
               </h5>
               <div class="impayes-grid">
                 <div class="impaye-item" *ngIf="bilanPreview.totalImpayesAdhesion > 0">
-                  <span>Adhésions</span>
+                  <span>{{ 'exercice.impayes.adhesions' | translate }}</span>
                   <span class="impaye-value">{{ formatMontant(bilanPreview.totalImpayesAdhesion) }}</span>
                 </div>
                 <div class="impaye-item" *ngIf="bilanPreview.totalImpayesCotisations > 0">
-                  <span>Cotisations</span>
+                  <span>{{ 'exercice.impayes.cotisations' | translate }}</span>
                   <span class="impaye-value">{{ formatMontant(bilanPreview.totalImpayesCotisations) }}</span>
                 </div>
                 <div class="impaye-item" *ngIf="bilanPreview.totalImpayesSanctions > 0">
-                  <span>Sanctions</span>
+                  <span>{{ 'exercice.impayes.sanctions' | translate }}</span>
                   <span class="impaye-value">{{ formatMontant(bilanPreview.totalImpayesSanctions) }}</span>
                 </div>
               </div>
               <p class="membres-retard" *ngIf="bilanPreview.nombreMembresEnRetard > 0">
                 <mat-icon>person</mat-icon>
-                {{ bilanPreview.nombreMembresEnRetard }} membre(s) en retard de paiement
+                {{ 'exercice.impayes.membres_retard' | translate:{ count: bilanPreview.nombreMembresEnRetard } }}
               </p>
             </div>
           </div>
@@ -272,16 +273,15 @@
           <div class="cloture-options">
             <h4>
               <mat-icon>settings</mat-icon>
-              Options de report
+              {{ 'exercice.cloture.options_titre' | translate }}
             </h4>
-            
             <div class="options-list">
               <mat-checkbox [(ngModel)]="clotureOptions.reporterImpayesAdhesion" color="primary">
                 <div class="checkbox-content">
                   <mat-icon>card_membership</mat-icon>
                   <div>
-                    <span>Reporter les impayés d'adhésion</span>
-                    <small>Les adhésions non payées seront reportées au prochain exercice</small>
+                    <span>{{ 'exercice.cloture.option_adhesion' | translate }}</span>
+                    <small>{{ 'exercice.cloture.option_adhesion_hint' | translate }}</small>
                   </div>
                 </div>
               </mat-checkbox>
@@ -290,8 +290,8 @@
                 <div class="checkbox-content">
                   <mat-icon>payments</mat-icon>
                   <div>
-                    <span>Reporter les impayés de cotisations</span>
-                    <small>Les cotisations en retard seront reportées</small>
+                    <span>{{ 'exercice.cloture.option_cotisations' | translate }}</span>
+                    <small>{{ 'exercice.cloture.option_cotisations_hint' | translate }}</small>
                   </div>
                 </div>
               </mat-checkbox>
@@ -300,8 +300,8 @@
                 <div class="checkbox-content">
                   <mat-icon>gavel</mat-icon>
                   <div>
-                    <span>Reporter les sanctions non payées</span>
-                    <small>Les sanctions seront reportées (décoché = effacées)</small>
+                    <span>{{ 'exercice.cloture.option_sanctions' | translate }}</span>
+                    <small>{{ 'exercice.cloture.option_sanctions_hint' | translate }}</small>
                   </div>
                 </div>
               </mat-checkbox>
@@ -311,16 +311,15 @@
 
         <div class="card-footer">
           <div class="primary-actions">
-            <button mat-raised-button 
-                    color="warn" 
+            <button mat-raised-button color="warn"
                     (click)="confirmCloture()"
                     [disabled]="isClosing">
               <mat-icon>{{ isClosing ? 'hourglass_empty' : 'lock' }}</mat-icon>
-              {{ isClosing ? 'Clôture en cours...' : 'Confirmer la clôture' }}
+              {{ (isClosing ? 'exercice.cloture.en_cours' : 'exercice.cloture.confirmer') | translate }}
             </button>
             <button mat-stroked-button (click)="cancelClose()">
               <mat-icon>close</mat-icon>
-              Annuler
+              {{ 'exercice.actions.annuler' | translate }}
             </button>
           </div>
         </div>
@@ -334,39 +333,42 @@
           <mat-icon>history</mat-icon>
         </div>
         <div class="header-text">
-          <h2>Historique des exercices</h2>
+          <h2>{{ 'exercice.historique.titre' | translate }}</h2>
           <span class="badge">{{ exercices.length }}</span>
         </div>
       </div>
 
       <div class="section-content">
-        <!-- Vue mobile en cartes -->
+
+        <!-- Vue mobile -->
         <div class="mobile-cards-view">
-          <div class="exercice-card" 
+          <div class="exercice-card"
                *ngFor="let exercice of exercices"
                [class.actif]="exercice.actif"
                [class.cloture]="exercice.cloture">
             <div class="card-header">
               <div class="card-title">
-                <mat-icon class="card-icon">{{ exercice.actif ? 'verified' : (exercice.cloture ? 'lock' : 'event') }}</mat-icon>
+                <mat-icon class="card-icon">
+                  {{ exercice.actif ? 'verified' : (exercice.cloture ? 'lock' : 'event') }}
+                </mat-icon>
                 <div class="title-content">
                   <h4>{{ exercice.libelle }}</h4>
-                  <span class="badge" [class]="getStatutClass(exercice)">{{ getStatutLabel(exercice) }}</span>
+                  <span class="badge" [class]="getStatutClass(exercice)">
+                    {{ getStatutLabel(exercice) }}
+                  </span>
                 </div>
               </div>
               <div class="card-actions">
-                <button mat-icon-button 
-                        color="primary" 
+                <button mat-icon-button color="primary"
                         *ngIf="exercice.cloture"
                         (click)="viewBilan(exercice)"
-                        matTooltip="Voir le bilan">
+                        [matTooltip]="'exercice.actions.voir_bilan' | translate">
                   <mat-icon>assessment</mat-icon>
                 </button>
-                <button mat-icon-button 
-                        color="warn" 
+                <button mat-icon-button color="warn"
                         *ngIf="exercice.actif && !exercice.cloture"
                         (click)="openCloseDialog(exercice)"
-                        matTooltip="Clôturer">
+                        [matTooltip]="'exercice.actif.cloturer' | translate">
                   <mat-icon>lock</mat-icon>
                 </button>
               </div>
@@ -375,15 +377,15 @@
             <div class="card-content">
               <div class="info-grid">
                 <div class="info-item">
-                  <label>Période</label>
+                  <label>{{ 'exercice.fields.periode' | translate }}</label>
                   <span>{{ exercice.dateDebut | date:'dd/MM/yyyy' }} - {{ exercice.dateFin | date:'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="info-item">
-                  <label>Solde reporté</label>
+                  <label>{{ 'exercice.fields.solde_reporte' | translate }}</label>
                   <span>{{ formatMontant(exercice.soldeReporte) }}</span>
                 </div>
                 <div class="info-item" *ngIf="exercice.soldeFinal">
-                  <label>Solde final</label>
+                  <label>{{ 'exercice.fields.solde_final' | translate }}</label>
                   <span class="solde-final">{{ formatMontant(exercice.soldeFinal) }}</span>
                 </div>
               </div>
@@ -394,10 +396,11 @@
         <!-- Vue desktop tableau -->
         <div class="desktop-table-view">
           <table mat-table [dataSource]="dataSource" matSort class="exercices-table">
-            
-            <!-- Colonne Libellé -->
+
             <ng-container matColumnDef="libelle">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                {{ 'exercice.table.libelle' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">
                 <div class="exercice-name">
                   <mat-icon [class]="getStatutClass(exercice)">
@@ -408,36 +411,40 @@
               </td>
             </ng-container>
 
-            <!-- Colonne Année -->
             <ng-container matColumnDef="annee">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Année</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                {{ 'exercice.table.annee' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">{{ exercice.annee }}</td>
             </ng-container>
 
-            <!-- Colonne Période -->
             <ng-container matColumnDef="periode">
-              <th mat-header-cell *matHeaderCellDef>Période</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'exercice.table.periode' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">
                 {{ exercice.dateDebut | date:'dd/MM/yyyy' }} - {{ exercice.dateFin | date:'dd/MM/yyyy' }}
               </td>
             </ng-container>
 
-            <!-- Colonne Solde -->
             <ng-container matColumnDef="solde">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Solde</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                {{ 'exercice.table.solde' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">
                 <span *ngIf="exercice.soldeFinal" class="solde-value">
                   {{ formatMontant(exercice.soldeFinal) }}
                 </span>
                 <span *ngIf="!exercice.soldeFinal" class="solde-reporte">
-                  Reporté: {{ formatMontant(exercice.soldeReporte) }}
+                  {{ 'exercice.table.reporte' | translate }}: {{ formatMontant(exercice.soldeReporte) }}
                 </span>
               </td>
             </ng-container>
 
-            <!-- Colonne Statut -->
             <ng-container matColumnDef="statut">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                {{ 'exercice.table.statut' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">
                 <span class="status-badge" [class]="getStatutClass(exercice)">
                   <mat-icon>{{ exercice.actif ? 'check_circle' : (exercice.cloture ? 'lock' : 'schedule') }}</mat-icon>
@@ -446,30 +453,28 @@
               </td>
             </ng-container>
 
-            <!-- Colonne Actions -->
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'exercice.table.actions' | translate }}
+              </th>
               <td mat-cell *matCellDef="let exercice">
                 <div class="action-buttons">
-                  <button mat-icon-button 
-                          color="primary" 
+                  <button mat-icon-button color="primary"
                           *ngIf="exercice.cloture"
                           (click)="viewBilan(exercice)"
-                          matTooltip="Voir le bilan">
+                          [matTooltip]="'exercice.actions.voir_bilan' | translate">
                     <mat-icon>assessment</mat-icon>
                   </button>
-                  <button mat-icon-button 
-                          color="accent" 
+                  <button mat-icon-button color="accent"
                           *ngIf="exercice.actif"
                           [routerLink]="['/finances/dashboard']"
-                          matTooltip="Tableau de bord">
+                          [matTooltip]="'exercice.actif.dashboard' | translate">
                     <mat-icon>dashboard</mat-icon>
                   </button>
-                  <button mat-icon-button 
-                          color="warn" 
+                  <button mat-icon-button color="warn"
                           *ngIf="exercice.actif && !exercice.cloture"
                           (click)="openCloseDialog(exercice)"
-                          matTooltip="Clôturer">
+                          [matTooltip]="'exercice.actif.cloturer' | translate">
                     <mat-icon>lock</mat-icon>
                   </button>
                 </div>
@@ -493,12 +498,12 @@
         <mat-icon class="empty-icon">event_busy</mat-icon>
       </div>
       <div class="empty-content">
-        <h3 class="empty-title">Aucun exercice</h3>
-        <p class="empty-text">Créez votre premier exercice comptable pour commencer la gestion financière.</p>
+        <h3 class="empty-title">{{ 'exercice.vide.titre' | translate }}</h3>
+        <p class="empty-text">{{ 'exercice.vide.texte' | translate }}</p>
         <div class="empty-actions">
           <button mat-raised-button color="primary" (click)="toggleCreateForm()">
             <mat-icon>add</mat-icon>
-            Créer un exercice
+            {{ 'exercice.actions.creer' | translate }}
           </button>
         </div>
       </div>

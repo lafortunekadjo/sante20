@@ -1,33 +1,95 @@
-// presence-form.component.scss - Version avec support matchs amicaux inter-groupes
-@import '../../../../../variables';
+// presence-form.component.scss
+@use '../../../../../variables' as *;
 
-// ===== VARIABLES LOCALES =====
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
 :host {
-  --team1-color: #1976d2;  // Bleu pour équipe locale
-  --team2-color: #d32f2f;  // Rouge pour équipe adverse
+  // Couleurs équipes (fixées, indépendantes du thème)
+  --team1-color:      #1976d2;
+  --team2-color:      #d32f2f;
+
+  // Couleurs de marque
+  --primary-color:    #{$primary-blue};
+  --primary-dark:     #{$primary-blue-dark};
+  --primary-light:    #{$primary-blue-light};
+  --success-color:    #{$success-color};
+  --warning-color:    #{$warning-color};
+  --error-color:      #{$error-color};
+  --info-color:       #{$info-color};
+
+  // Texte — mode clair
+  --text-primary:     #{$light-text-primary};
+  --text-secondary:   #{$light-text-secondary};
+  --text-tertiary:    #{$light-text-tertiary};
+
+  // Fonds — mode clair
+  --bg-primary:       #{$light-bg-primary};
+  --bg-secondary:     #{$light-bg-secondary};
+  --bg-tertiary:      #{$light-bg-tertiary};
+
+  // Bordures — mode clair
+  --border-color:     #{$light-border};
+  --divider-color:    #{$light-border};
 }
 
-// ===== CONTAINER =====
+// Dark mode overrides (4 sélecteurs)
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:     #{$dark-text-primary};
+  --text-secondary:   #{$dark-text-secondary};
+  --text-tertiary:    #{$dark-text-tertiary};
+
+  --bg-primary:       #{$dark-bg-primary};
+  --bg-secondary:     #{$dark-bg-secondary};
+  --bg-tertiary:      #{$dark-bg-tertiary};
+
+  --border-color:     #{$dark-border};
+  --divider-color:    #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER
+// ===================================================
 .presence-container {
   @include page-container;
 }
 
-// ===== HEADER =====
+// ===================================================
+// HEADER
+// ===================================================
 .page-header {
   @include page-header;
 }
 
-// ===== LOADING =====
+// ===================================================
+// LOADING
+// ===================================================
 .loading-container {
   @include loading-state;
+
+  .loading-content {
+    h3 { color: var(--text-primary); }
+    p  { color: var(--text-secondary); }
+  }
 }
 
-// ===== CONTENT =====
+// ===================================================
+// CONTENT
+// ===================================================
 .content {
   padding: $spacing-2xl;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @include mobile { padding: $spacing-lg; }
 }
 
-// ===== MATCH INFO CARD =====
+// ===================================================
+// MATCH INFO CARD
+// ===================================================
 .match-info-card {
   @include card-base;
   @include flex-center;
@@ -35,7 +97,8 @@
   padding: $spacing-2xl;
   margin-bottom: $spacing-2xl;
   text-align: center;
-  background: linear-gradient(135deg, var(--background-tertiary) 0%, var(--background-primary) 100%);
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 100%);
+  border-top: 5px solid var(--team1-color);
 
   .match-badge {
     padding: $spacing-xs $spacing-lg;
@@ -45,25 +108,10 @@
     text-transform: uppercase;
     margin-bottom: $spacing-lg;
 
-    &.type-interne {
-      background: rgba(156, 39, 176, 0.15);
-      color: #9c27b0;
-    }
-
-    &.type-duel {
-      background: rgba(244, 67, 54, 0.15);
-      color: #f44336;
-    }
-
-    &.type-amical {
-      background: rgba(33, 150, 243, 0.15);
-      color: #2196f3;
-    }
-
-    &.type-anniversaire {
-      background: rgba(255, 152, 0, 0.15);
-      color: #ff9800;
-    }
+    &.type-interne     { background: rgba(156, 39, 176, 0.15); color: #9c27b0; }
+    &.type-duel        { background: rgba(244, 67, 54, 0.15);  color: #f44336; }
+    &.type-amical      { background: rgba(33, 150, 243, 0.15); color: #2196f3; }
+    &.type-anniversaire{ background: rgba(255, 152, 0, 0.15);  color: #ff9800; }
   }
 
   .match-teams {
@@ -77,13 +125,8 @@
       font-weight: $font-weight-bold;
       color: var(--text-primary);
 
-      &.team-1 {
-        color: var(--team1-color);
-      }
-
-      &.team-2 {
-        color: var(--team2-color);
-      }
+      &.team-1 { color: var(--team1-color); font-weight: $font-weight-bold; }
+      &.team-2 { color: var(--team2-color); font-weight: $font-weight-bold; }
     }
 
     .vs {
@@ -98,47 +141,41 @@
     align-items: center;
     gap: $spacing-lg;
 
-    .score {
-      font-size: 48px;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-    }
-
-    .separator {
-      font-size: 32px;
-      color: var(--text-tertiary);
-    }
+    .score    { font-size: 48px; font-weight: $font-weight-bold; color: var(--text-primary); }
+    .separator{ font-size: 32px; color: var(--text-tertiary); }
   }
 
-  // ✅ NOUVEAU: Tag info pour match amical
   .match-info-tag {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
     margin-top: $spacing-lg;
     padding: $spacing-sm $spacing-lg;
-    background: rgba(33, 150, 243, 0.1);
+    background: rgba($primary-blue, 0.1);
     border-radius: $border-radius-full;
     font-size: $font-size-sm;
-    color: #1976d2;
+    color: var(--team1-color);
+    border: 1px solid rgba($primary-blue, 0.2);
 
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+    mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
   }
 }
 
-// ===== ADD MEMBER SECTION (classique) =====
+// ===================================================
+// SECTION AJOUT MEMBRES — CLASSIQUE
+// ===================================================
 .add-member-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: $spacing-xl;
   margin-bottom: $spacing-2xl;
+
+  @include mobile { grid-template-columns: 1fr; }
 }
 
-// ===== ADD MEMBER SECTION AMICAL (avec onglets) =====
+// ===================================================
+// SECTION AJOUT MEMBRES — AMICAL (onglets)
+// ===================================================
 .add-member-section-amical {
   margin-bottom: $spacing-2xl;
 
@@ -146,19 +183,22 @@
     @include card-base;
     overflow: hidden;
 
-    // Styles des onglets
     ::ng-deep {
       .mat-mdc-tab-header {
-        background: var(--background-tertiary);
+        background: var(--bg-tertiary);
         border-bottom: 1px solid var(--divider-color);
       }
 
-      .mat-mdc-tab {
-        min-width: 120px;
-      }
+      .mat-mdc-tab { min-width: 120px; }
 
-      .mat-mdc-tab-body-wrapper {
-        padding: $spacing-xl;
+      .mat-mdc-tab-body-wrapper { padding: $spacing-xl; }
+
+      // Dark mode pour le tab group
+      .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab__text-label {
+        color: var(--text-secondary);
+      }
+      .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+        color: var(--primary-color);
       }
     }
 
@@ -167,66 +207,41 @@
       align-items: center;
       gap: $spacing-sm;
 
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
       .tab-count {
         background: var(--primary-color);
         color: white;
-        padding: 2px 8px;
+        padding: 2px $spacing-sm;
         border-radius: $border-radius-full;
         font-size: $font-size-xs;
         font-weight: $font-weight-bold;
         margin-left: $spacing-xs;
       }
 
-      &.team-1-tab {
-        color: var(--team1-color);
-        .tab-count {
-          background: var(--team1-color);
-        }
-      }
-
-      &.team-2-tab {
-        color: var(--team2-color);
-        .tab-count {
-          background: var(--team2-color);
-        }
-      }
-
-      &.occasional-tab {
-        color: #ff9800;
-        .tab-count {
-          background: #ff9800;
-        }
-      }
+      &.team-1-tab     { color: var(--team1-color); .tab-count { background: var(--team1-color); } }
+      &.team-2-tab     { color: var(--team2-color); .tab-count { background: var(--team2-color); } }
+      &.occasional-tab { color: #{$warning-color};  .tab-count { background: #{$warning-color}; } }
     }
 
-    .tab-content {
-      .add-member-card {
-        margin: 0;
-        box-shadow: none;
-        border: 1px solid var(--border-color);
-      }
+    .tab-content .add-member-card {
+      margin: 0;
+      box-shadow: none;
+      border: 1px solid var(--border-color);
     }
   }
 }
 
-// ===== ADD MEMBER CARD =====
+// ===================================================
+// ADD MEMBER CARD
+// ===================================================
 .add-member-card {
   @include card-base;
   padding: $spacing-xl;
+  background: var(--bg-secondary);
 
-  &.occasional {
-    border-left: 4px solid #ff9800;
-  }
-
-  &.adverse {
-    border-left: 4px solid var(--team2-color);
-  }
+  &.occasional  { border-left: 4px solid #{$warning-color}; }
+  &.adverse     { border-left: 4px solid var(--team2-color); }
 
   h3 {
     display: flex;
@@ -237,9 +252,7 @@
     font-weight: $font-weight-semibold;
     color: var(--text-primary);
 
-    mat-icon {
-      color: var(--primary-color);
-    }
+    mat-icon { color: var(--primary-color); }
   }
 
   .add-member-form {
@@ -248,72 +261,57 @@
     align-items: flex-start;
     flex-wrap: wrap;
 
-    mat-form-field {
-      flex: 1;
-      min-width: 150px;
+    ::ng-deep {
+      .mdc-notched-outline { border-color: var(--border-color); }
+      .mdc-floating-label  { color: var(--text-secondary); }
+      .mat-mdc-select-value,
+      .mat-mdc-input-element { color: var(--text-primary); }
     }
 
-    .search-field {
-      flex: 1;
-      min-width: 120px;
-    }
+    mat-form-field     { flex: 1; min-width: 150px; }
+    .search-field      { flex: 1; min-width: 120px; }
+    .select-field      { flex: 2; min-width: 200px; }
+    .name-field        { flex: 2; }
+    .team-field        { flex: 1; min-width: 150px; }
 
-    .select-field {
-      flex: 2;
-      min-width: 200px;
-    }
-
-    .name-field {
-      flex: 2;
-    }
-
-    .team-field {
-      flex: 1;
-      min-width: 150px;
-    }
-
-    button {
-      height: 56px;
-      white-space: nowrap;
-    }
+    button             { height: 56px; white-space: nowrap; }
   }
 
   .equipe-tag {
     font-size: $font-size-xs;
     color: var(--text-tertiary);
     margin-left: $spacing-sm;
-    background: var(--background-tertiary);
-    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    padding: 2px $spacing-xs;
     border-radius: $border-radius-sm;
   }
 }
 
-// ===== PRESENCES GRID =====
+// ===================================================
+// GRILLE DES PRÉSENCES
+// ===================================================
 .presences-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: $spacing-xl;
   margin-bottom: $spacing-2xl;
+
+  @include mobile { grid-template-columns: 1fr; }
 }
 
 .team-section {
   @include card-base;
   overflow: hidden;
+  background: var(--bg-secondary);
 
   &.team-1 {
     border-top: 4px solid var(--team1-color);
-
-    .team-header .team-color {
-      background: var(--team1-color);
-    }
+    .team-header .team-color { background: var(--team1-color); }
   }
 
   &.team-2 {
     border-top: 4px solid var(--team2-color);
-
-    .team-header .team-color {
-      background: var(--team2-color);
-    }
+    .team-header .team-color { background: var(--team2-color); }
   }
 
   .team-header {
@@ -321,13 +319,14 @@
     align-items: center;
     gap: $spacing-md;
     padding: $spacing-lg $spacing-xl;
-    background: var(--background-tertiary);
+    background: var(--bg-tertiary);
     border-bottom: 1px solid var(--divider-color);
 
     .team-color {
       width: 16px;
       height: 16px;
       border-radius: $border-radius-full;
+      flex-shrink: 0;
     }
 
     h3 {
@@ -341,31 +340,34 @@
     .team-count {
       font-size: $font-size-sm;
       color: var(--text-secondary);
-      background: var(--background-primary);
+      background: var(--bg-primary);
       padding: $spacing-xs $spacing-md;
       border-radius: $border-radius-full;
+      white-space: nowrap;
     }
   }
 
-  mat-accordion {
-    display: block;
-  }
+  mat-accordion { display: block; }
 }
 
-// ===== PRESENCE PANEL =====
+// ===================================================
+// PRESENCE PANEL
+// ===================================================
 .presence-panel {
   margin: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   border-bottom: 1px solid var(--divider-color);
 
-  &.capitaine {
-    background: rgba(255, 193, 7, 0.08);
+  // Dark mode expansion panel
+  ::ng-deep {
+    .mat-expansion-panel-header { background: var(--bg-secondary) !important; }
+    .mat-expansion-panel-header:hover { background: var(--bg-tertiary) !important; }
+    .mat-expansion-panel-body  { background: var(--bg-secondary); }
   }
 
-  &.mvp {
-    background: rgba(76, 175, 80, 0.08);
-  }
+  &.capitaine { background: rgba(255, 193, 7, 0.06); }
+  &.mvp       { background: rgba(76, 175, 80, 0.06); }
 
   .player-info {
     display: flex;
@@ -382,6 +384,7 @@
       font-size: $font-size-sm;
       font-weight: $font-weight-bold;
       position: relative;
+      flex-shrink: 0;
 
       .captain-badge {
         position: absolute;
@@ -407,41 +410,41 @@
 
     .badge {
       padding: 2px $spacing-sm;
-      border-radius: $border-radius-md;
+      border-radius: $border-radius-sm;
       font-size: $font-size-xs;
       font-weight: $font-weight-medium;
 
-      &.present {
-        background: rgba(76, 175, 80, 0.15);
-        color: var(--success-color);
-      }
-
-      &.goals {
-        background: rgba(33, 150, 243, 0.15);
-        color: var(--info-color);
-      }
-
-      &.yellow {
-        background: rgba(255, 193, 7, 0.15);
-        color: #f9a825;
-      }
-
-      &.red {
-        background: rgba(244, 67, 54, 0.15);
-        color: var(--error-color);
-      }
+      &.present { background: rgba($success-color, 0.15); color: var(--success-color); }
+      &.goals   { background: rgba($primary-blue, 0.15);  color: var(--info-color); }
+      &.yellow  { background: rgba(255, 193, 7, 0.15);    color: #f9a825; }
+      &.red     { background: rgba($error-color, 0.15);   color: var(--error-color); }
     }
   }
 }
 
+// ===================================================
+// DÉTAILS DE PRÉSENCE
+// ===================================================
 .presence-details {
   padding: $spacing-lg;
-  background: var(--background-tertiary);
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--divider-color);
+
+  ::ng-deep {
+    .mdc-notched-outline   { border-color: var(--border-color); }
+    .mdc-floating-label    { color: var(--text-secondary); }
+    .mat-mdc-input-element { color: var(--text-primary); background: transparent; }
+    .mat-mdc-select-value  { color: var(--text-primary); }
+    .mat-mdc-checkbox label{ color: var(--text-primary); }
+  }
 
   .checkbox-row {
     display: flex;
     gap: $spacing-xl;
     margin-bottom: $spacing-lg;
+    flex-wrap: wrap;
+
+    @include mobile { flex-direction: column; gap: $spacing-md; }
   }
 
   .fields-row {
@@ -451,8 +454,12 @@
     align-items: center;
     margin-bottom: $spacing-lg;
 
-    mat-form-field {
-      width: 140px;
+    mat-form-field { width: 140px; }
+
+    @include mobile {
+      flex-direction: column;
+      align-items: stretch;
+      mat-form-field { width: 100%; }
     }
   }
 
@@ -461,12 +468,20 @@
     flex-wrap: wrap;
     gap: $spacing-md;
 
-    .stat-field {
-      width: 80px;
+    .stat-field { width: 80px; }
+
+    @media (max-width: 480px) {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+
+      .stat-field { width: 100%; }
     }
   }
 }
 
+// ===================================================
+// ÉTAT VIDE ÉQUIPE
+// ===================================================
 .empty-team {
   @include flex-center;
   flex-direction: column;
@@ -481,24 +496,29 @@
     opacity: 0.5;
   }
 
-  p {
-    margin: 0;
-    font-size: $font-size-sm;
-  }
+  p { margin: 0; font-size: $font-size-sm; }
 }
 
-// ===== ACTIONS BAR =====
+// ===================================================
+// BARRE D'ACTIONS
+// ===================================================
 .actions-bar {
   @include flex-between;
   padding: $spacing-xl;
-  background: var(--background-tertiary);
+  background: var(--bg-tertiary);
   border-radius: $border-radius-xl;
+  border: 1px solid var(--border-color);
   gap: $spacing-lg;
+  flex-wrap: wrap;
+
+  @include mobile { flex-direction: column; align-items: stretch; }
 
   .primary-actions {
     display: flex;
     gap: $spacing-md;
     flex-wrap: wrap;
+
+    @include mobile { flex-direction: column; }
   }
 
   button {
@@ -507,54 +527,69 @@
     gap: $spacing-sm;
     padding: $spacing-md $spacing-lg;
     font-weight: $font-weight-medium;
+
+    @include mobile { width: 100%; justify-content: center; }
   }
 }
 
-// ===== PRINT STYLES =====
-.print-section {
-  display: none;
+// ===================================================
+// BADGE ÉQUIPE (tableau présence)
+// ===================================================
+.team-badge {
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+
+  &.team-1 { background: rgba(25, 118, 210, 0.1); color: var(--team1-color); }
+  &.team-2 { background: rgba(211, 47, 47, 0.1);  color: var(--team2-color); }
 }
 
-// ===== RESPONSIVE - TABLET =====
-@media (max-width: 768px) {
-  .content {
-    padding: $spacing-lg;
+// ===================================================
+// PRINT
+// ===================================================
+.print-section { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+
+  .print-section {
+    visibility: visible !important;
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+
+    * { visibility: visible !important; }
   }
 
-  .add-member-section {
-    grid-template-columns: 1fr;
-  }
-
-  .add-member-section-amical {
-    .teams-tabs {
-      ::ng-deep {
-        .mat-mdc-tab-body-wrapper {
-          padding: $spacing-md;
-        }
-      }
-    }
-  }
-
-  .presences-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .actions-bar {
-    flex-direction: column;
-    align-items: stretch;
-
-    .primary-actions {
-      flex-direction: column;
-
-      button {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-  }
+  .page-header,
+  .content,
+  .actions-bar,
+  .add-member-section,
+  .add-member-section-amical,
+  .presences-grid { display: none !important; }
 }
 
-// ===== RESPONSIVE - MOBILE =====
+// ===================================================
+// RESPONSIVE — TABLET (768px)
+// ===================================================
+@include tablet {
+  .content { padding: $spacing-lg; }
+
+  .add-member-section { grid-template-columns: 1fr; }
+
+  .add-member-section-amical .teams-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+    padding: $spacing-md;
+  }
+
+  .presences-grid { grid-template-columns: 1fr; }
+}
+
+// ===================================================
+// RESPONSIVE — MOBILE (480px)
+// ===================================================
 @media (max-width: 480px) {
   .match-info-card {
     padding: $spacing-lg;
@@ -563,14 +598,10 @@
       flex-direction: column;
       gap: $spacing-sm;
 
-      .team {
-        font-size: $font-size-xl;
-      }
+      .team { font-size: $font-size-xl; }
     }
 
-    .match-score .score {
-      font-size: 36px;
-    }
+    .match-score .score { font-size: 36px; }
   }
 
   .add-member-card {
@@ -588,85 +619,7 @@
         min-width: unset;
       }
 
-      button {
-        width: 100%;
-      }
+      button { width: 100%; }
     }
   }
-
-  .presence-details {
-    .checkbox-row {
-      flex-direction: column;
-      gap: $spacing-md;
-    }
-
-    .fields-row {
-      flex-direction: column;
-      align-items: stretch;
-
-      mat-form-field {
-        width: 100%;
-      }
-    }
-
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-
-      .stat-field {
-        width: 100%;
-      }
-    }
-  }
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  
-  .print-section {
-    visibility: visible !important;
-    display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  
-  .print-section * {
-    visibility: visible !important;
-  }
-  
-  .page-header,
-  .content,
-  .actions-bar,
-  .add-member-section,
-  .add-member-section-amical,
-  .presences-grid {
-    display: none !important;
-  }
-}
-
-// Dans la section .match-info-card
-.match-info-card {
-  border-top: 5px solid var(--team1-color); // Rappel de couleur en haut de carte
-  
-  .match-teams {
-    .team {
-      &.team1 { color: var(--team1-color); font-weight: 800; }
-      &.team2 { color: var(--team2-color); font-weight: 800; }
-    }
-  }
-}
-
-// Style pour les badges dans le tableau
-.team-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  
-  &.team-1 { background: rgba(25, 118, 210, 0.1); color: #1976d2; }
-  &.team-2 { background: rgba(211, 47, 47, 0.1); color: #d32f2f; }
 }

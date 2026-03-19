@@ -1,4 +1,5 @@
 <div class="sanction-container">
+
   <!-- ============ HEADER ============ -->
   <header class="page-header">
     <div class="header-background">
@@ -13,45 +14,40 @@
           <h1>{{ 'sanction.management' | translate }}</h1>
           <p>{{ 'sanction.managementSubtitle' | translate }}</p>
           <div class="active-filters-info" *ngIf="isCurrentYearFilterActive()">
-          <span class="filter-badge">
-            <mat-icon>calendar_today</mat-icon>
-            Année {{ currentYear }}
-            <button (click)="resetFilters()" matTooltip="Afficher tout l'historique">
-              <mat-icon>close</mat-icon>
-            </button>
-          </span>
-        </div>
+            <span class="filter-badge">
+              <mat-icon>calendar_today</mat-icon>
+              {{ 'sanction.filter.year' | translate }} {{ currentYear }}
+              <button (click)="resetFilters()"
+                      [matTooltip]="'sanction.filter.showAllHistory' | translate">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          </div>
         </div>
       </div>
-      
+
       <div class="header-stats">
         <div class="stat-card stat-total">
-          <div class="stat-icon">
-            <mat-icon>list_alt</mat-icon>
-          </div>
+          <div class="stat-icon"><mat-icon>list_alt</mat-icon></div>
           <div class="stat-info">
             <span class="stat-value">{{ stats.total }}</span>
-            <span class="stat-label">Total</span>
+            <span class="stat-label">{{ 'sanction.stats.total' | translate }}</span>
           </div>
         </div>
-        
+
         <div class="stat-card stat-unpaid">
-          <div class="stat-icon">
-            <mat-icon>schedule</mat-icon>
-          </div>
+          <div class="stat-icon"><mat-icon>schedule</mat-icon></div>
           <div class="stat-info">
             <span class="stat-value">{{ stats.nonPayees + stats.partielles }}</span>
-            <span class="stat-label">En cours</span>
+            <span class="stat-label">{{ 'sanction.stats.inProgress' | translate }}</span>
           </div>
         </div>
-        
+
         <div class="stat-card stat-amount">
-          <div class="stat-icon">
-            <mat-icon>account_balance_wallet</mat-icon>
-          </div>
+          <div class="stat-icon"><mat-icon>account_balance_wallet</mat-icon></div>
           <div class="stat-info">
             <span class="stat-value">{{ formatMontant(stats.montantRestant) }}</span>
-            <span class="stat-label">Montant dû</span>
+            <span class="stat-label">{{ 'sanction.stats.amountDue' | translate }}</span>
           </div>
         </div>
       </div>
@@ -62,14 +58,14 @@
   <div *ngIf="isLoading" class="loading-container">
     <div class="loading-content">
       <mat-spinner diameter="56"></mat-spinner>
-      <h3>Chargement des sanctions...</h3>
-      <p>Veuillez patienter</p>
+      <h3>{{ 'sanction.loading' | translate }}</h3>
+      <p>{{ 'COMMON.LOADING_WAIT' | translate }}</p>
     </div>
   </div>
 
   <!-- ============ CONTENT ============ -->
   <main *ngIf="!isLoading" class="main-content" [@staggerList]="filteredSanctions.length">
-    
+
     <!-- QUICK FILTERS -->
     <section class="quick-filters-section">
       <div class="quick-filters">
@@ -79,7 +75,8 @@
                 (click)="applyQuickFilter(filter.value)">
           <mat-icon>{{ filter.icon }}</mat-icon>
           <span class="filter-label">{{ filter.label }}</span>
-          <span class="filter-count" [class.highlight]="(filter.value === 'unpaid' || filter.value === 'partial') && filter.count > 0">
+          <span class="filter-count"
+                [class.highlight]="(filter.value === 'unpaid' || filter.value === 'partial') && filter.count > 0">
             {{ filter.count }}
           </span>
         </button>
@@ -92,35 +89,37 @@
         <div class="filters-header" (click)="toggleAdvancedFilters()">
           <div class="filters-title">
             <mat-icon>filter_list</mat-icon>
-            <h3>Filtres avancés</h3>
+            <h3>{{ 'sanction.filter.advanced' | translate }}</h3>
             <span class="active-filters-badge" *ngIf="hasActiveFilters()">
-              Actifs
+              {{ 'sanction.filter.active' | translate }}
             </span>
           </div>
           <button mat-icon-button>
             <mat-icon>{{ showAdvancedFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
         </div>
-        
+
         <div class="filters-body" *ngIf="showAdvancedFilters" [@expandCollapse]>
           <form [formGroup]="filterForm" class="filters-form">
-            <!-- Ligne 1: Recherche + Type + Statut -->
+
+            <!-- Ligne 1 : Recherche + Type + Statut -->
             <div class="filter-row">
               <mat-form-field appearance="outline" class="filter-field search-field">
-                <mat-label>Rechercher un joueur</mat-label>
+                <mat-label>{{ 'sanction.filter.searchPlayer' | translate }}</mat-label>
                 <mat-icon matPrefix>search</mat-icon>
-                <input matInput formControlName="search" placeholder="Nom, prénom...">
-                <button mat-icon-button matSuffix *ngIf="filterForm.get('search')?.value" 
+                <input matInput formControlName="search"
+                       [placeholder]="'sanction.filter.searchPlaceholder' | translate">
+                <button mat-icon-button matSuffix *ngIf="filterForm.get('search')?.value"
                         (click)="filterForm.get('search')?.reset()">
                   <mat-icon>close</mat-icon>
                 </button>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field">
-                <mat-label>Type de sanction</mat-label>
+                <mat-label>{{ 'sanction.filter.type' | translate }}</mat-label>
                 <mat-icon matPrefix>category</mat-icon>
                 <mat-select formControlName="typeId">
-                  <mat-option [value]="null">Tous les types</mat-option>
+                  <mat-option [value]="null">{{ 'COMMON.ALL_TYPES' | translate }}</mat-option>
                   <mat-option *ngFor="let type of typeSanctions" [value]="type.id">
                     {{ type.nom }}
                   </mat-option>
@@ -128,30 +127,30 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field">
-                <mat-label>Statut</mat-label>
+                <mat-label>{{ 'sanction.filter.status' | translate }}</mat-label>
                 <mat-icon matPrefix>flag</mat-icon>
                 <mat-select formControlName="status">
-                  <mat-option value="ALL">Tous</mat-option>
+                  <mat-option value="ALL">{{ 'COMMON.ALL' | translate }}</mat-option>
                   <mat-option value="NON_PAYEE">
                     <mat-icon class="option-icon unpaid">schedule</mat-icon>
-                    Non payées
+                    {{ 'sanction.status.unpaid' | translate }}
                   </mat-option>
                   <mat-option value="PARTIELLE">
                     <mat-icon class="option-icon partial">timelapse</mat-icon>
-                    Partielles
+                    {{ 'sanction.status.partial' | translate }}
                   </mat-option>
                   <mat-option value="PAYEE">
                     <mat-icon class="option-icon paid">check_circle</mat-icon>
-                    Payées
+                    {{ 'sanction.status.paid' | translate }}
                   </mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
 
-            <!-- Ligne 2: Dates + Membre + Montants -->
+            <!-- Ligne 2 : Dates + Membre + Montants -->
             <div class="filter-row">
               <mat-form-field appearance="outline" class="filter-field date-field">
-                <mat-label>Date début</mat-label>
+                <mat-label>{{ 'sanction.filter.dateStart' | translate }}</mat-label>
                 <mat-icon matPrefix>event</mat-icon>
                 <input matInput [matDatepicker]="dateDebutPicker" formControlName="dateDebut">
                 <mat-datepicker-toggle matSuffix [for]="dateDebutPicker"></mat-datepicker-toggle>
@@ -159,7 +158,7 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field date-field">
-                <mat-label>Date fin</mat-label>
+                <mat-label>{{ 'sanction.filter.dateEnd' | translate }}</mat-label>
                 <mat-icon matPrefix>event</mat-icon>
                 <input matInput [matDatepicker]="dateFinPicker" formControlName="dateFin">
                 <mat-datepicker-toggle matSuffix [for]="dateFinPicker"></mat-datepicker-toggle>
@@ -167,10 +166,10 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field">
-                <mat-label>Membre spécifique</mat-label>
+                <mat-label>{{ 'sanction.filter.specificMember' | translate }}</mat-label>
                 <mat-icon matPrefix>person</mat-icon>
                 <mat-select formControlName="membreId">
-                  <mat-option [value]="null">Tous les membres</mat-option>
+                  <mat-option [value]="null">{{ 'sanction.filter.allMembers' | translate }}</mat-option>
                   <mat-option *ngFor="let membre of membres" [value]="membre.id">
                     {{ membre.nom }} {{ membre.prenom }}
                   </mat-option>
@@ -178,13 +177,13 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field montant-field">
-                <mat-label>Montant min</mat-label>
+                <mat-label>{{ 'sanction.filter.amountMin' | translate }}</mat-label>
                 <mat-icon matPrefix>attach_money</mat-icon>
                 <input matInput type="number" formControlName="montantMin" min="0">
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="filter-field montant-field">
-                <mat-label>Montant max</mat-label>
+                <mat-label>{{ 'sanction.filter.amountMax' | translate }}</mat-label>
                 <mat-icon matPrefix>attach_money</mat-icon>
                 <input matInput type="number" formControlName="montantMax" min="0">
               </mat-form-field>
@@ -194,7 +193,7 @@
           <div class="filters-actions">
             <button mat-stroked-button (click)="resetFilters()" [disabled]="!hasActiveFilters()">
               <mat-icon>refresh</mat-icon>
-              Réinitialiser
+              {{ 'COMMON.RESET' | translate }}
             </button>
           </div>
         </div>
@@ -206,38 +205,40 @@
       <div class="toolbar-left">
         <button mat-raised-button color="primary" (click)="toggleCreateForm()">
           <mat-icon>add</mat-icon>
-          Nouvelle sanction
+          {{ 'sanction.actions.new' | translate }}
         </button>
 
-        <!-- Sélection multiple actions -->
         <div class="bulk-actions" *ngIf="selectedSanctions.size > 0">
           <mat-chip color="primary">
-            {{ selectedSanctions.size }} sélectionnée(s)
+            {{ 'sanction.actions.selectedCount' | translate:{ count: selectedSanctions.size } }}
           </mat-chip>
-          <span class="bulk-total">Total: {{ formatMontant(getSelectedTotal()) }}</span>
+          <span class="bulk-total">
+            {{ 'sanction.actions.totalSelected' | translate }}: {{ formatMontant(getSelectedTotal()) }}
+          </span>
         </div>
       </div>
 
       <div class="toolbar-right">
         <mat-button-toggle-group [(ngModel)]="viewMode" (change)="onViewModeChange()" class="view-toggle">
-          <mat-button-toggle value="cards" matTooltip="Vue cartes">
+          <mat-button-toggle value="cards" [matTooltip]="'sanction.view.cards' | translate">
             <mat-icon>grid_view</mat-icon>
           </mat-button-toggle>
-          <mat-button-toggle value="table" matTooltip="Vue tableau">
+          <mat-button-toggle value="table" [matTooltip]="'sanction.view.table' | translate">
             <mat-icon>table_rows</mat-icon>
           </mat-button-toggle>
-          <mat-button-toggle value="grouped" matTooltip="Vue groupée">
+          <mat-button-toggle value="grouped" [matTooltip]="'sanction.view.grouped' | translate">
             <mat-icon>account_tree</mat-icon>
           </mat-button-toggle>
         </mat-button-toggle-group>
 
-        <button mat-icon-button [matMenuTriggerFor]="exportMenu" matTooltip="Exporter">
+        <button mat-icon-button [matMenuTriggerFor]="exportMenu"
+                [matTooltip]="'COMMON.EXPORT' | translate">
           <mat-icon>download</mat-icon>
         </button>
         <mat-menu #exportMenu="matMenu">
           <button mat-menu-item (click)="exportToPDF()">
             <mat-icon>picture_as_pdf</mat-icon>
-            Exporter en PDF
+            {{ 'sanction.actions.exportPdf' | translate }}
           </button>
         </mat-menu>
       </div>
@@ -249,7 +250,7 @@
         <div class="form-header">
           <div class="form-title">
             <mat-icon>add_circle</mat-icon>
-            <h3>Nouvelle sanction</h3>
+            <h3>{{ 'sanction.form.newTitle' | translate }}</h3>
           </div>
           <button mat-icon-button (click)="cancelCreate()">
             <mat-icon>close</mat-icon>
@@ -259,7 +260,7 @@
         <div class="form-body">
           <div class="form-row">
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Membre</mat-label>
+              <mat-label>{{ 'sanction.form.member' | translate }}</mat-label>
               <mat-select [(ngModel)]="newSanction.membre" required>
                 <mat-option *ngFor="let membre of membres" [value]="membre.id">
                   {{ membre.nom }} {{ membre.prenom }}
@@ -268,8 +269,8 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Type de sanction</mat-label>
-              <mat-select [(ngModel)]="newSanction.typeSanction" 
+              <mat-label>{{ 'sanction.form.type' | translate }}</mat-label>
+              <mat-select [(ngModel)]="newSanction.typeSanction"
                           (ngModelChange)="onTypeSanctionChange(newSanction)" required>
                 <mat-option *ngFor="let type of typeSanctions" [value]="type.id">
                   {{ type.nom }}
@@ -280,14 +281,15 @@
 
           <div class="form-row">
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Date</mat-label>
-              <input matInput [matDatepicker]="createDatePicker" [(ngModel)]="newSanction.dateSanction" required>
+              <mat-label>{{ 'sanction.form.date' | translate }}</mat-label>
+              <input matInput [matDatepicker]="createDatePicker"
+                     [(ngModel)]="newSanction.dateSanction" required>
               <mat-datepicker-toggle matSuffix [for]="createDatePicker"></mat-datepicker-toggle>
               <mat-datepicker #createDatePicker></mat-datepicker>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Montant (FCFA)</mat-label>
+              <mat-label>{{ 'sanction.form.amount' | translate }}</mat-label>
               <input matInput type="number" [(ngModel)]="newSanction.montant" min="0" required>
               <mat-icon matPrefix>attach_money</mat-icon>
             </mat-form-field>
@@ -295,7 +297,7 @@
 
           <div class="form-row">
             <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>Commentaire (optionnel)</mat-label>
+              <mat-label>{{ 'sanction.form.comment' | translate }}</mat-label>
               <textarea matInput [(ngModel)]="newSanction.commentaire" rows="2"></textarea>
             </mat-form-field>
           </div>
@@ -304,11 +306,13 @@
         <div class="form-actions">
           <button mat-stroked-button (click)="cancelCreate()">
             <mat-icon>close</mat-icon>
-            Annuler
+            {{ 'COMMON.CANCEL' | translate }}
           </button>
-          <button mat-raised-button color="primary" (click)="saveSanction()" [disabled]="!isCreateFormValid()">
+          <button mat-raised-button color="primary"
+                  (click)="saveSanction()"
+                  [disabled]="!isCreateFormValid()">
             <mat-icon>save</mat-icon>
-            Enregistrer
+            {{ 'COMMON.SAVE' | translate }}
           </button>
         </div>
       </div>
@@ -318,12 +322,10 @@
     <section class="cards-view" *ngIf="viewMode === 'cards' && filteredSanctions.length > 0">
       <div class="sanction-card" *ngFor="let sanction of filteredSanctions"
            [class.paid-card]="sanction.etat === 'PAYEE'">
-        
+
         <div class="card-header">
           <div class="member-info">
-            <div class="member-avatar">
-              {{ getMemberInitials(sanction.membre) }}
-            </div>
+            <div class="member-avatar">{{ getMemberInitials(sanction.membre) }}</div>
             <div class="member-details">
               <h4 class="member-name">{{ getMembreName(sanction.membre) }}</h4>
               <div class="sanction-type">
@@ -337,18 +339,20 @@
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #cardMenu="matMenu">
-              <button mat-menu-item (click)="openPayDialog(sanction)" [disabled]="sanction.etat === 'PAYEE'">
+              <button mat-menu-item (click)="openPayDialog(sanction)"
+                      [disabled]="sanction.etat === 'PAYEE'">
                 <mat-icon>monetization_on</mat-icon>
-                <span>Enregistrer paiement</span>
+                <span>{{ 'sanction.actions.registerPayment' | translate }}</span>
               </button>
-              <button mat-menu-item (click)="editRow(sanction)" [disabled]="sanction.etat === 'PAYEE'">
+              <button mat-menu-item (click)="editRow(sanction)"
+                      [disabled]="sanction.etat === 'PAYEE'">
                 <mat-icon>edit</mat-icon>
-                <span>Modifier</span>
+                <span>{{ 'COMMON.EDIT' | translate }}</span>
               </button>
               <mat-divider></mat-divider>
               <button mat-menu-item (click)="openDeleteDialog(sanction)" class="delete-action">
                 <mat-icon>delete</mat-icon>
-                <span>Supprimer</span>
+                <span>{{ 'COMMON.DELETE' | translate }}</span>
               </button>
             </mat-menu>
           </div>
@@ -356,28 +360,31 @@
 
         <div class="card-body">
           <div class="info-row">
-            <span class="info-label">Date</span>
+            <span class="info-label">{{ 'sanction.card.date' | translate }}</span>
             <span class="info-value">{{ formatDate(sanction.dateSanction) }}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Montant total</span>
+            <span class="info-label">{{ 'sanction.card.totalAmount' | translate }}</span>
             <span class="info-value amount">{{ formatMontant(sanction.montant) }}</span>
           </div>
 
-          <!-- Barre de progression du paiement -->
           <div class="payment-progress" *ngIf="sanction.montant > 0">
             <div class="progress-header">
-              <span class="progress-label">Progression du paiement</span>
+              <span class="progress-label">{{ 'sanction.card.paymentProgress' | translate }}</span>
               <span class="progress-value">{{ calculerPourcentagePaye(sanction) | number:'1.0-0' }}%</span>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill" 
+              <div class="progress-fill"
                    [class]="getPaymentClass(sanction)"
                    [style.width.%]="calculerPourcentagePaye(sanction)"></div>
             </div>
             <div class="progress-amounts">
-              <span class="paid">Payé: {{ formatMontant(sanction.montantPaye || 0) }}</span>
-              <span class="remaining">Reste: {{ formatMontant(calculerResteAPayer(sanction)) }}</span>
+              <span class="paid">
+                {{ 'sanction.card.paid' | translate }}: {{ formatMontant(sanction.montantPaye || 0) }}
+              </span>
+              <span class="remaining">
+                {{ 'sanction.card.remaining' | translate }}: {{ formatMontant(calculerResteAPayer(sanction)) }}
+              </span>
             </div>
           </div>
         </div>
@@ -388,10 +395,14 @@
             <span>{{ getPaymentLabel(sanction) }}</span>
           </div>
           <div class="action-buttons" *ngIf="sanction.etat !== 'PAYEE'">
-            <button mat-icon-button class="pay-btn" (click)="openPayDialog(sanction)" matTooltip="Payer">
+            <button mat-icon-button class="pay-btn"
+                    (click)="openPayDialog(sanction)"
+                    [matTooltip]="'sanction.actions.pay' | translate">
               <mat-icon>monetization_on</mat-icon>
             </button>
-            <button mat-icon-button class="edit-btn" (click)="editRow(sanction)" matTooltip="Modifier">
+            <button mat-icon-button class="edit-btn"
+                    (click)="editRow(sanction)"
+                    [matTooltip]="'COMMON.EDIT' | translate">
               <mat-icon>edit</mat-icon>
             </button>
           </div>
@@ -403,8 +414,7 @@
     <section class="table-section" *ngIf="viewMode === 'table' && filteredSanctions.length > 0">
       <div class="table-wrapper">
         <table mat-table [dataSource]="dataSource" matSort>
-          
-          <!-- Checkbox Column -->
+
           <ng-container matColumnDef="select">
             <th mat-header-cell *matHeaderCellDef>
               <mat-checkbox (change)="toggleSelectAll()"
@@ -420,9 +430,10 @@
             </td>
           </ng-container>
 
-          <!-- Membre Column -->
           <ng-container matColumnDef="membre">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Membre</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.member' | translate }}
+            </th>
             <td mat-cell *matCellDef="let sanction">
               <div class="member-cell">
                 <div class="member-avatar-sm">{{ getMemberInitials(sanction.membre) }}</div>
@@ -431,46 +442,47 @@
             </td>
           </ng-container>
 
-          <!-- Type Sanction Column -->
           <ng-container matColumnDef="typeSanction">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.type' | translate }}
+            </th>
             <td mat-cell *matCellDef="let sanction">
               {{ getTypeSanctionName(sanction.typeSanction) }}
             </td>
           </ng-container>
 
-          <!-- Date Column -->
           <ng-container matColumnDef="dateSanction">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
-            <td mat-cell *matCellDef="let sanction">
-              {{ formatDate(sanction.dateSanction) }}
-            </td>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.date' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let sanction">{{ formatDate(sanction.dateSanction) }}</td>
           </ng-container>
 
-          <!-- Match Column -->
           <ng-container matColumnDef="match">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Match</th>
-            <td mat-cell *matCellDef="let sanction">
-              {{ getMatchName(sanction.match) }}
-            </td>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.match' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let sanction">{{ getMatchName(sanction.match) }}</td>
           </ng-container>
 
-          <!-- Montant Column -->
           <ng-container matColumnDef="montant">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.amount' | translate }}
+            </th>
             <td mat-cell *matCellDef="let sanction">
               <span class="amount-cell">{{ formatMontant(sanction.montant) }}</span>
             </td>
           </ng-container>
 
-          <!-- Paiement Column (NOUVEAU) -->
           <ng-container matColumnDef="paiement">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Paiement</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.payment' | translate }}
+            </th>
             <td mat-cell *matCellDef="let sanction">
               <div class="payment-cell">
                 <div class="payment-mini-progress">
                   <div class="mini-bar">
-                    <div class="mini-fill" 
+                    <div class="mini-fill"
                          [class]="getPaymentClass(sanction)"
                          [style.width.%]="calculerPourcentagePaye(sanction)"></div>
                   </div>
@@ -482,31 +494,41 @@
             </td>
           </ng-container>
 
-          <!-- Status Column -->
           <ng-container matColumnDef="etat">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{ 'sanction.table.status' | translate }}
+            </th>
             <td mat-cell *matCellDef="let sanction">
               <div class="status-badge-sm" [class]="getStatusClass(sanction.etat)">
                 <mat-icon>{{ getStatusIcon(sanction.etat) }}</mat-icon>
-                <span>{{ sanction.etat === 'PAYEE' ? 'Payée' : (sanction.etat === 'PARTIELLE' ? 'Partielle' : 'Non payée') }}</span>
+                <span>{{
+                  sanction.etat === 'PAYEE'      ? ('sanction.status.paid'    | translate) :
+                  sanction.etat === 'PARTIELLE'  ? ('sanction.status.partial' | translate) :
+                                                   ('sanction.status.unpaid'  | translate)
+                }}</span>
               </div>
             </td>
           </ng-container>
 
-          <!-- Actions Column -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.ACTIONS' | translate }}</th>
             <td mat-cell *matCellDef="let sanction">
               <div class="actions-cell">
-                <button mat-icon-button color="accent" (click)="openPayDialog(sanction)"
-                        [disabled]="sanction.etat === 'PAYEE'" matTooltip="Payer">
+                <button mat-icon-button color="accent"
+                        (click)="openPayDialog(sanction)"
+                        [disabled]="sanction.etat === 'PAYEE'"
+                        [matTooltip]="'sanction.actions.pay' | translate">
                   <mat-icon>monetization_on</mat-icon>
                 </button>
-                <button mat-icon-button color="primary" (click)="editRow(sanction)"
-                        [disabled]="sanction.etat === 'PAYEE'" matTooltip="Modifier">
+                <button mat-icon-button color="primary"
+                        (click)="editRow(sanction)"
+                        [disabled]="sanction.etat === 'PAYEE'"
+                        [matTooltip]="'COMMON.EDIT' | translate">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="openDeleteDialog(sanction)" matTooltip="Supprimer">
+                <button mat-icon-button color="warn"
+                        (click)="openDeleteDialog(sanction)"
+                        [matTooltip]="'COMMON.DELETE' | translate">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -520,7 +542,6 @@
           </tr>
         </table>
       </div>
-      
       <mat-paginator [pageSizeOptions]="[10, 25, 50]" [pageSize]="10" showFirstLastButtons>
       </mat-paginator>
     </section>
@@ -530,11 +551,11 @@
       <div class="grouped-actions">
         <button mat-stroked-button (click)="expandAllGroups()">
           <mat-icon>unfold_more</mat-icon>
-          Tout déplier
+          {{ 'sanction.grouped.expandAll' | translate }}
         </button>
         <button mat-stroked-button (click)="collapseAllGroups()">
           <mat-icon>unfold_less</mat-icon>
-          Tout replier
+          {{ 'sanction.grouped.collapseAll' | translate }}
         </button>
       </div>
 
@@ -546,33 +567,30 @@
                                (closed)="group.expanded = false"
                                class="member-panel"
                                [class.has-unpaid]="group.countNonPayees > 0 || group.countPartielles > 0">
-            
+
             <mat-expansion-panel-header>
               <mat-panel-title>
                 <div class="panel-member">
-                  <div class="member-avatar-panel">
-                    {{ getMemberInitials(group.membre) }}
-                  </div>
+                  <div class="member-avatar-panel">{{ getMemberInitials(group.membre) }}</div>
                   <span class="member-name">{{ group.membre.nom }} {{ group.membre.prenom }}</span>
                 </div>
               </mat-panel-title>
-              
               <mat-panel-description>
                 <div class="panel-stats">
                   <span class="stat unpaid" *ngIf="group.countNonPayees > 0">
                     <mat-icon>schedule</mat-icon>
-                    {{ group.countNonPayees }} non payée(s)
+                    {{ group.countNonPayees }} {{ 'sanction.grouped.unpaid' | translate }}
                   </span>
                   <span class="stat partial" *ngIf="group.countPartielles > 0">
                     <mat-icon>timelapse</mat-icon>
-                    {{ group.countPartielles }} partielle(s)
+                    {{ group.countPartielles }} {{ 'sanction.grouped.partial' | translate }}
                   </span>
                   <span class="stat paid" *ngIf="group.countPayees > 0">
                     <mat-icon>check_circle</mat-icon>
-                    {{ group.countPayees }} payée(s)
+                    {{ group.countPayees }} {{ 'sanction.grouped.paid' | translate }}
                   </span>
                   <span class="stat amount" *ngIf="group.totalRestant > 0">
-                    <strong>Dû: {{ formatMontant(group.totalRestant) }}</strong>
+                    <strong>{{ 'sanction.grouped.due' | translate }}: {{ formatMontant(group.totalRestant) }}</strong>
                   </span>
                 </div>
               </mat-panel-description>
@@ -582,17 +600,18 @@
               <table class="mini-table">
                 <thead>
                   <tr>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Montant</th>
-                    <th>Payé</th>
-                    <th>Reste</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
+                    <th>{{ 'sanction.table.type'    | translate }}</th>
+                    <th>{{ 'sanction.table.date'    | translate }}</th>
+                    <th>{{ 'sanction.table.amount'  | translate }}</th>
+                    <th>{{ 'sanction.grouped.colPaid'      | translate }}</th>
+                    <th>{{ 'sanction.grouped.colRemaining' | translate }}</th>
+                    <th>{{ 'sanction.table.status'  | translate }}</th>
+                    <th>{{ 'COMMON.ACTIONS'         | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let sanction of group.sanctions" [class.paid-row]="sanction.etat === 'PAYEE'">
+                  <tr *ngFor="let sanction of group.sanctions"
+                      [class.paid-row]="sanction.etat === 'PAYEE'">
                     <td>{{ getTypeSanctionName(sanction.typeSanction) }}</td>
                     <td>{{ formatDate(sanction.dateSanction) }}</td>
                     <td class="amount-cell">{{ formatMontant(sanction.montant) }}</td>
@@ -604,8 +623,10 @@
                       </span>
                     </td>
                     <td>
-                      <button mat-icon-button size="small" (click)="openPayDialog(sanction)"
-                              [disabled]="sanction.etat === 'PAYEE'" matTooltip="Payer">
+                      <button mat-icon-button size="small"
+                              (click)="openPayDialog(sanction)"
+                              [disabled]="sanction.etat === 'PAYEE'"
+                              [matTooltip]="'sanction.actions.pay' | translate">
                         <mat-icon>monetization_on</mat-icon>
                       </button>
                     </td>
@@ -613,15 +634,15 @@
                 </tbody>
                 <tfoot>
                   <tr class="total-row">
-                    <td colspan="2"><strong>Total</strong></td>
+                    <td colspan="2"><strong>{{ 'sanction.grouped.total' | translate }}</strong></td>
                     <td class="amount-cell"><strong>{{ formatMontant(group.totalMontant) }}</strong></td>
                     <td><strong>{{ formatMontant(group.totalPaye) }}</strong></td>
                     <td colspan="3">
                       <span *ngIf="group.totalRestant > 0" class="remaining">
-                        Reste: {{ formatMontant(group.totalRestant) }}
+                        {{ 'sanction.card.remaining' | translate }}: {{ formatMontant(group.totalRestant) }}
                       </span>
                       <span *ngIf="group.totalRestant === 0" class="paid">
-                        Tout payé ✓
+                        {{ 'sanction.grouped.allPaid' | translate }} ✓
                       </span>
                     </td>
                   </tr>
@@ -639,21 +660,18 @@
         <mat-icon>gavel</mat-icon>
       </div>
       <div class="empty-content">
-        <h3>Aucune sanction trouvée</h3>
-        <p *ngIf="hasActiveFilters()">
-          Aucune sanction ne correspond à vos critères de recherche.
-        </p>
-        <p *ngIf="!hasActiveFilters()">
-          Commencez par ajouter une nouvelle sanction.
-        </p>
+        <h3>{{ 'sanction.empty.title' | translate }}</h3>
+        <p *ngIf="hasActiveFilters()">{{ 'sanction.empty.withFilters' | translate }}</p>
+        <p *ngIf="!hasActiveFilters()">{{ 'sanction.empty.noFilters' | translate }}</p>
         <div class="empty-actions">
-          <button mat-raised-button color="primary" (click)="toggleCreateForm()" *ngIf="!hasActiveFilters()">
+          <button mat-raised-button color="primary"
+                  (click)="toggleCreateForm()" *ngIf="!hasActiveFilters()">
             <mat-icon>add</mat-icon>
-            Nouvelle sanction
+            {{ 'sanction.actions.new' | translate }}
           </button>
           <button mat-stroked-button (click)="resetFilters()" *ngIf="hasActiveFilters()">
             <mat-icon>refresh</mat-icon>
-            Réinitialiser les filtres
+            {{ 'COMMON.RESET_FILTERS' | translate }}
           </button>
         </div>
       </div>

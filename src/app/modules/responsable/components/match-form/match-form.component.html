@@ -29,6 +29,7 @@
     </div>
   </div>
 
+  <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
     <div class="loading-spinner">
       <mat-spinner diameter="50"></mat-spinner>
@@ -40,19 +41,20 @@
   </div>
 
   <div *ngIf="!isLoading" class="content">
-    
+
+    <!-- Sélecteur de saison -->
     <div class="season-selector-container" *ngIf="exercices.length > 0">
       <div class="season-selector-header">
         <div class="season-title">
           <mat-icon>sports_soccer</mat-icon>
           <h3>{{ 'MATCH.SEASON.TITLE' | translate }}</h3>
         </div>
-        
+
         <div class="current-period-badge" *ngIf="!isLoadingExercices">
           <mat-icon>calendar_today</mat-icon>
           <span>{{ getCurrentPeriodLabel() }}</span>
-          <span class="period-type-chip" 
-                [class.season]="filterMode === 'season'" 
+          <span class="period-type-chip"
+                [class.season]="filterMode === 'season'"
                 [class.custom]="filterMode === 'dateRange'">
             {{ filterMode === 'season' ? ('MATCH.SEASON.MODE_SEASON' | translate) : ('MATCH.SEASON.MODE_CUSTOM' | translate) }}
           </span>
@@ -61,14 +63,14 @@
 
       <div class="season-selector-body">
         <div class="filter-mode-toggle">
-          <button mat-stroked-button 
+          <button mat-stroked-button
                   [class.active]="filterMode === 'season'"
                   (click)="onFilterModeChange('season')"
                   [matTooltip]="'MATCH.SEASON.TOOLTIP_SEASON' | translate">
             <mat-icon>event_note</mat-icon>
             <span>{{ 'MATCH.SEASON.BY_SEASON' | translate }}</span>
           </button>
-          <button mat-stroked-button 
+          <button mat-stroked-button
                   [class.active]="filterMode === 'dateRange'"
                   (click)="onFilterModeChange('dateRange')"
                   [matTooltip]="'MATCH.SEASON.TOOLTIP_DATE' | translate">
@@ -77,21 +79,24 @@
           </button>
         </div>
 
+        <!-- Mode saison -->
         <div class="season-select-wrapper" *ngIf="filterMode === 'season'" [@fadeSlideIn]>
           <mat-form-field appearance="outline" class="season-select">
             <mat-label>{{ 'MATCH.SEASON.SELECT_LABEL' | translate }}</mat-label>
             <mat-icon matPrefix>sports_soccer</mat-icon>
-            <mat-select [(ngModel)]="selectedExerciceId" 
+            <mat-select [(ngModel)]="selectedExerciceId"
                         (selectionChange)="onExerciceChange($event.value)"
                         [disabled]="isLoadingExercices">
-              
+
               <mat-select-trigger *ngIf="getSelectedExercice() as exercice">
                 <div class="selected-season-trigger">
                   <span class="season-name">{{ exercice.libelle }}</span>
-                  <span class="current-badge" *ngIf="isCurrentExercice(exercice)">{{ 'MATCH.SEASON.STATUS_CURRENT' | translate }}</span>
+                  <span class="current-badge" *ngIf="isCurrentExercice(exercice)">
+                    {{ 'MATCH.SEASON.STATUS_CURRENT' | translate }}
+                  </span>
                 </div>
               </mat-select-trigger>
-              
+
               <mat-option *ngFor="let exercice of exercices" [value]="exercice.id">
                 <div class="season-option">
                   <div class="season-option-main">
@@ -104,14 +109,19 @@
                     </div>
                   </div>
                   <div class="season-option-badges">
-                    <span class="badge current" *ngIf="isCurrentExercice(exercice)">{{ 'MATCH.SEASON.STATUS_CURRENT' | translate }}</span>
-                    <span class="badge closed" *ngIf="exercice.cloture">{{ 'MATCH.SEASON.STATUS_CLOSED' | translate }}</span>
+                    <span class="badge current" *ngIf="isCurrentExercice(exercice)">
+                      {{ 'MATCH.SEASON.STATUS_CURRENT' | translate }}
+                    </span>
+                    <span class="badge closed" *ngIf="exercice.cloture">
+                      {{ 'MATCH.SEASON.STATUS_CLOSED' | translate }}
+                    </span>
                   </div>
                 </div>
               </mat-option>
             </mat-select>
           </mat-form-field>
 
+          <!-- Carte info saison -->
           <div class="season-info-card" *ngIf="getSelectedExercice() as exercice">
             <div class="season-info-item">
               <mat-icon>event</mat-icon>
@@ -151,6 +161,7 @@
           </div>
         </div>
 
+        <!-- Mode plage de dates -->
         <div class="date-range-filter" *ngIf="filterMode === 'dateRange'" [@fadeSlideIn]>
           <div class="date-filter-form">
             <mat-form-field appearance="outline" class="date-field">
@@ -168,13 +179,15 @@
             </mat-form-field>
 
             <div class="action-buttons">
-              <button mat-raised-button color="primary" 
-                      (click)="applyDateRangeFilter()" 
+              <button mat-raised-button color="primary"
+                      (click)="applyDateRangeFilter()"
                       [disabled]="!filters.dateDebut || !filters.dateFin">
                 <mat-icon>search</mat-icon>
                 {{ 'COMMON.LOAD' | translate }}
               </button>
-              <button mat-stroked-button (click)="resetFilters()" [matTooltip]="'MATCH.FILTER.TOOLTIP_RESET' | translate">
+              <button mat-stroked-button
+                      (click)="resetFilters()"
+                      [matTooltip]="'MATCH.FILTER.TOOLTIP_RESET' | translate">
                 <mat-icon>refresh</mat-icon>
                 {{ 'COMMON.RESET' | translate }}
               </button>
@@ -187,6 +200,7 @@
         </div>
       </div>
 
+      <!-- Stats rapides -->
       <div class="season-stats">
         <div class="stat-chip">
           <mat-icon>sports_soccer</mat-icon>
@@ -207,6 +221,7 @@
       </div>
     </div>
 
+    <!-- Barre d'actions -->
     <div class="actions-bar">
       <div class="actions-left">
         <button mat-raised-button color="primary" (click)="toggleCreateRow()">
@@ -217,19 +232,26 @@
           <mat-icon>calendar_month</mat-icon>
           {{ 'MATCH.ACTIONS.CALENDAR' | translate }}
         </button>
-        <button mat-stroked-button [matMenuTriggerFor]="generateMenu" [matTooltip]="'MATCH.ACTIONS.TOOLTIP_GENERATE' | translate">
+        <button mat-stroked-button
+                [matMenuTriggerFor]="generateMenu"
+                [matTooltip]="'MATCH.ACTIONS.TOOLTIP_GENERATE' | translate">
           <mat-icon>auto_fix_high</mat-icon>
           {{ 'MATCH.ACTIONS.GENERATE' | translate }}
         </button>
         <mat-menu #generateMenu="matMenu">
           <button mat-menu-item (click)="generateAndSaveMatches()">
             <mat-icon>sports_soccer</mat-icon>
-            <span>{{ 'MATCH.ACTIONS.GENERATE_INTERNAL' | translate }} ({{ groupes?.jourMatch || ('COMMON.DAYS.SUNDAY' | translate) }}s)</span>
+            <span>
+              {{ 'MATCH.ACTIONS.GENERATE_INTERNAL' | translate }}
+              ({{ groupes?.jourMatch || ('COMMON.DAYS.SUNDAY' | translate) }}s)
+            </span>
           </button>
         </mat-menu>
       </div>
       <div class="actions-right">
-        <button mat-icon-button [matMenuTriggerFor]="exportMenu" [matTooltip]="'COMMON.EXPORT' | translate">
+        <button mat-icon-button
+                [matMenuTriggerFor]="exportMenu"
+                [matTooltip]="'COMMON.EXPORT' | translate">
           <mat-icon>download</mat-icon>
         </button>
         <mat-menu #exportMenu="matMenu">
@@ -242,7 +264,7 @@
             <span>CSV</span>
           </button>
         </mat-menu>
-        
+
         <mat-button-toggle-group [(ngModel)]="viewMode" class="view-toggle">
           <mat-button-toggle value="card" [matTooltip]="'MATCH.VIEW.CARD' | translate">
             <mat-icon>grid_view</mat-icon>
@@ -251,21 +273,28 @@
             <mat-icon>view_list</mat-icon>
           </mat-button-toggle>
         </mat-button-toggle-group>
-        
-        <button mat-icon-button (click)="toggleFilters()" [class.active]="showFilters" [matTooltip]="'COMMON.FILTERS' | translate">
+
+        <button mat-icon-button
+                (click)="toggleFilters()"
+                [class.active]="showFilters"
+                [matTooltip]="'COMMON.FILTERS' | translate">
           <mat-icon>filter_list</mat-icon>
         </button>
       </div>
     </div>
 
+    <!-- Panel filtres -->
     <div class="filters-panel" *ngIf="showFilters" [@slideDown]>
       <div class="filters-content">
         <mat-form-field appearance="outline" class="filter-field">
           <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
-          <input matInput [(ngModel)]="filters.searchText" (ngModelChange)="applyFilters()" [placeholder]="'MATCH.FILTER.SEARCH_PLACEHOLDER' | translate">
+          <input matInput
+                 [(ngModel)]="filters.searchText"
+                 (ngModelChange)="applyFilters()"
+                 [placeholder]="'MATCH.FILTER.SEARCH_PLACEHOLDER' | translate">
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
-        
+
         <mat-form-field appearance="outline" class="filter-field">
           <mat-label>{{ 'MATCH.FORM.TYPE_LABEL' | translate }}</mat-label>
           <mat-select [(ngModel)]="filters.typeMatch" (selectionChange)="applyFilters()">
@@ -276,7 +305,7 @@
             <mat-option value="ANNIVERSAIRE">{{ 'MATCH.TYPES.ANNIVERSARY' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
-        
+
         <mat-form-field appearance="outline" class="filter-field">
           <mat-label>{{ 'MATCH.FORM.STATUS_LABEL' | translate }}</mat-label>
           <mat-select [(ngModel)]="filters.statut" (selectionChange)="applyFilters()">
@@ -286,7 +315,7 @@
             <mat-option value="manques">{{ 'MATCH.STATS.NOT_VALIDATED' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
-        
+
         <button mat-stroked-button (click)="resetFilters()">
           <mat-icon>clear</mat-icon>
           {{ 'COMMON.RESET' | translate }}
@@ -294,6 +323,7 @@
       </div>
     </div>
 
+    <!-- Formulaire de création / édition -->
     <div *ngIf="showCreateRow" class="create-form" [@slideDown]>
       <div class="form-header">
         <mat-icon>{{ editingMatch ? 'edit' : 'add_circle' }}</mat-icon>
@@ -304,10 +334,22 @@
         <mat-form-field appearance="outline" class="form-field">
           <mat-label>{{ 'MATCH.FORM.TYPE_LABEL' | translate }}</mat-label>
           <mat-select [(ngModel)]="newMatch.typeMatch" required (selectionChange)="onTypeChange()">
-            <mat-option value="INTERNE"><mat-icon class="option-icon">groups</mat-icon>{{ 'MATCH.TYPES.INTERNAL' | translate }}</mat-option>
-            <mat-option value="DUEL"><mat-icon class="option-icon">sports</mat-icon>{{ 'MATCH.TYPES.DUEL' | translate }}</mat-option>
-            <mat-option value="AMICAL"><mat-icon class="option-icon">handshake</mat-icon>{{ 'MATCH.TYPES.FRIENDLY' | translate }}</mat-option>
-            <mat-option value="ANNIVERSAIRE"><mat-icon class="option-icon">cake</mat-icon>{{ 'MATCH.TYPES.ANNIVERSARY' | translate }}</mat-option>
+            <mat-option value="INTERNE">
+              <mat-icon class="option-icon">groups</mat-icon>
+              {{ 'MATCH.TYPES.INTERNAL' | translate }}
+            </mat-option>
+            <mat-option value="DUEL">
+              <mat-icon class="option-icon">sports</mat-icon>
+              {{ 'MATCH.TYPES.DUEL' | translate }}
+            </mat-option>
+            <mat-option value="AMICAL">
+              <mat-icon class="option-icon">handshake</mat-icon>
+              {{ 'MATCH.TYPES.FRIENDLY' | translate }}
+            </mat-option>
+            <mat-option value="ANNIVERSAIRE">
+              <mat-icon class="option-icon">cake</mat-icon>
+              {{ 'MATCH.TYPES.ANNIVERSARY' | translate }}
+            </mat-option>
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
         </mat-form-field>
@@ -320,13 +362,16 @@
 
         <mat-form-field appearance="outline" class="form-field">
           <mat-label>{{ 'MATCH.FORM.LOCATION_LABEL' | translate }}</mat-label>
-          <input matInput [(ngModel)]="newMatch.lieu" [placeholder]="'MATCH.FORM.LOCATION_PLACEHOLDER' | translate">
+          <input matInput [(ngModel)]="newMatch.lieu"
+                 [placeholder]="'MATCH.FORM.LOCATION_PLACEHOLDER' | translate">
           <mat-icon matPrefix>location_on</mat-icon>
         </mat-form-field>
       </div>
 
       <div class="form-actions">
-        <button mat-raised-button color="primary" (click)="saveMatch()" [disabled]="!isCreateFormValid()">
+        <button mat-raised-button color="primary"
+                (click)="saveMatch()"
+                [disabled]="!isCreateFormValid()">
           <mat-icon>save</mat-icon>
           {{ 'COMMON.SAVE' | translate }}
         </button>
@@ -337,13 +382,16 @@
       </div>
     </div>
 
+    <!-- Vue cartes -->
     <div class="matches-grid" *ngIf="viewMode === 'card'">
-      <div class="match-card" *ngFor="let match of filteredDataSource.data" 
+      <div class="match-card"
+           *ngFor="let match of filteredDataSource.data"
            [class.played]="isMatchPlayed(match)"
            [class.missed]="isMatchMissed(match)"
            [class.future]="isMatchFuture(match)">
+
         <div class="match-card-header">
-          <div class="match-type-badge" [class]="match.typeMatch?.toLowerCase()">
+          <div class="match-type-badge" [class]="match.typeMatch.toLowerCase()">
             {{ getTypeMatchLabel(match.typeMatch) }}
           </div>
           <div class="match-status" [class]="getMatchStatusClass(match)">
@@ -351,7 +399,7 @@
             <span>{{ getMatchStatusLabel(match) }}</span>
           </div>
         </div>
-        
+
         <div class="match-card-body">
           <div class="match-date">
             <mat-icon>event</mat-icon>
@@ -372,59 +420,72 @@
             <span>{{ match.lieu }}</span>
           </div>
         </div>
-        
+
         <div class="match-card-actions">
-          <button mat-icon-button matTooltip="Gérer les présences" color="primary" (click)="viewMatchDetails(match)">
+          <button mat-icon-button
+                  color="primary"
+                  [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
+                  (click)="viewMatchDetails(match)">
             <mat-icon>groups</mat-icon>
           </button>
-          <!-- <button mat-icon-button matTooltip="Voir détails" (click)="viewMatchDetails(match)">
-            <mat-icon>visibility</mat-icon>
-          </button> -->
-          <button mat-icon-button matTooltip="Modifier" (click)="editMatch(match)">
+          <button mat-icon-button
+                  [matTooltip]="'COMMON.EDIT' | translate"
+                  (click)="editMatch(match)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="deleteMatch(match)">
+          <button mat-icon-button
+                  color="warn"
+                  [matTooltip]="'COMMON.DELETE' | translate"
+                  (click)="deleteMatch(match)">
             <mat-icon>delete</mat-icon>
           </button>
         </div>
       </div>
-      
+
       <!-- État vide -->
       <div class="empty-state" *ngIf="filteredDataSource.data.length === 0">
         <mat-icon>sports_soccer</mat-icon>
-        <h3>Aucun match trouvé</h3>
-        <p>Aucun match ne correspond à vos critères de recherche</p>
+        <h3>{{ 'MATCH.EMPTY.TITLE' | translate }}</h3>
+        <p>{{ 'MATCH.EMPTY.DESCRIPTION' | translate }}</p>
         <button mat-raised-button color="primary" (click)="resetFilters()">
-          Réinitialiser les filtres
+          {{ 'COMMON.RESET_FILTERS' | translate }}
         </button>
       </div>
     </div>
 
-   <!-- ===== VUE LISTE ===== -->
+    <!-- Vue liste / table -->
     <div class="matches-table-container" *ngIf="viewMode === 'list'">
       <table mat-table [dataSource]="filteredDataSource" matSort class="matches-table">
-        
+
         <ng-container matColumnDef="dateMatch">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>
+            {{ 'MATCH.TABLE.DATE' | translate }}
+          </th>
           <td mat-cell *matCellDef="let match">{{ match.dateMatch | date:'dd/MM/yyyy' }}</td>
         </ng-container>
-        
+
         <ng-container matColumnDef="typeMatch">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>
+            {{ 'MATCH.TABLE.TYPE' | translate }}
+          </th>
           <td mat-cell *matCellDef="let match">
             <span class="type-badge" [class]="match.typeMatch?.toLowerCase()">
               {{ getTypeMatchLabel(match.typeMatch) }}
             </span>
           </td>
         </ng-container>
-        
+
         <ng-container matColumnDef="adversaire">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Match</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>
+            {{ 'MATCH.TABLE.MATCH' | translate }}
+          </th>
           <td mat-cell *matCellDef="let match">{{ getMatchDisplayName(match) }}</td>
         </ng-container>
-        
+
         <ng-container matColumnDef="statut">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>
+            {{ 'MATCH.TABLE.STATUS' | translate }}
+          </th>
           <td mat-cell *matCellDef="let match">
             <span class="status-badge" [class]="getMatchStatusClass(match)">
               <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
@@ -432,30 +493,36 @@
             </span>
           </td>
         </ng-container>
-        
+
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.ACTIONS' | translate }}</th>
           <td mat-cell *matCellDef="let match">
-            <button mat-icon-button matTooltip="Gérer les présences" color="primary" (click)="viewMatchDetails(match)">
+            <button mat-icon-button
+                    color="primary"
+                    [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
+                    (click)="viewMatchDetails(match)">
               <mat-icon>groups</mat-icon>
             </button>
-            <!-- <button mat-icon-button matTooltip="Voir" (click)="viewMatchDetails(match)">
-              <mat-icon>visibility</mat-icon>
-            </button> -->
-            <button mat-icon-button matTooltip="Modifier" (click)="editMatch(match)">
+            <button mat-icon-button
+                    [matTooltip]="'COMMON.EDIT' | translate"
+                    (click)="editMatch(match)">
               <mat-icon>edit</mat-icon>
             </button>
-            <button mat-icon-button matTooltip="Supprimer" color="warn" (click)="deleteMatch(match)">
+            <button mat-icon-button
+                    color="warn"
+                    [matTooltip]="'COMMON.DELETE' | translate"
+                    (click)="deleteMatch(match)">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
         </ng-container>
-        
+
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-      
+
       <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
     </div>
+
   </div>
 </div>

@@ -1,4 +1,5 @@
 <div class="config-container">
+
   <!-- Header -->
   <div class="page-header">
     <div class="header-content">
@@ -15,213 +16,205 @@
     <mat-spinner diameter="50"></mat-spinner>
     <p class="loading-text">{{ 'groupConfig.loading' | translate }}</p>
   </div>
-   @if (isDialogOpen()) {
-     <div class="modal-backdrop" (click)="closeDialog()">
-        
-  <!-- Contenu du Modal -->
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    
-    <!-- En-tête -->
-    <div class="modal-header">
-      <h3>
-        <mat-icon>stadium</mat-icon>
-        Nouveau Stade
-      </h3>
-      <button mat-icon-button (click)="closeDialog()" class="close-btn">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-    
-    <!-- Formulaire -->
-    <form (ngSubmit)="submitStade()" class="stade-form">
-      
-      <!-- Section Informations de base -->
-      <div class="form-section">
-        <h4 class="section-title">
-          <mat-icon>info</mat-icon>
-          Informations du stade
-        </h4>
-        
-        <div class="form-group">
-          <label for="stadeName">{{ 'groupConfig.stadeModal.stadeName' | translate }} *</label>
-          <input 
-            id="stadeName" 
-            type="text" 
-            name="stadeNameInput"
-            [(ngModel)]="stadeNom" 
-            required
-            maxlength="50"
-            class="text-input"
-            [placeholder]="'groupConfig.stadeModal.stadeNamePlaceholder' | translate"
-          />
-          <div class="input-helper">{{ 'groupConfig.stadeModal.maxChars' | translate }}</div>
-        </div>
-      </div>
 
-      <!-- Section Localisation -->
-      <div class="form-section">
-        <h4 class="section-title">
-          <mat-icon>location_on</mat-icon>
-          Localisation GPS
-        </h4>
-        
-        <!-- Bouton de géolocalisation -->
-        <div class="location-actions">
-          <button 
-            type="button" 
-            (click)="getCurrentLocation()" 
-            [disabled]="isGettingLocation"
-            class="btn-location">
-            <mat-icon>{{ isGettingLocation ? 'hourglass_empty' : 'my_location' }}</mat-icon>
-            {{ isGettingLocation ? ('groupConfig.stadeModal.locating' | translate) : ('groupConfig.stadeModal.useCurrentLocation' | translate) }}
+  <!-- Modal : Nouveau Stade -->
+  @if (isDialogOpen()) {
+    <div class="modal-backdrop" (click)="closeDialog()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+
+        <!-- En-tête -->
+        <div class="modal-header">
+          <h3>
+            <mat-icon>stadium</mat-icon>
+            {{ 'groupConfig.stadeModal.title' | translate }}
+          </h3>
+          <button mat-icon-button (click)="closeDialog()" class="close-btn">
+            <mat-icon>close</mat-icon>
           </button>
-          
-          <div class="location-status" *ngIf="locationMessage">
-            <mat-icon [color]="locationMessageType === 'success' ? 'primary' : 'warn'">
-              {{ locationMessageType === 'success' ? 'check_circle' : 'error' }}
-            </mat-icon>
-            <span>{{ locationMessage }}</span>
-          </div>
         </div>
 
-        <!-- Coordonnées manuelles -->
-        <div class="coordinates-grid">
-          <div class="form-group">
-            <label for="latitude">{{ 'groupConfig.stadeModal.latitude' | translate }}</label>
-            <input 
-              id="latitude" 
-              type="number" 
-              step="any"
-              name="latitudeInput"
-              [(ngModel)]="stadeLatitude" 
-              class="text-input"
-              [placeholder]="'groupConfig.stadeModal.latitudePlaceholder' | translate"
-              min="-90"
-              max="90"
-            />
-            <div class="input-helper">{{ 'groupConfig.stadeModal.latitudeHint' | translate }}</div>
-          </div>
+        <!-- Formulaire -->
+        <form (ngSubmit)="submitStade()" class="stade-form">
 
-          <div class="form-group">
-            <label for="longitude">{{ 'groupConfig.stadeModal.longitude' | translate }}</label>
-            <input 
-              id="longitude" 
-              type="number" 
-              step="any"
-              name="longitudeInput"
-              [(ngModel)]="stadeLongitude" 
-              class="text-input"
-              [placeholder]="'groupConfig.stadeModal.longitudePlaceholder' | translate"
-              min="-180"
-              max="180"
-            />
-            <div class="input-helper">{{ 'groupConfig.stadeModal.longitudeHint' | translate }}</div>
-          </div>
-        </div>
+          <!-- Informations de base -->
+          <div class="form-section">
+            <h4 class="section-title">
+              <mat-icon>info</mat-icon>
+              {{ 'groupConfig.stadeModal.sectionInfo' | translate }}
+            </h4>
 
-        <!-- Rayon de présence -->
-        <div class="form-group">
-          <label for="rayon">{{ 'groupConfig.stadeModal.detectionRadius' | translate }}</label>
-          <div class="rayon-input-group">
-            <input 
-              id="rayon" 
-              type="number" 
-              name="rayonInput"
-              [(ngModel)]="stadeRayon" 
-              class="text-input rayon-input"
-              placeholder="500"
-              min="10"
-              max="5000"
-              step="10"
-            />
-            <span class="rayon-unit">m</span>
-          </div>
-          <div class="input-helper">
-            Distance maximale pour marquer la présence (10m - 5km)
-          </div>
-          
-          <!-- Indicateur visuel du rayon -->
-          <div class="rayon-indicator" *ngIf="stadeRayon">
-            <div class="rayon-bar">
-              <div class="rayon-fill" [style.width.%]="(stadeRayon / 1000) * 100"></div>
-            </div>
-            <div class="rayon-labels">
-              <span>10m</span>
-              <span>{{ stadeRayon }}m</span>
-              <span>1000m</span>
+            <div class="form-group">
+              <label for="stadeName">{{ 'groupConfig.stadeModal.stadeName' | translate }} *</label>
+              <input
+                id="stadeName"
+                type="text"
+                name="stadeNameInput"
+                [(ngModel)]="stadeNom"
+                required
+                maxlength="50"
+                class="text-input"
+                [placeholder]="'groupConfig.stadeModal.stadeNamePlaceholder' | translate"
+              />
+              <div class="input-helper">{{ 'groupConfig.stadeModal.maxChars' | translate }}</div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Section Prévisualisation -->
-      <div class="form-section" *ngIf="hasValidCoordinates()">
-        <h4 class="section-title">
-          <mat-icon>preview</mat-icon>
-          Prévisualisation
-        </h4>
-        
-        <div class="location-preview">
-          <div class="preview-card">
-            <div class="preview-icon">
-              <mat-icon>place</mat-icon>
-            </div>
-            <div class="preview-content">
-              <h5>{{ stadeNom || 'Nouveau stade' }}</h5>
-              <div class="preview-coords">
-                <span>📍 {{ stadeLatitude | number:'1.6-6' }}, {{ stadeLongitude | number:'1.6-6' }}</span>
-              </div>
-              <div class="preview-radius">
-                <span>📏 Rayon: {{ stadeRayon }}m</span>
+          <!-- Localisation GPS -->
+          <div class="form-section">
+            <h4 class="section-title">
+              <mat-icon>location_on</mat-icon>
+              {{ 'groupConfig.stadeModal.sectionLocation' | translate }}
+            </h4>
+
+            <!-- Géolocalisation -->
+            <div class="location-actions">
+              <button
+                type="button"
+                (click)="getCurrentLocation()"
+                [disabled]="isGettingLocation"
+                class="btn-location">
+                <mat-icon>{{ isGettingLocation ? 'hourglass_empty' : 'my_location' }}</mat-icon>
+                {{ isGettingLocation ? ('groupConfig.stadeModal.locating' | translate) : ('groupConfig.stadeModal.useCurrentLocation' | translate) }}
+              </button>
+
+              <div class="location-status" *ngIf="locationMessage">
+                <mat-icon [color]="locationMessageType === 'success' ? 'primary' : 'warn'">
+                  {{ locationMessageType === 'success' ? 'check_circle' : 'error' }}
+                </mat-icon>
+                <span>{{ locationMessage }}</span>
               </div>
             </div>
-          </div>
-          
-          <!-- Mini carte conceptuelle (optionnel) -->
-          <div class="mini-map-placeholder">
-            <mat-icon>map</mat-icon>
-            <span>{{ 'groupConfig.stadeModal.stadePosition' | translate }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Boutons d'action -->
-      <div class="btn-group">
-        <!-- Annuler (Secondaire) -->
-        <button 
-          type="button" 
-          (click)="closeDialog()" 
-          class="btn-base btn-secondary">
-          <mat-icon>close</mat-icon>
-          Annuler
-        </button>
-        
-        <!-- Enregistrer (Primaire) -->
-        <button 
-          type="submit" 
-          [disabled]="!isFormValid()"
-          class="btn-base btn-primary"
-          [class.loading]="isSubmitting">
-          <mat-icon *ngIf="!isSubmitting">save</mat-icon>
-          <mat-icon *ngIf="isSubmitting" class="spinning">hourglass_empty</mat-icon>
-          {{ isSubmitting() ? ('common.saving' | translate) : ('common.save' | translate) }}
-        </button>
+            <!-- Coordonnées manuelles -->
+            <div class="coordinates-grid">
+              <div class="form-group">
+                <label for="latitude">{{ 'groupConfig.stadeModal.latitude' | translate }}</label>
+                <input
+                  id="latitude"
+                  type="number"
+                  step="any"
+                  name="latitudeInput"
+                  [(ngModel)]="stadeLatitude"
+                  class="text-input"
+                  [placeholder]="'groupConfig.stadeModal.latitudePlaceholder' | translate"
+                  min="-90"
+                  max="90"
+                />
+                <div class="input-helper">{{ 'groupConfig.stadeModal.latitudeHint' | translate }}</div>
+              </div>
+
+              <div class="form-group">
+                <label for="longitude">{{ 'groupConfig.stadeModal.longitude' | translate }}</label>
+                <input
+                  id="longitude"
+                  type="number"
+                  step="any"
+                  name="longitudeInput"
+                  [(ngModel)]="stadeLongitude"
+                  class="text-input"
+                  [placeholder]="'groupConfig.stadeModal.longitudePlaceholder' | translate"
+                  min="-180"
+                  max="180"
+                />
+                <div class="input-helper">{{ 'groupConfig.stadeModal.longitudeHint' | translate }}</div>
+              </div>
+            </div>
+
+            <!-- Rayon de présence -->
+            <div class="form-group">
+              <label for="rayon">{{ 'groupConfig.stadeModal.detectionRadius' | translate }}</label>
+              <div class="rayon-input-group">
+                <input
+                  id="rayon"
+                  type="number"
+                  name="rayonInput"
+                  [(ngModel)]="stadeRayon"
+                  class="text-input rayon-input"
+                  placeholder="500"
+                  min="10"
+                  max="5000"
+                  step="10"
+                />
+                <span class="rayon-unit">m</span>
+              </div>
+              <div class="input-helper">{{ 'groupConfig.stadeModal.detectionRadiusHint' | translate }}</div>
+
+              <!-- Indicateur visuel du rayon -->
+              <div class="rayon-indicator" *ngIf="stadeRayon">
+                <div class="rayon-bar">
+                  <div class="rayon-fill" [style.width.%]="(stadeRayon / 1000) * 100"></div>
+                </div>
+                <div class="rayon-labels">
+                  <span>10m</span>
+                  <span>{{ stadeRayon }}m</span>
+                  <span>1000m</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prévisualisation -->
+          <div class="form-section" *ngIf="hasValidCoordinates()">
+            <h4 class="section-title">
+              <mat-icon>preview</mat-icon>
+              {{ 'groupConfig.stadeModal.sectionPreview' | translate }}
+            </h4>
+
+            <div class="location-preview">
+              <div class="preview-card">
+                <div class="preview-icon">
+                  <mat-icon>place</mat-icon>
+                </div>
+                <div class="preview-content">
+                  <h5>{{ stadeNom || ('groupConfig.stadeModal.newStadeDefault' | translate) }}</h5>
+                  <div class="preview-coords">
+                    <span>📍 {{ stadeLatitude | number:'1.6-6' }}, {{ stadeLongitude | number:'1.6-6' }}</span>
+                  </div>
+                  <div class="preview-radius">
+                    <span>📏 {{ 'groupConfig.stadeModal.radiusLabel' | translate }}: {{ stadeRayon }}m</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mini-map-placeholder">
+                <mat-icon>map</mat-icon>
+                <span>{{ 'groupConfig.stadeModal.stadePosition' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Boutons d'action -->
+          <div class="btn-group">
+            <button type="button" (click)="closeDialog()" class="btn-base btn-secondary">
+              <mat-icon>close</mat-icon>
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button
+              type="submit"
+              [disabled]="!isFormValid()"
+              class="btn-base btn-primary"
+              [class.loading]="isSubmitting()">
+              <mat-icon *ngIf="!isSubmitting()">save</mat-icon>
+              <mat-icon *ngIf="isSubmitting()" class="spinning">hourglass_empty</mat-icon>
+              {{ isSubmitting() ? ('common.saving' | translate) : ('common.save' | translate) }}
+            </button>
+          </div>
+
+        </form>
       </div>
-      
-    </form>
-        </div>
-      </div>}
+    </div>
+  }
 
   <!-- Content -->
   <div *ngIf="!isLoading && groupe" class="config-content">
-    
+
     <mat-tab-group class="config-tabs" animationDuration="300ms">
-      
-      <!-- Tab 1: Informations du groupe -->
+
+      <!-- ===== Tab 1 : Informations du groupe ===== -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon class="tab-icon">info</mat-icon>
-          Informations générales
+          {{ 'groupConfig.tabs.generalInfo' | translate }}
         </ng-template>
 
         <div class="tab-content">
@@ -229,51 +222,51 @@
             <mat-card-header>
               <mat-card-title class="card-title">
                 <mat-icon>groups</mat-icon>
-                Informations du groupe
+                {{ 'groupConfig.groupInfo.cardTitle' | translate }}
               </mat-card-title>
             </mat-card-header>
 
             <mat-card-content>
               <form [formGroup]="groupeForm" (ngSubmit)="saveGroupe()">
-                
+
                 <!-- Photo de profil -->
                 <div class="form-section">
                   <h3 class="section-title">
                     <mat-icon>photo_camera</mat-icon>
-                    Photo de profil
+                    {{ 'groupConfig.groupInfo.sectionPhoto' | translate }}
                   </h3>
 
                   <div class="photo-upload-section">
                     <div class="photo-preview">
-                      <img *ngIf="profilePhotoPreview || groupe?.profilePhotoUrl" 
-                           [src]="profilePhotoPreview || groupe?.profilePhotoUrl" 
-                           alt="Photo de profil"
+                      <img *ngIf="profilePhotoPreview || groupe.profilePhotoUrl"
+                           [src]="profilePhotoPreview || groupe.profilePhotoUrl"
+                           [alt]="'groupConfig.groupInfo.photoAlt' | translate"
                            class="profile-image">
-                      <div *ngIf="!profilePhotoPreview && !groupe?.profilePhotoUrl" class="photo-placeholder">
+                      <div *ngIf="!profilePhotoPreview && !groupe.profilePhotoUrl" class="photo-placeholder">
                         <mat-icon>groups</mat-icon>
                         <span>{{ 'groupConfig.groupInfo.noPhoto' | translate }}</span>
                       </div>
                     </div>
-                    
+
                     <div class="photo-actions">
-                      <input type="file" 
-                             id="photoInput" 
+                      <input type="file"
+                             id="photoInput"
                              #fileInput
-                             accept="image/*" 
+                             accept="image/*"
                              (change)="onFileSelected($event)"
                              style="display: none;">
-                      
-                      <button mat-stroked-button 
+
+                      <button mat-stroked-button
                               type="button"
                               color="primary"
                               (click)="fileInput.click()"
                               [disabled]="isUploadingPhoto">
                         <mat-icon>photo_camera</mat-icon>
-                        Choisir une photo
+                        {{ 'groupConfig.groupInfo.choosePhoto' | translate }}
                       </button>
-                      
+
                       <div class="upload-actions" *ngIf="selectedFile">
-                        <button mat-raised-button 
+                        <button mat-raised-button
                                 type="button"
                                 color="primary"
                                 (click)="uploadProfilePhoto()"
@@ -282,18 +275,18 @@
                           <mat-icon *ngIf="!isUploadingPhoto">cloud_upload</mat-icon>
                           {{ isUploadingPhoto ? ('groupConfig.groupInfo.uploading' | translate) : ('groupConfig.groupInfo.upload' | translate) }}
                         </button>
-                        
-                        <button mat-button 
+
+                        <button mat-button
                                 type="button"
                                 (click)="cancelPhotoSelection()"
                                 [disabled]="isUploadingPhoto">
                           <mat-icon>cancel</mat-icon>
-                          Annuler
+                          {{ 'common.cancel' | translate }}
                         </button>
                       </div>
-                      
+
                       <mat-hint class="photo-hint">
-                        Format accepté : JPG, PNG (max 5MB)
+                        {{ 'groupConfig.groupInfo.photoHint' | translate }}
                       </mat-hint>
                     </div>
                   </div>
@@ -301,56 +294,56 @@
 
                 <mat-divider></mat-divider>
 
-                <!-- Nom et statut -->
+                <!-- Identification -->
                 <div class="form-section">
                   <h3 class="section-title">
                     <mat-icon>badge</mat-icon>
-                    Identification
+                    {{ 'groupConfig.groupInfo.sectionIdentification' | translate }}
                   </h3>
 
                   <div class="form-grid">
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.groupName' | translate }}</mat-label>
-                      <input matInput formControlName="nom" [placeholder]="'groupConfig.groupInfo.groupNamePlaceholder' | translate">
+                      <input matInput formControlName="nom"
+                             [placeholder]="'groupConfig.groupInfo.groupNamePlaceholder' | translate">
                       <mat-icon matPrefix>groups</mat-icon>
                       <mat-error *ngIf="groupeForm.get('nom')?.hasError('required')">
-                        Le nom est requis
+                        {{ 'groupConfig.errors.nameRequired' | translate }}
                       </mat-error>
                       <mat-error *ngIf="groupeForm.get('nom')?.hasError('minlength')">
-                        Minimum 3 caractères
+                        {{ 'groupConfig.errors.nameMinLength' | translate }}
                       </mat-error>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.abbreviation' | translate }}</mat-label>
-                      <input matInput 
-                             formControlName="abreviation" 
+                      <input matInput
+                             formControlName="abreviation"
                              [placeholder]="'groupConfig.groupInfo.abbreviationPlaceholder' | translate"
                              style="text-transform: uppercase;">
                       <mat-icon matPrefix>short_text</mat-icon>
                       <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('required')">
-                        L'abréviation est requise
+                        {{ 'groupConfig.errors.abrevRequired' | translate }}
                       </mat-error>
                       <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('minlength')">
-                        Minimum 2 caractères
+                        {{ 'groupConfig.errors.abrevMinLength' | translate }}
                       </mat-error>
                       <mat-error *ngIf="groupeForm.get('abreviation')?.hasError('maxlength')">
-                        Maximum 10 caractères
+                        {{ 'groupConfig.errors.abrevMaxLength' | translate }}
                       </mat-error>
                       <mat-hint>{{ 'groupConfig.groupInfo.abbreviationHint' | translate }}</mat-hint>
                     </mat-form-field>
 
-                    <!-- Dans la section "Identification", après le toggle isPublic -->
-<mat-form-field appearance="outline" class="form-field full-width">
-  <mat-label>{{ 'groupConfig.groupInfo.description' | translate }}</mat-label>
-  <textarea matInput 
-            formControlName="description" 
-            rows="3"
-            [placeholder]="'groupConfig.groupInfo.descriptionPlaceholder' | translate"
-            maxlength="500"></textarea>
-  <mat-icon matPrefix>description</mat-icon>
-  <mat-hint align="end">{{ groupeForm.get('description')?.value?.length || 0 }}/500</mat-hint>
-</mat-form-field>
+                    <mat-form-field appearance="outline" class="form-field full-width">
+                      <mat-label>{{ 'groupConfig.groupInfo.description' | translate }}</mat-label>
+                      <textarea matInput
+                                formControlName="description"
+                                rows="3"
+                                [placeholder]="'groupConfig.groupInfo.descriptionPlaceholder' | translate"
+                                maxlength="500"></textarea>
+                      <mat-icon matPrefix>description</mat-icon>
+                      <mat-hint align="end">{{ groupeForm.get('description')?.value?.length || 0 }}/500</mat-hint>
+                    </mat-form-field>
 
                     <div class="toggle-field">
                       <mat-slide-toggle formControlName="isPublic" color="primary">
@@ -365,20 +358,18 @@
 
                 <mat-divider></mat-divider>
 
-                <!-- Sport et équipe -->
+                <!-- Sport et type d'équipe -->
                 <div class="form-section">
                   <h3 class="section-title">
                     <mat-icon>sports_soccer</mat-icon>
-                    Sport et type d'équipe
+                    {{ 'groupConfig.groupInfo.sectionSport' | translate }}
                   </h3>
 
                   <div class="form-grid">
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.discipline' | translate }}</mat-label>
                       <mat-select formControlName="discipline">
-                        <mat-option *ngFor="let disc of disciplines" [value]="disc">
-                          {{ disc }}
-                        </mat-option>
+                        <mat-option *ngFor="let disc of disciplines" [value]="disc">{{ disc }}</mat-option>
                       </mat-select>
                       <mat-icon matPrefix>sports</mat-icon>
                     </mat-form-field>
@@ -386,9 +377,7 @@
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.teamType' | translate }}</mat-label>
                       <mat-select formControlName="typeEquipe">
-                        <mat-option *ngFor="let type of typesEquipe" [value]="type">
-                          {{ type }}
-                        </mat-option>
+                        <mat-option *ngFor="let type of typesEquipe" [value]="type">{{ type }}</mat-option>
                       </mat-select>
                       <mat-icon matPrefix>category</mat-icon>
                     </mat-form-field>
@@ -398,11 +387,11 @@
                       <mat-select formControlName="modeEquipes">
                         <mat-option value="STATIQUE">
                           <mat-icon class="option-icon">lock</mat-icon>
-                          Statique (équipes fixes)
+                          {{ 'groupConfig.groupInfo.teamModeStatic' | translate }}
                         </mat-option>
                         <mat-option value="DYNAMIQUE">
                           <mat-icon class="option-icon">shuffle</mat-icon>
-                          Dynamique (équipes variables)
+                          {{ 'groupConfig.groupInfo.teamModeDynamic' | translate }}
                         </mat-option>
                       </mat-select>
                       <mat-icon matPrefix>tune</mat-icon>
@@ -417,138 +406,127 @@
                 <div class="form-section">
                   <h3 class="section-title">
                     <mat-icon>place</mat-icon>
-                    Lieu et horaire
+                    {{ 'groupConfig.groupInfo.sectionLocation' | translate }}
                   </h3>
 
                   <div class="form-grid">
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.city' | translate }}</mat-label>
                       <mat-select formControlName="ville">
-                        <mat-option *ngFor="let ville of villes" [value]="ville.id">
-                          {{ ville.nom }}
-                        </mat-option>
+                        <mat-option *ngFor="let ville of villes" [value]="ville.id">{{ ville.nom }}</mat-option>
                       </mat-select>
                       <mat-icon matPrefix>location_city</mat-icon>
                     </mat-form-field>
 
-                    <!-- Après le champ "Ville" -->
-<mat-form-field appearance="outline" class="form-field">
-  <mat-label>{{ 'groupConfig.groupInfo.neighborhood' | translate }}</mat-label>
-  <input matInput 
-         formControlName="quartier" 
-         [placeholder]="'groupConfig.groupInfo.neighborhoodPlaceholder' | translate">
-  <mat-icon matPrefix>location_on</mat-icon>
-  <mat-hint>{{ 'groupConfig.groupInfo.neighborhoodHint' | translate }}</mat-hint>
-</mat-form-field>
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>{{ 'groupConfig.groupInfo.neighborhood' | translate }}</mat-label>
+                      <input matInput
+                             formControlName="quartier"
+                             [placeholder]="'groupConfig.groupInfo.neighborhoodPlaceholder' | translate">
+                      <mat-icon matPrefix>location_on</mat-icon>
+                      <mat-hint>{{ 'groupConfig.groupInfo.neighborhoodHint' | translate }}</mat-hint>
+                    </mat-form-field>
 
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.stadium' | translate }}</mat-label>
                       <mat-select formControlName="stade">
-                        <mat-option *ngFor="let stade of stades" [value]="stade.id">
-                          {{ stade.nom }}
-                        </mat-option>
+                        <mat-option *ngFor="let stade of stades" [value]="stade.id">{{ stade.nom }}</mat-option>
                       </mat-select>
                       <mat-icon matPrefix>stadium</mat-icon>
                     </mat-form-field>
-                     <button 
-                        mat-mini-fab 
-                        color="accent" 
-                        type="button" 
-                        (click)="openNewStadeDialog()"
-                        [attr.aria-label]="'groupConfig.groupInfo.addStade' | translate">
-                        <mat-icon>add</mat-icon>
-                      </button>
+
+                    <button
+                      mat-mini-fab
+                      color="accent"
+                      type="button"
+                      (click)="openNewStadeDialog()"
+                      [attr.aria-label]="'groupConfig.groupInfo.addStade' | translate">
+                      <mat-icon>add</mat-icon>
+                    </button>
 
                     <mat-form-field appearance="outline" class="form-field">
                       <mat-label>{{ 'groupConfig.groupInfo.matchDay' | translate }}</mat-label>
                       <mat-select formControlName="jourMatch">
-                        <mat-option *ngFor="let jour of joursMatch" [value]="jour">
-                          {{ jour }}
-                        </mat-option>
+                        <mat-option *ngFor="let jour of joursMatch" [value]="jour">{{ jour }}</mat-option>
                       </mat-select>
                       <mat-icon matPrefix>today</mat-icon>
                     </mat-form-field>
 
-                     <!-- NOUVEAU: Heure de match -->
                     <mat-form-field appearance="outline" class="form-field">
-                        <mat-label>{{ 'groupConfig.groupInfo.matchTime' | translate }}</mat-label>
-                        <input matInput type="time" formControlName="heureMatch">
-                        <mat-icon matPrefix>schedule</mat-icon>
-                        <mat-hint>{{ 'groupConfig.groupInfo.matchTimeHint' | translate }}</mat-hint>
+                      <mat-label>{{ 'groupConfig.groupInfo.matchTime' | translate }}</mat-label>
+                      <input matInput type="time" formControlName="heureMatch">
+                      <mat-icon matPrefix>schedule</mat-icon>
+                      <mat-hint>{{ 'groupConfig.groupInfo.matchTimeHint' | translate }}</mat-hint>
                     </mat-form-field>
                   </div>
                 </div>
 
                 <mat-divider></mat-divider>
-<!-- Nouvelle section : Adhésion et capacité -->
-<mat-divider></mat-divider>
 
-<div class="form-section">
-  <h3 class="section-title">
-    <mat-icon>group_add</mat-icon>
-    Adhésion et capacité
-  </h3>
+                <!-- Adhésion et capacité -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <mat-icon>group_add</mat-icon>
+                    {{ 'groupConfig.groupInfo.sectionMembership' | translate }}
+                  </h3>
 
-  <div class="form-grid">
-    <!-- Capacité maximale -->
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'groupConfig.groupInfo.maxCapacity' | translate }}</mat-label>
-      <input matInput 
-             type="number" 
-             formControlName="capaciteMax" 
-             min="2" 
-             max="100"
-             [placeholder]="'groupConfig.groupInfo.maxCapacityPlaceholder' | translate">
-      <mat-icon matPrefix>people</mat-icon>
-      <mat-hint>{{ 'groupConfig.groupInfo.maxCapacityHint' | translate }}</mat-hint>
-    </mat-form-field>
+                  <div class="form-grid">
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>{{ 'groupConfig.groupInfo.maxCapacity' | translate }}</mat-label>
+                      <input matInput
+                             type="number"
+                             formControlName="capaciteMax"
+                             min="2"
+                             max="100"
+                             [placeholder]="'groupConfig.groupInfo.maxCapacityPlaceholder' | translate">
+                      <mat-icon matPrefix>people</mat-icon>
+                      <mat-hint>{{ 'groupConfig.groupInfo.maxCapacityHint' | translate }}</mat-hint>
+                    </mat-form-field>
 
-    <!-- Niveau requis -->
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'groupConfig.groupInfo.requiredLevel' | translate }}</mat-label>
-      <mat-select formControlName="niveauRequis">
-        <mat-option value="TOUS">
-          <mat-icon class="option-icon">accessibility_new</mat-icon>
-          Tous niveaux
-        </mat-option>
-        <mat-option value="DEBUTANT">
-          <mat-icon class="option-icon">star_border</mat-icon>
-          Débutant
-        </mat-option>
-        <mat-option value="INTERMEDIAIRE">
-          <mat-icon class="option-icon">star_half</mat-icon>
-          Intermédiaire
-        </mat-option>
-        <mat-option value="AVANCE">
-          <mat-icon class="option-icon">star</mat-icon>
-          Avancé
-        </mat-option>
-      </mat-select>
-      <mat-icon matPrefix>fitness_center</mat-icon>
-    </mat-form-field>
+                    <mat-form-field appearance="outline" class="form-field">
+                      <mat-label>{{ 'groupConfig.groupInfo.requiredLevel' | translate }}</mat-label>
+                      <mat-select formControlName="niveauRequis">
+                        <mat-option value="TOUS">
+                          <mat-icon class="option-icon">accessibility_new</mat-icon>
+                          {{ 'groupConfig.groupInfo.levelAll' | translate }}
+                        </mat-option>
+                        <mat-option value="DEBUTANT">
+                          <mat-icon class="option-icon">star_border</mat-icon>
+                          {{ 'groupConfig.groupInfo.levelBeginner' | translate }}
+                        </mat-option>
+                        <mat-option value="INTERMEDIAIRE">
+                          <mat-icon class="option-icon">star_half</mat-icon>
+                          {{ 'groupConfig.groupInfo.levelIntermediate' | translate }}
+                        </mat-option>
+                        <mat-option value="AVANCE">
+                          <mat-icon class="option-icon">star</mat-icon>
+                          {{ 'groupConfig.groupInfo.levelAdvanced' | translate }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-icon matPrefix>fitness_center</mat-icon>
+                    </mat-form-field>
 
-    <!-- Toggle accepte nouveaux membres -->
-    <div class="toggle-field">
-      <mat-slide-toggle formControlName="accepteNouveauxMembres" color="primary">
-        <span class="toggle-label">
-          <mat-icon>{{ groupeForm.get('accepteNouveauxMembres')?.value ? 'door_front' : 'door_sliding' }}</mat-icon>
-          {{ groupeForm.get('accepteNouveauxMembres')?.value ? ('groupConfig.groupInfo.recruitmentOpen' | translate) : ('groupConfig.groupInfo.recruitmentClosed' | translate) }}
-        </span>
-      </mat-slide-toggle>
-      <p class="toggle-hint" *ngIf="!groupeForm.get('accepteNouveauxMembres')?.value">
-        Les nouvelles candidatures sont temporairement suspendues
-      </p>
-    </div>
-  </div>
-</div>
-               
+                    <div class="toggle-field">
+                      <mat-slide-toggle formControlName="accepteNouveauxMembres" color="primary">
+                        <span class="toggle-label">
+                          <mat-icon>{{ groupeForm.get('accepteNouveauxMembres')?.value ? 'door_front' : 'door_sliding' }}</mat-icon>
+                          {{ groupeForm.get('accepteNouveauxMembres')?.value ? ('groupConfig.groupInfo.recruitmentOpen' | translate) : ('groupConfig.groupInfo.recruitmentClosed' | translate) }}
+                        </span>
+                      </mat-slide-toggle>
+                      <p class="toggle-hint" *ngIf="!groupeForm.get('accepteNouveauxMembres')?.value">
+                        {{ 'groupConfig.groupInfo.recruitmentSuspended' | translate }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
+                <mat-divider></mat-divider>
 
-                <!-- Frais -->
+                <!-- Cotisation -->
                 <div class="form-section">
                   <h3 class="section-title">
                     <mat-icon>payments</mat-icon>
-                    Cotisation
+                    {{ 'groupConfig.groupInfo.sectionFees' | translate }}
                   </h3>
 
                   <div class="form-grid">
@@ -564,9 +542,9 @@
 
                 <!-- Actions -->
                 <div class="form-actions">
-                  <button 
-                    mat-raised-button 
-                    color="primary" 
+                  <button
+                    mat-raised-button
+                    color="primary"
                     type="submit"
                     [disabled]="groupeForm.invalid || isSaving">
                     <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
@@ -581,27 +559,25 @@
         </div>
       </mat-tab>
 
-      
-
-      <!-- Tab 2: Questions de candidature -->
+      <!-- ===== Tab 2 : Questions de candidature ===== -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon class="tab-icon">quiz</mat-icon>
-          Questions de candidature
+          {{ 'groupConfig.tabs.applicationForm' | translate }}
           <span class="badge" *ngIf="questions.length > 0">{{ questions.length }}</span>
         </ng-template>
 
         <div class="tab-content">
-          
-          <!-- Bouton ajouter -->
+
+          <!-- Barre d'action -->
           <div class="action-bar">
-            <button 
-              mat-raised-button 
-              color="primary" 
+            <button
+              mat-raised-button
+              color="primary"
               (click)="toggleQuestionForm()"
               class="add-question-btn">
               <mat-icon>{{ showQuestionForm ? 'close' : 'add' }}</mat-icon>
-              {{ showQuestionForm ? 'Annuler' : ('groupConfig.applicationForm.addQuestion' | translate) }}
+              {{ showQuestionForm ? ('common.cancel' | translate) : ('groupConfig.applicationForm.addQuestion' | translate) }}
             </button>
 
             <div class="info-box" *ngIf="questions.length > 0">
@@ -610,7 +586,7 @@
             </div>
           </div>
 
-          <!-- Formulaire question -->
+          <!-- Formulaire de question -->
           <mat-card *ngIf="showQuestionForm" class="question-form-card">
             <mat-card-header>
               <mat-card-title class="card-title">
@@ -621,27 +597,27 @@
 
             <mat-card-content>
               <form [formGroup]="questionForm" (ngSubmit)="saveQuestion()">
-                
+
                 <mat-form-field appearance="outline" class="full-width">
                   <mat-label>{{ 'groupConfig.applicationForm.questionText' | translate }}</mat-label>
-                  <textarea 
-                    matInput 
-                    formControlName="texteQuestion" 
+                  <textarea
+                    matInput
+                    formControlName="texteQuestion"
                     rows="3"
                     [placeholder]="'groupConfig.applicationForm.questionTextPlaceholder' | translate"></textarea>
                   <mat-icon matPrefix>help_outline</mat-icon>
                   <mat-error *ngIf="questionForm.get('texteQuestion')?.hasError('required')">
-                    La question est requise
+                    {{ 'groupConfig.errors.questionRequired' | translate }}
                   </mat-error>
                   <mat-error *ngIf="questionForm.get('texteQuestion')?.hasError('minlength')">
-                    Minimum 5 caractères
+                    {{ 'groupConfig.errors.questionMinLength' | translate }}
                   </mat-error>
                 </mat-form-field>
 
                 <div class="form-row">
                   <mat-form-field appearance="outline" class="flex-1">
                     <mat-label>{{ 'groupConfig.applicationForm.responseType' | translate }}</mat-label>
-                    <mat-select 
+                    <mat-select
                       formControlName="typeChamp"
                       (selectionChange)="onTypeChampChange($event.value)">
                       <mat-option *ngFor="let type of typeChampConfig" [value]="type.value">
@@ -655,19 +631,19 @@
                   <mat-slide-toggle formControlName="obligatoire" color="accent" class="obligatoire-toggle">
                     <span class="toggle-label">
                       <mat-icon>{{ questionForm.get('obligatoire')?.value ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-                      Question obligatoire
+                      {{ 'groupConfig.applicationForm.required' | translate }}
                     </span>
                   </mat-slide-toggle>
                 </div>
 
-                <mat-form-field 
-                  *ngIf="needsOptions()" 
-                  appearance="outline" 
+                <mat-form-field
+                  *ngIf="needsOptions()"
+                  appearance="outline"
                   class="full-width">
                   <mat-label>{{ 'groupConfig.applicationForm.choiceOptions' | translate }}</mat-label>
-                  <textarea 
-                    matInput 
-                    formControlName="optionsChoix" 
+                  <textarea
+                    matInput
+                    formControlName="optionsChoix"
                     rows="3"
                     [placeholder]="'groupConfig.applicationForm.choiceOptionsPlaceholder' | translate"></textarea>
                   <mat-icon matPrefix>list</mat-icon>
@@ -675,20 +651,13 @@
                 </mat-form-field>
 
                 <div class="form-actions">
-                  <button 
-                    mat-raised-button 
-                    color="primary" 
-                    type="submit"
-                    [disabled]="questionForm.invalid">
+                  <button mat-raised-button color="primary" type="submit" [disabled]="questionForm.invalid">
                     <mat-icon>{{ editingQuestion ? 'save' : 'add' }}</mat-icon>
-                    {{ editingQuestion ? ('common.save' | translate) : 'Ajouter' }}
+                    {{ editingQuestion ? ('common.save' | translate) : ('common.add' | translate) }}
                   </button>
-                  <button 
-                    mat-stroked-button 
-                    type="button"
-                    (click)="toggleQuestionForm()">
+                  <button mat-stroked-button type="button" (click)="toggleQuestionForm()">
                     <mat-icon>close</mat-icon>
-                    Annuler
+                    {{ 'common.cancel' | translate }}
                   </button>
                 </div>
               </form>
@@ -697,7 +666,7 @@
 
           <!-- Liste des questions -->
           <div class="questions-container">
-            
+
             <!-- État vide -->
             <div *ngIf="questions.length === 0" class="empty-state">
               <mat-icon class="empty-icon">quiz</mat-icon>
@@ -706,17 +675,17 @@
             </div>
 
             <!-- Liste drag & drop -->
-            <div 
+            <div
               *ngIf="questions.length > 0"
-              cdkDropList 
+              cdkDropList
               class="questions-list"
               (cdkDropListDropped)="drop($event)">
-              
-              <mat-card 
+
+              <mat-card
                 *ngFor="let question of questions; let i = index"
                 class="question-card"
                 cdkDrag>
-                
+
                 <div class="drag-handle" cdkDragHandle>
                   <mat-icon>drag_indicator</mat-icon>
                 </div>
@@ -728,7 +697,7 @@
                     <span class="type-label">{{ getTypeChampLabel(question.typeChamp) }}</span>
                     <mat-chip *ngIf="question.obligatoire" class="required-chip" color="accent">
                       <mat-icon>star</mat-icon>
-                      Obligatoire
+                      {{ 'groupConfig.applicationForm.required' | translate }}
                     </mat-chip>
                   </div>
 
@@ -745,28 +714,17 @@
                 </div>
 
                 <div class="question-actions">
-                  <button 
-                    mat-icon-button 
-                    [matTooltip]="'common.edit' | translate"
-                    (click)="editQuestion(question)">
+                  <button mat-icon-button [matTooltip]="'common.edit' | translate" (click)="editQuestion(question)">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button 
-                    mat-icon-button 
-                    [matTooltip]="'common.duplicate' | translate"
-                    (click)="duplicateQuestion(question)">
+                  <button mat-icon-button [matTooltip]="'common.duplicate' | translate" (click)="duplicateQuestion(question)">
                     <mat-icon>content_copy</mat-icon>
                   </button>
-                  <button 
-                    mat-icon-button 
-                    [matTooltip]="'common.delete' | translate"
-                    color="warn"
-                    (click)="deleteQuestion(question)">
+                  <button mat-icon-button [matTooltip]="'common.delete' | translate" color="warn" (click)="deleteQuestion(question)">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
 
-                <!-- Placeholder pendant le drag -->
                 <div class="drag-placeholder" *cdkDragPlaceholder></div>
               </mat-card>
             </div>
@@ -774,11 +732,11 @@
         </div>
       </mat-tab>
 
-      <!-- Tab 3: Aperçu -->
+      <!-- ===== Tab 3 : Aperçu du formulaire ===== -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon class="tab-icon">visibility</mat-icon>
-          Aperçu du formulaire
+          {{ 'groupConfig.tabs.preview' | translate }}
         </ng-template>
 
         <div class="tab-content">
@@ -786,7 +744,7 @@
             <mat-card-header>
               <mat-card-title class="card-title">
                 <mat-icon>preview</mat-icon>
-                Aperçu du formulaire de candidature
+                {{ 'groupConfig.applicationForm.previewCardTitle' | translate }}
               </mat-card-title>
             </mat-card-header>
 
@@ -811,57 +769,24 @@
                       <span *ngIf="question.obligatoire" class="required-mark">*</span>
                     </label>
 
-                    <!-- Aperçu selon le type -->
                     <div [ngSwitch]="question.typeChamp" class="preview-input">
-                      
-                      <!-- Texte court -->
-                      <input 
-                        *ngSwitchCase="'TEXTE_COURT'" 
-                        type="text" 
-                        class="preview-text-input"
-                        [placeholder]="'groupConfig.applicationForm.previewMode.yourAnswer' | translate"
-                        disabled>
 
-                      <!-- Texte long -->
-                      <textarea 
-                        *ngSwitchCase="'TEXTE_LONG'"
-                        class="preview-textarea"
-                        rows="4"
-                        [placeholder]="'groupConfig.applicationForm.previewMode.yourDetailedAnswer' | translate"
-                        disabled></textarea>
+                      <input *ngSwitchCase="'TEXTE_COURT'" type="text" class="preview-text-input"
+                             [placeholder]="'groupConfig.applicationForm.previewMode.yourAnswer' | translate" disabled>
 
-                      <!-- Nombre -->
-                      <input 
-                        *ngSwitchCase="'NOMBRE'" 
-                        type="number" 
-                        class="preview-text-input"
-                        placeholder="0"
-                        disabled>
+                      <textarea *ngSwitchCase="'TEXTE_LONG'" class="preview-textarea" rows="4"
+                                [placeholder]="'groupConfig.applicationForm.previewMode.yourDetailedAnswer' | translate" disabled></textarea>
 
-                      <!-- Date -->
-                      <input 
-                        *ngSwitchCase="'DATE'" 
-                        type="date" 
-                        class="preview-text-input"
-                        disabled>
+                      <input *ngSwitchCase="'NOMBRE'" type="number" class="preview-text-input" placeholder="0" disabled>
 
-                      <!-- Email -->
-                      <input 
-                        *ngSwitchCase="'EMAIL'" 
-                        type="email" 
-                        class="preview-text-input"
-                        [placeholder]="'groupConfig.applicationForm.previewMode.emailPlaceholder' | translate"
-                        disabled>
+                      <input *ngSwitchCase="'DATE'" type="date" class="preview-text-input" disabled>
 
-                      <!-- Téléphone -->
-                      <input 
-                        *ngSwitchCase="'TELEPHONE'" 
-                        type="tel" 
-                        class="preview-text-input"
-                        [placeholder]="'groupConfig.applicationForm.previewMode.phonePlaceholder' | translate"
-                        disabled>
+                      <input *ngSwitchCase="'EMAIL'" type="email" class="preview-text-input"
+                             [placeholder]="'groupConfig.applicationForm.previewMode.emailPlaceholder' | translate" disabled>
 
-                      <!-- Choix unique -->
+                      <input *ngSwitchCase="'TELEPHONE'" type="tel" class="preview-text-input"
+                             [placeholder]="'groupConfig.applicationForm.previewMode.phonePlaceholder' | translate" disabled>
+
                       <div *ngSwitchCase="'CHOIX_UNIQUE'" class="preview-radio-group">
                         <label *ngFor="let option of getOptionsArray(question.optionsChoix)" class="preview-radio">
                           <input type="radio" [name]="'q' + i" disabled>
@@ -869,7 +794,6 @@
                         </label>
                       </div>
 
-                      <!-- Choix multiple -->
                       <div *ngSwitchCase="'CHOIX_MULTIPLE'" class="preview-checkbox-group">
                         <label *ngFor="let option of getOptionsArray(question.optionsChoix)" class="preview-checkbox">
                           <input type="checkbox" disabled>
@@ -877,7 +801,6 @@
                         </label>
                       </div>
 
-                      <!-- Oui/Non -->
                       <div *ngSwitchCase="'OUI_NON'" class="preview-radio-group">
                         <label class="preview-radio">
                           <input type="radio" [name]="'q' + i" disabled>
@@ -888,11 +811,14 @@
                           <span>{{ 'groupConfig.applicationForm.previewMode.no' | translate }}</span>
                         </label>
                       </div>
+
                     </div>
                   </div>
 
                   <div class="preview-actions">
-                    <button class="preview-button" disabled>{{ 'groupConfig.applicationForm.previewMode.submit' | translate }}</button>
+                    <button class="preview-button" disabled>
+                      {{ 'groupConfig.applicationForm.previewMode.submit' | translate }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -903,4 +829,5 @@
 
     </mat-tab-group>
   </div>
+
 </div>

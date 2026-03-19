@@ -59,7 +59,6 @@ import { SplashScreenService } from '../../../core/services/splash-screen.servic
     NavbarComponent,
     TranslateModule,
     // ✅ COMPOSANTS PUBLICITÉ
-    PubliciteSplashComponent,
     // PubliciteBannerComponent,
   ],
   templateUrl: './layout.component.html',

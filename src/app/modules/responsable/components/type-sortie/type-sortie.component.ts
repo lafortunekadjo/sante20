@@ -46,7 +46,6 @@ import { TranslateModule } from '@ngx-translate/core';
     MatSelectModule,
     MatSortModule,
     MatTableModule,
-    CurrencyPipe,
     TranslateModule,
     DatePipe],
   templateUrl: './type-sortie.component.html',

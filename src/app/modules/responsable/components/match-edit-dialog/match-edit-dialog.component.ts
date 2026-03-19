@@ -229,7 +229,7 @@ export interface MatchEditDialogData {
                       <mat-select [(ngModel)]="selectedGroupeAdverseId">
                         <mat-option [value]="null">-- Aucun --</mat-option>
                         <mat-option *ngFor="let g of data.groupes" [value]="g.id">
-                          {{ g.nom }} <span *ngIf="g.ville">({{ g.ville?.nom }})</span>
+                          {{ g.nom }} <span *ngIf="g.ville">({{ g.ville.nom }})</span>
                         </mat-option>
                       </mat-select>
                     </mat-form-field>

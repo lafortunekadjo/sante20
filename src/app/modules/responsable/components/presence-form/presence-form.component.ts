@@ -35,6 +35,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-presence-form',
@@ -56,7 +57,8 @@ import { Capacitor } from '@capacitor/core';
     RouterModule,
     MatMenuTrigger,
     MatMenuModule,
-    MatDividerModule
+    MatDividerModule,
+    TranslateModule
   ],
   templateUrl: './presence-form.component.html',
   styleUrls: ['./presence-form.component.scss']
