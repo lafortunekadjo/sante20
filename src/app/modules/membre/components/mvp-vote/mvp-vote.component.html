@@ -1,0 +1,79 @@
+<div class="mvp-voting-lobby">
+  
+  <div class="lobby-header">
+    <div class="icon-circle">
+      <mat-icon>military_tech</mat-icon>
+    </div>
+    <h2>{{ 'mvpVote.title' | translate }}</h2>
+    <p>{{ 'mvpVote.subtitle' | translate }}</p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loader-box">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+
+    @if (!isEligible()) {
+      <div class="status-card error-card animate-in">
+        <mat-icon>info</mat-icon>
+        <h3>{{ 'mvpVote.notEligibleTitle' | translate }}</h3>
+        <p>{{ 'mvpVote.notEligibleMsg' | translate }}</p>
+      </div>
+    }
+
+    @else if (hasVoted()) {
+      <div class="status-card success-card animate-in">
+        <mat-icon>check_circle</mat-icon>
+        <h3>{{ 'mvpVote.votedTitle' | translate }}</h3>
+        <p>{{ 'mvpVote.votedMsg' | translate }}</p>
+        <button mat-stroked-button color="primary" class="mt-3">
+          {{ 'mvpVote.viewLiveResults' | translate }}
+        </button>
+      </div>
+    }
+
+    @else {
+      <div class="candidates-grid">
+        @for (player of nominés(); track player.id; let i = $index) {
+          <div class="fifa-card animate-in" [style.animation-delay]="i * 0.1 + 's'" (click)="openVoteSheet(player)">
+            <div class="card-inner">
+              <div class="player-rank">#{{ i + 1 }}</div>
+              
+              <div class="player-visual">
+                <div class="avatar-ring">
+                  <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="player-img">
+                  <mat-icon *ngIf="!player.photoUrl">person</mat-icon>
+                </div>
+              </div>
+
+              <div class="player-name">
+                <strong>{{ player.prenom }}</strong>
+                <span>{{ player.nom }}</span>
+              </div>
+
+              <div class="player-stats-row">
+                <div class="stat-item">
+                  <span class="icon">⚽</span>
+                  <span class="val">{{ player.buts }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="icon">👟</span>
+                  <span class="val">{{ player.passes }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="icon">⭐</span>
+                  <span class="val">{{ player.motm }}</span>
+                </div>
+              </div>
+
+              <button class="vote-btn-overlay">
+                {{ 'mvpVote.voteAction' | translate }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

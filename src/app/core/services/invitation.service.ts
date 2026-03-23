@@ -97,7 +97,8 @@ export interface InvitationStats {
 export class InvitationService {
 
   private apiUrl = environment.apiUrl;
-
+  
+ 
   constructor(private http: HttpClient) {}
 
   // ============================================================
@@ -299,6 +300,18 @@ export class InvitationService {
       }
     }
     return false;
+  }
+
+  getnomines(groupeId: number|null): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/votes/nomines/${groupeId}`);
+  }
+
+  verifierVote(groupeId: number|null, membreId: number | null): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/votes/check/${groupeId}/${membreId}`);
+  }
+
+  soumettreVote(voteData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/votes/soumettre`, voteData);
   }
 
   /**

@@ -119,6 +119,10 @@ export class GroupeConfigComponent implements OnInit {
       capaciteMax: [30, [Validators.min(3), Validators.max(1000)]],
       accepteNouveauxMembres: [true],
       niveauRequis: ['TOUS'],
+      poidsStatistique: [60, [Validators.required, Validators.min(0), Validators.max(100)]],
+      poidsVotePublic: [40, [Validators.required, Validators.min(0), Validators.max(100)]],
+      seuilPresenceVotePercent: [50, [Validators.required, Validators.min(0), Validators.max(100)]],
+      autoriserCommentairesVote: [true]
     });
 
     this.questionForm = this.fb.group({
@@ -126,6 +130,13 @@ export class GroupeConfigComponent implements OnInit {
       typeChamp: [TypeChamp.TEXTE_COURT, Validators.required],
       optionsChoix: [''],
       obligatoire: [false]
+    });
+
+    this.groupeForm.valueChanges.subscribe(values => {
+      const total = (values.poidsStatistique || 0) + (values.poidsVotePublic || 0);
+      if (total !== 100) {
+        // Tu peux gérer un message d'erreur ici si tu veux être strict
+      }
     });
   }
 
@@ -135,6 +146,8 @@ export class GroupeConfigComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
   }
+
+  
 
   openNewStadeDialog(): void {
     this.isDialogOpen.set(true);

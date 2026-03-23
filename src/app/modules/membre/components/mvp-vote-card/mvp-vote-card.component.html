@@ -1,0 +1,67 @@
+<div class="mvp-vote-card-container news-feed-card animate-in">
+  
+  <div class="card-header">
+    <div class="header-main">
+      <div class="icon-wrap">
+        <mat-icon>stars</mat-icon>
+      </div>
+      <div>
+        <h3 class="card-title">{{ 'mvpVote.cardTitle' | translate }}</h3>
+        <p class="card-subtitle">{{ currentMonthLabel() }}</p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="shareVote()" [matTooltip]="'mvpVote.shareTooltip' | translate" class="share-btn">
+      <mat-icon>share</mat-icon>
+    </button>
+  </div>
+
+  <div class="card-content">
+    @if (isLoading()) {
+      <div class="loading-shade">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    } @else {
+      
+      @if (hasVoted()) {
+        <div class="voted-state text-center animate-in">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <h4>{{ 'mvpVote.thanksTitle' | translate }}</h4>
+          <p>{{ 'mvpVote.thanksMsg' | translate }}</p>
+          <button mat-stroked-button color="primary" class="mt-3">
+            {{ 'mvpVote.viewResultsBtn' | translate }}
+          </button>
+        </div>
+      } 
+      
+      @else {
+        <p class="instruction-text">{{ 'mvpVote.instruction' | translate }}</p>
+        
+        <div class="candidates-list">
+          @for (player of nomines(); track player.id; let i = $index) {
+            <div class="candidate-item animate-in" [style.animation-delay]="i * 0.1 + 's'" (click)="openVoteSheet(player)">
+              <div class="player-rank">#{{ i + 1 }}</div>
+              
+              <div class="player-avatar">
+                <img *ngIf="player.photoUrl" [src]="player.photoUrl">
+                <mat-icon *ngIf="!player.photoUrl">person</mat-icon>
+              </div>
+              
+              <div class="player-info">
+                <span class="player-name">{{ player.prenom }} {{ player.nom }}</span>
+                <div class="player-stats">
+                  <span>⚽ <strong>{{ player.buts }}</strong></span>
+                  <span>👟 <strong>{{ player.passes }}</strong></span>
+                  <span>⭐ <strong>{{ player.motm }}</strong></span>
+                </div>
+              </div>
+              
+              <div class="vote-action">
+                <mat-icon>how_to_vote</mat-icon>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

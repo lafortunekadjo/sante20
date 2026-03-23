@@ -35,6 +35,7 @@ import { PresenceService } from '../../../../core/services/presence.service';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
 import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
+import { MvpVoteCardComponent } from '../mvp-vote-card/mvp-vote-card.component';
 
 // // Interface Exercice
 // interface Exercice {
@@ -57,7 +58,7 @@ import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/public
     MatProgressSpinnerModule,
     MatIconModule,
     MatTooltipModule,
-   
+   MvpVoteCardComponent,
     MatMenuModule,
     TranslateModule,
      PubliciteBannerComponent,
