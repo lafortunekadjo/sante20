@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { JoueurInviteRequest, PublicInvitationResponse, MatchInvitationService, SubmitPlayersRequest } from '../../../core/services/match-invitation.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 interface JoueurForm extends JoueurInviteRequest {
@@ -33,7 +34,8 @@ interface JoueurForm extends JoueurInviteRequest {
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    DragDropModule
+    DragDropModule,
+    TranslateModule
   ],
   templateUrl: './public-match-invite.component.html',
   styleUrls: ['./public-match-invite.component.scss'],
@@ -67,6 +69,9 @@ export class PublicMatchInviteComponent implements OnInit {
   isLoading = true;
   isSubmitting = false;
   isSubmitted = false;
+
+  logoPreview: string | null = null;
+  selectedLogoFile: File | null = null;
 
   invitation: PublicInvitationResponse | null = null;
 
@@ -107,7 +112,6 @@ export class PublicMatchInviteComponent implements OnInit {
       next: (response) => {
         this.invitation = response;
         this.isLoading = false;
-
         // Pré-remplir avec quelques joueurs vides si l'invitation est valide
         if (response.valide && !response.dejaSoumis) {
           this.initializeEmptyPlayers(response.minJoueurs || 7);
@@ -205,6 +209,7 @@ export class PublicMatchInviteComponent implements OnInit {
       nomEquipe: this.formData.nomEquipe.trim(),
       emailContact: this.formData.emailContact?.trim() || undefined,
       telephoneContact: this.formData.telephoneContact?.trim() || undefined,
+      logoAdversaire: this.logoPreview,
       joueurs: this.joueurs
         .filter(j => j.nom?.trim() && j.prenom?.trim())
         .map(j => ({
@@ -288,4 +293,22 @@ export class PublicMatchInviteComponent implements OnInit {
       panelClass: [panelClass]
     });
   }
+
+  // 2. Méthode pour gérer la sélection du fichier
+onLogoSelected(event: any): void {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) { // Limite 2Mo
+      this.showSnackbar('Le logo est trop lourd (max 2Mo)', 'error');
+      return;
+    }
+    
+    this.selectedLogoFile = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoPreview = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+}
 }

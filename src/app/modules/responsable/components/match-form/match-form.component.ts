@@ -47,6 +47,7 @@ import * as XLSX from 'xlsx';
 import { MatchEditDialogComponent } from '../match-edit-dialog/match-edit-dialog.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { Equipe } from '../../../../core/models/groupe.model copy';
+import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
 
 // Interface Exercice
 // interface Exercice {
@@ -151,6 +152,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   
   showCreateRow: boolean = false;
   isLoading: boolean = true;
+  isAmical: boolean = false;
   
   // Modèle de match pour création
   newMatch: Partial<Match> = this.getEmptyMatch();
@@ -174,6 +176,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // Pour le forfait
   equipesForForfait: string[] = [];
+  loading: boolean = false;
 
   constructor(
     private matchService: MatchService,
@@ -213,6 +216,26 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  openInvitationDialog(match: Match): void {
+  const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
+    width: '500px',
+    maxWidth: '95vw',
+    data: {
+      match: {
+        id: match.id,
+        dateMatch: match.dateMatch,
+        adversaire: match.groupeAdverse
+      }
+    }
+  });
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      // Invitation créée avec succès
+      // this.loadInvitations(); // Rafraîchir la liste
+    }
+  });
+}
 
   // ============ GESTION DES EXERCICES ============
 
@@ -395,6 +418,35 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // Vérification si le match peut être modifié (présences/médias)
+  canAccessMatchData(match: Match): boolean {
+    const matchDate = new Date(match.dateMatch);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    matchDate.setHours(0, 0, 0, 0);
+    return matchDate <= today;
+    
+  }
+
+  openMediaDialog(match: Match) {
+    if (!this.canAccessMatchData(match)) {
+      alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(MediaUploadDialogComponent, {
+      width: '90vw',
+      maxWidth: '900px',
+      data: { matchId: match.id },
+      panelClass: 'media-dialog-container'
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadData();
+      }
+    });
+  }
   // ============ NOMS DES ÉQUIPES ============
 
   getEquipeNames(match: any): [string, string] {
@@ -838,6 +890,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       payload.sourceAdversaire = this.selectedSourceAdversaire;
       if (this.selectedSourceAdversaire === 'GROUPE_EXISTANT') {
         payload.groupeAdverseId = this.newMatch.groupeAdverse?.id;
+        payload.adversaire = this.newMatch.groupeAdverse?.abreviation;
       } else {
         payload.nomAdversaireManuel = this.newMatch.nomAdversaireManuel;
       }
@@ -1161,6 +1214,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
           this.newMatch.equipe2?.nom || ''
         ];
       case 'AMICAL':
+        this.isAmical = true
         const local = this.groupes?.abreviation || this.groupes?.nom || 'Locale';
         let adverse = '';
         if (this.newMatch.groupeAdverse) {
@@ -1206,6 +1260,33 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       return false;
     }
   }
+
+  generateMatchPoster(match: Match): void {
+  if (!match.id) return;
+
+  // Optionnel : un petit indicateur de chargement global ou sur le bouton
+  this.loading = true; 
+
+  this.matchService.generatePoster(match.id).subscribe({
+    next: (blob: Blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      // Nom du fichier : Match_EquipeA_vs_EquipeB.png
+      const fileName = `Affiche_${match.groupeAdverse?.nom?.replace(/\s+/g, '_') || 'Match'}.png`;
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.loading = false;
+      this.snackBar.open('Affiche générée avec succès ! ⚽', 'OK', { duration: 3000 });
+    },
+    error: (err) => {
+      this.loading = false;
+      this.snackBar.open('Erreur lors de la génération de l\'affiche', 'Fermer', { duration: 3000 });
+      console.error(err);
+    }
+  });
+}
 
   // isCreateFormValid(): boolean {
   //   if (!this.newMatch.typeMatch || !this.isDateValid(this.newMatch.dateMatch)) {

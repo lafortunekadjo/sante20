@@ -27,6 +27,11 @@ export class MatchService {
   return this.http.get<Match[]>(`${environment.apiUrl}/matchs/by-date-range`, { params });
 }
 
+  generatePoster(matchId: number): Observable<Blob> {
+    // Appel au endpoint backend qui utilise ImageGeneratorService
+    return this.http.get(`${environment.apiUrl}/matches/${matchId}/poster`, { responseType: 'blob' });
+  }
+
 /**
  * Récupère les matchs pour un exercice spécifique
  * 

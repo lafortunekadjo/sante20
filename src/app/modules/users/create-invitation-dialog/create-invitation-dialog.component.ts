@@ -62,7 +62,7 @@ export class CreateInvitationDialogComponent {
   formData: CreateInvitationRequest = {
     matchId: 0,
     minJoueurs: 7,
-    maxJoueurs: 25,
+    maxJoueurs: 50,
     message: '',
     joursValidite: 7
   };

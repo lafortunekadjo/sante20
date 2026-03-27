@@ -25,6 +25,10 @@ export class AuditService {
     return this.http.get<AuditDto[]>(`${this.API_URL}/mouvements`);
   }
 
+    getAllAudit(): Observable<AuditDto[]> {
+    return this.http.get<AuditDto[]>(`${this.API_URL}/all`);
+  }
+
   // Récupère la version précédente pour faire un comparatif
   getPreviousVersion(entityId: number, revisionId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/mouvements/${entityId}/diff/${revisionId}`);

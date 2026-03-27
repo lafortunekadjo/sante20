@@ -45,7 +45,7 @@ export class AuditListComponent implements OnInit {
   ngOnInit(): void { this.loadAuditLogs(); }
 
   loadAuditLogs(): void {
-    this.auditService.getMouvementsAudit().subscribe(data => {
+    this.auditService.getAllAudit().subscribe(data => {
       this.dataSource.data = data;
       this.dataSource.paginator = this.paginator;
       this.dataSource.sort = this.sort;

@@ -26,6 +26,7 @@ export interface InvitationCreatedResponse {
 
 export interface SubmitPlayersRequest {
   nomEquipe: string;
+  logoAdversaire?: string | null;
   emailContact?: string;
   telephoneContact?: string;
   joueurs: JoueurInviteRequest[];

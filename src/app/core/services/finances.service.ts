@@ -459,6 +459,14 @@ export class FinancesService {
     return this.http.put<TypeContribution>(`${this.baseUrl}/types-contributions/${id}`, data);
   }
 
+patchStatus(id: number | string, isActive: boolean): Observable<any> {
+    // On envoie un objet partiel contenant uniquement la clé à modifier
+    const payload = { isActive: isActive };
+    
+    return this.http.patch<any>(`${this.baseUrl}/types-contributions/${id}/status`, payload);
+  }
+
+
   /**
    * DELETE /api/types-contributions/{id}
    * Désactiver un type de contribution

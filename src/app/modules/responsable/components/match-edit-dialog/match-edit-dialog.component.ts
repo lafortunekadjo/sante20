@@ -1312,6 +1312,7 @@ export class MatchEditDialogComponent implements OnInit {
       payload.sourceAdversaire = this.selectedSourceAdversaire;
       if (this.selectedSourceAdversaire === 'GROUPE_EXISTANT') {
         payload.groupeAdverseId = this.selectedGroupeAdverseId;
+        payload.adversaire = this.editMatch.groupeAdverse?.abreviation;
       } else {
         payload.nomAdversaireManuel = this.editMatch.nomAdversaireManuel;
       }

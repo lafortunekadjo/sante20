@@ -1,4 +1,4 @@
-// presence-form.component.ts - Version avec support matchs amicaux inter-groupes
+// presence-form.component.ts - isAmicalWithPlatformGroupersion avec support matchs amicaux inter-groupes
 
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
@@ -398,6 +398,7 @@ private darkenColor(rgb: number[], factor: number): number[] {
         ];
 
       case 'AMICAL':
+        console.log(match)
         const localeName = this.groupeActif?.abreviation || this.groupeActif?.nom || 'Locale';
         let adversaireName = 'Adverse';
         

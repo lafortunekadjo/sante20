@@ -36,54 +36,36 @@
         <ng-container *ngIf="!isLoadingMenus">
          
           <!-- Section: Menus Communs -->
-          <div class="nav-section" *ngIf="menusCommuns.length > 0 && !isPartenaire">
-            
-            <div class="section-title">
-              <mat-icon>home</mat-icon>
-              <span>{{ 'nav.mainMenu' | translate }}</span>
-            </div>
+         <div class="nav-section" *ngIf="menusCommuns.length > 0 && !isPartenaire">
+  <div class="section-title">
+    <mat-icon>home</mat-icon>
+    <span>{{ 'nav.mainMenu' | translate }}</span>
+  </div>
 
-            <!-- Lien Accueil - toujours visible -->
-            <a 
-              routerLink="/home" 
-              routerLinkActive="active"
-              (click)="onNavClick('home')"
-              class="nav-item">
-              <mat-icon>home</mat-icon>
-              <span>{{ 'admin.home' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
+  <a routerLink="/home" routerLinkActive="active" class="nav-item">
+    <mat-icon>home</mat-icon>
+    <span>{{ 'admin.home' | translate }}</span>
+    <div class="nav-indicator"></div>
+  </a>
 
-         <a *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
-          [routerLink]="menu.route" 
-          routerLinkActive="active"
-          (click)="onNavClick(menu.code)"
-          class="nav-item"
-          [class.onboarding-highlight]="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE' && !isAdmin"
-          [matTooltip]="menu.description">
-          
-          <mat-icon>{{ menu.icone }}</mat-icon>
-          <span>{{ menu.label }}</span>
-          <div class="nav-indicator"></div>
+  <a *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
+     [routerLink]="menu.route" 
+     routerLinkActive="active"
+     (click)="onNavClick(menu.code)"
+     class="nav-item"
+     [matTooltip]="'menu.descriptions.' + menu.code | translate">
+     
+    <mat-icon>{{ menu.icone }}</mat-icon>
+    
+    <span>{{ 'menu.items.' + menu.code | translate }}</span>
+    
+    <div class="nav-indicator"></div>
 
-          <div class="onboarding-tooltip right-side" 
-              *ngIf="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE' && !isAdmin">
-            
-            <button type="button" class="close-onboarding" (click)="stopOnboarding($event)">
-              <mat-icon>close</mat-icon>
-            </button>
-
-            <div class="tooltip-content">
-              <p>🏆 <b>Dernière étape !</b> Créez votre groupe pour débloquer toutes les fonctionnalités (Matchs, Trésorerie, etc.).</p>
-              
-              <button type="button" class="btn-got-it" (click)="stopOnboarding($event)">
-                J'ai compris
-              </button>
-            </div>
-          </div>
-        </a>
-
-          </div>
+    <div class="onboarding-tooltip right-side" 
+         *ngIf="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE' && !isAdmin">
+       </div>
+  </a>
+</div>
 
           <!-- Section: Administration -->
           <div class="nav-section" *ngIf="isAdmin">
@@ -213,40 +195,44 @@
 
           <!-- Section: Menus Responsable (seulement si a un groupe) -->
           <div *ngIf="isResponsable && userHasGroup">
-           
-            <!-- Menus dynamiques par catégorie -->
-            <div class="nav-section" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
-              <div class="section-divider"></div>
-              <div class="section-title category-section">
-                <mat-icon>{{ categorie.icone }}</mat-icon>
-                <span>{{ categorie.label }}</span>
-              </div>
+  
+  <div class="nav-section" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
+    <div class="section-divider"></div>
+    
+    <div class="section-title category-section">
+      <mat-icon>{{ categorie.icone }}</mat-icon>
+      <span>{{ 'menu.categories.' + categorie.code | translate }}</span>
+    </div>
 
-              <!-- Menus de la catégorie -->
-              <a 
-                *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
-                [routerLink]="menu.route" 
-                routerLinkActive="active"
-                (click)="onNavClick(menu.code)"
-                class="nav-item category-item"
-                [matTooltip]="menu.description"
-                matTooltipPosition="right"
-                matTooltipShowDelay="500">
-                <mat-icon>{{ menu.icone }}</mat-icon>
-                <span>{{ menu.label }}</span>
-                <div class="nav-indicator"></div>
-              </a>
-            </div>
+    <a 
+      *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
+      [routerLink]="menu.route" 
+      routerLinkActive="active"
+      (click)="onNavClick(menu.code)"
+      class="nav-item category-item"
+      [matTooltip]="'menu.descriptions.' + menu.code | translate"
+      matTooltipPosition="right">
+      
+      <mat-icon>{{ menu.icone }}</mat-icon>
+      
+      <span>
+        {{ ('menu.items.' + menu.code | translate) !== ('menu.items.' + menu.code) 
+           ? ('menu.items.' + menu.code | translate) 
+           : menu.label }}
+      </span>
+      
+      <div class="nav-indicator"></div>
+    </a>
+  </div>
 
-            <!-- Message si pas de groupe sélectionné -->
-            <div *ngIf="!currentGroupeId" class="no-groupe-message">
-              <mat-icon>info_outline</mat-icon>
-              <div class="message-content">
-                <h4>Sélectionnez un groupe</h4>
-                <p>Sélectionnez un groupe pour accéder aux fonctionnalités</p>
-              </div>
-            </div>
-          </div>
+  <div *ngIf="!currentGroupeId" class="no-groupe-message">
+    <mat-icon>info_outline</mat-icon>
+    <div class="message-content">
+      <h4>{{ 'menu.messages.select_group_title' | translate }}</h4>
+      <p>{{ 'menu.messages.select_group_text' | translate }}</p>
+    </div>
+  </div>
+</div>
 
           <!-- Message si l'utilisateur n'a pas de groupe -->
           <div *ngIf="!userHasGroup && !isAdmin" class="no-groupe-message info-box">

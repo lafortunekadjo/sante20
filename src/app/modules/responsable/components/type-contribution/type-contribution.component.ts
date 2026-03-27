@@ -1,5 +1,5 @@
 // type-contribution.component.ts
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -65,11 +65,13 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 export class TypeContributionComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  private translate = inject(TranslateService);
 
   isLoading = true;
   isSaving = false;
   showCreateForm = false;
   editingId: number | null = null;
+  isLoadingToggle = false;
 
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
@@ -141,6 +143,30 @@ export class TypeContributionComponent implements OnInit {
       delai: []
     });
   }
+
+toggleStatus(entity: any): void {
+  if (this.isLoadingToggle) return;
+
+  this.isLoadingToggle = true;
+  const nouveauStatut = !entity.isActive; // Inversion du booléen
+
+  // Remplacez 'monService.update' par votre service réel (GroupeService, MembreService, etc.)
+  this.financesService.patchStatus(entity.id, nouveauStatut).subscribe({
+    next: () => {
+      entity.isActive = nouveauStatut;
+      this.isLoadingToggle = false;
+      
+      const msg = this.translate.instant('common.messages.update_success');
+      this.snackBar.open(msg, 'OK', { duration: 3000 });
+    },
+    error: (err) => {
+      this.isLoadingToggle = false;
+      const msg = this.translate.instant('common.messages.update_error');
+      this.snackBar.open(msg, 'Fermer', { panelClass: ['error-snackbar'] });
+      console.error('Erreur de bascule statut:', err);
+    }
+  });
+}
 
   loadData(): void {
     if (!this.groupeId) return;

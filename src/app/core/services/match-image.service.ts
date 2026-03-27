@@ -6,6 +6,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -85,6 +86,11 @@ export class MatchImageService {
     }
   });
 }
+
+  generatePoster(matchId: number): Observable<Blob> {
+    // Appel au endpoint backend qui utilise ImageGeneratorService
+    return this.http.get(`/api/matches/${matchId}/poster`, { responseType: 'blob' });
+  }
   /**
    * Partager l'image (mobile)
    */
