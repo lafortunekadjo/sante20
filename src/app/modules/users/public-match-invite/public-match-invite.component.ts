@@ -112,6 +112,10 @@ export class PublicMatchInviteComponent implements OnInit {
       next: (response) => {
         this.invitation = response;
         this.isLoading = false;
+        console.log(response)
+        if (response.valide && response.nom) {
+        this.formData.nomEquipe = response.nom;
+      }
         // Pré-remplir avec quelques joueurs vides si l'invitation est valide
         if (response.valide && !response.dejaSoumis) {
           this.initializeEmptyPlayers(response.minJoueurs || 7);

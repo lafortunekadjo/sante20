@@ -51,7 +51,7 @@ export interface PublicInvitationResponse {
   maxJoueurs?: number;
   dateExpiration?: string;
   dejaSoumis?: boolean;
-  nomEquipeSoumise?: string;
+  nom?: string;
   nombreJoueursSoumis?: number;
 }
 
