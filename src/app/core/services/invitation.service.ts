@@ -310,6 +310,11 @@ export class InvitationService {
     return this.http.get<boolean>(`${this.apiUrl}/votes/check/${groupeId}/${membreId}`);
   }
 
+  verifierVoteur(groupeId: number|null, membreId: number | null): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/votes/check/eligible/${groupeId}/${membreId}`);
+  }
+
+
   soumettreVote(voteData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/votes/soumettre`, voteData);
   }

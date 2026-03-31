@@ -82,6 +82,7 @@ import { AdminStatsComponent } from "./modules/partenaire/admin-stats/admin-stat
 import { AdminPubliciteDetailComponent } from "./modules/partenaire/admin-publicite-detail/admin-publicite-detail.component";
 import { AdminPartenaireDashboardComponent } from "./modules/partenaire/admin-partenaire-dashboard/admin-partenaire-dashboard.component";
 import { AuditListComponent } from "./modules/responsable/components/audit-list/audit-list.component";
+import { MvpVoteComponent } from "./modules/membre/components/mvp-vote/mvp-vote.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -344,6 +345,10 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: MDashboardComponent
+          },
+           {
+            path: 'vote',
+            component: MvpVoteComponent
           },
           {
             path: '',
