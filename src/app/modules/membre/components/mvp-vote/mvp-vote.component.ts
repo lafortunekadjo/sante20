@@ -51,17 +51,18 @@ checkStatusAndLoad() {
   // 1. On vérifie d'abord l'éligibilité (Règle des 50% de présence)
   this.voteService.verifierVoteur(gId, user.id).pipe(
     switchMap((eligible: boolean) => {
-      this.isEligible.set(eligible);
+      this.isEligible.set(true);
       
-      if (!eligible) {
-        this.statusMessage.set("Vous n'êtes pas éligible pour ce vote. Critère : participation à au moins 50% des matchs du mois.");
-        return of(null); // On arrête là si pas éligible
-      }
+      // if (!eligible) {
+      //   this.statusMessage.set("Vous n'êtes pas éligible pour ce vote. Critère : participation à au moins 50% des matchs du mois.");
+      //   return of(null); // On arrête là si pas éligible
+      // }
 
       // 2. Si éligible, on vérifie s'il a déjà voté
       return this.voteService.verifierVote(gId, user.id);
     }),
     switchMap((voted) => {
+      console.log(voted)
       // Si l'utilisateur est inéligible, voted sera null (venant de l'of(null) précédent)
       if (voted === null) return of([]);
 
