@@ -79,6 +79,7 @@ checkStatusAndLoad() {
     })
   ).subscribe({
     next: (players) => {
+      console.log(players)
       if (players && players.length > 0) {
         this.nomines.set(players);
       }
