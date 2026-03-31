@@ -44,6 +44,8 @@ checkStatusAndLoad() {
   const gId = this.authService.getGroupe();
 
   if (!user?.id || !gId) {
+    console.log(user)
+    console.log(gId)
     this.isLoading.set(false);
     return;
   }
@@ -62,7 +64,7 @@ checkStatusAndLoad() {
       return this.voteService.verifierVote(gId, user.id);
     }),
     switchMap((voted) => {
-      console.log(voted)
+      console.log("peux voter" + voted)
       // Si l'utilisateur est inéligible, voted sera null (venant de l'of(null) précédent)
       if (voted === null) return of([]);
 
