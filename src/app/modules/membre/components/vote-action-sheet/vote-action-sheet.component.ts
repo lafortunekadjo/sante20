@@ -81,6 +81,7 @@ export class VoteActionSheetComponent {
 
     this.voteService.soumettreVote(payload).subscribe({
       next: () => {
+        console.log("vote soumis")
         this.sheetRef.dismiss({ success: true });
       },
       error: (err) => {

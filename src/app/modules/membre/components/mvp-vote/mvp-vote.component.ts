@@ -40,38 +40,57 @@ export class MvpVoteComponent implements OnInit {
 statusMessage = signal<string>('');
 
 checkStatusAndLoad() {
-    const userId = this.authService.getUserId();
-    const groupeId = this.authService.getGroupe();
-    // Sécurité : Seul un user connecté peut voter
-    if (!userId) {
-      this.isLoading.set(false);
-      return; 
-    }
+  const user = this.authService.getUser();
+  const gId = this.authService.getGroupe();
 
-    // 1. Vérifier si l'utilisateur a déjà voté ce mois-ci
-    this.voteService.verifierVote(groupeId, userId).subscribe({
-      
-      next: (voted: boolean) => {
-        console.log(voted)
-        this.hasVoted.set(voted);
-        
-        // 2. Si non voté, charger les nomines (Top 3 calculé par le backend)
-        if (!voted) {
-          this.voteService.getnomines(groupeId).subscribe({
-            next: (players) => {
-              console.log(players)
-              this.nomines.set(players);
-              this.isLoading.set(false);
-            },
-            error: () => this.isLoading.set(false)
-          });
-        } else {
-          this.isLoading.set(false);
-        }
-      },
-      error: () => this.isLoading.set(false)
-    });
+  if (!user?.userId || !gId) {
+    console.log(user)
+    console.log(gId)
+    this.isLoading.set(false);
+    return;
   }
+
+  // 1. On vérifie d'abord l'éligibilité (Règle des 50% de présence)
+  this.voteService.verifierVoteur(gId, user.userId).pipe(
+    switchMap((eligible: boolean) => {
+      this.isEligible.set(eligible);
+      console.log("peux voter" + this.isEligible)
+      if (!this.isEligible) {
+        this.statusMessage.set("Vous n'êtes pas éligible pour ce vote. Critère : participation à au moins 50% des matchs du mois.");
+        return of(null); // On arrête là si pas éligible
+      }
+
+      // 2. Si éligible, on vérifie s'il a déjà voté
+      return this.voteService.verifierVote(gId, user.userId);
+    }),
+    switchMap((voted) => {
+      console.log("peux voter" + voted)
+      // Si l'utilisateur est inéligible, voted sera null (venant de l'of(null) précédent)
+      if (voted === null) return of([]);
+
+      this.hasVoted.set(voted);
+      if (voted) {
+        this.statusMessage.set("Vous avez déjà enregistré votre vote pour ce mois.");
+        return of([]);
+      }
+
+      // 3. Éligible et n'a pas voté : on charge les nominés
+      return this.voteService.getnomines(gId);
+    })
+  ).subscribe({
+    next: (players) => {
+      console.log(players)
+      if (players && players.length > 0) {
+        this.nomines.set(players);
+      }
+      this.isLoading.set(false);
+    },
+    error: () => {
+      this.statusMessage.set("Erreur lors de la vérification de vos droits de vote.");
+      this.isLoading.set(false);
+    }
+  });
+}
   openVoteSheet(player: any) {
     const sheetRef = this.bottomSheet.open(VoteActionSheetComponent, {
       data: { player, groupeId: this.authService.getGroupe() }
