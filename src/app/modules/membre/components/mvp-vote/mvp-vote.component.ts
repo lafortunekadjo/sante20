@@ -44,49 +44,38 @@ checkStatusAndLoad() {
   const gId = this.authService.getGroupe();
 
   if (!user?.userId || !gId) {
-    console.log(user)
-    console.log(gId)
     this.isLoading.set(false);
     return;
   }
 
-  // 1. On vérifie d'abord l'éligibilité (Règle des 50% de présence)
+  // 1. Vérification de l'éligibilité (Règle des 50% de présence)
   this.voteService.verifierVoteur(gId, user.userId).pipe(
     switchMap((eligible: boolean) => {
       this.isEligible.set(eligible);
-      console.log("peux voter" + this.isEligible)
-      if (!this.isEligible) {
-        this.statusMessage.set("Vous n'êtes pas éligible pour ce vote. Critère : participation à au moins 50% des matchs du mois.");
-        return of(null); // On arrête là si pas éligible
-      }
-
-      // 2. Si éligible, on vérifie s'il a déjà voté
+      
+      // 2. Vérification si l'utilisateur a déjà voté
+      // On continue le flux même si non éligible pour charger les résultats
       return this.voteService.verifierVote(gId, user.userId);
     }),
     switchMap((voted) => {
-      console.log("peux voter" + voted)
-      // Si l'utilisateur est inéligible, voted sera null (venant de l'of(null) précédent)
-      if (voted === null) return of([]);
+      // On met à jour le signal du vote
+      this.hasVoted.set(voted === true);
 
-      this.hasVoted.set(voted);
-      if (voted) {
-        this.statusMessage.set("Vous avez déjà enregistré votre vote pour ce mois.");
-        return of([]);
-      }
-
-      // 3. Éligible et n'a pas voté : on charge les nominés
+      // 3. Chargement systématique des nominés
+      // Cela permet d'afficher les votesCount pour le mode "Tendances"
       return this.voteService.getnomines(gId);
     })
   ).subscribe({
     next: (players) => {
-      console.log(players)
       if (players && players.length > 0) {
+        // Met à jour la liste des nominés (incluant les votesCount du backend)
         this.nomines.set(players);
       }
       this.isLoading.set(false);
     },
-    error: () => {
-      this.statusMessage.set("Erreur lors de la vérification de vos droits de vote.");
+    error: (err) => {
+      console.error("Erreur My2-0:", err);
+      this.statusMessage.set("Erreur lors de la récupération des données de vote.");
       this.isLoading.set(false);
     }
   });
@@ -106,4 +95,27 @@ checkStatusAndLoad() {
       }
     });
   }
+
+  // À ajouter dans la classe MvpVoteComponent
+calculatePercentage(votes: number): number {
+  if (!this.nomines() || this.nomines().length === 0) return 0;
+  
+  // On trouve le maximum de votes parmi les nominés pour définir l'échelle
+  const maxVotes = Math.max(...this.nomines().map(p => p.votesCount || 0));
+  
+  if (maxVotes === 0) return 0;
+  return (votes / maxVotes) * 100;
+}
+
+getInitials(prenom: string, nom: string): string {
+  const p = prenom ? prenom.charAt(0).toUpperCase() : '';
+  const n = nom ? nom.charAt(0).toUpperCase() : '';
+  return p + n;
+}
+
+// Génère une couleur de fond stable basée sur l'ID du joueur
+getAvatarColor(playerId: number): string {
+  const colors = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa'];
+  return colors[playerId % colors.length];
+}
 }

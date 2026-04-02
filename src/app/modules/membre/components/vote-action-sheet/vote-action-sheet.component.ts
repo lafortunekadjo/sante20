@@ -49,12 +49,51 @@ import { InvitationService } from '../../../../core/services/invitation.service'
     </div>
   `,
   styles: [`
-    .vote-sheet { padding: 20px; font-family: 'Inter', sans-serif; }
-    .player-confirm { display: flex; align-items: center; gap: 10px; margin: 15px 0; padding: 10px; background: #f5f5f5; border-radius: 8px; }
-    .mini-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #ddd; display: flex; align-items: center; justify-content: center; img { width: 100%; height: 100%; object-fit: cover; } }
-    textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; height: 80px; margin-bottom: 5px; resize: none; }
-    .char-count { font-size: 10px; color: #888; display: block; text-align: right; }
-    .w-100 { width: 100%; }
+   :host { display: block; --bg-card: #ffffff; --text-main: #1a1a1a; --text-sub: #666; --border: #e2e8f0; --input-bg: #ffffff; }
+
+    /* Configuration Thème Sombre */
+    @media (prefers-color-scheme: dark) {
+      :host { --bg-card: #1e1e1e; --text-main: #f5f5f5; --text-sub: #a0aec0; --border: #333; --input-bg: #2d2d2d; }
+    }
+
+    .vote-sheet { 
+      padding: 24px; 
+      font-family: 'Poppins', sans-serif; 
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+
+    header h3 { margin: 0; color: var(--text-main); font-weight: 700; }
+    header p { color: var(--text-sub); font-size: 0.85rem; margin-bottom: 20px; }
+
+    .player-confirm { 
+      display: flex; align-items: center; gap: 15px; margin: 20px 0; padding: 12px; 
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; 
+    }
+
+    .mini-avatar { 
+      width: 50px; height: 50px; border-radius: 12px; overflow: hidden; 
+      background: #333; display: flex; align-items: center; justify-content: center; 
+      border: 2px solid var(--border);
+    }
+
+    textarea { 
+      width: 100%; border: 1.5px solid var(--border); border-radius: 12px; 
+      padding: 12px; height: 100px; margin-bottom: 5px; resize: none;
+      background: var(--input-bg); color: var(--text-main);
+    }
+
+    textarea:focus { outline: none; border-color: #3b82f6; }
+
+    .char-count { font-size: 11px; color: var(--text-sub); display: block; text-align: right; margin-bottom: 15px; }
+
+    .w-100 { 
+      width: 100%; height: 48px; border-radius: 12px !important; 
+      font-weight: 600 !important; text-transform: uppercase;
+    }
+  
   `]
 })
 export class VoteActionSheetComponent {
@@ -69,12 +108,12 @@ export class VoteActionSheetComponent {
 
   confirm() {
     const user = this.auth.getUser();
-    if (!user?.id) return;
-
+    if (!user?.userId) return;
+    console.log(this.data)
     this.loading = true;
     const payload = {
       groupeId: this.data.groupeId,
-      votantId: user.id,
+      votantId: user.userId,
       candidatId: this.data.player.id,
       commentaire: this.comment
     };

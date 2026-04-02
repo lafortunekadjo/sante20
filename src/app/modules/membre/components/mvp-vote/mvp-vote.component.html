@@ -15,21 +15,41 @@
   } 
   @else { 
 
-    @if (!isEligible()) {
-      <div class="status-card error-card animate-in">
-        <mat-icon>info</mat-icon>
-        <h3>{{ 'mvpVote.notEligibleTitle' | translate }}</h3>
-        <p>{{ 'mvpVote.notEligibleMsg' | translate }}</p>
-      </div>
-    }
+    @if (!isEligible() || hasVoted()) {
+      <div class="trends-container animate-in">
+        <div class="trends-header">
+          <mat-icon class="status-icon">{{ hasVoted() ? 'check_circle' : 'visibility' }}</mat-icon>
+          <h3>{{ 'mvpVote.trendsTitle' | translate }} - Mars 2026</h3>
+          <p class="status-subtitle">
+            {{ hasVoted() ? ('mvpVote.votedMsg' | translate) : ('mvpVote.notEligibleMsg' | translate) }}
+          </p>
+        </div>
 
-    @else if (hasVoted()) {
-      <div class="status-card success-card animate-in">
-        <mat-icon>check_circle</mat-icon>
-        <h3>{{ 'mvpVote.votedTitle' | translate }}</h3>
-        <p>{{ 'mvpVote.votedMsg' | translate }}</p>
-        <button mat-stroked-button color="primary" class="mt-3">
-          {{ 'mvpVote.viewLiveResults' | translate }}
+        <div class="trends-list">
+          @for (player of nomines(); track player.id; let i = $index) {
+            <div class="trend-item">
+              <div class="player-info">
+                <span class="rank-badge">#{{ i + 1 }}</span>
+                
+                <div class="mini-avatar-wrapper">
+                  <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="mini-img">
+                  <div *ngIf="!player.photoUrl" class="initials-avatar mini" [style.background-color]="getAvatarColor(player.id)">
+                    {{ getInitials(player.prenom, player.nom) }}
+                  </div>
+                </div>
+
+                <span class="name">{{ player.prenom }} {{ player.nom }}</span>
+                <span class="vote-count-label">{{ player.votesCount || 0 }} {{ 'mvpVote.votes' | translate }}</span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-fill" [style.width.%]="calculatePercentage(player.votesCount)"></div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <button mat-flat-button color="primary" (click)="checkStatusAndLoad()" class="refresh-btn w-100">
+          <mat-icon>refresh</mat-icon> {{ 'common.refresh' | translate }}
         </button>
       </div>
     }
@@ -44,7 +64,9 @@
               <div class="player-visual">
                 <div class="avatar-ring">
                   <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="player-img">
-                  <mat-icon *ngIf="!player.photoUrl">person</mat-icon>
+                  <div *ngIf="!player.photoUrl" class="initials-avatar" [style.background-color]="getAvatarColor(player.id)">
+                    {{ getInitials(player.prenom, player.nom) }}
+                  </div>
                 </div>
               </div>
 
@@ -66,6 +88,10 @@
                   <span class="icon">⭐</span>
                   <span class="val">{{ player.motm }}</span>
                 </div>
+                <div class="stat-item vote-count">
+                  <span class="icon">🗳️</span>
+                  <span class="val">{{ player.votesCount || 0 }}</span>
+                </div>
               </div>
 
               <button class="vote-btn-overlay">
@@ -77,5 +103,4 @@
       </div>
     }
   }
-  
 </div>

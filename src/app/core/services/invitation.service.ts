@@ -318,7 +318,24 @@ export class InvitationService {
   soumettreVote(voteData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/votes/soumettre`, voteData);
   }
+  
+  
 
+  getMvpWinner(groupeId: number, periode: string): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}/votes/winner/${groupeId}?periode=${periode}`);
+ }
+
+  // invitation.service.ts
+
+/**
+ * Récupère l'image générée du MVP sous forme de Blob (binaire)
+ */
+getMvpWinnerImage(groupeId: number, periode: string): Observable<Blob> {
+  return this.http.get(`${this.apiUrl}/votes/image/winner/${groupeId}`, {
+    params: { periode: periode },
+    responseType: 'blob' // Important pour les images
+  });
+}
   /**
    * Générer le lien WhatsApp
    */
