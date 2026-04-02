@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -39,6 +39,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder, 
     private authService: AuthService, 
+    private route: ActivatedRoute,
     private router: Router, 
     private dialog: MatDialog
   ) {
@@ -131,33 +132,35 @@ export class LoginComponent implements OnInit {
   /**
    * Redirige l'utilisateur selon son rôle
    */
-  private redirectBasedOnRole(): void {
+ private redirectBasedOnRole(): void {
+    // 1. Récupérer l'URL de retour depuis les paramètres de la route
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
     const roles = this.authService.getRoles();
-    console.log('Rôles de l\'utilisateur:', roles);
 
     this.isLoading = false;
 
-    // Hiérarchie de redirection basée sur les rôles
+    // 2. Si une URL de retour existe, on y va directement
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
+    // 3. Sinon, logique par défaut basée sur les rôles
     if (roles.includes('ADMIN')) {
       this.router.navigate(['/admin']);
     } else if (roles.includes('RESPONSABLE')) {
       this.router.navigate(['/responsable']);
     } else if (roles.includes('MEMBRE')) {
-      console.log('Connexion réussie pour le membre');
       this.router.navigate(['/membre2']);
     } else if (roles.includes('CANDIDAT')) {
-      console.log('Connexion réussie pour le membre');
       this.router.navigate(['/explorer']);
     } else if (roles.includes('PARTENAIRE')) {
        this.router.navigate(['/partenaire/dashboard']);
     } else {
-      // Aucun rôle reconnu - retour à la connexion
-      console.warn('Aucun rôle valide trouvé');
       this.authService.logout();
-      this.setErrorMessage('Compte non autorisé. Contactez l\'administrateur.');
+      this.setErrorMessage('Compte non autorisé.');
     }
-  }
-
+}
   /**
    * Gère les erreurs de connexion
    */
