@@ -51,7 +51,7 @@ export class UserService {
 
 
 
-  updateUser(id: number, user: User): Observable<User> {
+  updateUser(id: number, user: any): Observable<User> {
     return this.http.put<User>(`${environment.apiUrl}/user/update/${id}`, user).pipe(
       catchError(err => {
         console.error('Erreur lors de la mise à jour de l’utilisateur:', err);
