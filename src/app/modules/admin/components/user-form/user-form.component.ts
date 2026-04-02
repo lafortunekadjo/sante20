@@ -606,6 +606,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
           ? { id: this.editUser.groupe.id } 
           : this.editUser.groupe ? { id: this.editUser.groupe } : null
       };
+      console.log(userData)
 
       this.adminService.updateUser(this.editUser.id, userData)
         .pipe(takeUntil(this.destroy$))
