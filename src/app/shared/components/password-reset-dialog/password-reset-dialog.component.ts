@@ -15,6 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-password-reset-dialog',
@@ -32,6 +33,7 @@ import { Router } from '@angular/router';
       MatProgressSpinnerModule,
       MatDialogModule,
       FormsModule, 
+      TranslateModule,
       ReactiveFormsModule],
   templateUrl: './password-reset-dialog.component.html',
   styleUrl: './password-reset-dialog.component.scss'
@@ -39,6 +41,9 @@ import { Router } from '@angular/router';
 export class PasswordResetDialogComponent {
    passwordForm: FormGroup;
   errorMessage: string = '';
+  hideOld = true;
+  hideNew = true;
+  hideConfirm = true;
 
   constructor(
     public dialogRef: MatDialogRef<PasswordResetDialogComponent>,
