@@ -78,7 +78,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   isLoading: boolean = true;
   currentEvents: Evenement[] = [];
   recentMatches: Match[] = [];
-  ongoingContributions: { contribution: TypeContribution; individuelles: MouvementCaisse[] }[] = [];
+  ongoingContributions: { contribution: TypeContribution; individuelles: any[] }[] = [];
   upcomingBirthdays: { membre: Membre; date: Date }[] = [];
   groupAnnouncements: Announcement[] = [];
   topScorers: { membre: Membre; buts: number }[] = [];
@@ -91,6 +91,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   allPresences: Presence[] = [];
   showAllMatches: boolean = false;
   allMatches: Match[] = [];
+  allMembresValue: Membre[]=[]
   
   // Groupe actif pour les matchs amicaux
   groupeActif: Groupe | null = null;
@@ -210,7 +211,6 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   getEquipeNames(match: any): [string, string] {
     if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
-
     switch (match.typeMatch) {
       case 'INTERNE':
       case 'DUEL':
@@ -225,8 +225,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         
         if (match.groupeAdverse) {
           adversaireName = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
-        } else if (match.nomAdversaireManuel) {
-          adversaireName = match.nomAdversaireManuel;
+        } else if (match.equipe2Nom) {
+          adversaireName = match.equipe2Nom;
         }
         
         return [localeName, adversaireName];
@@ -243,6 +243,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   getMatchTitle(match: Match): string {
     if (!match || !match.typeMatch) return 'Match';
+
+
 
     const [team1, team2] = this.getEquipeNames(match);
 
@@ -326,150 +328,172 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   // ===== CHARGEMENT DES DONNÉES (MODIFIÉ POUR EXERCICE) =====
   
-  loadFeedData(): void {
-    this.isLoading = true;
-this.ongoingContributions = [];
-    const mainData$ = forkJoin({
-      events: this.generalService.getAllEvenements(),
-      matches: this.matchService.getAllMatches(),
-      contributions: this.financeService.getTypesContributionByExercice(this.exerciceId),
-      membres: this.membreService.getAllMembres(),
-      presences: this.matchService.getAllPresences()
-    });
+ loadFeedData(): void {
+  this.isLoading = true;
+  this.ongoingContributions = [];
 
-    mainData$.pipe(
-      tap(({ presences }) => this.allPresences$.next(presences)),
+  const mainData$ = forkJoin({
+    events: this.generalService.getAllEvenements(),
+    matches: this.matchService.getAllMatches(),
+    contributions: this.financeService.getTypesContributionByExercice(this.exerciceId),
+    membres: this.membreService.getAllMembres(),
+    presences: this.matchService.getAllPresences()
+  });
 
-      map(({ events, matches, contributions, membres, presences }) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const typedMembres: Membre[] = membres;
-        const typedPresences: Presence[] = presences;
-        const typedContributions: TypeContribution[] = contributions;
-        
-        // ✅ FILTRER les événements par exercice en cours
-        this.currentEvents = events.filter(e => {
-          const eventDate = new Date(e.dateEvenement);
-          return e.estContributionOuverte && 
-                 eventDate <= today && 
-                 this.isDateInCurrentExercice(eventDate);
-        });
-        
-        // ✅ FILTRER les matchs par exercice en cours
-        this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
-        this.allMatches = matches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
+  mainData$.pipe(
+    // 1. Mise à jour des sujets et stockage local des membres pour getStaticMembreName
+    tap(({ presences, membres }) => {
+      this.allPresences$.next(presences);
+      // On s'assure que la liste des membres est disponible pour les fonctions synchrones
+      this.allMembresValue = membres; 
+    }),
 
-        const observables = typedContributions.filter(contrib => 
-          contrib.actif === true) 
-          .map(contrib => this.financeService.getHistoriqueContrib(contrib.id || 0).pipe( map(individuelles => ({
-             contribution: contrib, individuelles })) ) ); 
-             forkJoin(observables).subscribe(results => { this.ongoingContributions = results; });
+    // 2. Traitement des données et déclenchement des appels imbriqués pour les contributions
+    switchMap(({ events, matches, contributions, membres, presences }) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        
-        // Anniversaires (pas de filtre exercice - toujours pertinent)
-     // Anniversaires (les 10 prochains)
-          this.upcomingBirthdays = typedMembres
-              .filter(m => !!m.dateNaissance)
-              .map(m => {
-                  const birthDate = new Date(m.dateNaissance);
-                  const nextBirthDate = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-                  nextBirthDate.setHours(0, 0, 0, 0);
-                  
-                  // Si l'anniversaire est déjà passé cette année, on prend celui de l'année prochaine
-                  if (nextBirthDate < today) {
-                      nextBirthDate.setFullYear(today.getFullYear() + 1);
-                  }
-                  
-                  return { membre: m, date: nextBirthDate };
-              })
-              // On trie d'abord par date la plus proche
-              .sort((a, b) => a.date.getTime() - b.date.getTime())
-              // On ne garde que les 10 premiers de la liste triée
-              .slice(0, 10);
-        
-        this.groupAnnouncements = [];
-        
-        // ✅ CALCULER LES STATS UNIQUEMENT SUR L'EXERCICE EN COURS
-        const presencesExercice = typedPresences.filter(p => {
-          if (!p.match?.dateMatch) return false;
-          return this.isDateInCurrentExercice(p.match.dateMatch);
-        });
-        
-        const scorerMap = new Map<number, number>();
-        const passerMap = new Map<number, number>();
-        
-        presencesExercice.forEach(p => {
-          if (p.membre?.id) {
-            scorerMap.set(p.membre.id, (scorerMap.get(p.membre.id) || 0) + (p.buts || 0));
-            passerMap.set(p.membre.id, (passerMap.get(p.membre.id) || 0) + (p.passes || 0));
+      // --- FILTRAGE ÉVÉNEMENTS & MATCHS ---
+      this.currentEvents = events.filter(e => {
+        const eventDate = new Date(e.dateEvenement);
+        return e.estContributionOuverte && eventDate <= today && this.isDateInCurrentExercice(eventDate);
+      });
+
+      this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
+      this.allMatches = matches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
+
+      // --- ANNIVERSAIRES (Les 10 prochains) ---
+      this.upcomingBirthdays = membres
+        .filter(m => !!m.dateNaissance)
+        .map(m => {
+          const birthDate = new Date(m.dateNaissance);
+          let nextBirthDate = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+          if (nextBirthDate < today) nextBirthDate.setFullYear(today.getFullYear() + 1);
+          return { membre: m, date: nextBirthDate };
+        })
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .slice(0, 10);
+
+      // --- TOP SCORERS & PASSERS ---
+      const presencesExercice = presences.filter(p => p.match?.dateMatch && this.isDateInCurrentExercice(p.match.dateMatch));
+      this.calculateStats(presencesExercice, membres);
+
+      // --- GESTION DES CONTRIBUTIONS (Flux réactif propre) ---
+      const activeContribs = contributions.filter(c => c.actif === true);
+      
+      if (activeContribs.length === 0) {
+        return of({ recentMatches: this.recentMatches, contributions: [] });
+      }
+
+      const contribObservables = activeContribs.map(contrib => 
+        this.financeService.getHistoriqueContrib(contrib.id || 0).pipe(
+          map(individuelles => ({
+            contribution: contrib,
+            // ON MAPPE LE NOM ICI POUR ÉVITER LE BLANC DANS LE HTML
+            individuelles: individuelles.map(indiv => ({
+              ...indiv,
+              displayName: this.getStaticMembreName(indiv.membre)
+            }))
+          }))
+        )
+      );
+
+      return forkJoin(contribObservables).pipe(
+        map(results => ({ recentMatches: this.recentMatches, contributions: results }))
+      );
+    }),
+
+    // 3. Préchargement des médias après avoir récupéré les contributions
+    switchMap(({ recentMatches, contributions }) => {
+      this.ongoingContributions = contributions;
+      const token = this.authService.getToken();
+      
+      if (!token || !recentMatches.length) return of(null);
+
+      const mediaObservables: Observable<any>[] = [];
+      recentMatches.forEach(match => {
+        match.mediaUrls?.forEach(mediaUrl => {
+          if (!this.mediaBlobUrls[mediaUrl] && !this.mediaLoadingErrors[mediaUrl]) {
+            mediaObservables.push(this.preloadMedia(mediaUrl, token));
           }
         });
-        
-        this.topScorers = Array.from(scorerMap.entries())
-          .map(([id, buts]) => ({ membre: typedMembres.find(m => m.id === id)!, buts }))
-          .filter(s => s.membre && s.buts > 0)
-          .sort((a, b) => b.buts - a.buts)
-          .slice(0, 5);
-          
-        this.topPassers = Array.from(passerMap.entries())
-          .map(([id, passes]) => ({ membre: typedMembres.find(m => m.id === id)!, passes }))
-          .filter(p => p.membre && p.passes > 0)
-          .sort((a, b) => b.passes - a.passes)
-          .slice(0, 5);
+      });
 
-        return this.recentMatches;
-      }),
+      return mediaObservables.length > 0 ? forkJoin(mediaObservables).pipe(catchError(() => of(null))) : of(null);
+    }),
 
-      switchMap((recentMatches: Match[]) => {
-        const token = this.authService.getToken();
-        if (!token || !recentMatches.length) {
-          return of(null);
-        }
+    finalize(() => this.isLoading = false)
+  ).subscribe({
+    error: (err) => console.error('Erreur News Feed:', err)
+  });
+}
 
-        const mediaObservables: Observable<any>[] = [];
+// --- MÉTHODES UTILITAIRES ---
 
-        recentMatches.forEach(match => {
-          match.mediaUrls?.forEach(mediaUrl => {
-            const fullMediaUrl = `${mediaUrl}`;
+private calculateStats(presences: any[], membres: any[]): void {
+  // On change le type de scorerMap pour stocker un objet avec le détail
+  const scorerMap = new Map<number, { buts: number, penalti: number }>();
+  const passerMap = new Map<number, number>();
 
-            if (!this.mediaBlobUrls[fullMediaUrl] && !this.mediaLoadingErrors[fullMediaUrl]) {
-              const fetch$ = new Observable(observer => {
-                fetch(fullMediaUrl, {
-                  headers: { Authorization: `Bearer ${token}` }
-                })
-                .then(response => {
-                  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                  return response.blob();
-                })
-                .then(blob => {
-                  const contentType = blob.type || this.getMediaTypeFromUrl(mediaUrl);
-                  this.mediaBlobUrls[fullMediaUrl] = { url: window.URL.createObjectURL(blob), type: contentType };
-                  observer.next(null);
-                  observer.complete();
-                })
-                .catch(err => {
-                  console.error(`Erreur de préchargement pour ${fullMediaUrl}:`, err);
-                  this.mediaLoadingErrors[fullMediaUrl] = true;
-                  observer.next(null);
-                  observer.complete();
-                });
-              });
-              mediaObservables.push(fetch$);
-            }
-          });
-        });
+  presences.forEach(p => {
+    if (p.membre?.id) {
+      // --- Gestion des Buteurs ---
+      const currentStats = scorerMap.get(p.membre.id) || { buts: 0, penalti: 0 };
+      scorerMap.set(p.membre.id, {
+        buts: currentStats.buts + (p.buts || 0),
+        penalti: currentStats.penalti + (p.penalti || 0)
+      });
 
-        return mediaObservables.length > 0 ? forkJoin(mediaObservables).pipe(catchError(() => of(null))) : of(null);
-      }),
+      // --- Gestion des Passeurs ---
+      passerMap.set(p.membre.id, (passerMap.get(p.membre.id) || 0) + (p.passes || 0));
+    }
+  });
 
-      finalize(() => this.isLoading = false)
-      
-    ).subscribe({
-      error: (err) => {
-        console.error('Erreur globale lors du chargement du fil d\'actualités:', err);
-      }
-    });
-  }
+  // Transformation et Tri des Buteurs
+  this.topScorers = Array.from(scorerMap.entries())
+    .map(([id, stats]) => {
+      const membre = membres.find(m => m.id === id);
+      return {
+        membre: membre!,
+        buts: stats.buts + stats.penalti,
+        penalties: stats.penalti,
+        total: stats.buts + stats.penalti // Cumul pour le classement
+      };
+    })
+    .filter(s => s.membre && s.total > 0)
+    .sort((a, b) => b.total - a.total) // On trie par le total (buts + pen)
+    .slice(0, 5);
+
+  // Top Passeurs (inchangé)
+  this.topPassers = Array.from(passerMap.entries())
+    .map(([id, passes]) => ({ membre: membres.find(m => m.id === id)!, passes }))
+    .filter(p => p.membre && p.passes > 0)
+    .sort((a, b) => b.passes - a.passes)
+    .slice(0, 5);
+}
+
+private preloadMedia(url: string, token: string): Observable<any> {
+  return new Observable(observer => {
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.blob() : Promise.reject())
+      .then(blob => {
+        this.mediaBlobUrls[url] = { url: window.URL.createObjectURL(blob), type: blob.type };
+        observer.next(null);
+        observer.complete();
+      })
+      .catch(() => {
+        this.mediaLoadingErrors[url] = true;
+        observer.next(null);
+        observer.complete();
+      });
+  });
+}
+
+getStaticMembreName(membreObj: any): string {
+  const id = membreObj?.id || membreObj;
+  const m = this.allMembresValue?.find((member: any) => member.id === id);
+  return m ? `${m.prenom} ${m.nom}` : 'Membre inconnu';
+}
 
   // ===== MÉTHODE: Calcul du score =====
 
@@ -546,14 +570,6 @@ getHommeDuMatch(match: Match): string {
     : (found.membre ? `${found.membre.prenom} ${found.membre.nom}` : 'Inconnu');
 }
 
-  getMembreName(id: number): Observable<string> {
-    return this.allMembres$.pipe(
-      map(membres => {
-        const membre = membres.find(m => m.id === id);
-        return membre ? `${membre.prenom} ${membre.nom}` : 'Membre non trouvé';
-      })
-    );
-  }
 
   private getDisplayName(p: any): string {
   if (p.nomOccasionnel) return p.nomOccasionnel;
@@ -681,7 +697,7 @@ async openPresenceDialog(match: Match): Promise<void> {
   if (!match?.id) return [];
   
   try {
-    console.log(match)
+
     const presences = await lastValueFrom(this.presenceService.getPresencesByMatch(this.groupeActif?.id, match.id));
     return presences;
   } catch (error) {
