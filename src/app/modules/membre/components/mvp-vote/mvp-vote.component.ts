@@ -11,7 +11,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, switchMap } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 
 @Component({
@@ -39,43 +40,35 @@ export class MvpVoteComponent implements OnInit {
 // Définition d'un type pour la clarté du message
 statusMessage = signal<string>('');
 
-checkStatusAndLoad() {
+checkStatusAndLoad(): void {
   const user = this.authService.getUser();
   const gId = this.authService.getGroupe();
 
+  // 1. Sécurité : on s'assure que les IDs ne sont pas nuls
   if (!user?.userId || !gId) {
     this.isLoading.set(false);
     return;
   }
 
-  // 1. Vérification de l'éligibilité (Règle des 50% de présence)
-  this.voteService.verifierVoteur(gId, user.userId).pipe(
-    switchMap((eligible: boolean) => {
-      this.isEligible.set(eligible);
-      
-      // 2. Vérification si l'utilisateur a déjà voté
-      // On continue le flux même si non éligible pour charger les résultats
-      return this.voteService.verifierVote(gId, user.userId);
-    }),
-    switchMap((voted) => {
-      // On met à jour le signal du vote
-      this.hasVoted.set(voted === true);
+  this.isLoading.set(true);
 
-      // 3. Chargement systématique des nominés
-      // Cela permet d'afficher les votesCount pour le mode "Tendances"
-      return this.voteService.getnomines(gId);
-    })
-  ).subscribe({
-    next: (players) => {
-      if (players && players.length > 0) {
-        // Met à jour la liste des nominés (incluant les votesCount du backend)
-        this.nomines.set(players);
-      }
+  // 2. Création de l'objet de requêtes typé
+  const sources = {
+    eligible: this.voteService.verifierVoteur(gId, user.userId).pipe(catchError(() => of(false))),
+    voted: this.voteService.verifierVote(gId, user.userId).pipe(catchError(() => of(false))),
+    players: this.voteService.getnomines(gId).pipe(catchError(() => of([])))
+  };
+
+  // 3. Exécution avec forkJoin
+  forkJoin(sources).subscribe({
+    next: (res) => {
+      this.isEligible.set(res.eligible);
+      this.hasVoted.set(res.voted === true);
+      this.nomines.set(res.players || []);
       this.isLoading.set(false);
     },
     error: (err) => {
       console.error("Erreur My2-0:", err);
-      this.statusMessage.set("Erreur lors de la récupération des données de vote.");
       this.isLoading.set(false);
     }
   });
@@ -119,3 +112,5 @@ getAvatarColor(playerId: number): string {
   return colors[playerId % colors.length];
 }
 }
+
+

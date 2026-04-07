@@ -10,7 +10,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet.component';
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-mvp-vote-card',
@@ -57,26 +57,37 @@ export class MvpVoteCardComponent implements OnInit {
     this.currentMonthLabel.set(date.toLocaleDateString(this.translate.currentLang, { month: 'long', year: 'numeric' }));
   }
 
-  checkStatusAndLoad() {
-    const userId = this.authService.getUserId();
-    if (!userId) {
+  checkStatusAndLoad(): void {
+    const user = this.authService.getUser();
+    const gId = this.authService.getGroupe();
+  
+    // 1. Sécurité : on s'assure que les IDs ne sont pas nuls
+    if (!user?.userId || !gId) {
       this.isLoading.set(false);
       return;
     }
-
-    // Chargement parallèle de l'éligibilité, du statut de vote et des nominés
-    forkJoin({
-      eligible: this.voteService.verifierVoteur(this.groupeId, userId),
-      voted: this.voteService.verifierVote(this.groupeId, userId),
-      players: this.voteService.getnomines(this.groupeId)
-    }).subscribe({
+  
+    this.isLoading.set(true);
+  
+    // 2. Création de l'objet de requêtes typé
+    const sources = {
+      eligible: this.voteService.verifierVoteur(gId, user.userId).pipe(catchError(() => of(false))),
+      voted: this.voteService.verifierVote(gId, user.userId).pipe(catchError(() => of(false))),
+      players: this.voteService.getnomines(gId).pipe(catchError(() => of([])))
+    };
+  
+    // 3. Exécution avec forkJoin
+    forkJoin(sources).subscribe({
       next: (res) => {
         this.isEligible.set(res.eligible);
-        this.hasVoted.set(res.voted);
+        this.hasVoted.set(res.voted === true);
         this.nomines.set(res.players || []);
         this.isLoading.set(false);
       },
-      error: () => this.isLoading.set(false)
+      error: (err) => {
+        console.error("Erreur My2-0:", err);
+        this.isLoading.set(false);
+      }
     });
   }
 
