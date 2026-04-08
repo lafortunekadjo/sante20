@@ -47,6 +47,7 @@ export interface Stats {
     teamName: string;
     totalGoals: number;               // 🔧 CHANGÉ: totalGoals au lieu de avgGoals
     playersCount: number;
+    played: number;
   }>;
 
   // 🏆 Classements individuels
