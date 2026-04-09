@@ -41,6 +41,7 @@ export interface Stats {
   participationRate?: number;
   bestPerformingTeam?: string;
   bestTeamTotalGoals?: number;        // 🔧 CHANGÉ: totalGoals au lieu de avgGoals
+  contributionCount?:number;
   
   // 🏅 Comparaison des équipes
   teamComparison?: Array<{
