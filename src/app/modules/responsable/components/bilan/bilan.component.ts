@@ -23,6 +23,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 // Interfaces
 interface Exercice {
@@ -109,7 +110,8 @@ interface StatistiquesBilan {
     MatTabsModule,
     MatDividerModule,
     MatTooltipModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    TranslateModule
   ],
   templateUrl: './bilan.component.html',
   styleUrls: ['./bilan.component.scss']

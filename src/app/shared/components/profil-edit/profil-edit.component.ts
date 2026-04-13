@@ -24,6 +24,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatStepperModule } from '@angular/material/stepper';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-profil-edit',
@@ -48,7 +49,8 @@ import { MatStepperModule } from '@angular/material/stepper';
     MatNativeDateModule,
     MatDividerModule,
     MatTooltipModule,
-    MatStepperModule
+    MatStepperModule,
+    TranslateModule
   ],
   templateUrl: './profil-edit.component.html',
   styleUrl: './profil-edit.component.scss'

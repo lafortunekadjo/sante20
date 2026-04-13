@@ -312,6 +312,6 @@ export class HomeComponent implements OnInit {
   }
 
   openWhatsApp(): void {
-    window.open('https://wa.me/237600000000?text=Bonjour, j\'ai besoin d\'aide avec Santé 2.0', '_blank');
+    window.open('https://wa.me/237691191385?text=Bonjour, j\'ai besoin d\'aide avec My2-0', '_blank');
   }
 }

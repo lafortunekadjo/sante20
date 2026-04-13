@@ -1,58 +1,207 @@
+// notification.component.scss
+@use '../../../../variables' as *;
+
+// ===================================================
+// THEMING
+// ===================================================
+:host {
+  --text-primary:   #{$light-text-primary};
+  --text-secondary: #{$light-text-secondary};
+  --text-tertiary:  #{$light-text-tertiary};
+  --bg:             #{$light-bg-secondary};
+  --bg-card:        #{$light-bg-primary};
+  --border:         #{$light-border};
+  --primary:        #{$primary-blue};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:   #{$dark-text-primary};
+  --text-secondary: #{$dark-text-secondary};
+  --text-tertiary:  #{$dark-text-tertiary};
+  --bg:             #{$dark-bg-primary};
+  --bg-card:        #{$dark-bg-secondary};
+  --border:         #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER
+// ===================================================
 .notifications-container {
-  padding: 24px;
+  padding: $spacing-2xl;
   max-width: 1400px;
   margin: 0 auto;
-  background-color: #f5f7fa;
+  background-color: var(--bg);
   min-height: calc(100vh - 64px);
+
+  @include mobile { padding: $spacing-lg; }
+}
+
+// ===================================================
+// HEADER
+// ===================================================
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-2xl;
+  justify-content: center;
+
+  @include mobile { margin-bottom: $spacing-xl; }
 }
 
 .page-title {
-  font-size: 2.2rem;
-  color: #1976d2;
-  margin-bottom: 24px;
-  text-align: center;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-3xl;
+  color: var(--primary);
+  margin: 0;
+  font-weight: $font-weight-bold;
   letter-spacing: 0.5px;
+
+  .title-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+  }
+
+  @include mobile { font-size: $font-size-2xl; }
+
+  @media (max-width: 480px) { font-size: $font-size-xl; }
 }
 
+.notif-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 $spacing-sm;
+  background: $primary-blue;
+  color: white;
+  border-radius: $border-radius-full;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+}
+
+// ===================================================
+// CARD
+// ===================================================
 .notifications-card {
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background: #ffffff;
+  border-radius: $border-radius-xl;
+  padding: $spacing-2xl;
+  box-shadow: $shadow-lg;
+  background: var(--bg-card) !important;
+
+  @include mobile { padding: $spacing-lg; }
+  @media (max-width: 480px) { padding: $spacing-md; }
+
+  ::ng-deep .mat-mdc-card-content { padding: 0; }
 }
 
+// ===================================================
+// LOADING
+// ===================================================
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+  gap: $spacing-lg;
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+}
+
+// ===================================================
+// LISTE
+// ===================================================
 .notification-list {
   max-height: 500px;
   overflow-y: auto;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: var(--bg); }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: $border-radius-full;
+  }
+
+  ::ng-deep .mat-mdc-list { padding: 0; }
 }
 
-.no-notifications {
+.notif-item {
+  border-bottom: 1px solid var(--border);
+  transition: background $transition-fast;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--bg) !important; }
+
+  ::ng-deep {
+    .mdc-list-item__content { padding: $spacing-md 0; }
+  }
+
+  .notif-icon { color: $primary-blue; }
+
+  .notif-message {
+    font-size: $font-size-sm;
+    color: var(--text-primary);
+    font-weight: $font-weight-medium;
+    line-height: 1.5;
+  }
+
+  .notif-date {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-top: $spacing-xs;
+
+    mat-icon {
+      font-size: 13px;
+      width: 13px;
+      height: 13px;
+      color: var(--text-tertiary);
+    }
+
+    small { color: var(--text-tertiary); font-size: $font-size-xs; }
+  }
+}
+
+// ===================================================
+// ÉTAT VIDE
+// ===================================================
+.empty-state {
   text-align: center;
-  color: #6b7280;
-  padding: 16px;
-}
+  padding: $spacing-3xl $spacing-2xl;
 
-@media (max-width: 768px) {
-  .notifications-container {
-    padding: 16px;
+  .empty-icon {
+    font-size: 72px;
+    width: 72px;
+    height: 72px;
+    color: var(--text-tertiary);
+    opacity: 0.5;
+    margin-bottom: $spacing-lg;
+    display: block;
+    margin-inline: auto;
   }
 
-  .page-title {
-    font-size: 1.8rem;
+  .empty-title {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
   }
 
-  .notifications-card {
-    padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .notifications-card {
-    padding: 12px;
+  .empty-subtitle {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
   }
 }

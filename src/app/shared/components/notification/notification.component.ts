@@ -20,6 +20,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-notification',
@@ -42,6 +43,7 @@ import { MatListModule } from '@angular/material/list';
     MatTooltipModule,
     MatSnackBarModule,
     MatRippleModule,
+    TranslateModule,
     MatListModule],
   templateUrl: './notification.component.html',
   styleUrl: './notification.component.scss'
@@ -49,17 +51,24 @@ import { MatListModule } from '@angular/material/list';
 export class NotificationComponent {
 
   notifications: any[] = [];
-
+isLoading = true;
   constructor(private notificationService: GeneralService) {}
 
   ngOnInit() {
     this.loadNotifications();
   }
 
-  loadNotifications() {
+  loadNotifications(): void {
+    this.isLoading = true;
     this.notificationService.getNotifications().subscribe({
-      next: (data) => (this.notifications = data),
-      error: (err) => console.error('Erreur lors du chargement des notifications:', err),
+      next: (data) => {
+        this.notifications = data;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des notifications:', err);
+        this.isLoading = false;
+      },
     });
   }
 

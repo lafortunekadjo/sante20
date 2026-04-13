@@ -8,22 +8,27 @@
         <div class="header-text">
           <h1 class="page-title">
             <mat-icon class="header-icon">assessment</mat-icon>
-            Bilan Financier
+            {{ 'bilan.titre' | translate }}
           </h1>
-          <p class="page-subtitle">Vue d'ensemble de la situation financière</p>
+          <p class="page-subtitle">{{ 'bilan.sous_titre' | translate }}</p>
         </div>
       </div>
 
       <div class="header-actions">
         <!-- Sélecteur d'exercice -->
         <mat-form-field appearance="outline" class="exercice-select" *ngIf="exercices.length > 0">
-          <mat-label>Exercice</mat-label>
-          <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
+          <mat-label>{{ 'bilan.exercice.label' | translate }}</mat-label>
+          <mat-select [(ngModel)]="selectedExerciceId"
+                      (selectionChange)="onExerciceChange($event.value)">
             <mat-option *ngFor="let ex of exercices" [value]="ex.id">
               <div class="exercice-option">
                 <span>{{ ex.libelle }}</span>
-                <span class="exercice-badge actif" *ngIf="ex.actif">Actif</span>
-                <span class="exercice-badge cloture" *ngIf="ex.cloture">Clôturé</span>
+                <span class="exercice-badge actif" *ngIf="ex.actif">
+                  {{ 'bilan.exercice.badge_actif' | translate }}
+                </span>
+                <span class="exercice-badge cloture" *ngIf="ex.cloture">
+                  {{ 'bilan.exercice.badge_cloture' | translate }}
+                </span>
               </div>
             </mat-option>
           </mat-select>
@@ -31,15 +36,21 @@
 
         <!-- Actions export -->
         <div class="export-actions">
-          <button mat-stroked-button (click)="exportPDF()" matTooltip="Exporter en PDF">
+          <button mat-stroked-button
+                  (click)="exportPDF()"
+                  [matTooltip]="'bilan.export.pdf_tooltip' | translate">
             <mat-icon>picture_as_pdf</mat-icon>
-            PDF
+            {{ 'bilan.export.pdf' | translate }}
           </button>
-          <button mat-stroked-button (click)="exportExcel()" matTooltip="Exporter en Excel">
+          <button mat-stroked-button
+                  (click)="exportExcel()"
+                  [matTooltip]="'bilan.export.excel_tooltip' | translate">
             <mat-icon>table_chart</mat-icon>
-            Excel
+            {{ 'bilan.export.excel' | translate }}
           </button>
-          <button mat-icon-button (click)="print()" matTooltip="Imprimer">
+          <button mat-icon-button
+                  (click)="print()"
+                  [matTooltip]="'bilan.export.print_tooltip' | translate">
             <mat-icon>print</mat-icon>
           </button>
         </div>
@@ -53,8 +64,8 @@
       <mat-spinner diameter="60"></mat-spinner>
     </div>
     <div class="loading-content">
-      <h3>Génération du bilan...</h3>
-      <p>Veuillez patienter</p>
+      <h3>{{ 'bilan.loading' | translate }}</h3>
+      <p>{{ 'COMMON.LOADING_WAIT' | translate }}</p>
     </div>
   </div>
 
@@ -65,67 +76,63 @@
     <div class="summary-card">
       <div class="summary-header">
         <div class="period-info">
-          <span class="period-label">Période</span>
+          <span class="period-label">{{ 'bilan.resume.periode' | translate }}</span>
           <span class="period-value">
             {{ formatDate(bilanData.exercice.dateDebut) }} - {{ formatDate(bilanData.exercice.dateFin) }}
           </span>
         </div>
         <div class="status-info">
-          <span class="status-badge" [class.actif]="bilanData.exercice.actif" [class.cloture]="bilanData.exercice.cloture">
+          <span class="status-badge"
+                [class.actif]="bilanData.exercice.actif"
+                [class.cloture]="bilanData.exercice.cloture">
             <mat-icon>{{ bilanData.exercice.cloture ? 'lock' : 'lock_open' }}</mat-icon>
-            {{ bilanData.exercice.cloture ? 'Clôturé' : 'En cours' }}
+            {{ (bilanData.exercice.cloture ? 'bilan.statut.cloture' : 'bilan.statut.en_cours') | translate }}
           </span>
         </div>
       </div>
 
       <div class="summary-grid">
         <div class="summary-item initial">
-          <div class="item-icon">
-            <mat-icon>history</mat-icon>
-          </div>
+          <div class="item-icon"><mat-icon>history</mat-icon></div>
           <div class="item-content">
-            <span class="item-label">Solde Initial</span>
+            <span class="item-label">{{ 'bilan.resume.solde_initial' | translate }}</span>
             <span class="item-value">{{ formatMontant(bilanData.soldeInitial) }}</span>
           </div>
         </div>
 
         <div class="summary-item entrees">
-          <div class="item-icon">
-            <mat-icon>trending_up</mat-icon>
-          </div>
+          <div class="item-icon"><mat-icon>trending_up</mat-icon></div>
           <div class="item-content">
-            <span class="item-label">Total Entrées</span>
+            <span class="item-label">{{ 'bilan.resume.total_entrees' | translate }}</span>
             <span class="item-value">+{{ formatMontant(bilanData.totalEntrees) }}</span>
           </div>
         </div>
 
         <div class="summary-item sorties">
-          <div class="item-icon">
-            <mat-icon>trending_down</mat-icon>
-          </div>
+          <div class="item-icon"><mat-icon>trending_down</mat-icon></div>
           <div class="item-content">
-            <span class="item-label">Total Sorties</span>
+            <span class="item-label">{{ 'bilan.resume.total_sorties' | translate }}</span>
             <span class="item-value">-{{ formatMontant(bilanData.totalSorties) }}</span>
           </div>
         </div>
 
         <div class="summary-item final">
-          <div class="item-icon">
-            <mat-icon>account_balance_wallet</mat-icon>
-          </div>
+          <div class="item-icon"><mat-icon>account_balance_wallet</mat-icon></div>
           <div class="item-content">
-            <span class="item-label">Solde Final</span>
+            <span class="item-label">{{ 'bilan.resume.solde_final' | translate }}</span>
             <span class="item-value">{{ formatMontant(bilanData.soldeFinal) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Variation -->
+      <!-- Variation + Recouvrement -->
       <div class="variation-section">
-        <div class="variation-card" [class.positive]="isPositiveVariation()" [class.negative]="!isPositiveVariation()">
+        <div class="variation-card"
+             [class.positive]="isPositiveVariation()"
+             [class.negative]="!isPositiveVariation()">
           <mat-icon>{{ isPositiveVariation() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
           <div class="variation-content">
-            <span class="variation-label">Variation sur l'exercice</span>
+            <span class="variation-label">{{ 'bilan.resume.variation' | translate }}</span>
             <span class="variation-value">
               {{ isPositiveVariation() ? '+' : '' }}{{ formatMontant(getVariation()) }}
               ({{ formatPercentage(getVariationPercentage()) }})
@@ -136,7 +143,7 @@
         <div class="recouvrement-card">
           <mat-icon>pie_chart</mat-icon>
           <div class="recouvrement-content">
-            <span class="recouvrement-label">Taux de recouvrement</span>
+            <span class="recouvrement-label">{{ 'bilan.resume.taux_recouvrement' | translate }}</span>
             <span class="recouvrement-value">{{ formatPercentage(getTauxRecouvrement()) }}</span>
           </div>
           <div class="progress-bar">
@@ -148,17 +155,17 @@
 
     <!-- Onglets de détails -->
     <mat-tab-group class="bilan-tabs" animationDuration="300ms">
-      
+
       <!-- Tab Caisses -->
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>account_balance</mat-icon>
-          <span>Caisses</span>
+          <span>{{ 'bilan.tabs.caisses' | translate }}</span>
         </ng-template>
 
         <div class="tab-content">
           <div class="caisses-grid">
-            <div class="caisse-card" 
+            <div class="caisse-card"
                  *ngFor="let caisse of bilanData.detailCaisses"
                  [style.--caisse-color]="caisse.couleur">
               <div class="caisse-header">
@@ -173,31 +180,34 @@
 
               <div class="caisse-body">
                 <div class="caisse-solde">
-                  <span class="solde-label">Solde actuel</span>
+                  <span class="solde-label">{{ 'bilan.caisse.solde_actuel' | translate }}</span>
                   <span class="solde-value">{{ formatMontant(caisse.soldeActuel) }}</span>
                 </div>
 
                 <div class="caisse-progress">
                   <div class="progress-bar">
-                    <div class="progress-fill" 
+                    <div class="progress-fill"
                          [style.width.%]="getCaissePercentage(caisse)"
                          [style.background-color]="caisse.couleur">
                     </div>
                   </div>
-                  <span class="progress-label">{{ getCaissePercentage(caisse) | number:'1.1-1' }}% du total</span>
+                  <span class="progress-label">
+                    {{ getCaissePercentage(caisse) | number:'1.1-1' }}%
+                    {{ 'bilan.caisse.du_total' | translate }}
+                  </span>
                 </div>
 
                 <div class="caisse-details">
                   <div class="detail-row">
-                    <span class="detail-label">Report</span>
+                    <span class="detail-label">{{ 'bilan.caisse.report' | translate }}</span>
                     <span class="detail-value">{{ formatMontant(caisse.soldeReporte) }}</span>
                   </div>
                   <div class="detail-row entree">
-                    <span class="detail-label">Entrées</span>
+                    <span class="detail-label">{{ 'bilan.caisse.entrees' | translate }}</span>
                     <span class="detail-value">+{{ formatMontant(caisse.totalEntrees) }}</span>
                   </div>
                   <div class="detail-row sortie">
-                    <span class="detail-label">Sorties</span>
+                    <span class="detail-label">{{ 'bilan.caisse.sorties' | translate }}</span>
                     <span class="detail-value">-{{ formatMontant(caisse.totalSorties) }}</span>
                   </div>
                 </div>
@@ -211,7 +221,7 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>payments</mat-icon>
-          <span>Contributions</span>
+          <span>{{ 'bilan.tabs.contributions' | translate }}</span>
         </ng-template>
 
         <div class="tab-content">
@@ -219,30 +229,35 @@
             <div class="contribution-card" *ngFor="let contrib of bilanData?.detailContributions">
               <div class="contrib-header">
                 <h4>{{ contrib.nom }}</h4>
-                <span class="contrib-count">{{ contrib.nbContributions }} paiements</span>
+                <span class="contrib-count">
+                  {{ 'bilan.contributions.nb_paiements' | translate:{ count: contrib.nbContributions } }}
+                </span>
               </div>
 
               <div class="contrib-body">
                 <div class="contrib-amounts">
                   <div class="amount-item attendu">
-                    <span class="amount-label">Attendu</span>
+                    <span class="amount-label">{{ 'bilan.contributions.attendu' | translate }}</span>
                     <span class="amount-value">{{ formatMontant(contrib.montantAttendu) }}</span>
                   </div>
                   <div class="amount-item recu">
-                    <span class="amount-label">Reçu</span>
+                    <span class="amount-label">{{ 'bilan.contributions.recu' | translate }}</span>
                     <span class="amount-value">{{ formatMontant(contrib.montantRecu) }}</span>
                   </div>
                 </div>
 
                 <div class="contrib-progress">
                   <div class="progress-header">
-                    <span>Taux de recouvrement</span>
-                    <span class="progress-value" [class.success]="contrib.tauxRecouvrement >= 80" [class.warning]="contrib.tauxRecouvrement < 80 && contrib.tauxRecouvrement >= 50" [class.danger]="contrib.tauxRecouvrement < 50">
+                    <span>{{ 'bilan.contributions.taux_recouvrement' | translate }}</span>
+                    <span class="progress-value"
+                          [class.success]="contrib.tauxRecouvrement >= 80"
+                          [class.warning]="contrib.tauxRecouvrement < 80 && contrib.tauxRecouvrement >= 50"
+                          [class.danger]="contrib.tauxRecouvrement < 50">
                       {{ formatPercentage(contrib.tauxRecouvrement) }}
                     </span>
                   </div>
                   <div class="progress-bar">
-                    <div class="progress-fill" 
+                    <div class="progress-fill"
                          [style.width.%]="contrib.tauxRecouvrement"
                          [class.success]="contrib.tauxRecouvrement >= 80"
                          [class.warning]="contrib.tauxRecouvrement < 80 && contrib.tauxRecouvrement >= 50"
@@ -256,7 +271,7 @@
 
           <div class="empty-tab" *ngIf="!bilanData.detailContributions?.length">
             <mat-icon>payments</mat-icon>
-            <p>Aucune contribution enregistrée</p>
+            <p>{{ 'bilan.contributions.vide' | translate }}</p>
           </div>
         </div>
       </mat-tab>
@@ -265,7 +280,7 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>shopping_cart</mat-icon>
-          <span>Dépenses</span>
+          <span>{{ 'bilan.tabs.depenses' | translate }}</span>
         </ng-template>
 
         <div class="tab-content">
@@ -273,30 +288,35 @@
             <div class="depense-card" *ngFor="let depense of bilanData.detailDepenses">
               <div class="depense-header">
                 <h4>{{ depense.nom }}</h4>
-                <span class="depense-count">{{ depense.nbDepenses }} opérations</span>
+                <span class="depense-count">
+                  {{ 'bilan.depenses.nb_operations' | translate:{ count: depense.nbDepenses } }}
+                </span>
               </div>
 
               <div class="depense-body">
                 <div class="depense-amounts">
                   <div class="amount-item budget">
-                    <span class="amount-label">Budget</span>
+                    <span class="amount-label">{{ 'bilan.depenses.budget' | translate }}</span>
                     <span class="amount-value">{{ formatMontant(depense.budgetAlloue) }}</span>
                   </div>
                   <div class="amount-item depense">
-                    <span class="amount-label">Dépensé</span>
+                    <span class="amount-label">{{ 'bilan.depenses.depense' | translate }}</span>
                     <span class="amount-value">{{ formatMontant(depense.montantDepense) }}</span>
                   </div>
                 </div>
 
                 <div class="depense-progress" *ngIf="depense.budgetAlloue > 0">
                   <div class="progress-header">
-                    <span>Consommation budget</span>
-                    <span class="progress-value" [class.success]="depense.tauxConsommation <= 80" [class.warning]="depense.tauxConsommation > 80 && depense.tauxConsommation <= 100" [class.danger]="depense.tauxConsommation > 100">
+                    <span>{{ 'bilan.depenses.consommation_budget' | translate }}</span>
+                    <span class="progress-value"
+                          [class.success]="depense.tauxConsommation <= 80"
+                          [class.warning]="depense.tauxConsommation > 80 && depense.tauxConsommation <= 100"
+                          [class.danger]="depense.tauxConsommation > 100">
                       {{ formatPercentage(depense.tauxConsommation) }}
                     </span>
                   </div>
                   <div class="progress-bar">
-                    <div class="progress-fill" 
+                    <div class="progress-fill"
                          [style.width.%]="Math.min(100, depense.tauxConsommation)"
                          [class.success]="depense.tauxConsommation <= 80"
                          [class.warning]="depense.tauxConsommation > 80 && depense.tauxConsommation <= 100"
@@ -310,7 +330,7 @@
 
           <div class="empty-tab" *ngIf="!bilanData.detailDepenses?.length">
             <mat-icon>shopping_cart</mat-icon>
-            <p>Aucune dépense enregistrée</p>
+            <p>{{ 'bilan.depenses.vide' | translate }}</p>
           </div>
         </div>
       </mat-tab>
@@ -319,33 +339,30 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>warning</mat-icon>
-          <span>Impayés</span>
+          <span>{{ 'bilan.tabs.impayes' | translate }}</span>
         </ng-template>
 
         <div class="tab-content">
           <div class="impayes-section" *ngIf="bilanData.impayes">
-            <!-- Résumé impayés -->
             <div class="impayes-summary">
               <div class="impaye-card total">
                 <mat-icon>money_off</mat-icon>
                 <div class="impaye-content">
-                  <span class="impaye-label">Total des impayés</span>
+                  <span class="impaye-label">{{ 'bilan.impayes.total' | translate }}</span>
                   <span class="impaye-value">{{ formatMontant(bilanData.impayes.totalImpayes) }}</span>
                 </div>
               </div>
-
               <div class="impaye-card membres">
                 <mat-icon>group</mat-icon>
                 <div class="impaye-content">
-                  <span class="impaye-label">Membres en retard</span>
+                  <span class="impaye-label">{{ 'bilan.impayes.membres_retard' | translate }}</span>
                   <span class="impaye-value">{{ bilanData.impayes.nombreMembresEnRetard }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Détail par type -->
             <div class="impayes-detail" *ngIf="bilanData.impayes.detailParType?.length > 0">
-              <h4>Détail par type</h4>
+              <h4>{{ 'bilan.impayes.detail_titre' | translate }}</h4>
               <div class="detail-list">
                 <div class="detail-item" *ngFor="let item of bilanData.impayes.detailParType">
                   <span class="detail-type">{{ item.type }}</span>
@@ -357,7 +374,7 @@
 
           <div class="empty-tab success" *ngIf="!bilanData.impayes?.totalImpayes">
             <mat-icon>check_circle</mat-icon>
-            <p>Aucun impayé ! Tous les membres sont à jour.</p>
+            <p>{{ 'bilan.impayes.vide' | translate }}</p>
           </div>
         </div>
       </mat-tab>
@@ -366,58 +383,48 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>bar_chart</mat-icon>
-          <span>Statistiques</span>
+          <span>{{ 'bilan.tabs.statistiques' | translate }}</span>
         </ng-template>
 
         <div class="tab-content">
           <div class="stats-section" *ngIf="bilanData.statistiques">
             <div class="stats-grid">
               <div class="stat-card">
-                <div class="stat-icon membres">
-                  <mat-icon>group</mat-icon>
-                </div>
+                <div class="stat-icon membres"><mat-icon>group</mat-icon></div>
                 <div class="stat-content">
-                  <span class="stat-label">Membres actifs</span>
+                  <span class="stat-label">{{ 'bilan.stats.membres_actifs' | translate }}</span>
                   <span class="stat-value">{{ bilanData.statistiques.nombreMembresActifs }}</span>
                 </div>
               </div>
 
               <div class="stat-card">
-                <div class="stat-icon contributions">
-                  <mat-icon>payments</mat-icon>
-                </div>
+                <div class="stat-icon contributions"><mat-icon>payments</mat-icon></div>
                 <div class="stat-content">
-                  <span class="stat-label">Nombre de contributions</span>
+                  <span class="stat-label">{{ 'bilan.stats.nb_contributions' | translate }}</span>
                   <span class="stat-value">{{ bilanData.statistiques.nombreContributions }}</span>
                 </div>
               </div>
 
               <div class="stat-card">
-                <div class="stat-icon moyenne-entree">
-                  <mat-icon>trending_up</mat-icon>
-                </div>
+                <div class="stat-icon moyenne-entree"><mat-icon>trending_up</mat-icon></div>
                 <div class="stat-content">
-                  <span class="stat-label">Contribution moyenne</span>
+                  <span class="stat-label">{{ 'bilan.stats.contribution_moyenne' | translate }}</span>
                   <span class="stat-value">{{ formatMontant(bilanData.statistiques.contributionMoyenne) }}</span>
                 </div>
               </div>
 
               <div class="stat-card">
-                <div class="stat-icon sorties">
-                  <mat-icon>receipt</mat-icon>
-                </div>
+                <div class="stat-icon sorties"><mat-icon>receipt</mat-icon></div>
                 <div class="stat-content">
-                  <span class="stat-label">Nombre de sorties</span>
+                  <span class="stat-label">{{ 'bilan.stats.nb_sorties' | translate }}</span>
                   <span class="stat-value">{{ bilanData.statistiques.nombreSorties }}</span>
                 </div>
               </div>
 
               <div class="stat-card">
-                <div class="stat-icon moyenne-sortie">
-                  <mat-icon>trending_down</mat-icon>
-                </div>
+                <div class="stat-icon moyenne-sortie"><mat-icon>trending_down</mat-icon></div>
                 <div class="stat-content">
-                  <span class="stat-label">Sortie moyenne</span>
+                  <span class="stat-label">{{ 'bilan.stats.sortie_moyenne' | translate }}</span>
                   <span class="stat-value">{{ formatMontant(bilanData.statistiques.sortieMoyenne) }}</span>
                 </div>
               </div>
@@ -436,12 +443,13 @@
       <mat-icon class="empty-icon">event_busy</mat-icon>
     </div>
     <div class="empty-content">
-      <h3 class="empty-title">Aucun exercice</h3>
-      <p class="empty-text">Créez un exercice comptable pour générer un bilan.</p>
+      <h3 class="empty-title">{{ 'bilan.vide.titre' | translate }}</h3>
+      <p class="empty-text">{{ 'bilan.vide.texte' | translate }}</p>
       <div class="empty-actions">
-        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
+        <button mat-raised-button color="primary"
+                routerLink="/responsable/finances/exercices">
           <mat-icon>add</mat-icon>
-          Créer un exercice
+          {{ 'bilan.vide.action' | translate }}
         </button>
       </div>
     </div>
