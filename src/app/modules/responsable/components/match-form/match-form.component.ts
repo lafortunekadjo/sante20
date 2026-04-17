@@ -1089,7 +1089,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   generateMatchDatesInRange(dayOfWeek: string, startDate: Date, endDate: Date): Date[] {
     const dates: Date[] = [];
     let currentDate = new Date(startDate);
-    console.log(dayOfWeek)
+   
     // Mapping des jours (français et anglais)
     const daysMapping: { [key: string]: number } = {
       // Français
@@ -1101,7 +1101,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     
     const targetDayIndex = daysMapping[dayOfWeek] ?? 0; // Dimanche par défaut
-
+    console.log(targetDayIndex)
     while (currentDate <= endDate) {
       if (currentDate.getDay() === targetDayIndex) {
         dates.push(new Date(currentDate));
