@@ -1086,23 +1086,30 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
    * Génère les dates de match dans une plage donnée
    * Supporte les jours en français et en anglais
    */
-  generateMatchDatesInRange(dayOfWeek: string, startDate: Date, endDate: Date): Date[] {
+ generateMatchDatesInRange(dayOfWeek: string, startDate: Date, endDate: Date): Date[] {
     const dates: Date[] = [];
     let currentDate = new Date(startDate);
     
-    // Mapping des jours (français et anglais)
+    // Mapping correct pour JavaScript (Dimanche = 0, Lundi = 1, ..., Samedi = 6)
     const daysMapping: { [key: string]: number } = {
       // Français
-      'Dimanche': 7, 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 
+      'Dimanche': 0, 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 
       'Jeudi': 4, 'Vendredi': 5, 'Samedi': 6,
       // Anglais
-      'Sunday': 7, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 
+      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 
       'Thursday': 4, 'Friday': 5, 'Saturday': 6
     };
     
-    const targetDayIndex = daysMapping[dayOfWeek] ?? 0; // Dimanche par défaut
+    // On récupère l'index. Si non trouvé, on peut mettre undefined pour gérer l'erreur
+    const targetDayIndex = daysMapping[dayOfWeek];
+
+    if (targetDayIndex === undefined) {
+      console.error("Jour non reconnu :", dayOfWeek);
+      return [];
+    }
 
     while (currentDate <= endDate) {
+      // getDay() renvoie 0 pour Dimanche, 6 pour Samedi
       if (currentDate.getDay() === targetDayIndex) {
         dates.push(new Date(currentDate));
       }
@@ -1110,7 +1117,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     return dates;
-  }
+}
 
   getMatchInfo(match: Match): string {
     return this.getMatchDisplayName(match);
