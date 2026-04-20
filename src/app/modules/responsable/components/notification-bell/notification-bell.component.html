@@ -1,1 +1,91 @@
-<p>notification-bell works!</p>
+<!-- notification-bell.component.html -->
+
+<!-- Bouton cloche -->
+<button mat-icon-button
+        [matMenuTriggerFor]="notificationMenu"
+        [matBadge]="unreadCount > 0 ? formatBadge(unreadCount) : null"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        class="notification-bell"
+        [class.has-unread]="unreadCount > 0"
+        [@bellShake]="bellState"
+        (@bellShake.done)="bellState = 'idle'"
+        [matTooltip]="'notif_bell.tooltip' | translate">
+  <mat-icon>{{ unreadCount > 0 ? 'notifications_active' : 'notifications' }}</mat-icon>
+</button>
+
+<!-- Menu déroulant -->
+<mat-menu #notificationMenu="matMenu" class="notification-menu" xPosition="before">
+
+  <!-- Header -->
+  <div class="menu-header" (click)="$event.stopPropagation()">
+    <h3>{{ 'notif_bell.titre' | translate }}</h3>
+    <button mat-button
+            *ngIf="unreadCount > 0"
+            (click)="markAllAsRead()"
+            class="mark-all-btn">
+      {{ 'notif_bell.tout_lire' | translate }}
+    </button>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Loading -->
+  <div class="menu-loading" *ngIf="isLoading">
+    <mat-spinner diameter="30"></mat-spinner>
+  </div>
+
+  <!-- Liste -->
+  <div class="notifications-list" *ngIf="!isLoading">
+    <ng-container *ngIf="recentNotifications.length > 0; else emptyState">
+      <div class="notification-item"
+           *ngFor="let notification of recentNotifications"
+           [class.unread]="!notification.isRead"
+           matRipple
+           (click)="onNotificationClick(notification)"
+           [@slideIn]>
+
+        <div class="notification-icon"
+             [style.background-color]="getTypeColor(notification.type)">
+          <mat-icon>{{ notification.icon || getCategoryIcon(notification.category) }}</mat-icon>
+        </div>
+
+        <div class="notification-content">
+          <p class="notification-title">{{ notification.title }}</p>
+          <p class="notification-message">
+            {{ notification.message | slice:0:80 }}{{ notification.message.length > 80 ? '...' : '' }}
+          </p>
+          <span class="notification-time">{{ notification.timeAgo }}</span>
+        </div>
+
+        <div class="notification-actions" (click)="$event.stopPropagation()">
+          <button mat-icon-button
+                  *ngIf="!notification.isRead"
+                  (click)="markAsRead(notification)"
+                  [matTooltip]="'notif_bell.marquer_lu' | translate">
+            <mat-icon>check</mat-icon>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- État vide -->
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <mat-icon>notifications_none</mat-icon>
+        <p>{{ 'notif_bell.vide' | translate }}</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <mat-divider *ngIf="recentNotifications.length > 0"></mat-divider>
+
+  <!-- Footer -->
+  <div class="menu-footer" *ngIf="recentNotifications.length > 0">
+    <button mat-button routerLink="/notifications" class="view-all-btn">
+      <mat-icon>open_in_new</mat-icon>
+      {{ 'notif_bell.voir_tout' | translate }}
+    </button>
+  </div>
+
+</mat-menu>
