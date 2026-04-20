@@ -1056,11 +1056,17 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
    * Exécute la génération des matchs après confirmation
    */
   private executeMatchGeneration(matchDates: Date[]) {
+    console.log(matchDates)
     const matchesToSave: any[] = matchDates.map(date => {
       const shuffled = [...this.equipes].sort(() => Math.random() - 0.5);
+      // Format YYYY-MM-DD en utilisant les méthodes locales pour éviter le décalage UTC
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
       return {
         typeMatch: 'INTERNE',
-        dateMatch: date.toISOString().split('T')[0],
+        dateMatch: localDateStr,
         equipe1Id: shuffled[0].id,
         equipe2Id: shuffled[1].id,
         lieu: '',
@@ -1090,17 +1096,11 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const dates: Date[] = [];
     let currentDate = new Date(startDate);
     
-    // Mapping correct pour JavaScript (Dimanche = 0, Lundi = 1, ..., Samedi = 6)
     const daysMapping: { [key: string]: number } = {
-      // Français
-      'Dimanche': 0, 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 
-      'Jeudi': 4, 'Vendredi': 5, 'Samedi': 6,
-      // Anglais
-      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 
-      'Thursday': 4, 'Friday': 5, 'Saturday': 6
+      'Dimanche': 0, 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 'Jeudi': 4, 'Vendredi': 5, 'Samedi': 6,
+      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     };
     
-    // On récupère l'index. Si non trouvé, on peut mettre undefined pour gérer l'erreur
     const targetDayIndex = daysMapping[dayOfWeek];
 
     if (targetDayIndex === undefined) {
@@ -1108,12 +1108,18 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       return [];
     }
 
+    // --- OPTIMISATION ---
+    // 1. On trouve le premier occurrence du jour cible
+    // (targetDayIndex - current + 7) % 7 donne le nombre de jours à ajouter
+    const daysUntilFirstMatch = (targetDayIndex - currentDate.getDay() + 7) % 7;
+    currentDate.setDate(currentDate.getDate() + daysUntilFirstMatch);
+
+    // 2. On boucle de 7 jours en 7 jours
     while (currentDate <= endDate) {
-      // getDay() renvoie 0 pour Dimanche, 6 pour Samedi
-      if (currentDate.getDay() === targetDayIndex) {
-        dates.push(new Date(currentDate));
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
+      dates.push(new Date(currentDate));
+      
+      // On saute directement à la semaine suivante
+      currentDate.setDate(currentDate.getDate() + 7);
     }
 
     return dates;
