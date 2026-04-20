@@ -1093,11 +1093,11 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     // Mapping des jours (français et anglais)
     const daysMapping: { [key: string]: number } = {
       // Français
-      'Dimanche': 2, 'Lundi': 2, 'Mardi': 3, 'Mercredi': 4, 
-      'Jeudi': 5, 'Vendredi': 6, 'Samedi': 7,
+      'Dimanche': 7, 'Lundi': 1, 'Mardi': 2, 'Mercredi': 3, 
+      'Jeudi': 4, 'Vendredi': 5, 'Samedi': 6,
       // Anglais
-      'Sunday': 1, 'Monday': 2, 'Tuesday': 3, 'Wednesday': 4, 
-      'Thursday': 5, 'Friday': 6, 'Saturday': 7
+      'Sunday': 7, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 
+      'Thursday': 4, 'Friday': 5, 'Saturday': 6
     };
     
     const targetDayIndex = daysMapping[dayOfWeek] ?? 0; // Dimanche par défaut
