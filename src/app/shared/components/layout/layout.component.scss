@@ -1,173 +1,253 @@
 @import '../../../../variables';
 
+// ===== CONTAINER PRINCIPAL =====
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow: hidden; 
   background-color: var(--background-secondary);
 }
 
+// ===== LAYOUT PRINCIPAL =====
 .main-layout {
   display: flex;
   flex: 1;
   overflow: hidden;
-  margin-top: $navbar-height;
-  @include mobile { margin-top: $navbar-height-mobile; }
-}
-
-.sidebar-nav {
-  flex: 1;
-  overflow-y: auto !important; // Force le scroll vertical
-  overflow-x: hidden;
-  padding: 10px 12px;
-  
-  /* Paramètres spécifiques pour le tactile sur mobile */
-  touch-action: pan-y !important; // Autorise uniquement le scroll vertical
-  -webkit-overflow-scrolling: touch; // Scroll fluide sur iOS
-  overscroll-behavior: contain; // Empêche le scroll du fond quand on scrolle le menu
-}
-
-// Dans votre fichier layout.component.scss
-.sidebar {
-  width: $sidebar-width;
-  // Utilisez une couleur solide, pas transparente
-  background-color: var(--surface-card, #ffffff) !important; 
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1070; // Assure que la sidebar est au-dessus du contenu
   position: relative;
+  margin-top: $navbar-height;
 
   @include mobile {
-    position: fixed;
-    left: -$sidebar-width;
-    top: 0; 
-    bottom: 0;
-    background-color: var(--surface-card, #ffffff) !important; // Force l'opacité sur mobile
-    
-    &.open {
-      left: 0;
-      box-shadow: 10px 0 25px rgba(0,0,0,0.3); // Ombre plus forte pour détacher du fond
+    margin-top: $navbar-height-mobile;
+  }
+
+  &.no-sidebar {
+    .main-content {
+      margin-left: 0;
+      width: 100%;
     }
   }
 }
 
-// ===== ACCORDÉONS (GROUPES DE MENUS) =====
-.menu-group-panel {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-
-  ::ng-deep .mat-expansion-panel-body {
-    padding: 0 0 8px 0 !important;
-  }
-
-  mat-expansion-panel-header {
-    padding: 0 16px;
-    height: 48px !important;
-    
-    &:hover { background: var(--surface-hover); }
-
-    mat-panel-title {
-      color: var(--text-primary);
-      font-weight: 600;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      
-      mat-icon { font-size: 20px; color: var(--primary-color); }
-    }
-  }
-}
-
-// ===== SOUS-MENUS IMBRIQUÉS =====
-.submenu-container {
-  margin-left: 26px; // Aligne la ligne guide sous l'icône du titre
-  border-left: 2px solid var(--border-color);
-  padding-left: 8px;
-  margin-top: 4px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  min-height: 44px;
-  border-radius: 8px;
-  margin: 2px 8px;
-  transition: all 0.2s;
-  user-select: none;
-
-  mat-icon { font-size: 18px; margin-right: 12px; }
-  span { font-size: 13.5px; }
-
-  &.submenu {
-    margin: 2px 4px;
-    padding: 8px 12px;
-  }
-
-  &.active {
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    font-weight: 600;
-  }
-
-  @media (min-width: 992px) {
-    &:hover { background: var(--surface-hover); transform: translateX(3px); }
-  }
-}
-
-.sidebar-footer {
-  padding: 16px;
-  background: var(--surface-hover);
-  border-top: 1px solid var(--border-color);
-  flex-shrink: 0;
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-    border-radius: 12px;
-    cursor: pointer;
-    background: var(--surface-card);
-    border: 1px solid var(--border-color);
-
-    .avatar-image { width: 36px; height: 36px; border-radius: 50%; }
-    .user-name { font-size: 13px; font-weight: 600; display: block; }
-    .user-role { font-size: 11px; color: var(--primary-color); }
-  }
-}
-
+// ===== OVERLAY MOBILE (Correctif Scroll) =====
 .sidebar-overlay {
-  display: none; // Désactivé par défaut
+  display: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   z-index: 1065;
   opacity: 0;
-  pointer-events: none; // 👈 CRUCIAL : Empêche l'overlay de bloquer le scroll
+  
+  // Important : ne bloque pas le scroll du contenu si inactif
+  pointer-events: none; 
   transition: opacity 0.3s ease;
   
   &.active {
     display: block;
     opacity: 1;
-    pointer-events: auto; // 👈 Réactive les clics pour pouvoir fermer le menu
+    pointer-events: auto; // Réactive les clics pour fermer le menu
   }
 }
 
+// ===== SIDEBAR (Gestion Thèmes & Opacité) =====
+.sidebar {
+  width: $sidebar-width;
+  // Utilisation des variables de thème pour le mode sombre
+  background-color: var(--surface-card) !important; 
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1070;
+  position: relative;
+  color: var(--text-primary);
+
+  @include mobile {
+    position: fixed;
+    left: -$sidebar-width;
+    top: 0;
+    bottom: 0;
+    background-color: var(--surface-card) !important; // Force l'opacité totale
+    
+    &.open {
+      left: 0;
+      // Ombre portée adaptée pour détacher le menu du contenu
+      box-shadow: 10px 0 25px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  // Zone de navigation avec scroll forcé
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding: 10px 12px;
+    
+    /* Optimisation scroll tactile */
+    touch-action: pan-y !important; 
+    -webkit-overflow-scrolling: touch; 
+    overscroll-behavior: contain;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 10px;
+    }
+
+    .sidebar-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 0;
+      gap: 12px;
+      color: var(--text-secondary);
+    }
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+    background: var(--surface-hover);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+}
+
+// ===== ITEMS DE NAVIGATION (Adaptation Dark Theme) =====
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 4px 0;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  min-height: 48px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+
+  mat-icon {
+    margin-right: 12px;
+    font-size: 22px;
+    color: var(--text-secondary);
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  &:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary-color);
+    mat-icon { color: var(--primary-color); }
+  }
+
+  &.active {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    
+    mat-icon, span {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .nav-indicator {
+      position: absolute;
+      left: 0;
+      top: 15%;
+      height: 70%;
+      width: 4px;
+      background-color: var(--primary-color);
+      border-radius: 0 4px 4px 0;
+    }
+  }
+}
+
+// ===== SECTIONS =====
+.nav-section {
+  margin-bottom: 20px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    padding: 0 16px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+
+    mat-icon {
+      font-size: 16px;
+      margin-right: 8px;
+    }
+  }
+}
+
+// ===== USER INFO & FOOTER =====
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover { background: var(--surface-hover); }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    
+    .user-name {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .user-role {
+      color: var(--primary-color);
+      font-size: 11px;
+    }
+  }
+}
+
+// ===== MAIN CONTENT =====
 .main-content {
   flex: 1;
   overflow-y: auto;
   background-color: var(--background-primary);
+  padding: 20px;
+
+  @include mobile {
+    padding: 15px;
+    // Empêche le scroll du contenu quand le menu est ouvert (optionnel)
+    body.menu-open & {
+      overflow: hidden;
+    }
+  }
+}
+
+.no-groupe-message.info-box {
+  margin: 15px;
+  padding: 15px;
+  background: var(--primary-light);
+  border-radius: 12px;
+  color: var(--primary-color);
+  display: flex;
+  gap: 10px;
+  
+  mat-icon { font-size: 20px; }
+  h4 { margin: 0; font-size: 14px; }
+  p { margin: 5px 0 0; font-size: 12px; opacity: 0.8; }
 }
