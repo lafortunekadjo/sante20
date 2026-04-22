@@ -1,297 +1,134 @@
-<!-- Layout principal de l'application My2-0 -->
 <div class="app-container">
-  <!-- Navbar - toujours visible -->
   <app-navbar (toggleMenu)="toggleSidebar()"></app-navbar>
 
-  <!-- Layout principal - adapté selon l'état de connexion -->
   <div class="main-layout" [class.no-sidebar]="!authService.isLoggedIn()">
     
-    <!-- Overlay pour mobile - seulement si connecté -->
-    <div 
-      *ngIf="authService.isLoggedIn()"
+    <div *ngIf="authService.isLoggedIn()"
       class="sidebar-overlay" 
       [class.active]="sidebarOpen && isMobile"
       (click)="closeSidebar()">
     </div>
 
-    <!-- Sidebar - seulement si connecté -->
-    <aside 
-      *ngIf="authService.isLoggedIn()"
+    <aside *ngIf="authService.isLoggedIn()"
       class="sidebar"
       [class.open]="sidebarOpen"
       [class.mobile]="isMobile">
 
-      <mat-divider class="header-divider"></mat-divider>
-
-      <!-- Menu navigation -->
       <nav class="sidebar-nav" [class.loading]="isLoadingMenus">
         
-        <!-- Loading state -->
         <div *ngIf="isLoadingMenus" class="sidebar-loading">
           <mat-spinner diameter="32"></mat-spinner>
           <span>{{ 'common.loading' | translate }}...</span>
         </div>
 
-        <!-- Navigation content -->
         <ng-container *ngIf="!isLoadingMenus">
-         
-          <!-- Section: Menus Communs -->
-         <div class="nav-section" *ngIf="menusCommuns.length > 0 && !isPartenaire">
-  <div class="section-title">
-    <mat-icon>home</mat-icon>
-    <span>{{ 'nav.mainMenu' | translate }}</span>
-  </div>
-
-  <a routerLink="/home" routerLinkActive="active" class="nav-item">
-    <mat-icon>home</mat-icon>
-    <span>{{ 'admin.home' | translate }}</span>
-    <div class="nav-indicator"></div>
-  </a>
-
-  <a *ngFor="let menu of menusCommuns; trackBy: trackByMenuId"
-     [routerLink]="menu.route" 
-     routerLinkActive="active"
-     (click)="onNavClick(menu.code)"
-     class="nav-item"
-     [matTooltip]="'menu.descriptions.' + menu.code | translate">
-     
-    <mat-icon>{{ menu.icone }}</mat-icon>
-    
-    <span>{{ 'menu.items.' + menu.code | translate }}</span>
-    
-    <div class="nav-indicator"></div>
-
-    <div class="onboarding-tooltip right-side" 
-         *ngIf="menu.code === 'CREATEG' && (onboardingService.step$ | async) === 'CREATE_GROUPE' && !isAdmin">
-       </div>
-  </a>
-</div>
-
-          <!-- Section: Administration -->
-          <div class="nav-section" *ngIf="isAdmin">
-            <div class="section-divider"></div>
-            <div class="section-title admin-section">
-              <mat-icon>admin_panel_settings</mat-icon>
-              <span>{{ 'nav.administration' | translate }}</span>
-            </div>
-            
-            <a 
-              routerLink="/admin/dashboard" 
-              routerLinkActive="active"
-              (click)="onNavClick('dashboard')"
-              class="nav-item admin-item">
-              <mat-icon>dashboard</mat-icon>
-              <span>{{ 'admin.dashboard' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-
-            <a 
-              routerLink="/admin/groupes" 
-              routerLinkActive="active"
-              (click)="onNavClick('groupe')"
-              class="nav-item admin-item">
-              <mat-icon>group</mat-icon>
-              <span>{{ 'admin.groups' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-
-               <a 
-              routerLink="/admin/audit" 
-              routerLinkActive="active"
-              (click)="onNavClick('audit')"
-              class="nav-item admin-item">
-              <mat-icon>audit</mat-icon>
-              <span>{{ 'admin.audit' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-
-            <a 
-              routerLink="/admin/utilisateurs" 
-              routerLinkActive="active"
-              (click)="onNavClick('user')"
-              class="nav-item admin-item">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'admin.users' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-
-             <a 
-              routerLink="/admin/partenaires" 
-              routerLinkActive="active"
-              (click)="onNavClick('partenaire')"
-              class="nav-item admin-item">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'admin.partenaires' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-
-              <a 
-              routerLink="/admin/publicites/dashboard1" 
-              routerLinkActive="active"
-              (click)="onNavClick('publicites/dashboard')"
-              class="nav-item admin-item">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'admin.publicites.dashboard' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
           
-            <a 
-              routerLink="/admin/publicites" 
-              routerLinkActive="active"
-              (click)="onNavClick('publicites')"
-              class="nav-item admin-item">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'admin.publicites.publicites' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-          </div>
+          <mat-accordion multi="false" displayMode="flat">
 
-             <!-- Section: partenaire -->
-          <div class="nav-section" *ngIf="isPartenaire">
-            <div class="section-divider"></div>
-            <div class="section-title admin-section">
-              <mat-icon>admin_panel_settings</mat-icon>
-              <span>{{ 'nav.administration' | translate }}</span>
-            </div>
-            
-            <a 
-              routerLink="/partenaire/dashboard" 
-              routerLinkActive="active"
-              (click)="onNavClick('dashboard')"
-              class="nav-item admin-item">
-              <mat-icon>dashboard</mat-icon>
-              <span>{{ 'admin.dashboard' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
+            <mat-expansion-panel class="menu-group-panel" [expanded]="true">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>home</mat-icon>
+                  <span>{{ 'nav.mainMenu' | translate }}</span>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
 
-            <a 
-              routerLink="/partenaire/entreprise" 
-              routerLinkActive="active"
-              (click)="onNavClick('entreprise')"
-              class="nav-item admin-item">
-              <mat-icon>group</mat-icon>
-              <span>{{ 'partenaire.entreprise' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-            <a 
-              routerLink="/partenaire/publicite" 
-              routerLinkActive="active"
-              (click)="onNavClick('publicite')"
-              class="nav-item admin-item">
-              <mat-icon>group</mat-icon>
-              <span>{{ 'partenaire.publicite' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a>
-            <!-- <a 
-              routerLink="/admin/utilisateurs" 
-              routerLinkActive="active"
-              (click)="onNavClick('user')"
-              class="nav-item admin-item">
-              <mat-icon>person</mat-icon>
-              <span>{{ 'admin.users' | translate }}</span>
-              <div class="nav-indicator"></div>
-            </a> -->
-          </div>
+              <div class="submenu-container">
+                <a routerLink="/home" routerLinkActive="active" class="nav-item submenu">
+                  <mat-icon>dashboard</mat-icon>
+                  <span>{{ 'admin.home' | translate }}</span>
+                </a>
 
-          <!-- Section: Menus Responsable (seulement si a un groupe) -->
-          <div *ngIf="isResponsable && userHasGroup">
-  
-  <div class="nav-section" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
-    <div class="section-divider"></div>
-    
-    <div class="section-title category-section">
-      <mat-icon>{{ categorie.icone }}</mat-icon>
-      <span>{{ 'menu.categories.' + categorie.code | translate }}</span>
-    </div>
+                <ng-container *ngFor="let menu of menusCommuns; trackBy: trackByMenuId">
+                  <a *ngIf="menu.route" [routerLink]="menu.route" routerLinkActive="active" 
+                     (click)="onNavClick(menu.code)" class="nav-item submenu">
+                    <mat-icon>{{ menu.icone }}</mat-icon>
+                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
+                  </a>
+                  <a *ngIf="!menu.route && menu.code === 'JOIN'" (click)="openJoinDialog()" class="nav-item submenu action-item">
+                    <mat-icon>{{ menu.icone }}</mat-icon>
+                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
+                  </a>
+                </ng-container>
+              </div>
+            </mat-expansion-panel>
 
-    <a 
-      *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
-      [routerLink]="menu.route" 
-      routerLinkActive="active"
-      (click)="onNavClick(menu.code)"
-      class="nav-item category-item"
-      [matTooltip]="'menu.descriptions.' + menu.code | translate"
-      matTooltipPosition="right">
-      
-      <mat-icon>{{ menu.icone }}</mat-icon>
-      
-      <span>
-        {{ ('menu.items.' + menu.code | translate) !== ('menu.items.' + menu.code) 
-           ? ('menu.items.' + menu.code | translate) 
-           : menu.label }}
-      </span>
-      
-      <div class="nav-indicator"></div>
-    </a>
-  </div>
+            <mat-expansion-panel class="menu-group-panel" *ngIf="isAdmin || isPartenaire">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>admin_panel_settings</mat-icon>
+                  <span>{{ 'nav.administration' | translate }}</span>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
 
-  <div *ngIf="!currentGroupeId" class="no-groupe-message">
-    <mat-icon>info_outline</mat-icon>
-    <div class="message-content">
-      <h4>{{ 'menu.messages.select_group_title' | translate }}</h4>
-      <p>{{ 'menu.messages.select_group_text' | translate }}</p>
-    </div>
-  </div>
-</div>
+              <div class="submenu-container">
+                <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item submenu">
+                  <mat-icon>analytics</mat-icon>
+                  <span>{{ 'admin.dashboard' | translate }}</span>
+                </a>
+                <a routerLink="/admin/groupes" routerLinkActive="active" class="nav-item submenu">
+                  <mat-icon>group</mat-icon>
+                  <span>{{ 'admin.groups' | translate }}</span>
+                </a>
+                </div>
+            </mat-expansion-panel>
 
-          <!-- Message si l'utilisateur n'a pas de groupe -->
+            <ng-container *ngIf="isResponsable && userHasGroup">
+              <mat-expansion-panel class="menu-group-panel" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    <mat-icon>{{ categorie.icone }}</mat-icon>
+                    <span>{{ 'menu.categories.' + categorie.code | translate }}</span>
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <div class="submenu-container">
+                  <a *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
+                     [routerLink]="menu.route" routerLinkActive="active"
+                     (click)="onNavClick(menu.code)" class="nav-item submenu">
+                    <mat-icon>{{ menu.icone }}</mat-icon>
+                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
+                  </a>
+                </div>
+              </mat-expansion-panel>
+            </ng-container>
+
+          </mat-accordion>
+
           <div *ngIf="!userHasGroup && !isAdmin" class="no-groupe-message info-box">
             <mat-icon>info_outline</mat-icon>
             <div class="message-content">
-              <h4>Aucun groupe</h4>
-              <p>Créez ou rejoignez un groupe pour accéder à toutes les fonctionnalités</p>
+              <h4>{{ 'menu.messages.no_group' | translate }}</h4>
+              <p>{{ 'menu.messages.no_group_text' | translate }}</p>
             </div>
           </div>
 
         </ng-container>
       </nav>
 
-      <!-- Footer sidebar amélioré -->
       <div class="sidebar-footer">
-        <mat-divider></mat-divider>
-        
-        <!-- Informations utilisateur -->
         <div class="user-info" *ngIf="user" (click)="openProfileEdit()">
           <div class="user-avatar">
-            <img *ngIf="userProfileImage" 
-                 [src]="userProfileImage" 
-                 [alt]="user.username"
-                 class="avatar-image">
+            <img *ngIf="userProfileImage" [src]="userProfileImage" class="avatar-image">
             <mat-icon *ngIf="!userProfileImage" class="avatar-icon">account_circle</mat-icon>
             <div class="status-indicator online"></div>
           </div>
           <div class="user-details">
             <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
             <span class="user-role">{{ selectedRole }}</span>
-            <span class="user-status">En ligne</span>
           </div>
-          <mat-icon class="edit-icon">edit</mat-icon>
         </div>
-
-        <!-- Informations app -->
         <div class="app-info">
-          <div class="version-info">
-            <span class="app-version">My 2.0 v1.0.0</span>
-            <span class="build-date">{{ getCurrentDate() | date:'shortDate' }}</span>
-          </div>
+          <span class="app-version">My 2.0 v1.0.0</span>
           <div class="footer-links">
-            <button mat-button class="footer-link" (click)="viewSettings()">
-              <mat-icon>help_outline</mat-icon>
-            </button>
-            <button mat-button class="footer-link" (click)="viewSettings()">
-              <mat-icon>settings</mat-icon>
-            </button>
+            <button mat-icon-button (click)="viewSettings()"><mat-icon>settings</mat-icon></button>
           </div>
         </div>
       </div>
     </aside>
 
-    <!-- Contenu principal -->
-    <main class="main-content" [class.full-width]="!authService.isLoggedIn()">
-      <!-- Contenu de la page -->
-      <div class="page-content">
-        <router-outlet></router-outlet>
-      </div>
+    <main class="main-content">
+      <router-outlet></router-outlet>
     </main>
   </div>
 </div>

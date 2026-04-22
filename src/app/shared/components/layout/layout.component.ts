@@ -33,6 +33,8 @@ import { PubliciteBannerComponent } from '../../../modules/publicite/publicite-b
 import { PubliciteSidebarComponent } from '../../../modules/publicite/publicite-sidebar/publicite-sidebar.component';
 import { PubliciteSplashComponent } from '../../../modules/publicite/publicite-splash/publicite-splash.component';
 import { SplashScreenService } from '../../../core/services/splash-screen.service';
+import { JoinGroupDialogComponent } from '../../../modules/membre/components/join-group-dialog/join-group-dialog.component';
+import { MatExpansionModule } from '@angular/material/expansion';
 
 
 
@@ -58,6 +60,7 @@ import { SplashScreenService } from '../../../core/services/splash-screen.servic
     MatTooltipModule,
     NavbarComponent,
     TranslateModule,
+    MatExpansionModule
     // ✅ COMPOSANTS PUBLICITÉ
     // PubliciteBannerComponent,
   ],
@@ -292,6 +295,21 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.userProfileImage = this.user?.profileImage || null;
   }
 
+  openJoinDialog() {
+  const dialogRef = this.dialog.open(JoinGroupDialogComponent, {
+    width: '450px',
+    disableClose: true
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      // Optionnel : rafraîchir les données de l'utilisateur 
+      // pour faire disparaître le menu "Rejoindre"
+      this.loadUserData(); 
+    }
+  });
+  }
+
   loadMenusCommuns(): void {
     const baseMenus: Menu[] = [
       {
@@ -342,6 +360,20 @@ export class LayoutComponent implements OnInit, OnDestroy {
         categorie: 'COMMUN'
       });
     }
+
+   if (!this.userHasGroup) {
+  baseMenus.push({
+    id: 13,
+    code: 'JOIN',
+    label: 'Rejoindre un groupe',
+    icone: 'group_add',
+    description: 'Rejoindre un groupe via le code',
+    ordre: 2,
+    actif: true,
+    categorie: 'COMMUN',
+    route: ''
+  });
+}
 
     if (this.userHasGroup) {
       baseMenus.push(

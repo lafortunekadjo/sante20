@@ -84,6 +84,8 @@ import { AdminPartenaireDashboardComponent } from "./modules/partenaire/admin-pa
 import { AuditListComponent } from "./modules/responsable/components/audit-list/audit-list.component";
 import { MvpVoteComponent } from "./modules/membre/components/mvp-vote/mvp-vote.component";
 import { MvpWinnerComponent } from "./modules/membre/components/mvp-winner/mvp-winner.component";
+import { DemandeAdhesionComponent } from "./shared/components/demande-adhesion/demande-adhesion.component";
+import { JoinGroupDialogComponent } from "./modules/membre/components/join-group-dialog/join-group-dialog.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -118,9 +120,17 @@ export const routes: Routes = [
         path: 'creategroup',
         component: UserGroupRegisterComponent,
       },
+       {
+        path: 'joingroup',
+        component: JoinGroupDialogComponent,
+      },
       {
         path: 'apropos',
         component: HomeComponent,
+      },
+       {
+        path: 'adhesion/:id/candidature',
+        component: DemandeAdhesionComponent,
       },
       {
         path: 'home',

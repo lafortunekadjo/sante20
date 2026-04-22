@@ -272,10 +272,10 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
     });
 
     const demande: DemandeAdhesion = {
-      
       groupeId: this.groupeId,
       statut: 'EN_ATTENTE',
-      reponses: reponses
+      reponses: reponses,
+      dateCreation: new Date()
     };
 
     console.log('Demande à envoyer:', demande);

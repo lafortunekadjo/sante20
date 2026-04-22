@@ -263,13 +263,13 @@ export class GroupesExploreComponent implements OnInit {
             });
           } else {
             // Rediriger vers le formulaire de candidature
-            this.router.navigate(['/adhesion', groupe.id, 'candidature']);
+            this.router.navigate(['/adhesion', groupe.id, '/candidature']);
           }
         },
         error: (err) => {
           console.error('Erreur vérification demande:', err);
           // En cas d'erreur, rediriger quand même
-          this.router.navigate(['/adhesion', groupe.id, 'candidature']);
+          this.router.navigate(['/adhesion', groupe.id, '/candidature']);
         }
       });
     }

@@ -124,6 +124,16 @@ export class InvitationService {
     );
   }
 
+    rejoindreGroupeConnecte(request: any): Observable<InscriptionInvitationResponse> {
+    return this.http.post<InscriptionInvitationResponse>(
+      `${this.apiUrl}/public/invitation/join/connect`,
+      request
+    );
+  }
+
+  
+
+
   // ============================================================
   // ENDPOINTS RESPONSABLE (avec auth)
   // ============================================================

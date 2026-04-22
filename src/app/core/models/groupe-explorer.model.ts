@@ -43,7 +43,7 @@ export interface DemandeAdhesion {
   groupeId: number;
   userId?: number;
   statut: 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE';
-  dateCreation: Date;
+  dateCreation: Date ;
   reponses?: ReponseQuestion[];
 }
 
