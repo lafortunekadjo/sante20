@@ -50,6 +50,8 @@ export class PartenaireDashboardComponent implements OnInit, OnDestroy {
   // États
   isLoading = true;
   isLoadingStats = true;
+  isLoggedIn = false;
+
   
   // Alertes
   alerts: { type: string; message: string; icon: string }[] = [];
@@ -75,6 +77,7 @@ export class PartenaireDashboardComponent implements OnInit, OnDestroy {
 
   private loadData(): void {
     this.isLoading = true;
+    this.isLoggedIn=this.authService.isLoggedIn()
     
     // Charger le partenaire
     const partSub = this.partenaireService.getMonPartenaire().subscribe({

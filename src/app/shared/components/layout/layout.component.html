@@ -22,10 +22,9 @@
         </div>
 
         <ng-container *ngIf="!isLoadingMenus">
-          
-          <mat-accordion multi="false" displayMode="flat">
+          <mat-accordion multi="true" displayMode="flat">
 
-            <mat-expansion-panel class="menu-group-panel" [expanded]="true">
+            <mat-expansion-panel class="menu-group-panel" [expanded]="true" *ngIf="!isPartenaire">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>home</mat-icon>
@@ -34,26 +33,19 @@
               </mat-expansion-panel-header>
 
               <div class="submenu-container">
-                <a routerLink="/home" routerLinkActive="active" class="nav-item submenu">
-                  <mat-icon>dashboard</mat-icon>
+                <a routerLink="/home" routerLinkActive="active" class="nav-item">
+                  <mat-icon>home</mat-icon>
                   <span>{{ 'admin.home' | translate }}</span>
                 </a>
 
-                <ng-container *ngFor="let menu of menusCommuns; trackBy: trackByMenuId">
-                  <a *ngIf="menu.route" [routerLink]="menu.route" routerLinkActive="active" 
-                     (click)="onNavClick(menu.code)" class="nav-item submenu">
-                    <mat-icon>{{ menu.icone }}</mat-icon>
-                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
-                  </a>
-                  <a *ngIf="!menu.route && menu.code === 'JOIN'" (click)="openJoinDialog()" class="nav-item submenu action-item">
-                    <mat-icon>{{ menu.icone }}</mat-icon>
-                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
-                  </a>
-                </ng-container>
+                <a *ngFor="let menu of menusCommuns" [routerLink]="menu.route" routerLinkActive="active" class="nav-item">
+                  <mat-icon>{{ menu.icone }}</mat-icon>
+                  <span>{{ 'menu.items.' + menu.code | translate }}</span>
+                </a>
               </div>
             </mat-expansion-panel>
 
-            <mat-expansion-panel class="menu-group-panel" *ngIf="isAdmin || isPartenaire">
+            <mat-expansion-panel class="menu-group-panel admin-panel" *ngIf="isAdmin">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>admin_panel_settings</mat-icon>
@@ -62,19 +54,55 @@
               </mat-expansion-panel-header>
 
               <div class="submenu-container">
-                <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item submenu">
-                  <mat-icon>analytics</mat-icon>
+                <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+                  <mat-icon>dashboard</mat-icon>
                   <span>{{ 'admin.dashboard' | translate }}</span>
                 </a>
-                <a routerLink="/admin/groupes" routerLinkActive="active" class="nav-item submenu">
+                <a routerLink="/admin/groupes" routerLinkActive="active" class="nav-item">
                   <mat-icon>group</mat-icon>
                   <span>{{ 'admin.groups' | translate }}</span>
                 </a>
-                </div>
+                <a routerLink="/admin/utilisateurs" routerLinkActive="active" class="nav-item">
+                  <mat-icon>person</mat-icon>
+                  <span>{{ 'admin.users' | translate }}</span>
+                </a>
+                <a routerLink="/admin/partenaires" routerLinkActive="active" class="nav-item">
+                  <mat-icon>business</mat-icon>
+                  <span>{{ 'admin.partenaires' | translate }}</span>
+                </a>
+                <a routerLink="/admin/publicites" routerLinkActive="active" class="nav-item">
+                  <mat-icon>ads_click</mat-icon>
+                  <span>{{ 'admin.publicites.publicites' | translate }}</span>
+                </a>
+              </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel class="menu-group-panel" *ngIf="isPartenaire">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>handshake</mat-icon>
+                  <span>Espace Partenaire</span>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="submenu-container">
+                <a routerLink="/partenaire/dashboard" routerLinkActive="active" class="nav-item">
+                  <mat-icon>dashboard</mat-icon>
+                  <span>Tableau de bord</span>
+                </a>
+                <a routerLink="/partenaire/entreprise" routerLinkActive="active" class="nav-item">
+                  <mat-icon>store</mat-icon>
+                  <span>Mon Entreprise</span>
+                </a>
+                <a routerLink="/partenaire/publicite" routerLinkActive="active" class="nav-item">
+                  <mat-icon>campaign</mat-icon>
+                  <span>Mes Publicités</span>
+                </a>
+              </div>
             </mat-expansion-panel>
 
             <ng-container *ngIf="isResponsable && userHasGroup">
-              <mat-expansion-panel class="menu-group-panel" *ngFor="let categorie of menuCategories; trackBy: trackByCategoryId">
+              <mat-expansion-panel class="menu-group-panel" *ngFor="let categorie of menuCategories">
                 <mat-expansion-panel-header>
                   <mat-panel-title>
                     <mat-icon>{{ categorie.icone }}</mat-icon>
@@ -83,9 +111,7 @@
                 </mat-expansion-panel-header>
 
                 <div class="submenu-container">
-                  <a *ngFor="let menu of categorie.menus; trackBy: trackByMenuId"
-                     [routerLink]="menu.route" routerLinkActive="active"
-                     (click)="onNavClick(menu.code)" class="nav-item submenu">
+                  <a *ngFor="let menu of categorie.menus" [routerLink]="menu.route" routerLinkActive="active" class="nav-item">
                     <mat-icon>{{ menu.icone }}</mat-icon>
                     <span>{{ 'menu.items.' + menu.code | translate }}</span>
                   </a>
@@ -95,7 +121,7 @@
 
           </mat-accordion>
 
-          <div *ngIf="!userHasGroup && !isAdmin" class="no-groupe-message info-box">
+          <div *ngIf="!userHasGroup && !isAdmin && !isPartenaire" class="no-groupe-message info-box">
             <mat-icon>info_outline</mat-icon>
             <div class="message-content">
               <h4>{{ 'menu.messages.no_group' | translate }}</h4>
@@ -107,28 +133,13 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="user-info" *ngIf="user" (click)="openProfileEdit()">
-          <div class="user-avatar">
-            <img *ngIf="userProfileImage" [src]="userProfileImage" class="avatar-image">
-            <mat-icon *ngIf="!userProfileImage" class="avatar-icon">account_circle</mat-icon>
-            <div class="status-indicator online"></div>
-          </div>
-          <div class="user-details">
-            <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
-            <span class="user-role">{{ selectedRole }}</span>
-          </div>
         </div>
-        <div class="app-info">
-          <span class="app-version">My 2.0 v1.0.0</span>
-          <div class="footer-links">
-            <button mat-icon-button (click)="viewSettings()"><mat-icon>settings</mat-icon></button>
-          </div>
-        </div>
-      </div>
     </aside>
 
-    <main class="main-content">
-      <router-outlet></router-outlet>
+    <main class="main-content" [class.full-width]="!authService.isLoggedIn()">
+      <div class="page-content">
+        <router-outlet></router-outlet>
+      </div>
     </main>
   </div>
 </div>
