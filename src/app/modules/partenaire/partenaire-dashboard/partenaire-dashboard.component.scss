@@ -1,621 +1,155 @@
-// ============================================================
-// DASHBOARD PARTENAIRE - STYLES
-// ============================================================
-
 @import '../../../../variables';
 
-.dashboard-container {
-  animation: fadeIn 0.4s ease-out;
+:host {
+  display: block;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
 }
 
-// ============================================================
-// LOADING STATE
-// ============================================================
+.dashboard-wrapper {
+  padding: $spacing-xl;
+  @include mobile { padding: $spacing-md; }
+}
 
-.loading-state {
-  @include flex-center;
-  flex-direction: column;
-  gap: $spacing-xl;
-  padding: $spacing-6xl;
-  color: var(--text-secondary);
-  
-  p {
-    font-size: $font-size-md;
+// Header avec Badge Pub Active
+.dashboard-header-minimal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  @include mobile { flex-direction: column; align-items: flex-start; gap: 16px; }
+
+  h1 { font-size: 1.5rem; margin: 0; font-weight: 800; }
+  p { color: var(--text-secondary); margin: 4px 0 0; }
+
+  .active-badge {
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    
+    .pulse {
+      width: 8px; height: 8px; background: $success-color;
+      border-radius: 50%; box-shadow: 0 0 0 rgba($success-color, 0.4);
+      animation: pulse 2s infinite;
+    }
   }
 }
 
-// ============================================================
-// HEADER
-// ============================================================
-
-.dashboard-header {
-  @include page-header;
-  margin-bottom: $spacing-2xl;
+// KPI Grid
+.kpi-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+  @include mobile { grid-template-columns: 1fr; } // Force 1 colonne sur tel
 }
 
-// ============================================================
-// ALERTES
-// ============================================================
-
-.alerts-section {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-  margin-bottom: $spacing-2xl;
-}
-
-.alert-card {
+.kpi-card {
+  background: var(--background-primary);
+  padding: 20px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-xl;
-  border-radius: $border-radius-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+  gap: 16px;
+  border: 1px solid var(--border-color);
+
+  .kpi-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    @include flex-center; flex-shrink: 0;
+    &.blue { background: rgba($primary-blue, 0.1); color: $primary-blue; }
+    &.emerald { background: rgba($success-color, 0.1); color: $success-color; }
   }
-  
-  span {
-    flex: 1;
-  }
-  
-  .alert-close {
-    opacity: 0.7;
-    
-    &:hover {
-      opacity: 1;
-    }
-  }
-  
-  &.alert-warning {
-    background-color: rgba($warning-color, 0.1);
-    color: $warning-color;
-    border: 1px solid rgba($warning-color, 0.3);
-  }
-  
-  &.alert-error {
-    background-color: rgba($error-color, 0.1);
-    color: $error-color;
-    border: 1px solid rgba($error-color, 0.3);
-  }
-  
-  &.alert-info {
-    background-color: rgba($info-color, 0.1);
-    color: $info-color;
-    border: 1px solid rgba($info-color, 0.3);
-  }
-  
-  &.alert-success {
-    background-color: rgba($success-color, 0.1);
-    color: $success-color;
-    border: 1px solid rgba($success-color, 0.3);
+
+  .kpi-data {
+    .v { display: block; font-size: 1.4rem; font-weight: 800; }
+    .l { font-size: 0.8rem; color: var(--text-secondary); }
   }
 }
 
-// ============================================================
-// DASHBOARD GRID
-// ============================================================
+// LE LAYOUT MAGIQUE : Grid sur desktop, Flex-Column sur mobile
+.responsive-layout {
+  display: block;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: $spacing-2xl;
-  
-  @include tablet {
-    grid-template-columns: 1fr;
-  }
-  
-  @include mobile {
-    gap: $spacing-lg;
+  @include tablet { // Se déclenche sur tablette et mobile
+    display: flex;
+    flex-direction: column; // EMPILAGE : Une section sous l'autre
   }
 }
 
-.main-column {
+.section-card {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: 20px;
+  
+  .card-title-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+    h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+  }
+}
+
+// Liste Entreprises (Correction visuelle pour éviter la compression)
+.ent-card {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-2xl;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--background-secondary);
+  border-radius: 12px;
+  cursor: pointer;
+
+  .ent-icon { 
+    width: 36px; height: 36px; border-radius: 8px; background: var(--background-primary);
+    @include flex-center; margin-right: 12px; flex-shrink: 0;
+  }
+
+  .ent-details {
+    flex: 1; min-width: 0;
+    .ent-name { font-weight: 600; display: block; @include text-truncate; }
+    .ent-sub { font-size: 0.75rem; color: var(--text-secondary); }
+  }
+  .arrow { font-size: 12px; width: 12px; color: var(--text-tertiary); }
 }
 
-.side-column {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-2xl;
-}
-
-// ============================================================
-// CARDS BASE
-// ============================================================
-
-mat-card {
-  @include card-base;
+// Liste Pubs Responsive
+.list-item-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px; border-bottom: 1px solid var(--border-color);
   
-  mat-card-header {
-    padding: $spacing-lg $spacing-xl;
-    border-bottom: 1px solid var(--border-color);
-    
-    [mat-card-avatar] {
-      @include flex-center;
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-      border-radius: $border-radius-md;
-      color: white;
-    }
-    
-    mat-card-title {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-semibold;
-      color: var(--text-primary);
-    }
-    
-    .view-all-btn {
-      margin-left: auto;
-    }
+  @include mobile { 
+    flex-direction: column; align-items: flex-start; gap: 12px; 
+    padding-bottom: 16px;
   }
-  
-  mat-card-content {
-    padding: $spacing-xl;
+
+  .item-info {
+    display: flex; align-items: center; gap: 12px;
+    .item-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .t1 { font-weight: 600; display: block; }
+    .t2 { font-size: 0.8rem; color: var(--text-secondary); }
   }
-  
-  mat-card-actions {
-    padding: $spacing-md $spacing-xl;
-    border-top: 1px solid var(--border-color);
+
+  .item-meta {
+    display: flex; align-items: center; gap: 12px;
+    @include mobile { width: 100%; justify-content: space-between; }
   }
 }
 
-// ============================================================
-// STATS CARD
-// ============================================================
-
-.stats-card {
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: $spacing-lg;
-    
-    @include tablet {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    @include mobile {
-      grid-template-columns: 1fr;
-    }
-  }
-  
-  .stat-box {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-lg;
-    background-color: var(--background-secondary);
-    border-radius: $border-radius-md;
-    transition: $transition-base;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: $shadow-md;
-    }
-    
-    .stat-icon {
-      @include flex-center;
-      width: 48px;
-      height: 48px;
-      border-radius: $border-radius-md;
-      
-      mat-icon {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-        color: white;
-      }
-      
-      &.impressions {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      }
-      
-      &.clicks {
-        background: linear-gradient(135deg, #10b981, #059669);
-      }
-      
-      &.ctr {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-      }
-      
-      &.active {
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      }
-    }
-    
-    .stat-info {
-      display: flex;
-      flex-direction: column;
-      
-      .stat-value {
-        font-size: $font-size-2xl;
-        font-weight: $font-weight-bold;
-        color: var(--text-primary);
-        line-height: 1.2;
-      }
-      
-      .stat-label {
-        font-size: $font-size-sm;
-        color: var(--text-secondary);
-      }
-    }
-  }
-  
-  .stats-loading {
-    @include flex-center;
-    padding: $spacing-3xl;
-  }
+.status-chip {
+  padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+  &.status-active { background: rgba($success-color, 0.1); color: $success-color; }
 }
 
-// ============================================================
-// RECENT ADS CARD
-// ============================================================
+.w-100 { width: 100%; }
 
-.recent-ads-card {
-  mat-card-header {
-    display: flex;
-    align-items: center;
-  }
-  
-  .ads-list {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-  }
-  
-  .ad-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
-    border-radius: $border-radius-md;
-    cursor: pointer;
-    transition: $transition-base;
-    
-    &:hover {
-      background-color: var(--background-tertiary);
-    }
-    
-    .ad-image {
-      @include flex-center;
-      width: 60px;
-      height: 60px;
-      border-radius: $border-radius-sm;
-      background-color: var(--background-secondary);
-      overflow: hidden;
-      flex-shrink: 0;
-      
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      
-      mat-icon {
-        font-size: 28px;
-        color: var(--text-tertiary);
-      }
-    }
-    
-    .ad-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      
-      .ad-title {
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-        @include text-truncate;
-      }
-      
-      .ad-enterprise {
-        font-size: $font-size-sm;
-        color: var(--text-secondary);
-      }
-      
-      .ad-stats {
-        display: flex;
-        gap: $spacing-md;
-        margin-top: $spacing-xs;
-        
-        span {
-          display: flex;
-          align-items: center;
-          gap: $spacing-xs;
-          font-size: $font-size-xs;
-          color: var(--text-tertiary);
-          
-          mat-icon {
-            font-size: 14px;
-            width: 14px;
-            height: 14px;
-          }
-        }
-      }
-    }
-    
-    .ad-status {
-      .status-badge {
-        padding: $spacing-xs $spacing-sm;
-        border-radius: $border-radius-sm;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        text-transform: uppercase;
-        
-        &.status-active {
-          background-color: rgba($success-color, 0.1);
-          color: $success-color;
-        }
-        
-        &.status-pending {
-          background-color: rgba($warning-color, 0.1);
-          color: $warning-color;
-        }
-        
-        &.status-paused {
-          background-color: rgba($info-color, 0.1);
-          color: $info-color;
-        }
-        
-        &.status-rejected {
-          background-color: rgba($error-color, 0.1);
-          color: $error-color;
-        }
-        
-        &.status-default {
-          background-color: var(--background-tertiary);
-          color: var(--text-secondary);
-        }
-      }
-    }
-    
-    .ad-arrow {
-      color: var(--text-tertiary);
-    }
-  }
-  
-  .empty-state {
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-lg;
-    padding: $spacing-3xl;
-    text-align: center;
-    
-    mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      color: var(--text-tertiary);
-      opacity: 0.5;
-    }
-    
-    p {
-      color: var(--text-secondary);
-    }
-  }
-}
-
-// ============================================================
-// QUICK ACTIONS CARD
-// ============================================================
-
-.quick-actions-card {
-  .quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
-  }
-  
-  .action-btn {
-    justify-content: flex-start;
-    padding: $spacing-md $spacing-lg;
-    
-    mat-icon {
-      margin-right: $spacing-sm;
-    }
-  }
-}
-
-// ============================================================
-// CONTRACT CARD
-// ============================================================
-
-.contract-card {
-  &.status-active {
-    border-left: 4px solid $success-color;
-  }
-  
-  &.status-warning {
-    border-left: 4px solid $warning-color;
-  }
-  
-  &.status-expired {
-    border-left: 4px solid $error-color;
-  }
-  
-  .contract-info {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
-  }
-  
-  .contract-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    .label {
-      font-size: $font-size-sm;
-      color: var(--text-secondary);
-    }
-    
-    .value {
-      font-weight: $font-weight-medium;
-      color: var(--text-primary);
-      
-      &.type-badge {
-        padding: $spacing-xs $spacing-sm;
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        color: white;
-        border-radius: $border-radius-sm;
-        font-size: $font-size-xs;
-        text-transform: uppercase;
-      }
-      
-      &.status-badge {
-        display: flex;
-        align-items: center;
-        gap: $spacing-xs;
-        
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
-      }
-      
-      &.status-active {
-        color: $success-color;
-      }
-      
-      &.status-warning {
-        color: $warning-color;
-      }
-      
-      &.status-expired {
-        color: $error-color;
-      }
-    }
-  }
-  
-  .contract-emplacements {
-    .label {
-      display: block;
-      margin-bottom: $spacing-sm;
-      font-size: $font-size-sm;
-      color: var(--text-secondary);
-    }
-    
-    .emplacements-list {
-      mat-chip {
-        font-size: $font-size-xs;
-      }
-    }
-  }
-  
-  mat-divider {
-    margin: $spacing-sm 0;
-  }
-}
-
-// ============================================================
-// ENTERPRISES CARD
-// ============================================================
-
-.enterprises-card {
-  .enterprises-list {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-  }
-  
-  .enterprise-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
-    border-radius: $border-radius-md;
-    cursor: pointer;
-    transition: $transition-base;
-    
-    &:hover {
-      background-color: var(--background-tertiary);
-    }
-    
-    .enterprise-logo {
-      @include flex-center;
-      width: 40px;
-      height: 40px;
-      border-radius: $border-radius-sm;
-      background-color: var(--background-secondary);
-      overflow: hidden;
-      
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-      
-      mat-icon {
-        color: var(--text-tertiary);
-      }
-    }
-    
-    .enterprise-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      
-      .enterprise-name {
-        font-weight: $font-weight-medium;
-        color: var(--text-primary);
-      }
-      
-      .enterprise-stats {
-        font-size: $font-size-sm;
-        color: var(--text-secondary);
-      }
-    }
-    
-    mat-icon {
-      color: var(--text-tertiary);
-    }
-  }
-  
-  .empty-enterprises {
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-2xl;
-    text-align: center;
-    
-    mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: var(--text-tertiary);
-      opacity: 0.5;
-    }
-    
-    p {
-      color: var(--text-secondary);
-      font-size: $font-size-sm;
-    }
-  }
-}
-
-// ============================================================
-// RESPONSIVE
-// ============================================================
-
-@include mobile {
-  .dashboard-header {
-    .header-content {
-      flex-direction: column;
-      align-items: stretch;
-      
-      .header-stats {
-        justify-content: space-around;
-      }
-    }
-  }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba($success-color, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba($success-color, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($success-color, 0); }
 }

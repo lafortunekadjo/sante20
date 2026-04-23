@@ -1,351 +1,94 @@
-<!-- Dashboard Partenaire My2-0 -->
-<div class="dashboard-container">
+<div class="dashboard-wrapper fade-in">
   
-  <!-- Loading State -->
-  <div class="loading-state" *ngIf="isLoading">
-    <mat-spinner diameter="48"></mat-spinner>
-    <p>{{ 'partenaire.common.loading' | translate }}</p>
-  </div>
-
-  <!-- Dashboard Content -->
-  <ng-container *ngIf="!isLoading && partenaire">
-    
-    <!-- Header -->
-    <header class="dashboard-header">
-      <div class="header-background"></div>
-      <div class="header-content">
-        <div class="header-main">
-          <div class="header-icon">
-            <mat-icon>dashboard</mat-icon>
-          </div>
-          <div class="header-text">
-            <h1 class="page-title">
-              {{ 'partenaire.dashboard.welcome' | translate }}, {{ getUserName() }} 👋
-            </h1>
-            <p class="page-subtitle">{{ 'partenaire.dashboard.subtitle' | translate }}</p>
-          </div>
-        </div>
-        
-        <!-- Quick Stats Header -->
-        <div class="header-stats">
-          <div class="stat-item">
-            <span class="stat-number">{{ partenaire.nombrePublicitesActives || 0 }}</span>
-            <span class="stat-label">{{ 'partenaire.dashboard.stats.activeAds' | translate }}</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-number">{{ partenaire.nombreEntreprises || 0 }}</span>
-            <span class="stat-label">{{ 'partenaire.dashboard.stats.enterprises' | translate }}</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-number">{{ formatNumber(partenaire.totalImpressions || 0) }}</span>
-            <span class="stat-label">{{ 'partenaire.dashboard.stats.impressions' | translate }}</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Alertes -->
-    <div class="alerts-section" *ngIf="alerts.length > 0">
-      <div 
-        class="alert-card"
-        *ngFor="let alert of alerts; trackBy: trackByAlert"
-        [class]="'alert-' + alert.type">
-        <mat-icon>{{ alert.icon }}</mat-icon>
-        <span>{{ alert.message }}</span>
-        <button mat-icon-button class="alert-close">
-          <mat-icon>close</mat-icon>
-        </button>
+  <header class="dashboard-header-minimal">
+    <div class="header-left">
+      <h1>{{ 'partenaire.dashboard.welcome' | translate }}, {{ getUserName() }}</h1>
+      <p>{{ 'partenaire.dashboard.subtitle' | translate }}</p>
+    </div>
+    <div class="header-right-stats">
+      <div class="active-badge">
+        <span class="pulse"></span>
+        <strong>{{ partenaire?.nombrePublicitesActives || 0 }}</strong> 
+        {{ 'partenaire.dashboard.stats.activeAds' | translate }}
       </div>
     </div>
+  </header>
 
-    <!-- Main Grid -->
-    <div class="dashboard-grid">
+  <main class="dashboard-main" *ngIf="!isLoading && partenaire">
+    
+    <section class="kpi-container">
+      <div class="kpi-card" matRipple>
+        <div class="kpi-icon blue"><mat-icon>visibility</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ formatNumber(stats?.totalImpressions || 0) }}</span>
+          <span class="l">{{ 'partenaire.dashboard.stats.impressions' | translate }}</span>
+        </div>
+      </div>
       
-      <!-- Colonne principale -->
-      <div class="main-column">
-        
-        <!-- Stats du mois -->
-        <mat-card class="stats-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>bar_chart</mat-icon>
-            <mat-card-title>{{ 'partenaire.dashboard.stats.title' | translate }}</mat-card-title>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <div class="stats-grid" *ngIf="!isLoadingStats && stats">
-              <div class="stat-box">
-                <div class="stat-icon impressions">
-                  <mat-icon>visibility</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-value">{{ formatNumber(stats.totalImpressions) }}</span>
-                  <span class="stat-label">{{ 'partenaire.dashboard.stats.impressions' | translate }}</span>
-                </div>
-              </div>
-              
-              <div class="stat-box">
-                <div class="stat-icon clicks">
-                  <mat-icon>touch_app</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-value">{{ formatNumber(stats.totalClics) }}</span>
-                  <span class="stat-label">{{ 'partenaire.dashboard.stats.clicks' | translate }}</span>
-                </div>
-              </div>
-              
-              <div class="stat-box">
-                <div class="stat-icon ctr">
-                  <mat-icon>trending_up</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-value">{{ stats.tauxClicsMoyen | number:'1.2-2' }}%</span>
-                  <span class="stat-label">{{ 'partenaire.dashboard.stats.ctr' | translate }}</span>
-                </div>
-              </div>
-              
-              <div class="stat-box">
-                <div class="stat-icon active">
-                  <mat-icon>campaign</mat-icon>
-                </div>
-                <div class="stat-info">
-                  <span class="stat-value">{{ stats.nombrePublicitesActives }}</span>
-                  <span class="stat-label">{{ 'partenaire.dashboard.stats.activeAds' | translate }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Loading stats -->
-            <div class="stats-loading" *ngIf="isLoadingStats">
-              <mat-spinner diameter="32"></mat-spinner>
-            </div>
-          </mat-card-content>
-          
-          <mat-card-actions>
-            <button mat-button color="primary" routerLink="/partenaire/statistiques">
-              <mat-icon>analytics</mat-icon>
-              {{ 'partenaire.dashboard.quickActions.viewStats' | translate }}
-            </button>
-          </mat-card-actions>
-        </mat-card>
-
-        <!-- Publicités récentes -->
-        <mat-card class="recent-ads-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>campaign</mat-icon>
-            <mat-card-title>{{ 'partenaire.dashboard.recentAds.title' | translate }}</mat-card-title>
-            <button mat-button color="primary" routerLink="/partenaire/publicite" class="view-all-btn">
-              {{ 'partenaire.dashboard.recentAds.viewAll' | translate }}
-              <mat-icon>chevron_right</mat-icon>
-            </button>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <!-- Liste des pubs -->
-            <div class="ads-list" *ngIf="recentAds.length > 0">
-              <div 
-                class="ad-item"
-                *ngFor="let ad of recentAds; trackBy: trackByAd"
-                routerLink="/partenaire/publicites/{{ ad.id }}">
-                
-                <div class="ad-image">
-                  <img 
-                    *ngIf="ad.imageUrl" 
-                    [src]="ad.imageUrl" 
-                    [alt]="ad.titre"
-                    loading="lazy">
-                  <mat-icon *ngIf="!ad.imageUrl">image</mat-icon>
-                </div>
-                
-                <div class="ad-info">
-                  <span class="ad-title">{{ ad.titre }}</span>
-                  <span class="ad-enterprise">{{ ad.entrepriseNom }}</span>
-                  <div class="ad-stats">
-                    <span>
-                      <mat-icon>visibility</mat-icon>
-                      {{ formatNumber(ad.totalImpressions) }}
-                    </span>
-                    <span>
-                      <mat-icon>touch_app</mat-icon>
-                      {{ formatNumber(ad.totalClics) }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="ad-status">
-                  <span class="status-badge" [class]="getStatutClass(ad.statut)">
-                    {{ 'partenaire.publicites.status.' + ad.statut | translate }}
-                  </span>
-                </div>
-                
-                <mat-icon class="ad-arrow">chevron_right</mat-icon>
-              </div>
-            </div>
-            
-            <!-- Empty state -->
-            <div class="empty-state" *ngIf="recentAds.length === 0">
-              <mat-icon>campaign</mat-icon>
-              <p>{{ 'partenaire.dashboard.recentAds.noAds' | translate }}</p>
-              <button 
-                mat-raised-button 
-                color="primary" 
-                routerLink="/partenaire/publicites/new"
-                *ngIf="canCreateAds()">
-                {{ 'partenaire.dashboard.recentAds.createFirst' | translate }}
-              </button>
-            </div>
-          </mat-card-content>
-        </mat-card>
+      <div class="kpi-card" matRipple>
+        <div class="kpi-icon emerald"><mat-icon>touch_app</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ formatNumber(stats?.totalClics || 0) }}</span>
+          <span class="l">{{ 'partenaire.dashboard.stats.clicks' | translate }}</span>
+        </div>
       </div>
 
-      <!-- Colonne latérale -->
-      <div class="side-column">
-        
-        <!-- Actions rapides -->
-        <mat-card class="quick-actions-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>bolt</mat-icon>
-            <mat-card-title>{{ 'partenaire.dashboard.quickActions.title' | translate }}</mat-card-title>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <div class="quick-actions">
-              <button 
-                mat-raised-button 
-                color="primary" 
-                class="action-btn"
-                routerLink="/partenaire/publicites/new"
-                *ngIf="canCreateAds()">
-                <mat-icon>add_circle</mat-icon>
-                {{ 'partenaire.dashboard.quickActions.newAd' | translate }}
-              </button>
-              
-              <button 
-                mat-stroked-button 
-                color="primary" 
-                class="action-btn"
-                routerLink="/partenaire/entreprises/new"
-                *ngIf="canCreateAds()">
-                <mat-icon>business</mat-icon>
-                {{ 'partenaire.dashboard.quickActions.newEnterprise' | translate }}
-              </button>
-              
-              <button 
-                mat-stroked-button 
-                class="action-btn"
-                routerLink="/partenaire/statistiques">
-                <mat-icon>analytics</mat-icon>
-                {{ 'partenaire.dashboard.quickActions.viewStats' | translate }}
-              </button>
-            </div>
-          </mat-card-content>
-        </mat-card>
+      <div class="kpi-card" [class]="getContractStatusClass()">
+        <div class="kpi-icon"><mat-icon>timer</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ getDaysRemaining() }}j</span>
+          <span class="l">{{ 'partenaire.dashboard.contract.daysLeft' | translate }}</span>
+        </div>
+      </div>
+    </section>
 
-        <!-- Info Contrat -->
-        <mat-card class="contract-card" [class]="getContractStatusClass()">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>description</mat-icon>
-            <mat-card-title>{{ 'partenaire.dashboard.contract.title' | translate }}</mat-card-title>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <div class="contract-info">
-              <div class="contract-row">
-                <span class="label">{{ 'partenaire.dashboard.contract.type' | translate }}</span>
-                <span class="value type-badge">{{ partenaire.typeContrat }}</span>
-              </div>
-              
-              <mat-divider></mat-divider>
-              
-              <div class="contract-row">
-                <span class="label">{{ 'partenaire.dashboard.contract.status' | translate }}</span>
-                <span class="value status-badge" [class]="getContractStatusClass()">
-                  <mat-icon>{{ getDaysRemaining() > 30 ? 'check_circle' : 'warning' }}</mat-icon>
-                  {{ getDaysRemaining() > 0 
-                    ? (getDaysRemaining() + ' ' + ('partenaire.dashboard.contract.daysRemaining' | translate))
-                    : ('partenaire.dashboard.contract.expired' | translate) }}
-                </span>
-              </div>
-              
-              <mat-divider></mat-divider>
-              
-              <div class="contract-row">
-                <span class="label">{{ 'partenaire.dashboard.contract.maxAds' | translate }}</span>
-                <span class="value">
-                  {{ partenaire.nombrePublicitesActives || 0 }} / {{ partenaire.maxPublicitesActives || '∞' }}
-                </span>
-              </div>
-              
-              <div class="contract-row">
-                <span class="label">{{ 'partenaire.dashboard.contract.maxEnterprises' | translate }}</span>
-                <span class="value">
-                  {{ partenaire.nombreEntreprises || 0 }} / {{ partenaire.maxEntreprises || '∞' }}
-                </span>
-              </div>
-              
-              <mat-divider></mat-divider>
-              
-              <div class="contract-emplacements">
-                <span class="label">{{ 'partenaire.dashboard.contract.emplacements' | translate }}</span>
-                <div class="emplacements-list">
-                  <mat-chip-set>
-                    <mat-chip 
-                      *ngFor="let emp of partenaire.emplacementsAutorises"
-                      [matTooltip]="'partenaire.publicites.emplacements.' + emp | translate">
-                      {{ emp }}
-                    </mat-chip>
-                  </mat-chip-set>
-                </div>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
+    <div class="responsive-layout">
+      
+      <section class="main-section">
+        <div class="section-card">
+          <div class="card-title-row">
+            <h2>{{ 'partenaire.dashboard.recentAds.title' | translate }}</h2>
+            <button mat-icon-button color="primary" routerLink="/partenaire/publicites/new"><mat-icon>add</mat-icon></button>
+          </div>
 
-        <!-- Mes Entreprises -->
-        <mat-card class="enterprises-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>business</mat-icon>
-            <mat-card-title>{{ 'partenaire.entreprises.title' | translate }}</mat-card-title>
-          </mat-card-header>
-          
-          <mat-card-content>
-            <div class="enterprises-list" *ngIf="entreprises.length > 0">
-              <div 
-                class="enterprise-item"
-                *ngFor="let ent of entreprises.slice(0, 3)"
-                routerLink="/partenaire/entreprise/{{ ent.id }}">
-                
-                <div class="enterprise-logo">
-                  <img *ngIf="ent.logoUrl" [src]="ent.logoUrl" [alt]="ent.nom">
-                  <mat-icon *ngIf="!ent.logoUrl">business</mat-icon>
+          <div class="list-stack">
+            <div class="list-item-card" *ngFor="let ad of recentAds" [routerLink]="['/partenaire/publicites', ad.id]">
+              <div class="item-info">
+                <img [src]="ad.imageUrl || 'assets/placeholder.png'" class="item-img">
+                <div class="item-text">
+                  <span class="t1">{{ ad.titre }}</span>
+                  <span class="t2">{{ ad.entrepriseNom }}</span>
                 </div>
-                
-                <div class="enterprise-info">
-                  <span class="enterprise-name">{{ ent.nom }}</span>
-                  <span class="enterprise-stats">
-                    {{ ent.nombrePublicites || 0 }} {{ 'partenaire.entreprises.card.ads' | translate }}
-                  </span>
-                </div>
-                
+              </div>
+              <div class="item-meta">
+                <span class="status-chip" [class]="getStatutClass(ad.statut)">{{ ad.statut }}</span>
                 <mat-icon>chevron_right</mat-icon>
               </div>
             </div>
-            
-            <div class="empty-enterprises" *ngIf="entreprises.length === 0">
-              <mat-icon>business</mat-icon>
-              <p>{{ 'partenaire.entreprises.empty.title' | translate }}</p>
-            </div>
-          </mat-card-content>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-section">
+        <div class="section-card">
+          <div class="card-title-row">
+            <h2>{{ 'partenaire.dashboard.stats.enterprises' | translate }}</h2>
+          </div>
           
-          <mat-card-actions>
-            <button mat-button color="primary" routerLink="/partenaire/entreprise">
-              Voir toutes
-              <mat-icon>chevron_right</mat-icon>
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      </div>
+          <div class="enterprise-stack">
+            <div class="ent-card" *ngFor="let ent of entreprises.slice(0, 4)" [routerLink]="['/partenaire/entreprise', ent.id]">
+              <div class="ent-icon"><mat-icon>business</mat-icon></div>
+              <div class="ent-details">
+                <span class="ent-name">{{ ent.nom }}</span>
+                <span class="ent-sub">{{ ent.nombrePublicites || 0 }} ads</span>
+              </div>
+              <mat-icon class="arrow">arrow_forward_ios</mat-icon>
+            </div>
+          </div>
+          <button mat-button class="w-100" routerLink="/partenaire/entreprise">Voir tout</button>
+        </div>
+      </aside>
+
     </div>
-  </ng-container>
+  </main>
 </div>
