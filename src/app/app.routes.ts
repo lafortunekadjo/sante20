@@ -86,6 +86,7 @@ import { MvpVoteComponent } from "./modules/membre/components/mvp-vote/mvp-vote.
 import { MvpWinnerComponent } from "./modules/membre/components/mvp-winner/mvp-winner.component";
 import { DemandeAdhesionComponent } from "./shared/components/demande-adhesion/demande-adhesion.component";
 import { JoinGroupDialogComponent } from "./modules/membre/components/join-group-dialog/join-group-dialog.component";
+import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -112,6 +113,54 @@ export const routes: Routes = [
         path: '',
         component: HomeComponent,
       },
+
+
+  {
+    path: 'competitions',
+    loadComponent: () =>
+      import('./modules/competition/components/competition-list/competition-list.component')
+        .then(m => m.CompetitionListComponent)
+  },
+  // {
+  //   path: ':id',
+  //   loadComponent: () =>
+  //     import('./modules/competition/components/competition-detail/competition-detail.component')
+  //       .then(m => m.CompetitionDetailComponent)
+  // },
+  {
+    path: ':competitionId/matchs/card',
+    loadComponent: () =>
+      import('./modules/competition/components/match-card/match-card.component')
+        .then(m => m.MatchCardComponent)
+  },
+  {
+    path: 'competition/participants',
+    loadComponent: () =>
+      import('./modules/competition/components/tab-participants/tab-participants.component')
+        .then(m => m.TabParticipantsComponent)
+  },
+    {
+    path: 'competition/phases',
+    loadComponent: () =>
+      import('./modules/competition/components/tab-phases/tab-phases.component')
+        .then(m => m.TabPhasesComponent)
+  },
+  
+    {
+    path: 'competition/resume',
+    loadComponent: () =>
+      import('./modules/competition/components/tab-resume/tab-resume.component')
+        .then(m => m.TabResumeComponent)
+  },
+
+    {
+    path: 'competition/classement',
+    loadComponent: () =>
+      import('./modules/competition/components/tab-phases/tab-phases.component')
+        .then(m => m.TabPhasesComponent)
+  },
+
+
       {
         path: 'match/invite/:token',
         component: PublicMatchInviteComponent,
@@ -220,6 +269,10 @@ export const routes: Routes = [
           {
             path: 'groupes',
             component: GroupeListComponent
+          },
+           {
+            path: 'stades',
+            component: StadeGestionComponent
           },
            {
             path: 'audit',

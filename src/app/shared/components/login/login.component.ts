@@ -8,9 +8,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PasswordResetDialogComponent } from '../password-reset-dialog/password-reset-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-login',
@@ -41,7 +42,9 @@ export class LoginComponent implements OnInit {
     private authService: AuthService, 
     private route: ActivatedRoute,
     private router: Router, 
-    private dialog: MatDialog
+    private dialog: MatDialog,
+  private translate: TranslateService,
+  private snack: MatSnackBar
   ) {
     this.loginForm = this.initializeForm();
   }
@@ -98,14 +101,20 @@ export class LoginComponent implements OnInit {
   /**
    * Ouvre la boîte de dialogue de mot de passe oublié
    */
-  openForgotPassword(): void {
-    this.dialog.open(PasswordResetDialogComponent, {
-      width: '400px',
-      disableClose: false,
-      autoFocus: true
-    });
-  }
+openForgotPassword(): void {
+  // On récupère le message traduit
+  const message = this.translate.instant('auth.forgot_password.in_development');
+  
+  // Option 1 : Avec une SnackBar (plus ergonomique et moderne)
+  this.snack.open(message, 'OK', {
+    duration: 5000,
+    panelClass: ['info-snackbar']
+  });
 
+  /* // Option 2 : Avec une simple boîte de dialogue native si tu préfères
+  // alert(message); 
+  */
+}
   /**
    * Efface le message d'erreur
    */

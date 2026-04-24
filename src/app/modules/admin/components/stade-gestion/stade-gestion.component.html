@@ -1,0 +1,105 @@
+<div class="dashboard-container fade-in">
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>{{ 'common.loading' | translate }}</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <header class="dashboard-header">
+      <div class="header-background"></div>
+      <div class="header-content">
+        <div class="header-main">
+          <div class="header-icon">
+            <mat-icon>stadium</mat-icon>
+          </div>
+          <div class="header-text">
+            <h1 class="page-title">{{ 'stade.gestion.title' | translate }}</h1>
+            <p class="page-subtitle">{{ 'stade.gestion.subtitle' | translate }}</p>
+          </div>
+        </div>
+        
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ stades.length }}</span>
+            <span class="stat-label">{{ 'stade.stats.total' | translate }}</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-number">{{ getMaxRadius() }}m</span>
+            <span class="stat-label">{{ 'stade.stats.max_radius' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button mat-flat-button color="primary" (click)="toggleForm()">
+            <mat-icon>{{ showForm ? 'close' : 'add' }}</mat-icon>
+            {{ (showForm ? 'stade.actions.close' : 'stade.actions.add') | translate }}
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="form-section" *ngIf="showForm" @slideInOut>
+      <mat-card class="stade-form-card card-glass">
+        <form [formGroup]="stadeForm" (ngSubmit)="onSubmit()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'stade.fields.name' | translate }}</mat-label>
+              <input matInput formControlName="nom">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'stade.fields.radius' | translate }} (m)</mat-label>
+              <input matInput type="number" formControlName="radius">
+            </mat-form-field>
+
+            <div class="geo-inputs-wrapper">
+              <div class="inputs">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'stade.fields.latitude' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="stadiumLat">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'stade.fields.longitude' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="stadiumLon">
+                </mat-form-field>
+              </div>
+              <button type="button" mat-stroked-button color="accent" (click)="getCurrentPosition()" class="btn-geo">
+                <mat-icon>my_location</mat-icon>
+                {{ 'stade.actions.geolocate' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button mat-flat-button color="primary" [disabled]="stadeForm.invalid">
+              {{ (isEditing ? 'stade.actions.update' : 'stade.actions.save') | translate }}
+            </button>
+            <button type="button" mat-button (click)="toggleForm()">{{ 'stade.actions.cancel' | translate }}</button>
+          </div>
+        </form>
+      </mat-card>
+    </section>
+
+    <div class="stade-grid">
+      <mat-card class="stade-item-card card-glass" *ngFor="let s of stades">
+        <div class="stade-card-content">
+          <div class="stade-visual">
+            <mat-icon>location_on</mat-icon>
+          </div>
+          <div class="stade-details">
+            <h3>{{ s.nom }}</h3>
+            <div class="badge-row">
+              <span class="radius-badge">{{ s.radius }}m</span>
+              <span class="geo-badge">{{ s.stadiumLat.toFixed(4) }}, {{ s.stadiumLon.toFixed(4) }}</span>
+            </div>
+          </div>
+          <div class="stade-actions">
+            <button mat-icon-button color="primary" (click)="editStade(s)"><mat-icon>edit</mat-icon></button>
+            <button mat-icon-button color="warn" (click)="deleteStade(s.id)"><mat-icon>delete</mat-icon></button>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  </ng-container>
+</div>

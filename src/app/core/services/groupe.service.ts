@@ -141,7 +141,7 @@ export class GroupeService {
   }
 
    createStade(stade: any): Observable<Stade> {
-    console.log(stade)
+  
     return this.http.post<Stade>(`${environment.apiUrl}/stades`, stade);
   }
   
