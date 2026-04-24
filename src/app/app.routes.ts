@@ -122,11 +122,18 @@ export const routes: Routes = [
         .then(m => m.CompetitionListComponent)
   },
   // {
-  //   path: ':id',
+  //   path: 'competitions/:id',
   //   loadComponent: () =>
   //     import('./modules/competition/components/competition-detail/competition-detail.component')
   //       .then(m => m.CompetitionDetailComponent)
   // },
+   {
+    path: 'competitions/new',
+    loadComponent: () =>
+      import('./modules/competition/components/competition-create/competition-create.component')
+        .then(m => m.CompetitionCreateComponent)
+  },
+
   {
     path: ':competitionId/matchs/card',
     loadComponent: () =>
