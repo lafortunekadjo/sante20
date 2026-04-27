@@ -9,7 +9,7 @@ import { MatchDTO, StatutMatch } from '../../../../core/models/competition.model
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="match-card" [class]="'statut-' + match.statut.toLowerCase()">
+    @if (match) { <div class="match-card" [class]="'statut-' + match.statut.toLowerCase()">
 
       <div class="match-card__header" *ngIf="match.dateHeure || match.tourNom">
         <span class="match-card__tour" *ngIf="match.tourNom">
@@ -101,6 +101,9 @@ import { MatchDTO, StatutMatch } from '../../../../core/models/competition.model
         </button>
       </div>
     </div>
+    } @else {
+  <div class="loader">Chargement...</div>
+}
   `,
   styleUrls: ['./match-card.component.scss']
 })

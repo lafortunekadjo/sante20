@@ -121,19 +121,19 @@ export const routes: Routes = [
       import('./modules/competition/components/competition-list/competition-list.component')
         .then(m => m.CompetitionListComponent)
   },
-  // {
-  //   path: 'competitions/:id',
-  //   loadComponent: () =>
-  //     import('./modules/competition/components/competition-detail/competition-detail.component')
-  //       .then(m => m.CompetitionDetailComponent)
-  // },
+ 
    {
     path: 'competitions/new',
     loadComponent: () =>
       import('./modules/competition/components/competition-create/competition-create.component')
         .then(m => m.CompetitionCreateComponent)
   },
-
+ {
+    path: 'competitions/:id',
+    loadComponent: () =>
+      import('./modules/competition/components/competition-detail/competition-detail.component')
+        .then(m => m.CompetitionDetailComponent)
+  },
   {
     path: ':competitionId/matchs/card',
     loadComponent: () =>
@@ -166,6 +166,20 @@ export const routes: Routes = [
       import('./modules/competition/components/tab-phases/tab-phases.component')
         .then(m => m.TabPhasesComponent)
   },
+  // {
+  //   path: 'competition/match',
+  //   loadComponent: () =>
+  //     import('./modules/competition/components/match-card/match-card.component')
+  //       .then(m => m.MatchCardComponent)
+  // },
+
+  //  {
+  //   path: 'competition/match-details',
+  //   loadComponent: () =>
+  //     import('./modules/competition/components/match-detail/match-detail.component')
+  //       .then(m => m.MatchDetailComponent)
+  // },
+
 
 
       {

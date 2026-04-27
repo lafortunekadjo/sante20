@@ -27,6 +27,17 @@ export class CompetitionApiService {
     return this.http.get<Page<CompetitionDTO>>(this.base, { params: p });
   }
 
+  // services/competition-api.service.ts — ajouts
+ouvrirInscriptions(id: number): Observable<void> {
+  return this.http.post<void>(
+    `${this.base}/${id}/ouvrir-inscriptions`, {});
+}
+
+fermerInscriptions(id: number): Observable<void> {
+  return this.http.post<void>(
+    `${this.base}/${id}/fermer-inscriptions`, {});
+}
+
   getById(id: number): Observable<CompetitionDetailDTO> {
     return this.http.get<CompetitionDetailDTO>(`${this.base}/${id}`);
   }
