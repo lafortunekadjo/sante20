@@ -87,6 +87,7 @@ import { MvpWinnerComponent } from "./modules/membre/components/mvp-winner/mvp-w
 import { DemandeAdhesionComponent } from "./shared/components/demande-adhesion/demande-adhesion.component";
 import { JoinGroupDialogComponent } from "./modules/membre/components/join-group-dialog/join-group-dialog.component";
 import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
+import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -141,6 +142,12 @@ export const routes: Routes = [
         .then(m => m.MatchCardComponent)
   },
   {
+    path: ':competitionId/matchs/:matchId',
+    loadComponent: () =>
+      import('./modules/competition/components/match-detail/match-detail.component')
+        .then(m => m.MatchDetailComponent)
+  },
+  {
     path: 'competition/participants',
     loadComponent: () =>
       import('./modules/competition/components/tab-participants/tab-participants.component')
@@ -166,6 +173,12 @@ export const routes: Routes = [
       import('./modules/competition/components/tab-phases/tab-phases.component')
         .then(m => m.TabPhasesComponent)
   },
+   {
+    path: 'officiels',
+    loadComponent: () =>
+      import('./modules/competition/components/officiels/officiels.component')
+        .then(m => m.OfficielsComponent)
+  },
   // {
   //   path: 'competition/match',
   //   loadComponent: () =>
@@ -179,6 +192,13 @@ export const routes: Routes = [
   //     import('./modules/competition/components/match-detail/match-detail.component')
   //       .then(m => m.MatchDetailComponent)
   // },
+
+   {
+    path: 'competitions/:competitionId/matchs/:matchId',
+    loadComponent: () =>
+      import('./modules/competition/components/match-detail/match-detail.component')
+        .then(m => m.MatchDetailComponent)
+  },
 
 
 
@@ -287,6 +307,9 @@ export const routes: Routes = [
             path: 'dashboard',
             component: AnalyticsDashboardComponent
           },
+        
+          { path: 'analytics', 
+            component: AdminAnalyticsComponent },
           {
             path: 'groupes',
             component: GroupeListComponent

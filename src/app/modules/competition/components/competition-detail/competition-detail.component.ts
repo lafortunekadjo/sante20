@@ -117,13 +117,13 @@ export class CompetitionDetailComponent implements OnInit {
     });
   }
 
-  @HostListener('document:click', ['$event'])
-onDocumentClick(event: MouseEvent): void {
-  const target = event.target as HTMLElement;
-  if (!target.closest('.statut-selector')) {
-    this.showStatutMenu.set(false);
-  }
-}
+//   @HostListener('document:click', ['$event'])
+// onDocumentClick(event: MouseEvent): void {
+//   const target = event.target as HTMLElement;
+//   if (!target.closest('.statut-selector')) {
+//     this.showStatutMenu.set(false);
+//   }
+// }
 
   // ── Drawer
   openDrawer(): void {
@@ -194,58 +194,82 @@ onDocumentClick(event: MouseEvent): void {
   }
 
   // ── Changement de statut
-  toggleStatutMenu(): void {
-    this.showStatutMenu.update(v => !v);
-  }
+ toggleStatutMenu(event: MouseEvent): void {
+  event.stopPropagation(); // Empêche le HostListener de fermer le menu aussitôt
+  console.log('Toggle Menu cliqué'); 
+  this.showStatutMenu.update(v => !v);
+}
 
  // ── Corriger changerStatut
-changerStatut(statut: StatutCompetition): void {
-  this.showStatutMenu.set(false);
+changerStatut(statut: StatutCompetition, event: MouseEvent): void {
+  event.stopPropagation();
+  console.log(statut)
+  this.showStatutMenu.set(false); // Ferme le menu immédiatement
   const id = this.competition()!.id;
 
   switch (statut) {
+    
     case StatutCompetition.INSCRIPTION_OUVERTE:
+      console.log(statut)
+      // Appelle l'API pour ouvrir les inscriptions
       this.api.ouvrirInscriptions(id).subscribe({
-        next: () => this.reload(),
-        error: (e) => console.error('Erreur ouverture inscriptions', e)
+        next: () => this.reload(), // Recharge les données pour mettre à jour l'UI
+        error: (e) => console.error('Erreur lors de l\'ouverture des inscriptions', e)
       });
       break;
 
     case StatutCompetition.BROUILLON:
+      console.log(statut)
+      // Appelle l'API pour repasser en brouillon (fermer inscriptions)
       this.api.fermerInscriptions(id).subscribe({
         next: () => this.reload(),
-        error: (e) => console.error('Erreur fermeture inscriptions', e)
+        error: (e) => console.error('Erreur lors du retour en brouillon', e)
       });
       break;
 
     case StatutCompetition.TERMINE:
-      this.confirmerTerminer();
+      this.confirmerTerminer(); // Ouvre la modal de confirmation existante
       break;
 
     case StatutCompetition.ANNULE:
-      this.confirmerAnnuler();
+      this.confirmerAnnuler(); // Ouvre la modal de confirmation existante
       break;
   }
 }
 
   // ── Actions avec confirmation
-  lancer(): void {
-    this.confirmModal.set({
-      titre:    'Lancer la compétition',
-      message:  'Une fois lancée, les inscriptions seront fermées et '
-              + 'le calendrier sera généré automatiquement. '
-              + 'Cette action est irréversible.',
-      iconName: 'play_arrow',
-      icon:     'icon-success',
-      action:   () => {
-        this.api.lancer(this.competition()!.id).subscribe(() => {
+lancer(): void {
+  this.confirmModal.set({
+    titre:    'Lancer la compétition',
+    message:  'Une fois lancée, les inscriptions seront fermées et le calendrier sera généré automatiquement.',
+    iconName: 'play_arrow',
+    icon:     'icon-success',
+    action:   () => {
+      this.api.lancer(this.competition()!.id).subscribe({
+        next: () => {
           this.reload();
           this.confirmModal.set(null);
-        });
-      }
-    });
-  }
+        },
+        error: (err) => {
+          // 1. Extraction du message de la BusinessException
+          // Spring Boot place le message d'exception dans la propriété 'message' du corps de la réponse
+          const messageErreur = err.error?.message || "Une erreur imprévue est survenue.";
 
+          // 2. Mise à jour de la modal pour afficher l'erreur au lieu de la fermer
+          this.confirmModal.update(current => current ? {
+            ...current,
+            titre: 'Lancement impossible',
+            message: messageErreur, // Affichera : "Pas assez d'équipes inscrites (min: 4)"
+            icon: 'icon-danger',
+            iconName: 'report_problem'
+          } : null);
+
+          console.error('Erreur métier capturée :', messageErreur);
+        }
+      });
+    }
+  });
+}
   phaseSuivante(): void {
     this.confirmModal.set({
       titre:    'Passer à la phase suivante',

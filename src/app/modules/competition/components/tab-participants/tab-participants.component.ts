@@ -6,11 +6,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CompetitionDetailDTO, CompetitionParticipantDTO, StatutInscription, TypeParticipant } from '../../../../core/models/competition.models';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
+import { EquipeMembresComponent } from '../equipe-membres/equipe-membres.component';
 
 @Component({
   selector: 'app-tab-participants',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule,EquipeMembresComponent],
   template: `
     <div class="tab-participants">
 
@@ -137,6 +138,12 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
               <i class="material-icons">remove_circle_outline</i>
             </button>
           </div>
+
+            <button class="btn-membres"
+        (click)="participantSelectionne.set(p)">
+        <i class="material-icons">groups</i>
+        Joueurs & staff
+      </button>
         </div>
 
         <div class="empty-state" *ngIf="filteredParticipants().length === 0">
@@ -144,6 +151,25 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
           <p>Aucune équipe dans cette catégorie</p>
         </div>
       </div>
+    
+
+      <!-- Panel membres -->
+        <div class="membres-panel"
+            *ngIf="participantSelectionne()">
+          <div class="membres-panel__header">
+            <h3>
+              {{ participantSelectionne()!.nomEquipe }}
+              — Joueurs & Staff
+            </h3>
+            <button class="btn-close"
+                    (click)="participantSelectionne.set(null)">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+          <app-equipe-membres
+            [competitionId]="competition.id"
+            [participantId]="participantSelectionne()!.id"/>
+        </div>
     </div>
   `,
   styleUrls: ['./tab-participants.component.scss']
@@ -154,6 +180,7 @@ export class TabParticipantsComponent implements OnInit {
 
   private api = inject(CompetitionApiService);
   private fb  = inject(FormBuilder);
+  participantSelectionne = signal<CompetitionParticipantDTO | null>(null);
 
   participants     = signal<CompetitionParticipantDTO[]>([]);
   showForm         = signal(false);

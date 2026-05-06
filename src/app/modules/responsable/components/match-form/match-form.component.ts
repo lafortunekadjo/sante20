@@ -48,6 +48,7 @@ import { MatchEditDialogComponent } from '../match-edit-dialog/match-edit-dialog
 import { TranslateModule } from '@ngx-translate/core';
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
+import { PosterModalComponent } from '../../../competition/components/poster-modal/poster-modal.component';
 
 // Interface Exercice
 // interface Exercice {
@@ -247,7 +248,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const groupeId = this.authService.getGroupe();
 
     if (!groupeId) {
-      console.error('Groupe ID not found');
+
       this.isLoadingExercices = false;
       this.loadData();
       return;
@@ -257,7 +258,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         catchError(err => {
-          console.error('Erreur lors du chargement des exercices:', err);
+
           return of([]);
         })
       )
@@ -289,7 +290,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         },
         error: (err) => {
-          console.error('Erreur lors du chargement des exercices:', err);
+ 
           this.isLoadingExercices = false;
           this.loadData();
         }
@@ -447,6 +448,22 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
   }
+
+   // Dans votre composant parent
+openPosterDialog(match: Match) {
+  const dialogRef = this.dialog.open(PosterModalComponent, {
+    width: '90vw',
+    maxWidth: '900px',
+    data: match,  // 👈 Passer l'objet match complet
+    panelClass: 'media-dialog-container'
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      this.loadData();
+    }
+  });
+}
   // ============ NOMS DES ÉQUIPES ============
 
   getEquipeNames(match: any): [string, string] {
@@ -540,7 +557,9 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.adminService.getAllGroupes()
     ]).subscribe({
       next: ([matches, groupes, membres, typeSanctions, equipes, allGroupes]) => {
+    
         this.dataSource.data = matches;
+
         this.groupes = groupes;
         this.membres = membres;
         this.equipes = equipes;
@@ -553,13 +572,14 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
         // Log pour debug
         const exercice = this.getSelectedExercice();
         if (exercice) {
-          console.log(`✅ Matchs chargés pour ${exercice.libelle}: ${matches.length}`);
+         
+          
         } else {
-          console.log(`✅ Tous les matchs chargés: ${matches.length}`);
+          
         }
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
+    
         this.showSnackbar('Erreur lors du chargement des matchs', 'error');
         this.isLoading = false;
       }
@@ -825,7 +845,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleCreateRow() {
-    console.log(this.showCreateRow)
+
     this.showCreateRow = !this.showCreateRow;
     if (!this.showCreateRow) {
       this.newMatch = this.getEmptyMatch();
@@ -910,7 +930,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.toggleCreateRow();
       },
       error: (err) => {
-        console.error('Erreur lors de la création:', err);
+  
         this.showSnackbar('Erreur lors de la création du match', 'error');
         this.isLoading = false;
       }
@@ -1056,7 +1076,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
    * Exécute la génération des matchs après confirmation
    */
   private executeMatchGeneration(matchDates: Date[]) {
-    console.log(matchDates)
+
     const matchesToSave: any[] = matchDates.map(date => {
       const shuffled = [...this.equipes].sort(() => Math.random() - 0.5);
       // Format YYYY-MM-DD en utilisant les méthodes locales pour éviter le décalage UTC
@@ -1081,7 +1101,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadDataForSelectedExercice();
       },
       error: (err) => {
-        console.error('Erreur lors de la génération:', err);
+        
         this.showSnackbar('Erreur lors de la génération des matchs', 'error');
         this.isLoading = false;
       }
@@ -1104,7 +1124,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const targetDayIndex = daysMapping[dayOfWeek];
 
     if (targetDayIndex === undefined) {
-      console.error("Jour non reconnu :", dayOfWeek);
+    
       return [];
     }
 
@@ -1296,7 +1316,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     error: (err) => {
       this.loading = false;
       this.snackBar.open('Erreur lors de la génération de l\'affiche', 'Fermer', { duration: 3000 });
-      console.error(err);
+    
     }
   });
 }
