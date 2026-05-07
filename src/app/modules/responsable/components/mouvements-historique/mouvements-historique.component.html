@@ -81,6 +81,17 @@
         </div>
       </div>
 
+       <div class="stat-card sorties">
+        <div class="stat-icon">
+          <mat-icon>trending_down</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">{{ 'mouvements.stats.total_annule' | translate }}</span>
+          <span class="stat-value">{{ formatMontant(stats.totalAnnulees) }}</span>
+          <span class="stat-sub">{{ 'mouvements.stats.nb_operations' | translate: { count: stats.nbSorties } }}</span>
+        </div>
+      </div>
+
       <div class="stat-card balance"
            [class.positive]="stats.balance >= 0"
            [class.negative]="stats.balance < 0">
@@ -205,7 +216,8 @@
       <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
         <div class="mouvement-card"
              *ngFor="let mouvement of dataSource.data | slice:0:20"
-             [class]="getMouvementClass(mouvement)">
+             [class]="getMouvementClass(mouvement)"
+             [class.annule-style]="mouvement.statut === 'ANNULE'">
           <div class="card-header">
             <div class="card-title">
               <div class="mouvement-icon" [class]="getMouvementClass(mouvement)">
@@ -220,8 +232,21 @@
               <span class="montant" [class]="getMouvementClass(mouvement)">
                 {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
               </span>
+             <button mat-icon-button [matMenuTriggerFor]="actionMenu">
+                <mat-icon>more_vert</mat-icon>
+              </button>
             </div>
           </div>
+          <mat-menu #actionMenu="matMenu">
+  <button mat-menu-item (click)="viewDetail(mouvement)">
+    <mat-icon>visibility</mat-icon>
+    <span>{{ 'mouvements.actions.voir_details' | translate }}</span>
+  </button>
+  <button mat-menu-item *ngIf="mouvement.statut !== 'ANNULE'" (click)="annulerMouvement(mouvement)">
+    <mat-icon color="warn">block</mat-icon>
+    <span>{{ 'mouvements.actions.annuler' | translate }}</span>
+  </button>
+</mat-menu>
           <div class="card-content">
             <div class="info-row">
               <span class="label">{{ 'finances.caisse.titre' | translate }}:</span>
@@ -330,6 +355,13 @@
                   <mat-icon>visibility</mat-icon>
                   <span>{{ 'mouvements.actions.voir_details' | translate }}</span>
                 </button>
+                <button mat-menu-item 
+                      *ngIf="mouvement.statut !== 'ANNULE'" 
+                      (click)="annulerMouvement(mouvement)"
+                      class="text-warn">
+                <mat-icon color="warn">block</mat-icon>
+                <span class="text-warn">Annuler le mouvement</span>
+              </button>
               </mat-menu>
             </td>
           </ng-container>

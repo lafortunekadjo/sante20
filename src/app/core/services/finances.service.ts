@@ -81,7 +81,7 @@ export interface TypeDepense {
 
 export interface MouvementCaisse {
   id?: number;
-  typeMouvement: 'ENTREE' | 'SORTIE';
+  typeMouvement: 'ENTREE' | 'SORTIE' | 'ANNULE';
   montant: number;
   dateMouvement: string;
   dateEnregistrement?: string;
@@ -284,6 +284,11 @@ export class FinancesService {
       catchError(() => of([]))
     );
   }
+
+  // À ajouter dans finances.service.ts
+annulerMouvement(mouvementId: number, motif: string): Observable<MouvementCaisse> {
+  return this.http.put<MouvementCaisse>(`${this.baseUrl}/caisses/mouvements/${mouvementId}/annuler`, { motif });
+}
 
   /**
    * GET /api/exercices/{exerciceId}
