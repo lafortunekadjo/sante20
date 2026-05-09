@@ -67,6 +67,7 @@ export interface PaginatedResponse<T> {
 })
 export class AdminPartenaireService {
   private apiUrl = `${environment.apiUrl}/admin/partenaires`;
+   private apiUrl2 = `${environment.apiUrl}/admin`;
 
   constructor(private http: HttpClient) {}
 
