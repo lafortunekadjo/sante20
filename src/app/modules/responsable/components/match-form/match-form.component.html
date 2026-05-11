@@ -771,14 +771,15 @@
            [class.future]="isMatchFuture(match)">
 
         <div class="match-card-header">
-          <div class="match-type-badge" [class]="match.typeMatch.toLowerCase()">
-            {{ getTypeMatchLabel(match.typeMatch) }}
-          </div>
-          <div class="match-status" [class]="getMatchStatusClass(match)">
-            <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
-            <span>{{ getMatchStatusLabel(match) }}</span>
-          </div>
-        </div>
+  <div class="match-type-badge" [class]="match.typeMatch?.toLowerCase()">
+    {{ (match.typeMatch ? 'MATCH.TYPES.' + match.typeMatch : 'MATCH.TYPES.DEFAULT') | translate }}
+  </div>
+
+  <div class="match-status" [class]="getMatchStatusClass(match)">
+    <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
+    <span>{{ getMatchStatusLabel(match) | translate }}</span>
+  </div>
+</div>
 
         <div class="match-card-body">
           <div class="match-date">
@@ -802,45 +803,50 @@
         </div>
 
         <div class="match-card-actions">
-          <button mat-icon-button
-                  color="primary"
-                  [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
-                  (click)="viewMatchDetails(match)"
-                >
-            <mat-icon>groups</mat-icon>
-          </button>
-          <button mat-icon-button 
-        class="btn-poster"
-        [matTooltip]="'MATCH.ACTIONS.GENERATE_POSTER' | translate"
-        (click)="openPosterDialog(match)">
+  
+  <button *ngIf="isMatchTodayOrPast(match)"
+          mat-icon-button
+          color="primary"
+          [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
+          (click)="viewMatchDetails(match)">
+    <mat-icon>groups</mat-icon>
+  </button>
+
+  <button mat-icon-button 
+          class="btn-poster"
+          [matTooltip]="'MATCH.ACTIONS.GENERATE_POSTER' | translate"
+          (click)="openPosterDialog(match)">
     <mat-icon>image</mat-icon>
-</button>
-          <button mat-icon-button
-                    (click)="openInvitationDialog(match)"
-                    [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate"
-                    >
-                    <mat-icon>link</mat-icon>
-                  
-          </button>
-          <button 
-                    mat-icon-button 
-                    [matTooltip]="'MATCH.ACTIONS.UPLOAD_MEDIA' | translate"
-                    (click)="openMediaDialog(match)"
-                    [disabled]="!canAccessMatchData(match)">
-                    <mat-icon>perm_media</mat-icon>
-                  </button>
-          <button mat-icon-button
-                  [matTooltip]="'COMMON.EDIT' | translate"
-                  (click)="editMatch(match)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button
-                  color="warn"
-                  [matTooltip]="'COMMON.DELETE' | translate"
-                  (click)="deleteMatch(match)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
+  </button>
+
+  <button *ngIf="match.typeMatch === 'AMICAL'"
+          mat-icon-button
+          (click)="openInvitationDialog(match)"
+          [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate">
+    <mat-icon>link</mat-icon>
+  </button>
+
+  <button mat-icon-button 
+          [matTooltip]="'MATCH.ACTIONS.UPLOAD_MEDIA' | translate"
+          (click)="openMediaDialog(match)"
+          [disabled]="!canAccessMatchData(match)">
+    <mat-icon>perm_media</mat-icon>
+  </button>
+
+  <button mat-icon-button
+          [matTooltip]="'COMMON.EDIT' | translate"
+          (click)="editMatch(match)">
+    <mat-icon>edit</mat-icon>
+  </button>
+
+  <button *ngIf="!match.rapporteur"
+          mat-icon-button
+          color="warn"
+          [matTooltip]="'COMMON.DELETE' | translate"
+          (click)="deleteMatch(match)">
+    <mat-icon>delete</mat-icon>
+  </button>
+</div>
       </div>
 
       <!-- État vide -->
@@ -865,13 +871,13 @@
           <td mat-cell *matCellDef="let match">{{ match.dateMatch | date:'dd/MM/yyyy' }}</td>
         </ng-container>
 
-        <ng-container matColumnDef="typeMatch">
+       <ng-container matColumnDef="typeMatch">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>
             {{ 'MATCH.TABLE.TYPE' | translate }}
           </th>
           <td mat-cell *matCellDef="let match">
             <span class="type-badge" [class]="match.typeMatch?.toLowerCase()">
-              {{ getTypeMatchLabel(match.typeMatch) }}
+              {{ (match.typeMatch ? 'MATCH.TYPES.' + match.typeMatch : 'MATCH.TYPES.DEFAULT') | translate }}
             </span>
           </td>
         </ng-container>
@@ -895,46 +901,41 @@
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.ACTIONS' | translate }}</th>
-          <td mat-cell *matCellDef="let match">
-            <button mat-icon-button
-                    color="primary"
-                    [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
-                    (click)="viewMatchDetails(match)" 
-                    >
-                     
-              <mat-icon>groups</mat-icon>
-            </button>
-            <button 
-                    mat-stroked-button 
-                    (click)="openInvitationDialog(match)"
-                    *ngIf="isAmical"
-                    [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate"
-                    >
-                    <mat-icon>link</mat-icon>
-                  
-                  </button>
-            <button 
-                    mat-icon-button 
-                    [matTooltip]="'MATCH.ACTIONS.UPLOAD_MEDIA' | translate"
-                    (click)="openMediaDialog(match)"
-                    [disabled]="!canAccessMatchData(match)">
-                    <mat-icon>perm_media</mat-icon>
-                  </button>
-            <button mat-icon-button
-                    [matTooltip]="'COMMON.EDIT' | translate"
-                    (click)="editMatch(match)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button
-                    color="warn"
-                    [matTooltip]="'COMMON.DELETE' | translate"
-                    (click)="deleteMatch(match)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
+       <ng-container matColumnDef="actions">
+  <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.ACTIONS' | translate }}</th>
+  <td mat-cell *matCellDef="let match">
+    
+    <button mat-icon-button
+            color="primary"
+            *ngIf="isMatchTodayOrPast(match)"
+            [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
+            (click)="viewMatchDetails(match)">
+      <mat-icon>groups</mat-icon>
+    </button>
+
+    <button mat-icon-button 
+            (click)="openInvitationDialog(match)"
+            *ngIf="match.typeMatch === 'AMICAL'"
+            [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate">
+      <mat-icon>link</mat-icon>
+    </button>
+
+    <button mat-icon-button
+            [matTooltip]="'COMMON.EDIT' | translate"
+            (click)="editMatch(match)">
+      <mat-icon>edit</mat-icon>
+    </button>
+
+    <button mat-icon-button
+            color="warn"
+            *ngIf="!isMatchJoue(match)"
+            [matTooltip]="'COMMON.DELETE' | translate"
+            (click)="deleteMatch(match)">
+      <mat-icon>delete</mat-icon>
+    </button>
+
+  </td>
+</ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>

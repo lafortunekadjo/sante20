@@ -25,52 +25,33 @@ import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 import { TypeSanction } from '../../../../core/models/sanction.model';
 
-// // Interface TypeSanction étendue
-// export interface TypeSanction {
-//   id?: number;
-//   nom: string;
-//   description?: string;
-//   montantParDefaut: number;
-//   duree?: number;
-//   type: 'AMENDE' | 'SUSPENSION' | 'DISCIPLINE';
-//   groupe?: any;
-//   // Nouveaux champs pour liaison financière
-//   caisseId?: number;
-//   caisse?: Caisse;
-//   typeContributionId?: number;
-//   genererMouvementAuto: boolean;
-//   icone: string;
-//   couleur: string;
-//   actif: boolean;
-//   createdDate?: string;
-// }
-
 // Icônes disponibles
 const ICONS_DISPONIBLES = [
-  { value: 'gavel', label: 'Sanction' },
-  { value: 'schedule', label: 'Retard' },
-  { value: 'event_busy', label: 'Absence' },
-  { value: 'warning', label: 'Avertissement' },
-  { value: 'style', label: 'Carton' },
-  { value: 'sports_soccer', label: 'Match' },
-  { value: 'block', label: 'Suspension' },
-  { value: 'money_off', label: 'Amende' },
+  { value: 'gavel',          label: 'Sanction'     },
+  { value: 'schedule',       label: 'Retard'       },
+  { value: 'event_busy',     label: 'Absence'      },
+  { value: 'warning',        label: 'Avertissement'},
+  { value: 'style',          label: 'Carton'       },
+  { value: 'sports_soccer',  label: 'Match'        },
+  { value: 'block',          label: 'Suspension'   },
+  { value: 'money_off',      label: 'Amende'       },
   { value: 'report_problem', label: 'Indiscipline' },
-  { value: 'rule', label: 'Règlement' }
+  { value: 'rule',           label: 'Règlement'    },
+  { value: 'inventory_2',    label: 'Matériel'     }, // ← ajouté
 ];
 
 // Couleurs disponibles
 const COULEURS_DISPONIBLES = [
-  { value: '#ef4444', label: 'Rouge' },
+  { value: '#ef4444', label: 'Rouge'  },
   { value: '#f59e0b', label: 'Orange' },
-  { value: '#eab308', label: 'Jaune' },
-  { value: '#84cc16', label: 'Lime' },
-  { value: '#10b981', label: 'Vert' },
-  { value: '#06b6d4', label: 'Cyan' },
-  { value: '#3b82f6', label: 'Bleu' },
-  { value: '#8b5cf6', label: 'Violet' },
-  { value: '#ec4899', label: 'Rose' },
-  { value: '#6b7280', label: 'Gris' }
+  { value: '#eab308', label: 'Jaune'  },
+  { value: '#84cc16', label: 'Lime'   },
+  { value: '#10b981', label: 'Vert'   },
+  { value: '#06b6d4', label: 'Cyan'   },
+  { value: '#3b82f6', label: 'Bleu'   },
+  { value: '#8b5cf6', label: 'Violet' }, // utilisé pour MATERIEL
+  { value: '#ec4899', label: 'Rose'   },
+  { value: '#6b7280', label: 'Gris'   },
 ];
 
 @Component({
@@ -96,33 +77,32 @@ const COULEURS_DISPONIBLES = [
     MatMenuModule,
     MatDividerModule,
     TranslateModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './type-sanction.component.html',
-  styleUrl: './type-sanction.component.scss'
+  styleUrl: './type-sanction.component.scss',
 })
 export class TypeSanctionComponent implements OnInit {
-  displayedColumns: string[] = ['icone', 'nom', 'type', 'montantParDefaut', 'duree', 'caisse', 'validation', 'statut', 'actions'];
+  displayedColumns: string[] = [
+    'icone', 'nom', 'type', 'montantParDefaut',
+    'duree', 'caisse', 'validation', 'statut', 'actions',
+  ];
   dataSource = new MatTableDataSource<TypeSanction>();
   isLoading = true;
   showCreateRow = false;
   editingRows: boolean[] = [];
-  
-  // Données de référence
+
   caisses: Caisse[] = [];
   icones = ICONS_DISPONIBLES;
   couleurs = COULEURS_DISPONIBLES;
-  
-  // Nouveau type de sanction
-  newTypeSanction: TypeSanction = this.getEmptyTypeSanction();
+
+  newTypeSanction: TypeSanction  = this.getEmptyTypeSanction();
   editTypeSanction: TypeSanction = this.getEmptyTypeSanction();
-  
-  // Filtres
+
   dateFilter: Date | null = null;
   searchTerm = '';
   filterActif: 'all' | 'actif' | 'inactif' = 'all';
-  
-  // Messages
+
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
@@ -132,7 +112,7 @@ export class TypeSanctionComponent implements OnInit {
   constructor(
     private sanctionService: SanctionService,
     private financesService: FinancesService,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
@@ -147,11 +127,13 @@ export class TypeSanctionComponent implements OnInit {
       description: '',
       montantParDefaut: 0,
       duree: undefined,
+      materiel: '',   // ← nouveau
+      quantite: 0,   // ← nouveau
       caisseId: undefined,
       genererMouvementAuto: true,
       icone: 'gavel',
       couleur: '#ef4444',
-      actif: true
+      actif: true,
     };
   }
 
@@ -161,7 +143,7 @@ export class TypeSanctionComponent implements OnInit {
 
     forkJoin({
       typeSanctions: this.sanctionService.getTypeSanctions(),
-      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : []
+      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : [],
     }).subscribe({
       next: ({ typeSanctions, caisses }) => {
         this.dataSource.data = typeSanctions;
@@ -173,41 +155,35 @@ export class TypeSanctionComponent implements OnInit {
         this.errorMessage = null;
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement des données : ' + err.message;
+        this.errorMessage = 'Erreur lors du chargement : ' + err.message;
         this.isLoading = false;
         console.error(err);
-      }
+      },
     });
   }
 
   applyFilters(): void {
     let filtered = [...this.dataSource.data];
-
-    // Filtre par recherche
     if (this.searchTerm.trim()) {
       const search = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.nom.toLowerCase().includes(search) ||
-        t.description?.toLowerCase().includes(search)
+      filtered = filtered.filter(
+        (t) =>
+          t.nom.toLowerCase().includes(search) ||
+          t.description?.toLowerCase().includes(search) ||
+          t.materiel?.toLowerCase().includes(search),
       );
     }
-
-    // Filtre par statut
-    if (this.filterActif === 'actif') {
-      filtered = filtered.filter(t => t.actif);
-    } else if (this.filterActif === 'inactif') {
-      filtered = filtered.filter(t => !t.actif);
-    }
-
+    if (this.filterActif === 'actif')   filtered = filtered.filter((t) => t.actif);
+    if (this.filterActif === 'inactif') filtered = filtered.filter((t) => !t.actif);
     this.dataSource.data = filtered;
   }
 
   filterByDate(date: Date | null): void {
     this.dateFilter = date;
     if (date) {
-      const formattedDate = date.toISOString().split('T')[0];
-      this.dataSource.data = this.dataSource.data.filter((item: any) =>
-        item.createdDate && item.createdDate.split('T')[0] === formattedDate
+      const d = date.toISOString().split('T')[0];
+      this.dataSource.data = this.dataSource.data.filter(
+        (item: any) => item.createdDate && item.createdDate.split('T')[0] === d,
       );
     } else {
       this.loadData();
@@ -221,18 +197,21 @@ export class TypeSanctionComponent implements OnInit {
     this.successMessage = null;
   }
 
+  /** Remet les champs spécifiques à zéro quand le type change */
+  onTypeChange(form: TypeSanction): void {
+    if (form.type !== 'SUSPENSION') form.duree    = undefined;
+    if (form.type !== 'MATERIEL')   { form.materiel = ''; form.quantite = 0; }
+  }
+
   saveTypeSanction(): void {
     if (!this.isCreateFormValid()) {
       this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
       return;
     }
-
-    // Préparer les données
     const data = {
       ...this.newTypeSanction,
-      caisse: this.newTypeSanction.caisseId ? { id: this.newTypeSanction.caisseId } : null
+      caisse: this.newTypeSanction.caisseId ? { id: this.newTypeSanction.caisseId } : null,
     };
-
     this.sanctionService.createTypeSanction(data).subscribe({
       next: () => {
         this.successMessage = 'Type de sanction créé avec succès.';
@@ -242,8 +221,7 @@ export class TypeSanctionComponent implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors de la création : ' + err.message;
-        console.error(err);
-      }
+      },
     });
   }
 
@@ -255,9 +233,9 @@ export class TypeSanctionComponent implements OnInit {
 
   editRow(index: number, typeSanction: TypeSanction): void {
     this.editingRows[index] = true;
-    this.editTypeSanction = { 
+    this.editTypeSanction = {
       ...typeSanction,
-      caisseId: typeSanction.caisse?.id
+      caisseId: typeSanction.caisse?.id,
     };
     this.errorMessage = null;
     this.successMessage = null;
@@ -268,12 +246,10 @@ export class TypeSanctionComponent implements OnInit {
       this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
       return;
     }
-
     const data = {
       ...this.editTypeSanction,
-      caisse: this.editTypeSanction.caisseId ? { id: this.editTypeSanction.caisseId } : null
+      caisse: this.editTypeSanction.caisseId ? { id: this.editTypeSanction.caisseId } : null,
     };
-
     this.sanctionService.updateTypeSanction(this.editTypeSanction.id!, data).subscribe({
       next: () => {
         this.successMessage = 'Type de sanction mis à jour avec succès.';
@@ -283,8 +259,7 @@ export class TypeSanctionComponent implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors de la mise à jour : ' + err.message;
-        console.error(err);
-      }
+      },
     });
   }
 
@@ -296,16 +271,16 @@ export class TypeSanctionComponent implements OnInit {
 
   toggleActif(typeSanction: TypeSanction): void {
     const newStatus = !typeSanction.actif;
-    this.sanctionService.updateTypeSanction(typeSanction.id!, { actif: newStatus }).subscribe({
-      next: () => {
-        this.successMessage = `Type de sanction ${newStatus ? 'activé' : 'désactivé'}`;
-        this.loadData();
-        this.clearMessagesAfterDelay();
-      },
-      error: (err) => {
-        this.errorMessage = 'Erreur lors de la modification : ' + err.message;
-      }
-    });
+    this.sanctionService
+      .activer(typeSanction.id!, newStatus )
+      .subscribe({
+        next: () => {
+          this.successMessage = `Type ${newStatus ? 'activé' : 'désactivé'}`;
+          this.loadData();
+          this.clearMessagesAfterDelay();
+        },
+        error: (err) => (this.errorMessage = 'Erreur : ' + err.message),
+      });
   }
 
   openDeleteDialog(typeSanction: TypeSanction): void {
@@ -316,48 +291,34 @@ export class TypeSanctionComponent implements OnInit {
           this.loadData();
           this.clearMessagesAfterDelay();
         },
-        error: (err) => {
-          this.errorMessage = 'Erreur lors de la suppression : ' + err.message;
-          console.error(err);
-        }
+        error: (err) => (this.errorMessage = 'Erreur lors de la suppression : ' + err.message),
       });
     }
   }
 
   isCreateFormValid(): boolean {
-    const isSuspension = this.newTypeSanction.type === 'SUSPENSION';
-    return this.newTypeSanction.nom.trim() !== '' &&
-           this.newTypeSanction.type !== undefined &&
-           this.newTypeSanction.montantParDefaut >= 0 &&
-           (!isSuspension || (isSuspension && this.newTypeSanction.duree != null && this.newTypeSanction.duree > 0));
+    const f = this.newTypeSanction;
+    if (!f.nom.trim() || f.montantParDefaut < 0) return false;
+    if (f.type === 'SUSPENSION') return !!f.duree && f.duree > 0;
+    if (f.type === 'MATERIEL')   return !!f.materiel?.trim();
+    return true;
   }
 
   isEditFormValid(): boolean {
-    const isSuspension = this.editTypeSanction.type === 'SUSPENSION';
-    return this.editTypeSanction.nom.trim() !== '' &&
-           this.editTypeSanction.type !== undefined &&
-           this.editTypeSanction.montantParDefaut >= 0 &&
-           (!isSuspension || (isSuspension && this.editTypeSanction.duree != null && this.editTypeSanction.duree > 0));
-  }
-
-  onTypeChange(form: TypeSanction): void {
-    if (form.type !== 'SUSPENSION') {
-      form.duree = undefined;
-    }
+    const f = this.editTypeSanction;
+    if (!f.nom.trim() || f.montantParDefaut < 0) return false;
+    if (f.type === 'SUSPENSION') return !!f.duree && f.duree > 0;
+    if (f.type === 'MATERIEL')   return !!f.materiel?.trim();
+    return true;
   }
 
   getCaisseName(caisseId: number | undefined): string {
     if (!caisseId) return 'Par défaut';
-    const caisse = this.caisses.find(c => c.id === caisseId);
-    return caisse ? caisse.nom : 'Non définie';
+    return this.caisses.find((c) => c.id === caisseId)?.nom ?? 'Non définie';
   }
 
   getIconLabel(iconValue: string): string {
-    return this.icones.find(i => i.value === iconValue)?.label || iconValue;
-  }
-
-  getCouleurLabel(couleurValue: string): string {
-    return this.couleurs.find(c => c.value === couleurValue)?.label || couleurValue;
+    return this.icones.find((i) => i.value === iconValue)?.label ?? iconValue;
   }
 
   formatMontant(montant: number | undefined): string {
@@ -372,16 +333,7 @@ export class TypeSanctionComponent implements OnInit {
     }, 5000);
   }
 
-  // Getters pour les stats
-  get totalTypes(): number {
-    return this.dataSource.data.length;
-  }
-
-  get typesActifs(): number {
-    return this.dataSource.data.filter(t => t.actif).length;
-  }
-
-  get typesAvecMouvement(): number {
-    return this.dataSource.data.filter(t => t.genererMouvementAuto).length;
-  }
+  get totalTypes():        number { return this.dataSource.data.length; }
+  get typesActifs():       number { return this.dataSource.data.filter((t) => t.actif).length; }
+  get typesAvecMouvement():number { return this.dataSource.data.filter((t) => t.genererMouvementAuto).length; }
 }

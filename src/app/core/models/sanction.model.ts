@@ -8,6 +8,8 @@ export interface TypeSanction {
   montantParDefaut: number;
   duree?: number;
   type: 'AMENDE' | 'SUSPENSION' | 'DISCIPLINE' | 'MATERIEL';
+  materiel: string;
+  quantite:number;
   groupe?: any;
   // Nouveaux champs pour liaison financière
   caisseId?: number;

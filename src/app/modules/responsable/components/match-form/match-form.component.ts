@@ -524,6 +524,7 @@ openPosterDialog(match: Match) {
     return `MATCH.TYPES.${type}`;
   }
 
+
   // Au lieu de retourner "Interne"
 // getTypeMatchLabel(type: string) {
 //   return `MATCH.TYPES.${type}`; // Retourne 'MATCH.TYPES.INTERNE'
@@ -1319,6 +1320,26 @@ openPosterDialog(match: Match) {
     
     }
   });
+}
+
+isMatchJoue(match: Match): boolean {
+  return !!match.rapporteur;
+}
+
+// Vérifie si on est le jour du match ou après (pour la feuille de présence)
+isMatchTodayOrPast(match: Match): boolean {
+  if (!match.dateMatch) return false;
+  const matchDate = new Date(match.dateMatch);
+  const today = new Date();
+  matchDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return matchDate <= today;
+}
+
+// Pour le bouton d'édition (toujours possible selon ta réflexion)
+canEditMatch(match: Match): boolean {
+  // Tu peux ajouter une condition ici plus tard si nécessaire
+  return true;
 }
 
   // isCreateFormValid(): boolean {
