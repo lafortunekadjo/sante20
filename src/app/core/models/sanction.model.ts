@@ -28,7 +28,9 @@ export interface Sanction {
   typeSanction: number | TypeSanction;
   dateSanction: string | Date;
   montant: number;
+  materiel?: string;
   commentaire?: string;
+  quantite?: number;
   match?: number | Match;
   
   // États de paiement

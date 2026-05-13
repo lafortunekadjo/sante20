@@ -72,63 +72,42 @@
     </div>
 
     <!-- ===== SECTION AJOUT MEMBRES — VERSION CLASSIQUE ===== -->
-<div class="add-member-section" *ngIf="!isAmicalWithPlatformGroup">
+    <div class="add-member-section" *ngIf="!isAmicalWithPlatformGroup">
 
-   <div class="add-member-card">
-    <h3>
-      <mat-icon>group_add</mat-icon>
-      {{ 'PRESENCE.ADD.TITLE_MEMBER' | translate }}
-    </h3>
-    <div class="add-member-form">
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
-        <input matInput [(ngModel)]="membreSearch"
-               [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
-        <mat-icon matPrefix>search</mat-icon>
-      </mat-form-field>
+      <!-- Ajout membre du groupe -->
+      <div class="add-member-card">
+        <h3>
+          <mat-icon>person_add</mat-icon>
+          {{ 'PRESENCE.ADD.TITLE_MEMBER' | translate }}
+        </h3>
+        <div class="add-member-form">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+            <input matInput [(ngModel)]="membreSearch"
+                   [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
 
-      <mat-form-field appearance="outline" class="select-field">
-        <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBERS' | translate }}</mat-label>
-        <mat-select [(ngModel)]="selectedMembreIdsToAdd" 
-                    multiple 
-                    (selectionChange)="_refreshCounter = _refreshCounter + 1"> <mat-option (click)="selectAllMembres()">
-            <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
-          </mat-option>
-          <mat-divider></mat-divider>
-          
-          <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
-            <div class="member-option-container" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-    
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px;">block</mat-icon>
-              
-              <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
-                    [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+          <mat-form-field appearance="outline" class="select-field">
+            <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBER' | translate }}</mat-label>
+            <mat-select [(ngModel)]="selectedMembreIdToAdd">
+              <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
                 {{ membre.nom }} {{ membre.prenom }}
-              </span>
-            </div>
+                <span class="equipe-tag" *ngIf="membre.equipe">{{ membre.equipe.nom }}</span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-            <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
-                  style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
-              Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
-            </span>
-            
-            <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">
-              ({{ membre.equipe.nom }})
-            </span>
-          </div>
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+          <button mat-raised-button color="primary"
+                  [disabled]="!selectedMembreIdToAdd"
+                  (click)="addMembreToPresenceList()">
+            <mat-icon>add</mat-icon>
+            {{ 'COMMON.ADD' | translate }}
+          </button>
+        </div>
+      </div>
 
-      <button mat-raised-button color="primary"
-              [disabled]="!selectedMembreIdsToAdd || selectedMembreIdsToAdd.length === 0"
-              (click)="addMembresToPresenceList()">
-        <mat-icon>playlist_add</mat-icon>
-        {{ 'COMMON.ADD' | translate }} ({{ selectedMembreIdsToAdd?.length || 0 }})
-      </button>
-    </div>
- <!-- Ajout joueur occasionnel -->
+      <!-- Ajout joueur occasionnel -->
       <div class="add-member-card occasional">
         <h3>
           <mat-icon>person_outline</mat-icon>
@@ -150,9 +129,7 @@
           </button>
         </div>
       </div>
-      </div>
-
-  </div>
+    </div>
 
     <!-- ===== SECTION AJOUT MEMBRES — VERSION AMICAL INTER-GROUPES ===== -->
     <div class="add-member-section-amical" *ngIf="isAmicalWithPlatformGroup">
@@ -302,9 +279,6 @@
       </mat-tab-group>
     </div>
 
-    
-    
-
     <!-- ===== LISTE DES PRÉSENCES PAR ÉQUIPE ===== -->
     <div class="presences-grid">
 
@@ -364,7 +338,7 @@
               <div class="fields-row" *ngIf="presence.aJoue">
                 <mat-form-field appearance="outline">
                   <mat-label>{{ 'PRESENCE.FIELD.TEAM' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange(presence)">
+                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange()">
                     <mat-option *ngFor="let equipe of equipeNames" [value]="equipe">{{ equipe }}</mat-option>
                   </mat-select>
                 </mat-form-field>
@@ -508,7 +482,7 @@
               <div class="fields-row" *ngIf="presence.aJoue">
                 <mat-form-field appearance="outline">
                   <mat-label>{{ 'PRESENCE.FIELD.TEAM' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange(presence)">
+                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange()">
                     <mat-option *ngFor="let equipe of equipeNames" [value]="equipe">{{ equipe }}</mat-option>
                   </mat-select>
                 </mat-form-field>

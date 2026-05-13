@@ -137,6 +137,8 @@ export class TypeSanctionComponent implements OnInit {
     };
   }
 
+
+
   loadData(): void {
     this.isLoading = true;
     const groupeId = this.authService.getGroupe();
