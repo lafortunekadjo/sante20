@@ -1,0 +1,148 @@
+<div class="announcement-admin-glass-container">
+  
+  <div class="module-header glass-effect">
+    <div class="header-icon-wrapper">
+      <mat-icon class="gold-icon">campaign</mat-icon>
+    </div>
+    <div class="header-text">
+      <h1>{{ 'announcement.admin.title' | translate }}</h1>
+      <p class="subtitle">{{ 'announcement.admin.subtitle' | translate }}</p>
+    </div>
+  </div>
+  
+  <div class="actions-bar glass-effect">
+    <button mat-raised-button color="primary" class="btn-create" (click)="toggleForm()">
+      <mat-icon>{{ showForm ? 'close' : 'add' }}</mat-icon>
+      {{ showForm ? ('common.cancel' | translate) : ('announcement.add' | translate) }}
+    </button>
+
+    <mat-form-field appearance="outline" class="search-field glass-field">
+      <mat-label>{{ 'common.search' | translate }}</mat-label>
+      <input matInput [(ngModel)]="searchTerm" (input)="applySearch()" placeholder="Ex: Entraînement de ce soir">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field glass-field">
+      <mat-label>{{ 'announcement.filter.team' | translate }}</mat-label>
+      <mat-select [(value)]="selectedEquipe" (selectionChange)="filterByEquipe($event.value)">
+        <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
+        <mat-option *ngFor="let eq of equipes" [value]="eq.id">
+          {{ eq.nom }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field glass-field">
+      <mat-label>{{ 'announcement.filter.role' | translate }}</mat-label>
+      <mat-select [(value)]="selectedRole" (selectionChange)="filterByRole($event.value)">
+        <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
+        <mat-option *ngFor="let role of roles" [value]="role.id">
+          {{ role.nom | translate }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <mat-card class="announcement-form-card glass-effect" *ngIf="showForm">
+    <mat-card-header>
+      <mat-card-title class="gold-title">
+        {{ isEditing ? ('announcement.edit.title' | translate) : ('announcement.create.title' | translate) }}
+      </mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()" class="announcement-form">
+        
+        <mat-form-field appearance="outline" class="full-width glass-field">
+          <mat-label>{{ 'announcement.form.title' | translate }} *</mat-label>
+          <input matInput formControlName="title" placeholder="Ex: Rappel important : Entraînement">
+          <mat-error *ngIf="announcementForm.get('title')?.invalid">
+            {{ 'announcement.errors.title' | translate }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width glass-field">
+          <mat-label>{{ 'announcement.form.content' | translate }} *</mat-label>
+          <textarea matInput formControlName="content" rows="5" placeholder="Écrivez votre annonce ici..."></textarea>
+          <mat-error *ngIf="announcementForm.get('content')?.invalid">
+            {{ 'announcement.errors.content' | translate }}
+          </mat-error>
+        </mat-form-field>
+
+        <div class="targeting-row">
+          <mat-form-field appearance="outline" class="glass-field">
+            <mat-label>{{ 'announcement.form.targetTeam' | translate }}</mat-label>
+            <mat-select formControlName="equipeId">
+              <mat-option [value]="null">{{ 'announcement.target.allTeams' | translate }}</mat-option>
+              <mat-option *ngFor="let eq of equipes" [value]="eq.id">
+                {{ eq.nom }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="glass-field">
+            <mat-label>{{ 'announcement.form.targetRole' | translate }}</mat-label>
+            <mat-select formControlName="roleCible">
+              <mat-option [value]="null">{{ 'announcement.target.allRoles' | translate }}</mat-option>
+              <mat-option *ngFor="let role of roles" [value]="role.id">
+                {{ role.nom | translate }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-actions">
+          <button mat-button type="button" class="btn-cancel" (click)="toggleForm()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button mat-raised-button color="primary" class="btn-submit" type="submit" [disabled]="announcementForm.invalid">
+            {{ isEditing ? ('common.update' | translate) : ('common.create' | translate) }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="news-feed-list">
+    <div class="no-data-alert glass-effect" *ngIf="filteredAnnouncements.length === 0">
+      <mat-icon class="gold-icon">campaign</mat-icon>
+      <p>{{ 'announcement.list.empty' | translate }}</p>
+    </div>
+
+    <mat-card class="announcement-news-item glass-effect" *ngFor="let actu of filteredAnnouncements">
+      <mat-card-header>
+        <div mat-card-avatar class="news-avatar">📢</div>
+        <mat-card-title>{{ actu.title }}</mat-card-title>
+        <mat-card-subtitle class="muted-subtitle">
+          {{ actu.date | date:'dd/MM/yyyy HH:mm' }} 
+          <span *ngIf="actu.createur"> • Par {{ actu.createur.nom }}</span>
+        </mat-card-subtitle>
+        
+        <div class="card-admin-actions">
+          <button mat-icon-button (click)="editAnnouncement(actu)" color="accent">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button (click)="deleteAnnouncement(actu.id)" color="warn">
+            <mat-icon>delete_forever</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p class="announcement-text">{{ actu.content }}</p>
+      </mat-card-content>
+
+      <mat-card-actions class="news-tags-footer">
+        <span class="news-badge badge-team" *ngIf="actu.equipeId">
+          👥 {{ getTeamName(actu.equipeId) }}
+        </span>
+        <span class="news-badge badge-role" *ngIf="actu.roleCible">
+          🔑 {{ actu.roleCible }}
+        </span>
+        <span class="news-badge badge-global" *ngIf="!actu.equipeId && !actu.roleCible">
+          🌍 {{ 'announcement.target.global' | translate }}
+        </span>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

@@ -155,152 +155,184 @@
   </div>
 
     <!-- ===== SECTION AJOUT MEMBRES — VERSION AMICAL INTER-GROUPES ===== -->
-    <div class="add-member-section-amical" *ngIf="isAmicalWithPlatformGroup">
-      <mat-tab-group class="teams-tabs" animationDuration="200ms">
+   <div class="add-member-section-amical" *ngIf="isAmicalWithPlatformGroup">
+  <mat-tab-group class="teams-tabs" animationDuration="200ms">
 
-        <!-- Onglet Équipe Locale -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <div class="tab-label team-1-tab">
-              <mat-icon>home</mat-icon>
-              <span>{{ equipeNames[0] }}</span>
-              <span class="tab-count">{{ membresNonPresents.length }}</span>
-            </div>
-          </ng-template>
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label team-1-tab">
+          <mat-icon>home</mat-icon>
+          <span>{{ equipeNames[0] }}</span>
+          <span class="tab-count">{{ membresNonPresents.length }}</span>
+        </div>
+      </ng-template>
 
-          <div class="tab-content">
-            <div class="add-member-card">
-              <h3>
-                <mat-icon>person_add</mat-icon>
-                {{ 'PRESENCE.ADD.TITLE_LOCAL' | translate:{ nom: groupeActif?.nom } }}
-              </h3>
-              <div class="add-member-form">
-                <mat-form-field appearance="outline" class="search-field">
-                  <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
-                  <input matInput [(ngModel)]="membreSearch"
-                         [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
-                  <mat-icon matPrefix>search</mat-icon>
-                </mat-form-field>
+      <div class="tab-content">
+        <div class="add-member-card">
+          <h3>
+            <mat-icon>person_add</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_LOCAL' | translate:{ nom: groupeActif?.nom } }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+              <input matInput [(ngModel)]="membreSearch"
+                     [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
 
-                <mat-form-field appearance="outline" class="select-field">
-                  <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBER' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="selectedMembreIdToAdd">
-                    <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
-                      {{ membre.nom }} {{ membre.prenom }}
-                      <span class="equipe-tag" *ngIf="membre.equipe">{{ membre.equipe.nom }}</span>
-                    </mat-option>
-                  </mat-select>
-                  <mat-hint>
-                    {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresNonPresents.length } }}
-                  </mat-hint>
-                </mat-form-field>
+            <mat-form-field appearance="outline" class="select-field">
+              <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBERS' | translate }}</mat-label>
+              <mat-select [(ngModel)]="selectedMembreIdsToAdd" multiple (selectionChange)="triggerRefresh()">
+                <mat-option (click)="selectAllLocalMembres()">
+                  <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
+                </mat-option>
+                <mat-divider></mat-divider>
+                
+                <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
+                  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px; height: 18px; width: 18px;">block</mat-icon>
+                      <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
+                            [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+                        {{ membre.nom }} {{ membre.prenom }}
+                      </span>
+                    </div>
+                    <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
+                          style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+                      Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                    </span>
+                    <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">{{ membre.equipe.nom }}</span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-hint>
+                {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresNonPresents.length } }}
+              </mat-hint>
+            </mat-form-field>
 
-                <button mat-raised-button color="primary"
-                        [disabled]="!selectedMembreIdToAdd"
-                        (click)="addMembreToPresenceList()">
-                  <mat-icon>add</mat-icon>
-                  {{ 'COMMON.ADD' | translate }}
-                </button>
-              </div>
-            </div>
+            <button mat-raised-button color="primary"
+                    [disabled]="!selectedMembreIdsToAdd || selectedMembreIdsToAdd.length === 0"
+                    (click)="addMembresLocalToPresenceList()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }} ({{ selectedMembreIdsToAdd?.length || 0 }})
+            </button>
           </div>
-        </mat-tab>
+        </div>
+      </div>
+    </mat-tab>
 
-        <!-- Onglet Équipe Adverse -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <div class="tab-label team-2-tab">
-              <mat-icon>flight</mat-icon>
-              <span>{{ equipeNames[1] }}</span>
-              <span class="tab-count">{{ membresAdverseNonPresents.length }}</span>
-            </div>
-          </ng-template>
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label team-2-tab">
+          <mat-icon>flight</mat-icon>
+          <span>{{ equipeNames[1] }}</span>
+          <span class="tab-count">{{ membresAdverseNonPresents.length }}</span>
+        </div>
+      </ng-template>
 
-          <div class="tab-content">
-            <div class="add-member-card adverse">
-              <h3>
-                <mat-icon>person_add</mat-icon>
-                {{ 'PRESENCE.ADD.TITLE_ADVERSE' | translate:{ nom: groupeAdverse?.nom } }}
-              </h3>
-              <div class="add-member-form">
-                <mat-form-field appearance="outline" class="search-field">
-                  <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
-                  <input matInput [(ngModel)]="membreAdverseSearch"
-                         [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
-                  <mat-icon matPrefix>search</mat-icon>
-                </mat-form-field>
+      <div class="tab-content">
+        <div class="add-member-card adverse">
+          <h3>
+            <mat-icon>person_add</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_ADVERSE' | translate:{ nom: groupeAdverse?.nom } }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+              <input matInput [(ngModel)]="membreAdverseSearch"
+                     [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
 
-                <mat-form-field appearance="outline" class="select-field">
-                  <mat-label>{{ 'PRESENCE.ADD.SELECT_ADVERSE' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="selectedMembreAdverseIdToAdd">
-                    <mat-option *ngFor="let membre of filteredMembresAdverse()" [value]="membre.id">
-                      {{ membre.nom }} {{ membre.prenom }}
-                    </mat-option>
-                  </mat-select>
-                  <mat-hint>
-                    {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresAdverseNonPresents.length } }}
-                  </mat-hint>
-                </mat-form-field>
+        <mat-icon>playlist_add</mat-icon>
+            <mat-form-field appearance="outline" class="select-field">
+              <mat-label>{{ 'PRESENCE.ADD.SELECT_ADVERSE' | translate }}</mat-label>
+              <mat-select [(ngModel)]="selectedMembreAdverseIdsToAdd" multiple (selectionChange)="triggerRefresh()">
+                <mat-option (click)="selectAllAdverseMembres()">
+                  <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
+                </mat-option>
+                <mat-divider></mat-divider>
 
-                <button mat-raised-button color="warn"
-                        [disabled]="!selectedMembreAdverseIdToAdd"
-                        (click)="addMembreAdverseToPresenceList()">
-                  <mat-icon>add</mat-icon>
-                  {{ 'COMMON.ADD' | translate }}
-                </button>
-              </div>
-            </div>
+                <mat-option *ngFor="let membre of filteredMembresAdverse()" [value]="membre.id">
+                  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px; height: 18px; width: 18px;">block</mat-icon>
+                      <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
+                            [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+                        {{ membre.nom }} {{ membre.prenom }}
+                      </span>
+                    </div>
+                    <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
+                          style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+                      Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                    </span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-hint>
+                {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresAdverseNonPresents.length } }}
+              </mat-hint>
+            </mat-form-field>
+
+            <button mat-raised-button color="warn"
+                    [disabled]="!selectedMembreAdverseIdsToAdd || selectedMembreAdverseIdsToAdd.length === 0"
+                    (click)="addMembresAdverseToPresenceList()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }} ({{ selectedMembreAdverseIdsToAdd?.length || 0 }})
+            </button>
           </div>
-        </mat-tab>
+        </div>
+      </div>
+    </mat-tab>
 
-        <!-- Onglet Joueur Occasionnel -->
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <div class="tab-label occasional-tab">
-              <mat-icon>person_outline</mat-icon>
-              <span>{{ 'PRESENCE.ADD.TAB_OCCASIONAL' | translate }}</span>
-            </div>
-          </ng-template>
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label occasional-tab">
+          <mat-icon>person_outline</mat-icon>
+          <span>{{ 'PRESENCE.ADD.TAB_OCCASIONAL' | translate }}</span>
+        </div>
+      </ng-template>
 
-          <div class="tab-content">
-            <div class="add-member-card occasional">
-              <h3>
-                <mat-icon>person_outline</mat-icon>
-                {{ 'PRESENCE.ADD.TITLE_OCCASIONAL' | translate }}
-              </h3>
-              <div class="add-member-form">
-                <mat-form-field appearance="outline" class="name-field">
-                  <mat-label>{{ 'PRESENCE.ADD.PLAYER_NAME' | translate }}</mat-label>
-                  <input matInput [(ngModel)]="occasionalPlayerName"
-                         [placeholder]="'PRESENCE.ADD.NAME_PLACEHOLDER' | translate">
-                  <mat-icon matPrefix>badge</mat-icon>
-                </mat-form-field>
+      <div class="tab-content">
+        <div class="add-member-card occasional">
+          <h3>
+            <mat-icon>person_outline</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_OCCASIONAL' | translate }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="name-field">
+              <mat-label>{{ 'PRESENCE.ADD.PLAYER_NAME' | translate }}</mat-label>
+              <input matInput [(ngModel)]="occasionalPlayerName"
+                     [placeholder]="'PRESENCE.ADD.NAME_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>badge</mat-icon>
+            </mat-form-field>
 
-                <mat-form-field appearance="outline" class="team-field">
-                  <mat-label>{{ 'PRESENCE.ADD.TEAM_LABEL' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="occasionalPlayerTeam">
-                    <mat-option [value]="equipeNames[0]">
-                      <mat-icon>home</mat-icon> {{ equipeNames[0] }}
-                    </mat-option>
-                    <mat-option [value]="equipeNames[1]">
-                      <mat-icon>flight</mat-icon> {{ equipeNames[1] }}
-                    </mat-option>
-                  </mat-select>
-                </mat-form-field>
+            <mat-form-field appearance="outline" class="team-field">
+              <mat-label>{{ 'PRESENCE.ADD.TEAM_LABEL' | translate }}</mat-label>
+              <mat-select [(ngModel)]="occasionalPlayerTeam">
+                <mat-option [value]="equipeNames[0]">
+                  <mat-icon>home</mat-icon> {{ equipeNames[0] }}
+                </mat-option>
+                <mat-option [value]="equipeNames[1]">
+                  <mat-icon>flight</mat-icon> {{ equipeNames[1] }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
 
-                <button mat-raised-button color="accent"
-                        [disabled]="!occasionalPlayerName || !occasionalPlayerTeam"
-                        (click)="addOccasionalPlayer()">
-                  <mat-icon>add</mat-icon>
-                  {{ 'COMMON.ADD' | translate }}
-                </button>
-              </div>
-            </div>
+            <button mat-raised-button color="accent"
+                    [disabled]="!occasionalPlayerName || !occasionalPlayerTeam"
+                    (click)="addOccasionalPlayer()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }}
+            </button>
           </div>
-        </mat-tab>
+        </div>
+      </div>
+    </mat-tab>
 
-      </mat-tab-group>
-    </div>
+  </mat-tab-group>
+</div>
 
     
     
@@ -616,10 +648,10 @@
           <mat-icon>aspect_ratio</mat-icon>
           <span>{{ 'PRESENCE.EXPORT.FULL_IMAGE' | translate }}</span>
         </button>
-        <button mat-menu-item (click)="downloadMatchSheetAsImage('story')">
+        <!-- <button mat-menu-item (click)="downloadMatchSheetAsImage('story')">
           <mat-icon>stay_current_portrait</mat-icon>
           <span>{{ 'PRESENCE.EXPORT.STORY_FORMAT' | translate }}</span>
-        </button>
+        </button> -->
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="shareMatchSheetAsImage('full')">
           <mat-icon>share</mat-icon>

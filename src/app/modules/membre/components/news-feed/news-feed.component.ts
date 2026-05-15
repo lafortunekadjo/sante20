@@ -11,7 +11,6 @@ import { Match, TypeMatch } from '../../../../core/models/match.model';
 import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
 import { Membre } from '../../../../core/models/membre.model';
 import { Presence } from '../../../../core/models/presence.model';
-import { Announcement } from '../../../../core/models/announcement.model';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { GeneralService } from '../../../../core/services/general.service';
 import { MatchService } from '../../../../core/services/match.service';
@@ -36,6 +35,7 @@ import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/pu
 import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 import { MvpVoteCardComponent } from '../mvp-vote-card/mvp-vote-card.component';
+import { Announcement, AnnouncementService } from '../../../../core/services/announcement.service';
 
 // // Interface Exercice
 // interface Exercice {
@@ -117,6 +117,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private financeService: FinancesService,
+    private announcementService: AnnouncementService
 
   ) {
     this.allMembres$ = this.membreService.getAllMembres();
@@ -125,6 +126,18 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.groupeId = this.authService.getGroupe();
     this.loadGroupeAndExercice();
+    this.loadAnnouncements();
+  }
+
+    loadAnnouncements(): void {
+    if (!this.groupeId) return;
+    this.announcementService.getByGroupe(this.groupeId).subscribe({
+      next: (data) => {
+        this.groupAnnouncements = data;
+      
+      },
+      error: (err) => console.error('Erreur lors du chargement des actualités', err)
+    });
   }
 
 

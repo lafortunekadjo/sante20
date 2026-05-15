@@ -88,6 +88,7 @@ import { DemandeAdhesionComponent } from "./shared/components/demande-adhesion/d
 import { JoinGroupDialogComponent } from "./modules/membre/components/join-group-dialog/join-group-dialog.component";
 import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
 import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
+import { AnnouncementAdminComponent } from "./modules/responsable/components/announcement-admin/announcement-admin.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -480,6 +481,12 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: RDashboardComponent
+          },
+            {
+            path: 'actualites',
+            component: AnnouncementAdminComponent,
+            canActivate: [RoleGuard],
+            data: { roles: ['ADMIN', 'RESPONSABLE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE'] }
           },
           {
             path: 'utilisateurs',

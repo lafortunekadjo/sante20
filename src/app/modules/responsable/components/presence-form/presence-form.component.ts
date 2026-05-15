@@ -96,8 +96,9 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
   today = new Date();
   selectedMemberIds: Set<number> = new Set();
   selectedMembreIdsToAdd: number[] = [];
-
+  selectedMembreAdverseIdsToAdd: number[] = [];
   public _refreshCounter = 0;
+  cdRef: any;
 
   constructor(
     private matchService: MatchService,
@@ -2520,4 +2521,130 @@ async copyMatchSheetToClipboard(): Promise<void> {
     return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
   }
  
+  selectAllAdverseMembres(): void {
+  const filteredIds = this.filteredMembresAdverse().map(m => m.id);
+  this.selectedMembreAdverseIdsToAdd = [...filteredIds];
+}
+
+addMembresLocalToPresenceList(): void {
+  if (!this.selectedMembreIdsToAdd || this.selectedMembreIdsToAdd.length === 0) return;
+
+  const toAdd = this.membresNonPresents.filter(m => this.selectedMembreIdsToAdd.includes(m.id));
+  
+  // Alerte si des joueurs sont suspendus
+  const suspendus = toAdd.filter(m => m.estSuspendu);
+  if (suspendus.length > 0) {
+    const noms = suspendus.map(m => m.prenom).join(', ');
+    if (!confirm(`Attention : ${noms} est/sont suspendu(s). Ajouter quand même ?`)) return;
+  }
+
+  const newPresences = toAdd.map(membre => ({
+   id: 0,
+      match: this.match!,
+      membre: membre,
+      present: true,
+      aJoue: true,
+      estCapitaine: false,
+      buts: 0,
+      passes: 0,
+      penalti: 0,
+      butsContreSonCamp: 0,
+      estHommeDuMatch: false,
+      estHommeDuMatchEq: false,
+      equipeMatch: this.equipeNames[0],
+      cartonsJaunes: 0,
+      cartonsRouges: 0,
+      nomOccasionnel: '',
+      estGardien: false,
+      points: 0,
+      paniers2pts: 0,
+      paniers3pts: 0,
+      lancersFrancs: 0,
+      rebonds: 0,
+      interceptions: 0,
+      contres: 0,
+      fautes: 0,
+      jets7m: 0,
+      deuxMinutes: 0,
+      equipePosition:1
+  }));
+
+  this.dataSource.data = [...this.dataSource.data, ...newPresences];
+  
+  // Filtrer la liste locale
+  this.membresNonPresents = this.membresNonPresents.filter(m => !this.selectedMembreIdsToAdd.includes(m.id));
+  
+  this.selectedMembreIdsToAdd = [];
+  this.membreSearch = '';
+  this.triggerRefresh();
+  this.updateCounts();
+}
+  updateCounts() {
+    throw new Error('Method not implemented.');
+  }
+
+addMembresAdverseToPresenceList(): void {
+  if (!this.selectedMembreAdverseIdsToAdd || this.selectedMembreAdverseIdsToAdd.length === 0) return;
+
+  const toAdd = this.membresAdverseNonPresents.filter(m => this.selectedMembreAdverseIdsToAdd.includes(m.id));
+
+  // Alerte si des joueurs adverses sont suspendus
+  const suspendus = toAdd.filter(m => m.estSuspendu);
+  if (suspendus.length > 0) {
+    const noms = suspendus.map(m => m.prenom).join(', ');
+    if (!confirm(`Attention : ${noms} est/sont suspendu(s). Ajouter quand même ?`)) return;
+  }
+
+  const newPresences = toAdd.map(membre => ({
+    id: 0,
+      match: this.match!,
+      membre: membre,
+      present: true,
+      aJoue: true,
+      estCapitaine: false,
+      buts: 0,
+      passes: 0,
+      penalti: 0,
+      butsContreSonCamp: 0,
+      estHommeDuMatch: false,
+      estHommeDuMatchEq: false,
+      equipeMatch: this.equipeNames[1],
+      cartonsJaunes: 0,
+      cartonsRouges: 0,
+      nomOccasionnel: '',
+      estGardien: false,
+      points: 0,
+      paniers2pts: 0,
+      paniers3pts: 0,
+      lancersFrancs: 0,
+      rebonds: 0,
+      interceptions: 0,
+      contres: 0,
+      fautes: 0,
+      jets7m: 0,
+      deuxMinutes: 0,
+      equipePosition: 2
+  }));
+
+  this.dataSource.data = [...this.dataSource.data, ...newPresences];
+  
+  // Filtrer la liste adverse
+  this.membresAdverseNonPresents = this.membresAdverseNonPresents.filter(m => !this.selectedMembreAdverseIdsToAdd.includes(m.id));
+  
+  this.selectedMembreAdverseIdsToAdd = [];
+  this.membreAdverseSearch = '';
+  this.triggerRefresh();
+  this.updateCounts();
+}
+
+triggerRefresh(): void {
+  this._refreshCounter++;
+  if (this.cdRef) this.cdRef.detectChanges();
+}
+
+selectAllLocalMembres(): void {
+  const filteredIds = this.filteredMembres().map(m => m.id);
+  this.selectedMembreIdsToAdd = [...filteredIds];
+
+}
 }
