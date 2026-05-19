@@ -45,12 +45,9 @@ export const appConfig: ApplicationConfig = {
           deps: [HttpClient]
         }
       })
-    ), provideServiceWorker('ngsw-worker.js', {
+    ), provideServiceWorker('sw-push.js', {
       enabled: !isDevMode(), // S'active uniquement en Production (Build Prod requis)
       registrationStrategy: 'registerWhenStable:30000'
-    }), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          })
+    })
   ]
 };
