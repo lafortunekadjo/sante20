@@ -71,10 +71,19 @@ export class PushNotificationService {
   /**
    * Demander la permission et abonner l'appareil aux notifications push
    */
+ /**
+   * Demander la permission et abonner l'appareil aux notifications push
+   */
   public async subscribeToNotifications(): Promise<PushSubscription | null> {
+    // CORRECTION : Si ce n'est pas encore prêt, on attend activement le Service Worker
     if (!this.swRegistration) {
-      console.error('[Push] Impossible d\'abonner : Service worker non initialisé.');
-      return null;
+      console.log('[Push] En attente de l\'initialisation du Service Worker...');
+      try {
+        this.swRegistration = await navigator.serviceWorker.ready;
+      } catch (err) {
+        console.error('[Push] Impossible d\'attendre le Service Worker:', err);
+        return null;
+      }
     }
 
     try {
@@ -88,8 +97,7 @@ export class PushNotificationService {
       // Étape 2 : Création du Uint8Array pour la clé publique VAPID
       const convertedKey = this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY);
 
-      // Étape 3 : Création de la souscription auprès du serveur de push (FCM, Apple, etc.)
-      // Note : On utilise '.buffer' pour fournir un ArrayBuffer pur et corriger l'erreur ts(2322)
+      // Étape 3 : Création de la souscription auprès du serveur de push
       const options: PushSubscriptionOptionsInit = {
         userVisibleOnly: true,
         applicationServerKey: convertedKey.buffer as ArrayBuffer
@@ -98,7 +106,7 @@ export class PushNotificationService {
       const subscription = await this.swRegistration.pushManager.subscribe(options);
       console.log('[Push] Nouvelle souscription générée avec succès sur l\'appareil.');
 
-      // Étape 4 : Extraction et conversion des clés de chiffrement pour ton Backend Java
+      // Étape 4 : Extraction et conversion des clés de chiffrement pour ton Backend
       const p256dhBuffer = subscription.getKey('p256dh');
       const authBuffer = subscription.getKey('auth');
 
@@ -114,7 +122,7 @@ export class PushNotificationService {
         }
       };
 
-      // Étape 5 : Transmission au backend Spring Boot
+      // Étape 5 : Transmission au backend
       await this.saveSubscriptionOnBackend(subscriptionData);
       
       this.isSubscribedSubject.next(true);
