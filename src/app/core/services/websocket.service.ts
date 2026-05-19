@@ -7,7 +7,6 @@ import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '../../environment';
 import { AuthService } from './auth.service';
 
-
 export interface MessageNotification {
   message: any;
   type: 'NEW_MESSAGE' | 'MESSAGE_EDITED' | 'MESSAGE_DELETED';
@@ -47,7 +46,21 @@ export class WebSocketService {
     this.client = new Client({
       webSocketFactory: () => {
         console.log('🏭 Creating WebSocket connection');
-        return new SockJS(`${environment.apiUrl}/ws`) as any;
+        
+        // Construction de l'URL à partir de la config environment
+        let baseApiUrl = environment.apiUrl; // Récupère '/api'
+        let wsEndpoint = `${baseApiUrl}/ws`;  // Devient '/api/ws'
+
+        // Sécurisation stricte : transforme le chemin relatif en URL absolue HTTPS
+        if (wsEndpoint.startsWith('/')) {
+          wsEndpoint = `https://${window.location.host}${wsEndpoint}`;
+        } else {
+          // Si une URL absolue incorrecte s'était glissée, on la nettoie pour SockJS
+          wsEndpoint = wsEndpoint.replace('http://', 'https://').replace('wss://', 'https://');
+        }
+
+        console.log('[WebSocket] URL SockJS sécurisée générée :', wsEndpoint);
+        return new SockJS(wsEndpoint) as any;
       },
       
       connectHeaders: {
@@ -130,7 +143,7 @@ export class WebSocketService {
     return subject.asObservable();
   }
 
-   /**
+  /**
    * Se désabonner d'une conversation
    */
   unsubscribeFromConversation(conversationId: number): void {
@@ -156,7 +169,6 @@ export class WebSocketService {
       console.log('✅ Unsubscribed from typing indicators:', conversationId);
     }
   }
-
 
   subscribeToTyping(conversationId: number): Observable<any> {
     const subject = new Subject<any>();
@@ -204,11 +216,10 @@ export class WebSocketService {
       headers: {
         Authorization: `Bearer ${token}`
       },
-  
       body: JSON.stringify({ content })
     });
     
-    console.log('✅ Message sent'+ token);
+    console.log('✅ Message sent' + token);
   }
 
   sendTypingIndicator(conversationId: number, isTyping: boolean): void {
