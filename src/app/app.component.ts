@@ -27,13 +27,14 @@ export class AppComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
+
   constructor(
     private router: Router,
     private authService: AuthService,
     private rxStompService: RxStompService,
     private notificationService: NotificationService,
+    private snackBar: MatSnackBar,
     private pushNotificationService: PushNotificationService,
-    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -43,6 +44,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initAuthListener();
     this.initNotificationListener();
     this.initNavigationLogger();
+
+    if (localStorage.getItem('token') || localStorage.getItem('user_data')) {
+      if (this.pushNotificationService.isPushSupported() && !this.pushNotificationService.isNotificationGranted()) {
+        this.pushNotificationService.subscribeToNotifications();
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -50,6 +57,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.rxStompService.disconnect();
   }
+
+
+
+ 
+
+
 
   /**
    * Écouter les changements d'authentification pour initialiser WebSocket
@@ -93,21 +106,6 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe(notification => {
         this.showNotificationToast(notification);
       });
-  }
-
-  private async checkAndRequestPushPermission(): Promise<void> {
-    try {
-      // Si la permission n'est pas encore accordée ou bloquée, on force l'abonnement
-      // Ta méthode 'subscribeToNotifications' appellera 'requestPermission()' nativement
-      if (Notification.permission !== 'granted') {
-        console.log('[PWA] Demande de permission push suite à la connexion ou l\'ouverture du raccourci...');
-        await this.pushNotificationService.subscribeToNotifications();
-      } else {
-        console.log('[PWA] Permission déjà accordée. Le téléphone est prêt à recevoir des pushs.');
-      }
-    } catch (err) {
-      console.error('[PWA] Échec de l\'activation automatique des notifications', err);
-    }
   }
 
   /**
