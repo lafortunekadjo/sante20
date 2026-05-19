@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, HttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { provideServiceWorker } from '@angular/service-worker';
 
 // Classe de loader personnalisée
 class CustomTranslateLoader implements TranslateLoader {
@@ -29,6 +30,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor])
     ),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(), // S'active uniquement en mode production (nécessaire sur mobile)
+      registrationStrategy: 'registerWhenStable:30000' // S'enregistre dès que l'app est stable
+    }),
     provideAnimations(),
     provideNativeDateAdapter(), 
     importProvidersFrom(
@@ -40,6 +45,12 @@ export const appConfig: ApplicationConfig = {
           deps: [HttpClient]
         }
       })
-    )
+    ), provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(), // S'active uniquement en Production (Build Prod requis)
+      registrationStrategy: 'registerWhenStable:30000'
+    }), provideServiceWorker('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            registrationStrategy: 'registerWhenStable:30000'
+          })
   ]
 };

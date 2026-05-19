@@ -1200,32 +1200,59 @@ getCSCForEquipe(position: number): number {
 
   // ===== ASSIGNATION ÉQUIPES =====
 
-  private assignDefaultTeams(): void {
-    let needsRefresh = false;
-    
-    this.dataSource.data.forEach(presence => {
-      if (!presence.equipeMatch || presence.equipeMatch === '') {
+private assignDefaultTeams(): void {
+  let needsRefresh = false;
+  
+  this.dataSource.data.forEach(presence => {
+    // ÉTAPE 1 : Si le joueur possède déjà un nom d'équipe valide ou une position valide reçue du serveur, on la préserve !
+    if (presence.equipeMatch && presence.equipeMatch !== '') {
+      // Sécurité : on s'assure que sa position numérique concorde avec le nom de l'équipe
+      if (presence.equipeMatch === this.equipeNames[1] && presence.equipePosition !== 2) {
+        presence.equipePosition = 2;
         needsRefresh = true;
-        
+      } else if (presence.equipeMatch === this.equipeNames[0] && presence.equipePosition !== 1) {
+        presence.equipePosition = 1;
+        needsRefresh = true;
+      }
+      return; // On passe au joueur suivant, pas besoin d'exécuter la logique d'attribution par défaut
+    }
+
+    // ÉTAPE 2 : Si equipeMatch est vide (Cas des nouveaux joueurs ajoutés à la volée avant sauvegarde)
+    if (!presence.equipeMatch || presence.equipeMatch === '') {
+      needsRefresh = true;
+
+      // Vérification si le joueur a une position numérique explicitement définie (1 ou 2)
+      if (presence.equipePosition === 2) {
+        presence.equipeMatch = this.equipeNames[1];
+      } else if (presence.equipePosition === 1) {
+        presence.equipeMatch = this.equipeNames[0];
+      } 
+      // Sinon, on applique la logique d'analyse des membres de la plateforme
+      else {
         const isFromAdverseGroup = this.isAmicalWithPlatformGroup && 
           presence.membre?.id && 
           this.membresAdverse.some(m => m.id === presence.membre?.id);
         
         if (isFromAdverseGroup) {
           presence.equipeMatch = this.equipeNames[1];
+          presence.equipePosition = 2;
         } else if (presence.membre?.equipe?.nom && this.equipeNames.includes(presence.membre.equipe.nom)) {
           presence.equipeMatch = presence.membre.equipe.nom;
+          presence.equipePosition = this.equipeNames.indexOf(presence.membre.equipe.nom) + 1;
         } else {
+          // Si c'est un joueur occasionnel sans aucune info, on le met par défaut côté hôte
           presence.equipeMatch = this.equipeNames[0];
+          presence.equipePosition = 1;
         }
       }
-    });
-    
-    if (needsRefresh) {
-      this._refreshCounter++;
-      this.cdr.detectChanges();
     }
+  });
+  
+  if (needsRefresh) {
+    this._refreshCounter++;
+    this.cdr.detectChanges();
   }
+}
 
   // ===== SAUVEGARDE =====
 

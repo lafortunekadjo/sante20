@@ -10,6 +10,7 @@ import { SettingsService } from './core/services/settings.service';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService, AppNotification } from './core/services/notification.service';
 import { RxStompService } from './rx-stomp.service';
+import { PushNotificationService } from './core/services/push-notification.service';
 
 @Component({
   selector: 'app-root',
@@ -31,6 +32,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private rxStompService: RxStompService,
     private notificationService: NotificationService,
+    private pushNotificationService: PushNotificationService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -91,6 +93,21 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe(notification => {
         this.showNotificationToast(notification);
       });
+  }
+
+  private async checkAndRequestPushPermission(): Promise<void> {
+    try {
+      // Si la permission n'est pas encore accordée ou bloquée, on force l'abonnement
+      // Ta méthode 'subscribeToNotifications' appellera 'requestPermission()' nativement
+      if (Notification.permission !== 'granted') {
+        console.log('[PWA] Demande de permission push suite à la connexion ou l\'ouverture du raccourci...');
+        await this.pushNotificationService.subscribeToNotifications();
+      } else {
+        console.log('[PWA] Permission déjà accordée. Le téléphone est prêt à recevoir des pushs.');
+      }
+    } catch (err) {
+      console.error('[PWA] Échec de l\'activation automatique des notifications', err);
+    }
   }
 
   /**

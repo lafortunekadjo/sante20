@@ -13,7 +13,7 @@ export interface Announcement {
   date?: string;
   groupeId?: number;
   equipeId?: number;
-  roleCible?: string;
+  roleCible?: number;
   actifSeulement?: boolean;
   pieceJointeUrl?: string;
   createur?:Membre;

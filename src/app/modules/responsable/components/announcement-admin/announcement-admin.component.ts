@@ -56,7 +56,7 @@ export class AnnouncementAdminComponent implements OnInit {
   // Variables de filtrage de la barre d'actions
   searchTerm: string = '';
   selectedEquipe: number | 'all' = 'all';
-  selectedRole: string | 'all' = 'all';
+  selectedRole: number | 'all' = 'all';
 
   constructor(
     private fb: FormBuilder,
@@ -117,7 +117,6 @@ export class AnnouncementAdminComponent implements OnInit {
     if (this.announcementForm.invalid || !this.currentGroupeId) return;
 
     const announcementData: Announcement = this.announcementForm.value;
-
     if (this.isEditing && this.editingId) {
       this.announcementService.update(this.editingId, announcementData).subscribe({
         next: (updated) => {
@@ -132,6 +131,7 @@ export class AnnouncementAdminComponent implements OnInit {
         next: (created) => {
           this.announcements.unshift(created);
           this.toggleForm();
+          this.updateFilters();
         },
         error: (err) => console.error('Erreur lors de la création', err)
       });
@@ -172,7 +172,7 @@ export class AnnouncementAdminComponent implements OnInit {
     this.updateFilters();
   }
 
-  filterByRole(roleCode: string | 'all'): void {
+  filterByRole(roleCode: number | 'all'): void {
     this.selectedRole = roleCode;
     this.updateFilters();
   }
@@ -192,5 +192,10 @@ export class AnnouncementAdminComponent implements OnInit {
   getTeamName(id: number): string {
     const eq = this.equipes.find(e => e.id === id);
     return eq ? eq.nom : `Équipe (#${id})`;
+  }
+
+   getRoleName(id: number): string {
+    const eq = this.roles.find(e => e.id === id);
+    return eq ? eq.nom : `Role (#${id})`;
   }
 }

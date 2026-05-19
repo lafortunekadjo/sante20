@@ -142,15 +142,28 @@
         <!-- Stats -->
         <div class="match-stats" *ngIf="matchDetails()?.isPlayed">
           <!-- Buteurs -->
-          <div class="stat-card" *ngIf="matchDetails()!.buteurs.length > 0">
+        <div class="stat-card" *ngIf="matchDetails()!.buteurs.length > 0">
             <div class="stat-header">
               <mat-icon>sports_soccer</mat-icon>
-              <span>Buteurs</span>
+              <span>{{ 'calendar.stats.scorers' | translate }}</span>
             </div>
-            <div class="stat-content">
-              <div *ngFor="let b of matchDetails()!.buteurs" class="player-row">
-                <span class="player-name">{{ b.nom }}</span>
-                <span class="player-stat">{{ b.count }} ⚽</span>
+            <div class="stat-list">
+              <div class="stat-row" *ngFor="let b of matchDetails()!.buteurs">
+              <span class="full-name">{{ b.nomAffiche }}</span>
+              <span class="short-name">{{ b.nomAbrege }}</span>
+                
+                <span class="player-stat-text">
+                  <strong class="main-count">{{ b.total }} ⚽</strong>
+                  
+                  <span class="sub-details" *ngIf="b.penalti > 0 || b.butsContreSonCamp > 0">
+                    (
+                    <span class="pen-text" *ngIf="b.penalti > 0">{{ b.penalti }}pen</span>
+                    <span class="sep-text" *ngIf="b.penalti > 0 && b.butsContreSonCamp > 0">, </span>
+                    <span class="csc-text" *ngIf="b.butsContreSonCamp > 0">{{ b.butsContreSonCamp }}csc</span>
+                    )
+                  </span>
+                </span>
+
               </div>
             </div>
           </div>
@@ -163,11 +176,53 @@
             </div>
             <div class="stat-content">
               <div *ngFor="let p of matchDetails()!.passeurs" class="player-row">
-                <span class="player-name">{{ p.nom }}</span>
+               <span class="full-name">{{ p.nomAffiche }}</span>
+                <span class="short-name">{{ p.nomAbrege }}</span>
                 <span class="player-stat">{{ p.count }} 🎯</span>
               </div>
             </div>
           </div>
+
+        <div class="stat-card honors-card" *ngIf="matchDetails()!.mvpEnseigne1 || matchDetails()!.mvpEnseigne2 || matchDetails()!.hdm">
+            <div class="stat-header">
+              <mat-icon class="gold-icon">military_tech</mat-icon>
+              <span>{{ 'calendar.stats.honors' | translate }}</span>
+            </div>
+            
+            <div class="honors-grid">
+              <ng-container *ngIf="matchDetails()!.isMultiMvp">
+                <div class="honor-item mvp" *ngIf="matchDetails()!.mvpEnseigne1">
+                  <span class="honor-label">🏆 MVP {{ selectedMatch()!.equipe1Nom }}</span>
+                  <span class="honor-value full-name">{{ matchDetails()!.mvpEnseigne1 }}</span>
+  
+                  <span class="honor-value short-name">{{ matchDetails()!.mvpEnseigne1Abrege }}</span>
+                </div>
+                <div class="honor-item mvp" *ngIf="matchDetails()!.mvpEnseigne2">
+                  <span class="honor-label">🏆 MVP {{ selectedMatch()!.equipe2Nom }}</span>
+                  <span class="honor-value full-name">{{ matchDetails()!.mvpEnseigne2 }}</span>
+  
+                   <span class="honor-value short-name">{{ matchDetails()!.mvpEnseigne2Abrege }}</span>
+                </div>
+              </ng-container>
+
+              <!-- <ng-container *ngIf="!matchDetails()!.isMultiMvp">
+                <div class="honor-item mvp" *ngIf="matchDetails()!.mvpEnseigne1">
+                  <span class="honor-label">🏆 MVP</span>
+                  <span class="honor-value">{{ matchDetails()!.mvpEnseigne1 }}</span>
+                </div>
+              </ng-container> -->
+
+              <div class="honor-item hdm" *ngIf="matchDetails()!.hdm">
+                <span class="honor-label">⭐ HDM</span>
+   
+                <span class="honor-value full-name">{{ matchDetails()!.hdm }}</span>
+  
+                <span class="honor-value short-name">{{ matchDetails()!.hdmAbrege }}</span>
+              </div>
+            </div>
+          </div>
+
+      
 
           <!-- Présents -->
           <div class="stat-card compact" *ngIf="matchDetails()!.presentsCount > 0">
