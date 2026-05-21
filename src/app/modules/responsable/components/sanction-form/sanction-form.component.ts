@@ -189,19 +189,19 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   filteredSanctions: Sanction[] = [];
   groupedSanctions: GroupedSanction[] = [];
   membres: Membre[] = [];
-  typeSanctions: TypeSanction[] = [];
+  typeSanctions: any[] = [];
   matches: Match[] = [];
   caisses: Caisse[] = []; // Nouveau: caisses disponibles
   
   // Table
   dataSource = new MatTableDataSource<Sanction>([]);
-  displayedColumns = ['select', 'membre', 'typeSanction', 'dateSanction', 'match', 'montant', 'paiement', 'etat', 'actions'];
+  displayedColumns = ['select', 'membre', 'typeSanction', 'dateSanction', 'match', 'montant',  'etat', 'actions'];
 
   // Sélection multiple
   selectedSanctions: Set<number> = new Set();
   selectAll = false;
   currentYear = new Date().getFullYear();
-
+  isMaterial: Boolean = false;
   // Formulaire filtres
   filterForm: FormGroup;
   
@@ -235,7 +235,14 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     includeSummary: true,
     dateRange: false
   };
-
+getMaterielPlaceholder(sanction: any): string {
+  if (this.isMaterielSanction(sanction)) {
+    // Utilise la clé de traduction pour l'exemple de matériel
+    return this.translate.instant('sanction.materielExample'); 
+  }
+  // Utilise la clé générique pour la description
+  return this.translate.instant('sanction.materielDescription');
+}
   // Filtres rapides prédéfinis
   quickFilters = [
     { label: 'Toutes', value: 'all', icon: 'list', count: 0 },
@@ -348,6 +355,16 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
         this.applyFilters();
       });
   }
+
+isMaterielSanction(sanction: any): boolean {
+  // console.log(sanction?.typeSanction.type === 'MATERIEL')
+  return sanction?.typeSanction.type === 'MATERIEL';
+}
+// isMaterielSanction2(sanction: any): boolean {
+//   console.log(sanction?.typeSanction.type)
+//   return sanction?.typeSanction.type === 'MATERIEL';
+// }
+
 
   applyFilters(): void {
     const filters = this.filterForm.value;
@@ -679,7 +696,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ============ CRUD SANCTIONS ============
 
-  getEmptySanction(): Partial<Sanction> & { equipeMatch?: string; selectedDate?: string } {
+  getEmptySanction(): Partial<any> & { equipeMatch?: string; selectedDate?: string } {
     return {
       id: 0,
       membre: 0,
@@ -691,7 +708,8 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       etat: 'NON_PAYEE',
       montantPaye: 0,
       equipeMatch: '',
-      selectedDate: ''
+      selectedDate: '',
+      quantite: 1, // Par défaut à 1
     };
   }
 
@@ -706,17 +724,34 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!(
       this.newSanction.membre &&
       this.newSanction.typeSanction &&
-      this.newSanction.dateSanction &&
-      this.newSanction.montant && this.newSanction.montant > 0
+      this.newSanction.dateSanction 
     );
   }
 
-  onTypeSanctionChange(sanction: any): void {
-    const type = this.typeSanctions.find(t => t.id === sanction.typeSanction);
-    if (type?.montantParDefaut) {
-      sanction.montant = type.montantParDefaut;
-    }
+onTypeSanctionChange(sanction: any): void {
+  // On utilise typeSanctionId pour correspondre au HTML
+  const typeDef = this.typeSanctions.find(t => t.id === sanction.typeSanction);
+ console.log(typeDef)
+  if (typeDef) {
+    sanction.montant = typeDef.montantParDefaut || 0;
+    sanction.type = typeDef.type; // Crucial pour le *ngIf materiel
   }
+  if (sanction.type === 'MATERIEL') {
+      sanction.quantite = sanction.quantite || 1;
+      sanction.materiel = sanction.materiel || typeDef.materiel;
+      this.isMaterial = true;
+      
+    }else{
+      this.isMaterial=false
+    }
+
+}
+
+  getTotalMateriel(sanction: any): number {
+  const montant = sanction.montant || 0;
+  const quantite = sanction.quantite || 1;
+  return montant * quantite;
+}
 
   saveSanction(): void {
     if (!this.isCreateFormValid()) {
@@ -729,8 +764,10 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
       membre: this.newSanction.membre,
       typeSanction: this.newSanction.typeSanction,
       match: this.newSanction.match || null,
-      dateSanction: this.formatDateForApi(this.newSanction.dateSanction as Date),
+      dateSanction: this.newSanction.dateSanction,
       montant: this.newSanction.montant,
+      materiel: this.newSanction.materiel,
+      quantite: this.newSanction.quantite,
       commentaire: this.newSanction.commentaire || '',
       etat: 'NON_PAYEE'
     };

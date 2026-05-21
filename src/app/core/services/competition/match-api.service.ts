@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environment';
-import { StatutMatch, MatchDTO, MatchDetailDTO, ResultatDTO, ForfaitDTO, ReportDTO, PlanificationMatchDTO, MatchEventDTO, MatchCompositionDTO } from '../../models/competition.models';
+import { StatutMatch, MatchDTO, MatchDetailDTO, ResultatDTO, ForfaitDTO, ReportDTO, PlanificationMatchDTO, MatchEventDTO, MatchCompositionDTO, TempsMatchDTO } from '../../models/competition.models';
 
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +25,14 @@ export class MatchApiService {
     if (params?.statut)        p = p.set('statut', params.statut);
     return this.http.get<MatchDTO[]>(this.base(competitionId), { params: p });
   }
+
+  // Dans match-api.service.ts — ajouter
+saisirTemps(competitionId: number,
+            matchId: number,
+            dto: TempsMatchDTO): Observable<MatchDetailDTO> {
+  return this.http.post<MatchDetailDTO>(
+    `${this.base(competitionId)}/${matchId}/temps`, dto);
+}
 
   getById(competitionId: number,
           matchId: number): Observable<MatchDetailDTO> {

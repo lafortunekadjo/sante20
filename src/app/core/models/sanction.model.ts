@@ -7,7 +7,9 @@ export interface TypeSanction {
   description?: string;
   montantParDefaut: number;
   duree?: number;
-  type: 'AMENDE' | 'SUSPENSION' | 'DISCIPLINE';
+  type: 'AMENDE' | 'SUSPENSION' | 'DISCIPLINE' | 'MATERIEL';
+  materiel: string;
+  quantite:number;
   groupe?: any;
   // Nouveaux champs pour liaison financière
   caisseId?: number;
@@ -26,7 +28,9 @@ export interface Sanction {
   typeSanction: number | TypeSanction;
   dateSanction: string | Date;
   montant: number;
+  materiel?: string;
   commentaire?: string;
+  quantite?: number;
   match?: number | Match;
   
   // États de paiement

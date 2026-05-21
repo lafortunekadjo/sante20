@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../environment';
@@ -73,6 +73,13 @@ export class SanctionService {
   updateTypeSanction(id: number, typeSanction: any): Observable<any> {
     console.log(typeSanction)
     return this.http.put(`${environment.apiUrl}/type-sanctions/${id}`, typeSanction);
+  }
+
+  activer(id: number, actif: boolean): Observable<any> {
+    const params = new HttpParams().set('actif', actif.toString());
+    
+    // On utilise PATCH pour une modification partielle
+    return this.http.patch(`${environment.apiUrl}/type-sanctions/${id}/activation`, {}, { params });
   }
 
   /**

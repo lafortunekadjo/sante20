@@ -146,7 +146,7 @@
           <mat-label>{{ 'explorer.filtres.ville' | translate }}</mat-label>
           <mat-select [(ngModel)]="filters.ville" (selectionChange)="onVilleChange(filters.ville)">
             <mat-option value="">{{ 'explorer.filtres.toutes' | translate }}</mat-option>
-            <mat-option *ngFor="let ville of villes" [value]="ville">
+            <mat-option *ngFor="let ville of villes" [value]="ville.nom">
               <mat-icon class="option-icon">location_city</mat-icon>
               {{ ville.nom }}
             </mat-option>
@@ -402,14 +402,23 @@
           (change)="toggleGroupSelection(groupe)">
         </mat-checkbox>
 
-        <div class="list-item-image" [style.background-image]="getGroupeImageUrl(groupe)">
-          <mat-chip class="discipline-chip-small">
-            <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
-          </mat-chip>
-          <div class="availability-badge-small" [class]="getAvailabilityClass(groupe)">
-            <mat-icon>{{ getAvailabilityIcon(groupe) }}</mat-icon>
-          </div>
-        </div>
+      <div class="list-item-image" 
+     [style.background-image]="getBackgroundImageStyle(groupe)"
+     [class.placeholder-bg]="!groupe.imageUrl"
+     [style.background-color]="!groupe.imageUrl ? getPlaceholderColor(groupe.nom) : null">
+
+  <div *ngIf="!groupe.imageUrl" class="no-image-placeholder-small">
+    <span class="placeholder-nom-small">{{ groupe.nom | uppercase }}</span>
+  </div>
+
+  <mat-chip class="discipline-chip-small">
+    <mat-icon>{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
+  </mat-chip>
+
+  <div class="availability-badge-small" [class]="getAvailabilityClass(groupe)">
+    <mat-icon>{{ getAvailabilityIcon(groupe) }}</mat-icon>
+  </div>
+</div>
 
         <div class="list-item-info">
           <h3 class="list-item-title">{{ groupe.nom }}</h3>
@@ -424,7 +433,7 @@
             </div>
             <div class="detail-item">
               <mat-icon>stadium</mat-icon>
-              <span>{{ groupe.stade.nom }}</span>
+              <span>{{ groupe.stade?.nom }}</span>
             </div>
             <div class="detail-item">
               <mat-icon>event</mat-icon>
@@ -451,7 +460,7 @@
         <div class="list-item-actions">
           <div class="frais-badge">
             <span class="frais-amount">{{ groupe.fraisAdhesion }}</span>
-            <span class="frais-currency">FCFA</span>
+            <span class="frais-currency"></span>
           </div>
 
           <div class="action-buttons">

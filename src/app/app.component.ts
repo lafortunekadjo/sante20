@@ -10,6 +10,7 @@ import { SettingsService } from './core/services/settings.service';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService, AppNotification } from './core/services/notification.service';
 import { RxStompService } from './rx-stomp.service';
+import { PushNotificationService } from './core/services/push-notification.service';
 
 @Component({
   selector: 'app-root',
@@ -26,12 +27,14 @@ export class AppComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
+
   constructor(
     private router: Router,
     private authService: AuthService,
     private rxStompService: RxStompService,
     private notificationService: NotificationService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private pushNotificationService: PushNotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -41,6 +44,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initAuthListener();
     this.initNotificationListener();
     this.initNavigationLogger();
+
+    if (localStorage.getItem('token') || localStorage.getItem('user_data')) {
+      if (this.pushNotificationService.isPushSupported() && !this.pushNotificationService.isNotificationGranted()) {
+        this.pushNotificationService.subscribeToNotifications();
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -48,6 +57,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.rxStompService.disconnect();
   }
+
+
+
+ 
+
+
 
   /**
    * Écouter les changements d'authentification pour initialiser WebSocket

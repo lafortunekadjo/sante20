@@ -11,7 +11,6 @@ import { Match, TypeMatch } from '../../../../core/models/match.model';
 import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
 import { Membre } from '../../../../core/models/membre.model';
 import { Presence } from '../../../../core/models/presence.model';
-import { Announcement } from '../../../../core/models/announcement.model';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { GeneralService } from '../../../../core/services/general.service';
 import { MatchService } from '../../../../core/services/match.service';
@@ -36,6 +35,7 @@ import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/pu
 import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 import { MvpVoteCardComponent } from '../mvp-vote-card/mvp-vote-card.component';
+import { Announcement, AnnouncementService } from '../../../../core/services/announcement.service';
 
 // // Interface Exercice
 // interface Exercice {
@@ -117,6 +117,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private financeService: FinancesService,
+    private announcementService: AnnouncementService
 
   ) {
     this.allMembres$ = this.membreService.getAllMembres();
@@ -125,6 +126,63 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.groupeId = this.authService.getGroupe();
     this.loadGroupeAndExercice();
+    this.loadAnnouncements();
+  }
+
+  loadAnnouncements(): void {
+    const userId = this.authService.getUserId();
+    if (!this.groupeId || !userId) return;
+
+    // On lance la récupération des annonces et des membres en parallèle
+    forkJoin({
+      announcements: this.announcementService.getByGroupe(this.groupeId),
+      membres: this.membreService.getAllMembres()
+    }).subscribe({
+      next: ({ announcements, membres }) => {
+        // 1. On trouve le membre connecté grâce à son ID utilisateur
+        const currentMembre = membres.find(m => m.user?.id === userId);
+
+        if (!currentMembre) {
+          // Par sécurité, si le membre n'est pas trouvé, on n'affiche que les annonces globales
+          this.groupAnnouncements = announcements.filter(a => !a.equipeId && !a.roleCible);
+          return;
+        }
+
+        console.log(currentMembre)
+
+        // 2. Extraction des facteurs de ciblage (Équipe et Rôle)
+        const userEquipeId = currentMembre.equipe?.id || (currentMembre as any).equipeId;
+        const userRoleId = currentMembre.roleCustom?.id || currentMembre.roleCustom?.id || (currentMembre as any).roleId;
+          console.log(userRoleId)
+        // 3. Application du filtre à double facteur
+        this.groupAnnouncements = announcements.filter(announcement => {
+          
+          // Facteur A : L'annonce est générale à tout le groupe (aucun ciblage)
+          const isGlobal = !announcement.equipeId && !announcement.roleCible;
+
+          // Facteur B : L'annonce cible spécifiquement l'équipe du membre
+          const isForMyTeam = !!(userEquipeId && announcement.equipeId === userEquipeId);
+
+          // Facteur C : L'annonce cible spécifiquement le rôle du membre
+          const isForMyRole = !!(userRoleId && announcement.roleCible === userRoleId);
+
+          // Sécurité additionnelle : L'annonce doit être active
+          const isActif = announcement.actifSeulement !== false;
+
+          return (isGlobal || isForMyTeam || isForMyRole) && isActif;
+        });
+
+        // 4. Tri par date décroissante (de la plus récente à la plus ancienne)
+        this.groupAnnouncements.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
+        });
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement ou du filtrage des annonces :', err);
+      }
+    });
   }
 
 
@@ -209,22 +267,41 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 
   // ===== MÉTHODE CLÉ: Obtenir les noms d'équipes selon le type de match =====
 
-  getEquipeNames(match: any): [string, string] {
+ getEquipeNames(match: any): [string, string] {
     if (!match || !match.typeMatch) return ['Équipe 1', 'Équipe 2'];
+
     switch (match.typeMatch) {
       case 'INTERNE':
       case 'DUEL':
-        return [
-          match.equipe1Nom || 'Équipe 1',
-          match.equipe2Nom || 'Équipe 2'
-        ];
+        // ✅ Récupération adaptative pour l'Équipe 1 (Vérifie l'objet complet, puis le champ à plat)
+        const team1 = match.equipe1?.nom || 
+                      match.equipe1?.libelle || 
+                      match.equipe1Nom || 
+                      'Équipe 1';
+
+        // ✅ Récupération adaptative pour l'Équipe 2
+        const team2 = match.equipe2?.nom || 
+                      match.equipe2?.libelle || 
+                      match.equipe2Nom || 
+                      'Équipe 2';
+                      
+        return [team1, team2];
 
       case 'AMICAL':
-        const localeName = this.groupeActif?.abreviation || this.groupeActif?.nom || 'Locale';
+        // Nom de ton groupe (Équipe locale)
+        const localeName = this.groupeActif?.abreviation || 
+                           this.groupeActif?.nom || 
+                           'Locale';
+                           
         let adversaireName = 'Adverse';
         
+        // Extraction adaptative du nom de l'adversaire extérieur
         if (match.groupeAdverse) {
-          adversaireName = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
+          adversaireName = match.groupeAdverse.abreviation || 
+                           match.groupeAdverse.nom || 
+                           match.groupeAdverse.libelle;
+        } else if (match.equipe2?.nom) {
+          adversaireName = match.equipe2.nom;
         } else if (match.equipe2Nom) {
           adversaireName = match.equipe2Nom;
         }
@@ -232,7 +309,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
         return [localeName, adversaireName];
 
       case 'ANNIVERSAIRE':
-        return ['Équipe Fêtés', 'Équipe Adverses'];
+        return ['Équipe Fêtés', 'Équipe Adverse'];
 
       default:
         return ['Équipe 1', 'Équipe 2'];
@@ -282,7 +359,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     const playedMatchIds = new Set<number>();
     
     for (const p of allPresences) {
-      if (p.aJoue === true && p.match?.id) {
+      if (p.aJoue === true && p.match?.id && p.match.arbitrePrincipal || p.match.arbitrePrincipalNomOccasionnel) {
         playedMatchIds.add(p.match.id);
       }
     }
@@ -309,13 +386,18 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       .sort((a, b) => new Date(b.dateMatch).getTime() - new Date(a.dateMatch).getTime());
   }
 
-  get matchesToDisplay(): Match[] {
-    if (this.showAllMatches) {
-      return this.recentMatches;
-    } else if (this.recentMatches.length > 0) {
-      return [this.recentMatches[0]];
+get matchesToDisplay(): Match[] {
+    if (!this.recentMatches || this.recentMatches.length === 0) {
+      return [];
     }
-    return [];
+
+    // Si l'utilisateur clique sur "Voir plus", on affiche les 5 matchs max
+    if (this.showAllMatches) {
+      return this.recentMatches.slice(0, 5);
+    }
+
+    // Par défaut, on n'affiche que les 2 premiers matchs joués
+    return this.recentMatches.slice(0, 2);
   }
 
   toggleDisplay(): void {

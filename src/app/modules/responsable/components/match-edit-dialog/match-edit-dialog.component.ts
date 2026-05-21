@@ -908,8 +908,8 @@ export class MatchEditDialogComponent implements OnInit {
   editMatch: Partial<Match>;
   
   // IDs sélectionnés pour les relations
-  selectedEquipe1Id: number | null = null;
-  selectedEquipe2Id: number | null = null;
+  selectedEquipe1Id: number | undefined = undefined;
+  selectedEquipe2Id: number | undefined = undefined;
   selectedGroupeAdverseId: number | null = null;
   selectedArbitrePrincipalId?: number | null = null;
   selectedArbitreAssistantId?: number | null = null;
@@ -941,8 +941,8 @@ export class MatchEditDialogComponent implements OnInit {
   initializeSelections() {
     const match = this.data.match;
     console.log(match )
-    this.selectedEquipe1Id = this.data.equipes[0].id;
-    this.selectedEquipe2Id = this.data.equipes[1].id;
+    this.selectedEquipe1Id = this.data.match?.equipe1?.id;
+    this.selectedEquipe2Id = this.data.match?.equipe2?.id;
    this.selectedArbitrePrincipalId = this.editMatch?.arbitrePrincipal?.id
     this.selectedRapporteurId = this.editMatch?.rapporteur?.id
     this.selectedArbitreAssistantId =this.editMatch?.arbitreAssistant?.id

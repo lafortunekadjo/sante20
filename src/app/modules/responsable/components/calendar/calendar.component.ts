@@ -12,6 +12,7 @@ import { Groupe } from '../../../../core/models/groupe.model';
 import { of } from 'rxjs';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { map, catchError, finalize } from 'rxjs/operators';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface CalendarDay {
   date: Date;
@@ -25,10 +26,16 @@ interface MatchDetails {
   match: Match;
   scoreLocal: number;
   scoreAdverse: number;
-  buteurs: { nom: string; count: number }[];
+  buteurs: { nom: string; buts: number; penalti: number; butsContreSonCamp: number; total: number }[];
   passeurs: { nom: string; count: number }[];
   presentsCount: number;
   isPlayed: boolean;
+  hdm?: string;
+  images?: string[];
+  // Ajustement pour les MVP
+  mvpEnseigne1?: string; // MVP de l'équipe 1 (ou locale)
+  mvpEnseigne2?: string; // MVP de l'équipe 2 (si match interne/duel)
+  isMultiMvp: boolean;   // Flag pour savoir si on affiche un ou deux blocs MVP
 }
 
 @Component({
@@ -42,7 +49,9 @@ interface MatchDetails {
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatMenuModule,
-    FormsModule
+    FormsModule,
+    TranslateModule,
+    MatIconModule
   ],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.scss'
@@ -56,8 +65,8 @@ export class CalendarComponent implements OnInit {
   currentYear: number;
   isMobile: boolean;
 
-  selectedMatch = signal<Match | null>(null);
-  matchDetails = signal<MatchDetails | null>(null);
+  selectedMatch = signal<any | null>(null);
+  matchDetails = signal<any | null>(null);
   isLoadingDetails = signal(false);
   
   private _calendarDays: CalendarDay[] = [];
@@ -259,89 +268,167 @@ export class CalendarComponent implements OnInit {
     this.matchDetails.set(null);
   }
 
-  loadMatchDetails(match: Match) {
-    this.isLoadingDetails.set(true);
-    this.matchDetails.set(null);
+loadMatchDetails(match: any): void {
+  this.isLoadingDetails.set(true);
+  this.matchDetails.set(null);
 
-    this.presenceService.getPresencesByMatchId(match.id).pipe(
-      map(presences => {
-        // Récupérer les noms des équipes depuis le match
-        const equipe1Nom = match.equipe1?.nom || (match as any).equipe1Nom;
-        const equipe2Nom = match.equipe2?.nom || (match as any).equipe2Nom;
+  this.presenceService.getPresencesByMatch(this.data.groupeActif?.id, match.id!).pipe(
+    map((presences: any[]) => {
+      const isPlayed = this.isMatchPlayed(match);
+      
+      let scoreLocal = match.scoreEquipe1 ?? 0;
+      let scoreAdverse = match.scoreEquipe2 ?? match.scoreAdversaire ?? 0;
 
-        const played = presences.filter(p => p.aJoue);
+      // Map des buteurs stockant l'objet membre pour pouvoir le formater plus tard
+      const buteursMap = new Map<string, { membre: any, nomOccasionnel: string, nomAffiche: string, nomAbrege: string, buts: number; penalti: number; butsContreSonCamp: number; total: number }>();
+      const passeursMap = new Map<string, { membre: any, nomOccasionnel: string, nomAffiche: string, nomAbrege: string, count: number }>();
 
-        let scoreEquipe1 = 0;
-        let scoreEquipe2 = 0;
+      presences.forEach(p => {
+        // Clé unique pour le regroupement (identifiant ou nom)
+        const key = p.membre ? `m_${p.membre.id}` : `o_${p.nomOccasionnel}`;
+        const nomAffiche = this.formatNomComplet(p.membre, p.nomOccasionnel, false);
+        const nomAbrege = this.formatNomComplet(p.membre, p.nomOccasionnel, true);
 
-        if (match.typeMatch === 'AMICAL') {
-          // En AMICAL: tous les joueurs présents sont de notre équipe
-          scoreEquipe1 = presences.reduce((sum, p) => sum + (p.buts || 0) + (p.penalti || 0), 0);
-          scoreEquipe2 = match.scoreAdversaire || 0;
+        if (!nomAffiche) return;
+
+        const nbButs = p.buts ?? 0;
+        const nbPenalties = p.penalti ?? p.penalty ?? 0;
+        const nbCsc = p.csc ?? 0;
+        const totalButsJoueur = nbButs + nbPenalties + nbCsc;
+
+        if (totalButsJoueur > 0) {
+          const currentData = buteursMap.get(key) || { 
+            membre: p.membre, 
+            nomOccasionnel: p.nomOccasionnel,
+            nomAffiche: nomAffiche, 
+            nomAbrege: nomAbrege, 
+            buts: 0, 
+            penalti: 0, 
+            butsContreSonCamp: 0, 
+            total: 0 
+          };
+          currentData.buts += nbButs;
+          currentData.penalti += nbPenalties;
+          currentData.butsContreSonCamp += nbCsc;
+          currentData.total += totalButsJoueur;
           
-          // CSC de nos joueurs = buts pour l'adversaire
-          const cscNous = presences.reduce((sum, p) => sum + (p.butsContreSonCamp || 0), 0);
-          scoreEquipe2 += cscNous;
-          
-        } else {
-          // Pour INTERNE, DUEL, ANNIVERSAIRE: séparer par equipeMatch
-          presences.forEach(p => {
-            const buts = (p.buts || 0) + (p.penalti || 0);
-            const csc = p.butsContreSonCamp || 0;
-            
-            // Comparer equipeMatch avec les noms des équipes du match
-            const equipeMatchLower = p.equipeMatch?.toLowerCase();
-            const equipe1Lower = equipe1Nom?.toLowerCase();
-            const equipe2Lower = equipe2Nom?.toLowerCase();
-            
-            if (equipeMatchLower === equipe1Lower) {
-              scoreEquipe1 += buts;
-              scoreEquipe2 += csc;
-            } else if (equipeMatchLower === equipe2Lower) {
-              scoreEquipe2 += buts;
-              scoreEquipe1 += csc;
-            }
-          });
+          buteursMap.set(key, currentData);
         }
 
-        // Buteurs
-        const buteursMap = new Map<string, number>();
-        presences.filter(p => (p.buts || 0) > 0 || (p.penalti || 0) > 0).forEach(p => {
-          const n = this.getPlayerName(p);
-          buteursMap.set(n, (buteursMap.get(n) || 0) + (p.buts || 0) + (p.penalti || 0));
-        });
+        if (p.passes && p.passes > 0) {
+          const currentPass = passeursMap.get(key) || {
+            membre: p.membre,
+            nomOccasionnel: p.nomOccasionnel,
+            nomAffiche: nomAffiche,
+            nomAbrege: nomAbrege,
+            count: 0
+          };
+          currentPass.count += p.passes;
+          passeursMap.set(key, currentPass);
+        }
+      });
 
-        // Passeurs
-        const passeursMap = new Map<string, number>();
-        presences.filter(p => (p.passes || 0) > 0).forEach(p => {
-          const n = this.getPlayerName(p);
-          passeursMap.set(n, (passeursMap.get(n) || 0) + (p.passes || 0));
-        });
+      const buteurs = Array.from(buteursMap.values()).sort((a, b) => b.total - a.total);
+      const p_list = Array.from(passeursMap.values()).sort((a, b) => b.count - a.count);
 
-        return {
-          match, 
-          scoreLocal: scoreEquipe1, 
-          scoreAdverse: scoreEquipe2,
-          buteurs: Array.from(buteursMap.entries()).map(([nom, count]) => ({ nom, count })).sort((a, b) => b.count - a.count),
-          passeurs: Array.from(passeursMap.entries()).map(([nom, count]) => ({ nom, count })).sort((a, b) => b.count - a.count),
-          presentsCount: played.length, 
-          isPlayed: played.length > 0
-        } as MatchDetails;
-      }),
-      catchError(err => {
-        console.error('Error loading match details:', err);
-        return of({ 
-          match, 
-          scoreLocal: 0, 
-          scoreAdverse: 0, 
-          buteurs: [], 
-          passeurs: [], 
-          presentsCount: 0, 
-          isPlayed: false 
-        } as MatchDetails);
-      }),
-      finalize(() => this.isLoadingDetails.set(false))
-    ).subscribe(d => this.matchDetails.set(d));
+      const type = match.typeMatch;
+      const isMultiMvp = type === 'INTERNE' || type === 'DUEL';
+
+      let mvpEnseigne1: string | undefined = undefined;
+      let mvpEnseigne1Abrege: string | undefined = undefined;
+      let mvpEnseigne2: string | undefined = undefined;
+      let mvpEnseigne2Abrege: string | undefined = undefined;
+
+      const eq1Nom = match.equipe1Nom || (match as any).equipe1Id;
+      const eq2Nom = match.equipe2Nom || (match as any).equipe2Id;
+
+      if (isMultiMvp) {
+        // Recherche du MVP pour l'équipe 1
+        const pMvp1 = presences.find(p => (p.estHommeDuMatchEq || p.isMvp || p.mvp) && p.equipeMatch === eq1Nom);
+        if (pMvp1) {
+          mvpEnseigne1 = this.formatNomComplet(pMvp1.membre, pMvp1.nomOccasionnel, false);
+          mvpEnseigne1Abrege = this.formatNomComplet(pMvp1.membre, pMvp1.nomOccasionnel, true);
+        }
+
+        // Recherche du MVP pour l'équipe 2
+        const pMvp2 = presences.find(p => (p.estHommeDuMatchEq || p.isMvp || p.mvp) && p.equipeMatch === eq2Nom);
+        if (pMvp2) {
+          mvpEnseigne2 = this.formatNomComplet(pMvp2.membre, pMvp2.nomOccasionnel, false);
+          mvpEnseigne2Abrege = this.formatNomComplet(pMvp2.membre, pMvp2.nomOccasionnel, true);
+        }
+
+      } else {
+        // Match Classique / Externe
+        const pMvp = presences.find(p => p.estHommeDuMatchEq || p.isMvp || p.mvp);
+        if (pMvp) {
+          mvpEnseigne1 = this.formatNomComplet(pMvp.membre, pMvp.nomOccasionnel, false);
+          mvpEnseigne1Abrege = this.formatNomComplet(pMvp.membre, pMvp.nomOccasionnel, true);
+        }
+      }
+          
+      // Homme du match général
+      const pHdm = presences.find(p => p.estHommeDuMatch);
+      const hdmName = pHdm ? this.formatNomComplet(pHdm.membre, pHdm.nomOccasionnel, false) : undefined;
+      const hdmNameAbrege = pHdm ? this.formatNomComplet(pHdm.membre, pHdm.nomOccasionnel, true) : undefined;
+
+      let matchImages: string[] = [];
+      if (match.mediaUrls && Array.isArray(match.mediaUrls)) {
+        matchImages = match.mediaUrls;
+      } else if ((match as any).mediaUrls) {
+        matchImages = [(match as any).mediaUrls];
+      }
+
+      return {
+        match,
+        scoreLocal,
+        scoreAdverse,
+        buteurs,
+        passeurs: p_list,
+        presentsCount: presences.filter(p => p.aJoue).length,
+        isPlayed,
+        mvpEnseigne1,
+        mvpEnseigne1Abrege,
+        mvpEnseigne2,
+        mvpEnseigne2Abrege,
+        isMultiMvp,
+        hdm: hdmName,
+        hdmAbrege: hdmNameAbrege,
+        images: matchImages
+      };
+    }),
+    catchError(err => {
+      console.error('Erreur détails calendrier:', err);
+      return of(null);
+    }),
+    finalize(() => this.isLoadingDetails.set(false))
+  ).subscribe(details => this.matchDetails.set(details as any));
+}
+
+  formatNomComplet(membre: any, nomOccasionnel?: string, abridge: boolean = false): string {
+  if (!membre) return nomOccasionnel || '';
+  
+  const nom = membre.nom?.trim() || '';
+  const prenom = membre.prenom?.trim() || '';
+
+  if (!prenom) return nom;
+
+  // Si on demande d'abréger (ex: "MBA KADJO Vanessa" devient "MBA KADJO V.")
+  if (abridge) {
+    return `${nom} ${prenom.charAt(0).toUpperCase()}.`.trim();
+  }
+
+  return `${nom} ${prenom}`.trim();
+}
+
+  // ✅ Méthode utilitaire pour télécharger une image
+  downloadImage(url: string, index: number): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Match_${this.selectedMatch()?.dateMatch || 'photo'}_${index + 1}.jpg`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   private getPlayerName(presence: any): string {
@@ -356,7 +443,7 @@ export class CalendarComponent implements OnInit {
 
   getEquipeNames(match: Match): [string, string] {
     if (!match?.typeMatch) return ['Équipe 1', 'Équipe 2'];
-    
+    console.log(match)
     switch (match.typeMatch) {
       case 'INTERNE':
       case 'DUEL':

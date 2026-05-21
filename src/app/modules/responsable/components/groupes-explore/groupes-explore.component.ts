@@ -25,8 +25,6 @@ import { GroupeService } from '../../../../core/services/groupe.service';
 import { Ville } from '../../../../core/models/ville';
 import { GroupeDetailsDialogComponent } from '../../../membre/components/groupe-details-dialog/groupe-details-dialog.component';
 import { LoginPromptDialogComponent } from '../../../membre/components/login-prompt-dialog/login-prompt-dialog.component';
-import { environment } from '../../../../environment';
-import { NavbarComponent } from "../../../../shared/components/navbar/navbar.component";
 import { TranslateModule } from '@ngx-translate/core';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -135,23 +133,17 @@ export class GroupesExploreComponent implements OnInit {
     });
   }
 
-  onVilleChange(ville: string): void {
-    this.filters.quartier = '';
-    this.quartiers = [];
-    
-    if (ville) {
-      this.groupesService.getVilles().subscribe({
-        next: (quartiers) => {
-          this.quartiers = quartiers;
-        },
-        error: (err) => {
-          console.error('Erreur chargement quartiers:', err);
-        }
-      });
-    }
-    
-    this.applyFilters();
-  }
+ onVilleChange(villeNom: string): void {
+  // 1. On met à jour l'objet de filtres
+  this.filters.ville = villeNom;
+  
+  // 2. On réinitialise le quartier car il n'est plus cohérent avec la nouvelle ville
+  this.filters.quartier = '';
+  this.quartiers = [];
+
+  // 3. On lance la recherche immédiatement
+  this.applyFilters();
+}
 
   applyFilters(): void {
     let filtered = [...this.groupes];
@@ -169,9 +161,10 @@ export class GroupesExploreComponent implements OnInit {
       filtered = filtered.filter(g => g.discipline === this.filters.discipline);
       }
 
-    if (this.filters.ville) {
-      filtered = filtered.filter(g => g.ville === this.filters.ville);
-    }
+   // CORRECTION FILTRE VILLE : On compare le nom de l'objet ville avec le string du filtre
+  if (this.filters.ville) {
+    filtered = filtered.filter(g => g.ville && g.ville.nom === this.filters.ville);
+  }
 
     if (this.filters.quartier) {
       filtered = filtered.filter(g => g.quartier === this.filters.quartier);

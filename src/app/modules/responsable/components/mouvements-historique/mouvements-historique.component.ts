@@ -24,7 +24,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Caisse, Exercice, FinancesService, MouvementCaisse } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 // Services
 
@@ -88,8 +88,11 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
   stats = {
     totalEntrees: 0,
     totalSorties: 0,
+    totalAnnulees:0,
     nbEntrees: 0,
     nbSorties: 0,
+    nbAnnules:0,
+
     balance: 0
   };
 
@@ -97,7 +100,8 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private financesService: FinancesService,
     private authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private translate: TranslateService
   ) {
     this.filterForm = this.fb.group({
       search: [''],
@@ -129,6 +133,32 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
         this.applyFilters();
       });
   }
+
+annulerMouvement(mouvement: MouvementCaisse): void {
+  if (!mouvement.id) return;
+
+  // Utilisation des traductions pour le prompt
+  const titrePrompt = this.translate.instant('mouvements.annuler.motif_prompt');
+  const motif = prompt(titrePrompt);
+
+  if (motif && motif.trim() !== '') {
+    this.isLoading = true;
+    this.financesService.annulerMouvement(mouvement.id, motif)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          const msg = this.translate.instant('mouvements.annuler.succes');
+          this.showSuccess(msg);
+          this.loadMouvements(this.selectedExerciceId!);
+        },
+        error: () => {
+          this.isLoading = false;
+          const msg = this.translate.instant('mouvements.annuler.erreur');
+          this.showError(msg);
+        }
+      });
+  }
+}
 
   loadData(): void {
     this.isLoading = true;
@@ -252,11 +282,14 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
   calculateStats(): void {
     const entrees = this.mouvements.filter(m => m.typeMouvement === 'ENTREE' && m.statut === 'VALIDE');
     const sorties = this.mouvements.filter(m => m.typeMouvement === 'SORTIE' && m.statut === 'VALIDE');
+    const annules = this.mouvements.filter(m => m.typeMouvement === 'ANNULE' && m.statut === 'ANNULE');
 
     this.stats.totalEntrees = entrees.reduce((sum, m) => sum + m.montant, 0);
     this.stats.totalSorties = sorties.reduce((sum, m) => sum + m.montant, 0);
+    this.stats.totalAnnulees = annules.reduce((sum, m) => sum + m.montant, 0);
     this.stats.nbEntrees = entrees.length;
     this.stats.nbSorties = sorties.length;
+    this.stats.nbAnnules = sorties.length;
     this.stats.balance = this.stats.totalEntrees - this.stats.totalSorties;
   }
 

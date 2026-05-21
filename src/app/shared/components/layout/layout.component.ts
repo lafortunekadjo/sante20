@@ -333,18 +333,19 @@ export class LayoutComponent implements OnInit, OnDestroy {
         ordre: 6,
         actif: true,
         categorie: 'COMMUN'
-      },
-         {
-        id: 11,
-        code: 'INV',
-        label: 'Invitation a rejoindre',
-        icone: 'lightbulb',
-        route: '/responsable/invitations',
-        description: 'Envoyez des invitations a rejoindre le groupe',
-        ordre: 6,
-        actif: true,
-        categorie: 'COMMUN'
       }
+      // ,
+      //    {
+      //   id: 11,
+      //   code: 'INV',
+      //   label: 'Invitation a rejoindre',
+      //   icone: 'lightbulb',
+      //   route: '/responsable/invitations',
+      //   description: 'Envoyez des invitations a rejoindre le groupe',
+      //   ordre: 6,
+      //   actif: true,
+      //   categorie: 'COMMUN'
+      // }
     ];
 
     if (!this.userHasGroup) {

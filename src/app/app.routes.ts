@@ -87,6 +87,8 @@ import { MvpWinnerComponent } from "./modules/membre/components/mvp-winner/mvp-w
 import { DemandeAdhesionComponent } from "./shared/components/demande-adhesion/demande-adhesion.component";
 import { JoinGroupDialogComponent } from "./modules/membre/components/join-group-dialog/join-group-dialog.component";
 import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
+import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
+import { AnnouncementAdminComponent } from "./modules/responsable/components/announcement-admin/announcement-admin.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -121,24 +123,30 @@ export const routes: Routes = [
       import('./modules/competition/components/competition-list/competition-list.component')
         .then(m => m.CompetitionListComponent)
   },
-  {
-    path: 'competitions/:id',
-    loadComponent: () =>
-      import('./modules/competition/components/competition-detail/competition-detail.component')
-        .then(m => m.CompetitionDetailComponent)
-  },
+
    {
     path: 'competitions/new',
     loadComponent: () =>
       import('./modules/competition/components/competition-create/competition-create.component')
         .then(m => m.CompetitionCreateComponent)
   },
-
+ {
+    path: 'competitions/:id',
+    loadComponent: () =>
+      import('./modules/competition/components/competition-detail/competition-detail.component')
+        .then(m => m.CompetitionDetailComponent)
+  },
   {
     path: ':competitionId/matchs/card',
     loadComponent: () =>
       import('./modules/competition/components/match-card/match-card.component')
         .then(m => m.MatchCardComponent)
+  },
+  {
+    path: ':competitionId/matchs/:matchId',
+    loadComponent: () =>
+      import('./modules/competition/components/match-detail/match-detail.component')
+        .then(m => m.MatchDetailComponent)
   },
   {
     path: 'competition/participants',
@@ -166,6 +174,33 @@ export const routes: Routes = [
       import('./modules/competition/components/tab-phases/tab-phases.component')
         .then(m => m.TabPhasesComponent)
   },
+   {
+    path: 'officiels',
+    loadComponent: () =>
+      import('./modules/competition/components/officiels/officiels.component')
+        .then(m => m.OfficielsComponent)
+  },
+  // {
+  //   path: 'competition/match',
+  //   loadComponent: () =>
+  //     import('./modules/competition/components/match-card/match-card.component')
+  //       .then(m => m.MatchCardComponent)
+  // },
+
+  //  {
+  //   path: 'competition/match-details',
+  //   loadComponent: () =>
+  //     import('./modules/competition/components/match-detail/match-detail.component')
+  //       .then(m => m.MatchDetailComponent)
+  // },
+
+   {
+    path: 'competitions/:competitionId/matchs/:matchId',
+    loadComponent: () =>
+      import('./modules/competition/components/match-detail/match-detail.component')
+        .then(m => m.MatchDetailComponent)
+  },
+
 
 
       {
@@ -273,6 +308,9 @@ export const routes: Routes = [
             path: 'dashboard',
             component: AnalyticsDashboardComponent
           },
+        
+          { path: 'analytics', 
+            component: AdminAnalyticsComponent },
           {
             path: 'groupes',
             component: GroupeListComponent
@@ -443,6 +481,12 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: RDashboardComponent
+          },
+            {
+            path: 'actualites',
+            component: AnnouncementAdminComponent,
+            canActivate: [RoleGuard],
+            data: { roles: ['ADMIN', 'RESPONSABLE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE'] }
           },
           {
             path: 'utilisateurs',

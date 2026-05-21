@@ -12,6 +12,8 @@ export interface Membre {
   poste: string;
   email: string;
   cotisationPayee: boolean;
+  estSuspendu: boolean;
+  dateFinSuspension?: Date | null;
   roleCO: string;
   equipe?: Equipe | null;
   groupe: Groupe;

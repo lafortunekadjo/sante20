@@ -7,6 +7,7 @@ export interface Presence {
   match: Match;
   aJoue: boolean;
   estCapitaine: boolean;
+  equipePosition: number;
   equipeMatch: string;
   present: boolean; 
   estHommeDuMatch: boolean;

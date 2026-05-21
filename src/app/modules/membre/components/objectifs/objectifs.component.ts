@@ -190,13 +190,13 @@ export class ObjectifsComponent implements OnInit {
           let valeurActuelle = 0;
           switch (o.type) {
             case 'BUTS':
-              valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.buts || 0), 0);
+              valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.buts || 0) + (p.penalti || 0), 0);
               break;
             case 'PASSES':
               valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.passes || 0), 0);
               break;
             case 'PRESENCE':
-              valeurActuelle = presencesFiltrees.filter(p => p.present).length;
+              valeurActuelle = presencesFiltrees.filter(p => p.aJoue).length;
               break;
             case 'CARTON':
               valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.cartonsJaunes || 0) + (p.cartonsRouges || 0), 0);
@@ -380,7 +380,7 @@ export class ObjectifsComponent implements OnInit {
       case 'PASSES':
         return 'Passes décisives';
       case 'PRESENCE':
-        return 'Présences';
+        return 'Match joué';
       case 'CARTON':
         return 'Cartons';
       default:

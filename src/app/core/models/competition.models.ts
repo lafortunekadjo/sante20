@@ -285,6 +285,15 @@ export interface MatchDetailDTO extends MatchDTO {
   evenements: MatchEventDTO[];
   compositionDomicile: MatchCompositionDTO[];
   compositionExterieur: MatchCompositionDTO[];
+    heureEffectiveDebut?: string;
+  heureEffectiveMiTemps?: string;
+  heureEffectiveReprise?: string;
+  heureEffectiveFin?: string;
+  tempsAdditionnel1?: number;
+  tempsAdditionnel2?: number;
+  tempsAdditionnelP1?: number;
+  tempsAdditionnelP2?: number;
+  conditions?: string;
 }
 
 export interface ResultatDTO {
@@ -307,9 +316,11 @@ export interface ReportDTO {
 }
 
 export interface PlanificationMatchDTO {
-  matchId: number;
-  dateHeure: string;
+ matchId?: number;
+  dateHeure?: string;
+  stadeId?: number;
   lieu?: string;
+  officiels?: MatchOfficielDTO[];
 }
 
 // ── Événement match
@@ -329,9 +340,24 @@ export interface MatchEventDTO {
   equipeNom?: string;
 }
 
+export interface CompositionDTO {
+  membreId?: number;    // ← nouveau
+  joueurId?: number;
+  joueurNom: string;
+  joueurPrenom?: string;
+  numeroDos?: number;
+  poste?: PosteJoueur;
+  statut: StatutComposition;
+  minuteEntree?: number;
+  minuteSortie?: number;
+  capitaine: boolean;
+  gardienTitulaire: boolean;
+}
+
 // ── Composition
 export interface MatchCompositionDTO {
   id?: number;
+  membreId?: number;
   joueurId?: number;
   joueurNom: string;
   joueurPrenom?: string;
@@ -482,4 +508,145 @@ export interface Page<T> {
   totalPages: number;
   size: number;
   number: number;
+}
+
+// Ajouter à competition.models.ts
+
+export enum RoleOfficiel {
+  ARBITRE_PRINCIPAL    = 'ARBITRE_PRINCIPAL',
+  ARBITRE_ASSISTANT_1  = 'ARBITRE_ASSISTANT_1',
+  ARBITRE_ASSISTANT_2  = 'ARBITRE_ASSISTANT_2',
+  QUATRIEME_ARBITRE    = 'QUATRIEME_ARBITRE',
+  DELEGUE              = 'DELEGUE',
+  OBSERVATEUR          = 'OBSERVATEUR'
+}
+
+export interface StadeDTO {
+  id: number;
+  nom: string;
+  ville?: string;
+  adresse?: string;
+  capacite?: number;
+  photoUrl?: string;
+  clubId?: number;
+  clubNom?: string;
+  actif: boolean;
+}
+
+export interface StadeCreateDTO {
+  nom: string;
+  ville?: string;
+  adresse?: string;
+  capacite?: number;
+  photoUrl?: string;
+  clubId?: number;
+  clubNom?: string;
+}
+
+export interface OfficielDTO {
+  id: number;
+  nom: string;
+  prenom?: string;
+  telephone?: string;
+  email?: string;
+  role: RoleOfficiel;
+  photoUrl?: string;
+  actif: boolean;
+}
+
+export interface OfficielCreateDTO {
+  nom: string;
+  prenom?: string;
+  telephone?: string;
+  email?: string;
+  role: RoleOfficiel;
+  photoUrl?: string;
+}
+
+export interface MatchOfficielDTO {
+  officielId: number;
+  nom?: string;
+  prenom?: string;
+  role: RoleOfficiel;
+}
+
+
+// Mise à jour MatchDTO pour inclure stade et officiels
+export interface MatchDTO {
+  id: number;
+  domicile: CompetitionParticipantDTO;
+  exterieur: CompetitionParticipantDTO;
+  butsDomicile?: number;
+  butsExterieur?: number;
+  butsDomicileProlong?: number;
+  butsExterieurProlong?: number;
+  tabDomicile?: number;
+  tabExterieur?: number;
+  statut: StatutMatch;
+  dateHeure?: string;
+  lieu?: string;
+  stade?: StadeDTO;          // ← nouveau
+  officiels?: MatchOfficielDTO[]; // ← nouveau
+  journeeNumero: number;
+  tourNom?: string;
+}
+
+export enum RoleMembre {
+  JOUEUR              = 'JOUEUR',
+  GARDIEN             = 'GARDIEN',
+  CAPITAINE           = 'CAPITAINE',
+  ENTRAINEUR          = 'ENTRAINEUR',
+  ASSISTANT_COACH     = 'ASSISTANT_COACH',
+  PREPARATEUR_PHYSIQUE = 'PREPARATEUR_PHYSIQUE',
+  MEDECIN             = 'MEDECIN',
+  DIRIGEANT           = 'DIRIGEANT',
+  AUTRE               = 'AUTRE'
+}
+
+export enum StatutMembre {
+  ACTIF         = 'ACTIF',
+  SUSPENDU      = 'SUSPENDU',
+  BLESSE        = 'BLESSE',
+  NON_CONVOQUE  = 'NON_CONVOQUE'
+}
+
+export interface MembreEquipeDTO {
+  id: number;
+  joueurId?: number;
+  nom: string;
+  prenom?: string;
+  photoUrl?: string;
+  telephone?: string;
+  role: RoleMembre;
+  numeroDos?: number;
+  poste?: string;
+  dateNaissance?: string;
+  nationalite?: string;
+  statut: StatutMembre;
+  actif: boolean;
+}
+
+export interface MembreEquipeCreateDTO {
+  joueurId?: number;
+  nom: string;
+  prenom?: string;
+  photoUrl?: string;
+  telephone?: string;
+  role: RoleMembre;
+  numeroDos?: number;
+  poste?: string;
+  dateNaissance?: string;
+  nationalite?: string;
+}
+
+export interface TempsMatchDTO {
+  heureEffectiveDebut?: string;
+  heureEffectiveMiTemps?: string;
+  heureEffectiveReprise?: string;
+  heureEffectiveFin?: string;
+  tempsAdditionnel1?: number;
+  tempsAdditionnel2?: number;
+  tempsAdditionnelP1?: number;
+  tempsAdditionnelP2?: number;
+  conditions?: string;
 }

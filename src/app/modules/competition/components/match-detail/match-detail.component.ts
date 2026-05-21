@@ -1,4 +1,5 @@
-// pages/match-detail/match-detail.component.ts
+// match-detail.component.ts — version complète mise à jour
+
 import {
   Component, OnInit, inject, signal, computed
 } from '@angular/core';
@@ -6,11 +7,23 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   ReactiveFormsModule, FormsModule,
-  FormBuilder, Validators
+  FormBuilder, Validators, FormGroup
 } from '@angular/forms';
-import { Cote, MatchDetailDTO, PosteJoueur, TypeEvent, StatutMatch, MatchEventDTO, MatchCompositionDTO } from '../../../../core/models/competition.models';
+import { Cote, MatchDetailDTO, TypeEvent, PosteJoueur, StatutComposition, MatchCompositionDTO, MembreEquipeDTO, MatchEventDTO, StatutMatch } from '../../../../core/models/competition.models';
 import { MatchApiService } from '../../../../core/services/competition/match-api.service';
+import { MembreEquipeApiService } from '../../../../core/services/competition/membre-equipe-api.service';
 
+
+// Structure interne pour le picker de joueur
+interface JoueurOption {
+  id?: number;          // joueurId (my2-0)
+  membreId?: number;
+  nom: string;
+  prenom?: string;
+  numeroDos?: number;
+  equipeId: number;
+  equipeNom?: string;
+}
 
 type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie';
 
@@ -18,515 +31,63 @@ type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie';
   selector: 'app-match-detail',
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
-  template: `
-    <div class="match-detail" *ngIf="match(); else loadingTpl">
-
-      <!-- Header match -->
-      <div class="match-detail__hero">
-        <button class="btn-back" (click)="goBack()">
-          <i class="material-icons">arrow_back</i>
-        </button>
-
-        <div class="match-hero">
-
-          <!-- Équipe domicile -->
-          <div class="team-display team-display--home"
-               [class.winner]="isWinner('home')">
-            <div class="team-display__logo">
-              <img *ngIf="match()!.domicile?.logoUrl"
-                   [src]="match()!.domicile.logoUrl"
-                   [alt]="match()!.domicile.nomEquipe"/>
-              <span *ngIf="!match()!.domicile?.logoUrl">
-                {{ getInitials(match()!.domicile?.nomEquipe) }}
-              </span>
-            </div>
-            <span class="team-display__name">
-              {{ match()!.domicile?.nomEquipe }}
-            </span>
-            <span class="team-display__label">Domicile</span>
-          </div>
-
-          <!-- Score central -->
-          <div class="score-display">
-            <div class="score-display__context">
-              <span *ngIf="match()!.journeeNumero > 0">
-                J{{ match()!.journeeNumero }}
-              </span>
-              <span *ngIf="match()!.tourNom">{{ match()!.tourNom }}</span>
-            </div>
-
-            <div class="score-display__main">
-              <span class="score-num"
-                    [class.winner-score]="isWinner('home')">
-                {{ isTermine() ? (match()!.butsDomicile ?? 0) : '–' }}
-              </span>
-              <span class="score-sep">:</span>
-              <span class="score-num"
-                    [class.winner-score]="isWinner('away')">
-                {{ isTermine() ? (match()!.butsExterieur ?? 0) : '–' }}
-              </span>
-            </div>
-
-            <div class="score-display__extra"
-                 *ngIf="match()!.butsDomicileProlong != null">
-              ap. {{ totalDom() }} – {{ totalExt() }}
-            </div>
-            <div class="score-display__extra"
-                 *ngIf="match()!.tabDomicile != null">
-              TAB {{ match()!.tabDomicile }} – {{ match()!.tabExterieur }}
-            </div>
-
-            <div class="score-display__statut"
-                 [class]="'statut-' + match()!.statut.toLowerCase()">
-              {{ statutLabel() }}
-            </div>
-
-            <div class="score-display__infos">
-              <span *ngIf="match()!.dateHeure">
-                <i class="material-icons">schedule</i>
-                {{ match()!.dateHeure | date:'dd/MM/yyyy HH:mm' }}
-              </span>
-              <span *ngIf="match()!.lieu">
-                <i class="material-icons">location_on</i>
-                {{ match()!.lieu }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Équipe extérieur -->
-          <div class="team-display team-display--away"
-               [class.winner]="isWinner('away')">
-            <div class="team-display__logo">
-              <img *ngIf="match()!.exterieur?.logoUrl"
-                   [src]="match()!.exterieur.logoUrl"
-                   [alt]="match()!.exterieur.nomEquipe"/>
-              <span *ngIf="!match()!.exterieur?.logoUrl">
-                {{ getInitials(match()!.exterieur?.nomEquipe) }}
-              </span>
-            </div>
-            <span class="team-display__name">
-              {{ match()!.exterieur?.nomEquipe }}
-            </span>
-            <span class="team-display__label">Extérieur</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="match-detail__tabs">
-        <div class="tabs-nav">
-          <button class="tab-btn"
-                  *ngFor="let t of tabs"
-                  [class.active]="activeTab() === t.key"
-                  (click)="setTab(t.key)">
-            <i class="material-icons">{{ t.icon }}</i>
-            {{ t.label }}
-          </button>
-        </div>
-
-        <div class="tabs-content">
-
-          <!-- ── APERÇU -->
-          <div *ngIf="activeTab() === 'apercu'" class="apercu-tab">
-
-            <!-- Timeline des événements -->
-            <div class="timeline" *ngIf="match()!.evenements?.length">
-              <h3 class="section-title">Résumé du match</h3>
-              <div class="timeline__content">
-                <div class="timeline__event"
-                     *ngFor="let e of sortedEvents()"
-                     [class]="'event-' + e.type.toLowerCase()">
-
-                  <div class="timeline__minute">
-                    {{ e.minute }}'
-                    <span *ngIf="e.minuteAdditionnel">+{{ e.minuteAdditionnel }}</span>
-                  </div>
-
-                  <div class="timeline__icon">
-                    {{ eventIcon(e.type) }}
-                  </div>
-
-                  <div class="timeline__info"
-                       [class.align-right]="isExterieurEvent(e)">
-                    <span class="event-player">{{ e.joueurNom }}</span>
-                    <span class="event-team">{{ e.equipeNom }}</span>
-                    <span class="event-assist"
-                          *ngIf="e.passeurNom">
-                      ↳ {{ e.passeurNom }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="no-events"
-                 *ngIf="!match()!.evenements?.length && isTermine()">
-              <i class="material-icons">sports_soccer</i>
-              <p>Aucun événement enregistré</p>
-            </div>
-
-            <div class="not-played"
-                 *ngIf="!isTermine()">
-              <i class="material-icons">schedule</i>
-              <p>Match {{ statutLabel().toLowerCase() }}</p>
-            </div>
-          </div>
-
-          <!-- ── COMPOSITION -->
-          <div *ngIf="activeTab() === 'composition'" class="composition-tab">
-            <div class="compo-grid">
-
-              <!-- Domicile -->
-              <div class="compo-team">
-                <div class="compo-team__header">
-                  <div class="compo-team__logo">
-                    <img *ngIf="match()!.domicile?.logoUrl"
-                         [src]="match()!.domicile.logoUrl"/>
-                    <span *ngIf="!match()!.domicile?.logoUrl">
-                      {{ getInitials(match()!.domicile?.nomEquipe) }}
-                    </span>
-                  </div>
-                  <span>{{ match()!.domicile?.nomEquipe }}</span>
-                </div>
-                <div class="compo-list">
-                  <ng-container *ngFor="let poste of postes">
-                    <div class="compo-poste-header"
-                         *ngIf="getByPoste(match()!.compositionDomicile, poste.value).length">
-                      {{ poste.label }}
-                    </div>
-                    <div class="compo-player"
-                         *ngFor="let p of getByPoste(match()!.compositionDomicile, poste.value)"
-                         [class.remplacant]="p.statut === 'REMPLACANT'"
-                         [class.ineligible]="!p.eligible">
-                      <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
-                      <span class="player-name">
-                        {{ p.joueurNom }}
-                        <i class="material-icons captain"
-                           *ngIf="p.capitaine"
-                           title="Capitaine">star</i>
-                      </span>
-                      <span class="player-entry"
-                            *ngIf="p.minuteEntree">
-                        ↑ {{ p.minuteEntree }}'
-                      </span>
-                      <span class="player-exit"
-                            *ngIf="p.minuteSortie">
-                        ↓ {{ p.minuteSortie }}'
-                      </span>
-                      <span class="ineligible-badge"
-                            *ngIf="!p.eligible"
-                            [title]="p.raisonIneligibilite ?? ''">
-                        ⚠
-                      </span>
-                    </div>
-                  </ng-container>
-                  <div class="compo-empty"
-                       *ngIf="!match()!.compositionDomicile?.length">
-                    Composition non saisie
-                  </div>
-                </div>
-              </div>
-
-              <!-- Extérieur -->
-              <div class="compo-team">
-                <div class="compo-team__header">
-                  <div class="compo-team__logo">
-                    <img *ngIf="match()!.exterieur?.logoUrl"
-                         [src]="match()!.exterieur.logoUrl"/>
-                    <span *ngIf="!match()!.exterieur?.logoUrl">
-                      {{ getInitials(match()!.exterieur?.nomEquipe) }}
-                    </span>
-                  </div>
-                  <span>{{ match()!.exterieur?.nomEquipe }}</span>
-                </div>
-                <div class="compo-list">
-                  <ng-container *ngFor="let poste of postes">
-                    <div class="compo-poste-header"
-                         *ngIf="getByPoste(match()!.compositionExterieur, poste.value).length">
-                      {{ poste.label }}
-                    </div>
-                    <div class="compo-player"
-                         *ngFor="let p of getByPoste(match()!.compositionExterieur, poste.value)"
-                         [class.remplacant]="p.statut === 'REMPLACANT'"
-                         [class.ineligible]="!p.eligible">
-                      <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
-                      <span class="player-name">
-                        {{ p.joueurNom }}
-                        <i class="material-icons captain"
-                           *ngIf="p.capitaine">star</i>
-                      </span>
-                      <span class="player-entry" *ngIf="p.minuteEntree">
-                        ↑ {{ p.minuteEntree }}'
-                      </span>
-                      <span class="player-exit" *ngIf="p.minuteSortie">
-                        ↓ {{ p.minuteSortie }}'
-                      </span>
-                      <span class="ineligible-badge"
-                            *ngIf="!p.eligible">⚠</span>
-                    </div>
-                  </ng-container>
-                  <div class="compo-empty"
-                       *ngIf="!match()!.compositionExterieur?.length">
-                    Composition non saisie
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── ÉVÉNEMENTS -->
-          <div *ngIf="activeTab() === 'evenements'" class="evenements-tab">
-            <div class="section-header">
-              <h3 class="section-title">Événements du match</h3>
-              <button class="btn-primary btn-sm"
-                      *ngIf="canEdit()"
-                      (click)="showEventForm.set(!showEventForm())">
-                <i class="material-icons">add</i>
-                Ajouter
-              </button>
-            </div>
-
-            <!-- Formulaire ajout événement -->
-            <div class="event-form" *ngIf="showEventForm() && canEdit()">
-              <form [formGroup]="eventForm" (ngSubmit)="ajouterEvenement()">
-                <div class="form-grid form-grid--3">
-                  <div class="form-field">
-                    <label class="form-label">Type *</label>
-                    <select formControlName="type" class="form-select">
-                      <option *ngFor="let e of eventTypes"
-                              [value]="e.value">{{ e.label }}</option>
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label class="form-label">Équipe *</label>
-                    <select formControlName="equipeId" class="form-select">
-                      <option [value]="match()!.domicile?.id">
-                        {{ match()!.domicile?.nomEquipe }}
-                      </option>
-                      <option [value]="match()!.exterieur?.id">
-                        {{ match()!.exterieur?.nomEquipe }}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label class="form-label">Nom du joueur *</label>
-                    <input formControlName="joueurNom"
-                           class="form-input"
-                           placeholder="Nom du joueur"/>
-                  </div>
-                  <div class="form-field">
-                    <label class="form-label">Minute *</label>
-                    <input formControlName="minute"
-                           type="number" min="1" max="120"
-                           class="form-input" placeholder="Ex: 45"/>
-                  </div>
-                  <div class="form-field">
-                    <label class="form-label">+ tps additionnel</label>
-                    <input formControlName="minuteAdditionnel"
-                           type="number" min="1"
-                           class="form-input" placeholder="Ex: 3"/>
-                  </div>
-                  <div class="form-field"
-                       *ngIf="isBut()">
-                    <label class="form-label">Passeur</label>
-                    <input formControlName="passeurNom"
-                           class="form-input"
-                           placeholder="Nom du passeur"/>
-                  </div>
-                </div>
-                <div class="form-actions">
-                  <button type="button" class="btn-ghost btn-sm"
-                          (click)="showEventForm.set(false)">
-                    Annuler
-                  </button>
-                  <button type="submit" class="btn-primary btn-sm"
-                          [disabled]="eventForm.invalid || savingEvent()">
-                    {{ savingEvent() ? '...' : 'Ajouter' }}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Liste événements -->
-            <div class="events-list">
-              <div class="event-row"
-                   *ngFor="let e of sortedEvents()"
-                   [class]="'event-' + e.type.toLowerCase()">
-                <span class="event-row__minute">
-                  {{ e.minute }}'
-                  <span *ngIf="e.minuteAdditionnel"
-                        class="additional">
-                    +{{ e.minuteAdditionnel }}
-                  </span>
-                </span>
-                <span class="event-row__icon">{{ eventIcon(e.type) }}</span>
-                <div class="event-row__info">
-                  <span class="event-row__player">{{ e.joueurNom }}</span>
-                  <span class="event-row__team">{{ e.equipeNom }}</span>
-                  <span class="event-row__assist"
-                        *ngIf="e.passeurNom">
-                    ↳ {{ e.passeurNom }}
-                  </span>
-                </div>
-                <button class="btn-icon--danger"
-                        *ngIf="canEdit()"
-                        (click)="supprimerEvenement(e.id!)"
-                        title="Supprimer">
-                  <i class="material-icons">delete_outline</i>
-                </button>
-              </div>
-
-              <div class="no-events-list"
-                   *ngIf="!match()!.evenements?.length">
-                <i class="material-icons">sports</i>
-                Aucun événement enregistré
-              </div>
-            </div>
-          </div>
-
-          <!-- ── SAISIE SCORE -->
-          <div *ngIf="activeTab() === 'saisie'" class="saisie-tab">
-
-            <!-- Résultat -->
-            <div class="saisie-section">
-              <h3 class="section-title">
-                <i class="material-icons">scoreboard</i>
-                Saisir le score
-              </h3>
-
-              <form [formGroup]="scoreForm" (ngSubmit)="saisirScore()">
-                <div class="score-inputs">
-                  <div class="score-input-group">
-                    <label>{{ match()!.domicile?.nomEquipe }}</label>
-                    <input formControlName="butsDomicile"
-                           type="number" min="0" class="score-big-input"/>
-                  </div>
-                  <span class="score-vs">–</span>
-                  <div class="score-input-group">
-                    <label>{{ match()!.exterieur?.nomEquipe }}</label>
-                    <input formControlName="butsExterieur"
-                           type="number" min="0" class="score-big-input"/>
-                  </div>
-                </div>
-
-                <!-- Prolongations -->
-                <div class="prolong-section"
-                     *ngIf="scoreForm.get('avecProlong')?.value">
-                  <h4>Prolongations</h4>
-                  <div class="score-inputs score-inputs--sm">
-                    <input formControlName="butsDomicileProlong"
-                           type="number" min="0" class="score-big-input score-big-input--sm"/>
-                    <span class="score-vs">–</span>
-                    <input formControlName="butsExterieurProlong"
-                           type="number" min="0" class="score-big-input score-big-input--sm"/>
-                  </div>
-                </div>
-
-                <!-- TAB -->
-                <div class="prolong-section"
-                     *ngIf="scoreForm.get('avecTab')?.value">
-                  <h4>Tirs au but</h4>
-                  <div class="score-inputs score-inputs--sm">
-                    <input formControlName="tabDomicile"
-                           type="number" min="0" class="score-big-input score-big-input--sm"/>
-                    <span class="score-vs">–</span>
-                    <input formControlName="tabExterieur"
-                           type="number" min="0" class="score-big-input score-big-input--sm"/>
-                  </div>
-                </div>
-
-                <div class="saisie-options">
-                  <label class="checkbox-label">
-                    <input type="checkbox" formControlName="avecProlong"/>
-                    Avec prolongations
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" formControlName="avecTab"/>
-                    Avec tirs au but
-                  </label>
-                </div>
-
-                <div class="saisie-actions">
-                  <button type="submit"
-                          class="btn-success"
-                          [disabled]="scoreForm.invalid || savingScore()">
-                    <i class="material-icons">check</i>
-                    {{ savingScore() ? 'Enregistrement...' : 'Valider le score' }}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Forfait -->
-            <div class="saisie-section saisie-section--danger">
-              <h3 class="section-title">
-                <i class="material-icons">warning</i>
-                Déclarer un forfait
-              </h3>
-              <div class="forfait-actions">
-                <button class="btn-danger btn-sm"
-                        (click)="declarerForfait(Cote.DOMICILE)">
-                  Forfait {{ match()!.domicile?.nomEquipe }}
-                </button>
-                <button class="btn-danger btn-sm"
-                        (click)="declarerForfait(Cote.EXTERIEUR)">
-                  Forfait {{ match()!.exterieur?.nomEquipe }}
-                </button>
-                <button class="btn-danger btn-sm"
-                        (click)="declarerForfait(Cote.LES_DEUX)">
-                  Double forfait
-                </button>
-              </div>
-            </div>
-
-            <!-- Reporter -->
-            <div class="saisie-section">
-              <h3 class="section-title">
-                <i class="material-icons">event_busy</i>
-                Reporter le match
-              </h3>
-              <div class="reporter-form">
-                <input type="datetime-local"
-                       [(ngModel)]="nouvelleDateHeure"
-                       class="form-input"/>
-                <button class="btn-warning btn-sm"
-                        [disabled]="!nouvelleDateHeure"
-                        (click)="reporter()">
-                  <i class="material-icons">event</i>
-                  Reporter
-                </button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <ng-template #loadingTpl>
-      <div class="match-detail__loading">
-        <div class="spinner"></div>
-        <span>Chargement du match...</span>
-      </div>
-    </ng-template>
-  `,
+  templateUrl:'./match-detail.component.html',
   styleUrls: ['./match-detail.component.scss']
 })
 export class MatchDetailComponent implements OnInit {
 
   Cote = Cote;
 
-  private route  = inject(ActivatedRoute);
-  private api    = inject(MatchApiService);
-  private fb     = inject(FormBuilder);
+  private route      = inject(ActivatedRoute);
+  private api        = inject(MatchApiService);
+  private membreApi  = inject(MembreEquipeApiService);
+  private fb         = inject(FormBuilder);
 
-  match           = signal<MatchDetailDTO | null>(null);
-  activeTab       = signal<MatchTab>('apercu');
-  showEventForm   = signal(false);
-  savingEvent     = signal(false);
-  savingScore     = signal(false);
+  // ── State match
+  match          = signal<MatchDetailDTO | null>(null);
+  activeTab      = signal<MatchTab>('apercu');
+  savingEvent    = signal(false);
+  savingScore    = signal(false);
+  showEventForm  = signal(false);
+
+  // ── State formulaire événement
+  eventTypeSelect   = signal<TypeEvent>(TypeEvent.BUT);
+  eventEquipe       = signal<'domicile' | 'exterieur' | null>(null);
+  eventMinute: number | null = null;
+  eventMinuteAdd: number | null = null;
+
+  // Joueur principal
+  joueurSearch       = '';
+  joueurManuelNom    = '';
+  joueurSelectionne  = signal<JoueurOption | null>(null);
+
+  // Passeur
+  passeurSearch       = '';
+  passeurSelectionne  = signal<JoueurOption | null>(null);
+
+  // Joueur sortant (remplacement)
+  joueurSortantSelectionne = signal<JoueurOption | null>(null);
+
+  // ── Listes joueurs (depuis composition)
+  private joueursDomicileCompo: JoueurOption[] = [];
+  private joueursExterieurCompo: JoueurOption[] = [];
+
+  // ── Formulaires
+  scoreForm = this.fb.group({
+    butsDomicile:         [0, [Validators.required, Validators.min(0)]],
+    butsExterieur:        [0, [Validators.required, Validators.min(0)]],
+    butsDomicileProlong:  [null as number | null],
+    butsExterieurProlong: [null as number | null],
+    tabDomicile:          [null as number | null],
+    tabExterieur:         [null as number | null],
+    avecProlong:          [false],
+    avecTab:              [false],
+  });
+
+  tempsForm!: FormGroup;
   nouvelleDateHeure = '';
 
+  // ── Config
   tabs = [
     { key: 'apercu'      as MatchTab, label: 'Aperçu',      icon: 'visibility' },
     { key: 'composition' as MatchTab, label: 'Composition', icon: 'people' },
@@ -542,37 +103,79 @@ export class MatchDetailComponent implements OnInit {
   ];
 
   eventTypes = [
-    { value: TypeEvent.BUT,                    label: '⚽ But' },
-    { value: TypeEvent.PENALTY_MARQUE,         label: '⚽ Penalty marqué' },
-    { value: TypeEvent.PENALTY_RATE,           label: '❌ Penalty raté' },
-    { value: TypeEvent.CONTRE_SON_CAMP,        label: '⚽ CSC' },
-    { value: TypeEvent.CARTON_JAUNE,           label: '🟨 Carton jaune' },
-    { value: TypeEvent.CARTON_ROUGE,           label: '🟥 Carton rouge' },
-    { value: TypeEvent.CARTON_ROUGE_DOUBLE_JAUNE, label: '🟥 2 jaunes = rouge' },
-    { value: TypeEvent.REMPLACEMENT,           label: '🔄 Remplacement' },
-    { value: TypeEvent.BUT_ANNULE,             label: '❌ But annulé' },
+    { value: TypeEvent.BUT,                       emoji: '⚽', label: 'But' },
+    { value: TypeEvent.PENALTY_MARQUE,            emoji: '⚽', label: 'Penalty' },
+    { value: TypeEvent.PENALTY_RATE,              emoji: '❌', label: 'Pen. raté' },
+    { value: TypeEvent.CONTRE_SON_CAMP,           emoji: '⚽', label: 'CSC' },
+    { value: TypeEvent.CARTON_JAUNE,              emoji: '🟨', label: 'Jaune' },
+    { value: TypeEvent.CARTON_ROUGE,              emoji: '🟥', label: 'Rouge' },
+    { value: TypeEvent.CARTON_ROUGE_DOUBLE_JAUNE, emoji: '🟥', label: '2J=R' },
+    { value: TypeEvent.REMPLACEMENT,              emoji: '🔄', label: 'Rempl.' },
+    { value: TypeEvent.BUT_ANNULE,                emoji: '❌', label: 'But annulé' },
   ];
 
-  scoreForm = this.fb.group({
-    butsDomicile:         [0, [Validators.required, Validators.min(0)]],
-    butsExterieur:        [0, [Validators.required, Validators.min(0)]],
-    butsDomicileProlong:  [null as number | null],
-    butsExterieurProlong: [null as number | null],
-    tabDomicile:          [null as number | null],
-    tabExterieur:         [null as number | null],
-    avecProlong:          [false],
-    avecTab:              [false],
+  // ── Computed : joueurs disponibles selon équipe + minute
+  joueursDisponibles = computed(() => {
+    const equipe = this.eventEquipe();
+    if (!equipe) return [];
+    const liste = equipe === 'domicile'
+      ? this.joueursDomicileCompo
+      : this.joueursExterieurCompo;
+
+    const minute = this.eventMinute ?? 0;
+
+    // Filtrer selon présence à la minute
+    return liste.filter(j => {
+      const compo = this.getCompoJoueur(j.membreId, equipe);
+      if (!compo) return true; // pas de compo → on inclut tout
+      return this.etaitSurLeTerrain(compo, minute);
+    });
   });
 
-  eventForm = this.fb.group({
-    type:             [TypeEvent.BUT, Validators.required],
-    equipeId:         [null as number | null, Validators.required],
-    joueurNom:        ['', Validators.required],
-    minute:           [null as number | null, [Validators.required, Validators.min(1)]],
-    minuteAdditionnel:[null as number | null],
-    passeurNom:       [''],
+  joueursFiltres = computed(() => {
+    const q = this.joueurSearch.toLowerCase().trim();
+    if (!q) return this.joueursDisponibles();
+    return this.joueursDisponibles().filter(j =>
+      j.nom.toLowerCase().includes(q) ||
+      j.prenom?.toLowerCase().includes(q) ||
+      String(j.numeroDos ?? '').includes(q)
+    );
   });
 
+  // Passeurs = même équipe, excluant le buteur
+  passeursDisponibles = computed(() => {
+    const liste = this.joueursDisponibles();
+    const sel   = this.joueurSelectionne();
+    return liste.filter(j => j.membreId !== sel?.membreId);
+  });
+
+  passeursFiltres = computed(() => {
+    const q = this.passeurSearch.toLowerCase().trim();
+    if (!q) return this.passeursDisponibles();
+    return this.passeursDisponibles().filter(j =>
+      j.nom.toLowerCase().includes(q) ||
+      j.prenom?.toLowerCase().includes(q)
+    );
+  });
+
+  // Joueurs sortants = titulaires en jeu (pour remplacement)
+  joueursSortants = computed(() => {
+    const equipe = this.eventEquipe();
+    if (!equipe) return [];
+    const liste = equipe === 'domicile'
+      ? this.joueursDomicileCompo
+      : this.joueursExterieurCompo;
+    const minute = this.eventMinute ?? 0;
+    // Seulement les titulaires encore sur le terrain
+    return liste.filter(j => {
+      const compo = this.getCompoJoueur(j.membreId, equipe);
+      if (!compo) return false;
+      return compo.statut === StatutComposition.TITULAIRE
+          && this.etaitSurLeTerrain(compo, minute);
+    });
+  });
+
+  // ── Getters
   get competitionId(): number {
     return Number(this.route.snapshot.paramMap.get('competitionId'));
   }
@@ -581,22 +184,271 @@ export class MatchDetailComponent implements OnInit {
     return Number(this.route.snapshot.paramMap.get('matchId'));
   }
 
-  ngOnInit(): void { this.reload(); }
+  ngOnInit(): void {
+    this.buildTempsForm();
+    this.reload();
+  }
+
+  buildTempsForm(): void {
+    this.tempsForm = this.fb.group({
+      heureEffectiveDebut:   [''],
+      heureEffectiveMiTemps: [''],
+      heureEffectiveReprise: [''],
+      heureEffectiveFin:     [''],
+      tempsAdditionnel1:     [null],
+      tempsAdditionnel2:     [null],
+      tempsAdditionnelP1:    [null],
+      tempsAdditionnelP2:    [null],
+      conditions:            [''],
+    });
+  }
 
   reload(): void {
-    this.api.getById(this.competitionId, this.matchId)
-      .subscribe(m => {
-        this.match.set(m);
-        // Pré-remplir le score si déjà saisi
-        if (m.butsDomicile != null) {
-          this.scoreForm.patchValue({
-            butsDomicile:  m.butsDomicile,
-            butsExterieur: m.butsExterieur,
-          });
-        }
+    this.api.getById(this.competitionId, this.matchId).subscribe(m => {
+      this.match.set(m);
+      this.buildJoueursListes(m);
+
+      // Pré-remplir score
+      if (m.butsDomicile != null) {
+        this.scoreForm.patchValue({
+          butsDomicile:  m.butsDomicile,
+          butsExterieur: m.butsExterieur,
+        });
+      }
+      // Pré-remplir temps
+      this.tempsForm.patchValue({
+        heureEffectiveDebut:   m.heureEffectiveDebut?.slice(0, 16) ?? '',
+        heureEffectiveMiTemps: m.heureEffectiveMiTemps?.slice(0, 16) ?? '',
+        heureEffectiveReprise: m.heureEffectiveReprise?.slice(0, 16) ?? '',
+        heureEffectiveFin:     m.heureEffectiveFin?.slice(0, 16) ?? '',
+        tempsAdditionnel1:     m.tempsAdditionnel1,
+        tempsAdditionnel2:     m.tempsAdditionnel2,
+        tempsAdditionnelP1:    m.tempsAdditionnelP1,
+        tempsAdditionnelP2:    m.tempsAdditionnelP2,
+        conditions:            m.conditions ?? '',
+      });
+    });
+  }
+
+  // ── Construction des listes depuis la composition
+  private buildJoueursListes(m: MatchDetailDTO): void {
+    this.joueursDomicileCompo = this.compoToOptions(
+      m.compositionDomicile, m.domicile?.id, m.domicile?.nomEquipe);
+    this.joueursExterieurCompo = this.compoToOptions(
+      m.compositionExterieur, m.exterieur?.id, m.exterieur?.nomEquipe);
+
+    // Si composition vide → charger depuis l'API membres
+    if (!m.compositionDomicile?.length && m.domicile?.id) {
+      this.membreApi.getJoueurs(this.competitionId, m.domicile.id)
+        .subscribe(membres => {
+          this.joueursDomicileCompo = membres.map(mb =>
+            this.membreToOption(mb, m.domicile!.id, m.domicile?.nomEquipe));
+        });
+    }
+    if (!m.compositionExterieur?.length && m.exterieur?.id) {
+      this.membreApi.getJoueurs(this.competitionId, m.exterieur.id)
+        .subscribe(membres => {
+          this.joueursExterieurCompo = membres.map(mb =>
+            this.membreToOption(mb, m.exterieur!.id, m.exterieur?.nomEquipe));
+        });
+    }
+  }
+
+  private compoToOptions(
+      compo: MatchCompositionDTO[] | undefined,
+      equipeId?: number,
+      equipeNom?: string): JoueurOption[] {
+    if (!compo?.length || !equipeId) return [];
+    return compo.map(c => ({
+      id:         c.joueurId,
+      membreId:   c.id, // id de la composition comme identifiant
+      nom:        c.joueurNom,
+      prenom:     c.joueurPrenom,
+      numeroDos:  c.numeroDos,
+      equipeId,
+      equipeNom,
+    }));
+  }
+
+  private membreToOption(
+      m: MembreEquipeDTO,
+      equipeId: number,
+      equipeNom?: string): JoueurOption {
+    return {
+      id:        m.joueurId,
+      membreId:  m.id,
+      nom:       m.nom,
+      prenom:    m.prenom,
+      numeroDos: m.numeroDos,
+      equipeId,
+      equipeNom,
+    };
+  }
+
+  // ── Vérifier présence sur le terrain à une minute donnée
+  private etaitSurLeTerrain(
+      compo: MatchCompositionDTO,
+      minute: number): boolean {
+    if (compo.statut === StatutComposition.TITULAIRE) {
+      return compo.minuteSortie == null || compo.minuteSortie > minute;
+    }
+    if (compo.statut === StatutComposition.REMPLACANT) {
+      return compo.minuteEntree != null
+          && compo.minuteEntree <= minute
+          && (compo.minuteSortie == null || compo.minuteSortie > minute);
+    }
+    return false;
+  }
+
+  private getCompoJoueur(
+      membreId: number | undefined,
+      equipe: 'domicile' | 'exterieur'): MatchCompositionDTO | undefined {
+    if (!membreId) return undefined;
+    const compo = equipe === 'domicile'
+      ? this.match()?.compositionDomicile
+      : this.match()?.compositionExterieur;
+    // Cherche par id de compo
+    return compo?.find(c => c.id === membreId);
+  }
+
+  // ── Handlers formulaire
+  onTypeChange(type: TypeEvent): void {
+    this.eventTypeSelect.set(type);
+    this.joueurSelectionne.set(null);
+    this.passeurSelectionne.set(null);
+    this.joueurSortantSelectionne.set(null);
+    this.joueurSearch  = '';
+    this.passeurSearch = '';
+  }
+
+  onEquipeChange(equipe: 'domicile' | 'exterieur'): void {
+    this.eventEquipe.set(equipe);
+    this.joueurSelectionne.set(null);
+    this.passeurSelectionne.set(null);
+    this.joueurSortantSelectionne.set(null);
+    this.joueurSearch  = '';
+    this.passeurSearch = '';
+  }
+
+  selectionnerJoueur(j: JoueurOption): void {
+    this.joueurSelectionne.set(j);
+    this.joueurSearch = '';
+    this.passeurSelectionne.set(null);
+    this.joueurSortantSelectionne.set(null);
+  }
+
+  selectionnerPasseur(j: JoueurOption): void {
+    this.passeurSelectionne.set(j);
+    this.passeurSearch = '';
+  }
+
+  toggleEventForm(): void {
+    this.showEventForm.update(v => !v);
+    if (!this.showEventForm()) this.resetEventForm();
+  }
+
+  resetEventForm(): void {
+    this.eventTypeSelect.set(TypeEvent.BUT);
+    this.eventEquipe.set(null);
+    this.eventMinute    = null;
+    this.eventMinuteAdd = null;
+    this.joueurSelectionne.set(null);
+    this.passeurSelectionne.set(null);
+    this.joueurSortantSelectionne.set(null);
+    this.joueurSearch    = '';
+    this.passeurSearch   = '';
+    this.joueurManuelNom = '';
+    this.showEventForm.set(false);
+  }
+
+  // ── Helpers type
+  isTypeBut(): boolean {
+    return [
+      TypeEvent.BUT,
+      TypeEvent.PENALTY_MARQUE,
+      TypeEvent.CONTRE_SON_CAMP
+    ].includes(this.eventTypeSelect());
+  }
+
+  isTypeRemplacement(): boolean {
+    return this.eventTypeSelect() === TypeEvent.REMPLACEMENT;
+  }
+
+  joueurLabel(): string {
+    const labels: Partial<Record<TypeEvent, string>> = {
+      [TypeEvent.BUT]:                       'Buteur',
+      [TypeEvent.PENALTY_MARQUE]:            'Tireur',
+      [TypeEvent.PENALTY_RATE]:              'Tireur',
+      [TypeEvent.CONTRE_SON_CAMP]:           'Joueur (CSC)',
+      [TypeEvent.CARTON_JAUNE]:              'Joueur averti',
+      [TypeEvent.CARTON_ROUGE]:              'Joueur exclu',
+      [TypeEvent.CARTON_ROUGE_DOUBLE_JAUNE]: 'Joueur exclu',
+      [TypeEvent.REMPLACEMENT]:              'Joueur entrant',
+      [TypeEvent.BUT_ANNULE]:                'Auteur du but annulé',
+    };
+    return labels[this.eventTypeSelect()] ?? 'Joueur';
+  }
+
+  canSubmitEvent(): boolean {
+    const hasJoueur = !!this.joueurSelectionne()
+                   || !!this.joueurManuelNom.trim();
+    const hasMinute = this.eventMinute != null && this.eventMinute > 0;
+    const hasEquipe = !!this.eventEquipe();
+    const hasType   = !!this.eventTypeSelect();
+    const hasSortant = !this.isTypeRemplacement()
+                    || !!this.joueurSortantSelectionne();
+    return hasJoueur && hasMinute && hasEquipe && hasType && hasSortant;
+  }
+
+  // ── Soumettre événement
+  ajouterEvenement(): void {
+    if (!this.canSubmitEvent()) return;
+    this.savingEvent.set(true);
+
+    const sel     = this.joueurSelectionne();
+    const passeur = this.passeurSelectionne();
+    const sortant = this.joueurSortantSelectionne();
+    const equipe  = this.eventEquipe() === 'domicile'
+      ? this.match()!.domicile
+      : this.match()!.exterieur;
+
+    const dto: MatchEventDTO = {
+      type:              this.eventTypeSelect(),
+      equipeId:          equipe?.id,
+      equipeNom:         equipe?.nomEquipe,
+      minute:            this.eventMinute!,
+      minuteAdditionnel: this.eventMinuteAdd ?? undefined,
+      // Joueur principal
+      joueurId:  sel?.id,
+      joueurNom: sel?.nom ?? this.joueurManuelNom,
+      joueurPrenom: sel?.prenom,
+      // Passeur
+      passeurId:  passeur?.id,
+      passeurNom: passeur ? `${passeur.prenom ?? ''} ${passeur.nom}`.trim() : undefined,
+      // Joueur sortant
+      joueurSortantId:  sortant?.id,
+      joueurSortantNom: sortant
+        ? `${sortant.prenom ?? ''} ${sortant.nom}`.trim()
+        : undefined,
+    };
+
+    this.api.ajouterEvenement(this.competitionId, this.matchId, dto)
+      .subscribe({
+        next: () => {
+          this.reload();
+          this.resetEventForm();
+          this.savingEvent.set(false);
+        },
+        error: () => this.savingEvent.set(false)
       });
   }
 
+  supprimerEvenement(eventId: number): void {
+    this.api.supprimerEvenement(this.competitionId, this.matchId, eventId)
+      .subscribe(() => this.reload());
+  }
+
+  // ── Helpers inchangés
   setTab(t: MatchTab): void { this.activeTab.set(t); }
 
   isTermine(): boolean {
@@ -606,7 +458,8 @@ export class MatchDetailComponent implements OnInit {
   }
 
   canEdit(): boolean {
-    return ![StatutMatch.TERMINE, StatutMatch.ANNULE].includes(this.match()!.statut);
+    return ![StatutMatch.TERMINE, StatutMatch.ANNULE]
+      .includes(this.match()!.statut);
   }
 
   isWinner(side: 'home' | 'away'): boolean {
@@ -617,9 +470,9 @@ export class MatchDetailComponent implements OnInit {
         ? m.tabDomicile! > m.tabExterieur!
         : m.tabExterieur! > m.tabDomicile!;
     }
-    const dom = this.totalDom();
-    const ext = this.totalExt();
-    return side === 'home' ? dom > ext : ext > dom;
+    return side === 'home'
+      ? this.totalDom() > this.totalExt()
+      : this.totalExt() > this.totalDom();
   }
 
   totalDom(): number {
@@ -641,15 +494,15 @@ export class MatchDetailComponent implements OnInit {
     return e.equipeId === this.match()?.exterieur?.id;
   }
 
-  getByPoste(compo: MatchCompositionDTO[] | undefined,
-             poste: PosteJoueur): MatchCompositionDTO[] {
-    return (compo ?? []).filter(p => p.poste === poste);
+  getCompo(side: string): MatchCompositionDTO[] {
+    return side === 'domicile'
+      ? (this.match()?.compositionDomicile ?? [])
+      : (this.match()?.compositionExterieur ?? []);
   }
 
-  isBut(): boolean {
-    return [TypeEvent.BUT, TypeEvent.PENALTY_MARQUE,
-            TypeEvent.CONTRE_SON_CAMP].includes(
-      this.eventForm.get('type')?.value as TypeEvent);
+  getByPoste(compo: MatchCompositionDTO[],
+             poste: PosteJoueur): MatchCompositionDTO[] {
+    return compo.filter(p => p.poste === poste);
   }
 
   eventIcon(type: TypeEvent): string {
@@ -686,7 +539,8 @@ export class MatchDetailComponent implements OnInit {
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   }
 
-  // ── Actions
+  goBack(): void { history.back(); }
+
   saisirScore(): void {
     if (this.scoreForm.invalid) return;
     this.savingScore.set(true);
@@ -705,48 +559,30 @@ export class MatchDetailComponent implements OnInit {
   }
 
   declarerForfait(equipe: Cote): void {
-    this.api.declarerForfait(this.competitionId, this.matchId, {
-      equipeForfait: equipe
-    }).subscribe(m => this.match.set(m));
+    this.api.declarerForfait(this.competitionId, this.matchId,
+      { equipeForfait: equipe })
+      .subscribe(m => this.match.set(m));
   }
 
   reporter(): void {
     if (!this.nouvelleDateHeure) return;
-    this.api.reporter(this.competitionId, this.matchId, {
-      nouvelleDate: this.nouvelleDateHeure
+    this.api.reporter(this.competitionId, this.matchId,
+      { nouvelleDate: this.nouvelleDateHeure })
+      .subscribe(m => this.match.set(m));
+  }
+
+  saisirTemps(): void {
+    const v = this.tempsForm.value;
+    this.api.saisirTemps(this.competitionId, this.matchId, {
+      heureEffectiveDebut:   v.heureEffectiveDebut || undefined,
+      heureEffectiveMiTemps: v.heureEffectiveMiTemps || undefined,
+      heureEffectiveReprise: v.heureEffectiveReprise || undefined,
+      heureEffectiveFin:     v.heureEffectiveFin || undefined,
+      tempsAdditionnel1:     v.tempsAdditionnel1 ?? undefined,
+      tempsAdditionnel2:     v.tempsAdditionnel2 ?? undefined,
+      tempsAdditionnelP1:    v.tempsAdditionnelP1 ?? undefined,
+      tempsAdditionnelP2:    v.tempsAdditionnelP2 ?? undefined,
+      conditions:            v.conditions || undefined,
     }).subscribe(m => this.match.set(m));
   }
-
-  ajouterEvenement(): void {
-    if (this.eventForm.invalid) return;
-    this.savingEvent.set(true);
-    const v = this.eventForm.value;
-    const equipe = v.equipeId === this.match()!.domicile?.id
-      ? this.match()!.domicile
-      : this.match()!.exterieur;
-    this.api.ajouterEvenement(this.competitionId, this.matchId, {
-      type:              v.type as TypeEvent,
-      joueurNom:         v.joueurNom!,
-      equipeId:          v.equipeId!,
-      equipeNom:         equipe?.nomEquipe,
-      minute:            v.minute!,
-      minuteAdditionnel: v.minuteAdditionnel ?? undefined,
-      passeurNom:        v.passeurNom || undefined,
-    }).subscribe({
-      next: () => {
-        this.reload();
-        this.eventForm.reset({ type: TypeEvent.BUT });
-        this.showEventForm.set(false);
-        this.savingEvent.set(false);
-      },
-      error: () => this.savingEvent.set(false)
-    });
-  }
-
-  supprimerEvenement(eventId: number): void {
-    this.api.supprimerEvenement(this.competitionId, this.matchId, eventId)
-      .subscribe(() => this.reload());
-  }
-
-  goBack(): void { history.back(); }
 }

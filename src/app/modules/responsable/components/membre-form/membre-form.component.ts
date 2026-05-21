@@ -207,6 +207,8 @@ compareUsers(u1: any, u2: any): boolean {
       poste: '',
       email: '',
       cotisationPayee: false,
+      estSuspendu:false,
+      dateFinSuspension:null,
       roleCO: '',
       equipe: null,
       groupe: {
