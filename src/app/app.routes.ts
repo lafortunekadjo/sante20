@@ -121,12 +121,12 @@ export const routes: Routes = [
       import('./modules/competition/components/competition-list/competition-list.component')
         .then(m => m.CompetitionListComponent)
   },
-  // {
-  //   path: 'competitions/:id',
-  //   loadComponent: () =>
-  //     import('./modules/competition/components/competition-detail/competition-detail.component')
-  //       .then(m => m.CompetitionDetailComponent)
-  // },
+  {
+    path: 'competitions/:id',
+    loadComponent: () =>
+      import('./modules/competition/components/competition-detail/competition-detail.component')
+        .then(m => m.CompetitionDetailComponent)
+  },
    {
     path: 'competitions/new',
     loadComponent: () =>

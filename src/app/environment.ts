@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-   apiUrl: 'http://172.18.101.38:8000/api',
-    wsUrl: 'ws://172.18.101.38:8000/ws',
+   apiUrl: 'http://localhost:8000/api',
+    wsUrl: 'ws://localhost:8000/ws',
     // apiUrl: 'https://my2-0.cloud/api',
     //   wsUrl: 'wss://my2-0.cloud:8000/ws',
     vapidPublicKey: 'BE5lNfsJXQBrNMR5EevZ8nzKeozncXycl0qDkwH9_GDUFBI9JyUPKfBv87kW7PT_g1tTC3Xe9TymJ6yD6TbdD5o'
