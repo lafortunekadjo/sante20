@@ -1,4 +1,5 @@
 import { Membre } from "./membre.model";
+import { ZoneGeographique, Ethnie } from "./zonegeographique.model";
 
 export interface User {
   id: number;
@@ -10,4 +11,10 @@ export interface User {
   motDePasse: string;
   groupe:number;
   profilePhotoUrl: string;
+
+  // --- NOUVEAUX CHAMPS STRUCTURÉS ---
+  villeHabitation?: ZoneGeographique;
+  quartierHabitation?: string;
+  zoneOrigine?: ZoneGeographique; // Le niveau le plus précis (Département / Ville d'origine)
+  ethnie?: Ethnie;
 }

@@ -397,7 +397,7 @@ get matchesToDisplay(): Match[] {
     }
 
     // Par défaut, on n'affiche que les 2 premiers matchs joués
-    return this.recentMatches.slice(0, 2);
+    return this.recentMatches.slice(0, 1);
   }
 
   toggleDisplay(): void {

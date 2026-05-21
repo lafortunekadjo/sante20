@@ -174,45 +174,58 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     }
   }
 
+  // À ajouter dans ton auth.service.ts
+setCurrentUser(user: any): void {
+  const currentInfo = this.getUser();
+  const updatedInfo = {
+    ...currentInfo,
+    ...user
+  };
+  localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(updatedInfo));
+}
+
   /**
    * Logique pour récupérer les informations utilisateur après l'authentification.
    */
-  private fetchUserInfoFromToken(): Observable<any> {
-    const token = this.getToken();
-    if (!token) {
-        return throwError(() => new Error('Token manquant.'));
-    }
-
-    const authHeaders = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    });
-
-    return this.http.get<any>(this.userInfoUrl, {
-        headers: authHeaders,
-        withCredentials: true
-    }).pipe(
-        tap(userInfo => {
-            this.userId = userInfo.id || null;
-            this.passwordResetRequired = userInfo.passwordResetRequired || false;
-            this.roles = userInfo.roles || [];
-            this.username = userInfo.username || null;
-            
-            if (!this.currentRole || !this.roles.includes(this.currentRole)) {
-              this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
-            }
-            
-            localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl); 
-
-            localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
-                userId: this.userId,
-                roles: this.roles, 
-                username: this.username,
-                currentRole: this.currentRole
-            }));
-        })
-    );
+ private fetchUserInfoFromToken(): Observable<any> {
+  const token = this.getToken();
+  if (!token) {
+      return throwError(() => new Error('Token manquant.'));
   }
+
+  const authHeaders = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+  });
+
+  return this.http.get<any>(this.userInfoUrl, {
+      headers: authHeaders,
+      withCredentials: true
+  }).pipe(
+      tap(userInfo => {
+          this.userId = userInfo.id || null;
+          this.passwordResetRequired = userInfo.passwordResetRequired || false;
+          this.roles = userInfo.roles || [];
+          this.username = userInfo.username || null;
+          
+          if (!this.currentRole || !this.roles.includes(this.currentRole)) {
+            this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
+          }
+          
+          localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl); 
+
+          // 🌟 SOLUTION : On sauvegarde l'intégralité de userInfo reçu du serveur,
+          // et on y injecte simplement le currentRole pour l'état de l'application.
+          const completeUserSession = {
+              ...userInfo,
+              userId: this.userId, // Pour garder la compatibilité avec ton code existant
+              currentRole: this.currentRole
+          };
+
+          localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(completeUserSession));
+      })
+  );
+}
 
   /**
    * Gère le processus de connexion

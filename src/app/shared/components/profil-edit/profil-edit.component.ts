@@ -9,11 +9,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSortModule } from '@angular/material/sort';
-import { MatTableModule } from '@angular/material/table';
 import { MembreService } from '../../../core/services/membre.service';
 import { PasswordResetDialogComponent } from '../password-reset-dialog/password-reset-dialog.component';
 import { User } from '../../../core/models/user';
@@ -23,61 +20,123 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatStepperModule } from '@angular/material/stepper';
 import { TranslateModule } from '@ngx-translate/core';
+import { ZoneGeographique, Ethnie } from '../../../core/models/zonegeographique.model';
+import { DonneesReferenceService } from '../../../core/services/donnees-reference.service';
+import { PropertyDescriptorParsingType } from 'html2canvas/dist/types/css/IPropertyDescriptor';
+import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
 
 @Component({
   selector: 'app-profil-edit',
+  templateUrl: './profil-edit.component.html',
+  styleUrls: ['./profil-edit.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTableModule,
-    MatInputModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatDialogModule,
     MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
     MatSelectModule,
     MatCheckboxModule,
-    MatPaginatorModule,
-    MatSortModule,
+    MatIconModule,
     MatProgressSpinnerModule,
-    MatDialogModule,
-    FormsModule, 
-    ReactiveFormsModule,
+    MatCardModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatDividerModule,
     MatTooltipModule,
-    MatStepperModule,
     TranslateModule
-  ],
-  templateUrl: './profil-edit.component.html',
-  styleUrl: './profil-edit.component.scss'
+  ]
 })
 export class ProfilEditComponent implements OnInit {
-  profileForm: FormGroup;
-  isLoading: boolean = true;
-  isSaving: boolean = false;
-  memberId: number = 0;
-  hidePassword: boolean = true;
-  maxDate: Date = new Date(); // Pour la date de naissance
+ profileForm!: FormGroup;
+  isLoading = true;
+  isSaving = false;
+  memberId!: number;
+  initialFormValues: any;
+profilePhotoUrl: string | null = null;
+  // Listes dynamiques provenant de l'API
+  villesList: ZoneGeographique[] = [];
+  zonesOrigineList: ZoneGeographique[] = [];
+  ethniesList: any[] = [];
+  filteredEthniesList: Ethnie[] = [];
 
   constructor(
     private fb: FormBuilder,
-    public dialogRef: MatDialogRef<ProfilEditComponent>,
+    private dialogRef: MatDialogRef<ProfilEditComponent>,
     private authService: AuthService,
     private memberService: MembreService,
+    private metadataService: DonneesReferenceService, // Injection ici
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     @Inject(MAT_DIALOG_DATA) public data: any
-  ) {
+  ) {}
+
+  ngOnInit(): void {
+    this.initForm();
+    this.loadMetadataAndUserData();
+    this.listenToZoneOrigineChanges();
+  }
+
+listenToZoneOrigineChanges(): void {
+  this.profileForm.get('zoneOrigineId')?.valueChanges.subscribe((zoneId: number | null) => {
+    
+    // 1. On effectue le filtrage de la liste
+    if (zoneId) {
+      this.filteredEthniesList = this.ethniesList.filter(
+        (ethnie: any) => ethnie.zoneOrigine?.id === zoneId || ethnie.zoneOrigineId === zoneId
+      );
+    } else {
+      this.filteredEthniesList = this.ethniesList;
+    }
+
+    // 2. Sécurité : On ne réinitialise l'ethnie QUE si la nouvelle région choisie 
+    // ne correspond pas à la région d'origine de l'ethnie actuellement sélectionnée.
+    const currentEthnieId = this.profileForm.get('ethnieId')?.value;
+    if (currentEthnieId) {
+      const currentEthnie = this.ethniesList.find(e => e.id === currentEthnieId);
+      const ethnieZoneId = currentEthnie?.zoneOrigine?.id || currentEthnie?.zoneOrigineId;
+
+      // Si la région choisie est différente de la région de l'ethnie courante, on efface.
+      if (ethnieZoneId !== zoneId) {
+        this.profileForm.get('ethnieId')?.setValue(null, { emitEvent: false });
+      }
+    }
+  });
+}
+
+// 3. Ajoutez la méthode pour ouvrir la boîte de dialogue d'édition de la photo :
+openPhotoEditionDialog(): void {
+  const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, { // Remplacez par le nom exact de votre composant de recadrage/upload
+    width: '450px',
+    disableClose: false,
+    data: { currentImageUrl: this.profilePhotoUrl, userId: this.authService.getUser().userId }
+  });
+
+  dialogRef.afterClosed().subscribe((newPhotoUrl: string | null) => {
+    if (newPhotoUrl) {
+      // Mettre à jour l'image à l'écran instantanément si l'utilisateur l'a changée
+      this.profilePhotoUrl = newPhotoUrl;
+      // Optionnel : sauvegarder dans la session locale de l'authService
+      this.authService.setCurrentUser({ profilePhotoUrl: newPhotoUrl });
+    }
+  });
+}
+  initForm(): void {
     this.profileForm = this.fb.group({
-      // Informations utilisateur
       username: ['', [Validators.required, Validators.minLength(3)]],
-      email: [''],
+      email: [{ value: '', disabled: true }, [Validators.email]],
       
-      // Informations membre
+      // Configuration des champs (Quartier, Origine et Ethnie sont désormais OPTIONNELS)
+      villeHabitationId: [null, Validators.required], // Seule la ville reste requise pour la localisation globale
+      quartierHabitation: [''], 
+      zoneOrigineId: [null],
+      ethnieId: [null],
+
+      // Informations du membre
       nom: ['', [Validators.required, Validators.minLength(2)]],
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       date_naissance: ['', Validators.required],
@@ -91,161 +150,140 @@ export class ProfilEditComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
-    this.loadUserData();
-  }
+  loadMetadataAndUserData(): void {
+    this.isLoading = true;
 
-  loadUserData() {
-    const user = this.authService.getUser();
-    if (user) {
+    // Chargement parallèle des métadonnées de l'API
+    this.metadataService.getVilles().subscribe(villes => this.villesList = villes);
+    this.metadataService.getZonesOrigine().subscribe(zones => this.zonesOrigineList = zones);
+    this.metadataService.getEthnies().subscribe(ethnies => {
+    this.ethniesList = ethnies;
+  console.log(ethnies)
+  // Initialisation de la liste filtrée au démarrage selon la valeur courante de la zone
+  const currentZoneId = this.profileForm.get('zoneOrigineId')?.value;
+  if (currentZoneId) {
+    this.filteredEthniesList = this.ethniesList.filter(
+      (e: any) => e.zoneOrigine?.id === currentZoneId || e.zoneOrigineId === currentZoneId
+    );
+  } else {
+    this.filteredEthniesList = ethnies;
+  }
+});
+
+    // Chargement de l'utilisateur connecté
+    const currentUser = this.authService.getUser();
+    if (currentUser) {
+      this.profilePhotoUrl = currentUser.profilePhotoUrl || localStorage.getItem('PROFIL_URL_KEY') || null;
+      this.memberId = currentUser.userId;
       this.profileForm.patchValue({
-        username: user.username || '',
-        email: user.email || ''
-      });
+        username: currentUser.username || '',
+        email: currentUser.email || '',
+        villeHabitationId: currentUser.villeHabitation?.id || null,
+        quartierHabitation: currentUser.quartierHabitation || '',
+        zoneOrigineId: currentUser.zoneOrigine?.id || null,
+        ethnieId: currentUser.ethnie?.id || null,
       
-      this.memberService.getMembreByUserId(user.userId).subscribe({
-        next: (member) => {
-          console.log(member)
-          this.memberId = member.id;
-          this.profileForm.patchValue({
-            nom: member.nom || '',
-            prenom: member.prenom || '',
-            date_naissance: member.dateNaissance ? new Date(member.dateNaissance) : null,
-            poste: member.poste || '',
-            roleCo: member.roleCO || '',
-            sexe: member.sexe || '',
-            cni: member.cni || '',
-            adresse: member.adresse || '',
-            tel: member.tel || '',
-            assurance: member.assurance || false
-          });
-          this.isLoading = false;
-        },
-        error: (err) => {
-          console.error('Erreur lors du chargement des données du membre:', err);
-          this.snackBar.open('Erreur lors du chargement des données', 'Fermer', { duration: 3000 });
-          this.isLoading = false;
-        }
       });
-    } else {
-      this.isLoading = false;
-      this.snackBar.open('Utilisateur non connecté', 'Fermer', { duration: 3000 });
-    }
-  }
 
-  saveProfile() {
-    if (this.profileForm.valid) {
-      this.isSaving = true;
-      const formData = this.profileForm.value;
-      
-      const userData: User = {
-        id: this.authService.getUser()?.userId || 0,
-        username: formData.username,
-        email: formData.email,
-        roles: '',
-        active: true,
-        membre: this.memberId,
-        motDePasse: '',
-        groupe: 0,
-        profilePhotoUrl: ''
-      };
-
-      const memberData: any = {
-        id: this.memberId,
-        nom: formData.nom,
-        prenom: formData.prenom,
-        dateNaissance: formData.date_naissance,
-        poste: formData.poste,
-        roleCO: formData.roleCo,
-        sexe: formData.sexe,
-        cni: formData.cni,
-        adresse: formData.adresse,
-        tel: formData.tel,
-        assurance: formData.assurance
-      };
-
-      this.authService.updateUserProfileAndMember(userData, memberData).subscribe({
-        next: (result) => {
-          this.isSaving = false;
-          let message = 'Profil mis à jour avec succès!';
-          
-          if (!result.userUpdated && !result.memberUpdated) {
-            message = 'Échec de la mise à jour du profil.';
-            this.snackBar.open(message, 'Fermer', { duration: 5000 });
-          } else if (!result.userUpdated) {
-            message = 'Informations du membre mises à jour. Échec de la mise à jour de l\'utilisateur.';
-            this.snackBar.open(message, 'Fermer', { duration: 5000 });
-            this.dialogRef.close(true);
-          } else if (!result.memberUpdated) {
-            message = 'Informations de l\'utilisateur mises à jour. Échec de la mise à jour du membre.';
-            this.snackBar.open(message, 'Fermer', { duration: 5000 });
-            this.dialogRef.close(true);
-          } else {
-            this.snackBar.open(message, 'Fermer', { duration: 3000 });
-            this.dialogRef.close(true);
-          }
-        },
-        error: (err) => {
-          this.isSaving = false;
-          console.error('Erreur lors de la mise à jour des profils:', err);
-          this.snackBar.open('Une erreur est survenue lors de la mise à jour.', 'Fermer', { duration: 5000 });
-        }
+      this.memberService.getMembreByUserId(this.memberId).subscribe({
+  next: (membre: Membre) => {
+    if (membre) {
+      this.profileForm.patchValue({
+        nom: membre.nom || '',
+        prenom: membre.prenom || '',
+        date_naissance: membre.dateNaissance || '',
+        poste: membre.poste || '',
+        roleCo: membre.roleCO || '',
+        sexe: membre.sexe || '',
+        cni: membre.cni || '',
+        adresse: membre.adresse || '',
+        tel: membre.tel || '',
+        assurance: membre.assurance || false
       });
-    } else {
-      this.markFormGroupTouched(this.profileForm);
-      this.snackBar.open('Veuillez corriger les erreurs dans le formulaire', 'Fermer', { duration: 3000 });
+      this.initialFormValues = this.profileForm.getRawValue();
+    }
+    this.isLoading = false;
+  },
+  error: (err: any) => { // <-- Correction ici : flèche double "=>" et typage de "err"
+    this.snackBar.open('Erreur lors du chargement du profil', 'Fermer', { duration: 3000 });
+    this.isLoading = false;
+  }
+});
     }
   }
 
-  // Marquer tous les champs comme touchés pour afficher les erreurs
-  private markFormGroupTouched(formGroup: FormGroup) {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
-      control?.markAsTouched();
-    });
+  hasChanges(): boolean {
+    if (!this.initialFormValues) return false;
+    const currentValues = this.profileForm.getRawValue();
+    return JSON.stringify(this.initialFormValues) !== JSON.stringify(currentValues);
   }
 
-  cancelEdit() {
-    if (this.profileForm.dirty) {
-      if (confirm('Voulez-vous vraiment annuler ? Les modifications non enregistrées seront perdues.')) {
-        this.dialogRef.close(false);
-      }
-    } else {
-      this.dialogRef.close(false);
+  resetForm(): void {
+    if (this.initialFormValues) {
+      this.profileForm.reset(this.initialFormValues);
     }
   }
 
-  checkPasswordResetRequired() {
-    if (this.authService.isPasswordResetRequired()) {
-      this.openPasswordResetDialog();
-    }
+  cancelEdit(): void {
+    this.dialogRef.close(false);
   }
 
-  openPasswordResetDialog(): void {
-    const dialogRef = this.dialog.open(PasswordResetDialogComponent, {
+  openPasswordReset(): void {
+    this.dialog.open(PasswordResetDialogComponent, {
       width: '400px',
-      disableClose: true,
-      data: { userId: localStorage.getItem('userId') }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (!result) {
-        console.log('La boîte de dialogue a été fermée sans action.');
-      }
+      disableClose: true
     });
   }
 
-  // Getters pour faciliter l'accès aux contrôles dans le template
-  get username() { return this.profileForm.get('username'); }
-  get email() { return this.profileForm.get('email'); }
-  get nom() { return this.profileForm.get('nom'); }
-  get prenom() { return this.profileForm.get('prenom'); }
-  get date_naissance() { return this.profileForm.get('date_naissance'); }
-  get sexe() { return this.profileForm.get('sexe'); }
-  get cni() { return this.profileForm.get('cni'); }
-  get tel() { return this.profileForm.get('tel'); }
+ saveProfile(): void {
+  if (this.profileForm.valid) {
+    this.isSaving = true;
+    const formData = this.profileForm.getRawValue();
 
-  // Méthode pour obtenir le message d'erreur
+    // Récupérer l'ID de l'utilisateur connecté de façon sûre
+    const currentUserId = this.authService.getUser()?.id || 0;
+
+    // 1. On construit l'objet User en forçant le type et en s'assurant que l'ID est présent
+    const userData: User = {
+      ...(this.authService.getUser() as User), // On propage l'utilisateur existant si nécessaire
+      id: currentUserId, // L'ID obligatoire résout l'erreur ts(2345)
+      username: formData.username,
+      villeHabitation: formData.villeHabitationId ? { id: formData.villeHabitationId } as any : null,
+      quartierHabitation: formData.quartierHabitation,
+      zoneOrigine: formData.zoneOrigineId ? { id: formData.zoneOrigineId } as any : null,
+      ethnie: formData.ethnieId ? { id: formData.ethnieId } as any : null
+    };
+
+    // 2. Données du membre (Reste inchangé)
+   const memberData: Membre = {
+     id: this.memberId, // Garanti comme un 'number', l'erreur disparaît
+     nom: formData.nom,
+     prenom: formData.prenom,
+     date_naissance: formData.date_naissance,
+     poste: formData.poste,
+     roleCo: formData.roleCo,
+     sexe: formData.sexe,
+     cni: formData.cni,
+     adresse: formData.adresse,
+     tel: formData.tel,
+     assurance: formData.assurance
+   } as unknown as Membre;
+
+    // 3. Envoi au backend (L'erreur disparaît car userData est maintenant un type 'User' valide)
+    this.authService.updateUserProfileAndMember(userData, memberData).subscribe({
+      next: (response) => {
+        this.snackBar.open('Profil mis à jour avec succès !', 'OK', { duration: 3000 });
+        this.isSaving = false;
+        this.dialogRef.close(true);
+      },
+      error: (err) => {
+        this.snackBar.open('Erreur lors de la sauvegarde du profil', 'Fermer', { duration: 3000 });
+        this.isSaving = false;
+      }
+    });
+  }
+}
+
   getErrorMessage(controlName: string): string {
     const control = this.profileForm.get(controlName);
     if (control?.hasError('required')) {
@@ -259,15 +297,11 @@ export class ProfilEditComponent implements OnInit {
       return `Minimum ${minLength} caractères requis`;
     }
     if (control?.hasError('pattern')) {
-      if (controlName === 'tel' || controlName === 'cni') {
-        return 'Format invalide (chiffres uniquement)';
-      }
-      return 'Format invalide';
+      return 'Format invalide (chiffres uniquement)';
     }
     return '';
   }
 
-  // Calculer l'âge à partir de la date de naissance
   calculateAge(): number | null {
     const birthDate = this.profileForm.get('date_naissance')?.value;
     if (birthDate) {
@@ -283,21 +317,12 @@ export class ProfilEditComponent implements OnInit {
     return null;
   }
 
-  // Obtenir les initiales pour l'avatar
   getInitials(): string {
     const nom = this.profileForm.get('nom')?.value || '';
     const prenom = this.profileForm.get('prenom')?.value || '';
-    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
-  }
-
-  // Vérifier si le formulaire a des modifications
-  hasChanges(): boolean {
-    return this.profileForm.dirty;
-  }
-
-  // Réinitialiser le formulaire
-  resetForm() {
-    this.loadUserData();
-    this.profileForm.markAsPristine();
+    if (nom || prenom) {
+      return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+    }
+    return '';
   }
 }
