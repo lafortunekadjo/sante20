@@ -89,6 +89,7 @@ import { JoinGroupDialogComponent } from "./modules/membre/components/join-group
 import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
 import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
 import { AnnouncementAdminComponent } from "./modules/responsable/components/announcement-admin/announcement-admin.component";
+import { SettingsComponent } from "./shared/components/settings/settings.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -218,6 +219,10 @@ export const routes: Routes = [
       {
         path: 'apropos',
         component: HomeComponent,
+      },
+       {
+        path: 'settings',
+        component: SettingsComponent,
       },
        {
         path: 'adhesion/:id/candidature',

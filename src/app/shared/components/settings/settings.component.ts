@@ -1,87 +1,93 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatRadioModule } from '@angular/material/radio';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
-import { Router } from '@angular/router';
-import { Theme, Language, SettingsService } from '../../../core/services/settings.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { SettingsService, Theme } from '../../../core/services/settings.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
-    MatButtonModule,
     MatIconModule,
-    MatRadioModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatButtonToggleModule,
     MatDividerModule,
     MatSnackBarModule,
-    FormsModule,
     TranslateModule
   ],
   templateUrl: './settings.component.html',
-  styleUrl: './settings.component.scss'
+  styleUrls: ['./settings.component.scss']
 })
-export class SettingsComponent implements OnInit {
-  selectedTheme: Theme = 'light';
-  selectedLanguage: Language = 'fr';
+export class SettingsComponent implements OnInit, OnDestroy {
+  currentTheme: Theme = 'light';
+  currentLanguage: string = 'fr';
+  
+  // Options de simulation pour les notifications
+  emailNotifications = true;
+  pushNotifications = false;
+  matchReminders = true;
 
-  themes: { value: Theme; label: string; icon: string }[] = [
-    { value: 'light', label: 'settings.themes.light', icon: 'light_mode' },
-    { value: 'dark', label: 'settings.themes.dark', icon: 'dark_mode' },
-    { value: 'auto', label: 'settings.themes.auto', icon: 'brightness_auto' }
-  ];
-
-  languages: { value: Language; label: string; flag: string }[] = [
-    { value: 'fr', label: 'Français', flag: '🇫🇷' },
-    { value: 'en', label: 'English', flag: '🇬🇧' }
-  ];
+  private destroy$ = new Subject<void>();
 
   constructor(
     private settingsService: SettingsService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
-    const currentSettings = this.settingsService.getSettings();
-    this.selectedTheme = currentSettings.theme;
-    this.selectedLanguage = currentSettings.language;
+    // Écouter les changements globaux de configuration (Thème & Langue)
+    this.settingsService.settings$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(settings => {
+        this.currentTheme = settings.theme;
+        this.currentLanguage = settings.language;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onThemeChange(theme: Theme): void {
-    this.selectedTheme = theme;
-    this.settingsService.setTheme(theme);
-    this.showSaveMessage();
-  }
-
-  onLanguageChange(language: Language): void {
-    this.selectedLanguage = language;
-    this.settingsService.setLanguage(language);
-    this.showSaveMessage();
-  }
-
-  resetSettings(): void {
-    if (confirm('Voulez-vous vraiment réinitialiser les paramètres ?')) {
-      this.settingsService.resetSettings();
-      const defaultSettings = this.settingsService.getSettings();
-      this.selectedTheme = defaultSettings.theme;
-      this.selectedLanguage = defaultSettings.language;
-      this.snackBar.open('Paramètres réinitialisés', 'Fermer', { duration: 3000 });
+    if (this.currentTheme !== theme) {
+      this.settingsService.toggleTheme(); // Ou une méthode spécifique setSelection(theme) si disponible
+      this.showSaveFeedback();
     }
   }
 
-  private showSaveMessage(): void {
-    this.snackBar.open('Paramètres enregistrés', 'Fermer', { duration: 2000 });
+  onLanguageChange(lang: string): void {
+    if (this.currentLanguage !== lang) {
+      this.settingsService.toggleLanguage(); // Aligne le changement avec votre service existant
+      this.showSaveFeedback();
+    }
   }
 
-  goBack(): void {
-    this.router.navigate(['/']);
+  toggleNotification(setting: string): void {
+    this.showSaveFeedback();
+  }
+
+  private showSaveFeedback(): void {
+    const message = this.translate.instant('settings.saved') || 'Paramètres mis à jour !';
+    this.snackBar.open(message, 'OK', {
+      duration: 2500,
+      panelClass: ['snackbar-success']
+    });
   }
 }

@@ -48,18 +48,27 @@
         
         <div class="form-grid">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.username' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.username' | translate }}</mat-label>
             <input matInput formControlName="username" placeholder="johndoe">
             <mat-icon matPrefix>account_circle</mat-icon>
             <mat-error *ngIf="profileForm.get('username')?.invalid">
               {{ getErrorMessage('username') }}
             </mat-error>
+            <mat-spinner matSuffix *ngIf="profileForm.get('username')?.pending" diameter="20"></mat-spinner>
+
+            <mat-error *ngIf="profileForm.get('username')?.hasError('usernamePris')">
+              Ce nom d'utilisateur est déjà utilisé par un autre joueur.
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field field-disabled">
-            <mat-label>{{ 'profil.champs.email' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.email' | translate }}</mat-label>
             <input matInput formControlName="email">
             <mat-icon matPrefix>email</mat-icon>
+            <mat-spinner matSuffix *ngIf="profileForm.get('email')?.pending" diameter="20"></mat-spinner>
+            <mat-error *ngIf="profileForm.get('email')?.hasError('emailPris')">
+              Cette adresse email est déjà associée à un autre compte.
+            </mat-error>
           </mat-form-field>
         </div>
 
@@ -138,7 +147,7 @@
 
         <div class="form-grid">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.nom' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.nom' | translate }}</mat-label>
             <input matInput formControlName="nom" uppercase>
             <mat-icon matPrefix>person</mat-icon>
             <mat-error *ngIf="profileForm.get('nom')?.invalid">
@@ -147,7 +156,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.prenom' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.prenom' | translate }}</mat-label>
             <input matInput formControlName="prenom">
             <mat-icon matPrefix>person_outline</mat-icon>
             <mat-error *ngIf="profileForm.get('prenom')?.invalid">
@@ -156,10 +165,10 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.sexe' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.sexe' | translate }}</mat-label>
             <mat-select formControlName="sexe">
-              <mat-option value="M">{{ 'profil.options.sexe.m' | translate }}</mat-option>
-              <mat-option value="F">{{ 'profil.options.sexe.f' | translate }}</mat-option>
+              <mat-option value="M">{{ 'profil.sexe.m' | translate }}</mat-option>
+              <mat-option value="F">{{ 'profil.sexe.f' | translate }}</mat-option>
             </mat-select>
             <mat-icon matPrefix>wc</mat-icon>
             <mat-error *ngIf="profileForm.get('sexe')?.invalid">
@@ -168,13 +177,13 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.date_naissance' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.date_naissance' | translate }}</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="date_naissance">
             <mat-icon matPrefix>cake</mat-icon>
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker></mat-datepicker>
             <mat-hint *ngIf="calculateAge() !== null">
-              {{ calculateAge() }} {{ 'profil.champs.ans' | translate }}
+              {{ calculateAge() }} {{ 'profil.fields.ans' | translate }}
             </mat-hint>
             <mat-error *ngIf="profileForm.get('date_naissance')?.invalid">
               {{ getErrorMessage('date_naissance') }}
@@ -182,7 +191,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.cni' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.cni' | translate }}</mat-label>
             <input matInput formControlName="cni" placeholder="123456789">
             <mat-icon matPrefix>fingerprint</mat-icon>
             <mat-error *ngIf="profileForm.get('cni')?.invalid">
@@ -201,14 +210,19 @@
         </div>
 
         <div class="form-grid">
+      
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.poste' | translate }}</mat-label>
-            <input matInput formControlName="poste" placeholder="Ex: Attaquant, Milieu...">
+            <mat-label>{{ 'profil.fields.poste' | translate }}</mat-label>
+            <mat-select formControlName="poste" placeholder="Sélectionnez votre poste">
+              <mat-option *ngFor="let poste of postesList" [value]="poste">
+                <mat-icon class="option-icon">sports_soccer</mat-icon> {{ poste }}
+              </mat-option>
+            </mat-select>
             <mat-icon matPrefix>directions_run</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.roleCo' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.roleCo' | translate }}</mat-label>
             <input matInput formControlName="roleCo" placeholder="Ex: Capitaine, Trésorier...">
             <mat-icon matPrefix>military_tech</mat-icon>
           </mat-form-field>
@@ -225,7 +239,7 @@
 
         <div class="form-grid">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.tel' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.tel' | translate }}</mat-label>
             <input matInput formControlName="tel" placeholder="612345678">
             <mat-icon matPrefix>phone</mat-icon>
             <mat-error *ngIf="profileForm.get('tel')?.invalid">
@@ -234,7 +248,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.champs.adresse' | translate }}</mat-label>
+            <mat-label>{{ 'profil.fields.adresse' | translate }}</mat-label>
             <input matInput formControlName="adresse" placeholder="Adresse complémentaire">
             <mat-icon matPrefix>home</mat-icon>
           </mat-form-field>
@@ -250,11 +264,11 @@
         </div>
         <div class="assurance-content">
           <mat-checkbox formControlName="assurance" color="primary">
-            {{ 'profil.champs.assurance_label' | translate }}
+            {{ 'profil.fields.assurance_label' | translate }}
           </mat-checkbox>
           <p class="assurance-hint" *ngIf="!profileForm.get('assurance')?.value">
             <mat-icon>warning</mat-icon>
-            {{ 'profil.champs.assurance_hint' | translate }}
+            {{ 'profil.fields.assurance_hint' | translate }}
           </p>
         </div>
       </div>
@@ -280,14 +294,16 @@
             <mat-icon>close</mat-icon>
             {{ 'COMMON.CANCEL' | translate }}
           </button>
+         
 
           <button mat-raised-button
                   color="primary"
                   type="submit"
-                  [disabled]="profileForm.invalid || !hasChanges() || isSaving"
+                  [disabled]="profileForm.invalid || !hasChanges() || profileForm.pending || isSaving"
                   class="save-button">
             <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
             <mat-icon *ngIf="!isSaving">save</mat-icon>
+            <mat-spinner *ngIf="isSaving" diameter="20" class="btn-spinner"></mat-spinner>
             <span *ngIf="!isSaving">{{ 'COMMON.SAVE' | translate }}</span>
             <span *ngIf="isSaving">{{ 'COMMON.SAVING' | translate }}</span>
           </button>

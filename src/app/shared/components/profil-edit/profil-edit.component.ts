@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, AsyncValidatorFn, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -25,6 +25,7 @@ import { ZoneGeographique, Ethnie } from '../../../core/models/zonegeographique.
 import { DonneesReferenceService } from '../../../core/services/donnees-reference.service';
 import { PropertyDescriptorParsingType } from 'html2canvas/dist/types/css/IPropertyDescriptor';
 import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
+import { Observable, of, delay, switchMap, map, catchError } from 'rxjs';
 
 @Component({
   selector: 'app-profil-edit',
@@ -63,6 +64,7 @@ profilePhotoUrl: string | null = null;
   zonesOrigineList: ZoneGeographique[] = [];
   ethniesList: any[] = [];
   filteredEthniesList: Ethnie[] = [];
+  postesList: string[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -109,26 +111,84 @@ listenToZoneOrigineChanges(): void {
 }
 
 // 3. Ajoutez la méthode pour ouvrir la boîte de dialogue d'édition de la photo :
+// openPhotoEditionDialog(): void {
+//   const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, { // Remplacez par le nom exact de votre composant de recadrage/upload
+//     width: '450px',
+//     disableClose: false,
+//     data: { currentImageUrl: this.profilePhotoUrl, userId: this.authService.getUser().userId }
+//   });
+
+//   dialogRef.afterClosed().subscribe((newPhotoUrl: string | null) => {
+//     if (newPhotoUrl) {
+//       // Mettre à jour l'image à l'écran instantanément si l'utilisateur l'a changée
+//       this.profilePhotoUrl = newPhotoUrl;
+//       // Optionnel : sauvegarder dans la session locale de l'authService
+//       this.authService.setCurrentUser({ profilePhotoUrl: newPhotoUrl });
+//     }
+//   });
+// }
+
 openPhotoEditionDialog(): void {
-  const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, { // Remplacez par le nom exact de votre composant de recadrage/upload
+  const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, {
     width: '450px',
     disableClose: false,
-    data: { currentImageUrl: this.profilePhotoUrl, userId: this.authService.getUser().userId }
+    data: { currentImageUrl: this.profilePhotoUrl, userId: this.authService.getUser()?.userId }
   });
 
-  dialogRef.afterClosed().subscribe((newPhotoUrl: string | null) => {
-    if (newPhotoUrl) {
-      // Mettre à jour l'image à l'écran instantanément si l'utilisateur l'a changée
-      this.profilePhotoUrl = newPhotoUrl;
-      // Optionnel : sauvegarder dans la session locale de l'authService
-      this.authService.setCurrentUser({ profilePhotoUrl: newPhotoUrl });
+  dialogRef.afterClosed().subscribe((result: any) => {
+    // Le dialogue renvoie un objet { file: File, previewUrl: string }
+    if (result && result.file) {
+      
+      // 1. Mise à jour visuelle instantanée à l'écran
+      this.profilePhotoUrl = result.previewUrl;
+      
+      // 2. Envoi du fichier réel au serveur
+      const userId = this.authService.getUser()?.userId;
+      if (userId) {
+        this.authService.uploadProfilePhoto(userId, result.file).subscribe({
+          next: (response: any) => {
+            // Extraction de l'URL finale renvoyée par le serveur
+            let serverUrl = null;
+            if (response?.url) serverUrl = response.url;
+            else if (typeof response === 'string' && response.startsWith('http')) serverUrl = response;
+            
+            if (serverUrl) {
+              this.profilePhotoUrl = serverUrl;
+              localStorage.setItem('profilUrl', serverUrl);
+              this.authService.setCurrentUser({ profilePhotoUrl: serverUrl });
+            }
+            
+            this.snackBar.open('Photo de profil enregistrée avec succès !', 'Fermer', { 
+              duration: 3000,
+              panelClass: ['snackbar-success'] 
+            });
+          },
+          error: (err) => {
+            console.error("Échec du téléversement de l'image", err);
+            this.snackBar.open("Erreur lors de l'enregistrement de l'image sur le serveur.", 'Fermer', { 
+              panelClass: ['snackbar-error'] 
+            });
+          }
+        });
+      }
     }
   });
 }
+
+
+
   initForm(): void {
+   const userId = this.authService.getUser().userId
     this.profileForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      email: [{ value: '', disabled: true }, [Validators.email]],
+      username: [
+      '', 
+      [Validators.required, Validators.minLength(3)],
+      [this.usernameUniqueValidator(userId)] // 🌟 Validateur asynchrone Username
+    ],
+      email: [ '', 
+      [Validators.required, Validators.minLength(3)],
+      [this.emailUniqueValidator(userId)] 
+    ],
       
       // Configuration des champs (Quartier, Origine et Ethnie sont désormais OPTIONNELS)
       villeHabitationId: [null, Validators.required], // Seule la ville reste requise pour la localisation globale
@@ -141,7 +201,7 @@ openPhotoEditionDialog(): void {
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       date_naissance: ['', Validators.required],
       poste: [''],
-      roleCo: [''],
+      roleCo: [{ value: '', disabled: true }],
       sexe: ['', Validators.required],
       cni: [''],
       adresse: [''],
@@ -158,7 +218,7 @@ openPhotoEditionDialog(): void {
     this.metadataService.getZonesOrigine().subscribe(zones => this.zonesOrigineList = zones);
     this.metadataService.getEthnies().subscribe(ethnies => {
     this.ethniesList = ethnies;
-  console.log(ethnies)
+  
   // Initialisation de la liste filtrée au démarrage selon la valeur courante de la zone
   const currentZoneId = this.profileForm.get('zoneOrigineId')?.value;
   if (currentZoneId) {
@@ -172,9 +232,23 @@ openPhotoEditionDialog(): void {
 
     // Chargement de l'utilisateur connecté
     const currentUser = this.authService.getUser();
+    
     if (currentUser) {
+      // On extrait le sport. S'adapte à ta structure de l'objet User (ex: currentUser.groupe.discipline)
+    const disciplineSportive = currentUser.groupe?.discipline || 'FOOTBALL'; 
+
+    this.metadataService.getPostesParDiscipline(disciplineSportive).subscribe({
+      next: (postes) => {
+        this.postesList = postes;
+      },
+      error: () => {
+        // Fallback local si l'API échoue
+        this.postesList = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
+      }
+    });
       this.profilePhotoUrl = currentUser.profilePhotoUrl || localStorage.getItem('PROFIL_URL_KEY') || null;
       this.memberId = currentUser.userId;
+      console.log(currentUser)
       this.profileForm.patchValue({
         username: currentUser.username || '',
         email: currentUser.email || '',
@@ -193,7 +267,7 @@ openPhotoEditionDialog(): void {
         prenom: membre.prenom || '',
         date_naissance: membre.dateNaissance || '',
         poste: membre.poste || '',
-        roleCo: membre.roleCO || '',
+        roleCo: membre.roleCustom?.nom || '',
         sexe: membre.sexe || '',
         cni: membre.cni || '',
         adresse: membre.adresse || '',
@@ -211,6 +285,38 @@ openPhotoEditionDialog(): void {
 });
     }
   }
+
+// 1. Ajoute les validateurs asynchrones en bas de ton composant ou à l'intérieur
+usernameUniqueValidator(userId: number): AsyncValidatorFn {
+  return (control: AbstractControl): Observable<ValidationErrors | null> => {
+    if (!control.value || control.value.length < 3) return of(null);
+    
+    return of(control.value).pipe(
+      delay(500),
+      switchMap(username => this.authService.checkUsernameAvailability2(username, userId)),
+      map((res: any) => {
+        // 💡 Ajuste 'res.available' selon la propriété exacte renvoyée par ton API
+        return res.available ? null : { usernamePris: true };
+      }),
+      catchError(() => of(null))
+    );
+  };
+}
+
+// 2. Validateur pour l'Email (Si un jour tu le réactives)
+emailUniqueValidator(currentUserId: number): AsyncValidatorFn {
+  return (control: AbstractControl): Observable<ValidationErrors | null> => {
+    if (!control.value) return of(null);
+    
+    return of(control.value).pipe(
+      delay(500),
+      switchMap(email => this.authService.checkEmailAvailability2(email)),
+      map((res: any) => (res.available ? null : { emailPris: true })),
+      catchError(() => of(null))
+    );
+  };
+}
+
 
   hasChanges(): boolean {
     if (!this.initialFormValues) return false;
@@ -248,6 +354,7 @@ openPhotoEditionDialog(): void {
       ...(this.authService.getUser() as User), // On propage l'utilisateur existant si nécessaire
       id: currentUserId, // L'ID obligatoire résout l'erreur ts(2345)
       username: formData.username,
+      email:formData.email,
       villeHabitation: formData.villeHabitationId ? { id: formData.villeHabitationId } as any : null,
       quartierHabitation: formData.quartierHabitation,
       zoneOrigine: formData.zoneOrigineId ? { id: formData.zoneOrigineId } as any : null,
@@ -268,7 +375,6 @@ openPhotoEditionDialog(): void {
      tel: formData.tel,
      assurance: formData.assurance
    } as unknown as Membre;
-
     // 3. Envoi au backend (L'erreur disparaît car userData est maintenant un type 'User' valide)
     this.authService.updateUserProfileAndMember(userData, memberData).subscribe({
       next: (response) => {

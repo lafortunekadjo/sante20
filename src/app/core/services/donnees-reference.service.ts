@@ -24,4 +24,8 @@ export class DonneesReferenceService {
   getEthnies(): Observable<Ethnie[]> {
     return this.http.get<Ethnie[]>(`${this.apiUrl}/ethnies`);
   }
+
+  getPostesParDiscipline(discipline: string): Observable<string[]> {
+  return this.http.get<string[]>(`${this.apiUrl}/postes/${discipline}`);
+}
 }

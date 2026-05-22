@@ -69,6 +69,7 @@ export class AuthService {
   private apiGroupesConnect= `${environment.apiUrl}/groupes/connect`;
   
   username: any;
+  email: any;
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
@@ -167,6 +168,7 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
         this.roles = userInfo.roles || [];
         this.username = userInfo.username || null;
         this.currentRole = userInfo.currentRole || null;
+        this.email = userInfo.email || null;
         
       } catch (e) {
         console.error("Erreur lors du parsing de userInfo depuis localStorage:", e);
@@ -207,6 +209,7 @@ setCurrentUser(user: any): void {
           this.passwordResetRequired = userInfo.passwordResetRequired || false;
           this.roles = userInfo.roles || [];
           this.username = userInfo.username || null;
+          this.email = userInfo.email || null
           
           if (!this.currentRole || !this.roles.includes(this.currentRole)) {
             this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
@@ -587,7 +590,8 @@ setCurrentUser(user: any): void {
       userId: this.userId,
       roles: this.roles,
       username: this.username,
-      currentRole: this.currentRole
+      currentRole: this.currentRole,
+      email:this.email
     };
   }
 
@@ -716,6 +720,27 @@ setCurrentUser(user: any): void {
     );
   }
 
+  checkUsernameAvailability2(username: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { username };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-username2`, { params });
+}
+
+checkEmailAvailability2(email: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { email };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-email2`, { params });
+}
+
+checkTelAvailability2(tel: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { tel };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-tel2`, { params });
+}
+
 
   /**
  * ✅ Rafraîchit les informations utilisateur depuis le serveur.
@@ -746,6 +771,7 @@ refreshUserInfo(): Observable<any> {
       this.passwordResetRequired = userInfo.passwordResetRequired || false;
       this.roles = userInfo.roles || [];
       this.username = userInfo.username || null;
+      this.email = userInfo.email || null;
       
       // Mettre à jour le rôle courant
       // Si on était CANDIDAT et qu'on est maintenant RESPONSABLE, changer
@@ -762,7 +788,9 @@ refreshUserInfo(): Observable<any> {
         userId: this.userId,
         roles: this.roles,
         username: this.username,
-        currentRole: this.currentRole
+        currentRole: this.currentRole,
+        email: this.email,
+        
       }));
       
       console.log('[AuthService] refreshUserInfo - Rôles mis à jour:', this.roles);
