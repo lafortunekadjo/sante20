@@ -26,6 +26,7 @@ import { DonneesReferenceService } from '../../../core/services/donnees-referenc
 import { PropertyDescriptorParsingType } from 'html2canvas/dist/types/css/IPropertyDescriptor';
 import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
 import { Observable, of, delay, switchMap, map, catchError } from 'rxjs';
+import { VideoUploadDialogComponent } from '../../../modules/membre/components/video-upload-dialog/video-upload-dialog.component';
 
 @Component({
   selector: 'app-profil-edit',
@@ -127,6 +128,25 @@ listenToZoneOrigineChanges(): void {
 //     }
 //   });
 // }
+
+// Ajoute la méthode pour ouvrir le modal de téléchargement de vidéos
+openUploadDialog(): void {
+  const currentUser = this.authService.getUser();
+  if (!currentUser || !currentUser.username) return;
+
+  const dialogRef = this.dialog.open(VideoUploadDialogComponent, {
+    width: '550px',
+    panelClass: 'modern-video-dialog', // Optionnel : pour styliser le modal
+    data: { username: currentUser.username }
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    if (result) {
+      // Optionnel : Tu peux lever un toast ou rafraîchir un indicateur si nécessaire
+      this.snackBar.open('Vidéo ajoutée avec succès à votre galerie !', 'OK', { duration: 3000 });
+    }
+  });
+}
 
 openPhotoEditionDialog(): void {
   const dialogRef = this.dialog.open(ProfileImageEditDialogComponent, {

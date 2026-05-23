@@ -1,0 +1,38 @@
+  <div class="directory-container">
+      <div class="directory-header">
+        <h1>Communauté Sante-2-0</h1>
+        <p>Découvrez les profils et fiches de statistiques de tous les athlètes de la plateforme</p>
+        
+        <div class="search-bar-wrapper">
+          <mat-icon>search</mat-icon>
+          <input type="text" [(ngModel)]="searchQuery" (input)="filterPlayers()" placeholder="Rechercher un joueur par son nom d'utilisateur...">
+        </div>
+      </div>
+
+      <div class="center-spinner" *ngIf="isLoading">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <div class="players-grid" *ngIf="!isLoading">
+        <div class="player-mini-card" *ngFor="let player of filteredPlayers">
+          <div class="card-avatar-zone">
+            <img *ngIf="player.profilePhotoUrl" [src]="player.profilePhotoUrl" alt="Avatar">
+            <div *ngIf="!player.profilePhotoUrl" class="fallback-avatar">{{ player.username.substring(0,2).toUpperCase() }}</div>
+          </div>
+          
+          <div class="card-info-zone">
+            <h3>&#64;{{ player.username }}</h3>
+            <p class="stats-badge">⚽ {{ player.totalButsGlobal }} buts inscrits</p>
+          </div>
+
+          <button mat-flat-button color="primary" class="view-btn" [routerLink]="['/p', player.username]">
+            Voir le profil
+          </button>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="filteredPlayers.length === 0 && !isLoading">
+        <mat-icon>group_off</mat-icon>
+        <p>Aucun athlète ne correspond à votre recherche.</p>
+      </div>
+    </div>

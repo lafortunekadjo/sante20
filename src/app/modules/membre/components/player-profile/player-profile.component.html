@@ -1,0 +1,106 @@
+<div class="profile-page-wrapper">
+  
+  <div class="center-container" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement de la fiche athlète...</p>
+  </div>
+
+  <div class="center-container error-box" *ngIf="hasError && !isLoading">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h2>Profil introuvable</h2>
+    <p>Le joueur demandé n'existe pas ou a désactivé son compte.</p>
+  </div>
+
+  <div class="profile-container" *ngIf="playerProfile && !isLoading">
+    
+    <div class="profile-card-header">
+      <div class="profile-cover"></div>
+      <div class="profile-avatar-row">
+        <div class="avatar-wrapper">
+          <img *ngIf="playerProfile.profilePhotoUrl" [src]="playerProfile.profilePhotoUrl" alt="Avatar joueur">
+          <div *ngIf="!playerProfile.profilePhotoUrl" class="avatar-initials">{{ getInitials() }}</div>
+        </div>
+        
+        <div class="player-main-info">
+          <div class="name-badge-row">
+            <h1>&#64;{{ playerProfile.username }}</h1>
+            <span class="own-profile-badge" *ngIf="isOwnProfile">Mon profil</span>
+          </div>
+          <p class="player-meta">
+            <mat-icon>location_on</mat-icon> Douala, Cameroun 
+            <span class="separator">•</span> 
+            <mat-icon>mail_outline</mat-icon> {{ playerProfile.email }}
+          </p>
+        </div>
+      </div>
+
+      <div class="quick-counters">
+        <div class="counter-item">
+          <span class="count-value">{{ playerProfile.totalButsGlobal }}</span>
+          <span class="count-label">Buts Totaux</span>
+        </div>
+        <div class="counter-item">
+          <span class="count-value">{{ playerProfile.totalPassesGlobal }}</span>
+          <span class="count-label">Passes</span>
+        </div>
+        <div class="counter-item">
+          <span class="count-value">{{ playerProfile.totalCartonsGlobal }}</span>
+          <span class="count-label">Malus / Cartons</span>
+        </div>
+      </div>
+    </div>
+
+    <mat-tab-group class="modern-profile-tabs">
+      
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>history</mat-icon>
+          <span>Parcours & Clubs 2-0</span>
+        </ng-template>
+        
+        <div class="tab-content">
+          <h2 class="content-title">Historique d'appartenance</h2>
+          <div class="timeline-list">
+            
+            <div class="timeline-item" *ngFor="let club of playerProfile.historiqueClubs" [class.active-club]="club.activeInGroup">
+              <div class="club-marker">
+                <mat-icon>{{ club.activeInGroup ? 'star' : 'radio_button_unchecked' }}</mat-icon>
+              </div>
+              <div class="club-details">
+                <div class="club-header">
+                  <h3>{{ club.nomGroupe }}</h3>
+                  <span class="status-tag">{{ club.activeInGroup ? 'Actuel' : 'Ancien' }}</span>
+                </div>
+                <p class="post-info">Poste occupé : <strong>{{ club.posteOccupe || 'Non défini' }}</strong></p>
+                <div class="club-stats-row">
+                  <span><strong>{{ club.butsDansCeClub }}</strong> Buts</span>
+                  <span class="dot-separator">•</span>
+                  <span><strong>{{ club.passesDansCeClub }}</strong> Passes</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="empty-history" *ngIf="playerProfile.historiqueClubs.length === 0">
+              <p>Ce joueur n'est associé à aucun groupe "2-0" pour le moment.</p>
+            </div>
+
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>play_circle_outline</mat-icon>
+          <span>Vidéos du Stade</span>
+        </ng-template>
+        <div class="tab-content empty-videos">
+          <mat-icon class="placeholder-icon">video_library</mat-icon>
+          <h3>Bientôt disponible</h3>
+          <p>Le téléversement et le visionnage de vidéos de matchs arrivent très vite sur la plateforme !</p>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </div>
+</div>

@@ -90,6 +90,8 @@ import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/
 import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
 import { AnnouncementAdminComponent } from "./modules/responsable/components/announcement-admin/announcement-admin.component";
 import { SettingsComponent } from "./shared/components/settings/settings.component";
+import { PlayerProfileComponent } from "./modules/membre/components/player-profile/player-profile.component";
+import { PlayerListComponent } from "./modules/membre/components/player-list/player-list.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -208,6 +210,15 @@ export const routes: Routes = [
         path: 'match/invite/:token',
         component: PublicMatchInviteComponent,
       },
+      {
+        path:'p/:username',
+        component: PlayerProfileComponent
+      },
+      {
+        path: 'joueurs',
+        component: PlayerListComponent
+      },
+            
       {
         path: 'creategroup',
         component: UserGroupRegisterComponent,
