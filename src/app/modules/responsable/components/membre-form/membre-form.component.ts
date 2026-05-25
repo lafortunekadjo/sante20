@@ -18,7 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { switchMap, forkJoin, map, lastValueFrom, finalize, Observable } from 'rxjs';
+import { switchMap, forkJoin, map, lastValueFrom, finalize, Observable, of } from 'rxjs';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeneralService } from '../../../../core/services/general.service';
@@ -38,6 +38,7 @@ import { ImportResult } from '../../../../core/services/excel-import.service';
 import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-dialog.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterModule } from '@angular/router';
+import { Exercice, FinancesService } from '../../../../core/services/finances.service';
 
 @Component({
   selector: 'app-membre-form',
@@ -124,6 +125,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   createUserForMembre = false;
   isLoading = true;
   isSaving = false;
+  exerciceActif: Exercice | null = null;
   
   // Filtres
   showFilters = false;
@@ -134,15 +136,19 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     roleCustom: null as number | null,
     roleCO: null as string | null,
     cotisation: null as boolean | null,
-    poste: '' as string
+    poste: '' as string,
+    filterWithoutAccount:  null as boolean | null, // Réinitialisation du filtre
   };
   
-  filteredMembers: Membre[] = [];
-  paginatedMembers: Membre[] = [];
+  filteredMembers: any[] = [];
+  paginatedMembers: any[] = [];
   filteredCount = 0;
   activeFiltersCount = 0;
   pageSize = 10;
   pageIndex = 0;
+  filterWithoutAccount: boolean = false;
+  // Près de tes autres déclarations (groupe, membres, etc.)
+  typesContributions: any[] = [];
 
   // Gradients pour avatars
   private avatarGradients = [
@@ -160,6 +166,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
 
   // Map pour gérer les erreurs d'images
   private brokenImages = new Set<number>();
+  groupeId!: number | null;
 
   constructor(
     private adminService: MembreService,
@@ -172,9 +179,11 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     private authService: AuthService,
     private translate: TranslateService,
     private cdr: ChangeDetectorRef,
+    private financesService: FinancesService
   ) {}
 
   ngOnInit(): void {
+    this.groupeId = this.authService.getGroupe();
     this.loadData();
     this.loadRoles();
   }
@@ -333,44 +342,76 @@ compareUsers(u1: any, u2: any): boolean {
     this.dataSource.data = [...this.dataSource.data];
     this.applyFilters();
   }
+loadData(): void {
+  this.isLoading = true;
 
-  loadData(): void {
-    this.isLoading = true;
-    forkJoin([
-      this.adminService.getGroupMembers().pipe(map(data => data || [])),
-      this.groupService.getAllGroupesMembre().pipe(map(data => data || null)),
-      this.userService.getAllUsers2().pipe(map(data => data || [])),
-      this.equipeService.getEquipesByGroupe().pipe(map(data => data || []))
-    ]).subscribe({
-      next: ([membres, groupeResponse, users, equipes]) => {
-        this.dataSource.data = membres || [];
-        this.groupe = groupeResponse || null;
-        
-        const membreUserIds = new Set(
-          membres?.filter(m => m.user && m.user.id).map(m => m.user!.id) || []
-        );
-        // this.users = users.filter(user => !membreUserIds.has(user.id)) || [];
-        this.equipes = equipes || [];
-        this.editingRows = new Array(membres?.length || 0).fill(false);
-        this.users = users || [];
-        if (this.groupe) {
-          this.newMembre.groupe = this.groupe;
-        }
-       
-        this.applyFilters();
-        this.isLoading = false;
-         this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des données:', err);
-        this.isLoading = false;
-        this.dataSource.data = [];
-        this.filteredMembers = [];
-        this.paginatedMembers = [];
+  // 1. On récupère d'abord l'exercice actif du groupe
+  this.financesService.getExerciceActif(this.groupeId!).pipe(
+    switchMap((exercice) => {
+      // On garde une référence de l'exercice ou des contributions si besoin dans le composant
+      this.exerciceActif = exercice; 
+      const exerciceId = exercice?.id;
+
+      // 2. Maintenant que l'ID de l'exercice est disponible, on lance le forkJoin en parallèle
+      return forkJoin([
+        this.adminService.getGroupMembers().pipe(map(data => data || [])),
+        this.groupService.getAllGroupesMembre().pipe(map(data => data || null)),
+        this.userService.getAllUsers2().pipe(map(data => data || [])),
+        this.equipeService.getEquipesByGroupe().pipe(map(data => data || [])),
+        // Si l'exercice existe, on charge ses types de contributions, sinon on renvoie un tableau vide
+        exerciceId 
+          ? this.financesService.getTypesContributionByExercice(exerciceId).pipe(map(data => data || []))
+          : of([])
+      ]);
+    })
+  ).subscribe({
+    // 3. Récupération des 5 résultats bien alignés dans le tableau du next
+    next: ([membres, groupeResponse, users, equipes, typesContributions]) => {
+      this.filteredMembers = membres || []; // Pour ton filtrage local
+      this.dataSource.data = membres || [];
+      this.groupe = groupeResponse || null;
+      this.equipes = equipes || [];
+      this.users = users || [];
+      
+      // Stockage des contributions pour l'affichage dynamique des badges visuels
+      this.typesContributions = typesContributions || [];
+
+      this.editingRows = new Array(this.dataSource.data.length).fill(false);
+      
+      if (this.groupe) {
+        this.newMembre.groupe = this.groupe;
       }
-    });
-  }
+     
+      const membreUserIds = new Set(
+        membres?.filter((m: { user: { id: any; }; }) => m.user && m.user.id).map((m: { user: any; }) => m.user!.id) || []
+      );
 
+      this.applyFilters();
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement des données:', err);
+      this.isLoading = false;
+      this.dataSource.data = [];
+      this.filteredMembers = [];
+      this.paginatedMembers = [];
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+
+  hasContributionLink(champ: string): boolean {
+  if (!this.typesContributions) return false;
+  return this.typesContributions.some(tc => tc.majStatutMembre && tc.champStatutMembre === champ);
+}
+
+// Les sanctions n'ont pas forcément besoin d'un TypeContribution pour exister, 
+// mais on peut vérifier si le groupe gère des types de sanctions.
+hasSanctionsEnabled(): boolean {
+  return this.groupe?.isActive!;
+}
   // ===== FILTRES =====
 
   applyFilters(): void {
@@ -408,6 +449,12 @@ compareUsers(u1: any, u2: any): boolean {
       filtered = filtered.filter(m => m.poste?.toLowerCase().includes(posteSearch));
     }
 
+      // 3. ⭐ NOUVEAU : Filtrer les membres sans compte utilisateur ⭐
+    if (this.filterWithoutAccount) {
+      // Si m.user est null ou indéfini, le membre n'a pas de compte utilisateur lié
+      filtered = filtered.filter(m => m.user === null || m.user === undefined);
+    }
+
     const searchFilter = this.dataSource.filter;
     if (searchFilter) {
       filtered = filtered.filter(m => {
@@ -442,7 +489,8 @@ compareUsers(u1: any, u2: any): boolean {
       roleCustom: null,
       roleCO: null,
       cotisation: null,
-      poste: ''
+      poste: '',
+     filterWithoutAccount:null // Réinitialisation du filtre
     };
     this.applyFilters();
   }

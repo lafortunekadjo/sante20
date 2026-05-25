@@ -6,25 +6,35 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatInputModule } from '@angular/material/input';
 import { PlayerProfile, ProfileService } from '../../../../core/services/profile.service';
-
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
-  imports: [
-    CommonModule, RouterModule, FormsModule, MatCardModule, 
-    MatIconModule, MatInputModule, MatButtonModule, MatProgressSpinnerModule
-  ],
+  imports: [CommonModule, RouterModule, FormsModule, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './player-list.component.html',
   styleUrl: './player-list.component.scss'
 })
 export class PlayerListComponent implements OnInit {
   players: PlayerProfile[] = [];
   filteredPlayers: PlayerProfile[] = [];
-  searchQuery = '';
   isLoading = true;
+
+  // Filtres enrichis
+  searchQuery = '';
+  selectedPoste = 'all';
+  selectedPied = 'all';
+  selectedSexe = 'all';
+  selectedQuartier = 'all';
+  minGoals: number | null = null;
+  sortBy = 'butsDesc';
+
+  // Liste unique des quartiers détectés dynamiquement depuis le backend
+  quartiersDisponibles: string[] = [];
+
+  // Comparateur
+  comparedPlayers: PlayerProfile[] = [];
+  showComparisonModal = false;
 
   constructor(private profileService: ProfileService) {}
 
@@ -32,17 +42,82 @@ export class PlayerListComponent implements OnInit {
     this.profileService.getAllPlayers().subscribe({
       next: (data) => {
         this.players = data;
-        this.filteredPlayers = data;
+        
+        // Extraire dynamiquement la liste des quartiers pour alimenter le filtre dropdown
+        const setQuartiers = new Set(data.map(p => p.quartier).filter(q => q && q !== 'Non renseigné'));
+        this.quartiersDisponibles = Array.from(setQuartiers).sort();
+        
+        this.applyAdvancedFilters();
         this.isLoading = false;
       },
       error: () => this.isLoading = false
     });
   }
 
-  filterPlayers(): void {
-    const query = this.searchQuery.toLowerCase().trim();
-    this.filteredPlayers = this.players.filter(p => 
-      p.username.toLowerCase().includes(query)
-    );
+  applyAdvancedFilters(): void {
+    this.filteredPlayers = this.players.filter(player => {
+      const matchesSearch = player.username.toLowerCase().includes(this.searchQuery.toLowerCase());
+      const matchesPoste = this.selectedPoste === 'all' || player.poste === this.selectedPoste;
+      const matchesPied = this.selectedPied === 'all' || player.piedFort === this.selectedPied;
+      const matchesSexe = this.selectedSexe === 'all' || player.sexe === this.selectedSexe;
+      const matchesQuartier = this.selectedQuartier === 'all' || player.quartier === this.selectedQuartier;
+      const matchesGoals = this.minGoals === null || (player.totalButsGlobal || 0) >= this.minGoals;
+
+      return matchesSearch && matchesPoste && matchesPied && matchesSexe && matchesQuartier && matchesGoals;
+    });
+
+    this.sortResults();
   }
+
+  sortResults(): void {
+    switch (this.sortBy) {
+      case 'butsDesc':
+        this.filteredPlayers.sort((a, b) => b.totalButsGlobal - a.totalButsGlobal);
+        break;
+      case 'passesDesc':
+        this.filteredPlayers.sort((a, b) => b.totalPassesGlobal - a.totalPassesGlobal);
+        break;
+      case 'cleanSheetsDesc':
+        this.filteredPlayers.sort((a, b) => b.cleanSheets - a.cleanSheets);
+        break;
+      case 'matchsDesc':
+        this.filteredPlayers.sort((a, b) => b.totalMatchsJoues - a.totalMatchsJoues);
+        break;
+      case 'usernameAsc':
+        this.filteredPlayers.sort((a, b) => a.username.localeCompare(b.username));
+        break;
+    }
+  }
+
+  resetFilters(): void {
+    this.searchQuery = '';
+    this.selectedPoste = 'all';
+    this.selectedPied = 'all';
+    this.selectedSexe = 'all';
+    this.selectedQuartier = 'all';
+    this.minGoals = null;
+    this.sortBy = 'butsDesc';
+    this.applyAdvancedFilters();
+  }
+
+  toggleCompare(player: PlayerProfile, event: any): void {
+    if (event.target.checked) {
+      if (this.comparedPlayers.length >= 3) {
+        event.target.checked = false;
+        alert('Maximum 3 joueurs pour la comparaison.');
+        return;
+      }
+      this.comparedPlayers.push(player);
+    } else {
+      this.comparedPlayers = this.comparedPlayers.filter(p => p.id !== player.id);
+    }
+  }
+
+  isCompared(player: PlayerProfile): boolean {
+    return this.comparedPlayers.some(p => p.id === player.id);
+  }
+
+  openComparison(): void { if (this.comparedPlayers.length >= 2) this.showComparisonModal = true; }
+  closeComparison(): void { this.showComparisonModal = false; }
+  clearComparison(): void { this.comparedPlayers = []; this.showComparisonModal = false; }
 }

@@ -524,7 +524,7 @@ setCurrentUser(user: any): void {
   }
 
   updateUserProfileAndMember(userData: User, memberData: Membre): Observable<{ userUpdated: boolean; memberUpdated: boolean }> {
-    console.log(memberData)
+    console.log(userData)
     const token = this.getToken();
     if (!token) {
       return throwError(() => new Error('Aucun token disponible pour la mise à jour.'));

@@ -111,6 +111,8 @@
           <mat-icon>close</mat-icon>
         </button>
       </div>
+
+    
     </div>
 
     <!-- Panneau de filtres -->
@@ -194,6 +196,18 @@
           <input matInput [(ngModel)]="filters.poste" (keyup)="applyFilters()" [placeholder]="'membres.positionPlaceholder' | translate">
           <mat-icon matPrefix>sports</mat-icon>
         </mat-form-field>
+        
+         <div class="filter-checkbox-wrapper">
+        <mat-checkbox 
+          color="primary" 
+          [(ngModel)]="filterWithoutAccount" 
+          (change)="applyFilters()">
+          {{ 'membres.withoutAccount' | translate }}
+        </mat-checkbox>
+
+  </div>
+
+        
       </div>
 
       <div class="filters-summary" *ngIf="activeFiltersCount > 0">
@@ -408,6 +422,33 @@
                   {{ membre.roleCustom.nom }}
                 </span>
               </div>
+            </div>
+
+            <div class="financial-status-badges">
+
+              <div class="status-badge" 
+                  *ngIf="hasContributionLink('adhesionPayee')"
+                  [ngClass]="membre.adhesionPayee ? 'status-success' : 'status-danger'">
+                <mat-icon>{{ membre.adhesionPayee ? 'verified' : 'unpublished' }}</mat-icon>
+                <span>Adhésion</span>
+              </div>
+
+              <div class="status-badge" 
+                  *ngIf="hasContributionLink('cotisationAJour')"
+                  [ngClass]="membre.cotisationAJour ? 'status-success' : 'status-danger'">
+                <mat-icon>{{ membre.cotisationAJour ? 'account_balance_wallet' : 'running_with_errors' }}</mat-icon>
+                <span>Cotisation</span>
+              </div>
+
+              <div class="status-badge" 
+                  *ngIf="hasSanctionsEnabled()"
+                  [ngClass]="membre.sanctionsPayees ? 'status-success' : 'status-warning'">
+                <mat-icon>{{ membre.sanctionsPayees ? 'gavel' : 'warning_amber' }}</mat-icon>
+                <span>
+                  {{ membre.sanctionsPayees ? 'Sanctions OK' : ((membre.totalSanctionsNonPayees || 0) + ' F') }}
+                </span>
+              </div>
+
             </div>
           </div>
           

@@ -1,38 +1,164 @@
-  <div class="directory-container">
-      <div class="directory-header">
-        <h1>Communauté Sante-2-0</h1>
-        <p>Découvrez les profils et fiches de statistiques de tous les athlètes de la plateforme</p>
-        
-        <div class="search-bar-wrapper">
+<div class="directory-container">
+  <div class="directory-header">
+    <h1>Communauté My2-0</h1>
+    <p>Analyse des performances, filtres avancés et comparaison d'athlètes en temps réel.</p>
+  </div>
+
+  <div class="filters-panel-card">
+    <div class="panel-header">
+      <mat-icon>tune</mat-icon>
+      <h2>Filtres multicritères</h2>
+    </div>
+    
+    <div class="filters-grid-layout">
+      <div class="filter-field-wrapper input-search">
+        <label>Joueur</label>
+        <div class="search-input-box">
           <mat-icon>search</mat-icon>
-          <input type="text" [(ngModel)]="searchQuery" (input)="filterPlayers()" placeholder="Rechercher un joueur par son nom d'utilisateur...">
+          <input type="text" [(ngModel)]="searchQuery" (input)="applyAdvancedFilters()" placeholder="Rechercher...">
         </div>
       </div>
 
-      <div class="center-spinner" *ngIf="isLoading">
-        <mat-spinner diameter="40"></mat-spinner>
+      <div class="filter-field-wrapper">
+        <label>Poste</label>
+        <select [(ngModel)]="selectedPoste" (change)="applyAdvancedFilters()">
+          <option value="all">Tous les postes</option>
+          <option value="Attaquant">Attaquant</option>
+          <option value="Milieu">Milieu</option>
+          <option value="Défenseur">Défenseur</option>
+          <option value="Gardien">Gardien</option>
+        </select>
       </div>
 
-      <div class="players-grid" *ngIf="!isLoading">
-        <div class="player-mini-card" *ngFor="let player of filteredPlayers">
-          <div class="card-avatar-zone">
-            <img *ngIf="player.profilePhotoUrl" [src]="player.profilePhotoUrl" alt="Avatar">
-            <div *ngIf="!player.profilePhotoUrl" class="fallback-avatar">{{ player.username.substring(0,2).toUpperCase() }}</div>
-          </div>
-          
-          <div class="card-info-zone">
-            <h3>&#64;{{ player.username }}</h3>
-            <p class="stats-badge">⚽ {{ player.totalButsGlobal }} buts inscrits</p>
-          </div>
-
-          <button mat-flat-button color="primary" class="view-btn" [routerLink]="['/p', player.username]">
-            Voir le profil
-          </button>
-        </div>
+      <div class="filter-field-wrapper">
+        <label>Pied Fort</label>
+        <select [(ngModel)]="selectedPied" (change)="applyAdvancedFilters()">
+          <option value="all">Tous</option>
+          <option value="Droitier">Droitier</option>
+          <option value="Gaucher">Gaucher</option>
+          <option value="Ambidextre">Ambidextre</option>
+        </select>
       </div>
 
-      <div class="empty-state" *ngIf="filteredPlayers.length === 0 && !isLoading">
-        <mat-icon>group_off</mat-icon>
-        <p>Aucun athlète ne correspond à votre recherche.</p>
+      <div class="filter-field-wrapper">
+        <label>Genre</label>
+        <select [(ngModel)]="selectedSexe" (change)="applyAdvancedFilters()">
+          <option value="all">Tous</option>
+          <option value="M">Masculin</option>
+          <option value="F">Féminin</option>
+        </select>
+      </div>
+
+      <div class="filter-field-wrapper">
+        <label>Quartier d'habitation</label>
+        <select [(ngModel)]="selectedQuartier" (change)="applyAdvancedFilters()">
+          <option value="all">Tous les quartiers</option>
+          <option *ngFor="let q of quartiersDisponibles" [value]="q">{{ q }}</option>
+        </select>
+      </div>
+
+      <div class="filter-field-wrapper">
+        <label>Trier par Performance</label>
+        <select [(ngModel)]="sortBy" (change)="applyAdvancedFilters()">
+          <option value="butsDesc">⚽ Meilleurs Buteurs</option>
+          <option value="passesDesc">🎯 Meilleurs Passeurs</option>
+          <option value="cleanSheetsDesc">🧤 Clean Sheets (Gardiens)</option>
+          <option value="matchsDesc">👕 Matchs joués</option>
+          <option value="usernameAsc">🔤 Nom (A-Z)</option>
+        </select>
       </div>
     </div>
+
+    <div class="panel-actions" *ngIf="searchQuery || selectedPoste !== 'all' || selectedPied !== 'all' || selectedSexe !== 'all' || selectedQuartier !== 'all'">
+      <button class="btn-reset" (click)="resetFilters()">
+        <mat-icon>backspace</mat-icon> Effacer les filtres
+      </button>
+    </div>
+  </div>
+
+  <div class="center-spinner" *ngIf="isLoading">
+    <mat-spinner diameter="45"></mat-spinner>
+  </div>
+
+  <div class="players-grid" *ngIf="!isLoading && filteredPlayers.length > 0">
+    <div class="player-mini-card" *ngFor="let player of filteredPlayers" [class.selected-for-compare]="isCompared(player)">
+      
+      <div class="card-top-bar">
+        <label class="compare-checkbox-label">
+          <input type="checkbox" [checked]="isCompared(player)" (change)="toggleCompare(player, $event)">
+          <span>Comparer</span>
+        </label>
+        <span class="position-tag" [ngClass]="player.poste?.toLowerCase() || ''">{{ player.poste }}</span>
+      </div>
+
+      <div class="card-avatar-zone">
+        <img *ngIf="player.profilePhotoUrl" [src]="player.profilePhotoUrl" alt="Avatar">
+        <div *ngIf="!player.profilePhotoUrl" class="fallback-avatar">{{ player.username.substring(0,2).toUpperCase() }}</div>
+      </div>
+      
+      <div class="card-info-zone">
+        <h3>&#64;{{ player.username }}</h3>
+        <p class="player-geo">📍 {{ player.quartier }} | {{ player.sexe === 'M' ? 'Homme' : 'Femme' }}</p>
+        
+        <div class="main-stat-badge" *ngIf="player.poste !== 'Gardien'">
+          <span class="value">⚽ {{ player.totalButsGlobal }} buts | 🎯 {{ player.totalPassesGlobal }} pas.</span>
+        </div>
+        <div class="main-stat-badge goalie" *ngIf="player.poste === 'Gardien'">
+          <span class="value">🧤 {{ player.cleanSheets }} Clean Sheets | 🥅 {{ player.butsEncaisses }} enc.</span>
+        </div>
+      </div>
+
+      <button mat-flat-button color="primary" class="view-btn" [routerLink]="['/p', player.username]">
+        Fiche complète
+      </button>
+    </div>
+  </div>
+
+  <div class="floating-compare-bar" *ngIf="comparedPlayers.length > 0">
+    <div class="compare-bar-content">
+      <div class="selected-summary">
+        <mat-icon>balance</mat-icon>
+        <span class="text"><strong>{{ comparedPlayers.length }}</strong> / 3 athlètes sélectionnés</span>
+      </div>
+      <div class="bar-actions">
+        <button mat-button class="btn-clear-all" (click)="clearComparison()">Annuler</button>
+        <button mat-raised-button color="accent" class="btn-trigger-compare" [disabled]="comparedPlayers.length < 2" (click)="openComparison()">
+          <mat-icon>swap_horiz</mat-icon> Comparer le face-à-face
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison-modal-backdrop" *ngIf="showComparisonModal">
+    <div class="comparison-modal-box">
+      <div class="modal-header">
+        <h2><mat-icon>military_tech</mat-icon> Tableau de Confrontation My2-0</h2>
+        <button mat-icon-button (click)="closeComparison()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <div class="modal-body-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Métriques</th>
+              <th *ngFor="let p of comparedPlayers">&#64;{{ p.username }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Poste / Pied</td><td *ngFor="let p of comparedPlayers">{{ p.poste }} / {{ p.piedFort }}</td></tr>
+            <tr><td>Secteur Géo</td><td *ngFor="let p of comparedPlayers">📍 {{ p.quartier }}</td></tr>
+            <tr><td>Matchs joués</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">{{ p.totalMatchsJoues }}</td></tr>
+            <tr><td>Buts Marqués (Pén.)</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">⚽ {{ p.totalButsGlobal }} ({{ p.totalPenaltysGlobal }} pen)</td></tr>
+            <tr><td>Passes Décisives</td><td *ngFor="let p of comparedPlayers" class="stat-highlight" style="color: #059669;">🎯 {{ p.totalPassesGlobal }}</td></tr>
+            <tr><td>Buts Encaissés (Gardien)</td><td *ngFor="let p of comparedPlayers">🥅 {{ p.poste === 'Gardien' ? p.butsEncaisses : '-' }}</td></tr>
+            <tr><td>Clean Sheets (Gardien)</td><td *ngFor="let p of comparedPlayers" style="font-weight: bold; color: #1e3a8a;">🧤 {{ p.poste === 'Gardien' ? p.cleanSheets : '-' }}</td></tr>
+            <tr><td>Cartons écopés</td><td *ngFor="let p of comparedPlayers">🟨🟥 {{ p.totalCartonsGlobal }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button mat-stroked-button (click)="closeComparison()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>

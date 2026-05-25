@@ -27,80 +27,154 @@
             <span class="own-profile-badge" *ngIf="isOwnProfile">Mon profil</span>
           </div>
           <p class="player-meta">
-            <mat-icon>location_on</mat-icon> Douala, Cameroun 
-            <span class="separator">•</span> 
-            <mat-icon>mail_outline</mat-icon> {{ playerProfile.email }}
+            <mat-icon>location_on</mat-icon>
+            <span>Douala, {{ playerProfile.quartier }}</span>
           </p>
         </div>
       </div>
 
-      <div class="quick-counters">
-        <div class="counter-item">
-          <span class="count-value">{{ playerProfile.totalButsGlobal }}</span>
-          <span class="count-label">Buts Totaux</span>
+      <div class="stats-ribbon-grid">
+        <div class="ribbon-item">
+          <span class="ribbon-num">{{ playerProfile.totalMatchsJoues }}</span>
+          <span class="ribbon-label">Matchs</span>
         </div>
-        <div class="counter-item">
-          <span class="count-value">{{ playerProfile.totalPassesGlobal }}</span>
-          <span class="count-label">Passes</span>
+        <div class="ribbon-item">
+          <span class="ribbon-num primary-stat">{{ playerProfile.totalButsGlobal }}</span>
+          <span class="ribbon-label">Buts</span>
         </div>
-        <div class="counter-item">
-          <span class="count-value">{{ playerProfile.totalCartonsGlobal }}</span>
-          <span class="count-label">Malus / Cartons</span>
+        <div class="ribbon-item">
+          <span class="ribbon-num">{{ playerProfile.totalPassesGlobal }}</span>
+          <span class="ribbon-label">Passes</span>
+        </div>
+        <div class="ribbon-item text-warn" *ngIf="playerProfile.poste === 'Gardien'">
+          <span class="ribbon-num">{{ playerProfile.cleanSheets }}</span>
+          <span class="ribbon-label">Clean Sheets</span>
+        </div>
+        <div class="ribbon-item" *ngIf="playerProfile.poste !== 'Gardien'">
+          <span class="ribbon-num">{{ playerProfile.totalCartonsGlobal }}</span>
+          <span class="ribbon-label">Malus/Cartons</span>
         </div>
       </div>
     </div>
 
-    <mat-tab-group class="modern-profile-tabs">
-      
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>history</mat-icon>
-          <span>Parcours & Clubs 2-0</span>
-        </ng-template>
+    <div class="profile-tabs-card">
+      <mat-tab-group animationDuration="250ms">
         
-        <div class="tab-content">
-          <h2 class="content-title">Historique d'appartenance</h2>
-          <div class="timeline-list">
-            
-            <div class="timeline-item" *ngFor="let club of playerProfile.historiqueClubs" [class.active-club]="club.activeInGroup">
-              <div class="club-marker">
-                <mat-icon>{{ club.activeInGroup ? 'star' : 'radio_button_unchecked' }}</mat-icon>
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>sports_soccer</mat-icon>
+            <span>Fiche Technique</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="info-details-grid">
+              <div class="detail-box">
+                <span class="box-label">Poste Préféré</span>
+                <span class="box-value accent-text">🛡️ {{ playerProfile.poste }}</span>
               </div>
-              <div class="club-details">
-                <div class="club-header">
-                  <h3>{{ club.nomGroupe }}</h3>
-                  <span class="status-tag">{{ club.activeInGroup ? 'Actuel' : 'Ancien' }}</span>
-                </div>
-                <p class="post-info">Poste occupé : <strong>{{ club.posteOccupe || 'Non défini' }}</strong></p>
-                <div class="club-stats-row">
-                  <span><strong>{{ club.butsDansCeClub }}</strong> Buts</span>
-                  <span class="dot-separator">•</span>
-                  <span><strong>{{ club.passesDansCeClub }}</strong> Passes</span>
-                </div>
+              <div class="detail-box">
+                <span class="box-label">Pied Fort</span>
+                <span class="box-value">{{ playerProfile.piedFort }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="box-label">Sexe</span>
+                <span class="box-value">{{ playerProfile.sexe === 'M' ? 'Masculin' : 'Féminin' }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="box-label">Email de contact</span>
+                <span class="box-value email-text">{{ playerProfile.email }}</span>
               </div>
             </div>
-            
-            <div class="empty-history" *ngIf="playerProfile.historiqueClubs.length === 0">
-              <p>Ce joueur n'est associé à aucun groupe "2-0" pour le moment.</p>
-            </div>
-
           </div>
-        </div>
-      </mat-tab>
+        </mat-tab>
 
-      <mat-tab>
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>history</mat-icon>
+            <span>Parcours Clubs</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="timeline-list">
+              <div class="timeline-item" 
+                   *ngFor="let club of playerProfile.historiqueClubs"
+                   [class.active-club]="club.statut === 'Actif'">
+                <mat-icon class="club-marker">shield</mat-icon>
+                <div class="club-details">
+                  <div class="club-header">
+                    <h3>{{ club.clubNom }}</h3>
+                    <span class="status-tag">{{ club.statut }}</span>
+                  </div>
+                  <p class="post-info">Exercice : <strong>{{ club.exerciceLibelle }}</strong></p>
+                  <div class="club-stats-row">
+                    <span><strong>{{ club.matchsJoues }}</strong> Matchs</span>
+                    <span class="dot-separator">•</span>
+                    <span><strong>{{ club.buts }}</strong> Buts</span>
+                    <span class="dot-separator">•</span>
+                    <span><strong>{{ club.passes }}</strong> Passes</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="empty-history" *ngIf="!playerProfile.historiqueClubs || playerProfile.historiqueClubs.length === 0">
+                <p>Ce joueur n'est associé à aucun groupe "2-0" pour le moment.</p>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>play_circle_outline</mat-icon>
           <span>Vidéos du Stade</span>
         </ng-template>
-        <div class="tab-content empty-videos">
-          <mat-icon class="placeholder-icon">video_library</mat-icon>
-          <h3>Bientôt disponible</h3>
-          <p>Le téléversement et le visionnage de vidéos de matchs arrivent très vite sur la plateforme !</p>
+        
+        <div class="tab-content">
+          
+          <div class="center-container" *ngIf="isLoadingVideos">
+            <mat-spinner diameter="35"></mat-spinner>
+            <p>Chargement de la galerie vidéos...</p>
+          </div>
+
+          <div class="media-grid" *ngIf="!isLoadingVideos && playerVideos.length > 0">
+            <div class="media-card" *ngFor="let video of playerVideos" (click)="openLightbox(video.videoUrl)">
+              
+              <div class="media-preview video-wrapper">
+                <video [src]="video.videoUrl" preload="metadata" muted></video>
+                <div class="play-overlay">
+                  <mat-icon>play_arrow</mat-icon>
+                </div>
+                <span class="media-badge type-video">Highlight</span>
+              </div>
+              
+              <div class="media-footer">
+                <h4 class="video-title">{{ video.titre }}</h4>
+                <p class="video-adversaire" *ngIf="video.adversaire">VS {{ video.adversaire }}</p>
+                <p class="video-desc" *ngIf="video.description">{{ video.description }}</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="empty-videos" *ngIf="!isLoadingVideos && playerVideos.length === 0">
+            <mat-icon class="placeholder-icon">video_library</mat-icon>
+            <h3>Aucun moment fort enregistré</h3>
+            <p>Les vidéos de ce joueur apparaîtront dès qu'il en ajoutera depuis les paramètres de modification de son profil.</p>
+          </div>
+
         </div>
       </mat-tab>
 
-    </mat-tab-group>
-
+      </mat-tab-group>
+    </div>
   </div>
+
+ <div class="lightbox-overlay" *ngIf="activeMediaUrl" (click)="closeLightbox()">
+    <button class="close-lightbox-btn" (click)="closeLightbox()">
+      <mat-icon>close</mat-icon>
+    </button>
+    
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <video [src]="activeMediaUrl" controls autoplay class="lightbox-element"></video>
+    </div>
+  </div>
+
 </div>

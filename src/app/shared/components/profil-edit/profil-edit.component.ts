@@ -66,6 +66,8 @@ profilePhotoUrl: string | null = null;
   ethniesList: any[] = [];
   filteredEthniesList: Ethnie[] = [];
   postesList: string[] = [];
+  piedFort: String | null = null;
+
 
   constructor(
     private fb: FormBuilder,
@@ -206,7 +208,7 @@ openPhotoEditionDialog(): void {
       [this.usernameUniqueValidator(userId)] // 🌟 Validateur asynchrone Username
     ],
       email: [ '', 
-      [Validators.required, Validators.minLength(3)],
+      [Validators.minLength(3)],
       [this.emailUniqueValidator(userId)] 
     ],
       
@@ -218,15 +220,16 @@ openPhotoEditionDialog(): void {
 
       // Informations du membre
       nom: ['', [Validators.required, Validators.minLength(2)]],
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
-      date_naissance: ['', Validators.required],
+      prenom: ['', [Validators.minLength(2)]],
+      date_naissance: [''],
       poste: [''],
       roleCo: [{ value: '', disabled: true }],
       sexe: ['', Validators.required],
       cni: [''],
       adresse: [''],
       tel: ['', [Validators.pattern('^[0-9]{9,15}$')]],
-      assurance: [false]
+      assurance: [false],
+      piedFort: [''],
     });
   }
 
@@ -276,6 +279,7 @@ openPhotoEditionDialog(): void {
         quartierHabitation: currentUser.quartierHabitation || '',
         zoneOrigineId: currentUser.zoneOrigine?.id || null,
         ethnieId: currentUser.ethnie?.id || null,
+        piedFort: currentUser.piedFort || '',
       
       });
 
@@ -330,7 +334,7 @@ emailUniqueValidator(currentUserId: number): AsyncValidatorFn {
     
     return of(control.value).pipe(
       delay(500),
-      switchMap(email => this.authService.checkEmailAvailability2(email)),
+      switchMap(email => this.authService.checkEmailAvailability2(email,currentUserId)),
       map((res: any) => (res.available ? null : { emailPris: true })),
       catchError(() => of(null))
     );
@@ -370,11 +374,12 @@ emailUniqueValidator(currentUserId: number): AsyncValidatorFn {
     const currentUserId = this.authService.getUser()?.id || 0;
 
     // 1. On construit l'objet User en forçant le type et en s'assurant que l'ID est présent
-    const userData: User = {
+    const userData: any = {
       ...(this.authService.getUser() as User), // On propage l'utilisateur existant si nécessaire
       id: currentUserId, // L'ID obligatoire résout l'erreur ts(2345)
       username: formData.username,
       email:formData.email,
+      piedFort: formData.piedFort,
       villeHabitation: formData.villeHabitationId ? { id: formData.villeHabitationId } as any : null,
       quartierHabitation: formData.quartierHabitation,
       zoneOrigine: formData.zoneOrigineId ? { id: formData.zoneOrigineId } as any : null,

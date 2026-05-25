@@ -22,7 +22,7 @@ export class MembreService {
   }
 
   // Membres du groupe
-  getGroupMembers(): Observable<Membre[]> {
+  getGroupMembers(): Observable<any[]> {
     return this.http.get<Membre[]>(`${environment.apiUrl}/groupes/membre1`).pipe(
       catchError(err => {
         console.error('Erreur lors de la récupération des membres:', err);

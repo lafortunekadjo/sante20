@@ -32,6 +32,18 @@ export class UserService {
     );
   }
 
+    createUserOnly(user: any): Observable<User> {
+      console.log(user)
+    return this.http.post<User>(`${environment.apiUrl}/user/createUser`, user).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la création de l’utilisateur:', err);
+        return throwError(err);
+      })
+    );
+  }
+
+ 
+
     // getuserByGroup(userId: number): Observable<User> {
     //   return this.http.get<User>(`${environment.apiUrl}/user/${userId}`);
     // }

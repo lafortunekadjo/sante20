@@ -521,35 +521,48 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.newUser.roles = this.rolesToApiFormat(this.selectedRolesArray);
   }
 
-  saveUser(): void {
-    if (this.isCreateFormValid()) {
-      this.isLoading = true;
-      if (!this.isAdmin){
-        this.newUser.groupe = this.authService.getCurrentGroupeId();
-      }
-      console.log(this.newUser)
-      const userData = {
-        ...this.newUser,
-        roles: this.rolesToApiFormat(this.selectedRolesArray),
-        // groupe: this.newUser.groupe.id ? { id: this.newUser.groupe.id } : null
-      };
+saveUser(): void {
+  if (this.isCreateFormValid()) {
+    this.isLoading = true;
 
-      this.adminService.createUser(userData)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: () => {
-            this.showSnackbar('Utilisateur créé avec succès', 'success');
-            this.loadUsers();
-            this.toggleCreateRow();
-          },
-          error: (err) => {
-            console.error('Erreur lors de la création:', err);
-            this.showSnackbar('Erreur lors de la création', 'error');
-            this.isLoading = false;
-          }
-        });
+    // Si l'utilisateur connecté n'est pas admin, on force l'ID du groupe courant
+    if (!this.isAdmin) {
+      this.newUser.groupe = this.authService.getCurrentGroupeId();
     }
+
+    console.log('Données avant formatage:', this.newUser);
+
+    // Extraction et formatage des données à envoyer
+    const userData = {
+      ...this.newUser,
+      roles: this.rolesToApiFormat(this.selectedRolesArray)
+    };
+
+    // ⭐ CHOIX DYNAMIQUE DU SERVICE SELON LE RÔLE ⭐
+    // Si ADMIN -> On appelle la nouvelle fonction (création de l'utilisateur seul)
+    // Si NON-ADMIN -> On appelle l'ancienne fonction (création utilisateur + membre)
+    const request$ = this.isAdmin 
+      ? this.adminService.createUser(userData)
+      : this.adminService.createUserOnly(userData);
+
+    // Exécution de la requête
+    request$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.showSnackbar('Utilisateur créé avec succès', 'success');
+          this.loadUsers();
+          this.toggleCreateRow();
+          this.isLoading = false; // Ne pas oublier de reset le spinner de chargement
+        },
+        error: (err) => {
+          console.error('Erreur lors de la création:', err);
+          this.showSnackbar('Erreur lors de la création de l\'utilisateur', 'error');
+          this.isLoading = false;
+        }
+      });
   }
+}
 
   cancelCreate(): void {
     this.toggleCreateRow();

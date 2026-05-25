@@ -6,9 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../../core/services/auth.service';
-import { PlayerProfile, ProfileService } from '../../../../core/services/profile.service';
-
+import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
 
 @Component({
   selector: 'app-player-profile',
@@ -20,16 +20,23 @@ import { PlayerProfile, ProfileService } from '../../../../core/services/profile
     MatIconModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-    MatDividerModule
+    MatDividerModule,
+    MatButtonModule
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']
 })
 export class PlayerProfileComponent implements OnInit {
-  playerProfile: PlayerProfile | null = null;
+  playerProfile: any | null = null;
   isLoading = true;
   hasError = false;
-  isOwnProfile = false; // Flag pour savoir si c'est le profil de l'utilisateur connecté
+  isOwnProfile = false;
+
+  // Gestion de la visionneuse de médias (Lightbox)
+  activeMediaUrl: string | null = null;
+  activeMediaType: 'image' | 'video' | null = null;
+  playerVideos: VideoHighlight[] = [];
+  isLoadingVideos = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -38,14 +45,38 @@ export class PlayerProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Écouter les changements de paramètres dans l'URL (ex: /p/vanessa)
     this.route.params.subscribe(params => {
       const usernameFromUrl = params['username'];
       if (usernameFromUrl) {
         this.loadProfile(usernameFromUrl);
+        this.loadPlayerVideos(usernameFromUrl);
       }
     });
   }
+
+  private loadPlayerVideos(username: string): void {
+    this.isLoadingVideos = true;
+    this.profileService.getVideosByUsername(username).subscribe({
+      next: (videos) => {
+        this.playerVideos = videos;
+        this.isLoadingVideos = false;
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des vidéos du profil', err);
+        this.isLoadingVideos = false;
+      }
+    });
+  }
+
+  // // --- GESTION DES MÉDIAS (LIGHTBOX) ---
+  
+  // openLightbox(url: string): void {
+  //   this.activeMediaUrl = url;
+  // }
+
+  // closeLightbox(): void {
+  //   this.activeMediaUrl = null;
+  // }
 
   private loadProfile(username: string): void {
     this.isLoading = true;
@@ -56,7 +87,6 @@ export class PlayerProfileComponent implements OnInit {
         this.playerProfile = profile;
         this.isLoading = false;
         
-        // Vérification d'identité
         const currentUser = this.authService.getUser();
         this.isOwnProfile = currentUser?.username === profile.username;
       },
@@ -69,7 +99,24 @@ export class PlayerProfileComponent implements OnInit {
   }
 
   getInitials(): string {
-    if (!this.playerProfile?.username) return '?';
+    if (!this.playerProfile?.username) return '20';
     return this.playerProfile.username.substring(0, 2).toUpperCase();
+  }
+
+  // --- GESTION DES MÉDIAS ---
+  
+  isUrlVideo(url: string): boolean {
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || url.includes('video');
+  }
+
+  openLightbox(url: string): void {
+    this.activeMediaUrl = url;
+    this.activeMediaType = this.isUrlVideo(url) ? 'video' : 'image';
+  }
+
+  closeLightbox(): void {
+    this.activeMediaUrl = null;
+    this.activeMediaType = null;
   }
 }

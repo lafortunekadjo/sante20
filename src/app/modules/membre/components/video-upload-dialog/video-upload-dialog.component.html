@@ -1,1 +1,55 @@
-<p>video-upload-dialog works!</p>
+<div class="upload-dialog-container">
+  <div class="dialog-header-zone">
+    <mat-icon class="title-icon">movie_filter</mat-icon>
+    <h2 mat-dialog-title>Ajouter un Highlight du Stade</h2>
+  </div>
+
+  <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()">
+    <mat-dialog-content class="dialog-scrollable-content">
+      
+      <div class="file-picker-zone" [class.has-file]="selectedFile" (click)="fileInput.click()">
+        <input #fileInput type="file" accept="video/*" (change)="onFileSelected($event)" style="display: none;" />
+        
+        <div class="picker-content">
+          <mat-icon class="upload-icon" *ngIf="!selectedFile">cloud_upload</mat-icon>
+          <mat-icon class="upload-icon success" *ngIf="selectedFile">check_circle</mat-icon>
+          
+          <span class="picker-label" *ngIf="!selectedFile">Cliquez pour sélectionner votre action vidéo</span>
+          <span class="picker-filename" *ngIf="selectedFile">{{ selectedFile.name }}</span>
+          <span class="picker-hint" *ngIf="selectedFile">({{ (selectedFile.size / 1024 / 1024) | number:'1.1-2' }} Mo)</span>
+        </div>
+      </div>
+
+      <div class="form-fields-grid">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Titre de l'action</mat-label>
+          <input matInput formControlName="titre" placeholder="Ex: Reprise de volée en lucarne" />
+          <mat-icon matSuffix class="muted-icon">title</mat-icon>
+          <mat-error *ngIf="uploadForm.get('titre')?.hasError('required')">Le titre est obligatoire</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Adversaire (Optionnel)</mat-label>
+          <input matInput formControlName="adversaire" placeholder="Ex: Dynamic FC" />
+          <mat-icon matSuffix class="muted-icon">sports_soccer</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description ou contexte de l'action</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Racontez votre action (Ex: Passe décisive de Chamberlain...)"></textarea>
+          <mat-icon matSuffix class="muted-icon">description</mat-icon>
+        </mat-form-field>
+      </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions-footer">
+      <button mat-stroked-button type="button" [disabled]="isUploading" mat-dialog-close>Annuler</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="uploadForm.invalid || !selectedFile || isUploading">
+        <mat-spinner diameter="20" *ngIf="isUploading" class="btn-spinner"></mat-spinner>
+        <mat-icon *ngIf="!isUploading">cloud_done</mat-icon>
+        <span>{{ isUploading ? 'Téléversement...' : 'Enregistrer' }}</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>
