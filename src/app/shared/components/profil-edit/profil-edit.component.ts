@@ -266,7 +266,7 @@ openPhotoEditionDialog(): void {
       },
       error: () => {
         // Fallback local si l'API échoue
-        this.postesList = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
+        this.postesList = ['Gardien de but', 'Défenseur Central', 'Arrière Latéral', 'Milieu Défensif', 'Milieu Offensif', 'Ailier', 'Avant-centre'];
       }
     });
       this.profilePhotoUrl = currentUser.profilePhotoUrl || localStorage.getItem('PROFIL_URL_KEY') || null;

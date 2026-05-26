@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-player-profile',
@@ -21,7 +22,8 @@ import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/
     MatTabsModule,
     MatProgressSpinnerModule,
     MatDividerModule,
-    MatButtonModule
+    MatButtonModule,
+    TranslateModule
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']
@@ -41,7 +43,8 @@ export class PlayerProfileComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private profileService: ProfileService,
-    private authService: AuthService
+    private authService: AuthService,
+    private location: Location // Injection pour le bouton retour
   ) {}
 
   ngOnInit(): void {
@@ -52,6 +55,33 @@ export class PlayerProfileComponent implements OnInit {
         this.loadPlayerVideos(usernameFromUrl);
       }
     });
+  }
+
+  calculateAge(dateNaissance: string | Date | undefined | null): number | null {
+  if (!dateNaissance) return null;
+
+  const birthDate = new Date(dateNaissance);
+  
+  // Vérifie si la date est valide
+  if (isNaN(birthDate.getTime())) {
+    return null;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+
+  // Ajuste l'âge si l'anniversaire n'est pas encore passé cette année
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
+  // Action du bouton retour
+  goBackToList(): void {
+    this.location.back();
   }
 
   private loadPlayerVideos(username: string): void {

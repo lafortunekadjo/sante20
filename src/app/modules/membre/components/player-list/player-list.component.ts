@@ -7,11 +7,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PlayerProfile, ProfileService } from '../../../../core/services/profile.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterModule, FormsModule, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, TranslateModule],
   templateUrl: './player-list.component.html',
   styleUrl: './player-list.component.scss'
 })
