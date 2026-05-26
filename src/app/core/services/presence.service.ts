@@ -71,6 +71,7 @@ savePresences(matchId: number, presences: any[]): Observable<void> {
         nomOccasionnel: presence.nomOccasionnel,
         aJoue: presence.aJoue,
         estCapitaine: presence.estCapitaine,
+        estGardien:presence.estGardien,
         buts: presence.buts,
         passes: presence.passes,
         estHommeDuMatch: presence.estHommeDuMatch,

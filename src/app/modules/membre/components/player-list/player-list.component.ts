@@ -43,7 +43,7 @@ export class PlayerListComponent implements OnInit {
     this.profileService.getAllPlayers().subscribe({
       next: (data) => {
         this.players = data;
-        
+        console.log(data)
         // Extraire dynamiquement la liste des quartiers pour alimenter le filtre dropdown
         const setQuartiers = new Set(data.map(p => p.quartier).filter(q => q && q !== 'Non renseigné'));
         this.quartiersDisponibles = Array.from(setQuartiers).sort();
