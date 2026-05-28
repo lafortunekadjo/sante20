@@ -30,8 +30,25 @@ export interface PlayerProfile {
   butsEncaisses: number;
   cleanSheets: number;
   historiqueClubs: MembreHistory[];
+  historiqueSaisons: SaisonStats[];
   mediaUrls?: string[];
 
+}
+
+export interface SaisonStats {
+  exerciceId: number;
+  exerciceLibelle: string;
+  dateDebut: string;       // Reçu sous forme de chaîne ISO (AAAA-MM-JJ)
+  dateFin: string;
+  clubNom: string | null;
+  statut: string | null;
+  matchsJoues: number;
+  buts: number;
+  passes: number;
+  penaltys: number;
+  cartons: number;
+  butsEncaisses: number;
+  cleanSheets: number;
 }
 
 export interface MembreHistory {

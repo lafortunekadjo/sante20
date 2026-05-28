@@ -94,39 +94,78 @@
           </div>
         </mat-tab>
 
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon>history</mat-icon>
-            <span>{{ 'profile.tabs.club_history' | translate }}</span>
-          </ng-template>
-          <div class="tab-content">
-            <div class="timeline-list">
-              <div class="timeline-item" 
-                   *ngFor="let club of playerProfile.historiqueClubs"
-                   [class.active-club]="club.statut === 'Actif'">
-                <mat-icon class="club-marker">shield</mat-icon>
-                <div class="club-details">
-                  <div class="club-header">
-                    <h3>{{ club.clubNom }}</h3>
-                    <span class="status-tag">{{ club.statut }}</span>
-                  </div>
-                  <p class="post-info">{{ 'profile.club.exercise_label' | translate }} : <strong>{{ club.saison }}</strong></p>
-                  <div class="club-stats-row">
-                    <span><strong>{{ club.matchsJoues }}</strong> {{ 'directory.stats.matches' | translate }}</span>
-                    <span class="dot-separator">•</span>
-                    <span><strong>{{ club.buts }}</strong> {{ 'directory.stats.goals' | translate }}</span>
-                    <span class="dot-separator">•</span>
-                    <span><strong>{{ club.passes }}</strong> {{ 'directory.stats.assists' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="empty-history" *ngIf="!playerProfile.historiqueClubs || playerProfile.historiqueClubs.length === 0">
-                <p>{{ 'profile.club.empty_title' | translate }}</p>
-              </div>
-            </div>
+       <mat-tab>
+  <ng-template mat-tab-label>
+    <mat-icon>history</mat-icon>
+    <span>{{ 'profile.tabs.club_history' | translate }}</span>
+  </ng-template>
+  
+  <div class="tab-content">
+    
+    <mat-accordion class="saisons-accordion" multipanel *ngIf="playerProfile?.historiqueSaisons && playerProfile.historiqueSaisons.length > 0">
+      
+      <mat-expansion-panel *ngFor="let saison of playerProfile.historiqueSaisons; let isFirst = first" [expanded]="isFirst">
+        
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="season-icon">calendar_today</mat-icon>
+            <strong>{{ saison.exerciceLibelle }}</strong>
+          </mat-panel-title>
+          <mat-panel-description>
+            <span class="club-name-tag" *ngIf="saison.clubNom">
+              ⚽ {{ saison.clubNom }} 
+              <span class="status-badge" [class.active]="saison.statut === 'Actif'">{{ saison.statut }}</span>
+            </span>
+            <span *ngIf="!saison.clubNom" class="no-club-tag">{{ 'directory.sort.hors_club' | translate }}</span>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="season-stats-grid">
+          
+          <div class="stat-card-box">
+            <span class="stat-label">{{ 'directory.sort.matches_played' | translate }}</span>
+            <span class="stat-value">👕 {{ saison.matchsJoues }}</span>
           </div>
-        </mat-tab>
+
+          <ng-container *ngIf="saison.cleanSheets > 0 || saison.butsEncaisses > 0; else joueurChampStats">
+            <div class="stat-card-box goalie">
+              <span class="stat-label">{{ 'directory.sort.clean_sheets' | translate }}</span>
+              <span class="stat-value">🧤 {{ saison.cleanSheets }}</span>
+            </div>
+            <div class="stat-card-box goalie">
+              <span class="stat-label">{{'directory.sort.but_encaisses'| translate }}</span>
+              <span class="stat-value">🥅 {{ saison.butsEncaisses }}</span>
+            </div>
+          </ng-container>
+
+          <ng-template #joueurChampStats>
+            <div class="stat-card-box">
+              <span class="stat-label">{{'directory.sort.but_marques'| translate }}</span>
+              <span class="stat-value">⚽ {{ saison.buts }} <small *ngIf="saison.penaltys > 0">({{ saison.penaltys }} pen)</small></span>
+            </div>
+            <div class="stat-card-box">
+              <span class="stat-label">{{'directory.sort.passeD'| translate }}</span>
+              <span class="stat-value">🎯 {{ saison.passes }}</span>
+            </div>
+          </ng-template>
+
+          <div class="stat-card-box">
+            <span class="stat-label">{{'directory.sort.cartons'| translate }}</span>
+            <span class="stat-value">🟨🟥 {{ saison.cartons }}</span>
+          </div>
+
+        </div>
+
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    <div class="empty-history" *ngIf="!playerProfile?.historiqueSaisons || playerProfile.historiqueSaisons.length === 0">
+      <mat-icon class="placeholder-icon">history_toggle_off</mat-icon>
+      <h3>{{ 'profile.club.empty_title' | translate }}</h3>
+    </div>
+
+  </div>
+</mat-tab>
 
         <mat-tab>
         <ng-template mat-tab-label>

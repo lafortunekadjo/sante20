@@ -10,6 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { MatExpansionModule } from '@angular/material/expansion';
 
 @Component({
   selector: 'app-player-profile',
@@ -23,7 +24,8 @@ import { TranslateModule } from '@ngx-translate/core';
     MatProgressSpinnerModule,
     MatDividerModule,
     MatButtonModule,
-    TranslateModule
+    TranslateModule,
+    MatExpansionModule,
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']
@@ -116,7 +118,7 @@ export class PlayerProfileComponent implements OnInit {
       next: (profile) => {
         this.playerProfile = profile;
         this.isLoading = false;
-        
+        console.log(this.playerProfile)
         const currentUser = this.authService.getUser();
         this.isOwnProfile = currentUser?.username === profile.username;
       },
