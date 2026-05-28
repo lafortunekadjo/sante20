@@ -55,17 +55,23 @@ export class PlayerListComponent implements OnInit {
     });
   }
 
-  applyAdvancedFilters(): void {
-    this.filteredPlayers = this.players.filter(player => {
-      const matchesSearch = player.username.toLowerCase().includes(this.searchQuery.toLowerCase());
-      const matchesPoste = this.selectedPoste === 'all' || player.poste === this.selectedPoste;
-      const matchesPied = this.selectedPied === 'all' || player.piedFort === this.selectedPied;
-      const matchesSexe = this.selectedSexe === 'all' || player.sexe === this.selectedSexe;
-      const matchesQuartier = this.selectedQuartier === 'all' || player.quartier === this.selectedQuartier;
-      const matchesGoals = this.minGoals === null || (player.totalButsGlobal || 0) >= this.minGoals;
+ applyAdvancedFilters(): void {
+  this.filteredPlayers = this.players.filter(player => {
+    const matchesSearch = player.username.toLowerCase().includes(this.searchQuery.toLowerCase());
+    const matchesPoste = this.selectedPoste === 'all' || player.poste === this.selectedPoste;
+    const matchesPied = this.selectedPied === 'all' || player.piedFort === this.selectedPied;
+    
+    // GESTION SOUPLE DU SEXE (M/Masculin, F/Féminin)
+    // 1. Récupère la première lettre du sexe du joueur en majuscule (ex: 'M' ou 'F')
+    const playerSexeLetter = player.sexe ? player.sexe.trim().toUpperCase().charAt(0) : '';
+    // 2. Vérifie si le filtre correspond à cette lettre
+    const matchesSexe = this.selectedSexe === 'all' || playerSexeLetter === this.selectedSexe.toUpperCase().charAt(0);
 
-      return matchesSearch && matchesPoste && matchesPied && matchesSexe && matchesQuartier && matchesGoals;
-    });
+    const matchesQuartier = this.selectedQuartier === 'all' || player.quartier === this.selectedQuartier;
+    const matchesGoals = this.minGoals === null || (player.totalButsGlobal || 0) >= this.minGoals;
+
+    return matchesSearch && matchesPoste && matchesPied && matchesSexe && matchesQuartier && matchesGoals;
+  });
 
     this.sortResults();
   }
