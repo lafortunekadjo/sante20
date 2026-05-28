@@ -27,6 +27,7 @@ import { PropertyDescriptorParsingType } from 'html2canvas/dist/types/css/IPrope
 import { ProfileImageEditDialogComponent } from '../profile-image-edit-dialog/profile-image-edit-dialog.component';
 import { Observable, of, delay, switchMap, map, catchError } from 'rxjs';
 import { VideoUploadDialogComponent } from '../../../modules/membre/components/video-upload-dialog/video-upload-dialog.component';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-profil-edit',
@@ -50,7 +51,8 @@ import { VideoUploadDialogComponent } from '../../../modules/membre/components/v
     MatNativeDateModule,
     MatDividerModule,
     MatTooltipModule,
-    TranslateModule
+    TranslateModule,
+    MatSlideToggleModule
   ]
 })
 export class ProfilEditComponent implements OnInit {
@@ -213,7 +215,7 @@ openPhotoEditionDialog(): void {
     ],
       
       // Configuration des champs (Quartier, Origine et Ethnie sont désormais OPTIONNELS)
-      villeHabitationId: [null, Validators.required], // Seule la ville reste requise pour la localisation globale
+      villeHabitationId: [null], // Seule la ville reste requise pour la localisation globale
       quartierHabitation: [''], 
       zoneOrigineId: [null],
       ethnieId: [null],
@@ -230,6 +232,7 @@ openPhotoEditionDialog(): void {
       tel: ['', [Validators.pattern('^[0-9]{9,15}$')]],
       assurance: [false],
       piedFort: [''],
+      isPublic: ['']
     });
   }
 
@@ -280,9 +283,10 @@ openPhotoEditionDialog(): void {
         zoneOrigineId: currentUser.zoneOrigine?.id || null,
         ethnieId: currentUser.ethnie?.id || null,
         piedFort: currentUser.piedFort || '',
+        isPublic: currentUser.public ,
       
       });
-
+      console.log(this.profileForm)
       this.memberService.getMembreByUserId(this.memberId).subscribe({
   next: (membre: Membre) => {
     if (membre) {
@@ -296,7 +300,8 @@ openPhotoEditionDialog(): void {
         cni: membre.cni || '',
         adresse: membre.adresse || '',
         tel: membre.tel || '',
-        assurance: membre.assurance || false
+        assurance: membre.assurance || false,
+      
       });
       this.initialFormValues = this.profileForm.getRawValue();
     }
@@ -383,7 +388,8 @@ emailUniqueValidator(currentUserId: number): AsyncValidatorFn {
       villeHabitation: formData.villeHabitationId ? { id: formData.villeHabitationId } as any : null,
       quartierHabitation: formData.quartierHabitation,
       zoneOrigine: formData.zoneOrigineId ? { id: formData.zoneOrigineId } as any : null,
-      ethnie: formData.ethnieId ? { id: formData.ethnieId } as any : null
+      ethnie: formData.ethnieId ? { id: formData.ethnieId } as any : null,
+      isPublic: formData.isPublic ?? true
     };
 
     // 2. Données du membre (Reste inchangé)

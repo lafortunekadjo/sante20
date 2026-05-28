@@ -32,6 +32,7 @@ export interface PlayerProfile {
   historiqueClubs: MembreHistory[];
   historiqueSaisons: SaisonStats[];
   mediaUrls?: string[];
+  isPublic?: boolean;
 
 }
 
@@ -85,6 +86,10 @@ export class ProfileService {
   getProfileByUsername(username: string): Observable<PlayerProfile> {
     return this.http.get<PlayerProfile>(`${this.apiUrl}/${username}`);
   }
+
+  deleteVideo(videoId: number, username: string): Observable<any> {
+  return this.http.delete(`${this.apiUrl2}/${videoId}/${username}`);
+}
   
   /**
  * Envoie le FormData (Fichier vidéo binaire + métadonnées) à l'API Spring Boot

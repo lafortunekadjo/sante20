@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -11,6 +11,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-player-profile',
@@ -26,6 +27,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
     MatButtonModule,
     TranslateModule,
     MatExpansionModule,
+    MatSlideToggleModule
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']
@@ -48,6 +50,11 @@ export class PlayerProfileComponent implements OnInit {
     private authService: AuthService,
     private location: Location // Injection pour le bouton retour
   ) {}
+
+  @HostListener('window:blur', ['$event'])
+    onWindowBlur() {
+      this.closeLightbox(); // Ferme immédiatement la photo si la fenêtre perd le focus
+    }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -130,6 +137,16 @@ export class PlayerProfileComponent implements OnInit {
     });
   }
 
+  
+
+  // À ajouter dans ta classe PlayerProfileComponent
+openPhotoLightbox(photoUrl: string | null): void {
+  if (photoUrl) {
+    this.activeMediaUrl = photoUrl;
+    // Si tu as un booléen ou un string pour suivre le type de média (ex: activeMediaType = 'image') ajoute-le ici
+  }
+}
+
   getInitials(): string {
     if (!this.playerProfile?.username) return '20';
     return this.playerProfile.username.substring(0, 2).toUpperCase();
@@ -152,3 +169,5 @@ export class PlayerProfileComponent implements OnInit {
     this.activeMediaType = null;
   }
 }
+
+

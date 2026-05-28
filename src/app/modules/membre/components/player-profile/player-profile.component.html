@@ -17,27 +17,67 @@
       </button>
     </div>
     
+<div class="private-profile-fallback" *ngIf="!playerProfile.public && !isOwnProfile">
+  <div class="fallback-card">
+    
+    <div class="icon-container">
+      <div class="pulse-glow"></div>
+      <mat-icon class="lock-icon">security</mat-icon>
+    </div>
 
-  <div class="profile-container" *ngIf="playerProfile && !isLoading">
+    <h2>{{ 'profile.visibility.private_title' | translate }}</h2>
+    <div class="divider-line"></div>
+    <p>{{ 'profile.visibility.private_profile_message' | translate }}</p>
+
+    <div class="brand-watermark">My2-0 Secure</div>
+  </div>
+</div>
+
+  <div class="profile-container" *ngIf="(playerProfile && !isLoading && playerProfile.public) || isOwnProfile ">
     
     <div class="profile-card-header">
       <div class="profile-cover"></div>
       <div class="profile-avatar-row">
-        <div class="avatar-wrapper">
-          <img *ngIf="playerProfile.profilePhotoUrl" [src]="playerProfile.profilePhotoUrl" alt="Avatar joueur">
-          <div *ngIf="!playerProfile.profilePhotoUrl" class="avatar-initials">{{ getInitials() }}</div>
+        <div class="avatar-wrapper" style="cursor: zoom-in;">
+          <img *ngIf="playerProfile.profilePhotoUrl" 
+              [src]="playerProfile.profilePhotoUrl" 
+              alt="Avatar joueur"
+              (click)="openPhotoLightbox(playerProfile.profilePhotoUrl)">
+              
+          <div *ngIf="!playerProfile.profilePhotoUrl" 
+              class="avatar-initials">
+              {{ getInitials() }}
+          </div>
         </div>
         
         <div class="player-main-info">
-          <div class="name-badge-row">
-            <h1>&#64;{{ playerProfile.username }}</h1>
-            <span class="own-profile-badge" *ngIf="isOwnProfile">{{ 'profile.badges.own_profile' | translate }}</span>
-          </div>
+         <div class="name-badge-row" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <h1 style="margin: 0;">&#64;{{ playerProfile.username }}</h1>
+          
+          <span class="own-profile-badge" *ngIf="isOwnProfile" 
+                style="display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 20px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);">
+            <span style="width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; margin-right: 6px; display: inline-block;"></span>
+            {{ 'profile.badges.own_profile' | translate }}
+          </span>
+        </div>
+          <div class="visibility-toggle-zone" *ngIf="isOwnProfile && playerProfile">
+            <span class="visibility-label">
+              <mat-icon>{{ playerProfile.public ? 'visibility' : 'visibility_off' }}</mat-icon>
+              {{ (playerProfile.public ? 'profile.visibility.public' : 'profile.visibility.private') | translate }}
+            </span>
+            
+            <!-- <mat-slide-toggle 
+              [checked]="playerProfile.isPublic" 
+              (change)="toggleProfileVisibility($event.checked)"
+              color="primary">
+            </mat-slide-toggle> -->
+        </div>
           <p class="player-meta">
             <mat-icon>location_on</mat-icon>
             <span>Douala, {{ playerProfile.quartier }}</span>
           </p>
         </div>
+
       </div>
 
       <div class="stats-ribbon-grid">
@@ -159,6 +199,11 @@
       </mat-expansion-panel>
     </mat-accordion>
 
+    <!-- <span class="private-status-badge" *ngIf="!playerProfile.isPublic && isOwnProfile">
+              <mat-icon>visibility_off</mat-icon>
+              {{ 'profile.visibility.private_badge' | translate }}
+    </span> -->
+
     <div class="empty-history" *ngIf="!playerProfile?.historiqueSaisons || playerProfile.historiqueSaisons.length === 0">
       <mat-icon class="placeholder-icon">history_toggle_off</mat-icon>
       <h3>{{ 'profile.club.empty_title' | translate }}</h3>
@@ -213,14 +258,36 @@
     </div>
   </div>
 
- <div class="lightbox-overlay" *ngIf="activeMediaUrl" (click)="closeLightbox()">
-    <button class="close-lightbox-btn" (click)="closeLightbox()">
-      <mat-icon>close</mat-icon>
-    </button>
+<div class="lightbox-overlay" *ngIf="activeMediaUrl" (click)="closeLightbox()">
+  <button class="close-lightbox-btn" (click)="closeLightbox()">
+    <mat-icon>close</mat-icon>
+  </button>
+  
+  <div class="lightbox-content" (click)="$event.stopPropagation()">
     
-    <div class="lightbox-content" (click)="$event.stopPropagation()">
-      <video [src]="activeMediaUrl" controls autoplay class="lightbox-element"></video>
-    </div>
+    <ng-container *ngIf="!activeMediaUrl.includes('.mp4') && !activeMediaUrl.includes('.webm')">
+      <div class="lightbox-image-wrapper">
+        <img [src]="activeMediaUrl" 
+             class="lightbox-element image-mode"
+             (contextmenu)="$event.preventDefault()" 
+             (dragstart)="$event.preventDefault()"
+             alt="Pofil agrandi" />
+             
+        <div class="lightbox-watermark">
+          MY2-0 • {{ playerProfile?.username }}
+        </div>
+      </div>
+    </ng-container>
+
+    <video *ngIf="activeMediaUrl.includes('.mp4') || activeMediaUrl.includes('.webm')" 
+           [src]="activeMediaUrl" 
+           controls 
+           autoplay 
+           (contextmenu)="$event.preventDefault()"
+           class="lightbox-element">
+    </video>
+
   </div>
+</div>
 
 </div>

@@ -299,6 +299,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.router.navigate(['/settings']);
   }
 
+  openVideoEdit(): void{
+    this.router.navigate(['/membre/videos']);
+  }
+
   changeRole(role: string): void {
     this.selectedRole = role;
     this.authService.setCurrentRole(role);
