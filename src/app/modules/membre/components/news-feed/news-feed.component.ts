@@ -104,6 +104,8 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exerciceDateDebut: Date | null = null;
   exerciceDateFin: Date | null = null;
   isOpeningDialog = false;
+  expandedAnnouncements = new Set<number>();
+  readonly maxTextLength = 150;
 
   constructor(
     private generalService: GeneralService,
@@ -128,6 +130,23 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     this.loadGroupeAndExercice();
     this.loadAnnouncements();
   }
+
+  toggleExpand(id: number | undefined): void {
+  if (!id) return;
+  if (this.expandedAnnouncements.has(id)) {
+    this.expandedAnnouncements.delete(id);
+  } else {
+    this.expandedAnnouncements.add(id);
+  }
+}
+
+isExpanded(id: number | undefined): boolean {
+  return id ? this.expandedAnnouncements.has(id) : false;
+}
+
+shouldTruncate(content: string): boolean {
+  return content ? content.length > this.maxTextLength : false;
+}
 
   loadAnnouncements(): void {
     const userId = this.authService.getUserId();

@@ -109,27 +109,63 @@
       <p>{{ 'announcement.list.empty' | translate }}</p>
     </div>
 
-    <mat-card class="announcement-news-item glass-effect" *ngFor="let actu of filteredAnnouncements">
-      <mat-card-header>
-        <div mat-card-avatar class="news-avatar">📢</div>
-        <mat-card-title>{{ actu.title }}</mat-card-title>
-        <mat-card-subtitle class="muted-subtitle">
-          {{ actu.date | date:'dd/MM/yyyy HH:mm' }} 
-          <span *ngIf="actu.createur"> • Par {{ actu.createur.nom }}</span>
-        </mat-card-subtitle>
-        
-        <div class="card-admin-actions">
-          <button mat-icon-button (click)="editAnnouncement(actu)" color="accent">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button (click)="deleteAnnouncement(actu.id)" color="warn">
-            <mat-icon>delete_forever</mat-icon>
-          </button>
-        </div>
-      </mat-card-header>
+    <mat-card class="announcement-news-item glass-effect" 
+          *ngFor="let actu of filteredAnnouncements"
+          [class.disabled-announcement]="actu.actifSeulement === false"> <mat-card-header>
+    <div mat-card-avatar class="news-avatar">📢</div>
+    <mat-card-title>
+      {{ actu.title }}
+      <span *ngIf="actu.actifSeulement === false" class="inactive-badge">
+        ({{ 'common.inactive' | translate }})
+      </span>
+    </mat-card-title>
+    <mat-card-subtitle class="muted-subtitle">
+      {{ actu.date | date:'dd/MM/yyyy HH:mm' }} 
+      <span *ngIf="actu.createur"> • Par {{ actu.createur.nom }}</span>
+    </mat-card-subtitle>
+    
+    <div class="card-admin-actions">
+      <button mat-icon-button 
+              (click)="toggleAnnouncementStatus(actu)" 
+              [color]="actu.actifSeulement !== false ? 'primary' : 'default'"
+              [matTooltip]="(actu.actifSeulement !== false ? 'common.deactivate' : 'common.activate') | translate">
+        <mat-icon>{{ actu.actifSeulement !== false ? 'visibility' : 'visibility_off' }}</mat-icon>
+      </button>
+
+      <button mat-icon-button (click)="editAnnouncement(actu)" color="accent">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button mat-icon-button (click)="deleteAnnouncement(actu.id)" color="warn">
+        <mat-icon>delete_forever</mat-icon>
+      </button>
+    </div>
+  </mat-card-header>
 
       <mat-card-content>
-        <p class="announcement-text">{{ actu.content }}</p>
+        <p class="announcement-text">
+          <ng-container *ngIf="shouldTruncate(actu.content) && !isExpanded(actu.id)">
+            {{ actu.content | slice:0:maxTextLength }}...
+          </ng-container>
+          
+          <ng-container *ngIf="!shouldTruncate(actu.content) || isExpanded(actu.id)">
+            {{ actu.content }}
+          </ng-container>
+
+         <button *ngIf="shouldTruncate(actu.content)" 
+                  type="button"
+                  class="read-more-btn" 
+                  (click)="toggleExpand(actu.id)">
+            
+            <ng-container *ngIf="isExpanded(actu.id)">
+              {{ 'common.readLess' | translate }}
+            </ng-container>
+
+            <ng-container *ngIf="!isExpanded(actu.id)">
+              {{ 'common.readMore' | translate }}
+            </ng-container>
+
+          </button>
+        </p>
       </mat-card-content>
 
       <mat-card-actions class="news-tags-footer">

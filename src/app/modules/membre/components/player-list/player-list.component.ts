@@ -8,11 +8,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PlayerProfile, ProfileService } from '../../../../core/services/profile.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { MatOptionModule } from '@angular/material/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [CommonModule, RouterModule, FormsModule, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, TranslateModule, MatOptionModule,MatFormFieldModule,
+    MatSelectModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule],
   templateUrl: './player-list.component.html',
   styleUrl: './player-list.component.scss'
 })
@@ -32,14 +39,20 @@ export class PlayerListComponent implements OnInit {
 
   // Liste unique des quartiers détectés dynamiquement depuis le backend
   quartiersDisponibles: string[] = [];
+  selectedPostes: string[] = [];
+selectedQuartiers: string[] = [];
 
   // Comparateur
   comparedPlayers: PlayerProfile[] = [];
   showComparisonModal = false;
+  showMobileFilters: boolean = true;
 
   constructor(private profileService: ProfileService) {}
 
   ngOnInit(): void {
+    if (window.innerWidth <= 768) {
+    this.showMobileFilters = false;
+  }
     this.profileService.getAllPlayers().subscribe({
       next: (data) => {
         this.players = data;
@@ -55,10 +68,17 @@ export class PlayerListComponent implements OnInit {
     });
   }
 
+  // 2. Ajoute cette fonction pour intercepter le clic de réduction
+toggleMobileFilters(): void {
+  if (window.innerWidth <= 768) {
+    this.showMobileFilters = !this.showMobileFilters;
+  }
+}
+
  applyAdvancedFilters(): void {
   this.filteredPlayers = this.players.filter(player => {
     const matchesSearch = player.username.toLowerCase().includes(this.searchQuery.toLowerCase());
-    const matchesPoste = this.selectedPoste === 'all' || player.poste === this.selectedPoste;
+    const matchesPoste = this.selectedPostes.length === 0 || this.selectedPostes.includes(player.poste);
     const matchesPied = this.selectedPied === 'all' || player.piedFort === this.selectedPied;
     
     // GESTION SOUPLE DU SEXE (M/Masculin, F/Féminin)
@@ -67,7 +87,7 @@ export class PlayerListComponent implements OnInit {
     // 2. Vérifie si le filtre correspond à cette lettre
     const matchesSexe = this.selectedSexe === 'all' || playerSexeLetter === this.selectedSexe.toUpperCase().charAt(0);
 
-    const matchesQuartier = this.selectedQuartier === 'all' || player.quartier === this.selectedQuartier;
+    const matchesQuartier = this.selectedQuartiers.length === 0 || this.selectedQuartiers.includes(player.quartier);
     const matchesGoals = this.minGoals === null || (player.totalButsGlobal || 0) >= this.minGoals;
 
     return matchesSearch && matchesPoste && matchesPied && matchesSexe && matchesQuartier && matchesGoals;
@@ -104,6 +124,8 @@ export class PlayerListComponent implements OnInit {
     this.selectedQuartier = 'all';
     this.minGoals = null;
     this.sortBy = 'butsDesc';
+    this.selectedPostes = [];
+    this.selectedQuartiers = [];
     this.applyAdvancedFilters();
   }
 

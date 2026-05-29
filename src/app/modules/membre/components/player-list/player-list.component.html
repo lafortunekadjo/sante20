@@ -4,13 +4,18 @@
     <p>{{ 'directory.subtitle' | translate }}</p>
   </div>
 
-  <div class="filters-panel-card">
-    <div class="panel-header">
-      <mat-icon>tune</mat-icon>
-      <h2>{{ 'directory.filters.title' | translate }}</h2>
+ <div class="filters-panel-card">
+    <div class="panel-header" (click)="toggleMobileFilters()">
+      <div class="header-title">
+        <mat-icon>tune</mat-icon>
+        <h2>{{ 'directory.filters.title' | translate }}</h2>
+      </div>
+      <button mat-icon-button class="btn-toggle-filters">
+        <mat-icon>{{ showMobileFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
     </div>
     
-    <div class="filters-grid-layout">
+    <div class="filters-grid-layout" [class.is-hidden-mobile]="!showMobileFilters">
       <div class="filter-field-wrapper input-search">
         <label>{{ 'directory.filters.player_label' | translate }}</label>
         <div class="search-input-box">
@@ -21,16 +26,17 @@
 
       <div class="filter-field-wrapper">
         <label>{{ 'directory.filters.position_label' | translate }}</label>
-        <select [(ngModel)]="selectedPoste" (change)="applyAdvancedFilters()">
-          <option value="all">{{ 'directory.filters.all_positions' | translate }}</option>
-          <option value="Gardien de but">{{ 'directory.positions.goalkeeper' | translate }}</option>
-          <option value="Défenseur Central">{{ 'directory.positions.center_back' | translate }}</option>
-          <option value="Arrière Latéral">{{ 'directory.positions.full_back' | translate }}</option>
-          <option value="Milieu Défensif">{{ 'directory.positions.defensive_midfielder' | translate }}</option>
-          <option value="Milieu Offensif">{{ 'directory.positions.attacking_midfielder' | translate }}</option>
-          <option value="Ailier">{{ 'directory.positions.winger' | translate }}</option>
-          <option value="Avant-centre">{{ 'directory.positions.striker' | translate }}</option>
-        </select>
+        <mat-form-field class="custom-mat-form-field" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="selectedPostes" (selectionChange)="applyAdvancedFilters()" multiple [placeholder]="'directory.filters.all_positions' | translate">
+            <mat-option value="Gardien de but">{{ 'directory.positions.goalkeeper' | translate }}</mat-option>
+            <mat-option value="Défenseur Central">{{ 'directory.positions.center_back' | translate }}</mat-option>
+            <mat-option value="Arrière Latéral">{{ 'directory.positions.full_back' | translate }}</mat-option>
+            <mat-option value="Milieu Défensif">{{ 'directory.positions.defensive_midfielder' | translate }}</mat-option>
+            <mat-option value="Milieu Offensif">{{ 'directory.positions.attacking_midfielder' | translate }}</mat-option>
+            <mat-option value="Ailier">{{ 'directory.positions.winger' | translate }}</mat-option>
+            <mat-option value="Avant-centre">{{ 'directory.positions.striker' | translate }}</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
 
       <div class="filter-field-wrapper">
@@ -54,10 +60,11 @@
 
       <div class="filter-field-wrapper">
         <label>{{ 'directory.filters.neighborhood_label' | translate }}</label>
-        <select [(ngModel)]="selectedQuartier" (change)="applyAdvancedFilters()">
-          <option value="all">{{ 'directory.filters.all_neighborhoods' | translate }}</option>
-          <option *ngFor="let q of quartiersDisponibles" [value]="q">{{ q }}</option>
-        </select>
+        <mat-form-field class="custom-mat-form-field" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="selectedQuartiers" (selectionChange)="applyAdvancedFilters()" multiple [placeholder]="'directory.filters.all_neighborhoods' | translate">
+            <mat-option *ngFor="let q of quartiersDisponibles" [value]="q">{{ q }}</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
 
       <div class="filter-field-wrapper">
@@ -72,7 +79,7 @@
       </div>
     </div>
 
-    <div class="panel-actions" *ngIf="searchQuery || selectedPoste !== 'all' || selectedPied !== 'all' || selectedSexe !== 'all' || selectedQuartier !== 'all'">
+    <div class="panel-actions" *ngIf="(searchQuery || selectedPostes.length > 0 || selectedPied !== 'all' || selectedSexe !== 'all' || selectedQuartiers.length > 0) && showMobileFilters">
       <button class="btn-reset" (click)="resetFilters()">
         <mat-icon>backspace</mat-icon> {{ 'directory.filters.clear_btn' | translate }}
       </button>
@@ -135,11 +142,11 @@
     </div>
   </div>
 
-  <div class="comparison-modal-backdrop" *ngIf="showComparisonModal">
-    <div class="comparison-modal-box">
+  <div class="comparison-modal-backdrop" *ngIf="showComparisonModal" (click)="closeComparison()">
+    <div class="comparison-modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2><mat-icon>military_tech</mat-icon> {{ 'directory.compare.modal_title' | translate }}</h2>
-        <button mat-icon-button (click)="closeComparison()"><mat-icon>close</mat-icon></button>
+        <button mat-icon-button class="btn-close-modal" (click)="closeComparison()"><mat-icon>close</mat-icon></button>
       </div>
 
       <div class="modal-body-table-wrapper">
@@ -156,14 +163,14 @@
             <tr><td>{{ 'directory.compare.matches_played' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">{{ p.totalMatchsJoues }}</td></tr>
             <tr><td>{{ 'directory.compare.goals_scored' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">⚽ {{ p.totalButsGlobal }} ({{ p.totalPenaltysGlobal }} pen)</td></tr>
             <tr><td>{{ 'directory.compare.assists' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight" style="color: #059669;">🎯 {{ p.totalPassesGlobal }}</td></tr>
-            <tr><td>{{ 'directory.compare.goals_conceded' | translate }}</td><td *ngFor="let p of comparedPlayers">🥅 {{  p.butsEncaisses }}</td></tr>
+            <tr><td>{{ 'directory.compare.goals_conceded' | translate }}</td><td *ngFor="let p of comparedPlayers">🥅 {{ p.butsEncaisses }}</td></tr>
             <tr><td>{{ 'directory.compare.clean_sheets' | translate }}</td><td *ngFor="let p of comparedPlayers" style="font-weight: bold; color: #1e3a8a;">🧤 {{ p.cleanSheets }}</td></tr>
             <tr><td>{{ 'directory.compare.cards' | translate }}</td><td *ngFor="let p of comparedPlayers">🟨🟥 {{ p.totalCartonsGlobal }}</td></tr>
           </tbody>
         </table>
       </div>
       <div class="modal-footer">
-        <button mat-stroked-button (click)="closeComparison()">{{ 'directory.compare.close_btn' | translate }}</button>
+        <button mat-flat-button color="warn" (click)="closeComparison()">{{ 'directory.compare.close_btn' | translate }}</button>
       </div>
     </div>
   </div>

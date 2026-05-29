@@ -45,6 +45,11 @@ export class AnnouncementService {
     return this.http.put<Announcement>(`${this.apiUrl}/${id}`, announcement);
   }
 
+activate(id: number): Observable<Announcement> {
+  // On passe un objet vide {} comme body pour valider la signature de la méthode PUT
+  return this.http.put<Announcement>(`${this.apiUrl}/activer/${id}`, {});
+}
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

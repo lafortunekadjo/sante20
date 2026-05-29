@@ -12,7 +12,7 @@ import { Groupe } from '../../../../core/models/groupe.model';
 import { of } from 'rxjs';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { map, catchError, finalize } from 'rxjs/operators';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface CalendarDay {
   date: Date;
@@ -57,9 +57,34 @@ interface MatchDetails {
   styleUrl: './calendar.component.scss'
 })
 export class CalendarComponent implements OnInit {
-  dayNamesShort = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-  monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+ get dayNamesShort(): string[] {
+  return [
+    this.translate.instant('calendar.days.sun'),
+    this.translate.instant('calendar.days.mon'),
+    this.translate.instant('calendar.days.tue'),
+    this.translate.instant('calendar.days.wed'),
+    this.translate.instant('calendar.days.thu'),
+    this.translate.instant('calendar.days.fri'),
+    this.translate.instant('calendar.days.sat')
+  ];
+}
+
+get monthNames(): string[] {
+  return [
+    this.translate.instant('calendar.months.jan'),
+    this.translate.instant('calendar.months.feb'),
+    this.translate.instant('calendar.months.mar'),
+    this.translate.instant('calendar.months.apr'),
+    this.translate.instant('calendar.months.may'),
+    this.translate.instant('calendar.months.jun'),
+    this.translate.instant('calendar.months.jul'),
+    this.translate.instant('calendar.months.aug'),
+    this.translate.instant('calendar.months.sep'),
+    this.translate.instant('calendar.months.oct'),
+    this.translate.instant('calendar.months.nov'),
+    this.translate.instant('calendar.months.dec')
+  ];
+}
 
   currentMonth: number;
   currentYear: number;
@@ -76,6 +101,7 @@ export class CalendarComponent implements OnInit {
   constructor(
     private presenceService: PresenceService,
     public dialogRef: MatDialogRef<CalendarComponent>,
+    private translate: TranslateService,
     @Inject(MAT_DIALOG_DATA) public data: { 
       matches: Match[]; 
       jourDeMatch?: string;
@@ -441,33 +467,44 @@ loadMatchDetails(match: any): void {
     return presence.nomOccasionnel || 'Inconnu';
   }
 
-  getEquipeNames(match: Match): [string, string] {
-    if (!match?.typeMatch) return ['Équipe 1', 'Équipe 2'];
-    console.log(match)
-    switch (match.typeMatch) {
-      case 'INTERNE':
-      case 'DUEL':
-        return [
-          match.equipe1?.nom || (match as any).equipe1Nom || 'Équipe 1', 
-          match.equipe2?.nom || (match as any).equipe2Nom || 'Équipe 2'
-        ];
-      case 'AMICAL':
-        const local = this.data.groupeActif?.abreviation || this.data.groupeActif?.nom || 'Nous';
-        let adv = 'Adversaire';
-        if (match.groupeAdverse) {
-          adv = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
-        } else if (match.nomAdversaireManuel) {
-          adv = match.nomAdversaireManuel;
-        } else if ((match as any).adversaire) {
-          adv = (match as any).adversaire;
-        }
-        return [local, adv];
-      case 'ANNIVERSAIRE':
-        return ['Fêtés', 'Adverses'];
-      default:
-        return ['Équipe 1', 'Équipe 2'];
-    }
+ getEquipeNames(match: Match): [string, string] {
+  if (!match?.typeMatch) {
+    return [
+      this.translate.instant('calendar.teams.team1'), 
+      this.translate.instant('calendar.teams.team2')
+    ];
   }
+
+  switch (match.typeMatch) {
+    case 'INTERNE':
+    case 'DUEL':
+      return [
+        match.equipe1?.nom || (match as any).equipe1Nom || this.translate.instant('calendar.teams.team1'), 
+        match.equipe2?.nom || (match as any).equipe2Nom || this.translate.instant('calendar.teams.team2')
+      ];
+    case 'AMICAL':
+      const local = this.data.groupeActif?.abreviation || this.data.groupeActif?.nom || this.translate.instant('calendar.teams.we');
+      let adv = this.translate.instant('calendar.teams.opponent');
+      if (match.groupeAdverse) {
+        adv = match.groupeAdverse.abreviation || match.groupeAdverse.nom;
+      } else if (match.nomAdversaireManuel) {
+        adv = match.nomAdversaireManuel;
+      } else if ((match as any).adversaire) {
+        adv = (match as any).adversaire;
+      }
+      return [local, adv];
+    case 'ANNIVERSAIRE':
+      return [
+        this.translate.instant('calendar.teams.celebrated'), 
+        this.translate.instant('calendar.teams.opposing')
+      ];
+    default:
+      return [
+        this.translate.instant('calendar.teams.team1'), 
+        this.translate.instant('calendar.teams.team2')
+      ];
+  }
+}
 
   getTypeEmoji(type?: TypeMatch): string {
     const emojis: Record<string, string> = {
@@ -479,15 +516,15 @@ loadMatchDetails(match: any): void {
     return emojis[type || ''] || '⚽';
   }
 
-  getTypeLabel(type?: TypeMatch): string {
-    const labels: Record<string, string> = {
-      'INTERNE': 'Interne',
-      'DUEL': 'Duel',
-      'AMICAL': 'Amical',
-      'ANNIVERSAIRE': 'Anniversaire'
-    };
-    return labels[type || ''] || 'Match';
-  }
+getTypeLabel(type?: TypeMatch): string {
+  const labels: Record<string, string> = {
+    'INTERNE': this.translate.instant('calendar.types.internal'),
+    'DUEL': this.translate.instant('calendar.types.duel'),
+    'AMICAL': this.translate.instant('calendar.types.friendly'),
+    'ANNIVERSAIRE': this.translate.instant('calendar.types.birthday')
+  };
+  return labels[type || ''] || this.translate.instant('calendar.types.default');
+}
 
   isMatchPlayed(match: Match): boolean {
     const d = new Date(match.dateMatch); 
@@ -528,11 +565,11 @@ loadMatchDetails(match: any): void {
     return 'future';
   }
 
-  getMatchStatusLabel(match: Match): string {
-    if (this.isMatchPlayed(match)) return 'Terminé';
-    if (this.isMatchMissed(match)) return 'Non validé';
-    return 'À venir';
-  }
+getMatchStatusLabel(match: Match): string {
+  if (this.isMatchPlayed(match)) return this.translate.instant('calendar.status.completed');
+  if (this.isMatchMissed(match)) return this.translate.instant('calendar.status.unvalidated');
+  return this.translate.instant('calendar.status.future');
+}
 
   onClose(): void {
     this.dialogRef.close();

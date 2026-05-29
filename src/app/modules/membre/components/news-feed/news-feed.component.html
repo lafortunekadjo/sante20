@@ -528,17 +528,32 @@
                   </div>
                 </div>
               </div>
-              <div class="demande-content">
-                <p class="announcement-text">{{ announcement.content }}</p>
-              </div>
-              <div class="demande-actions">
-                <div class="primary-actions">
-                  <button mat-stroked-button color="primary">
-                    <span>{{ 'feed.sections.announcements.read_more' | translate }}</span>
-                    <mat-icon>arrow_forward</mat-icon>
-                  </button>
-                </div>
-              </div>
+           <div class="demande-content">
+            <p class="announcement-text">
+              <ng-container *ngIf="shouldTruncate(announcement.content) && !isExpanded(announcement.id)">
+                {{ announcement.content | slice:0:maxTextLength }}...
+              </ng-container>
+              
+              <ng-container *ngIf="!shouldTruncate(announcement.content) || isExpanded(announcement.id)">
+                {{ announcement.content }}
+              </ng-container>
+            </p>
+          </div>
+
+          <div class="demande-actions" *ngIf="shouldTruncate(announcement.content)">
+            <div class="primary-actions">
+              <button mat-stroked-button color="primary" (click)="toggleExpand(announcement.id)">
+                <ng-container *ngIf="isExpanded(announcement.id)">
+                  <span>{{ 'feed.sections.announcements.read_less' | translate  }}</span>
+                  <mat-icon>expand_less</mat-icon>
+                </ng-container>
+                <ng-container *ngIf="!isExpanded(announcement.id)">
+                  <span>{{ 'feed.sections.announcements.read_more' | translate  }}</span>
+                  <mat-icon>expand_more</mat-icon>
+                </ng-container>
+              </button>
+            </div>
+          </div>
             </div>
             <div class="empty-state" *ngIf="groupAnnouncements?.length === 0">
               <div class="empty-illustration">
