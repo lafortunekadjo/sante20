@@ -1,4 +1,6 @@
 <div class="calendar-wrapper" [class.details-open]="selectedMatch()">
+
+  <!-- ===== HEADER ===== -->
   <div class="calendar-header-bar">
     <div class="header-title">
       <mat-icon>calendar_month</mat-icon>
@@ -12,17 +14,63 @@
 
   <div class="calendar-body">
     <div class="calendar-section">
+
+      <!-- ===== HEATMAP ANNUELLE ===== -->
+      <div class="year-heatmap">
+        <div class="year-heatmap-header">
+          <span class="year-heatmap-title">{{ currentYear }}</span>
+          <div class="year-heatmap-legend">
+            <span class="hm-leg"><span class="hm-dot type-interne"></span>{{ 'calendar.types.internal' | translate }}</span>
+            <span class="hm-leg"><span class="hm-dot type-duel"></span>{{ 'calendar.types.duel' | translate }}</span>
+            <span class="hm-leg"><span class="hm-dot type-amical"></span>{{ 'calendar.types.friendly' | translate }}</span>
+            <span class="hm-leg"><span class="hm-dot type-anniversaire"></span>{{ 'calendar.types.birthday' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="year-heatmap-grid">
+          <div class="hm-month-col"
+               *ngFor="let month of monthNames; let mi = index"
+               [class.hm-active-month]="mi === currentMonth"
+               (click)="goToMonth(mi)">
+            <span class="hm-month-label">{{ month.slice(0, 3) }}</span>
+            <div class="hm-dots-wrap">
+              <ng-container *ngFor="let day of calendarDays()">
+                <ng-container *ngIf="day.isCurrentMonth && getMonthIndexForDay(day) === mi">
+                  <ng-container *ngFor="let match of day.matches">
+                    <span class="hm-cell"
+                          [class.type-interne]="match.typeMatch === 'INTERNE'"
+                          [class.type-duel]="match.typeMatch === 'DUEL'"
+                          [class.type-amical]="match.typeMatch === 'AMICAL'"
+                          [class.type-anniversaire]="match.typeMatch === 'ANNIVERSAIRE'"
+                          [class.hm-played]="isMatchPlayed(match)"
+                          [class.hm-future]="isMatchFuture(match)"
+                          [class.hm-missed]="isMatchMissed(match)"
+                          [title]="match.dateMatch | date:'d MMM':'':'fr'">
+                    </span>
+                  </ng-container>
+                </ng-container>
+              </ng-container>
+              <!-- Placeholder si aucun match ce mois -->
+              <span class="hm-cell hm-empty"
+                    *ngIf="getMatchesForMonthIndex(mi).length === 0">
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== NAVIGATION MENSUELLE ===== -->
       <div class="month-nav">
         <button mat-icon-button (click)="previousMonth()">
           <mat-icon>chevron_left</mat-icon>
         </button>
-        
+
         <button mat-button [matMenuTriggerFor]="monthMenu" class="month-label">
           {{ monthNames[currentMonth] }} {{ currentYear }}
           <mat-icon>expand_more</mat-icon>
         </button>
         <mat-menu #monthMenu="matMenu">
-          <button mat-menu-item *ngFor="let month of monthNames; let i = index" 
+          <button mat-menu-item *ngFor="let month of monthNames; let i = index"
                   (click)="goToMonth(i)" [class.active]="i === currentMonth">
             {{ month }}
           </button>
@@ -38,64 +86,84 @@
         </button>
       </div>
 
-      <div class="legend-bar">
-        <span class="legend-item"><span class="dot green"></span>{{ 'calendar.legend.played' | translate }}</span>
-        <span class="legend-item"><span class="dot orange"></span>{{ 'calendar.legend.unvalidated' | translate }}</span>
-        <span class="legend-item"><span class="dot blue"></span>{{ 'calendar.legend.future' | translate }}</span>
+      <!-- ===== STATS MENSUELLES PAR TYPE ===== -->
+      <div class="mini-stats">
+        <div class="stat">
+          <span class="num">{{ monthStats().total }}</span>
+          <span class="label">{{ 'calendar.stats.total' | translate }}</span>
+        </div>
+        <div class="stat type-interne-stat">
+          <span class="num">{{ monthStats().interne }}</span>
+          <span class="label">{{ 'calendar.types.internal' | translate }}</span>
+        </div>
+        <div class="stat type-duel-stat">
+          <span class="num">{{ monthStats().duel }}</span>
+          <span class="label">{{ 'calendar.types.duel' | translate }}</span>
+        </div>
+        <div class="stat type-amical-stat">
+          <span class="num">{{ monthStats().amical }}</span>
+          <span class="label">{{ 'calendar.types.friendly' | translate }}</span>
+        </div>
       </div>
 
+      <!-- ===== GRILLE CALENDRIER ===== -->
       <div class="calendar-grid-container">
         <div class="weekdays">
           <span *ngFor="let day of dayNamesShort">{{ day }}</span>
         </div>
-        
+
         <div class="days-grid">
-          <div *ngFor="let day of calendarDays()" 
+          <div *ngFor="let day of calendarDays()"
                class="day-cell"
                [class.other-month]="!day.isCurrentMonth"
                [class.today]="day.isToday"
                [class.has-matches]="day.matches.length > 0"
                [class.selected]="isDaySelected(day)"
                (click)="onDayClick(day)">
-            
+
             <span class="day-num">{{ day.dayNumber }}</span>
-            
+
+            <!-- Affichage enrichi : score inline si joué, sinon emoji type -->
             <div class="day-matches" *ngIf="day.matches.length > 0">
-              <div *ngFor="let match of day.matches.slice(0, 2)" 
-                   class="match-dot"
-                   [class.played]="isMatchPlayed(match)"
-                   [class.missed]="isMatchMissed(match)"
-                   [class.future]="isMatchFuture(match)"
-                   [class.active]="selectedMatch()?.id === match.id"
-                   (click)="onMatchClick(match, $event)">
-                {{ getTypeEmoji(match.typeMatch) }}
-              </div>
+              <ng-container *ngFor="let match of day.matches.slice(0, 2)">
+
+                <!-- Match joué : on affiche le score directement -->
+                <div class="match-chip"
+                     *ngIf="isMatchPlayed(match)"
+                     [class.chip-interne]="match.typeMatch === 'INTERNE'"
+                     [class.chip-duel]="match.typeMatch === 'DUEL'"
+                     [class.chip-amical]="match.typeMatch === 'AMICAL'"
+                     [class.chip-anniversaire]="match.typeMatch === 'ANNIVERSAIRE'"
+                     [class.active]="selectedMatch()?.id === match.id"
+                     (click)="onMatchClick(match, $event)">
+                  <span class="chip-teams">
+                    <span class="chip-team1">{{ getEquipeNames(match)[0] | slice:0:4 }}</span>
+                    <span class="chip-score">{{ match.scoreEquipe1 ?? '?' }}–{{ match.scoreEquipe2 ?? match.scoreAdversaire ?? '?' }}</span>
+                    <span class="chip-team2">{{ getEquipeNames(match)[1] | slice:0:4 }}</span>
+                  </span>
+                </div>
+
+                <!-- Match non validé ou futur : emoji + label court -->
+                <div class="match-dot"
+                     *ngIf="!isMatchPlayed(match)"
+                     [class.played]="isMatchPlayed(match)"
+                     [class.missed]="isMatchMissed(match)"
+                     [class.future]="isMatchFuture(match)"
+                     [class.active]="selectedMatch()?.id === match.id"
+                     (click)="onMatchClick(match, $event)">
+                  {{ getTypeEmoji(match.typeMatch) }}
+                </div>
+
+              </ng-container>
               <span *ngIf="day.matches.length > 2" class="more-badge">+{{ day.matches.length - 2 }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="mini-stats">
-        <div class="stat">
-          <span class="num">{{ monthStats().total }}</span>
-          <span class="label">{{ 'calendar.stats.total' | translate }}</span>
-        </div>
-        <div class="stat green">
-          <span class="num">{{ monthStats().played }}</span>
-          <span class="label">{{ 'calendar.stats.played' | translate }}</span>
-        </div>
-        <div class="stat orange">
-          <span class="num">{{ monthStats().missed }}</span>
-          <span class="label">{{ 'calendar.stats.missed' | translate }}</span>
-        </div>
-        <div class="stat blue">
-          <span class="num">{{ monthStats().future }}</span>
-          <span class="label">{{ 'calendar.stats.future' | translate }}</span>
-        </div>
-      </div>
-    </div>
+    </div><!-- /calendar-section -->
 
+    <!-- ===== PANNEAU DÉTAIL ===== -->
     <div class="details-section" *ngIf="selectedMatch()" [class.is-open]="selectedMatch()">
       <div class="details-header">
         <div class="match-badge" [ngClass]="'type-' + selectedMatch()!.typeMatch?.toLowerCase()">
@@ -140,10 +208,8 @@
               <div class="stat-row" *ngFor="let b of matchDetails()!.buteurs">
                 <span class="full-name">{{ b.nomAffiche }}</span>
                 <span class="short-name">{{ b.nomAbrege }}</span>
-                
                 <span class="player-stat-text">
                   <strong class="main-count">{{ b.total }} ⚽</strong>
-                  
                   <span class="sub-details" *ngIf="b.penalti > 0 || b.butsContreSonCamp > 0">
                     (
                     <span class="pen-text" *ngIf="b.penalti > 0">{{ b.penalti }}{{ 'calendar.stats.pen_short' | translate }}</span>
@@ -175,7 +241,6 @@
               <mat-icon class="gold-icon">military_tech</mat-icon>
               <span>{{ 'calendar.stats.honors' | translate }}</span>
             </div>
-            
             <div class="honors-grid">
               <ng-container *ngIf="matchDetails()!.isMultiMvp">
                 <div class="honor-item mvp" *ngIf="matchDetails()!.mvpEnseigne1">
@@ -189,7 +254,6 @@
                   <span class="honor-value short-name">{{ matchDetails()!.mvpEnseigne2Abrege }}</span>
                 </div>
               </ng-container>
-
               <div class="honor-item hdm" *ngIf="matchDetails()!.hdm">
                 <span class="honor-label">⭐ {{ 'calendar.stats.hdm' | translate }}</span>
                 <span class="honor-value full-name">{{ matchDetails()!.hdm }}</span>

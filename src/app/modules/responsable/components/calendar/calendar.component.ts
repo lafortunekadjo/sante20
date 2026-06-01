@@ -240,23 +240,28 @@ get monthNames(): string[] {
   }
 
   // Stats
-  monthStats() {
+monthStats() {
     if (!this.data.matches) {
-      return { total: 0, played: 0, missed: 0, future: 0 };
+      return { total: 0, played: 0, missed: 0, future: 0, interne: 0, duel: 0, amical: 0, anniversaire: 0 };
     }
-    
+
     const monthMatches = this.data.matches.filter(m => {
       const d = new Date(m.dateMatch);
       return d.getMonth() === this.currentMonth && d.getFullYear() === this.currentYear;
     });
-    
+
     return {
-      total: monthMatches.length,
-      played: monthMatches.filter(m => this.isMatchPlayed(m)).length,
-      missed: monthMatches.filter(m => this.isMatchMissed(m)).length,
-      future: monthMatches.filter(m => this.isMatchFuture(m)).length
+      total:        monthMatches.length,
+      played:       monthMatches.filter(m => this.isMatchPlayed(m)).length,
+      missed:       monthMatches.filter(m => this.isMatchMissed(m)).length,
+      future:       monthMatches.filter(m => this.isMatchFuture(m)).length,
+      interne:      monthMatches.filter(m => m.typeMatch === 'INTERNE').length,
+      duel:         monthMatches.filter(m => m.typeMatch === 'DUEL').length,
+      amical:       monthMatches.filter(m => m.typeMatch === 'AMICAL').length,
+      anniversaire: monthMatches.filter(m => m.typeMatch === 'ANNIVERSAIRE').length,
     };
   }
+
 
   // Selection
   isDaySelected(day: CalendarDay): boolean {
@@ -549,6 +554,18 @@ getTypeLabel(type?: TypeMatch): string {
     
     return d < t && !this.isMatchPlayed(match);
   }
+
+  getMonthIndexForDay(day: CalendarDay): number {
+  return day.date.getMonth();
+}
+
+getMatchesForMonthIndex(monthIndex: number): Match[] {
+  if (!this.data.matches) return [];
+  return this.data.matches.filter(m => {
+    const d = new Date(m.dateMatch);
+    return d.getFullYear() === this.currentYear && d.getMonth() === monthIndex;
+  });
+}
 
   isMatchFuture(match: Match): boolean {
     const d = new Date(match.dateMatch); 

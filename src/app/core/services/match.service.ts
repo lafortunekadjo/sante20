@@ -23,6 +23,8 @@ export class MatchService {
   const params = new HttpParams()
     .set('startDate', startDate)
     .set('endDate', endDate);
+
+    console.log("les dates " + startDate, endDate)
     
   return this.http.get<Match[]>(`${environment.apiUrl}/matchs/by-date-range`, { params });
 }

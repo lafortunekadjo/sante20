@@ -4,6 +4,7 @@ import { Observable, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../environment';
 import { AuthService } from './auth.service';
 import { MemberStats, MonthlyStats } from '../models/stats.model';
+import { DatePipe } from '@angular/common';
 
 
 @Injectable({
@@ -13,6 +14,7 @@ export class StatsService {
 
   private adminStatsUrl = `${environment.apiUrl}/admin/stats`;
   private responsableStatsUrl = `${environment.apiUrl}/responsable/stats`;
+  
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
@@ -41,24 +43,41 @@ export class StatsService {
     return this.http.get(`${this.adminStatsUrl}`, { params });
   }
 
-   getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
-    let params = new HttpParams();
-    if (startDate && endDate) {
-      params = params.set('startDate', startDate.toISOString().split('T')[0]);
-      params = params.set('endDate', endDate.toISOString().split('T')[0]);
+getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
+  let params = new HttpParams();
+  const datePipe = new DatePipe('fr-FR');
+
+  if (startDate && endDate) {
+    const formattedStart = datePipe.transform(startDate, 'yyyy-MM-dd');
+    const formattedEnd = datePipe.transform(endDate, 'yyyy-MM-dd');
+
+    if (formattedStart && formattedEnd) {
+      params = params.set('startDate', formattedStart);
+      params = params.set('endDate', formattedEnd);
     }
-    return this.http.get(`${environment.apiUrl}/responsable/stats`, { params });
   }
 
-  getMembreStats(startDate?: Date, endDate?: Date): Observable<any> {
-    let params = new HttpParams();
-    if (startDate && endDate) {
-      params = params.set('startDate', startDate.toISOString().split('T')[0]);
-      params = params.set('endDate', endDate.toISOString().split('T')[0]);
+  console.log(params.toString());
+  return this.http.get(`${environment.apiUrl}/responsable/stats`, { params });
+}
+
+ getMembreStats(startDate?: Date, endDate?: Date): Observable<any> {
+  let params = new HttpParams();
+  const datePipe = new DatePipe('fr-FR');
+
+  if (startDate && endDate) {
+    const formattedStart = datePipe.transform(startDate, 'yyyy-MM-dd');
+    const formattedEnd = datePipe.transform(endDate, 'yyyy-MM-dd');
+
+    // On s'assure que le formatage a réussi avant de peupler les paramètres
+    if (formattedStart && formattedEnd) {
+      params = params.set('startDate', formattedStart);
+      params = params.set('endDate', formattedEnd);
     }
-    return this.http.get(`${environment.apiUrl}/membre/stats`, { params });
   }
 
+  return this.http.get(`${environment.apiUrl}/membre/stats`, { params });
+}
   getResponsableStats1(): Observable<ResponsableStats> {
     return this.http.get<ResponsableStats>(this.responsableStatsUrl, { headers: this.getHeaders() }).pipe(
       catchError(err => {

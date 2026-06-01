@@ -1,20 +1,27 @@
-// Variables
-$primary: #1976d2;
-$success: #4caf50;
-$warning: #ff9800;
-$danger: #f44336;
-$accent: #9c27b0;
-$text-dark: #212121;
-$text-medium: #616161;
-$text-light: #9e9e9e;
-$bg-white: #ffffff;
-$bg-light: #f8f9fa;
-$bg-hover: #f0f0f0;
-$border: #e8e8e8;
-$shadow: 0 2px 8px rgba(0,0,0,0.08);
-$radius: 12px;
-$radius-sm: 8px;
+// ========== VARIABLES ==========
+$primary:       #1976d2;
+$success:       #4caf50;
+$warning:       #ff9800;
+$danger:        #f44336;
+$accent:        #9c27b0;
+$text-dark:     #212121;
+$text-medium:   #616161;
+$text-light:    #9e9e9e;
+$bg-white:      #ffffff;
+$bg-light:      #f8f9fa;
+$bg-hover:      #f0f0f0;
+$border:        #e8e8e8;
+$shadow:        0 2px 8px rgba(0,0,0,0.08);
+$radius:        12px;
+$radius-sm:     8px;
 
+// Type colors
+$col-interne:      #9c27b0;
+$col-duel:         #f44336;
+$col-amical:       #1976d2;
+$col-anniversaire: #ff9800;
+
+// ========== WRAPPER ==========
 .calendar-wrapper {
   display: flex;
   flex-direction: column;
@@ -25,7 +32,7 @@ $radius-sm: 8px;
   overflow: hidden;
 }
 
-// ========== HEADER ==========
+// ========== HEADER BAR ==========
 .calendar-header-bar {
   display: flex;
   align-items: center;
@@ -33,6 +40,7 @@ $radius-sm: 8px;
   padding: 16px 20px;
   background: linear-gradient(135deg, $primary 0%, #1565c0 100%);
   color: white;
+  flex-shrink: 0;
 
   .header-title {
     display: flex;
@@ -40,11 +48,9 @@ $radius-sm: 8px;
     gap: 10px;
     font-size: 18px;
     font-weight: 600;
-
     mat-icon { font-size: 24px; }
     small { font-size: 12px; opacity: 0.85; font-weight: 400; }
   }
-
   .close-btn { color: white; }
 }
 
@@ -55,21 +61,132 @@ $radius-sm: 8px;
   overflow: hidden;
 }
 
-// ========== CALENDAR ==========
 .calendar-section {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 16px;
   overflow-y: auto;
+  gap: 12px;
 }
 
+// ========== HEATMAP ANNUELLE ==========
+.year-heatmap {
+  background: $bg-light;
+  border-radius: $radius-sm;
+  padding: 10px 12px;
+  flex-shrink: 0;
+}
+
+.year-heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.year-heatmap-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: $text-medium;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.year-heatmap-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .hm-leg {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: $text-medium;
+  }
+
+  .hm-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+    &.type-interne      { background: $col-interne; }
+    &.type-duel         { background: $col-duel; }
+    &.type-amical       { background: $col-amical; }
+    &.type-anniversaire { background: $col-anniversaire; }
+  }
+}
+
+.year-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+
+.hm-month-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px 2px;
+  transition: background 0.15s;
+
+  &:hover { background: rgba($primary, 0.06); }
+
+  &.hm-active-month {
+    background: rgba($primary, 0.1);
+    .hm-month-label { color: $primary; font-weight: 700; }
+  }
+}
+
+.hm-month-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: $text-light;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hm-dots-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  min-height: 10px;
+}
+
+.hm-cell {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  opacity: 0.85;
+  transition: transform 0.1s, opacity 0.1s;
+
+  &:hover { transform: scale(1.4); opacity: 1; }
+
+  &.type-interne      { background: $col-interne; }
+  &.type-duel         { background: $col-duel; }
+  &.type-amical       { background: $col-amical; }
+  &.type-anniversaire { background: $col-anniversaire; }
+
+  &.hm-future  { opacity: 0.35; }
+  &.hm-missed  { opacity: 0.5; filter: grayscale(0.4); }
+  &.hm-empty   { background: $border; opacity: 0.5; }
+}
+
+// ========== NAVIGATION ==========
 .month-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 
   .month-label {
     font-size: 16px;
@@ -86,33 +203,28 @@ $radius-sm: 8px;
   }
 }
 
-.legend-bar {
+// ========== STATS MENSUELLES ==========
+.mini-stats {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 8px;
-  margin-bottom: 12px;
+  justify-content: space-around;
+  padding: 10px 12px;
   background: $bg-light;
   border-radius: $radius-sm;
+  flex-shrink: 0;
 
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: $text-medium;
+  .stat {
+    text-align: center;
+    .num   { display: block; font-size: 18px; font-weight: 700; color: $text-dark; }
+    .label { font-size: 10px; color: $text-light; text-transform: uppercase; letter-spacing: 0.03em; }
 
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      &.green { background: $success; }
-      &.orange { background: $warning; }
-      &.blue { background: $primary; }
-    }
+    &.type-interne-stat      .num { color: $col-interne; }
+    &.type-duel-stat         .num { color: $col-duel; }
+    &.type-amical-stat       .num { color: $col-amical; }
+    &.type-anniversaire-stat .num { color: $col-anniversaire; }
   }
 }
 
+// ========== GRILLE CALENDRIER ==========
 .calendar-grid-container {
   flex: 1;
 }
@@ -120,7 +232,7 @@ $radius-sm: 8px;
 .weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 
   span {
     text-align: center;
@@ -134,17 +246,15 @@ $radius-sm: 8px;
 .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
 .day-cell {
-  aspect-ratio: 1;
-  min-height: 48px;
+  min-height: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 4px;
+  padding: 4px 3px;
   border-radius: $radius-sm;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -155,15 +265,14 @@ $radius-sm: 8px;
   &.other-month { opacity: 0.35; }
 
   &.today {
-    background: rgba($primary, 0.08);
+    background: rgba($primary, 0.06);
     border-color: $primary;
-
     .day-num {
       background: $primary;
       color: white;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -171,64 +280,113 @@ $radius-sm: 8px;
   }
 
   &.selected {
-    background: rgba($primary, 0.12);
+    background: rgba($primary, 0.1);
     border-color: $primary;
   }
 
   .day-num {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     color: $text-dark;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
+    line-height: 20px;
   }
 
   .day-matches {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 2px;
-    justify-content: center;
-  }
-
-  .match-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    cursor: pointer;
-    transition: transform 0.15s;
-
-    &:hover { transform: scale(1.2); }
-    &.played { background: rgba($success, 0.2); border: 1px solid $success; }
-    &.missed { background: rgba($warning, 0.2); border: 1px solid $warning; }
-    &.future { background: rgba($primary, 0.2); border: 1px solid $primary; }
-    &.active { transform: scale(1.15); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    width: 100%;
+    align-items: stretch;
   }
 
   .more-badge {
     font-size: 9px;
     color: $text-light;
+    text-align: center;
   }
 }
 
-.mini-stats {
-  display: flex;
-  justify-content: space-around;
-  padding: 12px;
-  margin-top: 12px;
-  background: $bg-light;
-  border-radius: $radius-sm;
+// ========== MATCH CHIP (score visible) ==========
+.match-chip {
+  border-radius: 4px;
+  padding: 2px 3px;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  line-height: 1.3;
+  text-align: center;
 
-  .stat {
-    text-align: center;
-    .num { display: block; font-size: 18px; font-weight: 700; color: $text-dark; }
-    .label { font-size: 10px; color: $text-light; text-transform: uppercase; }
-    &.green .num { color: $success; }
-    &.orange .num { color: $warning; }
-    &.blue .num { color: $primary; }
+  &:hover  { transform: scale(1.04); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  &.active { box-shadow: 0 2px 8px rgba(0,0,0,0.22); transform: scale(1.04); }
+
+  // Couleurs fond/texte par type
+  &.chip-interne {
+    background: rgba($col-interne, 0.12);
+    border: 1px solid rgba($col-interne, 0.35);
+    color: darken($col-interne, 10%);
   }
+  &.chip-duel {
+    background: rgba($col-duel, 0.1);
+    border: 1px solid rgba($col-duel, 0.3);
+    color: darken($col-duel, 10%);
+  }
+  &.chip-amical {
+    background: rgba($col-amical, 0.1);
+    border: 1px solid rgba($col-amical, 0.3);
+    color: darken($col-amical, 10%);
+  }
+  &.chip-anniversaire {
+    background: rgba($col-anniversaire, 0.12);
+    border: 1px solid rgba($col-anniversaire, 0.35);
+    color: darken($col-anniversaire, 15%);
+  }
+}
+
+.chip-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.chip-team1,
+.chip-team2 {
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22px;
+}
+
+.chip-score {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+// ========== MATCH DOT (futur / non validé) ==========
+.match-dot {
+  width: 100%;
+  min-height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  transition: transform 0.15s;
+
+  &:hover  { transform: scale(1.1); }
+  &.played { background: rgba($success, 0.15); border: 1px solid $success; }
+  &.missed { background: rgba($warning, 0.15); border: 1px solid $warning; }
+  &.future { background: rgba($primary, 0.12); border: 1px solid $primary; }
+  &.active { transform: scale(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 }
 
 // ========== DETAILS (Desktop) ==========
@@ -258,10 +416,10 @@ $radius-sm: 8px;
     font-size: 12px;
     font-weight: 600;
 
-    &.type-interne { background: rgba($accent, 0.1); color: $accent; }
-    &.type-duel { background: rgba($danger, 0.1); color: $danger; }
-    &.type-amical { background: rgba($primary, 0.1); color: $primary; }
-    &.type-anniversaire { background: rgba($warning, 0.1); color: $warning; }
+    &.type-interne      { background: rgba($col-interne, 0.1);      color: $col-interne; }
+    &.type-duel         { background: rgba($col-duel, 0.1);         color: $col-duel; }
+    &.type-amical       { background: rgba($col-amical, 0.1);       color: $col-amical; }
+    &.type-anniversaire { background: rgba($col-anniversaire, 0.12); color: darken($col-anniversaire, 15%); }
   }
 }
 
@@ -309,7 +467,6 @@ $radius-sm: 8px;
       text-align: center;
       word-break: break-word;
     }
-
     .team-score {
       font-size: 32px;
       font-weight: 700;
@@ -366,6 +523,7 @@ $radius-sm: 8px;
   }
 
   .stat-content { padding: 8px 12px; }
+  .stat-list    { padding: 4px 12px 8px; }
 
   .player-row {
     display: flex;
@@ -374,12 +532,76 @@ $radius-sm: 8px;
     padding: 6px 0;
     border-bottom: 1px solid $border;
     &:last-child { border-bottom: none; }
-
-    .player-name { font-size: 13px; color: $text-dark; }
-    .player-stat { font-size: 12px; font-weight: 600; color: $text-medium; }
+    .player-name  { font-size: 13px; color: $text-dark; }
+    .player-stat  { font-size: 12px; font-weight: 600; color: $text-medium; }
   }
 
   &.compact .stat-header { padding: 12px; }
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.05);
+
+  .player-stat-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9rem;
+
+    .main-count { font-weight: 700; color: $text-dark; }
+
+    .sub-details {
+      font-size: 0.78rem;
+      color: #616161;
+      font-weight: 500;
+      .pen-text { color: #388e3c; font-weight: 600; }
+      .csc-text { color: #d32f2f; font-weight: 600; }
+    }
+  }
+}
+
+.honors-grid {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 12px 12px;
+
+  .honor-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.04);
+
+    .honor-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .honor-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-dark;
+    }
+
+    &.mvp {
+      background: rgba(#ffb300, 0.08);
+      border-color: rgba(#ffb300, 0.2);
+      .honor-label { color: #b45309; }
+    }
+    &.hdm {
+      background: rgba(#00897b, 0.08);
+      border-color: rgba(#00897b, 0.2);
+      .honor-label { color: #00695c; }
+    }
+  }
 }
 
 .empty-stats, .future-match {
@@ -423,228 +645,7 @@ $radius-sm: 8px;
   color: $text-light;
 }
 
-// ========== MOBILE OVERLAY (hidden by default) ==========
-.mobile-overlay { 
-  display: none; 
-}
-
-// ========== TABLET (768px) ==========
-@media (max-width: 768px) {
-  .calendar-wrapper { 
-    max-height: 100vh; 
-    max-height: 100dvh;
-    border-radius: 0; 
-  }
-  
-  .calendar-body { 
-    flex-direction: column; 
-    overflow-y: auto;
-    flex: 1;
-  }
-  
-  .calendar-section { 
-    padding: 12px;
-    flex: none;
-  }
-  
-  .month-nav .today-btn .btn-text { 
-    display: none; 
-  }
-  
-  .day-cell {
-    min-height: 42px;
-    
-    .match-dot { 
-      width: 16px; 
-      height: 16px; 
-      font-size: 8px; 
-    }
-  }
-
-  // Details en Bottom Sheet
-  .details-section {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-height: 70vh;
-    height: auto;
-    border-left: none;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
-    z-index: 1000;
-    background-color: $bg-white;
-    overflow-y: auto;
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-
-    &.is-open {
-      transform: translateY(0);
-    }
-  }
-
-  .details-header {
-    position: sticky;
-    top: 0;
-    background: $bg-white;
-    padding: 20px 16px 12px 16px;
-    z-index: 5;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      top: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 40px;
-      height: 5px;
-      background: $border;
-      border-radius: 2.5px;
-    }
-  }
-
-  .details-body {
-    padding: 0 16px 24px 16px;
-  }
-
-  .mobile-overlay {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    z-index: 999;
-  }
-
-  .scoreboard .team .team-score { 
-    font-size: 26px; 
-  }
-}
-
-// ========== SMALL MOBILE (480px) ==========
-@media (max-width: 480px) {
-  .legend-bar { 
-    gap: 8px; 
-    
-    .legend-item { 
-      font-size: 10px; 
-    } 
-  }
-  
-  .day-cell { 
-    min-height: 36px; 
-    padding: 2px; 
-    
-    .day-num { 
-      font-size: 11px; 
-    } 
-  }
-  
-  .mini-stats .stat .num { 
-    font-size: 16px; 
-  }
-  
-  .details-header {
-    padding: 16px 12px 10px 12px;
-  }
-  
-  .details-body {
-    padding: 0 12px 20px 12px;
-  }
-  
-  .scoreboard .team .team-score {
-    font-size: 24px;
-  }
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
-  
-  .player-name {
-    font-weight: 500;
-    color: var(--text-dark, #212121);
-  }
-
-  .player-stat-text {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.9rem;
-
-    .main-count {
-      font-weight: 700;
-      color: var(--text-dark, #212121);
-    }
-
-    .sub-details {
-      font-size: 0.78rem;
-      color: #616161; // Gris intermédiaire pour garder les parenthèses discrètes
-      font-weight: 500;
-
-      .pen-text {
-        color: #388e3c; // Petite touche de vert pour le penalty si souhaité, sinon à enlever
-        font-weight: 600;
-      }
-
-      .csc-text {
-        color: #d32f2f; // Petite touche de rouge pour le csc
-        font-weight: 600;
-      }
-    }
-  }
-}
-
-// Block Trophées MVP / HDM
-.honors-grid {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-  
-  .honor-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-
-    .honor-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .honor-value {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: $text-dark;
-    }
-
-    &.mvp {
-      background: rgba(#ffb300, 0.08);
-      border-color: rgba(#ffb300, 0.2);
-      .honor-label { color: #b45309; }
-    }
-
-    &.hdm {
-      background: rgba(#00897b, 0.08);
-      border-color: rgba(#00897b, 0.2);
-      .honor-label { color: #00695c; }
-    }
-  }
-}
-
-// Galerie d'images & téléchargement
+// ========== IMAGES ==========
 .images-thumbnail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -671,48 +672,135 @@ $radius-sm: 8px;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0.8);
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       color: white;
       opacity: 0;
       transition: all 0.2s ease;
       width: 36px;
       height: 36px;
       line-height: 36px;
-      
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
     }
 
     &:hover {
-      .match-thumb {
-        transform: scale(1.08);
-        filter: brightness(0.7);
-      }
-      .download-thumb-btn {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
+      .match-thumb { transform: scale(1.08); filter: brightness(0.7); }
+      .download-thumb-btn { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     }
   }
 }
 
-// Par défaut sur mobile (écrans inférieurs à 768px)
-.full-name {
-  display: none !important;
-}
-.short-name {
-  display: inline-block !important;
+// ========== NOM ABREGÉ / COMPLET ==========
+.full-name  { display: none !important; }
+.short-name { display: inline-block !important; }
+
+@media (min-width: 768px) {
+  .full-name  { display: inline-block !important; }
+  .short-name { display: none !important; }
 }
 
-// Sur tablettes et ordinateurs (écrans à partir de 768px)
-@media (min-width: 768px) {
-  .full-name {
-    display: inline-block !important;
+// ========== MOBILE OVERLAY ==========
+.mobile-overlay { display: none; }
+
+// ========== TABLET (768px) ==========
+@media (max-width: 768px) {
+  .calendar-wrapper {
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
   }
-  .short-name {
-    display: none !important;
+
+  .calendar-body {
+    flex-direction: column;
+    overflow-y: auto;
+    flex: 1;
   }
+
+  .calendar-section {
+    padding: 10px;
+    flex: none;
+    gap: 8px;
+  }
+
+  .month-nav .today-btn .btn-text { display: none; }
+
+  .year-heatmap-legend { display: none; } // trop serré sur mobile
+
+  .hm-cell { width: 6px; height: 6px; }
+
+  .day-cell {
+    min-height: 52px;
+    .match-dot { width: 16px; height: 16px; font-size: 8px; }
+  }
+
+  .chip-team1, .chip-team2 { display: none; } // affiche juste le score sur mobile
+  .chip-score { font-size: 9px; }
+
+  // Details en bottom sheet
+  .details-section {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    max-height: 70vh;
+    height: auto;
+    border-left: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+    z-index: 1000;
+    background-color: $bg-white;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+
+    &.is-open { transform: translateY(0); }
+  }
+
+  .details-header {
+    position: sticky;
+    top: 0;
+    background: $bg-white;
+    padding: 20px 16px 12px;
+    z-index: 5;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px; height: 5px;
+      background: $border;
+      border-radius: 2.5px;
+    }
+  }
+
+  .details-body { padding: 0 16px 24px; }
+
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+  }
+
+  .scoreboard .team .team-score { font-size: 26px; }
+}
+
+// ========== SMALL MOBILE (480px) ==========
+@media (max-width: 480px) {
+  .year-heatmap { padding: 8px; }
+  .hm-cell { width: 5px; height: 5px; }
+
+  .day-cell {
+    min-height: 44px;
+    padding: 2px;
+    .day-num { font-size: 10px; }
+  }
+
+  .mini-stats .stat .num { font-size: 15px; }
+
+  .details-header { padding: 16px 12px 10px; }
+  .details-body   { padding: 0 12px 20px; }
+  .scoreboard .team .team-score { font-size: 24px; }
 }

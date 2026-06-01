@@ -1,6 +1,6 @@
 // exercice-management.component.ts
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -264,9 +264,11 @@ export class ExerciceManagementComponent implements OnInit {
     // this.router.navigate(['/finances/exercices', exercice.id, 'bilan']);
   }
 
-  formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
+formatDate(date: Date): string {
+  const datePipe = new DatePipe('fr-FR');
+  // Le '||' renvoie une chaîne vide en secours si le formatage échoue (évite le type null)
+  return datePipe.transform(date, 'yyyy-MM-dd') || '';
+}
 
   formatMontant(montant: number): string {
     return this.financesService.formatMontant(montant);
