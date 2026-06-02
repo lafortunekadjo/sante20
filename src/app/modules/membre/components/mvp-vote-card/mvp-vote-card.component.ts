@@ -11,6 +11,7 @@ import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { catchError, forkJoin, of } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-mvp-vote-card',
@@ -36,6 +37,7 @@ export class MvpVoteCardComponent implements OnInit {
   private bottomSheet = inject(MatBottomSheet);
   private snackBar = inject(MatSnackBar);
   private translate = inject(TranslateService);
+  private router =  inject(Router);
 
   nomines = signal<any[]>([]);
   isLoading = signal(true);
@@ -52,10 +54,33 @@ export class MvpVoteCardComponent implements OnInit {
     this.checkStatusAndLoad();
   }
 
-  private setCurrentMonthLabel() {
-    const date = new Date();
-    this.currentMonthLabel.set(date.toLocaleDateString(this.translate.currentLang, { month: 'long', year: 'numeric' }));
+onViewResults() {
+    console.log('L’utilisateur souhaite voir les résultats');
+    
+    // 3. Redirection vers la route 'membre/vote'
+    this.router.navigate(['/membre/vote']);
   }
+
+private setCurrentMonthLabel() {
+  const date = new Date();
+  
+  // 🔥 Alignement avec la logique backend :
+  // Si on est entre le 1er et le 7 du mois, on affiche le mois précédent
+  if (date.getDate() <= 7) {
+    date.setMonth(date.getMonth() - 1);
+  }
+
+  // Formatage localisé (affichera "mai 2026" au lieu de "juin 2026" si on est le 2 juin)
+  const formattedLabel = date.toLocaleDateString(this.translate.currentLang, { 
+    month: 'long', 
+    year: 'numeric' 
+  });
+
+  // Capitalisation de la première lettre (ex: "Mai 2026")
+  const capitalizedLabel = formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
+
+  this.currentMonthLabel.set(capitalizedLabel);
+}
 
   checkStatusAndLoad(): void {
     const user = this.authService.getUser();
@@ -113,9 +138,20 @@ export class MvpVoteCardComponent implements OnInit {
     });
   }
 
-  shareVote() {
-    const text = `Découvrez les nominés MVP de ${this.currentMonthLabel()} !`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(whatsappUrl, '_blank');
-  }
+shareVote() {
+  // Lien direct vers la page de vote de ton application (à adapter avec ton vrai domaine)
+  const appUrl = `${window.location.origin}/membre/vote`; 
+  
+  // Un texte accrocheur et communautaire pour pousser à l'action
+  const text = `🏆 *MVP ${this.currentMonthLabel()}* 🏆\n\n` +
+               `Les nominations pour le joueur du mois sont en ligne ! 🔥\n` +
+               `Viens soutenir tes performances collectives et vote pour ton favori dès maintenant. Ton vote compte pour le classement final ! 🗳️⚽\n\n` +
+               `👉 Clique ici pour voter : ${appUrl}`;
+
+  // Encodage propre pour WhatsApp
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  
+  // Ouverture sécurisée du lien WhatsApp
+  window.open(whatsappUrl, '_blank');
+}
 }
