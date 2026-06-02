@@ -59,6 +59,8 @@ checkStatusAndLoad(): void {
     players: this.voteService.getnomines(gId).pipe(catchError(() => of([])))
   };
 
+  
+
   // 3. Exécution avec forkJoin
   forkJoin(sources).subscribe({
     next: (res) => {
@@ -66,6 +68,7 @@ checkStatusAndLoad(): void {
       this.hasVoted.set(res.voted === true);
       this.nomines.set(res.players || []);
       this.isLoading.set(false);
+      console.log(res)
     },
     error: (err) => {
       console.error("Erreur My2-0:", err);
@@ -112,5 +115,7 @@ getAvatarColor(playerId: number): string {
   return colors[playerId % colors.length];
 }
 }
+
+
 
 
