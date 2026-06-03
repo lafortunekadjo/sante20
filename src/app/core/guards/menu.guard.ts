@@ -37,7 +37,7 @@ export class MenuGuard implements CanActivate {
         
         // Vérifier si l'utilisateur a accès à cette route
         const hasAccess = userMenus.menus.some(menu => 
-          requestedRoute.startsWith(menu.route)
+          requestedRoute.startsWith(menu.route!)
         );
 
         if (!hasAccess) {

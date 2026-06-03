@@ -5,7 +5,7 @@ export interface Menu {
   code: string;
   label: string;
   icone: string;
-  route: string;
+  route?: string | null;
   description: string;
   ordre: number;
   actif: boolean;

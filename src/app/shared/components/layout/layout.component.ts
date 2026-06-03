@@ -372,7 +372,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     ordre: 2,
     actif: true,
     categorie: 'COMMUN',
-    route: ''
+    route: null
   });
 }
 
@@ -416,6 +416,29 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     this.menusCommuns = baseMenus.sort((a, b) => a.ordre - b.ordre);
     console.log('[LayoutComponent] Menus communs chargés:', this.menusCommuns.map(m => m.code));
+  }
+
+
+  handleMenuAction(menuCode: string): void {
+    if (menuCode === 'JOIN') {
+      this.openJoinGroupDialog();
+    }
+  }
+
+  /**
+   * Ouvre la boîte de dialogue pour rejoindre un groupe
+   */
+  openJoinGroupDialog(): void {
+    this.dialog.open(JoinGroupDialogComponent, {
+      width: '450px',
+      maxWidth: '90vw',
+      disableClose: false // Permet de fermer en cliquant à l'extérieur
+    });
+    
+    // Optionnel : Ferme la sidebar sur mobile après avoir cliqué sur le menu
+    if (this.isMobile) {
+      this.closeSidebar();
+    }
   }
 
   loadUserMenus(): void {

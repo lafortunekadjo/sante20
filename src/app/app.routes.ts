@@ -276,6 +276,10 @@ export const routes: Routes = [
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'CANDIDAT', 'ROLE_CANDIDAT'] }
       },
+       {
+            path: 'membre/videos',
+            component: VideoManagementComponent
+          },
       {
         path: 'login',
         component: LoginComponent
@@ -476,10 +480,7 @@ export const routes: Routes = [
             path: 'dashboard',
             component: MDashboardComponent
           },
-             {
-            path: 'videos',
-            component: VideoManagementComponent
-          },
+            
            {
             path: 'vote',
             component: MvpVoteComponent

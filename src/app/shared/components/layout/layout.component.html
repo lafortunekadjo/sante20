@@ -24,26 +24,41 @@
         <ng-container *ngIf="!isLoadingMenus">
           <mat-accordion multi="true" displayMode="flat">
 
-            <mat-expansion-panel class="menu-group-panel" [expanded]="true" *ngIf="!isPartenaire">
-              <mat-expansion-panel-header>
-                <mat-panel-title>
-                  <mat-icon>home</mat-icon>
-                  <span>{{ 'nav.mainMenu' | translate }}</span>
-                </mat-panel-title>
-              </mat-expansion-panel-header>
+          <mat-expansion-panel class="menu-group-panel" [expanded]="true" *ngIf="!isPartenaire">
+  <mat-expansion-panel-header>
+    <mat-panel-title>
+      <mat-icon>home</mat-icon>
+      <span>{{ 'nav.mainMenu' | translate }}</span>
+    </mat-panel-title>
+  </mat-expansion-panel-header>
 
-              <div class="submenu-container">
-                <a routerLink="/home" routerLinkActive="active" class="nav-item">
-                  <mat-icon>home</mat-icon>
-                  <span>{{ 'admin.home' | translate }}</span>
-                </a>
+  <div class="submenu-container">
+    <a routerLink="/home" routerLinkActive="active" class="nav-item">
+      <mat-icon>home</mat-icon>
+      <span>{{ 'admin.home' | translate }}</span>
+    </a>
 
-                <a *ngFor="let menu of menusCommuns" [routerLink]="menu.route" routerLinkActive="active" class="nav-item">
-                  <mat-icon>{{ menu.icone }}</mat-icon>
-                  <span>{{ 'menu.items.' + menu.code | translate }}</span>
-                </a>
-              </div>
-            </mat-expansion-panel>
+    <ng-container *ngFor="let menu of menusCommuns">
+      
+      <a *ngIf="menu.route" 
+         [routerLink]="menu.route" 
+         routerLinkActive="active" 
+         class="nav-item">
+        <mat-icon>{{ menu.icone }}</mat-icon>
+        <span>{{ 'menu.items.' + menu.code | translate }}</span>
+      </a>
+
+      <a *ngIf="!menu.route" 
+         (click)="handleMenuAction(menu.code)" 
+         class="nav-item" 
+         style="cursor: pointer;">
+        <mat-icon>{{ menu.icone }}</mat-icon>
+        <span>{{ 'menu.items.' + menu.code | translate }}</span>
+      </a>
+
+    </ng-container>
+  </div>
+</mat-expansion-panel>
 
             <mat-expansion-panel class="menu-group-panel admin-panel" *ngIf="isAdmin">
               <mat-expansion-panel-header>
