@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../../core/services/auth.service';
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet.component';
@@ -27,15 +27,39 @@ export class MvpVoteComponent implements OnInit {
   private authService = inject(AuthService);
   private bottomSheet = inject(MatBottomSheet);
   private snackBar = inject(MatSnackBar);
+    private translate = inject(TranslateService);
 
   nomines = signal<any[]>([]);
   isLoading = signal(true);
   hasVoted = signal(false); // Directement lie au boolean du backend
   isEligible = signal(false); 
+  currentMonthLabel = signal<string>('');
 
   ngOnInit() {
     this.checkStatusAndLoad();
+     this.setCurrentMonthLabel();
   }
+
+  private setCurrentMonthLabel() {
+  const date = new Date();
+  
+  // 🔥 Alignement avec la logique backend :
+  // Si on est entre le 1er et le 7 du mois, on affiche le mois précédent
+  if (date.getDate() <= 7) {
+    date.setMonth(date.getMonth() - 1);
+  }
+
+  // Formatage localisé (affichera "mai 2026" au lieu de "juin 2026" si on est le 2 juin)
+  const formattedLabel = date.toLocaleDateString(this.translate.currentLang, { 
+    month: 'long', 
+    year: 'numeric' 
+  });
+
+  // Capitalisation de la première lettre (ex: "Mai 2026")
+  const capitalizedLabel = formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
+
+  this.currentMonthLabel.set(capitalizedLabel);
+}
 
 // Définition d'un type pour la clarté du message
 statusMessage = signal<string>('');
