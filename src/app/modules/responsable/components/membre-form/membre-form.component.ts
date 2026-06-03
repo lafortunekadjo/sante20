@@ -740,7 +740,7 @@ hasSanctionsEnabled(): boolean {
   }
 
   deleteMembre(id: number): void {
-    this.adminService.deleteMembre(id).subscribe({
+    this.adminService.deleteMember(id).subscribe({
       next: () => {
         this.showSuccessMessage(this.translate.instant('membres.deleteSuccess'));
         this.loadData();

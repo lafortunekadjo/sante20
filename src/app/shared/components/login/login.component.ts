@@ -102,18 +102,8 @@ export class LoginComponent implements OnInit {
    * Ouvre la boîte de dialogue de mot de passe oublié
    */
 openForgotPassword(): void {
-  // On récupère le message traduit
-  const message = this.translate.instant('auth.forgot_password.in_development');
-  
-  // Option 1 : Avec une SnackBar (plus ergonomique et moderne)
-  this.snack.open(message, 'OK', {
-    duration: 5000,
-    panelClass: ['info-snackbar']
-  });
-
-  /* // Option 2 : Avec une simple boîte de dialogue native si tu préfères
-  // alert(message); 
-  */
+  // Redirige l'utilisateur vers ton nouveau composant de demande
+  this.router.navigate(['/forgot-password']);
 }
   /**
    * Efface le message d'erreur

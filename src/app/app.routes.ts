@@ -93,6 +93,8 @@ import { SettingsComponent } from "./shared/components/settings/settings.compone
 import { PlayerProfileComponent } from "./modules/membre/components/player-profile/player-profile.component";
 import { PlayerListComponent } from "./modules/membre/components/player-list/player-list.component";
 import { VideoManagementComponent } from "./modules/membre/components/video-management/video-management.component";
+import { ForgotPasswordComponent } from "./shared/components/forgot-password/forgot-password.component";
+import { ResetPasswordComponent } from "./shared/components/reset-password/reset-password.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -211,6 +213,8 @@ export const routes: Routes = [
         path: 'match/invite/:token',
         component: PublicMatchInviteComponent,
       },
+      { path: 'forgot-password', component: ForgotPasswordComponent },
+       { path: 'reset-password', component: ResetPasswordComponent },
       {
         path:'p/:username',
         component: PlayerProfileComponent
