@@ -389,7 +389,7 @@ ngOnInit(): void {
             result:  result,
             statut:  aJoue ? 'JOUE' : 'TERRAIN_UNIQUEMENT',
             buts:    aJoue ? (p.buts || 0) : 0,
-            penalties: aJoue ? (p.penalties || p.penalts || 0) : 0,
+            penalties: aJoue ? (p.penalti || p.penalts || 0) : 0,
             passes:  aJoue ? (p.passes || 0) : 0
           });
         } else {
