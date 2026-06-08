@@ -10,19 +10,21 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatInputModule } from '@angular/material/input';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
-import { takeUntil, finalize } from 'rxjs/operators';
+import { finalize, takeUntil } from 'rxjs/operators';
 import { Match } from '../../../../core/models/match.model';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { PresenceService } from '../../../../core/services/presence.service';
+import { GeneralService } from '../../../../core/services/general.service';
 import { MatchService } from '../../../../core/services/match.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { Equipe } from '../../../../core/models/groupe.model copy';
-import { GroupeService } from '../../../../core/services/groupe.service';
-import { GeneralService } from '../../../../core/services/general.service';
 
-// ─────────────────── Interfaces ───────────────────
+export interface Equipe {
+  id: number;
+  nom: string;
+}
 
 export interface MembreStats {
   membreId: number;
@@ -31,218 +33,180 @@ export interface MembreStats {
   nomAffiche: string;
   nomAbrege: string;
   poste?: string;
+  membreEquipeId?: number;
   avatarColor: string;
   initiales: string;
-  membreEquipeId?: number;
-  // Présences
-  totalMatchs: number;
-  presences: number;
-  absences: number;
-  tauxPresence: number;
-  // Perf
-  buts: number;
+  // Présences au terrain vs Matchs Joués
+  totalMatchs: number;     // Matchs totaux de la période
+  matchsAuTerrain: number; // Présence physique sur le terrain/banc
+  matchsJoues: number;     // A effectivement joué (aJoue === true)
+  absences: number;        // Ni au terrain, ni joué
+  tauxPresenceTerrain: number;
+  tauxJoue: number;
+  // Performances détaillées
+  butsCumules: number;
+  butsDansLeJeu: number;
+  penalties: number;
   passes: number;
   mvp: number;
   hdm: number;
-  // Timeline mensuelle: mois → { present, total, taux }
-  parMois: Record<string, { present: number; total: number; taux: number }>;
-  // Timeline matchs (ordre chrono)
+  // Évolutions mensuelles
+  parMois: Record<string, { presentTerrain: number; aJoue: number; total: number }>;
+  // Historique des matchs
   timeline: Array<{
     matchId: number;
     date: Date;
-    result: 'W' | 'L' | 'N' | 'ABS' | 'FUT';
-    present: boolean;
+    result: 'W' | 'L' | 'N' | 'ABS';
+    statut: 'JOUE' | 'TERRAIN_UNIQUEMENT' | 'ABSENT';
     buts: number;
+    penalties: number;
     passes: number;
   }>;
 }
 
-export interface HeatmapCell {
-  membreId: number;
-  moisKey: string; 
-  taux: number;
-  present: number;
-  total: number;
-}
-
-export type PeriodFilter = '1' | '3' | '5' | '6' | '12' | 'all';
-export type SortField = 'nom' | 'taux' | 'buts' | 'passes' | 'mvp';
+export type PeriodFilter = '1' | '3' | '5' | '6' | '12' | 'all' | 'custom';
+export type SortField = 'nom' | 'taux' | 'tauxJoue' | 'buts' | 'passes' | 'mvp';
 export type SortDir = 'asc' | 'desc';
 export type ActiveView = 'heatmap' | 'table' | 'compare';
-export type EquipeFilter = 'all' | 'equipe1' | 'equipe2'; // 🔥 Nouveau filtre d'équipe
 
-// ─────────────────── Helpers ───────────────────
-
-const AVATAR_COLORS = [
-  '#378ADD', '#1D9E75', '#D85A30', '#534AB7',
-  '#BA7517', '#D4537E', '#0F6E56', '#993C1D',
-];
-
-function getAvatarColor(id: number): string {
-  return AVATAR_COLORS[id % AVATAR_COLORS.length];
-}
-
-function getInitiales(nom: string, prenom: string): string {
-  return ((nom?.charAt(0) || '') + (prenom?.charAt(0) || '')).toUpperCase();
-}
-
+const AVATAR_COLORS = ['#378ADD', '#1D9E75', '#D85A30', '#534AB7', '#BA7517', '#D4537E', '#0F6E56', '#993C1D'];
+function getAvatarColor(id: number): string { return AVATAR_COLORS[id % AVATAR_COLORS.length]; }
+function getInitiales(nom: string, prenom: string): string { return ((nom?.charAt(0) || '') + (prenom?.charAt(0) || '')).toUpperCase(); }
 function formatNom(nom: string, prenom: string, abrege = false): string {
   if (!prenom) return nom || '';
   if (abrege) return `${nom} ${prenom.charAt(0).toUpperCase()}.`.trim();
   return `${nom} ${prenom}`.trim();
 }
-
-function moisKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
+function moisKey(date: Date): string { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; }
 
 function heatColor(taux: number): string {
-  if (taux === 0)  return '#F09595';
-  if (taux < 40)  return '#FAEEDA';
-  if (taux < 60)  return '#C0DD97';
-  if (taux < 80)  return '#5DCAA5';
-  return '#1D9E75';
+  if (taux === 0) return '#F09595'; if (taux < 40) return '#FAEEDA'; if (taux < 60) return '#C0DD97'; if (taux < 80) return '#5DCAA5'; return '#1D9E75';
 }
-
 function heatTextColor(taux: number): string {
-  if (taux === 0)  return '#791F1F';
-  if (taux < 40)  return '#633806';
-  if (taux < 60)  return '#27500A';
-  if (taux < 80)  return '#085041';
-  return '#E1F5EE';
+  if (taux === 0) return '#791F1F'; if (taux < 40) return '#633806'; if (taux < 60) return '#27500A'; if (taux < 80) return '#085041'; return '#E1F5EE';
 }
-
-// ─────────────────── Component ───────────────────
 
 @Component({
   selector: 'app-stats-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatProgressSpinnerModule,
-    MatMenuModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatChipsModule,
-    TranslateModule,
+    CommonModule, FormsModule, MatButtonModule, MatIconModule, MatDialogModule,
+    MatTooltipModule, MatProgressSpinnerModule, MatMenuModule, MatSelectModule,
+    MatFormFieldModule, MatChipsModule, MatInputModule, TranslateModule
   ],
   templateUrl: './stats-dashboard.component.html',
   styleUrl: './stats-dashboard.component.scss',
 })
 export class StatsDashboardComponent implements OnInit, OnDestroy {
 
-  // ── État UI ──
   activeView = signal<ActiveView>('heatmap');
   isLoading  = signal(true);
   isMobile   = false;
 
   // ── Filtres ──
   periodFilter  = signal<PeriodFilter>('5');
+  dateDebut     = signal<string>(''); // YYYY-MM-DD
+  dateFin       = signal<string>('');   // YYYY-MM-DD
   searchQuery   = signal('');
   posteFilter   = signal('');
-  equipeFilter  = signal<number | 'all'>('all'); // 🔥 Initialisation du filtre d'équipe
+  equipeFilter  = signal<number | 'all'>('all');
   sortField     = signal<SortField>('taux');
   sortDir       = signal<SortDir>('desc');
-  compareIds    = signal<number[]>([]);   // max 3
+  compareIds    = signal<number[]>([]);
 
-  // ── Données brutes ──
+  // ── Données ──
   private allStats     = signal<MembreStats[]>([]);
-  private allMonths    = signal<string[]>([]);  // 'YYYY-MM' triés
+  private allMonths    = signal<string[]>([]);
   private allMatches   = signal<Match[]>([]);
   readonly allEquipes  = signal<Equipe[]>([]);
 
-  // ── Panneau joueur ──
   selectedMembre = signal<MembreStats | null>(null);
 
-  // ── Computed Corrigés et Filtrés ──
-// ── Computed Corrigés et Filtrés avec Équipe Dynamique ──
+  // ── Listes des mois visibles en fonction du filtre temporel ──
+  readonly visibleMonths = computed(() => {
+    const all = this.allMonths();
+    const period = this.periodFilter();
+    if (period === 'all' || period === 'custom') return all;
+    return all.slice(-parseInt(period, 10));
+  });
+
+  // ── Filtrage et restriction des statistiques ──
   readonly filteredStats = computed(() => {
-    const stats  = this.allStats();
-    const q      = this.searchQuery().toLowerCase().trim();
-    const poste  = this.posteFilter();
-    const equipeId = this.equipeFilter(); // 🔥 ID de l'équipe sélectionnée
-    const field  = this.sortField();
-    const dir    = this.sortDir();
+    const stats = this.allStats();
+    const q = this.searchQuery().toLowerCase().trim();
+    const poste = this.posteFilter();
+    const equipeId = this.equipeFilter();
+    const field = this.sortField();
+    const dir = this.sortDir();
+    
+    const period = this.periodFilter();
+    const dDeb = this.dateDebut();
+    const dFin = this.dateFin();
     const months = this.visibleMonths();
 
-
     return stats
-      .map(s => this.restrictToPeriod(s, months))
+      .map(s => this.restrictToPeriodCustom(s, period, months, dDeb, dFin))
       .filter(s => {
+        if (s.totalMatchs === 0) return false; // Exclure si aucun match sur la période sélectionnée
         if (q && !s.nomAffiche.toLowerCase().includes(q)) return false;
         if (poste && s.poste !== poste) return false;
-        
-        // 🔥 FILTRE SUR L'EQUIPE DU MEMBRE
         if (equipeId !== 'all' && s.membreEquipeId !== equipeId) return false;
-        
         return true;
       })
       .sort((a, b) => {
         let cmp = 0;
         switch (field) {
-          case 'nom':    cmp = a.nomAffiche.localeCompare(b.nomAffiche); break;
-          case 'taux':   cmp = a.tauxPresence - b.tauxPresence; break;
-          case 'buts':   cmp = a.buts - b.buts; break;
-          case 'passes': cmp = a.passes - b.passes; break;
-          case 'mvp':    cmp = a.mvp - b.mvp; break;
+          case 'nom':       cmp = a.nomAffiche.localeCompare(b.nomAffiche); break;
+          case 'taux':      cmp = a.tauxPresenceTerrain - b.tauxPresenceTerrain; break;
+          case 'tauxJoue':  cmp = a.tauxJoue - b.tauxJoue; break;
+          case 'buts':      cmp = a.butsCumules - b.butsCumules; break;
+          case 'passes':    cmp = a.passes - b.passes; break;
+          case 'mvp':       cmp = a.mvp - b.mvp; break;
         }
         return dir === 'desc' ? -cmp : cmp;
       });
   });
 
-  readonly visibleMonths = computed(() => {
-    const all    = this.allMonths();
-    const period = this.periodFilter();
-    if (period === 'all') return all;
-    const n = parseInt(period, 10);
-    return all.slice(-n);
-  });
-
   readonly globalKpis = computed(() => {
-    const stats  = this.filteredStats();
+    const stats = this.filteredStats();
+    const period = this.periodFilter();
+    const dDeb = this.dateDebut();
+    const dFin = this.dateFin();
     const months = this.visibleMonths();
     
-    if (!stats.length) return { totalMatchs: 0, presenceMoy: 0, topJoueur: '', absentCount: 0 };
+    if (!stats.length) return { totalMatchs: 0, presenceMoy: 0, joueMoy: 0, topJoueur: '', absentCount: 0 };
     
-    const totalMatchs = this.allMatches().filter(m => this.matchInPeriod(m, months)).length;
+    const totalMatchs = this.allMatches().filter(m => this.isMatchInFilterRange(m, period, months, dDeb, dFin)).length;
     
-    // 🔥 CORRECTION : Vraie formule mathématique de participation globale (cumul présence / cumul possible)
-    const cumulPresences = stats.reduce((acc, s) => acc + s.presences, 0);
+    const cumulTerrain = stats.reduce((acc, s) => acc + s.matchsAuTerrain, 0);
+    const cumulJoues = stats.reduce((acc, s) => acc + s.matchsJoues, 0);
     const cumulMatchsPossibles = stats.reduce((acc, s) => acc + s.totalMatchs, 0);
-    const presenceMoy = cumulMatchsPossibles > 0 
-      ? Math.round((cumulPresences / cumulMatchsPossibles) * 100) 
-      : 0;
 
-    const top = [...stats].sort((a, b) => b.tauxPresence - a.tauxPresence || b.buts - a.buts)[0];
-    const absentCount = stats.filter(s => s.tauxPresence < 50).length;
+    const presenceMoy = cumulMatchsPossibles > 0 ? Math.round((cumulTerrain / cumulMatchsPossibles) * 100) : 0;
+    const joueMoy = cumulMatchsPossibles > 0 ? Math.round((cumulJoues / cumulMatchsPossibles) * 100) : 0;
+
+    const top = [...stats].sort((a, b) => b.tauxJoue - a.tauxJoue || b.butsCumules - a.butsCumules)[0];
+    const absentCount = stats.filter(s => s.tauxPresenceTerrain < 50).length;
     
-    return { totalMatchs, presenceMoy, topJoueur: top?.nomAbrege || '', absentCount };
+    return { totalMatchs, presenceMoy, joueMoy, topJoueur: top?.nomAbrege || '', absentCount };
   });
 
   readonly compareStats = computed(() => {
-    const ids    = this.compareIds();
+    const ids = this.compareIds();
+    const period = this.periodFilter();
+    const dDeb = this.dateDebut();
+    const dFin = this.dateFin();
     const months = this.visibleMonths();
+
     return this.allStats()
       .filter(s => ids.includes(s.membreId))
-      .map(s => this.restrictToPeriod(s, months));
+      .map(s => this.restrictToPeriodCustom(s, period, months, dDeb, dFin));
   });
 
-  readonly postes = computed(() =>
-    [...new Set(this.allStats().map(s => s.poste).filter(Boolean))] as string[]
-  );
-
-  // ── Couleurs heatmap exposées au template ──
-  readonly heatColor   = heatColor;
+  readonly postes = computed(() => [...new Set(this.allStats().map(s => s.poste).filter(Boolean))] as string[]);
+  readonly heatColor = heatColor;
   readonly heatTextColor = heatTextColor;
-
-  // ── Couleurs comparaison ──
   readonly compareColors = ['#378ADD', '#1D9E75', '#EF9F27'];
-
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -263,9 +227,7 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   @HostListener('window:resize')
   onResize() { this.isMobile = window.innerWidth <= 768; }
 
-  // ──────────────────── Lifecycle ────────────────────
-
- ngOnInit(): void {
+ngOnInit(): void {
   this.isLoading.set(true);
 
   // 2. Appel de l'API pour charger les matchs (par exemple du groupe actif)
@@ -308,15 +270,14 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   }
 }
 
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // ──────────────────── Chargement données ────────────────────
-
   private loadAllPresences(): void {
-    const matches = this.allMatches();
+   const matches = this.allMatches();
     if (!matches.length) { this.isLoading.set(false); return; }
 
     const playedMatches = matches.filter(m => this.isMatchPlayed(m));
@@ -343,14 +304,10 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildStats(
-    matches: Match[],
-    presencesByMatch: Record<number, any[]>
-  ): void {
+  private buildStats(matches: Match[], presencesByMatch: Record<number, any[]>): void {
     const membresMap = new Map<number, MembreStats>();
     const monthsSet = new Set<string>();
 
-    // 1. Collecter d'abord la liste absolue de tous les membres uniques
     matches.forEach(match => {
       const presences = presencesByMatch[match.id] || [];
       presences.forEach(p => {
@@ -358,23 +315,22 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
         const id = p.membre.id;
         if (!membresMap.has(id)) {
           membresMap.set(id, {
-            membreId: id,
-            nom:       p.membre.nom || '',
-            prenom:    p.membre.prenom || '',
+            membreId:   id,
+            nom:        p.membre.nom || '',
+            prenom:     p.membre.prenom || '',
             nomAffiche: formatNom(p.membre.nom, p.membre.prenom),
             nomAbrege:  formatNom(p.membre.nom, p.membre.prenom, true),
             poste:      p.membre.poste || p.poste || undefined,
+            membreEquipeId: p.membre.equipe?.id || p.membre.equipe || undefined,
             avatarColor: getAvatarColor(id),
             initiales:   getInitiales(p.membre.nom, p.membre.prenom),
-            membreEquipeId: p.membre.equipe?.id || p.membre.equipe || undefined,
             totalMatchs: 0,
-            presences:   0,
-            absences:    0,
-            tauxPresence: 0,
-            buts:    0,
-            passes:  0,
-            mvp:     0,
-            hdm:     0,
+            matchsAuTerrain: 0,
+            matchsJoues:     0,
+            absences:        0,
+            tauxPresenceTerrain: 0,
+            tauxJoue:            0,
+            butsCumules: 0, butsDansLeJeu: 0, penalties: 0, passes: 0, mvp: 0, hdm: 0,
             parMois: {},
             timeline: [],
           });
@@ -382,71 +338,80 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
       });
     });
 
-    // 2. Extraire et trier la liste chronologique des mois
-    matches.forEach(match => {
-      const d = new Date(match.dateMatch);
-      monthsSet.add(moisKey(d));
-    });
-    const sortedMonths = [...monthsSet].sort();
-    this.allMonths.set(sortedMonths);
+    matches.forEach(match => monthsSet.add(moisKey(new Date(match.dateMatch))));
+    this.allMonths.set([...monthsSet].sort());
 
-    // 3. 🔥 LOGIQUE SÉCURISÉE : Boucler par Match, puis évaluer CHAQUE Joueur du 2-0
     matches.forEach(match => {
       const presences  = presencesByMatch[match.id] || [];
       const matchDate  = new Date(match.dateMatch);
       const mk         = moisKey(matchDate);
       const result     = this.getMatchResult(match);
 
-      // Indexation rapide des présents du match courant
       const mapPresentsDuMatch = new Map<number, any>();
-      presences.forEach(p => {
-        if (p.membre?.id) mapPresentsDuMatch.set(p.membre.id, p);
-      });
+      presences.forEach(p => { if (p.membre?.id) mapPresentsDuMatch.set(p.membre.id, p); });
 
-      // Analyse systématique pour chaque joueur inscrit dans le groupe
       membresMap.forEach((s, id) => {
         const p = mapPresentsDuMatch.get(id);
-        const aJoue = p ? !!p.aJoue : false; // Si absent de la liste = Absence réelle enregistrée
+        
+        // Au terrain = présent sur la feuille de match
+        const auTerrain = !!p; 
+        // A joué = présent sur la feuille ET propriété aJoue cochée vraie
+        const aJoue = p ? !!p.aJoue : false;
 
-        if (!s.parMois[mk]) {
-          s.parMois[mk] = { present: 0, total: 0, taux: 0 };
-        }
+        if (!s.parMois[mk]) s.parMois[mk] = { presentTerrain: 0, aJoue: 0, total: 0 };
 
         s.totalMatchs++;
         s.parMois[mk].total++;
 
-        if (aJoue) {
-          s.presences++;
-          s.parMois[mk].present++;
-          s.buts   += p.buts   || 0;
-          s.passes += p.passes || 0;
-          if (p.isMvp || p.mvp || p.estHommeDuMatchEq) s.mvp++;
-          if (p.estHommeDuMatch) s.hdm++;
+        if (auTerrain) {
+          s.matchsAuTerrain++;
+          s.parMois[mk].presentTerrain++;
+          
+          if (aJoue) {
+            s.matchsJoues++;
+            s.parMois[mk].aJoue++;
+            
+            // Traitement des buts et pénaltys distincts
+            const pButs = p.buts || 0;
+            const pPens = p.penalti || p.penalts || 0; // Sécurité sur l'attribut backend
+            s.butsDansLeJeu += pButs;
+            s.penalties     += pPens;
+            s.butsCumules   += (pButs + pPens);
+
+            s.passes += p.passes || 0;
+            if (p.isMvp || p.mvp || p.estHommeDuMatchEq) s.mvp++;
+            if (p.estHommeDuMatch) s.hdm++;
+          }
+
+          s.timeline.push({
+            matchId: match.id,
+            date:    matchDate,
+            result:  result,
+            statut:  aJoue ? 'JOUE' : 'TERRAIN_UNIQUEMENT',
+            buts:    aJoue ? (p.buts || 0) : 0,
+            penalties: aJoue ? (p.penalties || p.penalts || 0) : 0,
+            passes:  aJoue ? (p.passes || 0) : 0
+          });
         } else {
           s.absences++;
+          s.timeline.push({
+            matchId: match.id,
+            date:    matchDate,
+            result:  'ABS',
+            statut:  'ABSENT',
+            buts: 0, penalties: 0, passes: 0
+          });
         }
-
-        s.timeline.push({
-          matchId: match.id,
-          date:    matchDate,
-          result:  aJoue ? result : 'ABS',
-          present: aJoue,
-          buts:    aJoue ? (p.buts || 0) : 0,
-          passes:  aJoue ? (p.passes || 0) : 0,
-        });
       });
     });
 
-    // 4. Calcul final des pourcentages par joueur
     membresMap.forEach(s => {
-      s.tauxPresence = s.totalMatchs > 0
-        ? Math.round((s.presences / s.totalMatchs) * 100)
-        : 0;
-
+      s.tauxPresenceTerrain = s.totalMatchs > 0 ? Math.round((s.matchsAuTerrain / s.totalMatchs) * 100) : 0;
+      s.tauxJoue = s.totalMatchs > 0 ? Math.round((s.matchsJoues / s.totalMatchs) * 100) : 0;
+      
       Object.values(s.parMois).forEach(m => {
-        m.taux = m.total > 0 ? Math.round((m.present / m.total) * 100) : 0;
+        m.total > 0 ? Math.round((m.presentTerrain / m.total) * 100) : 0;
       });
-
       s.timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
     });
 
@@ -454,146 +419,113 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
     this.isLoading.set(false);
   }
 
-  // ──────────────────── Helpers domaine ────────────────────
+  // ── Filtrage de date avancé ──
+  private isMatchInFilterRange(match: Match, period: PeriodFilter, months: string[], dDeb: string, dFin: string): boolean {
+    const mDate = new Date(match.dateMatch);
+    if (period === 'custom') {
+      if (dDeb && mDate < new Date(dDeb)) return false;
+      if (dFin) {
+        const targetFin = new Date(dFin);
+        targetFin.setHours(23, 59, 59, 999);
+        if (mDate > targetFin) return false;
+      }
+      return true;
+    }
+    return months.includes(moisKey(mDate));
+  }
+
+  private restrictToPeriodCustom(s: MembreStats, period: PeriodFilter, months: string[], dDeb: string, dFin: string): MembreStats {
+    const timeline = s.timeline.filter(t => {
+      if (period === 'custom') {
+        if (dDeb && t.date < new Date(dDeb)) return false;
+        if (dFin) {
+          const limit = new Date(dFin); limit.setHours(23,59,59,999);
+          if (t.date > limit) return false;
+        }
+        return true;
+      }
+      return months.includes(moisKey(t.date));
+    });
+
+    const total = timeline.length;
+    const terrain = timeline.filter(t => t.statut === 'JOUE' || t.statut === 'TERRAIN_UNIQUEMENT').length;
+    const joues = timeline.filter(t => t.statut === 'JOUE').length;
+
+    return {
+      ...s,
+      timeline,
+      totalMatchs: total,
+      matchsAuTerrain: terrain,
+      matchsJoues: joues,
+      absences: total - terrain,
+      tauxPresenceTerrain: total > 0 ? Math.round((terrain / total) * 100) : 0,
+      tauxJoue: total > 0 ? Math.round((joues / total) * 100) : 0,
+      butsDansLeJeu: timeline.reduce((acc, t) => acc + t.buts, 0),
+      penalties: timeline.reduce((acc, t) => acc + t.penalties, 0),
+      butsCumules: timeline.reduce((acc, t) => acc + (t.buts + t.penalties), 0),
+      passes: timeline.reduce((acc, t) => acc + t.passes, 0),
+    };
+  }
 
   private isMatchPlayed(match: Match): boolean {
-    const d = new Date(match.dateMatch);
-    d.setHours(0, 0, 0, 0);
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
+    const d = new Date(match.dateMatch); d.setHours(0, 0, 0, 0);
+    const t = new Date(); t.setHours(0, 0, 0, 0);
     if (d >= t) return false;
-    return !!match.rapporteur ||
-           !!(match.rapporteurNomOccasionnel?.trim()) ||
-           match.scoreEquipe1 != null ||
-           match.scoreEquipe2 != null ||
-           match.scoreAdversaire != null;
+    return !!match.rapporteur || !!(match.rapporteurNomOccasionnel?.trim()) ||
+           match.scoreEquipe1 != null || match.scoreEquipe2 != null || match.scoreAdversaire != null;
   }
 
   private getMatchResult(match: Match): 'W' | 'L' | 'N' {
     const s1 = match.scoreEquipe1 ?? match.scoreAdversaire ?? 0;
     const s2 = match.scoreEquipe2 ?? match.scoreAdversaire ?? 0;
-    if (s1 === s2) return 'N';
-    return s1 > s2 ? 'W' : 'L';
+    if (s1 === s2) return 'N'; return s1 > s2 ? 'W' : 'L';
   }
 
-  private matchInPeriod(match: Match, months: string[]): boolean {
-    return months.includes(moisKey(new Date(match.dateMatch)));
-  }
-
-  private restrictToPeriod(s: MembreStats, months: string[]): MembreStats {
-    if (months.length === this.allMonths().length) return s;
-    const mSet = new Set(months);
-    const timeline = s.timeline.filter(t => mSet.has(moisKey(t.date)));
-    const presences = timeline.filter(t => t.present).length;
-    const total     = timeline.length;
-    return {
-      ...s,
-      timeline,
-      presences,
-      absences:     total - presences,
-      totalMatchs:  total,
-      tauxPresence: total > 0 ? Math.round((presences / total) * 100) : 0,
-      buts:    timeline.reduce((acc, t) => acc + t.buts, 0),
-      passes:  timeline.reduce((acc, t) => acc + t.passes, 0),
-    };
-  }
-
-  // ──────────────────── Actions UI ────────────────────
-
+  // ── Actions UI ──
   setView(v: ActiveView): void { this.activeView.set(v); }
-
-  setPeriod(p: PeriodFilter | string): void {
-    this.periodFilter.set(p as PeriodFilter);
-    this.selectedMembre.set(null);
-  }
-
+  setPeriod(p: PeriodFilter | string): void { this.periodFilter.set(p as PeriodFilter); this.selectedMembre.set(null); }
   setSort(field: SortField): void {
-    if (this.sortField() === field) {
-      this.sortDir.set(this.sortDir() === 'desc' ? 'asc' : 'desc');
-    } else {
-      this.sortField.set(field);
-      this.sortDir.set('desc');
-    }
+    if (this.sortField() === field) { this.sortDir.set(this.sortDir() === 'desc' ? 'asc' : 'desc'); } 
+    else { this.sortField.set(field); this.sortDir.set('desc'); }
   }
-
-  selectMembre(s: MembreStats): void {
-    this.selectedMembre.set(
-      this.selectedMembre()?.membreId === s.membreId ? null : s
-    );
-  }
-
+  selectMembre(s: MembreStats): void { this.selectedMembre.set(this.selectedMembre()?.membreId === s.membreId ? null : s); }
   toggleCompare(id: number): void {
     const ids = this.compareIds();
-    if (ids.includes(id)) {
-      this.compareIds.set(ids.filter(i => i !== id));
-    } else if (ids.length < 3) {
-      this.compareIds.set([...ids, id]);
-    }
+    if (ids.includes(id)) { this.compareIds.set(ids.filter(i => i !== id)); } 
+    else if (ids.length < 3) { this.compareIds.set([...ids, id]); }
   }
-
-  isInCompare(id: number): boolean {
-    return this.compareIds().includes(id);
-  }
-
-  compareColor(id: number): string {
-    const idx = this.compareIds().indexOf(id);
-    return idx >= 0 ? this.compareColors[idx] : '';
-  }
-
+  isInCompare(id: number): boolean { return this.compareIds().includes(id); }
+  compareColor(id: number): string { const idx = this.compareIds().indexOf(id); return idx >= 0 ? this.compareColors[idx] : ''; }
   clearCompare(): void { this.compareIds.set([]); }
-
-  onClose(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
-  }
-
-  // ──────────────────── Template helpers ────────────────────
+  onClose(): void { if (this.dialogRef) this.dialogRef.close(); }
 
   getMoisLabel(key: string): string {
-    const [y, m] = key.split('-');
+    const [, m] = key.split('-');
     const monthNames = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
     return monthNames[parseInt(m, 10) - 1] || m;
   }
-
   getCellForMois(s: MembreStats, mois: string): { taux: number; present: number; total: number } {
-    return s.parMois[mois] || { taux: 0, present: 0, total: 0 };
+    const m = s.parMois[mois];
+    return m ? { taux: m.total > 0 ? Math.round((m.presentTerrain / m.total) * 100) : 0, present: m.presentTerrain, total: m.total } : { taux: 0, present: 0, total: 0 };
   }
-
-  getTauxClass(taux: number): string {
-    if (taux >= 80) return 'taux-hi';
-    if (taux >= 50) return 'taux-mid';
-    return 'taux-lo';
-  }
-
-  getTimelineIcon(result: string): string {
-    const map: Record<string, string> = { W: 'V', L: 'D', N: 'N', ABS: 'A', FUT: '?' };
-    return map[result] || '?';
-  }
-
-  getMaxStat(field: 'buts' | 'passes' | 'mvp'): number {
-    const stats = this.compareStats();
-    return Math.max(...stats.map(s => s[field]), 1);
-  }
-
-  barWidth(val: number, max: number): string {
-    return `${Math.round((val / max) * 100)}%`;
-  }
+  getTauxClass(taux: number): string { if (taux >= 80) return 'taux-hi'; if (taux >= 50) return 'taux-mid'; return 'taux-lo'; }
+  getTimelineIcon(result: string): string { const map: Record<string, string> = { W: 'V', L: 'D', N: 'N', ABS: 'A' }; return map[result] || '?'; }
+  getMaxStat(field: 'butsCumules' | 'passes' | 'mvp'): number { return Math.max(...this.compareStats().map(s => s[field]), 1); }
+  barWidth(val: number, max: number): string { return `${Math.round((val / max) * 100)}%`; }
 
   exportCSV(): void {
     const stats  = this.filteredStats();
-    const header = ['Joueur', 'Poste', 'Matchs', 'Présences', 'Absences', 'Taux%', 'Buts', 'Passes', 'MVP', 'HDM'];
+    // En-têtes mis à jour avec la séparation Terrain/Joue et Buts/Penaltys
+    const header = ['Joueur', 'Poste', 'Matchs Période', 'Présences Terrain', 'Matchs Joués', 'Absences', 'Taux Terrain %', 'Taux Joué %', 'Buts Cumulés', 'Buts (Jeu)', 'Penalties', 'Passes', 'MVP'];
     const rows   = stats.map(s => [
-      s.nomAffiche, s.poste || '', s.totalMatchs, s.presences,
-      s.absences, s.tauxPresence, s.buts, s.passes, s.mvp, s.hdm
+      s.nomAffiche, s.poste || '', s.totalMatchs, s.matchsAuTerrain, s.matchsJoues, s.absences,
+      s.tauxPresenceTerrain, s.tauxJoue, s.butsCumules, s.butsDansLeJeu, s.penalties, s.passes, s.mvp
     ]);
     const csv = [header, ...rows].map(r => r.join(';')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `stats_${this.data.groupeActif?.nom || 'groupe'}_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href     = url; a.download = `stats_detailles_${this.data.groupeActif?.nom || 'groupe'}.csv`; a.click(); URL.revokeObjectURL(url);
   }
 }
+
