@@ -318,8 +318,8 @@ annulerMouvement(mouvementId: number, motif: string): Observable<MouvementCaisse
    * GET /api/exercices/{exerciceId}/bilan
    * Récupérer le bilan d'un exercice
    */
-  getBilanExercice(exerciceId: number): Observable<BilanExercice | null> {
-    return this.http.get<BilanExercice>(`${this.baseUrl}/exercices/${exerciceId}/bilan`).pipe(
+  getBilanExercice(exerciceId: number): Observable<any | null> {
+    return this.http.get<any>(`${this.baseUrl}/exercices/${exerciceId}/bilan`).pipe(
       map(bilan => this.enrichBilanData(bilan)),
       catchError(() => of(null))
     );
@@ -367,6 +367,7 @@ annulerMouvement(mouvementId: number, motif: string): Observable<MouvementCaisse
    * Enregistrer une entrée de caisse
    */
   enregistrerEntree(data: EntreeCaisseRequest): Observable<MouvementCaisse> {
+    console.log(data)
     return this.http.post<MouvementCaisse>(`${this.baseUrl}/caisses/entrees`, data);
   }
 

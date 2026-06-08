@@ -1,7 +1,7 @@
 <!-- bilan.component.html -->
 <div class="bilan-container">
 
-  <!-- Header -->
+  <!-- ===== HEADER ===== -->
   <div class="page-header">
     <div class="header-content">
       <div class="header-main">
@@ -15,42 +15,31 @@
       </div>
 
       <div class="header-actions">
-        <!-- Sélecteur d'exercice -->
+        <!-- Sélecteur exercice -->
         <mat-form-field appearance="outline" class="exercice-select" *ngIf="exercices.length > 0">
           <mat-label>{{ 'bilan.exercice.label' | translate }}</mat-label>
-          <mat-select [(ngModel)]="selectedExerciceId"
-                      (selectionChange)="onExerciceChange($event.value)">
+          <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
             <mat-option *ngFor="let ex of exercices" [value]="ex.id">
               <div class="exercice-option">
                 <span>{{ ex.libelle }}</span>
-                <span class="exercice-badge actif" *ngIf="ex.actif">
-                  {{ 'bilan.exercice.badge_actif' | translate }}
-                </span>
-                <span class="exercice-badge cloture" *ngIf="ex.cloture">
-                  {{ 'bilan.exercice.badge_cloture' | translate }}
-                </span>
+                <span class="exercice-badge actif"   *ngIf="ex.actif">{{ 'bilan.exercice.badge_actif'   | translate }}</span>
+                <span class="exercice-badge cloture" *ngIf="ex.cloture">{{ 'bilan.exercice.badge_cloture' | translate }}</span>
               </div>
             </mat-option>
           </mat-select>
         </mat-form-field>
 
-        <!-- Actions export -->
+        <!-- Export -->
         <div class="export-actions">
-          <button mat-stroked-button
-                  (click)="exportPDF()"
-                  [matTooltip]="'bilan.export.pdf_tooltip' | translate">
+          <button mat-stroked-button (click)="exportPDF()"   [matTooltip]="'bilan.export.pdf_tooltip'   | translate">
             <mat-icon>picture_as_pdf</mat-icon>
             {{ 'bilan.export.pdf' | translate }}
           </button>
-          <button mat-stroked-button
-                  (click)="exportExcel()"
-                  [matTooltip]="'bilan.export.excel_tooltip' | translate">
+          <button mat-stroked-button (click)="exportExcel()" [matTooltip]="'bilan.export.excel_tooltip' | translate">
             <mat-icon>table_chart</mat-icon>
             {{ 'bilan.export.excel' | translate }}
           </button>
-          <button mat-icon-button
-                  (click)="print()"
-                  [matTooltip]="'bilan.export.print_tooltip' | translate">
+          <button mat-icon-button (click)="print()" [matTooltip]="'bilan.export.print_tooltip' | translate">
             <mat-icon>print</mat-icon>
           </button>
         </div>
@@ -58,102 +47,165 @@
     </div>
   </div>
 
-  <!-- Loading -->
+  <!-- ===== LOADING ===== -->
   <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="60"></mat-spinner>
-    </div>
+    <div class="loading-spinner"><mat-spinner diameter="60"></mat-spinner></div>
     <div class="loading-content">
       <h3>{{ 'bilan.loading' | translate }}</h3>
       <p>{{ 'COMMON.LOADING_WAIT' | translate }}</p>
     </div>
   </div>
 
-  <!-- Contenu principal -->
+  <!-- ===== CONTENU PRINCIPAL ===== -->
   <div *ngIf="!isLoading && bilanData" class="content">
 
-    <!-- Carte résumé principal -->
-    <div class="summary-card">
-      <div class="summary-header">
-        <div class="period-info">
-          <span class="period-label">{{ 'bilan.resume.periode' | translate }}</span>
-          <span class="period-value">
-            {{ formatDate(bilanData.exercice.dateDebut) }} - {{ formatDate(bilanData.exercice.dateFin) }}
+    <!-- ── LIGNE 1 : Période + statut ── -->
+    <div class="period-bar">
+      <div class="period-left">
+        <mat-icon>date_range</mat-icon>
+        <span class="period-dates">
+          {{ formatDate(bilanData.exercice.dateDebut) }} → {{ formatDate(bilanData.exercice.dateFin) }}
+        </span>
+      </div>
+      <span class="status-pill"
+            [class.actif]="bilanData.exercice.actif"
+            [class.cloture]="bilanData.exercice.cloture">
+        <mat-icon>{{ bilanData.exercice.cloture ? 'lock' : 'lock_open' }}</mat-icon>
+        {{ (bilanData.exercice.cloture ? 'bilan.statut.cloture' : 'bilan.statut.en_cours') | translate }}
+      </span>
+    </div>
+
+    <!-- ── LIGNE 2 : 4 KPI cards ── -->
+    <div class="kpi-row">
+
+      <div class="kpi-card k-init">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>history</mat-icon></div>
+        </div>
+        <span class="kpi-label">{{ 'bilan.resume.solde_initial' | translate }}</span>
+        <span class="kpi-value">{{ formatMontant(bilanData.soldeInitial) }}</span>
+      </div>
+
+      <div class="kpi-card k-in">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>trending_up</mat-icon></div>
+        </div>
+        <span class="kpi-label">{{ 'bilan.resume.total_entrees' | translate }}</span>
+        <span class="kpi-value">+{{ formatMontant(bilanData.totalEntrees) }}</span>
+      </div>
+
+      <div class="kpi-card k-out">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>trending_down</mat-icon></div>
+        </div>
+        <span class="kpi-label">{{ 'bilan.resume.total_sorties' | translate }}</span>
+        <span class="kpi-value">-{{ formatMontant(bilanData.totalSorties) }}</span>
+      </div>
+
+      <div class="kpi-card k-final">
+        <div class="kpi-top">
+          <div class="kpi-icon"><mat-icon>account_balance_wallet</mat-icon></div>
+          <span class="kpi-delta" [class.delta-up]="isPositiveVariation()" [class.delta-down]="!isPositiveVariation()">
+            {{ isPositiveVariation() ? '↑' : '↓' }} {{ formatPercentage(getVariationPercentage()) }}
           </span>
         </div>
-        <div class="status-info">
-          <span class="status-badge"
-                [class.actif]="bilanData.exercice.actif"
-                [class.cloture]="bilanData.exercice.cloture">
-            <mat-icon>{{ bilanData.exercice.cloture ? 'lock' : 'lock_open' }}</mat-icon>
-            {{ (bilanData.exercice.cloture ? 'bilan.statut.cloture' : 'bilan.statut.en_cours') | translate }}
-          </span>
+        <span class="kpi-label">{{ 'bilan.resume.solde_final' | translate }}</span>
+        <span class="kpi-value">{{ formatMontant(bilanData.soldeFinal) }}</span>
+      </div>
+
+    </div>
+
+    <!-- ── LIGNE 3 : Répartition caisses + Recouvrement ── -->
+    <div class="mid-row">
+
+      <!-- Donut répartition caisses -->
+      <div class="chart-card">
+        <div class="card-title">
+          <mat-icon>donut_large</mat-icon>
+          <span>{{ 'bilan.caisse.repartition' | translate }}</span>
+        </div>
+        <div class="donut-layout">
+          <!-- SVG Donut généré dynamiquement selon nb caisses — ici on affiche la légende, le SVG est optionnel -->
+          <div class="donut-placeholder">
+            <div class="donut-center-text">
+              <span class="donut-amount">{{ formatMontant(bilanData.soldeFinal) }}</span>
+              <span class="donut-sub">{{ 'bilan.resume.solde_final' | translate }}</span>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <div class="donut-leg-row" *ngFor="let caisse of bilanData.detailCaisses">
+              <span class="donut-leg-dot" [style.background]="caisse.couleur"></span>
+              <span class="donut-leg-name">{{ caisse.nom }}</span>
+              <span class="donut-leg-pct">{{ formatPercentage(getCaissePercentage(caisse)) }}</span>
+              <span class="donut-leg-amt">{{ formatMontant(caisse.soldeActuel) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="summary-grid">
-        <div class="summary-item initial">
-          <div class="item-icon"><mat-icon>history</mat-icon></div>
-          <div class="item-content">
-            <span class="item-label">{{ 'bilan.resume.solde_initial' | translate }}</span>
-            <span class="item-value">{{ formatMontant(bilanData.soldeInitial) }}</span>
-          </div>
+      <!-- Taux de recouvrement -->
+      <div class="chart-card">
+        <div class="card-title">
+          <mat-icon>gps_fixed</mat-icon>
+          <span>{{ 'bilan.resume.taux_recouvrement' | translate }}</span>
         </div>
 
-        <div class="summary-item entrees">
-          <div class="item-icon"><mat-icon>trending_up</mat-icon></div>
-          <div class="item-content">
-            <span class="item-label">{{ 'bilan.resume.total_entrees' | translate }}</span>
-            <span class="item-value">+{{ formatMontant(bilanData.totalEntrees) }}</span>
-          </div>
+        <div class="recouv-big">
+          {{ formatPercentage(getTauxRecouvrement()) }}
+        </div>
+        <div class="recouv-bar-track">
+          <div class="recouv-bar-fill" [style.width.%]="getTauxRecouvrement()"></div>
         </div>
 
-        <div class="summary-item sorties">
-          <div class="item-icon"><mat-icon>trending_down</mat-icon></div>
-          <div class="item-content">
-            <span class="item-label">{{ 'bilan.resume.total_sorties' | translate }}</span>
-            <span class="item-value">-{{ formatMontant(bilanData.totalSorties) }}</span>
-          </div>
+        <div class="recouv-info-row">
+          <span class="recouv-sub">
+            {{ formatMontant(bilanData.impayes?.totalImpayes) }} {{ 'bilan.impayes.restants' | translate }}
+          </span>
+          <span class="variation-chip"
+                [class.chip-pos]="isPositiveVariation()"
+                [class.chip-neg]="!isPositiveVariation()">
+            {{ isPositiveVariation() ? '↑' : '↓' }}
+            {{ isPositiveVariation() ? '+' : '' }}{{ formatMontant(getVariation()) }}
+          </span>
         </div>
 
-        <div class="summary-item final">
-          <div class="item-icon"><mat-icon>account_balance_wallet</mat-icon></div>
-          <div class="item-content">
-            <span class="item-label">{{ 'bilan.resume.solde_final' | translate }}</span>
-            <span class="item-value">{{ formatMontant(bilanData.soldeFinal) }}</span>
+        <div class="recouv-chips">
+          <div class="r-chip r-green">
+            <span class="rv">{{ formatMontant(bilanData.totalEntrees) }}</span>
+            <span class="rl">{{ 'bilan.resume.total_entrees' | translate }}</span>
+          </div>
+          <div class="r-chip r-red">
+            <span class="rv">{{ formatMontant(bilanData.impayes?.totalImpayes) }}</span>
+            <span class="rl">{{ 'bilan.impayes.total' | translate }}</span>
+          </div>
+          <div class="r-chip r-blue">
+            <span class="rv">{{ formatMontant(bilanData.totalEntrees + (bilanData.impayes?.totalImpayes || 0)) }}</span>
+            <span class="rl">{{ 'bilan.impayes.attendu' | translate }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Variation + Recouvrement -->
-      <div class="variation-section">
-        <div class="variation-card"
-             [class.positive]="isPositiveVariation()"
-             [class.negative]="!isPositiveVariation()">
-          <mat-icon>{{ isPositiveVariation() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-          <div class="variation-content">
-            <span class="variation-label">{{ 'bilan.resume.variation' | translate }}</span>
-            <span class="variation-value">
-              {{ isPositiveVariation() ? '+' : '' }}{{ formatMontant(getVariation()) }}
-              ({{ formatPercentage(getVariationPercentage()) }})
-            </span>
-          </div>
-        </div>
+    </div>
 
-        <div class="recouvrement-card">
-          <mat-icon>pie_chart</mat-icon>
-          <div class="recouvrement-content">
-            <span class="recouvrement-label">{{ 'bilan.resume.taux_recouvrement' | translate }}</span>
-            <span class="recouvrement-value">{{ formatPercentage(getTauxRecouvrement()) }}</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="getTauxRecouvrement()"></div>
+    <!-- ── BANNIÈRE IMPAYÉS (si > 0) ── -->
+    <div class="impayes-banner" *ngIf="bilanData.impayes?.totalImpayes > 0">
+      <div class="imp-left">
+        <mat-icon class="imp-icon">warning</mat-icon>
+        <div>
+          <div class="imp-title">{{ 'bilan.impayes.titre_banner' | translate }}</div>
+          <div class="imp-sub">
+            {{ bilanData.impayes.nombreMembresEnRetard }} {{ 'bilan.impayes.membres_retard' | translate }}
+            <span *ngFor="let d of bilanData.impayes.detailParType"> · {{ d.type }}</span>
           </div>
         </div>
+      </div>
+      <div class="imp-right">
+        <span class="imp-amount">{{ formatMontant(bilanData.impayes.totalImpayes) }}</span>
+        <span class="imp-detail-link">{{ 'bilan.impayes.voir_detail' | translate }} →</span>
       </div>
     </div>
 
-    <!-- Onglets de détails -->
+    <!-- ── ONGLETS ── -->
     <mat-tab-group class="bilan-tabs" animationDuration="300ms">
 
       <!-- Tab Caisses -->
@@ -162,12 +214,9 @@
           <mat-icon>account_balance</mat-icon>
           <span>{{ 'bilan.tabs.caisses' | translate }}</span>
         </ng-template>
-
         <div class="tab-content">
           <div class="caisses-grid">
-            <div class="caisse-card"
-                 *ngFor="let caisse of bilanData.detailCaisses"
-                 [style.--caisse-color]="caisse.couleur">
+            <div class="caisse-card" *ngFor="let caisse of bilanData.detailCaisses" [style.--caisse-color]="caisse.couleur">
               <div class="caisse-header">
                 <div class="caisse-icon" [style.background-color]="caisse.couleur">
                   <mat-icon>{{ caisse.icone || 'account_balance_wallet' }}</mat-icon>
@@ -177,31 +226,18 @@
                   <span class="caisse-type">{{ caisse.type }}</span>
                 </div>
               </div>
-
               <div class="caisse-body">
                 <div class="caisse-solde">
                   <span class="solde-label">{{ 'bilan.caisse.solde_actuel' | translate }}</span>
                   <span class="solde-value">{{ formatMontant(caisse.soldeActuel) }}</span>
                 </div>
-
                 <div class="caisse-progress">
                   <div class="progress-bar">
-                    <div class="progress-fill"
-                         [style.width.%]="getCaissePercentage(caisse)"
-                         [style.background-color]="caisse.couleur">
-                    </div>
+                    <div class="progress-fill" [style.width.%]="getCaissePercentage(caisse)" [style.background-color]="caisse.couleur"></div>
                   </div>
-                  <span class="progress-label">
-                    {{ getCaissePercentage(caisse) | number:'1.1-1' }}%
-                    {{ 'bilan.caisse.du_total' | translate }}
-                  </span>
+                  <span class="progress-label">{{ formatPercentage(getCaissePercentage(caisse)) }} {{ 'bilan.caisse.du_total' | translate }}</span>
                 </div>
-
                 <div class="caisse-details">
-                  <div class="detail-row">
-                    <span class="detail-label">{{ 'bilan.caisse.report' | translate }}</span>
-                    <span class="detail-value">{{ formatMontant(caisse.soldeReporte) }}</span>
-                  </div>
                   <div class="detail-row entree">
                     <span class="detail-label">{{ 'bilan.caisse.entrees' | translate }}</span>
                     <span class="detail-value">+{{ formatMontant(caisse.totalEntrees) }}</span>
@@ -209,6 +245,10 @@
                   <div class="detail-row sortie">
                     <span class="detail-label">{{ 'bilan.caisse.sorties' | translate }}</span>
                     <span class="detail-value">-{{ formatMontant(caisse.totalSorties) }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">{{ 'bilan.caisse.solde_reporte' | translate }}</span>
+                    <span class="detail-value">{{ formatMontant(caisse.soldeReporte) }}</span>
                   </div>
                 </div>
               </div>
@@ -223,17 +263,13 @@
           <mat-icon>payments</mat-icon>
           <span>{{ 'bilan.tabs.contributions' | translate }}</span>
         </ng-template>
-
         <div class="tab-content">
-          <div class="contributions-list" *ngIf="bilanData?.detailContributions?.length > 0">
-            <div class="contribution-card" *ngFor="let contrib of bilanData?.detailContributions">
+          <div class="contributions-list" *ngIf="bilanData.detailContributions?.length > 0">
+            <div class="contribution-card" *ngFor="let contrib of bilanData.detailContributions">
               <div class="contrib-header">
                 <h4>{{ contrib.nom }}</h4>
-                <span class="contrib-count">
-                  {{ 'bilan.contributions.nb_paiements' | translate:{ count: contrib.nbContributions } }}
-                </span>
+                <span class="contrib-count">{{ 'bilan.contributions.nb_operations' | translate:{ count: contrib.nbContributions } }}</span>
               </div>
-
               <div class="contrib-body">
                 <div class="contrib-amounts">
                   <div class="amount-item attendu">
@@ -242,16 +278,15 @@
                   </div>
                   <div class="amount-item recu">
                     <span class="amount-label">{{ 'bilan.contributions.recu' | translate }}</span>
-                    <span class="amount-value">{{ formatMontant(contrib.montantRecu) }}</span>
+                    <span class="amount-value">{{ formatMontant(contrib.montant) }}</span>
                   </div>
                 </div>
-
                 <div class="contrib-progress">
                   <div class="progress-header">
                     <span>{{ 'bilan.contributions.taux_recouvrement' | translate }}</span>
                     <span class="progress-value"
                           [class.success]="contrib.tauxRecouvrement >= 80"
-                          [class.warning]="contrib.tauxRecouvrement < 80 && contrib.tauxRecouvrement >= 50"
+                          [class.warning]="contrib.tauxRecouvrement >= 50 && contrib.tauxRecouvrement < 80"
                           [class.danger]="contrib.tauxRecouvrement < 50">
                       {{ formatPercentage(contrib.tauxRecouvrement) }}
                     </span>
@@ -260,7 +295,7 @@
                     <div class="progress-fill"
                          [style.width.%]="contrib.tauxRecouvrement"
                          [class.success]="contrib.tauxRecouvrement >= 80"
-                         [class.warning]="contrib.tauxRecouvrement < 80 && contrib.tauxRecouvrement >= 50"
+                         [class.warning]="contrib.tauxRecouvrement >= 50 && contrib.tauxRecouvrement < 80"
                          [class.danger]="contrib.tauxRecouvrement < 50">
                     </div>
                   </div>
@@ -268,7 +303,6 @@
               </div>
             </div>
           </div>
-
           <div class="empty-tab" *ngIf="!bilanData.detailContributions?.length">
             <mat-icon>payments</mat-icon>
             <p>{{ 'bilan.contributions.vide' | translate }}</p>
@@ -282,17 +316,13 @@
           <mat-icon>shopping_cart</mat-icon>
           <span>{{ 'bilan.tabs.depenses' | translate }}</span>
         </ng-template>
-
         <div class="tab-content">
           <div class="depenses-list" *ngIf="bilanData.detailDepenses?.length > 0">
             <div class="depense-card" *ngFor="let depense of bilanData.detailDepenses">
               <div class="depense-header">
                 <h4>{{ depense.nom }}</h4>
-                <span class="depense-count">
-                  {{ 'bilan.depenses.nb_operations' | translate:{ count: depense.nbDepenses } }}
-                </span>
+                <span class="depense-count">{{ 'bilan.depenses.nb_operations' | translate:{ count: depense.nbDepenses } }}</span>
               </div>
-
               <div class="depense-body">
                 <div class="depense-amounts">
                   <div class="amount-item budget">
@@ -304,7 +334,6 @@
                     <span class="amount-value">{{ formatMontant(depense.montantDepense) }}</span>
                   </div>
                 </div>
-
                 <div class="depense-progress" *ngIf="depense.budgetAlloue > 0">
                   <div class="progress-header">
                     <span>{{ 'bilan.depenses.consommation_budget' | translate }}</span>
@@ -327,7 +356,6 @@
               </div>
             </div>
           </div>
-
           <div class="empty-tab" *ngIf="!bilanData.detailDepenses?.length">
             <mat-icon>shopping_cart</mat-icon>
             <p>{{ 'bilan.depenses.vide' | translate }}</p>
@@ -341,7 +369,6 @@
           <mat-icon>warning</mat-icon>
           <span>{{ 'bilan.tabs.impayes' | translate }}</span>
         </ng-template>
-
         <div class="tab-content">
           <div class="impayes-section" *ngIf="bilanData.impayes">
             <div class="impayes-summary">
@@ -360,7 +387,6 @@
                 </div>
               </div>
             </div>
-
             <div class="impayes-detail" *ngIf="bilanData.impayes.detailParType?.length > 0">
               <h4>{{ 'bilan.impayes.detail_titre' | translate }}</h4>
               <div class="detail-list">
@@ -371,7 +397,6 @@
               </div>
             </div>
           </div>
-
           <div class="empty-tab success" *ngIf="!bilanData.impayes?.totalImpayes">
             <mat-icon>check_circle</mat-icon>
             <p>{{ 'bilan.impayes.vide' | translate }}</p>
@@ -385,7 +410,6 @@
           <mat-icon>bar_chart</mat-icon>
           <span>{{ 'bilan.tabs.statistiques' | translate }}</span>
         </ng-template>
-
         <div class="tab-content">
           <div class="stats-section" *ngIf="bilanData.statistiques">
             <div class="stats-grid">
@@ -396,7 +420,6 @@
                   <span class="stat-value">{{ bilanData.statistiques.nombreMembresActifs }}</span>
                 </div>
               </div>
-
               <div class="stat-card">
                 <div class="stat-icon contributions"><mat-icon>payments</mat-icon></div>
                 <div class="stat-content">
@@ -404,7 +427,6 @@
                   <span class="stat-value">{{ bilanData.statistiques.nombreContributions }}</span>
                 </div>
               </div>
-
               <div class="stat-card">
                 <div class="stat-icon moyenne-entree"><mat-icon>trending_up</mat-icon></div>
                 <div class="stat-content">
@@ -412,7 +434,6 @@
                   <span class="stat-value">{{ formatMontant(bilanData.statistiques.contributionMoyenne) }}</span>
                 </div>
               </div>
-
               <div class="stat-card">
                 <div class="stat-icon sorties"><mat-icon>receipt</mat-icon></div>
                 <div class="stat-content">
@@ -420,7 +441,6 @@
                   <span class="stat-value">{{ bilanData.statistiques.nombreSorties }}</span>
                 </div>
               </div>
-
               <div class="stat-card">
                 <div class="stat-icon moyenne-sortie"><mat-icon>trending_down</mat-icon></div>
                 <div class="stat-content">
@@ -437,7 +457,7 @@
 
   </div>
 
-  <!-- Pas d'exercice -->
+  <!-- ===== PAS D'EXERCICE ===== -->
   <div *ngIf="!isLoading && exercices.length === 0" class="empty-state">
     <div class="empty-illustration">
       <mat-icon class="empty-icon">event_busy</mat-icon>
@@ -446,8 +466,7 @@
       <h3 class="empty-title">{{ 'bilan.vide.titre' | translate }}</h3>
       <p class="empty-text">{{ 'bilan.vide.texte' | translate }}</p>
       <div class="empty-actions">
-        <button mat-raised-button color="primary"
-                routerLink="/responsable/finances/exercices">
+        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
           <mat-icon>add</mat-icon>
           {{ 'bilan.vide.action' | translate }}
         </button>

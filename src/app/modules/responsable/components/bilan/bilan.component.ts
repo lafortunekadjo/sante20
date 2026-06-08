@@ -24,6 +24,7 @@ import { GroupeService } from '../../../../core/services/groupe.service';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 // Interfaces
 interface Exercice {
@@ -111,7 +112,8 @@ interface StatistiquesBilan {
     MatDividerModule,
     MatTooltipModule,
     MatSnackBarModule,
-    TranslateModule
+    TranslateModule,
+    MatProgressBarModule
   ],
   templateUrl: './bilan.component.html',
   styleUrls: ['./bilan.component.scss']
@@ -125,6 +127,7 @@ export class BilanComponent implements OnInit, OnDestroy {
   exercices: Exercice[] = [];
   selectedExerciceId: number | null = null;
   bilanData: any | null = null;
+  isExporting = false;
 
   constructor(
     private financesService: FinancesService,
@@ -174,6 +177,8 @@ export class BilanComponent implements OnInit, OnDestroy {
       });
   }
 
+
+
   loadBilan(exerciceId: number): void {
     this.isLoading = true;
 
@@ -183,7 +188,9 @@ export class BilanComponent implements OnInit, OnDestroy {
         next: (bilan) => {
           this.bilanData = bilan;
           this.isLoading = false;
+          console.log(bilan)
         },
+        
         error: () => {
           this.isLoading = false;
           this.showError('Erreur lors du chargement du bilan');
@@ -229,9 +236,24 @@ export class BilanComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
   }
 
-  formatPercentage(value: number): string {
-    return value.toFixed(1) + '%';
+ formatPercentage(value: number | undefined | null): string {
+  // 🔥 Sécurité : si la valeur n'existe pas ou n'est pas un nombre, on retourne '0' ou '0.00'
+  if (value === null || value === undefined || isNaN(value)) {
+    return '0.00'; // ou '0' selon ta préférence visuelle
   }
+
+  
+  
+  return value.toFixed(2); // Convertit proprement à 2 décimales
+}
+
+// 2. Méthode utilitaire pour calculer un pourcentage en toute sécurité
+getPercentage(part: number, total: number): number {
+  if (!total || total === 0 || !part) {
+    return 0;
+  }
+  return (part / total) * 100;
+}
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString('fr-FR');

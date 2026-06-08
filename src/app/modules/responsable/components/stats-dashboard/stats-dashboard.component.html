@@ -1,0 +1,519 @@
+<div class="stats-wrapper">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <div class="stats-header">
+    <div class="header-left">
+      <mat-icon class="header-icon">insert_chart</mat-icon>
+      <div class="header-text">
+        <span class="header-title">Statistiques</span>
+        <span class="header-sub" *ngIf="data.groupeActif">{{ data.groupeActif.nom }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Sélecteur période -->
+      <div class="period-chips">
+        <button
+          *ngFor="let p of [
+            {val:'1', label:'1 mois'},
+            {val:'3', label:'3 mois'},
+            {val:'5', label:'5 mois'},
+            {val:'6', label:'6 mois'},
+            {val:'12', label:'1 an'},
+            {val:'all', label:'Tout'}
+          ]"
+          class="period-chip"
+          [class.active]="periodFilter() === p.val"
+          (click)="setPeriod(p.val)">
+          {{ p.label }}
+        </button>
+      </div>
+
+      <button mat-icon-button (click)="exportCSV()" matTooltip="Exporter CSV" class="btn-export">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button mat-icon-button (click)="onClose()" class="btn-close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════ LOADING ══════════ -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Chargement des statistiques…</span>
+  </div>
+
+  <ng-container *ngIf="!isLoading()">
+
+    <!-- ══════════ KPIs GLOBAUX ══════════ -->
+    <div class="kpi-bar">
+      <div class="kpi-card">
+        <span class="kpi-val">{{ globalKpis().totalMatchs }}</span>
+        <span class="kpi-lbl">Matchs joués</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-val" [class.taux-hi]="globalKpis().presenceMoy >= 70">
+          {{ globalKpis().presenceMoy }}%
+        </span>
+        <span class="kpi-lbl">Présence moy.</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-val kpi-top">{{ globalKpis().topJoueur || '–' }}</span>
+        <span class="kpi-lbl">Meilleure présence</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-val" [class.taux-lo]="globalKpis().absentCount > 0">
+          {{ globalKpis().absentCount }}
+        </span>
+        <span class="kpi-lbl">Joueurs &lt; 50%</span>
+      </div>
+    </div>
+
+    <!-- ══════════ ONGLETS DE VUE ══════════ -->
+    <div class="view-tabs">
+      <button class="view-tab" [class.active]="activeView() === 'heatmap'" (click)="setView('heatmap')">
+        <mat-icon>grid_on</mat-icon>
+        <span>Heatmap</span>
+      </button>
+      <button class="view-tab" [class.active]="activeView() === 'table'" (click)="setView('table')">
+        <mat-icon>table_rows</mat-icon>
+        <span>Tableau</span>
+      </button>
+      <button class="view-tab" [class.active]="activeView() === 'compare'" (click)="setView('compare')">
+        <mat-icon>compare_arrows</mat-icon>
+        <span>Comparer</span>
+        <span class="compare-count" *ngIf="compareIds().length">{{ compareIds().length }}</span>
+      </button>
+    </div>
+
+    <!-- ══════════ CORPS PRINCIPAL ══════════ -->
+    <div class="stats-body">
+
+      <!-- ── BARRE DE FILTRES ── -->
+      <div class="filters-bar" *ngIf="activeView() !== 'compare'">
+        <div class="search-box">
+          <mat-icon>search</mat-icon>
+          <input
+            type="text"
+            placeholder="Rechercher un joueur…"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)">
+          <button *ngIf="searchQuery()" (click)="searchQuery.set('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <select
+          class="poste-select"
+          [ngModel]="posteFilter()"
+          (ngModelChange)="posteFilter.set($event)">
+          <option value="">Tous les postes</option>
+          <option *ngFor="let p of postes()" [value]="p">{{ p }}</option>
+        </select>
+        <span class="result-count">{{ filteredStats().length }} joueur(s)</span>
+      </div>
+
+      <!-- ─────────────────────────────────────────
+           VUE 1 : HEATMAP
+      ───────────────────────────────────────── -->
+      <div class="view-heatmap" *ngIf="activeView() === 'heatmap'">
+        <div class="heatmap-scroll">
+          <table class="heatmap-table">
+            <thead>
+              <tr>
+                <th class="col-player">Joueur</th>
+                <th
+                  *ngFor="let m of visibleMonths()"
+                  class="col-month">
+                  {{ getMoisLabel(m) }}
+                </th>
+                <th class="col-avg">Moy.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let s of filteredStats()"
+                class="heatmap-row"
+                [class.selected]="selectedMembre()?.membreId === s.membreId"
+                (click)="selectMembre(s)">
+                <td class="cell-player">
+                  <div
+                    class="avatar-sm"
+                    [style.background]="s.avatarColor">
+                    {{ s.initiales }}
+                  </div>
+                  <span class="player-name">{{ s.nomAbrege }}</span>
+                </td>
+                <td
+                  *ngFor="let m of visibleMonths()"
+                  class="cell-heat"
+                  [style.background]="heatColor(getCellForMois(s, m).taux)"
+                  [style.color]="heatTextColor(getCellForMois(s, m).taux)"
+                  [matTooltip]="getCellForMois(s, m).present + '/' + getCellForMois(s, m).total + ' matchs'">
+                  <span *ngIf="getCellForMois(s, m).total > 0">
+                    {{ getCellForMois(s, m).taux }}%
+                  </span>
+                  <span *ngIf="getCellForMois(s, m).total === 0" class="no-data">—</span>
+                </td>
+                <td class="cell-avg">
+                  <span class="taux-badge" [ngClass]="getTauxClass(s.tauxPresence)">
+                    {{ s.tauxPresence }}%
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Légende heatmap -->
+        <div class="heatmap-legend">
+          <span class="legend-label">Taux de présence :</span>
+          <div class="legend-scale">
+            <div class="legend-cell" style="background:#F09595">0%</div>
+            <div class="legend-cell" style="background:#FAEEDA">25%</div>
+            <div class="legend-cell" style="background:#C0DD97">50%</div>
+            <div class="legend-cell" style="background:#5DCAA5">75%</div>
+            <div class="legend-cell" style="background:#1D9E75;color:#E1F5EE">100%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─────────────────────────────────────────
+           VUE 2 : TABLEAU FILTRABLE
+      ───────────────────────────────────────── -->
+      <div class="view-table" *ngIf="activeView() === 'table'">
+        <div class="table-scroll">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th class="th-player">Joueur</th>
+                <th class="th-sortable" (click)="setSort('taux')">
+                  Taux
+                  <mat-icon *ngIf="sortField() === 'taux'">
+                    {{ sortDir() === 'desc' ? 'arrow_downward' : 'arrow_upward' }}
+                  </mat-icon>
+                </th>
+                <th class="th-progress">Progression</th>
+                <th class="th-sortable" (click)="setSort('buts')">
+                  Buts
+                  <mat-icon *ngIf="sortField() === 'buts'">
+                    {{ sortDir() === 'desc' ? 'arrow_downward' : 'arrow_upward' }}
+                  </mat-icon>
+                </th>
+                <th class="th-sortable" (click)="setSort('passes')">
+                  Passes
+                  <mat-icon *ngIf="sortField() === 'passes'">
+                    {{ sortDir() === 'desc' ? 'arrow_downward' : 'arrow_upward' }}
+                  </mat-icon>
+                </th>
+                <th class="th-sortable" (click)="setSort('mvp')">
+                  MVP
+                  <mat-icon *ngIf="sortField() === 'mvp'">
+                    {{ sortDir() === 'desc' ? 'arrow_downward' : 'arrow_upward' }}
+                  </mat-icon>
+                </th>
+                <th>Comparer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let s of filteredStats()"
+                class="stats-row"
+                [class.selected]="selectedMembre()?.membreId === s.membreId"
+                (click)="selectMembre(s)">
+                <td class="td-player">
+                  <div class="avatar-sm" [style.background]="s.avatarColor">
+                    {{ s.initiales }}
+                  </div>
+                  <div class="player-info">
+                    <span class="player-name">{{ s.nomAffiche }}</span>
+                    <span class="player-sub" *ngIf="s.poste">{{ s.poste }}</span>
+                  </div>
+                </td>
+                <td class="td-taux">
+                  <span class="taux-badge" [ngClass]="getTauxClass(s.tauxPresence)">
+                    {{ s.tauxPresence }}%
+                  </span>
+                  <span class="presences-detail">{{ s.presences }}/{{ s.totalMatchs }}</span>
+                </td>
+                <td class="td-bar">
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      [style.width.%]="s.tauxPresence"
+                      [style.background]="s.tauxPresence >= 80 ? '#1D9E75' : s.tauxPresence >= 50 ? '#EF9F27' : '#E24B4A'">
+                    </div>
+                  </div>
+                </td>
+                <td class="td-stat">{{ s.buts }}</td>
+                <td class="td-stat">{{ s.passes }}</td>
+                <td class="td-stat td-mvp">
+                  <span *ngIf="s.mvp > 0" class="mvp-badge">{{ s.mvp }}</span>
+                  <span *ngIf="s.mvp === 0" class="no-data">—</span>
+                </td>
+                <td class="td-compare">
+                  <button
+                    class="btn-compare-add"
+                    [class.in-compare]="isInCompare(s.membreId)"
+                    [style.border-color]="isInCompare(s.membreId) ? compareColor(s.membreId) : ''"
+                    [style.color]="isInCompare(s.membreId) ? compareColor(s.membreId) : ''"
+                    (click)="toggleCompare(s.membreId); $event.stopPropagation()"
+                    [disabled]="!isInCompare(s.membreId) && compareIds().length >= 3"
+                    [matTooltip]="isInCompare(s.membreId) ? 'Retirer de la comparaison' : 'Ajouter à la comparaison'">
+                    <mat-icon>{{ isInCompare(s.membreId) ? 'check' : 'add' }}</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─────────────────────────────────────────
+           VUE 3 : COMPARAISON
+      ───────────────────────────────────────── -->
+      <div class="view-compare" *ngIf="activeView() === 'compare'">
+        <div class="compare-empty" *ngIf="compareIds().length === 0">
+          <mat-icon>compare_arrows</mat-icon>
+          <p>Sélectionne 2 ou 3 joueurs depuis le tableau pour les comparer</p>
+          <button mat-stroked-button (click)="setView('table')">
+            <mat-icon>table_rows</mat-icon>
+            Aller au tableau
+          </button>
+        </div>
+
+        <ng-container *ngIf="compareIds().length > 0">
+          <div class="compare-header">
+            <div class="compare-players">
+              <div
+                *ngFor="let s of compareStats(); let i = index"
+                class="compare-player-chip"
+                [style.border-color]="compareColors[i]"
+                [style.color]="compareColors[i]">
+                <div class="avatar-xs" [style.background]="compareColors[i]">
+                  {{ s.initiales }}
+                </div>
+                {{ s.nomAbrege }}
+                <button (click)="toggleCompare(s.membreId)" class="chip-remove">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+            <button mat-stroked-button (click)="clearCompare()" class="btn-clear">
+              Tout effacer
+            </button>
+          </div>
+
+          <div class="compare-grid">
+
+            <!-- Taux de présence -->
+            <div class="compare-block">
+              <div class="compare-block-title">
+                <mat-icon>event_available</mat-icon>
+                Taux de présence
+              </div>
+              <div *ngFor="let s of compareStats(); let i = index" class="compare-bar-row">
+                <span class="compare-bar-label">{{ s.nomAbrege }}</span>
+                <div class="compare-bar-track">
+                  <div
+                    class="compare-bar-fill"
+                    [style.width.%]="s.tauxPresence"
+                    [style.background]="compareColors[i]">
+                  </div>
+                </div>
+                <span class="compare-bar-val">{{ s.tauxPresence }}%</span>
+              </div>
+            </div>
+
+            <!-- Buts -->
+            <div class="compare-block">
+              <div class="compare-block-title">
+                <mat-icon>sports_soccer</mat-icon>
+                Buts
+              </div>
+              <div *ngFor="let s of compareStats(); let i = index" class="compare-bar-row">
+                <span class="compare-bar-label">{{ s.nomAbrege }}</span>
+                <div class="compare-bar-track">
+                  <div
+                    class="compare-bar-fill"
+                    [style.width]="barWidth(s.buts, getMaxStat('buts'))"
+                    [style.background]="compareColors[i]">
+                  </div>
+                </div>
+                <span class="compare-bar-val">{{ s.buts }}</span>
+              </div>
+            </div>
+
+            <!-- Passes -->
+            <div class="compare-block">
+              <div class="compare-block-title">
+                <mat-icon>assistant</mat-icon>
+                Passes décisives
+              </div>
+              <div *ngFor="let s of compareStats(); let i = index" class="compare-bar-row">
+                <span class="compare-bar-label">{{ s.nomAbrege }}</span>
+                <div class="compare-bar-track">
+                  <div
+                    class="compare-bar-fill"
+                    [style.width]="barWidth(s.passes, getMaxStat('passes'))"
+                    [style.background]="compareColors[i]">
+                  </div>
+                </div>
+                <span class="compare-bar-val">{{ s.passes }}</span>
+              </div>
+            </div>
+
+            <!-- MVP -->
+            <div class="compare-block">
+              <div class="compare-block-title">
+                <mat-icon>military_tech</mat-icon>
+                MVP & HDM
+              </div>
+              <div *ngFor="let s of compareStats(); let i = index" class="compare-bar-row">
+                <span class="compare-bar-label">{{ s.nomAbrege }}</span>
+                <div class="compare-bar-track">
+                  <div
+                    class="compare-bar-fill"
+                    [style.width]="barWidth(s.mvp + s.hdm, getMaxStat('mvp'))"
+                    [style.background]="compareColors[i]">
+                  </div>
+                </div>
+                <span class="compare-bar-val">{{ s.mvp + s.hdm }}</span>
+              </div>
+            </div>
+
+            <!-- Timeline des 10 derniers matchs -->
+            <div class="compare-block compare-block-full">
+              <div class="compare-block-title">
+                <mat-icon>timeline</mat-icon>
+                10 derniers matchs
+              </div>
+              <div *ngFor="let s of compareStats(); let i = index" class="compare-timeline-row">
+                <span class="compare-bar-label">{{ s.nomAbrege }}</span>
+                <div class="timeline-cells">
+                  <div
+                    *ngFor="let t of s.timeline.slice(-10)"
+                    class="timeline-cell"
+                    [ngClass]="'tc-' + t.result"
+                    [matTooltip]="(t.date | date:'dd/MM') + ' — ' + t.result">
+                    {{ getTimelineIcon(t.result) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </ng-container>
+      </div>
+
+    </div><!-- /stats-body -->
+
+  </ng-container>
+
+  <!-- ══════════ PANNEAU FICHE JOUEUR ══════════ -->
+  <div class="player-panel" [class.open]="selectedMembre() !== null" *ngIf="selectedMembre()">
+    <div class="panel-header">
+      <div class="panel-player">
+        <div class="avatar-lg" [style.background]="selectedMembre()!.avatarColor">
+          {{ selectedMembre()!.initiales }}
+        </div>
+        <div>
+          <div class="panel-name">{{ selectedMembre()!.nomAffiche }}</div>
+          <div class="panel-sub" *ngIf="selectedMembre()!.poste">{{ selectedMembre()!.poste }}</div>
+        </div>
+      </div>
+      <button mat-icon-button (click)="selectedMembre.set(null)">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="panel-body">
+      <!-- KPIs joueur -->
+      <div class="panel-kpis">
+        <div class="panel-kpi">
+          <span class="panel-kpi-val" [ngClass]="getTauxClass(selectedMembre()!.tauxPresence)">
+            {{ selectedMembre()!.tauxPresence }}%
+          </span>
+          <span class="panel-kpi-lbl">Présence</span>
+        </div>
+        <div class="panel-kpi">
+          <span class="panel-kpi-val">{{ selectedMembre()!.buts }}</span>
+          <span class="panel-kpi-lbl">Buts</span>
+        </div>
+        <div class="panel-kpi">
+          <span class="panel-kpi-val">{{ selectedMembre()!.passes }}</span>
+          <span class="panel-kpi-lbl">Passes</span>
+        </div>
+        <div class="panel-kpi">
+          <span class="panel-kpi-val panel-kpi-gold">{{ selectedMembre()!.mvp }}</span>
+          <span class="panel-kpi-lbl">MVP</span>
+        </div>
+      </div>
+
+      <!-- Détail présences -->
+      <div class="panel-section">
+        <div class="panel-section-title">Présences / Absences</div>
+        <div class="presence-detail">
+          <span class="pd-present">{{ selectedMembre()!.presences }} présences</span>
+          <span class="pd-absent">{{ selectedMembre()!.absences }} absences</span>
+          <span class="pd-total">sur {{ selectedMembre()!.totalMatchs }} matchs</span>
+        </div>
+        <div class="presence-bar">
+          <div
+            class="pb-fill"
+            [style.width.%]="selectedMembre()!.tauxPresence">
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline par mois -->
+      <div class="panel-section">
+        <div class="panel-section-title">Par mois</div>
+        <div class="month-bars">
+          <div *ngFor="let m of visibleMonths()" class="month-bar-item">
+            <div class="month-bar-track">
+              <div
+                class="month-bar-fill"
+                [style.height.%]="getCellForMois(selectedMembre()!, m).taux"
+                [style.background]="heatColor(getCellForMois(selectedMembre()!, m).taux)">
+              </div>
+            </div>
+            <span class="month-bar-label">{{ getMoisLabel(m) }}</span>
+            <span class="month-bar-val">
+              {{ getCellForMois(selectedMembre()!, m).taux }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline matchs -->
+      <div class="panel-section">
+        <div class="panel-section-title">Historique matchs</div>
+        <div class="timeline-cells panel-timeline">
+          <div
+            *ngFor="let t of selectedMembre()!.timeline.slice(-20)"
+            class="timeline-cell"
+            [ngClass]="'tc-' + t.result"
+            [matTooltip]="(t.date | date:'dd/MM/yy') + ' — ' + (t.present ? 'Présent' : 'Absent') + (t.buts > 0 ? ' · ' + t.buts + ' but(s)' : '')">
+            {{ getTimelineIcon(t.result) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bouton comparer -->
+      <button
+        mat-stroked-button
+        class="btn-add-compare"
+        [style.border-color]="isInCompare(selectedMembre()!.membreId) ? compareColor(selectedMembre()!.membreId) : ''"
+        (click)="toggleCompare(selectedMembre()!.membreId)"
+        [disabled]="!isInCompare(selectedMembre()!.membreId) && compareIds().length >= 3">
+        <mat-icon>{{ isInCompare(selectedMembre()!.membreId) ? 'check' : 'compare_arrows' }}</mat-icon>
+        {{ isInCompare(selectedMembre()!.membreId) ? 'Dans la comparaison' : 'Ajouter à la comparaison' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay mobile fiche joueur -->
+  <div class="panel-overlay" *ngIf="selectedMembre() && isMobile" (click)="selectedMembre.set(null)"></div>
+
+</div>

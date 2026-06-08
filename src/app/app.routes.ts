@@ -95,6 +95,7 @@ import { PlayerListComponent } from "./modules/membre/components/player-list/pla
 import { VideoManagementComponent } from "./modules/membre/components/video-management/video-management.component";
 import { ForgotPasswordComponent } from "./shared/components/forgot-password/forgot-password.component";
 import { ResetPasswordComponent } from "./shared/components/reset-password/reset-password.component";
+import { StatsDashboardComponent } from "./modules/responsable/components/stats-dashboard/stats-dashboard.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -269,6 +270,10 @@ export const routes: Routes = [
       {
         path: 'explorer',
         component: GroupesExploreComponent,
+      },
+        {
+        path: 'memberstat',
+        component: StatsDashboardComponent,
       },
       {
         path: 'mes-demandes',

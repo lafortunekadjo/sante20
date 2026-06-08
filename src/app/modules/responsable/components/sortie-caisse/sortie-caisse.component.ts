@@ -206,17 +206,24 @@ export class SortieCaisseComponent implements OnInit {
     ).slice(0, 10);
   }
 
-  displayMembre(membre: Membre): string {
-    return membre ? `${membre.prenom} ${membre.nom}` : '';
-  }
 
-  onBeneficiaireSelected(membre: Membre): void {
-    this.sortieForm.patchValue({
-      beneficiaireId: membre.id,
-      beneficiaireSearch: `${membre.prenom} ${membre.nom}`,
-      beneficiaireTexte: ''
-    });
-  }
+onBeneficiaireSelected(membre: Membre): void {
+  this.sortieForm.patchValue({
+    // 1. Conserve bien l'ID pour ton traitement ou ton envoi API
+    beneficiaireId: membre.id,
+    
+    // 🔥 2. Injecte l'OBJET 'membre' complet ici au lieu de la chaîne de caractères !
+    // Angular Material s'occupera tout seul de l'affichage grâce à [displayWith]="displayMembre"
+    beneficiaireSearch: membre,
+    
+    // 3. Vide le champ texte alternatif si le bénéficiaire est un membre officiel
+    beneficiaireTexte: ''
+  });
+}
+
+displayMembre = (membre: Membre): string => {
+  return membre ? `${membre.prenom} ${membre.nom}` : '';
+};
 
   onCaisseChange(): void {
     const caisseId = this.sortieForm.get('caisseId')?.value;
