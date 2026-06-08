@@ -123,12 +123,47 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   selectedMembre = signal<MembreStats | null>(null);
 
   // ── Listes des mois visibles en fonction du filtre temporel ──
-  readonly visibleMonths = computed(() => {
-    const all = this.allMonths();
-    const period = this.periodFilter();
-    if (period === 'all' || period === 'custom') return all;
-    return all.slice(-parseInt(period, 10));
-  });
+ readonly visibleMonths = computed(() => {
+  const all = this.allMonths(); // ex: ['2026-01', '2026-02', '2026-03', ...]
+  const period = this.periodFilter();
+  
+  if (period === 'all') {
+    return all;
+  }
+
+  if (period === 'custom') {
+    const dDeb = this.dateDebut();
+    const dFin = this.dateFin();
+    
+    // Si aucune date n'est saisie, on affiche tout par défaut
+    if (!dDeb && !dFin) return all;
+
+    return all.filter(mKey => {
+      // mKey est au format "YYYY-MM"
+      const [year, month] = mKey.split('-').map(Number);
+      
+      if (dDeb) {
+        const start = new Date(dDeb);
+        // On compare par rapport au dernier jour du mois pour ne pas exclure 
+        // un mois commencé si la date de début est au milieu du mois
+        const finDuMois = new Date(year, month, 0); 
+        if (finDuMois < start) return false;
+      }
+      
+      if (dFin) {
+        const end = new Date(dFin);
+        // On compare par rapport au premier jour du mois
+        const debutDuMois = new Date(year, month - 1, 1);
+        if (debutDuMois > end) return false;
+      }
+      
+      return true;
+    });
+  }
+
+  // Pour les périodes fixes ('1', '3', '5', '6', '12')
+  return all.slice(-parseInt(period, 10));
+});
 
   // ── Filtrage et restriction des statistiques ──
   readonly filteredStats = computed(() => {
