@@ -212,8 +212,11 @@ export class TypeSanctionComponent implements OnInit {
     }
     const data = {
       ...this.newTypeSanction,
-      caisse: this.newTypeSanction.caisseId ? { id: this.newTypeSanction.caisseId } : null,
+      caisseId: this.newTypeSanction.caisseId 
     };
+
+    console.log(data)
+   
     this.sanctionService.createTypeSanction(data).subscribe({
       next: () => {
         this.successMessage = 'Type de sanction créé avec succès.';
