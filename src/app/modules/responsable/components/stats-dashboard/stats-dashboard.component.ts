@@ -18,6 +18,9 @@ import { Groupe } from '../../../../core/models/groupe.model';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { MatchService } from '../../../../core/services/match.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { Equipe } from '../../../../core/models/groupe.model copy';
+import { GroupeService } from '../../../../core/services/groupe.service';
+import { GeneralService } from '../../../../core/services/general.service';
 
 // ─────────────────── Interfaces ───────────────────
 
@@ -30,6 +33,7 @@ export interface MembreStats {
   poste?: string;
   avatarColor: string;
   initiales: string;
+  membreEquipeId?: number;
   // Présences
   totalMatchs: number;
   presences: number;
@@ -40,9 +44,9 @@ export interface MembreStats {
   passes: number;
   mvp: number;
   hdm: number;
-  // Timeline mensuelle: mois → { present, total }
+  // Timeline mensuelle: mois → { present, total, taux }
   parMois: Record<string, { present: number; total: number; taux: number }>;
-  // Timeline matchs (ordre chrono): 'W' | 'L' | 'N' | 'ABS' | 'FUT'
+  // Timeline matchs (ordre chrono)
   timeline: Array<{
     matchId: number;
     date: Date;
@@ -55,7 +59,7 @@ export interface MembreStats {
 
 export interface HeatmapCell {
   membreId: number;
-  moisKey: string; // 'YYYY-MM'
+  moisKey: string; 
   taux: number;
   present: number;
   total: number;
@@ -65,6 +69,7 @@ export type PeriodFilter = '1' | '3' | '5' | '6' | '12' | 'all';
 export type SortField = 'nom' | 'taux' | 'buts' | 'passes' | 'mvp';
 export type SortDir = 'asc' | 'desc';
 export type ActiveView = 'heatmap' | 'table' | 'compare';
+export type EquipeFilter = 'all' | 'equipe1' | 'equipe2'; // 🔥 Nouveau filtre d'équipe
 
 // ─────────────────── Helpers ───────────────────
 
@@ -140,6 +145,7 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   periodFilter  = signal<PeriodFilter>('5');
   searchQuery   = signal('');
   posteFilter   = signal('');
+  equipeFilter  = signal<number | 'all'>('all'); // 🔥 Initialisation du filtre d'équipe
   sortField     = signal<SortField>('taux');
   sortDir       = signal<SortDir>('desc');
   compareIds    = signal<number[]>([]);   // max 3
@@ -148,25 +154,32 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   private allStats     = signal<MembreStats[]>([]);
   private allMonths    = signal<string[]>([]);  // 'YYYY-MM' triés
   private allMatches   = signal<Match[]>([]);
+  readonly allEquipes  = signal<Equipe[]>([]);
 
   // ── Panneau joueur ──
   selectedMembre = signal<MembreStats | null>(null);
 
-  // ── Computed ──
+  // ── Computed Corrigés et Filtrés ──
+// ── Computed Corrigés et Filtrés avec Équipe Dynamique ──
   readonly filteredStats = computed(() => {
     const stats  = this.allStats();
-    const period = this.periodFilter();
     const q      = this.searchQuery().toLowerCase().trim();
     const poste  = this.posteFilter();
+    const equipeId = this.equipeFilter(); // 🔥 ID de l'équipe sélectionnée
     const field  = this.sortField();
     const dir    = this.sortDir();
     const months = this.visibleMonths();
+
 
     return stats
       .map(s => this.restrictToPeriod(s, months))
       .filter(s => {
         if (q && !s.nomAffiche.toLowerCase().includes(q)) return false;
         if (poste && s.poste !== poste) return false;
+        
+        // 🔥 FILTRE SUR L'EQUIPE DU MEMBRE
+        if (equipeId !== 'all' && s.membreEquipeId !== equipeId) return false;
+        
         return true;
       })
       .sort((a, b) => {
@@ -193,11 +206,21 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
   readonly globalKpis = computed(() => {
     const stats  = this.filteredStats();
     const months = this.visibleMonths();
+    
     if (!stats.length) return { totalMatchs: 0, presenceMoy: 0, topJoueur: '', absentCount: 0 };
-    const totalMatchs   = this.allMatches().filter(m => this.matchInPeriod(m, months)).length;
-    const presenceMoy   = Math.round(stats.reduce((s, m) => s + m.tauxPresence, 0) / stats.length);
-    const top           = [...stats].sort((a, b) => b.tauxPresence - a.tauxPresence)[0];
-    const absentCount   = stats.filter(s => s.tauxPresence < 50).length;
+    
+    const totalMatchs = this.allMatches().filter(m => this.matchInPeriod(m, months)).length;
+    
+    // 🔥 CORRECTION : Vraie formule mathématique de participation globale (cumul présence / cumul possible)
+    const cumulPresences = stats.reduce((acc, s) => acc + s.presences, 0);
+    const cumulMatchsPossibles = stats.reduce((acc, s) => acc + s.totalMatchs, 0);
+    const presenceMoy = cumulMatchsPossibles > 0 
+      ? Math.round((cumulPresences / cumulMatchsPossibles) * 100) 
+      : 0;
+
+    const top = [...stats].sort((a, b) => b.tauxPresence - a.tauxPresence || b.buts - a.buts)[0];
+    const absentCount = stats.filter(s => s.tauxPresence < 50).length;
+    
     return { totalMatchs, presenceMoy, topJoueur: top?.nomAbrege || '', absentCount };
   });
 
@@ -222,21 +245,21 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
- constructor(
-  private presenceService: PresenceService,
-  private matchService: MatchService,
-  private authService: AuthService,
-  @Optional() public dialogRef: MatDialogRef<StatsDashboardComponent>, // <-- Optionnel !
-  private translate: TranslateService,
-  @Optional() @Inject(MAT_DIALOG_DATA) public data: { matches: Match[]; groupeActif?: Groupe; } // <-- Optionnel !
-) {
-  this.isMobile = window.innerWidth <= 768;
-  
-  // Sécurité si 'data' est nul (lors de l'affichage hors boîte de dialogue)
-  if (!this.data) {
-    this.data = { matches: [], groupeActif: undefined };
+  constructor(
+    private presenceService: PresenceService,
+    private matchService: MatchService,
+    private authService: AuthService,
+    private equipeService: GeneralService,
+    @Optional() public dialogRef: MatDialogRef<StatsDashboardComponent>, // 🔥 Optionnel pour éviter l'erreur NullInjectorError
+    private translate: TranslateService,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: { matches: Match[]; groupeActif?: Groupe; }
+  ) {
+    this.isMobile = window.innerWidth <= 768;
+    if (!this.data) {
+      this.data = { matches: [], groupeActif: undefined };
+    }
   }
-}
+
   @HostListener('window:resize')
   onResize() { this.isMobile = window.innerWidth <= 768; }
 
@@ -268,6 +291,21 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
         this.isLoading.set(false);
       }
     });
+
+    // 🔥 Appel de l'API pour charger dynamiquement les équipes du groupe
+  if (groupeId) {
+    this.equipeService.getEquipesByGroupe() // <-- Adapte le nom de ta méthode API
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (equipes: Equipe[]) => {
+          this.allEquipes.set(equipes || []);
+        },
+        error: (err) => {
+          console.error("Erreur lors du chargement des équipes depuis l'API", err);
+          this.allEquipes.set([]); // Sécurité
+        }
+      });
+  }
 }
 
   ngOnDestroy(): void {
@@ -284,7 +322,6 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
     const playedMatches = matches.filter(m => this.isMatchPlayed(m));
     if (!playedMatches.length) { this.isLoading.set(false); return; }
 
-    // On charge les présences de tous les matchs joués en parallèle
     let pending = playedMatches.length;
     const presencesByMatch: Record<number, any[]> = {};
 
@@ -310,21 +347,10 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
     matches: Match[],
     presencesByMatch: Record<number, any[]>
   ): void {
-    // Collecte de tous les membres uniques
     const membresMap = new Map<number, MembreStats>();
-
-    // Récupère tous les mois couverts
     const monthsSet = new Set<string>();
 
-    matches.forEach(match => {
-      const d = new Date(match.dateMatch);
-      monthsSet.add(moisKey(d));
-    });
-
-    const sortedMonths = [...monthsSet].sort();
-    this.allMonths.set(sortedMonths);
-
-    // Initialise les membres depuis toutes les présences
+    // 1. Collecter d'abord la liste absolue de tous les membres uniques
     matches.forEach(match => {
       const presences = presencesByMatch[match.id] || [];
       presences.forEach(p => {
@@ -333,13 +359,14 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
         if (!membresMap.has(id)) {
           membresMap.set(id, {
             membreId: id,
-            nom:      p.membre.nom || '',
-            prenom:   p.membre.prenom || '',
+            nom:       p.membre.nom || '',
+            prenom:    p.membre.prenom || '',
             nomAffiche: formatNom(p.membre.nom, p.membre.prenom),
             nomAbrege:  formatNom(p.membre.nom, p.membre.prenom, true),
             poste:      p.membre.poste || p.poste || undefined,
             avatarColor: getAvatarColor(id),
             initiales:   getInitiales(p.membre.nom, p.membre.prenom),
+            membreEquipeId: p.membre.equipe?.id || p.membre.equipe || undefined,
             totalMatchs: 0,
             presences:   0,
             absences:    0,
@@ -355,28 +382,42 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
       });
     });
 
-    // Calcul des stats par match
+    // 2. Extraire et trier la liste chronologique des mois
+    matches.forEach(match => {
+      const d = new Date(match.dateMatch);
+      monthsSet.add(moisKey(d));
+    });
+    const sortedMonths = [...monthsSet].sort();
+    this.allMonths.set(sortedMonths);
+
+    // 3. 🔥 LOGIQUE SÉCURISÉE : Boucler par Match, puis évaluer CHAQUE Joueur du 2-0
     matches.forEach(match => {
       const presences  = presencesByMatch[match.id] || [];
       const matchDate  = new Date(match.dateMatch);
       const mk         = moisKey(matchDate);
       const result     = this.getMatchResult(match);
 
-      // Pour les membres présents à ce match
-      const presentIds = new Set<number>();
-
+      // Indexation rapide des présents du match courant
+      const mapPresentsDuMatch = new Map<number, any>();
       presences.forEach(p => {
-        if (!p.membre?.id) return;
-        const id  = p.membre.id;
-        const s   = membresMap.get(id);
-        if (!s) return;
+        if (p.membre?.id) mapPresentsDuMatch.set(p.membre.id, p);
+      });
 
-        const aJoue = !!p.aJoue;
-        if (aJoue) presentIds.add(id);
+      // Analyse systématique pour chaque joueur inscrit dans le groupe
+      membresMap.forEach((s, id) => {
+        const p = mapPresentsDuMatch.get(id);
+        const aJoue = p ? !!p.aJoue : false; // Si absent de la liste = Absence réelle enregistrée
+
+        if (!s.parMois[mk]) {
+          s.parMois[mk] = { present: 0, total: 0, taux: 0 };
+        }
 
         s.totalMatchs++;
+        s.parMois[mk].total++;
+
         if (aJoue) {
           s.presences++;
+          s.parMois[mk].present++;
           s.buts   += p.buts   || 0;
           s.passes += p.passes || 0;
           if (p.isMvp || p.mvp || p.estHommeDuMatchEq) s.mvp++;
@@ -385,24 +426,18 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
           s.absences++;
         }
 
-        // parMois
-        if (!s.parMois[mk]) s.parMois[mk] = { present: 0, total: 0, taux: 0 };
-        s.parMois[mk].total++;
-        if (aJoue) s.parMois[mk].present++;
-
-        // Timeline
         s.timeline.push({
           matchId: match.id,
           date:    matchDate,
           result:  aJoue ? result : 'ABS',
           present: aJoue,
-          buts:    p.buts || 0,
-          passes:  p.passes || 0,
+          buts:    aJoue ? (p.buts || 0) : 0,
+          passes:  aJoue ? (p.passes || 0) : 0,
         });
       });
     });
 
-    // Taux finaux
+    // 4. Calcul final des pourcentages par joueur
     membresMap.forEach(s => {
       s.tauxPresence = s.totalMatchs > 0
         ? Math.round((s.presences / s.totalMatchs) * 100)
@@ -467,11 +502,10 @@ export class StatsDashboardComponent implements OnInit, OnDestroy {
 
   setView(v: ActiveView): void { this.activeView.set(v); }
 
-setPeriod(p: PeriodFilter | string): void {
-  // On force le cast vers PeriodFilter ici
-  this.periodFilter.set(p as PeriodFilter);
-  this.selectedMembre.set(null);
-}
+  setPeriod(p: PeriodFilter | string): void {
+    this.periodFilter.set(p as PeriodFilter);
+    this.selectedMembre.set(null);
+  }
 
   setSort(field: SortField): void {
     if (this.sortField() === field) {
@@ -508,7 +542,11 @@ setPeriod(p: PeriodFilter | string): void {
 
   clearCompare(): void { this.compareIds.set([]); }
 
-  onClose(): void { this.dialogRef.close(); }
+  onClose(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
 
   // ──────────────────── Template helpers ────────────────────
 
@@ -544,7 +582,6 @@ setPeriod(p: PeriodFilter | string): void {
 
   exportCSV(): void {
     const stats  = this.filteredStats();
-    const months = this.visibleMonths();
     const header = ['Joueur', 'Poste', 'Matchs', 'Présences', 'Absences', 'Taux%', 'Buts', 'Passes', 'MVP', 'HDM'];
     const rows   = stats.map(s => [
       s.nomAffiche, s.poste || '', s.totalMatchs, s.presences,
