@@ -1,33 +1,55 @@
-<!-- echeancier.component.html -->
 <div class="echeancier-container">
 
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">
-            <mat-icon class="header-icon">event_note</mat-icon>
-            {{ 'echeancier.titre' | translate }}
-          </h1>
-          <p class="page-subtitle">{{ 'echeancier.sous_titre' | translate }}</p>
+  <!-- ══════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════ -->
+  <div class="echeancier-header">
+    <div class="header-bg"></div>
+    <div class="header-inner">
+      <div class="header-top">
+        <div class="header-title-group">
+          <div class="header-icon-wrap"><mat-icon>event_note</mat-icon></div>
+          <div>
+            <h1>{{ 'echeancier.titre' | translate }}</h1>
+            <p>{{ 'echeancier.sous_titre' | translate }}</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button mat-icon-button class="header-icon-btn"
+                  (click)="exportData()"
+                  [matTooltip]="'commun.actions.exporter' | translate">
+            <mat-icon>download</mat-icon>
+          </button>
         </div>
       </div>
 
-      <div class="header-stats" *ngIf="echeances.length > 0">
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.nbPayes }}</span>
-          <span class="stat-label">{{ 'echeancier.stats.payees' | translate }}</span>
+      <!-- KPIs -->
+      <div class="header-kpis" *ngIf="exerciceActif && echeances.length > 0">
+        <div class="hkpi">
+          <span class="hkpi-val">{{ formatMontant(stats.totalAttendu) }}</span>
+          <span class="hkpi-lbl">{{ 'echeancier.kpi.total_attendu' | translate }}</span>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item warning">
-          <span class="stat-number">{{ stats.nbEnRetard }}</span>
-          <span class="stat-label">{{ 'echeancier.stats.en_retard' | translate }}</span>
+        <div class="hkpi-sep"></div>
+        <div class="hkpi paid">
+          <span class="hkpi-val">{{ formatMontant(stats.totalPaye) }}</span>
+          <span class="hkpi-lbl">{{ 'echeancier.kpi.total_paye' | translate }}</span>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.tauxRecouvrement | number:'1.0-0' }}%</span>
-          <span class="stat-label">{{ 'echeancier.stats.recouvrement' | translate }}</span>
+        <div class="hkpi-sep"></div>
+        <div class="hkpi warn">
+          <span class="hkpi-val">{{ formatMontant(stats.totalRestant) }}</span>
+          <span class="hkpi-lbl">{{ 'echeancier.kpi.reste_a_percevoir' | translate }}</span>
+        </div>
+        <div class="hkpi-sep"></div>
+        <div class="hkpi rate">
+          <span class="hkpi-val">{{ stats.tauxRecouvrement | number:'1.0-0' }}%</span>
+          <span class="hkpi-lbl">{{ 'echeancier.stats.recouvrement' | translate }}</span>
+        </div>
+      </div>
+
+      <!-- Barre progression globale -->
+      <div class="global-progress" *ngIf="exerciceActif && stats.tauxRecouvrement > 0">
+        <div class="gp-bar">
+          <div class="gp-fill" [style.width.%]="stats.tauxRecouvrement"></div>
         </div>
       </div>
     </div>
@@ -35,382 +57,264 @@
 
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="60"></mat-spinner>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'echeancier.chargement' | translate }}</h3>
-      <p>{{ 'commun.patienter' | translate }}</p>
-    </div>
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>{{ 'echeancier.chargement' | translate }}</p>
   </div>
 
-  <!-- Contenu principal -->
-  <div *ngIf="!isLoading && exerciceActif" class="content">
+  <!-- Pas d'exercice -->
+  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
+    <mat-icon>event_busy</mat-icon>
+    <h3>{{ 'finances.exercice.aucun_actif' | translate }}</h3>
+    <p>{{ 'echeancier.vide.aucun_exercice_description' | translate }}</p>
+    <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
+      <mat-icon>add</mat-icon>{{ 'finances.exercice.creer' | translate }}
+    </button>
+  </div>
 
-    <!-- Cartes statistiques -->
-    <div class="stats-grid">
-      <div class="stat-card total">
-        <div class="stat-icon">
-          <mat-icon>assignment</mat-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">{{ 'echeancier.kpi.total_attendu' | translate }}</span>
-          <span class="stat-value">{{ formatMontant(stats.totalAttendu) }}</span>
-        </div>
-      </div>
+  <!-- ══════════════════════════════════════════════════
+       TABS STICKY
+  ══════════════════════════════════════════════════ -->
+  <div class="tabs-wrapper" *ngIf="!isLoading && exerciceActif">
 
-      <div class="stat-card paye">
-        <div class="stat-icon">
-          <mat-icon>check_circle</mat-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">{{ 'echeancier.kpi.total_paye' | translate }}</span>
-          <span class="stat-value">{{ formatMontant(stats.totalPaye) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card restant">
-        <div class="stat-icon">
-          <mat-icon>hourglass_empty</mat-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">{{ 'echeancier.kpi.reste_a_percevoir' | translate }}</span>
-          <span class="stat-value">{{ formatMontant(stats.totalRestant) }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card recouvrement">
-        <div class="stat-icon">
-          <mat-icon>pie_chart</mat-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">{{ 'echeancier.kpi.taux_recouvrement' | translate }}</span>
-          <span class="stat-value">{{ stats.tauxRecouvrement | number:'1.1-1' }}%</span>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="stats.tauxRecouvrement"></div>
-          </div>
-        </div>
-      </div>
+    <div class="tabs-bar" role="tablist">
+      <button class="tab-btn" [class.active]="activeTab === 'list'"
+              (click)="activeTab = 'list'" role="tab">
+        <mat-icon>event_note</mat-icon>
+        <span>Échéances</span>
+        <span class="tab-badge">{{ dataSource.data.length }}</span>
+      </button>
+      <button class="tab-btn warn-tab" [class.active]="activeTab === 'retard'"
+              (click)="activeTab = 'retard'" role="tab">
+        <mat-icon>warning</mat-icon>
+        <span>En retard</span>
+        <span class="tab-badge warn" *ngIf="stats.nbEnRetard > 0">{{ stats.nbEnRetard }}</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'filter'"
+              (click)="activeTab = 'filter'" role="tab">
+        <mat-icon>tune</mat-icon>
+        <span class="hide-mobile">{{ 'commun.filtres.titre' | translate }}</span>
+        <span class="show-mobile">Filtres</span>
+        <span class="tab-badge warn" *ngIf="hasActiveFilters()">!</span>
+      </button>
     </div>
 
-    <!-- Barre de filtres -->
-    <div class="filters-section">
-      <div class="filters-card">
-        <div class="filters-header">
-          <div class="filters-title">
-            <mat-icon>filter_list</mat-icon>
-            <span>{{ 'commun.filtres.titre' | translate }}</span>
-          </div>
-          <button mat-button color="primary" (click)="resetFilters()">
-            <mat-icon>refresh</mat-icon>
-            {{ 'commun.actions.reinitialiser' | translate }}
+    <!-- ── TAB : TOUTES LES ÉCHÉANCES ────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'list'">
+      <div class="content-inner">
+
+        <!-- Actions rapides -->
+        <div class="quick-actions-row">
+          <button mat-raised-button color="primary"
+                  routerLink="/responsable/finances/entree">
+            <mat-icon>add_circle</mat-icon>
+            <span>{{ 'echeancier.actions.enregistrer_paiement' | translate }}</span>
+          </button>
+          <button mat-stroked-button color="warn"
+                  (click)="sendReminders()"
+                  [disabled]="stats.nbEnRetard === 0">
+            <mat-icon>notifications</mat-icon>
+            <span class="hide-mobile">{{ 'echeancier.actions.envoyer_rappels' | translate:{ count: stats.nbEnRetard } }}</span>
+            <span class="show-mobile">Rappels ({{ stats.nbEnRetard }})</span>
+          </button>
+          <button mat-icon-button class="filter-quick-btn"
+                  [class.active]="hasActiveFilters()"
+                  (click)="activeTab = 'filter'">
+            <mat-icon>tune</mat-icon>
           </button>
         </div>
 
-        <form [formGroup]="filterForm" class="filters-grid">
-          <!-- Recherche -->
-          <mat-form-field appearance="outline" class="filter-field search-field">
-            <mat-label>{{ 'echeancier.filtres.rechercher_membre' | translate }}</mat-label>
-            <input matInput formControlName="search"
-                   [placeholder]="'echeancier.filtres.recherche_placeholder' | translate">
-            <mat-icon matPrefix>search</mat-icon>
-          </mat-form-field>
+        <div class="empty-state" *ngIf="dataSource.data.length === 0">
+          <mat-icon>event_available</mat-icon>
+          <h3>{{ 'echeancier.vide.titre' | translate }}</h3>
+          <p>{{ 'echeancier.vide.description' | translate }}</p>
+          <button mat-stroked-button (click)="resetFilters()">
+            <mat-icon>refresh</mat-icon>{{ 'utilisateurs.filtres.reinitialiser' | translate }}
+          </button>
+        </div>
 
-          <!-- Type de contribution -->
-          <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>{{ 'finances.entree.formulaire.type_contribution' | translate }}</mat-label>
-            <mat-select formControlName="typeId">
-              <mat-option [value]="null">{{ 'echeancier.filtres.tous_types' | translate }}</mat-option>
-              <mat-option *ngFor="let type of typesContributions" [value]="type.id">
-                {{ type.nom }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
+        <ng-container *ngTemplateOutlet="echeancesList; context: { items: dataSource.data }">
+        </ng-container>
 
-          <!-- Statut -->
-          <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>{{ 'utilisateurs.filtres.statut' | translate }}</mat-label>
-            <mat-select formControlName="statut">
-              <mat-option value="ALL">{{ 'echeancier.filtres.tous_statuts' | translate }}</mat-option>
-              <mat-option value="PAYE">
-                <mat-icon class="option-icon paye">check_circle</mat-icon>
-                {{ 'echeancier.statut.paye' | translate }}
-              </mat-option>
-              <mat-option value="PARTIEL">
-                <mat-icon class="option-icon partiel">pie_chart</mat-icon>
-                {{ 'echeancier.statut.partiel' | translate }}
-              </mat-option>
-              <mat-option value="EN_ATTENTE">
-                <mat-icon class="option-icon en-attente">schedule</mat-icon>
-                {{ 'echeancier.statut.en_attente' | translate }}
-              </mat-option>
-              <mat-option value="EN_RETARD">
-                <mat-icon class="option-icon en-retard">warning</mat-icon>
-                {{ 'echeancier.statut.en_retard' | translate }}
-              </mat-option>
-              <mat-option value="EXONERE">
-                <mat-icon class="option-icon exonere">verified</mat-icon>
-                {{ 'echeancier.statut.exonere' | translate }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </form>
+        <mat-paginator *ngIf="dataSource.data.length > 10"
+                       [pageSizeOptions]="[10,25,50,100]"
+                       showFirstLastButtons class="list-paginator">
+        </mat-paginator>
+
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="actions-bar">
-      <div class="results-count">
-        <mat-icon>list</mat-icon>
-        <span>{{ 'echeancier.resultats' | translate: { count: dataSource.data.length } }}</span>
-      </div>
-      <div class="actions-buttons">
-        <button mat-stroked-button (click)="exportData()">
-          <mat-icon>download</mat-icon>
-          {{ 'commun.actions.exporter' | translate }}
-        </button>
-        <button mat-stroked-button color="warn" (click)="sendReminders()" [disabled]="stats.nbEnRetard === 0">
-          <mat-icon>notifications</mat-icon>
-          {{ 'echeancier.actions.envoyer_rappels' | translate: { count: stats.nbEnRetard } }}
-        </button>
-        <button mat-raised-button color="primary" routerLink="/responsable/finances/entree">
-          <mat-icon>add_circle</mat-icon>
-          {{ 'echeancier.actions.enregistrer_paiement' | translate }}
-        </button>
+    <!-- ── TAB : EN RETARD ────────────────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'retard'">
+      <div class="content-inner">
+
+        <div class="retard-banner" *ngIf="stats.nbEnRetard > 0">
+          <mat-icon>warning</mat-icon>
+          <div>
+            <strong>{{ stats.nbEnRetard }} membre(s) en retard</strong>
+            <span>Total dû : {{ formatMontant(stats.totalRestant) }}</span>
+          </div>
+          <button mat-stroked-button (click)="sendReminders()">
+            <mat-icon>notifications</mat-icon>Envoyer rappels
+          </button>
+        </div>
+
+        <div class="empty-state" *ngIf="stats.nbEnRetard === 0">
+          <mat-icon style="color: var(--success-color)">check_circle</mat-icon>
+          <h3>Aucun retard !</h3>
+          <p>Tous les membres sont à jour.</p>
+        </div>
+
+        <ng-container *ngTemplateOutlet="echeancesList; context: { items: getEcheancesEnRetard() }">
+        </ng-container>
+
       </div>
     </div>
 
-    <!-- Section tableau -->
-    <div class="table-section">
-
-      <!-- Vue mobile en cartes -->
-      <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
-        <div class="echeance-card"
-             *ngFor="let echeance of dataSource.data | slice:0:20"
-             [class]="getStatutClass(echeance.statut)">
-
-          <div class="card-header">
-            <div class="membre-info">
-              <div class="membre-avatar">
-                <mat-icon>person</mat-icon>
-              </div>
-              <div class="membre-details">
-                <h4>{{ getMembreNom(echeance) }}</h4>
-                <span class="type-badge">{{ echeance.typeContribution.nom }}</span>
-              </div>
+    <!-- ── TAB : FILTRES ─────────────────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'filter'">
+      <div class="content-inner">
+        <div class="filter-panel">
+          <div class="filter-panel-header">
+            <div class="fph-title">
+              <mat-icon>tune</mat-icon>{{ 'commun.filtres.titre' | translate }}
             </div>
-            <span class="status-badge" [class]="getStatutClass(echeance.statut)">
-              <mat-icon>{{ getStatutIcon(echeance.statut) }}</mat-icon>
-              {{ getStatutLabel(echeance.statut) }}
+            <button mat-button (click)="resetFilters()" [disabled]="!hasActiveFilters()">
+              <mat-icon>refresh</mat-icon>{{ 'commun.actions.reinitialiser' | translate }}
+            </button>
+          </div>
+          <form [formGroup]="filterForm" class="filter-grid">
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>{{ 'echeancier.filtres.rechercher_membre' | translate }}</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput formControlName="search"
+                     [placeholder]="'echeancier.filtres.recherche_placeholder' | translate">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'finances.entree.formulaire.type_contribution' | translate }}</mat-label>
+              <mat-icon matPrefix>category</mat-icon>
+              <mat-select formControlName="typeId">
+                <mat-option [value]="null">{{ 'echeancier.filtres.tous_types' | translate }}</mat-option>
+                <mat-option *ngFor="let t of typesContributions" [value]="t.id">{{ t.nom }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'utilisateurs.filtres.statut' | translate }}</mat-label>
+              <mat-icon matPrefix>flag</mat-icon>
+              <mat-select formControlName="statut">
+                <mat-option value="ALL">{{ 'echeancier.filtres.tous_statuts' | translate }}</mat-option>
+                <mat-option value="PAYE">{{ 'echeancier.statut.paye' | translate }}</mat-option>
+                <mat-option value="PARTIEL">{{ 'echeancier.statut.partiel' | translate }}</mat-option>
+                <mat-option value="EN_ATTENTE">{{ 'echeancier.statut.en_attente' | translate }}</mat-option>
+                <mat-option value="EN_RETARD">{{ 'echeancier.statut.en_retard' | translate }}</mat-option>
+                <mat-option value="EXONERE">{{ 'echeancier.statut.exonere' | translate }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </form>
+          <div class="filter-apply-row">
+            <button mat-raised-button color="primary" (click)="activeTab = 'list'">
+              <mat-icon>visibility</mat-icon>Voir les résultats ({{ dataSource.data.length }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ TEMPLATE CARDS ÉCHÉANCES (réutilisé) ═══ -->
+  <ng-template #echeancesList let-items="items">
+    <div class="echeances-list">
+      <div class="echeance-card"
+           *ngFor="let e of items"
+           [class.paye]="e.statut === 'PAYE'"
+           [class.partiel]="e.statut === 'PARTIEL'"
+           [class.en-retard]="e.statut === 'EN_RETARD'"
+           [class.en-attente]="e.statut === 'EN_ATTENTE'"
+           [class.exonere]="e.statut === 'EXONERE'">
+
+        <!-- En-tête -->
+        <div class="ec-header">
+          <div class="ec-avatar">
+            <mat-icon>person</mat-icon>
+          </div>
+          <div class="ec-info">
+            <span class="ec-name">{{ getMembreNom(e) }}</span>
+            <span class="ec-type">{{ e.typeContribution.nom }}</span>
+          </div>
+          <div class="ec-status-wrap">
+            <span class="status-badge" [class]="getStatutClass(e.statut)">
+              <mat-icon>{{ getStatutIcon(e.statut) }}</mat-icon>
+              {{ getStatutLabel(e.statut) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Corps -->
+        <div class="ec-body">
+          <!-- Période + échéance -->
+          <div class="ec-periode">
+            <mat-icon>date_range</mat-icon>
+            <span>{{ e.periodeConcernee }}</span>
+            <span class="ec-echeance">
+              Éch. : {{ formatDate(e.dateEcheance) }}
             </span>
           </div>
 
-          <div class="card-content">
-            <div class="periode-row">
-              <mat-icon>date_range</mat-icon>
-              <span>{{ echeance.periodeConcernee }}</span>
-              <span class="echeance-date">
-                {{ 'echeancier.table.ech' | translate }}: {{ formatDate(echeance.dateEcheance) }}
-              </span>
+          <!-- Montants 3 colonnes -->
+          <div class="ec-montants">
+            <div class="ec-montant">
+              <span class="em-val">{{ formatMontant(e.montantAttendu) }}</span>
+              <span class="em-lbl">{{ 'echeancier.table.attendu' | translate }}</span>
             </div>
-
-            <div class="montants-row">
-              <div class="montant-item">
-                <span class="montant-label">{{ 'echeancier.table.attendu' | translate }}</span>
-                <span class="montant-value">{{ formatMontant(echeance.montantAttendu) }}</span>
-              </div>
-              <div class="montant-item paye">
-                <span class="montant-label">{{ 'echeancier.table.paye' | translate }}</span>
-                <span class="montant-value">{{ formatMontant(echeance.montantPaye) }}</span>
-              </div>
-              <div class="montant-item reste" *ngIf="echeance.resteAPayer > 0">
-                <span class="montant-label">{{ 'echeancier.table.reste' | translate }}</span>
-                <span class="montant-value">{{ formatMontant(echeance.resteAPayer) }}</span>
-              </div>
+            <div class="ec-montant paid">
+              <span class="em-val">{{ formatMontant(e.montantPaye) }}</span>
+              <span class="em-lbl">{{ 'echeancier.table.paye' | translate }}</span>
             </div>
-
-            <div class="progress-row" *ngIf="echeance.statut !== 'EXONERE'">
-              <div class="progress-bar">
-                <div class="progress-fill"
-                     [style.width.%]="getProgressPercentage(echeance)"
-                     [class]="getStatutClass(echeance.statut)">
-                </div>
-              </div>
-              <span class="progress-label">{{ getProgressPercentage(echeance) | number:'1.0-0' }}%</span>
-            </div>
-
-            <div class="retard-info" *ngIf="echeance.joursRetard > 0">
-              <mat-icon>warning</mat-icon>
-              <span>{{ 'echeancier.retard.jours' | translate: { jours: echeance.joursRetard } }}</span>
-              <span class="penalite" *ngIf="echeance.penaliteRetard > 0">
-                + {{ formatMontant(echeance.penaliteRetard) }} {{ 'echeancier.retard.penalite' | translate }}
-              </span>
+            <div class="ec-montant rest" *ngIf="e.resteAPayer > 0">
+              <span class="em-val">{{ formatMontant(e.resteAPayer) }}</span>
+              <span class="em-lbl">{{ 'echeancier.table.reste' | translate }}</span>
             </div>
           </div>
 
-          <div class="card-actions" *ngIf="echeance.statut !== 'PAYE' && echeance.statut !== 'EXONERE'">
-            <button mat-raised-button color="primary" (click)="enregistrerPaiement(echeance)">
-              <mat-icon>payments</mat-icon>
-              {{ 'echeancier.actions.enregistrer_paiement' | translate }}
-            </button>
+          <!-- Barre progression -->
+          <div class="ec-progress" *ngIf="e.statut !== 'EXONERE'">
+            <div class="ec-progress-bar">
+              <div class="ec-progress-fill" [class]="getStatutClass(e.statut)"
+                   [style.width.%]="getProgressPercentage(e)"></div>
+            </div>
+            <span class="ec-pct">{{ getProgressPercentage(e) | number:'1.0-0' }}%</span>
+          </div>
+
+          <!-- Retard -->
+          <div class="ec-retard" *ngIf="e.joursRetard > 0">
+            <mat-icon>warning</mat-icon>
+            <span>{{ 'echeancier.retard.jours' | translate:{ jours: e.joursRetard } }}</span>
+            <span class="ec-penalite" *ngIf="e.penaliteRetard > 0">
+              + {{ formatMontant(e.penaliteRetard) }} {{ 'echeancier.retard.penalite' | translate }}
+            </span>
           </div>
         </div>
-      </div>
 
-      <!-- Vue desktop tableau -->
-      <div class="desktop-table-view" *ngIf="dataSource.data.length > 0">
-        <table mat-table [dataSource]="dataSource" matSort class="echeances-table">
-
-          <ng-container matColumnDef="membre">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.champs.membre' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <div class="membre-cell">
-                <div class="membre-avatar">
-                  <mat-icon>person</mat-icon>
-                </div>
-                <span>{{ getMembreNom(echeance) }}</span>
-              </div>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.table.type' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <span class="type-badge">{{ echeance.typeContribution.nom }}</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="periode">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'echeancier.table.periode' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <div class="periode-cell">
-                <span class="periode">{{ echeance.periodeConcernee }}</span>
-                <span class="echeance-date">
-                  {{ 'echeancier.table.ech' | translate }}: {{ formatDate(echeance.dateEcheance) }}
-                </span>
-              </div>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="montant">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'echeancier.table.attendu' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              {{ formatMontant(echeance.montantAttendu) }}
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="paye">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'echeancier.table.paye' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <span class="montant paye">{{ formatMontant(echeance.montantPaye) }}</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="reste">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'echeancier.table.reste' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <span class="montant reste" *ngIf="echeance.resteAPayer > 0">
-                {{ formatMontant(echeance.resteAPayer) }}
-              </span>
-              <span *ngIf="echeance.resteAPayer === 0">-</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="statut">
-            <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.statut' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <span class="status-badge" [class]="getStatutClass(echeance.statut)">
-                <mat-icon>{{ getStatutIcon(echeance.statut) }}</mat-icon>
-                {{ getStatutLabel(echeance.statut) }}
-              </span>
-              <span class="retard-badge" *ngIf="echeance.joursRetard > 0">
-                {{ echeance.joursRetard }}j
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.actions' | translate }}</th>
-            <td mat-cell *matCellDef="let echeance">
-              <button mat-icon-button
-                      color="primary"
-                      (click)="enregistrerPaiement(echeance)"
-                      [matTooltip]="'echeancier.actions.enregistrer_paiement' | translate"
-                      *ngIf="echeance.statut !== 'PAYE' && echeance.statut !== 'EXONERE'">
-                <mat-icon>payments</mat-icon>
-              </button>
-              <button mat-icon-button [matMenuTriggerFor]="actionMenu"
-                      [matTooltip]="'commun.actions.plus_actions' | translate">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #actionMenu="matMenu">
-                <button mat-menu-item>
-                  <mat-icon>history</mat-icon>
-                  <span>{{ 'echeancier.menu.historique_paiements' | translate }}</span>
-                </button>
-                <button mat-menu-item *ngIf="echeance.statut === 'EN_RETARD'">
-                  <mat-icon>notifications</mat-icon>
-                  <span>{{ 'echeancier.menu.envoyer_rappel' | translate }}</span>
-                </button>
-                <mat-divider></mat-divider>
-                <button mat-menu-item>
-                  <mat-icon>event_repeat</mat-icon>
-                  <span>{{ 'echeancier.menu.reporter' | translate }}</span>
-                </button>
-                <button mat-menu-item>
-                  <mat-icon>verified</mat-icon>
-                  <span>{{ 'echeancier.menu.exonerer' | translate }}</span>
-                </button>
-              </mat-menu>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class]="getStatutClass(row.statut)"></tr>
-        </table>
-
-        <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons></mat-paginator>
-      </div>
-
-      <!-- État vide (filtres actifs) -->
-      <div class="empty-state" *ngIf="dataSource.data.length === 0">
-        <div class="empty-illustration">
-          <mat-icon class="empty-icon">event_available</mat-icon>
+        <!-- Actions -->
+        <div class="ec-footer" *ngIf="e.statut !== 'PAYE' && e.statut !== 'EXONERE'">
+          <button mat-raised-button color="primary" (click)="enregistrerPaiement(e)">
+            <mat-icon>payments</mat-icon>
+            {{ 'echeancier.actions.enregistrer_paiement' | translate }}
+          </button>
+          <button mat-icon-button [matMenuTriggerFor]="ecMenu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #ecMenu="matMenu">
+            <button mat-menu-item><mat-icon>history</mat-icon>{{ 'echeancier.menu.historique_paiements' | translate }}</button>
+            <button mat-menu-item *ngIf="e.statut === 'EN_RETARD'"><mat-icon>notifications</mat-icon>{{ 'echeancier.menu.envoyer_rappel' | translate }}</button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item><mat-icon>event_repeat</mat-icon>{{ 'echeancier.menu.reporter' | translate }}</button>
+            <button mat-menu-item><mat-icon>verified</mat-icon>{{ 'echeancier.menu.exonerer' | translate }}</button>
+          </mat-menu>
         </div>
-        <div class="empty-content">
-          <h3 class="empty-title">{{ 'echeancier.vide.titre' | translate }}</h3>
-          <p class="empty-text">{{ 'echeancier.vide.description' | translate }}</p>
-          <div class="empty-actions">
-            <button mat-stroked-button (click)="resetFilters()">
-              <mat-icon>refresh</mat-icon>
-              {{ 'utilisateurs.filtres.reinitialiser' | translate }}
-            </button>
-            <button mat-raised-button color="primary" routerLink="/responsable/finances/types-contributions">
-              <mat-icon>add</mat-icon>
-              {{ 'echeancier.actions.configurer_contributions' | translate }}
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
-
-  </div>
-
-  <!-- Pas d'exercice actif -->
-  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
-    <div class="empty-illustration">
-      <mat-icon class="empty-icon">event_busy</mat-icon>
-    </div>
-    <div class="empty-content">
-      <h3 class="empty-title">{{ 'finances.exercice.aucun_actif' | translate }}</h3>
-      <p class="empty-text">{{ 'echeancier.vide.aucun_exercice_description' | translate }}</p>
-      <div class="empty-actions">
-        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
-          <mat-icon>add</mat-icon>
-          {{ 'finances.exercice.creer' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
+  </ng-template>
 
 </div>

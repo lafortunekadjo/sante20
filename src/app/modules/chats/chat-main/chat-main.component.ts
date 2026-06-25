@@ -31,6 +31,7 @@ import { MembreService } from '../../../core/services/membre.service';
 import { Membre } from '../../../core/models/membre.model';
 import { ConversationDetailComponent } from '../conversation-detail/conversation-detail.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AuthService } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
 
 
@@ -75,18 +76,19 @@ export class ChatMainComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private groupService: GroupeService ,
     private userService: UserService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.loadConversations();
     this.setupWebSocket();
     
-    // Écouter les changements de route
+    // Écouter les changements de route (navigation entre conversations)
+    // On n'agit que si les conversations sont déjà chargées (évite la race condition)
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const conversationId = params['conversationId'];
-      if (conversationId) {
-        console.log(conversationId)
+      if (conversationId && !this.loading) {
         this.selectConversationById(+conversationId);
       }
     });
@@ -104,8 +106,14 @@ export class ChatMainComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (conversations) => {
           this.conversations = conversations;
-          console.log(conversations)
           this.loading = false;
+
+          // Auto-sélection : si l'URL contient un ID de conversation,
+          // on sélectionne maintenant que la liste est chargée
+          const idFromUrl = this.route.snapshot.params['conversationId'];
+          if (idFromUrl) {
+            this.selectConversationById(+idFromUrl);
+          }
         },
         error: (error) => {
           console.error('Error loading conversations:', error);
@@ -173,31 +181,63 @@ export class ChatMainComponent implements OnInit, OnDestroy {
   }
 
   selectConversationById(conversationId: number): void {
-    console.log(conversationId)
-    const conversation = this.conversations.find(c => c.id === conversationId);
-    if (conversation) {
-      this.selectedConversation = conversation;
-    } else {
-      // Charger la conversation depuis le serveur
-      this.chatService.getConversationById(conversationId).subscribe({
+    // 1. Chercher dans la liste déjà chargée
+    const existing = this.conversations.find(c => c.id === conversationId);
+    if (existing) {
+      this.selectConversation(existing); // passe par selectConversation pour mettre à jour l'URL aussi
+      return;
+    }
+
+    // 2. Pas dans la liste → charger depuis l'API (nouveau chat ou navigation directe)
+    this.chatService.getConversationById(conversationId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (conv) => {
-          this.selectedConversation = conv;
-          // Ajouter à la liste si pas déjà présente
+          // Ajouter en tête de liste si absente
           if (!this.conversations.find(c => c.id === conversationId)) {
             this.conversations.unshift(conv);
           }
+          // Sélectionner sans re-naviguer (on est déjà sur la bonne URL)
+          this.selectedConversation = conv;
         },
-        error: (error) => {
-          console.error('Error loading conversation:', error);
+        error: () => {
           this.router.navigate(['/chat']);
         }
       });
-    }
   }
 
   onConversationCreated(conversation: Conversation): void {
-    this.conversations.unshift(conversation);
+    if (!this.conversations.find(cv => cv.id === conversation.id)) {
+      this.conversations.unshift(conversation);
+    }
     this.selectConversation(conversation);
+  }
+
+  goBackToList(): void {
+    this.selectedConversation = null;
+    this.router.navigate(['/chat']);
+  }
+
+  getSelectedTitle(): string {
+    if (!this.selectedConversation) return '';
+    if (this.selectedConversation.titre) return this.selectedConversation.titre;
+    const currentId = this.authService?.getUserId?.() ?? 0;
+    const other = this.selectedConversation.participants?.find(
+      p => p.user.id !== currentId
+    );
+    return other ? `${other.user.nom} ${other.user.prenom}` : 'Conversation';
+  }
+
+  onLastMessageUpdated(event: { conversationId: number; message: any }): void {
+    const conv = this.conversations.find(cv => cv.id === event.conversationId);
+    if (conv) {
+      (conv as any).lastMessage = event.message;
+      const idx = this.conversations.indexOf(conv);
+      if (idx > 0) {
+        this.conversations.splice(idx, 1);
+        this.conversations.unshift(conv);
+      }
+    }
   }
 
 //   openPrivateChatDialog(): void {

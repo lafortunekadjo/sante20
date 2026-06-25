@@ -85,6 +85,7 @@ export class ObjectifsComponent implements OnInit {
   userId: number | null = null;
   isLoading = true;
   showForm = false;
+  activeTab: 'list'|'form' = 'list';
   editingObjectif: Objectif | null = null;
    userVille: string | undefined;
 

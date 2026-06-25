@@ -1,32 +1,30 @@
 <!-- type-sanction.component.html -->
 <div class="type-sanction-container">
 
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-icon">
-          <mat-icon>gavel</mat-icon>
-        </div>
-        <div class="header-text">
-          <h1>{{ 'sanction.managementTitle' | translate }}</h1>
-          <p>{{ 'sanction.managementSubtitle' | translate }}</p>
-        </div>
+  <!-- Header gradient compact -->
+  <div class="ts-header">
+    <div class="ts-title-group">
+      <div class="ts-icon"><mat-icon>gavel</mat-icon></div>
+      <div>
+        <h1>{{ 'sanction.managementTitle' | translate }}</h1>
+        <p>{{ 'sanction.managementSubtitle' | translate }}</p>
       </div>
-      <div class="header-stats">
-        <div class="stat-item">
-          <span class="stat-number">{{ totalTypes }}</span>
-          <span class="stat-label">{{ 'sanction.totalTypes' | translate }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ typesActifs }}</span>
-          <span class="stat-label">Actifs</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ typesAvecMouvement }}</span>
-          <span class="stat-label">Mvt auto</span>
-        </div>
+    </div>
+
+    <div class="ts-kpis">
+      <div class="ts-kpi">
+        <span class="ts-kpi-val">{{ totalTypes }}</span>
+        <span class="ts-kpi-lbl">{{ 'sanction.totalTypes' | translate }}</span>
+      </div>
+      <div class="ts-kpi-sep"></div>
+      <div class="ts-kpi">
+        <span class="ts-kpi-val">{{ typesActifs }}</span>
+        <span class="ts-kpi-lbl">Actifs</span>
+      </div>
+      <div class="ts-kpi-sep"></div>
+      <div class="ts-kpi">
+        <span class="ts-kpi-val">{{ typesAvecMouvement }}</span>
+        <span class="ts-kpi-lbl">Mvt auto</span>
       </div>
     </div>
   </div>
@@ -39,6 +37,26 @@
       <p>{{ 'sanction.loadingTypes' | translate }}</p>
     </div>
   </div>
+
+  <!-- Tabs sticky -->
+  <div class="ts-tabs-wrapper" *ngIf="!isLoading">
+
+    <div class="ts-tabs-bar">
+      <button class="ts-tab" [class.active]="activeTab === 'list'" (click)="activeTab = 'list'">
+        <mat-icon>list</mat-icon>
+        <span>{{ 'sanction.totalTypes' | translate }}</span>
+        <span class="ts-tab-badge">{{ dataSource.data.length }}</span>
+      </button>
+      <button class="ts-tab" [class.active]="activeTab === 'filter'" (click)="activeTab = 'filter'">
+        <mat-icon>tune</mat-icon>
+        <span>{{ 'common.filterBy' | translate }}</span>
+      </button>
+      <button class="ts-tab" [class.active]="activeTab === 'create'"
+              (click)="activeTab = 'create'; toggleCreateRow()">
+        <mat-icon>add_circle</mat-icon>
+        <span>{{ 'sanction.addType' | translate }}</span>
+      </button>
+    </div>
 
   <!-- Content -->
   <div *ngIf="!isLoading" class="content">
@@ -59,53 +77,53 @@
       </div>
     </div>
 
-    <!-- Filtres -->
-    <div class="filters-container">
-      <div class="filters-header">
-        <div class="filters-title">
-          <mat-icon>filter_list</mat-icon>
-          <h3>{{ 'common.filterBy' | translate }}</h3>
+    <!-- ── TAB FILTRES ─────────────────────────────── -->
+    <div class="ts-tab-panel" *ngIf="activeTab === 'filter'">
+      <div class="filters-container">
+        <div class="filters-header">
+          <div class="filters-title">
+            <mat-icon>filter_list</mat-icon>
+            <h3>{{ 'common.filterBy' | translate }}</h3>
+          </div>
+        </div>
+        <div class="filter-chips">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Rechercher</mat-label>
+            <input matInput [(ngModel)]="searchTerm"
+                   (ngModelChange)="applyFilters()"
+                   placeholder="Nom ou description">
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Statut</mat-label>
+            <mat-select [(ngModel)]="filterActif" (ngModelChange)="applyFilters()">
+              <mat-option value="all">Tous</mat-option>
+              <mat-option value="actif">Actifs</mat-option>
+              <mat-option value="inactif">Inactifs</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="date-filter">
+            <mat-label>{{ 'sanction.filterByDate' | translate }}</mat-label>
+            <input matInput [matDatepicker]="dateFilterPicker"
+                   [(ngModel)]="dateFilter"
+                   (ngModelChange)="filterByDate($event)">
+            <mat-datepicker-toggle matSuffix [for]="dateFilterPicker"></mat-datepicker-toggle>
+            <mat-datepicker #dateFilterPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <div class="ts-filter-apply">
+          <button mat-raised-button color="primary" (click)="activeTab = 'list'">
+            <mat-icon>visibility</mat-icon>Voir les résultats
+          </button>
         </div>
       </div>
-      <div class="filter-chips">
-        <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Rechercher</mat-label>
-          <input matInput [(ngModel)]="searchTerm"
-                 (ngModelChange)="applyFilters()"
-                 placeholder="Nom ou description">
-          <mat-icon matPrefix>search</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Statut</mat-label>
-          <mat-select [(ngModel)]="filterActif" (ngModelChange)="applyFilters()">
-            <mat-option value="all">Tous</mat-option>
-            <mat-option value="actif">Actifs</mat-option>
-            <mat-option value="inactif">Inactifs</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="date-filter">
-          <mat-label>{{ 'sanction.filterByDate' | translate }}</mat-label>
-          <input matInput [matDatepicker]="dateFilterPicker"
-                 [(ngModel)]="dateFilter"
-                 (ngModelChange)="filterByDate($event)">
-          <mat-datepicker-toggle matSuffix [for]="dateFilterPicker"></mat-datepicker-toggle>
-          <mat-datepicker #dateFilterPicker></mat-datepicker>
-        </mat-form-field>
-      </div>
     </div>
 
-    <!-- Bouton ajouter -->
-    <div class="action-buttons">
-      <button mat-raised-button color="primary"
-              (click)="toggleCreateRow()"
-              class="add-button">
-        <mat-icon>{{ showCreateRow ? 'close' : 'add' }}</mat-icon>
-        <span class="button-text">{{ 'sanction.addType' | translate }}</span>
-      </button>
-    </div>
-
+    <!-- ── TAB CRÉER ────────────────────────────────── -->
+    <div class="ts-tab-panel" *ngIf="activeTab === 'create'">
     <!-- ===== FORMULAIRE DE CRÉATION ===== -->
     <div *ngIf="showCreateRow" class="demande-card create-card">
       <div class="demande-header">
@@ -267,20 +285,24 @@
 
       <div class="demande-actions">
         <button mat-raised-button color="primary"
-                (click)="saveTypeSanction()"
+                (click)="saveTypeSanction(); activeTab = 'list'"
                 [disabled]="!isCreateFormValid()"
                 class="action-button">
           <mat-icon>save</mat-icon>
           <span class="button-text">{{ 'common.save' | translate }}</span>
         </button>
         <button mat-stroked-button color="warn"
-                (click)="cancelCreate()"
+                (click)="cancelCreate(); activeTab = 'list'"
                 class="action-button">
           <mat-icon>cancel</mat-icon>
           <span class="button-text">{{ 'common.cancel' | translate }}</span>
         </button>
       </div>
     </div>
+    </div><!-- /ts-tab-panel create -->
+
+    <!-- ── TAB LISTE ────────────────────────────────── -->
+    <div class="ts-tab-panel" *ngIf="activeTab === 'list'">
 
     <!-- ===== VUE MOBILE — CARTES ===== -->
     <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
@@ -725,13 +747,15 @@
         <h3 class="empty-title">{{ 'sanction.noTypes' | translate }}</h3>
         <p class="empty-text">{{ 'sanction.noTypesMessage' | translate }}</p>
         <div class="empty-actions">
-          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+          <button mat-raised-button color="primary" (click)="activeTab = 'create'; toggleCreateRow()">
             <mat-icon>add</mat-icon>
             <span>{{ 'sanction.addType' | translate }}</span>
           </button>
         </div>
       </div>
     </div>
+    </div><!-- /ts-tab-panel list -->
 
   </div>
+  </div><!-- /ts-tabs-wrapper -->
 </div>

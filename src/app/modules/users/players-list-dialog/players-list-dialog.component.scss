@@ -5,23 +5,31 @@
 .players-dialog {
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
+  max-height: 90dvh;
   background: var(--background-primary);
   border-radius: $border-radius-xl;
   overflow: hidden;
+
+  @include mobile {
+    max-height: 100dvh;
+    border-radius: 0;
+  }
 }
 
 // ===== HEADER =====
 .dialog-header {
   @include flex-between;
   padding: $spacing-xl;
+  padding-top: max($spacing-xl, env(safe-area-inset-top));
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
+  flex-shrink: 0;
 
   .header-content {
     display: flex;
     align-items: center;
     gap: $spacing-lg;
+    min-width: 0;
   }
 
   .team-avatar {
@@ -39,11 +47,23 @@
     }
   }
 
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    padding-top: max($spacing-md, env(safe-area-inset-top));
+
+    .team-avatar { width: 44px; height: 44px; mat-icon { font-size: 22px; width: 22px; height: 22px; } }
+    .header-text h2 { font-size: $font-size-lg; }
+  }
+
   .header-text {
+    min-width: 0;
     h2 {
       margin: 0 0 $spacing-xs 0;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     p {
@@ -105,8 +125,11 @@
 .dialog-body {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: $spacing-xl;
-  max-height: 400px;
+  min-height: 0; // permet à flex:1 de respecter le scroll dans un container fixe
+
+  @include mobile { padding: $spacing-md; }
 
   // Custom scrollbar
   &::-webkit-scrollbar {
@@ -145,7 +168,15 @@
 
   &:hover {
     box-shadow: $shadow-lg;
-    transform: translateX(4px);
+  }
+
+  @media (hover: hover) {
+    &:hover { transform: translateX(4px); }
+  }
+
+  @include mobile {
+    padding: $spacing-md;
+    gap: $spacing-md;
   }
 
   &.capitaine {
@@ -168,6 +199,7 @@
     @include flex-center;
     width: 28px;
     height: 28px;
+    @include mobile { width: 22px; height: 22px; font-size: $font-size-xs; }
     border-radius: $border-radius-full;
     background: var(--background-tertiary);
     color: var(--text-secondary);
@@ -181,6 +213,7 @@
     @include flex-center;
     width: 48px;
     height: 48px;
+    @include mobile { width: 40px; height: 40px; }
     border-radius: $border-radius-full;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
@@ -368,10 +401,17 @@
 
   @include mobile {
     flex-direction: column;
+    padding-bottom: max($spacing-xl, env(safe-area-inset-bottom));
 
     button {
       width: 100%;
       justify-content: center;
+      min-height: 46px;
     }
+
+    // Priorité visuelle : Valider en premier, Refuser ensuite, Fermer en dernier
+    button[mat-flat-button][color="primary"] { order: 1; }
+    button[mat-stroked-button][color="warn"]  { order: 2; }
+    button:not([color])                       { order: 3; }
   }
 }

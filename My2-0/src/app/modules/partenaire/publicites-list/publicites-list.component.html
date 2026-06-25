@@ -1,0 +1,280 @@
+<!-- Liste des publicités partenaire -->
+<div class="publicites-container">
+  
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-icon">
+          <mat-icon>campaign</mat-icon>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">{{ 'partenaire.publicites.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'partenaire.publicites.subtitle' | translate }}</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          mat-raised-button 
+          color="accent"
+          routerLink="/partenaire/publicite/new"
+          [disabled]="!canCreate()"
+          [matTooltip]="!hasEntreprises() ? ('partenaire.publicites.empty.needEnterprise' | translate) : ''">
+          <mat-icon>add</mat-icon>
+          {{ 'partenaire.publicites.add' | translate }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barre de filtres -->
+  <div class="filters-bar">
+    <!-- Recherche -->
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>{{ 'partenaire.common.search' | translate }}</mat-label>
+      <input 
+        matInput 
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        placeholder="Rechercher une publicité...">
+      <mat-icon matPrefix>search</mat-icon>
+      <button 
+        mat-icon-button 
+        matSuffix 
+        *ngIf="searchQuery"
+        (click)="searchQuery = ''; onSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <!-- Filtre par statut -->
+    <div class="status-filters">
+      <button 
+        mat-stroked-button
+        [class.active]="selectedStatut === 'ALL'"
+        (click)="onStatutFilter('ALL')">
+        {{ 'partenaire.publicites.filters.all' | translate }}
+        <span class="count">({{ getCountByStatut('ALL') }})</span>
+      </button>
+      <button 
+        mat-stroked-button
+        [class.active]="selectedStatut === 'ACTIVE'"
+        (click)="onStatutFilter('ACTIVE')">
+        <mat-icon>check_circle</mat-icon>
+        {{ 'partenaire.publicites.filters.active' | translate }}
+        <span class="count">({{ getCountByStatut('ACTIVE') }})</span>
+      </button>
+      <button 
+        mat-stroked-button
+        [class.active]="selectedStatut === 'EN_ATTENTE'"
+        (click)="onStatutFilter('EN_ATTENTE')">
+        <mat-icon>hourglass_empty</mat-icon>
+        {{ 'partenaire.publicites.filters.pending' | translate }}
+        <span class="count">({{ getCountByStatut('EN_ATTENTE') }})</span>
+      </button>
+      <button 
+        mat-stroked-button
+        [class.active]="selectedStatut === 'PAUSEE'"
+        (click)="onStatutFilter('PAUSEE')">
+        <mat-icon>pause_circle</mat-icon>
+        {{ 'partenaire.publicites.filters.paused' | translate }}
+        <span class="count">({{ getCountByStatut('PAUSEE') }})</span>
+      </button>
+    </div>
+
+    <!-- Filtre par entreprise -->
+    <mat-form-field appearance="outline" class="entreprise-filter" *ngIf="entreprises.length > 1">
+      <mat-label>Entreprise</mat-label>
+      <mat-select [(ngModel)]="selectedEntreprise" (selectionChange)="onEntrepriseFilter()">
+        <mat-option [value]="null">Toutes</mat-option>
+        <mat-option *ngFor="let ent of entreprises" [value]="ent.id">
+          {{ ent.nom }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Bouton clear -->
+    <button 
+      mat-icon-button 
+      *ngIf="selectedStatut !== 'ALL' || searchQuery || selectedEntreprise"
+      (click)="clearFilters()"
+      matTooltip="Effacer les filtres">
+      <mat-icon>filter_alt_off</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>{{ 'partenaire.common.loading' | translate }}</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading">
+    
+    <!-- Liste des publicités -->
+    <div class="publicites-grid" *ngIf="filteredPublicites.length > 0">
+      <mat-card 
+        class="publicite-card"
+        *ngFor="let pub of filteredPublicites; trackBy: trackByPublicite"
+        [class.inactive]="pub.statut === 'PAUSEE' || pub.statut === 'TERMINEE'">
+        
+        <!-- Image -->
+        <div class="card-image">
+          <img 
+            *ngIf="pub.imageUrl" 
+            [src]="pub.imageUrl" 
+            [alt]="pub.titre"
+            loading="lazy">
+          <div *ngIf="!pub.imageUrl" class="image-placeholder">
+            <mat-icon>image</mat-icon>
+          </div>
+          
+          <!-- Badge statut -->
+          <div class="status-badge" [ngClass]="getStatutClass(pub.statut)">
+            <mat-icon>{{ getStatutIcon(pub.statut) }}</mat-icon>
+            <span>{{ getStatutLabel(pub.statut) }}</span>
+          </div>
+
+          <!-- Badge emplacement -->
+          <div class="emplacement-badge">
+            {{ getEmplacementLabel(pub.emplacement) }}
+          </div>
+        </div>
+
+        <!-- Contenu -->
+        <div class="card-content">
+          <div class="publicite-header">
+            <div class="entreprise-info" *ngIf="pub.entrepriseLogoUrl || pub.entrepriseNom">
+              <img 
+                *ngIf="pub.entrepriseLogoUrl" 
+                [src]="pub.entrepriseLogoUrl" 
+                [alt]="pub.entrepriseNom"
+                class="entreprise-logo">
+              <span class="entreprise-name">{{ pub.entrepriseNom }}</span>
+            </div>
+          </div>
+          
+          <h3 class="publicite-title">{{ pub.titre }}</h3>
+          <p class="publicite-description" *ngIf="pub.description">{{ pub.description }}</p>
+
+          <!-- Dates -->
+          <div class="publicite-dates">
+            <span class="date-item">
+              <mat-icon>event</mat-icon>
+              {{ 'partenaire.publicites.card.since' | translate }}: {{ formatDate(pub?.dateDebut) }}
+            </span>
+            <span class="date-item" *ngIf="pub.dateFin">
+              <mat-icon>event_busy</mat-icon>
+              {{ 'partenaire.publicites.card.until' | translate }}: {{ formatDate(pub?.dateFin) }}
+            </span>
+          </div>
+
+          <!-- Stats -->
+          <div class="publicite-stats">
+            <div class="stat">
+              <mat-icon>visibility</mat-icon>
+              <span class="stat-value">{{ formatNumber(pub.totalImpressions) }}</span>
+              <span class="stat-label">{{ 'partenaire.publicites.card.impressions' | translate }}</span>
+            </div>
+            <div class="stat">
+              <mat-icon>touch_app</mat-icon>
+              <span class="stat-value">{{ formatNumber(pub.totalClics) }}</span>
+              <span class="stat-label">{{ 'partenaire.publicites.card.clicks' | translate }}</span>
+            </div>
+            <div class="stat">
+              <mat-icon>trending_up</mat-icon>
+              <span class="stat-value">{{ calculateCTR(pub.totalImpressions, pub.totalClics) }}%</span>
+              <span class="stat-label">{{ 'partenaire.publicites.card.ctr' | translate }}</span>
+            </div>
+          </div>
+
+          <!-- Message en attente -->
+          <div class="pending-message" *ngIf="pub.statut === 'EN_ATTENTE'">
+            <mat-icon>info</mat-icon>
+            <span>{{ 'partenaire.publicites.card.pendingApproval' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button 
+            mat-button 
+            color="primary"
+            [routerLink]="['/partenaire/publicites', pub.id]">
+            <mat-icon>bar_chart</mat-icon>
+            Stats
+          </button>
+          
+          <button 
+            mat-button
+            [routerLink]="['/partenaire/publicite', pub.id, 'edit']"
+            *ngIf="pub.statut === 'BROUILLON' || pub.statut === 'REJETEE'">
+            <mat-icon>edit</mat-icon>
+            {{ 'partenaire.publicites.edit' | translate }}
+          </button>
+          
+          <button 
+            mat-button
+            (click)="togglePause(pub)"
+            *ngIf="pub.statut === 'ACTIVE' || pub.statut === 'PAUSEE'">
+            <mat-icon>{{ pub.statut === 'PAUSEE' ? 'play_arrow' : 'pause' }}</mat-icon>
+            {{ pub.statut === 'PAUSEE' ? ('partenaire.publicites.resume' | translate) : ('partenaire.publicites.pause' | translate) }}
+          </button>
+          
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item [routerLink]="['/partenaire/publicites', pub.id]">
+              <mat-icon>visibility</mat-icon>
+              <span>Voir détails</span>
+            </button>
+            <button mat-menu-item (click)="duplicatePublicite(pub)">
+              <mat-icon>content_copy</mat-icon>
+              <span>{{ 'partenaire.publicites.duplicate' | translate }}</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deletePublicite(pub)" class="delete-item">
+              <mat-icon>delete</mat-icon>
+              <span>{{ 'partenaire.publicites.delete' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="filteredPublicites.length === 0">
+      <div class="empty-illustration">
+        <mat-icon>campaign</mat-icon>
+      </div>
+      
+      <ng-container *ngIf="hasEntreprises(); else noEnterprise">
+        <h3>{{ 'partenaire.publicites.empty.title' | translate }}</h3>
+        <p>{{ 'partenaire.publicites.empty.description' | translate }}</p>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          routerLink="/partenaire/publicite/new">
+          <mat-icon>add</mat-icon>
+          {{ 'partenaire.publicites.empty.action' | translate }}
+        </button>
+      </ng-container>
+      
+      <ng-template #noEnterprise>
+        <h3>{{ 'partenaire.publicites.empty.needEnterprise' | translate }}</h3>
+        <p>Créez d'abord une entreprise pour pouvoir créer des publicités.</p>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          routerLink="/partenaire/entreprises/new">
+          <mat-icon>business</mat-icon>
+          Créer une entreprise
+        </button>
+      </ng-template>
+    </div>
+  </ng-container>
+</div>

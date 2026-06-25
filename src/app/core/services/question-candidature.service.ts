@@ -121,7 +121,7 @@ createQuestion(groupeId: number, question: QuestionCandidature): Observable<Ques
     motifRefus?: string
   ): Observable<DemandeAdhesion> {
     return this.http.put<DemandeAdhesion>(
-      `${this.apiUrl}/candidatures/${demandeId}/traiter`,
+      `${this.apiUrl}/${demandeId}/traiter`,
       { 
         statut
       }

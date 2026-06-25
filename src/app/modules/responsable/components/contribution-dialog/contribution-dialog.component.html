@@ -1,18 +1,54 @@
-<div mat-dialog-content class="dialog-content">
-  <h2 class="dialog-title">Liste des contributions</h2>
-  <div class="contribution-list" *ngIf="data.contributions.length; else noContributions">
-    <div class="contribution-item" *ngFor="let contribution of data.contributions">
-      <span class="member-name">{{ contribution.membre.nom }} {{ contribution.membre.prenom }}</span>
-      <span class="amount">{{ contribution.montant }} FCFA</span>
+<div class="cd">
+
+  <!-- Header -->
+  <div class="cd-header">
+    <div class="cd-header-icon"><mat-icon>account_balance_wallet</mat-icon></div>
+    <div class="cd-header-text">
+      <h2>Liste des contributions</h2>
+      <p *ngIf="data.contributions.length">{{ data.contributions.length }} contributeur{{ data.contributions.length > 1 ? 's' : '' }}</p>
     </div>
-    <div class="total-row">
-      <strong>Total des contributions :</strong> <span>{{ data.total }} FCFA</span>
-    </div>
+    <button mat-icon-button class="cd-close" (click)="dialogRef.close()">
+      <mat-icon>close</mat-icon>
+    </button>
   </div>
-  <ng-template #noContributions>
-    <p class="no-data">Aucune contribution pour cet événement.</p>
-  </ng-template>
-</div>
-<div mat-dialog-actions class="dialog-actions">
-  <button mat-button (click)="dialogRef.close()" color="primary">Fermer</button>
+
+  <!-- Body -->
+  <div class="cd-body">
+
+    <ng-container *ngIf="data.contributions.length; else noContributions">
+
+      <div class="cd-list">
+        <div class="cd-item" *ngFor="let contribution of data.contributions">
+          <div class="cd-avatar">
+            {{ contribution.membre.prenom?.charAt(0) }}{{ contribution.membre.nom?.charAt(0) }}
+          </div>
+          <span class="cd-name">{{ contribution.membre.prenom }} {{ contribution.membre.nom }}</span>
+          <span class="cd-amount">{{ contribution.montant | number }} FCFA</span>
+        </div>
+      </div>
+
+      <div class="cd-total">
+        <mat-icon>summarize</mat-icon>
+        <span class="cd-total-label">Total des contributions</span>
+        <span class="cd-total-amount">{{ data.total | number }} FCFA</span>
+      </div>
+
+    </ng-container>
+
+    <ng-template #noContributions>
+      <div class="cd-empty">
+        <mat-icon>inbox</mat-icon>
+        <p>Aucune contribution pour cet événement.</p>
+      </div>
+    </ng-template>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="cd-footer">
+    <button mat-flat-button color="primary" (click)="dialogRef.close()">
+      Fermer
+    </button>
+  </div>
+
 </div>

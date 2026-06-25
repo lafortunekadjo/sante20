@@ -61,6 +61,7 @@ export class SanctionService {
    * @returns Observable avec le type de sanction créé
    */
   createTypeSanction(typeSanction: any): Observable<any> {
+ 
     return this.http.post(`${environment.apiUrl}/type-sanctions`, typeSanction);
   }
 

@@ -127,6 +127,7 @@ export class BilanComponent implements OnInit, OnDestroy {
   exercices: Exercice[] = [];
   selectedExerciceId: number | null = null;
   bilanData: any | null = null;
+  bilanTab: 'caisses'|'contributions'|'depenses'|'impayes'|'statistiques' = 'caisses';
   isExporting = false;
 
   constructor(

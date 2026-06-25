@@ -1,0 +1,273 @@
+<div class="financial-dashboard-container">
+
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon class="header-icon">account_balance</mat-icon>
+            {{ 'finances.dashboard.title' | translate }}
+          </h1>
+          <p class="page-subtitle">{{ 'finances.dashboard.subtitle' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="exercice-selector" *ngIf="exercices.length > 0">
+        <mat-form-field appearance="outline" class="exercice-select">
+          <mat-label>{{ 'finances.dashboard.exercise_label' | translate }}</mat-label>
+          <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
+            <mat-option *ngFor="let ex of exercices" [value]="ex.id">
+              <div class="exercice-option">
+                <span class="exercice-label">{{ ex.libelle }}</span>
+                <span class="exercice-badge actif" *ngIf="ex.actif">{{ 'finances.dashboard.status_active' | translate }}</span>
+                <span class="exercice-badge cloture" *ngIf="ex.cloture">{{ 'finances.dashboard.status_closed' | translate }}</span>
+              </div>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="60" color="accent"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'finances.dashboard.loading_title' | translate }}</h3>
+      <p>{{ 'finances.dashboard.loading_wait' | translate }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && soldeGlobal" class="content">
+
+    <div class="solde-global-card">
+      <div class="solde-header">
+        <div class="solde-icon-wrapper">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="solde-info">
+          <span class="solde-label">{{ 'finances.dashboard.total_balance_label' | translate }}</span>
+          <span class="solde-value">{{ formatMontant(soldeGlobal.soldeTotal ?? 0) }}</span>
+        </div>
+        <button mat-icon-button [matMenuTriggerFor]="menuActions" class="actions-btn">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menuActions="matMenu">
+          <button mat-menu-item routerLink="/responsable/finances/bilan">
+            <mat-icon>assessment</mat-icon>
+            <span>{{ 'finances.dashboard.menu.view_balance' | translate }}</span>
+          </button>
+          <button mat-menu-item routerLink="/responsable/finances/mouvements">
+            <mat-icon>history</mat-icon>
+            <span>{{ 'finances.dashboard.menu.full_history' | translate }}</span>
+          </button>
+        </mat-menu>
+      </div>
+
+      <div class="solde-stats">
+        <div class="stat-card entrees">
+          <div class="stat-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">{{ 'finances.dashboard.total_income' | translate }}</span>
+            <span class="stat-value">{{ formatMontant(soldeGlobal.totalEntrees ?? 0) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card sorties">
+          <div class="stat-icon">
+            <mat-icon>trending_down</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">{{ 'finances.dashboard.total_expenses' | translate }}</span>
+            <span class="stat-value">{{ formatMontant(soldeGlobal.totalSorties ?? 0) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card caisses">
+          <div class="stat-icon">
+            <mat-icon>account_balance</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">{{ 'finances.dashboard.cash_accounts_count' | translate }}</span>
+            <span class="stat-value">{{ soldeGlobal.nombreCaisses }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button mat-raised-button color="primary" routerLink="/responsable/finances/entree" class="action-btn">
+        <mat-icon>add_circle</mat-icon>
+        <span>{{ 'finances.dashboard.actions.new_income' | translate }}</span>
+      </button>
+      <button mat-raised-button color="warn" routerLink="/responsable/finances/sortie" class="action-btn">
+        <mat-icon>remove_circle</mat-icon>
+        <span>{{ 'finances.dashboard.actions.new_expense' | translate }}</span>
+      </button>
+      <button mat-stroked-button routerLink="/responsable/finances/entree" class="action-btn">
+        <mat-icon>payments</mat-icon>
+        <span>{{ 'finances.dashboard.actions.contributions' | translate }}</span>
+      </button>
+      <button mat-stroked-button routerLink="/responsable/finances/exercices" class="action-btn">
+        <mat-icon>calendar_today</mat-icon>
+        <span>{{ 'finances.dashboard.actions.exercises' | translate }}</span>
+      </button>
+    </div>
+
+    <div class="dashboard-grid">
+
+      <div class="caisses-section">
+        <div class="section-header">
+          <h2>
+            <mat-icon>account_balance</mat-icon>
+            {{ 'finances.dashboard.cash_details_title' | translate }}
+          </h2>
+          <button mat-button color="primary" routerLink="/responsable/finances/caisses">
+            {{ 'finances.dashboard.view_all' | translate }} <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="caisses-grid">
+          <div class="caisse-card" 
+               *ngFor="let caisse of soldeGlobal.detailCaisses"
+               [style.--caisse-color]="caisse.couleur">
+            <div class="caisse-header">
+              <div class="caisse-icon" [style.background-color]="caisse.couleur">
+                <mat-icon>{{ caisse.icone }}</mat-icon>
+              </div>
+              <div class="caisse-title">
+                <h3>{{ caisse.nom }}</h3>
+                <span class="caisse-type">{{ caisse.type }}</span>
+              </div>
+            </div>
+
+            <div class="caisse-body">
+              <div class="caisse-solde">
+                <span class="solde-amount">{{ formatMontant(caisse.soldeActuel ?? 0) }}</span>
+              </div>
+
+              <div class="caisse-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="getProgressPercentage(caisse)"
+                       [style.background-color]="caisse.couleur">
+                  </div>
+                </div>
+                <span class="progress-label">{{ getProgressPercentage(caisse) | number:'1.1-1' }}% {{ 'finances.dashboard.of_total' | translate }}</span>
+              </div>
+
+              <div class="caisse-details">
+                <div class="detail-item entree">
+                  <mat-icon>arrow_upward</mat-icon>
+                  <span>{{ formatMontant(caisse.totalEntrees ?? 0) }}</span>
+                </div>
+                <div class="detail-item sortie">
+                  <mat-icon>arrow_downward</mat-icon>
+                  <span>{{ formatMontant(caisse.totalSorties ?? 0) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="caisse-footer">
+              <button mat-button color="primary" [routerLink]="['/responsable/finances/caisses', caisse.caisseId]">
+                <mat-icon>visibility</mat-icon>
+                {{ 'finances.dashboard.details_btn' | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-section">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>
+              <mat-icon>pie_chart</mat-icon>
+              {{ 'finances.dashboard.charts.distribution' | translate }}
+            </h3>
+          </div>
+          <div class="chart-body">
+            <canvas baseChart
+                    [data]="doughnutChartData"
+                    [options]="doughnutChartOptions"
+                    type="doughnut">
+            </canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>
+              <mat-icon>bar_chart</mat-icon>
+              {{ 'finances.dashboard.charts.income_vs_expense' | translate }}
+            </h3>
+          </div>
+          <div class="chart-body bar-chart">
+            <canvas baseChart
+                    [data]="barChartData"
+                    [options]="barChartOptions"
+                    type="bar">
+            </canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="mouvements-section">
+        <div class="section-header">
+          <h2>
+            <mat-icon>history</mat-icon>
+            {{ 'finances.dashboard.recent_transactions' | translate }}
+          </h2>
+          <button mat-button color="primary" routerLink="/responsable/finances/mouvements">
+            {{ 'finances.dashboard.view_all' | translate }} <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="mouvements-list" *ngIf="derniersMouvements.length > 0">
+          <div class="mouvement-item" 
+               *ngFor="let mouvement of derniersMouvements"
+               [class]="getMouvementClass(mouvement)">
+            <div class="mouvement-icon" [class]="getMouvementClass(mouvement)">
+              <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+            </div>
+            <div class="mouvement-info">
+              <span class="mouvement-libelle">{{ mouvement.libelle }}</span>
+              <span class="mouvement-details">
+                {{ mouvement.caisse?.nom }} • {{ mouvement.dateMouvement | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+            <div class="mouvement-montant" [class]="getMouvementClass(mouvement)">
+              <span>{{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant ?? 0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-mouvements" *ngIf="derniersMouvements.length === 0">
+          <mat-icon>history</mat-icon>
+          <p>{{ 'finances.dashboard.no_transactions' | translate }}</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
+    <div class="empty-illustration">
+      <mat-icon class="empty-icon">event_busy</mat-icon>
+    </div>
+    <div class="empty-content">
+      <h3 class="empty-title">{{ 'finances.dashboard.empty.no_active_exercise' | translate }}</h3>
+      <p class="empty-text">{{ 'finances.dashboard.empty.create_msg' | translate }}</p>
+      <div class="empty-actions">
+        <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices/nouveau">
+          <mat-icon>add</mat-icon>
+          {{ 'finances.dashboard.empty.create_btn' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

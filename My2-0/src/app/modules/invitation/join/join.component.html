@@ -1,0 +1,278 @@
+<!-- join.component.html -->
+<div class="join-page">
+
+  <!-- Background décoratif -->
+  <div class="background-decoration">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+  </div>
+
+  <div class="join-container">
+
+    <!-- Logo -->
+    <div class="logo-section">
+      <div class="logo" (click)="goToHome()">
+        <mat-icon class="logo-icon">sports_soccer</mat-icon>
+        <span class="logo-text">My 2.0</span>
+      </div>
+    </div>
+
+    <!-- ===== ÉTAT : CHARGEMENT ===== -->
+    <mat-card class="join-card" *ngIf="isLoading">
+      <div class="loading-state">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>{{ 'join.loading' | translate }}</p>
+      </div>
+    </mat-card>
+
+    <!-- ===== ÉTAT : INVITATION INVALIDE ===== -->
+    <mat-card class="join-card error-card"
+              *ngIf="!isLoading && !invitationValide && !inscriptionReussie">
+      <div class="error-state">
+        <div class="error-icon-wrapper">
+          <mat-icon class="error-icon">link_off</mat-icon>
+        </div>
+        <h2>{{ 'join.error.titre' | translate }}</h2>
+        <p class="error-message">
+          {{ invitation?.messageErreur || ('join.error.message_defaut' | translate) }}
+        </p>
+        <div class="error-actions">
+          <button mat-stroked-button (click)="goToHome()">
+            <mat-icon>home</mat-icon>
+            {{ 'join.actions.retour_accueil' | translate }}
+          </button>
+          <button mat-flat-button color="primary" (click)="goToLogin()">
+            <mat-icon>login</mat-icon>
+            {{ 'join.actions.se_connecter' | translate }}
+          </button>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- ===== ÉTAT : INSCRIPTION RÉUSSIE ===== -->
+    <mat-card class="join-card success-card" *ngIf="inscriptionReussie">
+      <div class="success-state">
+        <div class="success-icon-wrapper">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+        </div>
+        <h2>{{ 'join.success.titre' | translate }}</h2>
+        <p class="success-message">
+          {{ 'join.success.message' | translate:{ groupe: groupeNom } }}
+        </p>
+
+        <div class="info-box">
+          <mat-icon>info</mat-icon>
+          <div>
+            <strong>{{ 'join.success.prochaine_etape_titre' | translate }}</strong>
+            <p>{{ 'join.success.prochaine_etape_texte' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="success-actions">
+          <button mat-flat-button color="primary" (click)="goToLogin()">
+            <mat-icon>login</mat-icon>
+            {{ 'join.actions.se_connecter' | translate }}
+          </button>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- ===== ÉTAT : FORMULAIRE D'INSCRIPTION ===== -->
+    <mat-card class="join-card form-card"
+              *ngIf="!isLoading && invitationValide && !inscriptionReussie">
+
+      <!-- Header avec infos du groupe -->
+      <div class="card-header">
+        <div class="groupe-info">
+          <div class="groupe-avatar" *ngIf="invitation?.groupeLogo; else defaultAvatar">
+            <img [src]="invitation?.groupeLogo" [alt]="invitation?.groupeNom">
+          </div>
+          <ng-template #defaultAvatar>
+            <div class="groupe-avatar default">
+              <mat-icon>groups</mat-icon>
+            </div>
+          </ng-template>
+
+          <div class="groupe-details">
+            <h2>{{ 'join.form.rejoindre' | translate:{ nom: invitation?.groupeNom } }}</h2>
+            <p class="groupe-meta">
+              <span *ngIf="invitation?.groupeVille">
+                <mat-icon>location_on</mat-icon>
+                {{ invitation?.groupeVille }}
+              </span>
+              <span *ngIf="invitation?.nombreMembres">
+                <mat-icon>people</mat-icon>
+                {{ 'join.form.membres' | translate:{ count: invitation?.nombreMembres } }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <p class="groupe-description" *ngIf="invitation?.groupeDescription">
+          {{ invitation?.groupeDescription }}
+        </p>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Formulaire -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="join-form">
+
+        <!-- Section : Infos personnelles -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>person</mat-icon>
+            {{ 'join.form.section_infos' | translate }}
+          </h3>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.prenom' | translate }}</mat-label>
+              <input matInput formControlName="prenom"
+                     [placeholder]="'join.form.prenom_placeholder' | translate">
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-error *ngIf="hasError('prenom', 'required')">
+                {{ 'join.errors.prenom_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('prenom', 'minlength')">
+                {{ 'join.errors.min2' | translate }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.nom' | translate }}</mat-label>
+              <input matInput formControlName="nom"
+                     [placeholder]="'join.form.nom_placeholder' | translate">
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-error *ngIf="hasError('nom', 'required')">
+                {{ 'join.errors.nom_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('nom', 'minlength')">
+                {{ 'join.errors.min2' | translate }}
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.email' | translate }}</mat-label>
+              <input matInput formControlName="email" type="email"
+                     placeholder="votre@email.com">
+              <mat-icon matPrefix>email</mat-icon>
+              <mat-error *ngIf="hasError('email', 'required')">
+                {{ 'join.errors.email_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('email', 'email')">
+                {{ 'join.errors.email_invalide' | translate }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.telephone' | translate }}</mat-label>
+              <input matInput formControlName="telephone" placeholder="6XXXXXXXX">
+              <mat-icon matPrefix>phone</mat-icon>
+              <mat-error *ngIf="hasError('telephone', 'required')">
+                {{ 'join.errors.telephone_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('telephone', 'pattern')">
+                {{ 'join.errors.telephone_invalide' | translate }}
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section : Identifiants -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>lock</mat-icon>
+            {{ 'join.form.section_identifiants' | translate }}
+          </h3>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ 'join.form.username' | translate }}</mat-label>
+            <input matInput formControlName="username"
+                   [placeholder]="'join.form.username_placeholder' | translate">
+            <mat-icon matPrefix>alternate_email</mat-icon>
+            <mat-hint>{{ 'join.form.username_hint' | translate }}</mat-hint>
+            <mat-error *ngIf="hasError('username', 'required')">
+              {{ 'join.errors.username_requis' | translate }}
+            </mat-error>
+            <mat-error *ngIf="hasError('username', 'minlength')">
+              {{ 'join.errors.min3' | translate }}
+            </mat-error>
+            <mat-error *ngIf="hasError('username', 'pattern')">
+              {{ 'join.errors.username_pattern' | translate }}
+            </mat-error>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.password' | translate }}</mat-label>
+              <input matInput formControlName="password"
+                     [type]="showPassword ? 'text' : 'password'"
+                     placeholder="••••••••">
+              <mat-icon matPrefix>lock</mat-icon>
+              <button mat-icon-button matSuffix type="button" (click)="togglePassword()">
+                <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <mat-hint>{{ 'join.form.password_hint' | translate }}</mat-hint>
+              <mat-error *ngIf="hasError('password', 'required')">
+                {{ 'join.errors.password_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('password', 'minlength')">
+                {{ 'join.errors.min6' | translate }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'join.form.confirm_password' | translate }}</mat-label>
+              <input matInput formControlName="confirmPassword"
+                     [type]="showConfirmPassword ? 'text' : 'password'"
+                     placeholder="••••••••">
+              <mat-icon matPrefix>lock_outline</mat-icon>
+              <button mat-icon-button matSuffix type="button" (click)="toggleConfirmPassword()">
+                <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <mat-error *ngIf="hasError('confirmPassword', 'required')">
+                {{ 'join.errors.confirm_requis' | translate }}
+              </mat-error>
+              <mat-error *ngIf="hasError('confirmPassword', 'passwordMismatch')">
+                {{ 'join.errors.password_mismatch' | translate }}
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Info validation -->
+        <div class="validation-info">
+          <mat-icon>info</mat-icon>
+          <p>{{ 'join.form.validation_info' | translate }}</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="goToLogin()">
+            {{ 'join.actions.deja_compte' | translate }}
+          </button>
+          <button mat-flat-button color="primary" type="submit"
+                  [disabled]="isSubmitting || form.invalid">
+            <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
+            <span *ngIf="!isSubmitting">
+              <mat-icon>send</mat-icon>
+              {{ 'join.actions.envoyer_demande' | translate }}
+            </span>
+          </button>
+        </div>
+      </form>
+    </mat-card>
+
+    <!-- Footer -->
+    <div class="footer-links">
+      <a routerLink="/login">{{ 'join.footer.deja_membre' | translate }}</a>
+      <span class="separator">•</span>
+      <a routerLink="/">{{ 'join.footer.accueil' | translate }}</a>
+    </div>
+
+  </div>
+</div>

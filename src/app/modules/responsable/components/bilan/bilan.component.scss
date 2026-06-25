@@ -1,224 +1,147 @@
-// bilan.component.scss
-@use '../../../../../variables' as *;
+@import '../../../../../variables';
 
-// ===================================================
-// THEMING — CSS Custom Properties
-// ===================================================
-:host {
-  --primary-color:    #{$primary-blue};
-  --primary-dark:     #{$primary-blue-dark};
-  --accent-color:     #{$accent-orange};
-  --success-color:    #{$success-color};
-  --warning-color:    #{$warning-color};
-  --error-color:      #{$error-color};
-  --info-color:       #{$info-color};
-
-  --text-primary:     #{$light-text-primary};
-  --text-secondary:   #{$light-text-secondary};
-  --text-tertiary:    #{$light-text-tertiary};
-  --bg-primary:       #{$light-bg-primary};
-  --bg-secondary:     #{$light-bg-secondary};
-  --bg-tertiary:      #{$light-bg-tertiary};
-  --border-color:     #{$light-border};
-
-  --background-primary:   #{$light-bg-primary};
-  --background-secondary: #{$light-bg-secondary};
-  --background-tertiary:  #{$light-bg-tertiary};
-}
-
-:host-context(.dark-theme),
-:host-context([data-theme="dark"]),
-:host-context(body.dark-theme),
-:host-context(.dark-mode) {
-  --text-primary:     #{$dark-text-primary};
-  --text-secondary:   #{$dark-text-secondary};
-  --text-tertiary:    #{$dark-text-tertiary};
-  --bg-primary:       #{$dark-bg-primary};
-  --bg-secondary:     #{$dark-bg-secondary};
-  --bg-tertiary:      #{$dark-bg-tertiary};
-  --border-color:     #{$dark-border};
-
-  --background-primary:   #{$dark-bg-primary};
-  --background-secondary: #{$dark-bg-secondary};
-  --background-tertiary:  #{$dark-bg-tertiary};
-}
-
-// ===================================================
-// CONTAINER
-// ===================================================
 .bilan-container {
-  @include page-container;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--background-secondary);
+}
+.content{
+   padding: $spacing-2xl;
+  // Espace pour la bottom nav sur mobile
+  padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
 }
 
-// ===================================================
-// HEADER — orange gradient
-// ===================================================
+// ── Header ────────────────────────────────────────────────────
 .page-header {
   @include page-header;
-  background: linear-gradient(135deg, $accent-orange 0%, #d18608 100%);
+  margin-bottom: 0;
+  border-radius: 0;
+
+  .header-content {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: $spacing-lg;
-    @include mobile { flex-direction: column; width: 100%; }
+    gap: $spacing-sm;
+    flex-wrap: wrap;
 
-    .exercice-select {
-      min-width: 200px;
-      ::ng-deep {
-        .mat-mdc-text-field-wrapper { background: rgba(255,255,255,0.15); }
-        .mat-mdc-select-value,
-        .mat-mdc-floating-label,
-        .mat-mdc-select-arrow { color: white !important; }
-        .mdc-notched-outline { border-color: rgba(255,255,255,0.3) !important; }
-      }
-      .exercice-option {
-        display: flex; align-items: center; gap: $spacing-sm;
-        .exercice-badge {
-          font-size: $font-size-xs; padding: 2px $spacing-sm; border-radius: $border-radius-full;
-          &.actif   { background: rgba($success-color, 0.15); color: $success-color; }
-          &.cloture { background: rgba(0,0,0,0.1); color: var(--text-secondary); }
-        }
-      }
-    }
-
-    .export-actions {
-      display: flex; gap: $spacing-sm;
-      button {
-        background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3);
-        display: flex; align-items: center; gap: $spacing-sm;
-        &:hover { background: rgba(255,255,255,0.25); }
-      }
-    }
+    .exercice-select { min-width: 160px; }
+    .export-actions  { display: flex; gap: $spacing-xs; }
   }
 }
 
-// ===================================================
-// LOADING
-// ===================================================
-.loading-container { @include loading-state; }
-
-// ===================================================
-// CONTENU
-// ===================================================
-.content {
-  padding: $spacing-2xl;
-  display: flex;
+// ── Loading ───────────────────────────────────────────────────
+.loading-container {
+  @include flex-center;
   flex-direction: column;
   gap: $spacing-xl;
-  @include mobile { padding: $spacing-lg; gap: $spacing-lg; }
+  padding: $spacing-5xl;
 }
 
-// ===================================================
-// BARRE PÉRIODE
-// ===================================================
-.period-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-md $spacing-lg;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: $border-radius-lg;
+// ── Contenu ───────────────────────────────────────────────────
 
-  @include mobile { flex-direction: column; gap: $spacing-sm; align-items: flex-start; }
+
+.period-bar {
+  @include flex-between;
+  padding: $spacing-md $spacing-2xl;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--border-color);
+  gap: $spacing-md;
+  flex-wrap: wrap;
+
+  @include mobile { padding: $spacing-md; }
 
   .period-left {
-    display: flex; align-items: center; gap: $spacing-sm;
-    mat-icon { color: $accent-orange; font-size: 20px; width: 20px; height: 20px; }
-    .period-dates { font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
   }
 
   .status-pill {
-    display: inline-flex; align-items: center; gap: $spacing-xs;
-    padding: $spacing-xs $spacing-lg;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
     border-radius: $border-radius-full;
-    font-size: $font-size-sm; font-weight: $font-weight-semibold;
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    &.actif   { background: rgba($success-color, 0.1); color: $success-color; }
-    &.cloture { background: rgba(0,0,0,0.06); color: var(--text-secondary); }
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+    &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
+    &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
   }
 }
 
-// ===================================================
-// KPI ROW — 4 cartes
-// ===================================================
+// ── KPI row ───────────────────────────────────────────────────
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: $spacing-lg;
+  gap: $spacing-md;
+  padding: $spacing-xl $spacing-2xl;
 
-  @include tablet { grid-template-columns: repeat(2, 1fr); }
-  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  @include mobile { grid-template-columns: repeat(2, 1fr); padding: $spacing-md; }
 }
 
 .kpi-card {
   @include card-base;
-  padding: $spacing-lg $spacing-xl;
+  padding: $spacing-lg;
+  border-top: 3px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  position: relative;
-  overflow: hidden;
 
-  // Barre colorée en haut
-  &::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  }
-  &.k-init::before  { background: $info-color; }
-  &.k-in::before    { background: $success-color; }
-  &.k-out::before   { background: $error-color; }
-  &.k-final::before { background: $accent-orange; }
-
-  .kpi-top {
-    display: flex; justify-content: space-between; align-items: flex-start;
-  }
+  .kpi-top { @include flex-between; }
 
   .kpi-icon {
-    width: 38px; height: 38px;
+    width: 36px; height: 36px;
     border-radius: $border-radius-md;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    @include flex-center;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
   }
-
-  &.k-init  .kpi-icon { background: rgba($info-color, 0.12);    color: $info-color; }
-  &.k-in    .kpi-icon { background: rgba($success-color, 0.12); color: $success-color; }
-  &.k-out   .kpi-icon { background: rgba($error-color, 0.12);   color: $error-color; }
-  &.k-final .kpi-icon { background: rgba($accent-orange, 0.12); color: $accent-orange; }
 
   .kpi-delta {
-    font-size: $font-size-xs; font-weight: $font-weight-bold;
-    padding: 2px 8px; border-radius: $border-radius-full;
-    &.delta-up   { background: rgba($success-color, 0.1); color: $success-color; }
-    &.delta-down { background: rgba($error-color, 0.1);   color: $error-color; }
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    padding: 2px 7px;
+    border-radius: $border-radius-full;
+    &.delta-up  { background: rgba(16,185,129,.1); color: $success-color; }
+    &.delta-down{ background: rgba(239,68,68,.08); color: $error-color; }
   }
 
-  .kpi-label {
-    font-size: $font-size-xs; color: var(--text-secondary);
-    text-transform: uppercase; letter-spacing: 0.03em;
-  }
+  .kpi-label { font-size: $font-size-xs; color: var(--text-secondary); }
+  .kpi-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); @include mobile { font-size: $font-size-lg; } }
 
-  .kpi-value {
-    font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary);
-    line-height: 1.2;
-    @include mobile { font-size: $font-size-lg; }
-  }
-
-  &.k-in  .kpi-value { color: $success-color; }
-  &.k-out .kpi-value { color: $error-color; }
-  &.k-final .kpi-value { color: darken($accent-orange, 8%); }
+  &.k-init  { border-top-color: var(--text-tertiary); .kpi-icon { background: linear-gradient(135deg,#64748b,#94a3b8); } }
+  &.k-in    { border-top-color: $success-color; .kpi-icon { background: linear-gradient(135deg,#0f6e56,#10b981); } .kpi-value { color: $success-color; } }
+  &.k-out   { border-top-color: $error-color;   .kpi-icon { background: linear-gradient(135deg,#991b1b,#ef4444); } .kpi-value { color: $error-color; } }
+  &.k-final { border-top-color: var(--primary-color); .kpi-icon { background: linear-gradient(135deg,var(--primary-dark),var(--primary-color)); } }
 }
 
-// ===================================================
-// MID ROW — Donut + Recouvrement
-// ===================================================
+// ── Mid row ───────────────────────────────────────────────────
 .mid-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-xl;
-  @include mobile { grid-template-columns: 1fr; }
+  padding: 0 $spacing-2xl $spacing-xl;
+
+  @include mobile { grid-template-columns: 1fr; padding: 0 $spacing-md $spacing-md; }
 }
 
 .chart-card {
@@ -226,384 +149,366 @@
   padding: $spacing-xl;
 
   .card-title {
-    display: flex; align-items: center; gap: $spacing-sm;
-    font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
     margin-bottom: $spacing-xl;
-    mat-icon { color: $accent-orange; font-size: 20px; width: 20px; height: 20px; }
+    mat-icon { color: var(--primary-color); font-size: 20px; }
   }
 }
 
-// Donut
 .donut-layout {
-  display: flex; align-items: center; gap: $spacing-xl;
+  display: flex;
+  gap: $spacing-xl;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .donut-placeholder {
-  width: 100px; height: 100px; border-radius: 50%;
-  background: conic-gradient($info-color 45%, $success-color 45% 75%, $accent-orange 75%);
-  display: flex; align-items: center; justify-content: center;
+  width: 100px; height: 100px;
+  border-radius: $border-radius-full;
+  border: 8px solid var(--border-color);
+  @include flex-center;
   flex-shrink: 0;
-  position: relative;
+  background: var(--background-secondary);
 
-  // Trou donut
-  &::after {
-    content: ''; position: absolute;
-    width: 65px; height: 65px; border-radius: 50%;
-    background: var(--bg-primary);
+  .donut-center-text { text-align: center;
+    .donut-amount { display: block; font-size: $font-size-sm; font-weight: $font-weight-bold; color: var(--text-primary); }
+    .donut-sub    { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
   }
 }
 
-.donut-center-text {
-  position: relative; z-index: 1; text-align: center;
-  .donut-amount { display: none; } // masqué car trop petit — visible via légende
-  .donut-sub    { display: none; }
-}
-
-.donut-legend {
-  flex: 1; display: flex; flex-direction: column; gap: $spacing-md;
-}
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: $spacing-sm; }
 
 .donut-leg-row {
-  display: flex; align-items: center; gap: $spacing-sm;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+
+  .donut-leg-dot { width: 10px; height: 10px; border-radius: $border-radius-full; flex-shrink: 0; }
+  .donut-leg-name{ flex: 1; @include text-truncate; color: var(--text-secondary); }
+  .donut-leg-pct  { color: var(--text-tertiary); font-size: $font-size-xs; }
+  .donut-leg-amt  { font-weight: $font-weight-semibold; white-space: nowrap; }
 }
 
-.donut-leg-dot {
-  width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+.recouv-big { font-size: 42px; font-weight: $font-weight-bold; color: var(--primary-color); text-align: center; line-height: 1; margin: $spacing-md 0 $spacing-sm; }
+.recouv-bar-track { height: 8px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden; margin-bottom: $spacing-lg;
+  .recouv-bar-fill { height: 100%; background: var(--primary-color); border-radius: $border-radius-full; transition: width $transition-base; }
 }
-
-.donut-leg-name {
-  flex: 1; font-size: $font-size-sm; color: var(--text-secondary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.donut-leg-pct {
-  font-size: $font-size-sm; font-weight: $font-weight-bold; color: var(--text-primary);
-  min-width: 38px; text-align: right;
-}
-
-.donut-leg-amt {
-  font-size: $font-size-xs; color: var(--text-tertiary);
-  min-width: 90px; text-align: right;
-}
-
-// Recouvrement
-.recouv-big {
-  font-size: 44px; font-weight: 900; color: $info-color; line-height: 1;
-  margin-bottom: $spacing-sm;
-}
-
-.recouv-bar-track {
-  height: 8px; background: rgba($info-color, 0.12);
-  border-radius: $border-radius-full; overflow: hidden;
-  margin-bottom: $spacing-sm;
-
-  .recouv-bar-fill {
-    height: 100%; border-radius: $border-radius-full;
-    background: linear-gradient(90deg, $info-color, darken($info-color, 15%));
-    transition: width 0.6s ease;
-  }
-}
-
-.recouv-info-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: $spacing-lg;
-
+.recouv-info-row { @include flex-between; margin-bottom: $spacing-md;
   .recouv-sub { font-size: $font-size-sm; color: var(--text-secondary); }
-
-  .variation-chip {
-    font-size: $font-size-xs; font-weight: $font-weight-bold;
-    padding: 3px 10px; border-radius: $border-radius-full;
-    &.chip-pos { background: rgba($success-color, 0.1); color: $success-color; }
-    &.chip-neg { background: rgba($error-color, 0.1);   color: $error-color; }
+  .variation-chip { font-size: $font-size-xs; font-weight: $font-weight-bold; padding: 2px 8px; border-radius: $border-radius-full;
+    &.chip-pos { background: rgba(16,185,129,.1); color: $success-color; }
+    &.chip-neg { background: rgba(239,68,68,.08); color: $error-color; }
   }
 }
-
-.recouv-chips {
-  display: flex; gap: $spacing-sm;
-
-  .r-chip {
-    flex: 1; border-radius: $border-radius-md; padding: $spacing-sm $spacing-md;
-    text-align: center;
-    display: flex; flex-direction: column; gap: 2px;
-
-    .rv { font-size: $font-size-md; font-weight: $font-weight-bold; }
-    .rl { font-size: $font-size-xs; color: var(--text-secondary); }
-
-    &.r-green { background: rgba($success-color, 0.08); .rv { color: $success-color; } }
-    &.r-red   { background: rgba($error-color, 0.08);   .rv { color: $error-color; } }
-    &.r-blue  { background: rgba($info-color, 0.08);    .rv { color: $info-color; } }
-  }
+.recouv-chips { display: flex; gap: $spacing-sm; flex-wrap: wrap; }
+.r-chip { flex: 1; min-width: 80px; padding: $spacing-sm; border-radius: $border-radius-lg; text-align: center;
+  .rv { display: block; font-size: $font-size-sm; font-weight: $font-weight-bold; }
+  .rl { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+  &.r-green { background: rgba(16,185,129,.08); .rv { color: $success-color; } }
+  &.r-red   { background: rgba(239,68,68,.06);  .rv { color: $error-color; } }
+  &.r-blue  { background: rgba(37,99,235,.06);  .rv { color: var(--primary-color); } }
 }
 
-// ===================================================
-// BANNIÈRE IMPAYÉS
-// ===================================================
+// ── Bannière impayés ──────────────────────────────────────────
 .impayes-banner {
-  display: flex; align-items: center; justify-content: space-between; gap: $spacing-lg;
-  padding: $spacing-lg $spacing-xl;
-  background: rgba($error-color, 0.06);
-  border: 1px solid rgba($error-color, 0.2);
-  border-radius: $border-radius-lg;
+  @include flex-between;
+  gap: $spacing-lg;
+  padding: $spacing-lg $spacing-2xl;
+  background: rgba(245,158,11,.08);
+  border: 1px solid rgba(245,158,11,.25);
+  margin: 0 $spacing-2xl $spacing-xl;
+  border-radius: $border-radius-xl;
+  flex-wrap: wrap;
 
-  @include mobile { flex-direction: column; align-items: flex-start; }
+  @include mobile { margin: 0 $spacing-md $spacing-md; padding: $spacing-md; }
 
-  .imp-left {
-    display: flex; align-items: center; gap: $spacing-lg;
-
-    .imp-icon {
-      font-size: 28px; width: 28px; height: 28px; color: $error-color; flex-shrink: 0;
-    }
-
-    .imp-title { font-size: $font-size-md; font-weight: $font-weight-bold; color: $error-color; }
-    .imp-sub   { font-size: $font-size-sm; color: var(--text-secondary); margin-top: 2px; }
+  .imp-left { display: flex; align-items: center; gap: $spacing-md;
+    .imp-icon { font-size: 24px; width: 24px; height: 24px; color: $warning-color; flex-shrink: 0; }
+    .imp-title { font-weight: $font-weight-semibold; color: var(--text-primary); font-size: $font-size-sm; }
+    .imp-sub   { font-size: $font-size-xs; color: var(--text-secondary); margin-top: 2px; }
   }
-
-  .imp-right {
-    text-align: right;
-    @include mobile { text-align: left; }
-    .imp-amount     { display: block; font-size: $font-size-2xl; font-weight: $font-weight-bold; color: $error-color; }
-    .imp-detail-link{ display: block; font-size: $font-size-sm; color: var(--text-secondary); margin-top: 2px; cursor: pointer; }
+  .imp-right { text-align: right;
+    .imp-amount      { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; color: $warning-color; }
+    .imp-detail-link { display: block; font-size: $font-size-xs; color: var(--primary-color); cursor: pointer; }
   }
 }
 
-// ===================================================
-// ONGLETS
-// ===================================================
-.bilan-tabs {
-  @include card-base;
-  overflow: hidden;
+// ── Tabs sticky (custom — remplace mat-tab-group) ─────────────
+.bilan-tabs-wrapper { display: flex; flex-direction: column; }
 
-  ::ng-deep {
-    .mat-mdc-tab-labels { background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color); }
-    .mat-mdc-tab {
-      min-width: 120px;
-      .mdc-tab__content { gap: $spacing-sm; }
-      mat-icon { font-size: 20px; width: 20px; height: 20px; }
-    }
-    .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab__text-label { color: var(--text-secondary); }
-    .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label { color: $accent-orange; }
-    .mat-mdc-tab-indicator .mdc-tab-indicator__content--underline { border-color: $accent-orange; }
-  }
-
-  .tab-content { padding: $spacing-xl; @include mobile { padding: $spacing-lg; } }
+.bilan-tabs-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  background: var(--background-primary);
+  border-bottom: 2px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
-// ===================================================
-// GRILLE CAISSES
-// ===================================================
+.btab {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-xl;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: $transition-fast;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
+  &.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: $font-weight-semibold;
+    background: rgba(37,99,235,.04);
+    mat-icon { color: var(--primary-color); }
+  }
+
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-xs;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}
+
+.bilan-tab-pane { flex: 1; }
+
+.bilan-pane {
+  padding: $spacing-2xl;
+  animation: fadeIn .2s ease forwards;
+  @include mobile { padding: $spacing-lg $spacing-md; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── Tab Caisses ───────────────────────────────────────────────
 .caisses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: $spacing-lg;
-  @include mobile { grid-template-columns: 1fr; }
+  gap: $spacing-xl;
+
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
 }
 
 .caisse-card {
-  background: var(--bg-tertiary);
-  border-radius: $border-radius-lg;
-  padding: $spacing-lg;
-  border-left: 4px solid var(--caisse-color, #{$primary-blue});
+  @include card-base;
+  overflow: hidden;
+  border-top: 3px solid var(--caisse-color, var(--primary-color));
+}
 
-  .caisse-header {
-    display: flex; align-items: center; gap: $spacing-md; margin-bottom: $spacing-lg;
+.caisse-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg $spacing-xl;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--border-color);
 
-    .caisse-icon {
-      width: 40px; height: 40px; border-radius: $border-radius-md;
-      @include flex-center; color: white; flex-shrink: 0;
-      mat-icon { font-size: 20px; width: 20px; height: 20px; }
-    }
-
-    .caisse-info {
-      h4 { margin: 0 0 $spacing-xs; font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
-      .caisse-type { font-size: $font-size-xs; color: var(--text-secondary); text-transform: uppercase; }
-    }
+  .caisse-icon {
+    width: 40px; height: 40px;
+    border-radius: $border-radius-lg;
+    @include flex-center;
+    mat-icon { font-size: 22px; width: 22px; height: 22px; color: white; }
   }
 
-  .caisse-body {
-    .caisse-solde {
-      text-align: center; margin-bottom: $spacing-md;
-      .solde-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); }
-      .solde-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
-    }
+  .caisse-info {
+    h4 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; }
+    .caisse-type { font-size: $font-size-xs; color: var(--text-tertiary); }
+  }
+}
 
-    .caisse-progress {
-      margin-bottom: $spacing-md;
-      .progress-bar {
-        height: 6px; background: var(--border-color); border-radius: $border-radius-full; margin-bottom: $spacing-xs;
-        .progress-fill { height: 100%; border-radius: $border-radius-full; }
-      }
-      .progress-label { font-size: $font-size-xs; color: var(--text-secondary); }
-    }
+.caisse-body { padding: $spacing-lg $spacing-xl; }
 
-    .caisse-details {
-      .detail-row {
-        display: flex; justify-content: space-between;
-        padding: $spacing-sm 0; border-top: 1px solid var(--border-color);
-        .detail-label { font-size: $font-size-sm; color: var(--text-secondary); }
-        .detail-value { font-size: $font-size-sm; font-weight: $font-weight-medium; color: var(--text-primary); }
-        &.entree .detail-value { color: $success-color; }
-        &.sortie .detail-value { color: $error-color; }
-      }
+.caisse-solde {
+  @include flex-between;
+  margin-bottom: $spacing-md;
+  .solde-label { font-size: $font-size-xs; color: var(--text-secondary); }
+  .solde-value { font-size: $font-size-xl; font-weight: $font-weight-bold; }
+}
+
+.caisse-progress {
+  margin-bottom: $spacing-md;
+  .progress-bar { height: 6px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden; margin-bottom: 4px;
+    .progress-fill { height: 100%; border-radius: $border-radius-full; transition: width $transition-base; }
+  }
+  .progress-label { font-size: $font-size-xs; color: var(--text-tertiary); }
+}
+
+.caisse-details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  .detail-row {
+    @include flex-between;
+    font-size: $font-size-sm;
+    .detail-label { color: var(--text-secondary); }
+    .detail-value { font-weight: $font-weight-semibold;
+      &.entree { color: $success-color; }
+      &.sortie { color: $error-color; }
     }
   }
 }
 
-// ===================================================
-// CONTRIBUTIONS / DÉPENSES
-// ===================================================
-.contributions-list,
-.depenses-list {
-  display: flex; flex-direction: column; gap: $spacing-lg;
-}
+// ── Tab Contributions / Dépenses ──────────────────────────────
+.contributions-list, .depenses-list { display: flex; flex-direction: column; gap: $spacing-lg; }
 
-.contribution-card,
-.depense-card {
-  background: var(--bg-tertiary); border-radius: $border-radius-lg; padding: $spacing-lg;
+.contribution-card, .depense-card {
+  @include card-base;
+  padding: $spacing-xl;
 
-  .contrib-header,
-  .depense-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: $spacing-lg;
-    h4 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
-    .contrib-count, .depense-count { font-size: $font-size-xs; color: var(--text-secondary); }
+  h4 { margin: 0 0 $spacing-sm; font-size: $font-size-md; font-weight: $font-weight-semibold; }
+
+  .contrib-count, .depense-count { font-size: $font-size-xs; color: var(--text-tertiary); }
+
+  .contrib-amounts, .depense-amounts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    .amount-item {
+      .amount-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
+      .amount-value { font-size: $font-size-lg; font-weight: $font-weight-bold; }
+
+      &.attendu .amount-value { color: var(--primary-color); }
+      &.recu    .amount-value { color: $success-color; }
+      &.budget  .amount-value { color: var(--text-secondary); }
+      &.depense .amount-value { color: $error-color; }
+    }
   }
 
-  .contrib-body,
-  .depense-body {
-
-    .contrib-amounts,
-    .depense-amounts {
-      display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-md; margin-bottom: $spacing-lg;
-
-      .amount-item {
-        text-align: center; padding: $spacing-md; background: var(--bg-primary); border-radius: $border-radius-md;
-        .amount-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: $spacing-xs; }
-        .amount-value { font-size: $font-size-lg; font-weight: $font-weight-bold; }
-        &.attendu .amount-value,
-        &.budget  .amount-value { color: $info-color; }
-        &.recu    .amount-value { color: $success-color; }
-        &.depense .amount-value { color: $error-color; }
-      }
+  .progress-header { @include flex-between; margin-bottom: $spacing-xs;
+    .progress-value {
+      font-weight: $font-weight-bold; font-size: $font-size-sm;
+      &.success { color: $success-color; }
+      &.warning { color: $warning-color; }
+      &.danger  { color: $error-color; }
     }
+  }
 
-    .contrib-progress,
-    .depense-progress {
-      .progress-header {
-        display: flex; justify-content: space-between; margin-bottom: $spacing-sm;
-        font-size: $font-size-sm; color: var(--text-secondary);
-        .progress-value {
-          font-weight: $font-weight-bold;
-          &.success { color: $success-color; }
-          &.warning { color: $warning-color; }
-          &.danger  { color: $error-color; }
-        }
-      }
-      .progress-bar {
-        height: 8px; background: var(--border-color); border-radius: $border-radius-full;
-        .progress-fill {
-          height: 100%; border-radius: $border-radius-full;
-          &.success { background: $success-color; }
-          &.warning { background: $warning-color; }
-          &.danger  { background: $error-color; }
-        }
-      }
+  .progress-bar { height: 8px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden;
+    .progress-fill {
+      height: 100%; border-radius: $border-radius-full; transition: width $transition-base;
+      &.success { background: $success-color; }
+      &.warning { background: $warning-color; }
+      &.danger  { background: $error-color; }
     }
   }
 }
 
-// ===================================================
-// IMPAYÉS (onglet)
-// ===================================================
-.impayes-section {
-  .impayes-summary {
-    display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-lg; margin-bottom: $spacing-xl;
-    @include mobile { grid-template-columns: 1fr; }
+// ── Tab Impayés ───────────────────────────────────────────────
+.impayes-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
 
-    .impaye-card {
-      display: flex; align-items: center; gap: $spacing-lg; padding: $spacing-xl; border-radius: $border-radius-lg;
-      mat-icon { font-size: 32px; width: 32px; height: 32px; flex-shrink: 0; }
-      &.total   { background: rgba($error-color, 0.1);   color: $error-color; }
-      &.membres { background: rgba($warning-color, 0.1); color: $warning-color; }
-      .impaye-content {
-        .impaye-label { display: block; font-size: $font-size-sm; opacity: 0.8; }
-        .impaye-value { font-size: $font-size-2xl; font-weight: $font-weight-bold; }
-      }
-    }
-  }
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+}
 
-  .impayes-detail {
-    h4 { margin: 0 0 $spacing-lg; font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
-    .detail-list {
-      .detail-item {
-        display: flex; justify-content: space-between;
-        padding: $spacing-md; background: var(--bg-tertiary); border-radius: $border-radius-md; margin-bottom: $spacing-sm;
-        .detail-type    { color: var(--text-primary); }
-        .detail-montant { font-weight: $font-weight-bold; color: $error-color; }
-      }
-    }
+.impaye-card {
+  @include card-base;
+  padding: $spacing-xl;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+
+  mat-icon { font-size: 28px; width: 28px; height: 28px; flex-shrink: 0; }
+
+  &.total   mat-icon { color: $error-color; }
+  &.membres mat-icon { color: var(--primary-color); }
+
+  .impaye-content {
+    .impaye-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
+    .impaye-value { font-size: $font-size-xl; font-weight: $font-weight-bold; }
   }
 }
 
-// ===================================================
-// STATISTIQUES
-// ===================================================
-.stats-section {
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: $spacing-lg;
+.impayes-detail h4 { margin: 0 0 $spacing-md; font-size: $font-size-md; font-weight: $font-weight-semibold; }
+
+.detail-list { display: flex; flex-direction: column; gap: $spacing-sm; }
+.detail-item { @include flex-between; padding: $spacing-sm $spacing-md; background: var(--background-secondary); border-radius: $border-radius-md;
+  .detail-type    { font-size: $font-size-sm; color: var(--text-secondary); }
+  .detail-montant { font-weight: $font-weight-bold; color: $error-color; }
+}
+
+// ── Tab Stats ─────────────────────────────────────────────────
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: $spacing-lg;
+
+  @include mobile { grid-template-columns: 1fr 1fr; gap: $spacing-md; }
+}
+
+.stat-card {
+  @include card-base;
+  padding: $spacing-xl;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: $border-radius-lg;
+    @include flex-center;
+    flex-shrink: 0;
+    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+
+    &.membres      { background: linear-gradient(135deg, var(--primary-dark), var(--primary-color)); }
+    &.contributions{ background: linear-gradient(135deg, #0f6e56, #10b981); }
+    &.moyenne-entree { background: linear-gradient(135deg, #0f6e56, #10b981); }
+    &.sorties      { background: linear-gradient(135deg, #991b1b, #ef4444); }
+    &.moyenne-sortie { background: linear-gradient(135deg, #991b1b, #ef4444); }
   }
 
-  .stat-card {
-    display: flex; align-items: center; gap: $spacing-md; padding: $spacing-lg;
-    background: var(--bg-tertiary); border-radius: $border-radius-lg;
-
-    .stat-icon {
-      width: 48px; height: 48px; border-radius: $border-radius-md;
-      @include flex-center; color: white; flex-shrink: 0;
-      mat-icon { font-size: 24px; width: 24px; height: 24px; }
-      &.membres        { background: linear-gradient(135deg, $info-color        0%, #0f66f3 100%); }
-      &.contributions  { background: linear-gradient(135deg, $success-color     0%, #0d9d6d 100%); }
-      &.moyenne-entree { background: linear-gradient(135deg, $secondary-emerald 0%, #0d9d6d 100%); }
-      &.sorties        { background: linear-gradient(135deg, $error-color       0%, #eb1919 100%); }
-      &.moyenne-sortie { background: linear-gradient(135deg, $accent-orange     0%, #d18608 100%); }
-    }
-
-    .stat-content {
-      .stat-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: $spacing-xs; }
-      .stat-value { font-size: $font-size-lg; font-weight: $font-weight-bold; color: var(--text-primary); }
-    }
+  .stat-content {
+    .stat-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
+    .stat-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
   }
 }
 
-// ===================================================
-// ÉTATS VIDES
-// ===================================================
+// ── Vide ──────────────────────────────────────────────────────
 .empty-tab {
-  text-align: center; padding: $spacing-3xl; color: var(--text-secondary);
-  mat-icon { font-size: 64px; width: 64px; height: 64px; opacity: 0.4; margin-bottom: $spacing-lg; display: block; margin-inline: auto; }
-  p { margin: 0; font-size: $font-size-md; }
-  &.success { color: $success-color; mat-icon { opacity: 1; } }
-}
-
-.empty-state {
   @include empty-state;
-  margin: $spacing-3xl auto; max-width: 500px;
-  .empty-illustration { margin-bottom: $spacing-xl; .empty-icon { font-size: 80px; width: 80px; height: 80px; color: var(--text-tertiary); opacity: 0.6; } }
-  .empty-content {
-    .empty-title  { margin: 0 0 $spacing-md; font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
-    .empty-text   { margin: 0 0 $spacing-xl; font-size: $font-size-md; color: var(--text-secondary); }
-    .empty-actions button { display: inline-flex; align-items: center; gap: $spacing-sm; }
-  }
+  padding: $spacing-3xl $spacing-2xl;
+
+  mat-icon { font-size: 48px; width: 48px; height: 48px; opacity: .4; }
+  p { margin: 0; }
+
+  &.success mat-icon { color: $success-color; opacity: .7; }
 }
 
-// ===================================================
-// PRINT
-// ===================================================
-@media print {
-  .page-header {
-    background: none !important; color: black !important; box-shadow: none !important;
-    .header-actions { display: none !important; }
-  }
-  .bilan-tabs ::ng-deep .mat-mdc-tab-labels { display: none !important; }
-  .tab-content { display: block !important; page-break-inside: avoid; }
-  .impayes-banner { border: 1px solid #ccc !important; background: white !important; }
-  .period-bar { border: 1px solid #ccc !important; }
+.empty-state { @include empty-state; padding: $spacing-4xl;
+  .empty-icon { font-size: 64px; width: 64px; height: 64px; opacity: .3; }
+  .empty-title, .empty-text { margin: 0; }
+  .empty-actions { margin-top: $spacing-lg; }
+}
+
+.exercice-option { display: flex; align-items: center; gap: $spacing-sm; justify-content: space-between; width: 100%; }
+.exercice-badge { font-size: 10px; padding: 1px 7px; border-radius: $border-radius-full; font-weight: $font-weight-semibold;
+  &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
+  &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
 }

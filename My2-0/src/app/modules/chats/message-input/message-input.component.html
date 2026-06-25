@@ -1,0 +1,68 @@
+<!-- src/app/modules/chat/components/message-input/message-input.component.html -->
+
+<div class="message-input-container">
+  <!-- Prévisualisation du fichier sélectionné -->
+  <div *ngIf="selectedFile" class="file-preview">
+    <div class="preview-content">
+      <!-- Prévisualisation image -->
+      <img 
+        *ngIf="selectedFilePreview" 
+        [src]="selectedFilePreview" 
+        alt="Preview"
+        class="image-preview">
+      
+      <!-- Info fichier non-image -->
+      <div *ngIf="!selectedFilePreview" class="file-info">
+        <mat-icon>attach_file</mat-icon>
+        <span>{{ selectedFile.name }}</span>
+      </div>
+    </div>
+    
+    <button mat-icon-button (click)="removeSelectedFile()" class="remove-file-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Zone de saisie -->
+  <div class="input-wrapper">
+    <!-- Bouton pièce jointe -->
+    <button 
+      mat-icon-button 
+      type="button"
+      (click)="fileInput.click()"
+      [disabled]="sending"
+      matTooltip="Joindre un fichier">
+      <mat-icon>attach_file</mat-icon>
+    </button>
+    
+    <input 
+      #fileInput
+      type="file" 
+      hidden
+      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+      (change)="onFileSelected($event)">
+
+    <!-- Textarea -->
+    <textarea
+      #messageTextarea
+      [formControl]="messageControl"
+      class="message-textarea"
+      placeholder="Écrivez un message..."
+      rows="1"
+      (keydown)="onKeyDown($event)"
+      (input)="autoResizeTextarea($event)"
+      [disabled]="sending"></textarea>
+
+    <!-- Bouton envoyer -->
+    <button 
+      mat-icon-button 
+      color="primary"
+      type="button"
+      (click)="sendMessage()"
+      [disabled]="(!messageControl.value?.trim() && !selectedFile) || sending"
+      matTooltip="Envoyer (Ctrl+Enter)">
+      <mat-icon *ngIf="!sending">send</mat-icon>
+      <mat-spinner *ngIf="sending" diameter="24"></mat-spinner>
+    </button>
+  </div>
+</div>

@@ -11,7 +11,7 @@
     <div class="header-actions">
       <button mat-flat-button color="primary" class="export-btn" (click)="exportCSV()">
         <mat-icon>download</mat-icon>
-        <span class="btn-text">{{ 'STATS.EXPORT' | translate }}</span>
+        <span class="btn-text hide-mobile">{{ 'STATS.EXPORT' | translate }}</span>
       </button>
       <button mat-icon-button class="close-btn" (click)="onClose()">
         <mat-icon>close</mat-icon>
@@ -30,14 +30,14 @@
     <div class="kpi-card bg-presence">
       <div class="kpi-icon-wrapper"><mat-icon>groups</mat-icon></div>
       <div class="kpi-content">
-        <span class="kpi-label">Présence Terrain Moy.</span>
+        <span class="kpi-label">Présence Moy.</span>
         <span class="kpi-value">{{ globalKpis().presenceMoy }}%</span>
       </div>
     </div>
     <div class="kpi-card bg-joue">
       <div class="kpi-icon-wrapper"><mat-icon>directions_run</mat-icon></div>
       <div class="kpi-content">
-        <span class="kpi-label">Taux de Jeu Moyen</span>
+        <span class="kpi-label">Taux de Jeu</span>
         <span class="kpi-value">{{ globalKpis().joueMoy }}%</span>
       </div>
     </div>
@@ -52,7 +52,7 @@
 
   <div class="filter-toolbar">
     <div class="search-and-select">
-      <div class="search-box">
+      <div class="search-box search-box-full">
         <mat-icon>search</mat-icon>
         <input type="text" [placeholder]="'STATS.SEARCH_PLAYER' | translate" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
       </div>
@@ -106,6 +106,10 @@
     <div class="center-content">
       
       <div class="view-card card-heatmap" *ngIf="activeView() === 'heatmap'">
+        <div class="scroll-hint-bar">
+          <mat-icon>swipe</mat-icon>
+          <span>Glissez pour voir les mois</span>
+        </div>
         <div class="table-responsive">
           <table class="stats-table table-heatmap">
             <thead>
@@ -139,6 +143,10 @@
       </div>
 
       <div class="view-card card-table" *ngIf="activeView() === 'table'">
+        <div class="scroll-hint-bar">
+          <mat-icon>swipe</mat-icon>
+          <span>Glissez pour voir toutes les colonnes</span>
+        </div>
         <div class="table-responsive">
           <table class="stats-table">
             <thead>
@@ -192,7 +200,7 @@
           <p>Basculez sur la vue "Tableau" et cliquez sur le carré d'ajout pour comparer jusqu'à 3 joueurs.</p>
         </div>
 
-        <div class="compare-workspace" *ngIf="compareStats().length > 0">
+        <div class="compare-workspace" *ngIf="compareStats().length > 0"><div class="scroll-hint hide-desktop"><mat-icon>swipe</mat-icon> Faites glisser pour voir plus</div>
           <div class="compare-header-row">
             <div class="compare-head-player" *ngFor="let s of compareStats(); let idx = index" [style.border-top-color]="compareColors[idx]">
               <div class="avatar" [style.background-color]="s.avatarColor">{{ s.initiales }}</div>
@@ -257,7 +265,7 @@
       </div>
     </div>
 
-    <div class="side-panel-wrapper" *ngIf="selectedMembre() as membre">
+    <div class="side-panel-wrapper" [class.mobile-open]="selectedMembre()" *ngIf="selectedMembre() as membre">
       <div class="side-panel-card animate-fade-in">
         <div class="side-header">
           <div class="side-avatar-box">

@@ -61,6 +61,7 @@ import { ConfirmationDialogComponent } from '../../../../shared/components/confi
   styleUrl: './exercice-management.component.scss'
 })
 export class ExerciceManagementComponent implements OnInit {
+  activeTab: 'actif'|'create'|'history' = 'actif';
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 

@@ -1,7 +1,7 @@
 // caisse-detail.component.ts
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -22,6 +22,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { FinancesService } from '../../../../core/services/finances.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 
 
@@ -78,7 +79,8 @@ interface MouvementCaisse {
     MatSnackBarModule,
     MatFormFieldModule,
     MatInputModule,
-    MatDatepickerModule
+    MatDatepickerModule,
+    TranslateModule
   ],
   templateUrl: './caisse-detail.component.html',
   styleUrls: ['./caisse-detail.component.scss']
@@ -114,7 +116,8 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private financesService: FinancesService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -124,6 +127,20 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
         this.loadData();
       }
     });
+  }
+
+
+  // Ta fonction de navigation
+  allerAuxEntreesFinances(): void {
+    this.router.navigate(['/responsable/finances/entree'])
+      .then(navigue => {
+        if (navigue) {
+          console.log('Navigation réussie vers les entrées !');
+        } else {
+          console.error('La navigation a échoué (bloquée par un guard ?)');
+        }
+      })
+      .catch(err => console.error('Erreur de navigation :', err));
   }
 
   ngOnDestroy(): void {

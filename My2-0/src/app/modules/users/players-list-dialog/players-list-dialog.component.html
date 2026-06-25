@@ -1,0 +1,119 @@
+<!-- players-list-dialog.component.html -->
+<div class="players-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <div class="team-avatar">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2>{{ data.nomEquipeAdverse }}</h2>
+        <p>{{ data.joueurs.length }} joueur(s) inscrits</p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="close()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Contact Info -->
+  <div class="contact-section" *ngIf="data.emailContact || data.telephoneContact">
+    <div class="contact-item" *ngIf="data.emailContact">
+      <mat-icon>email</mat-icon>
+      <a [href]="'mailto:' + data.emailContact">{{ data.emailContact }}</a>
+    </div>
+    <div class="contact-item" *ngIf="data.telephoneContact">
+      <mat-icon>phone</mat-icon>
+      <a [href]="'tel:' + data.telephoneContact">{{ data.telephoneContact }}</a>
+    </div>
+  </div>
+
+  <!-- Players List -->
+  <div class="dialog-body">
+    <div class="players-list">
+      <div 
+        class="player-card" 
+        *ngFor="let joueur of data.joueurs; let i = index"
+        [class.capitaine]="joueur.estCapitaine"
+        [class.gardien]="joueur.estGardien">
+        
+        <!-- Numéro ordre -->
+        <div class="player-order">{{ i + 1 }}</div>
+
+        <!-- Avatar avec numéro maillot -->
+        <div class="player-avatar" [class.has-number]="joueur.numeroMaillot">
+          <span class="jersey-number" *ngIf="joueur.numeroMaillot">{{ joueur.numeroMaillot }}</span>
+          <span class="initials" *ngIf="!joueur.numeroMaillot">{{ getInitiales(joueur) }}</span>
+        </div>
+
+        <!-- Infos joueur -->
+        <div class="player-info">
+          <div class="player-name">
+            {{ joueur.prenom }} {{ joueur.nom }}
+          </div>
+          <div class="player-details">
+            <span class="poste" *ngIf="joueur.poste">{{ joueur.poste }}</span>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="player-badges">
+          <span class="badge capitaine" *ngIf="joueur.estCapitaine" matTooltip="Capitaine">
+            <mat-icon>star</mat-icon>
+            C
+          </span>
+          <span class="badge gardien" *ngIf="joueur.estGardien" matTooltip="Gardien">
+            <mat-icon>sports_handball</mat-icon>
+            G
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="data.joueurs.length === 0">
+      <mat-icon>person_off</mat-icon>
+      <p>Aucun joueur dans cette liste</p>
+    </div>
+  </div>
+
+  <!-- Stats résumé -->
+  <div class="stats-section">
+    <div class="stat-item">
+      <mat-icon>people</mat-icon>
+      <div class="stat-content">
+        <span class="stat-value">{{ data.joueurs.length }}</span>
+        <span class="stat-label">Joueurs</span>
+      </div>
+    </div>
+    <div class="stat-item">
+      <mat-icon>star</mat-icon>
+      <div class="stat-content">
+        <span class="stat-value">{{ getCapitaineNom() }}</span>
+        <span class="stat-label">Capitaine</span>
+      </div>
+    </div>
+    <div class="stat-item">
+      <mat-icon>sports_handball</mat-icon>
+      <div class="stat-content">
+        <span class="stat-value">{{ countGardiens() }}</span>
+        <span class="stat-label">Gardien(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button mat-stroked-button (click)="close()">
+      Fermer
+    </button>
+    <button mat-flat-button color="primary" (click)="validate()" *ngIf="data.canValidate">
+      <mat-icon>check</mat-icon>
+      Valider cette liste
+    </button>
+    <button mat-stroked-button color="warn" (click)="reject()" *ngIf="data.canValidate">
+      <mat-icon>close</mat-icon>
+      Refuser
+    </button>
+  </div>
+</div>

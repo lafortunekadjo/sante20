@@ -1,1 +1,358 @@
-<p>match-edit-dialog works!</p>
+<div class="med">
+
+  <!-- Header -->
+  <div class="med-header" [ngClass]="'med-header--' + editMatch.typeMatch?.toLowerCase()">
+    <div class="med-header-icon"><mat-icon>{{ getTypeIcon() }}</mat-icon></div>
+    <div class="med-header-text">
+      <h2>Modifier le match</h2>
+      <p>{{ formatDate(editMatch.dateMatch) }}</p>
+    </div>
+    <button mat-icon-button class="med-close" (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="med-tabs-bar">
+    <button class="med-tab" [class.active]="activeTab === 0" (click)="activeTab = 0">
+      <mat-icon>info</mat-icon><span>Général</span>
+    </button>
+    <button class="med-tab" [class.active]="activeTab === 1" (click)="activeTab = 1">
+      <mat-icon>groups</mat-icon><span>Équipes</span>
+    </button>
+    <button class="med-tab" [class.active]="activeTab === 2" (click)="activeTab = 2">
+      <mat-icon>gavel</mat-icon><span>Officiels</span>
+    </button>
+    <button class="med-tab" [class.active]="activeTab === 3" (click)="activeTab = 3">
+      <mat-icon>{{ getStatusIcon() }}</mat-icon><span>Statut</span>
+    </button>
+  </div>
+
+  <!-- Body scrollable -->
+  <div class="med-body">
+
+    <!-- TAB 0 : GÉNÉRAL -->
+    <div class="med-tab-content" *ngIf="activeTab === 0">
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Type de match</mat-label>
+        <mat-select [(ngModel)]="editMatch.typeMatch" (selectionChange)="onTypeChange()">
+          <mat-option value="INTERNE"><mat-icon class="option-icon">groups</mat-icon>Interne</mat-option>
+          <mat-option value="DUEL"><mat-icon class="option-icon">sports</mat-icon>Duel</mat-option>
+          <mat-option value="AMICAL"><mat-icon class="option-icon">handshake</mat-icon>Amical</mat-option>
+          <mat-option value="ANNIVERSAIRE"><mat-icon class="option-icon">cake</mat-icon>Anniversaire</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="form-row two-cols">
+        <mat-form-field appearance="outline">
+          <mat-label>Date du match</mat-label>
+          <input matInput type="date" [(ngModel)]="editMatch.dateMatch">
+          <mat-icon matPrefix>event</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Lieu</mat-label>
+          <input matInput [(ngModel)]="editMatch.lieu" placeholder="Stade, terrain...">
+          <mat-icon matPrefix>location_on</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Commentaire</mat-label>
+        <textarea matInput [(ngModel)]="editMatch.commentaire" rows="2"></textarea>
+        <mat-icon matPrefix>comment</mat-icon>
+      </mat-form-field>
+
+    </div>
+
+    <!-- TAB 1 : ÉQUIPES -->
+    <div class="med-tab-content" *ngIf="activeTab === 1">
+
+      <!-- INTERNE / DUEL -->
+      <div *ngIf="editMatch.typeMatch === 'INTERNE' || editMatch.typeMatch === 'DUEL'" class="teams-section">
+        <div class="teams-grid">
+
+          <div class="team-card team-1">
+            <span class="team-badge">Équipe 1</span>
+            <mat-form-field appearance="outline">
+              <mat-label>Sélectionner</mat-label>
+              <mat-select [(ngModel)]="selectedEquipe1Id" (selectionChange)="updateEquipesForForfait()">
+                <mat-option [value]="null">-- Aucune --</mat-option>
+                <mat-option *ngFor="let eq of data.equipes" [value]="eq.id" [disabled]="eq.id === selectedEquipe2Id">
+                  {{ eq.nom }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="score-field">
+              <mat-label>Score</mat-label>
+              <input matInput type="number" [(ngModel)]="editMatch.scoreEquipe1" min="0">
+            </mat-form-field>
+            <div class="current-value" *ngIf="getEquipe1Name()">
+              <mat-icon>check_circle</mat-icon><span>Actuel: {{ getEquipe1Name() }}</span>
+            </div>
+          </div>
+
+          <div class="vs-badge">VS</div>
+
+          <div class="team-card team-2">
+            <span class="team-badge">Équipe 2</span>
+            <mat-form-field appearance="outline">
+              <mat-label>Sélectionner</mat-label>
+              <mat-select [(ngModel)]="selectedEquipe2Id" (selectionChange)="updateEquipesForForfait()">
+                <mat-option [value]="null">-- Aucune --</mat-option>
+                <mat-option *ngFor="let eq of data.equipes" [value]="eq.id" [disabled]="eq.id === selectedEquipe1Id">
+                  {{ eq.nom }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="score-field">
+              <mat-label>Score</mat-label>
+              <input matInput type="number" [(ngModel)]="editMatch.scoreEquipe2" min="0">
+            </mat-form-field>
+            <div class="current-value" *ngIf="getEquipe2Name()">
+              <mat-icon>check_circle</mat-icon><span>Actuel: {{ getEquipe2Name() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="random-btn">
+          <button mat-stroked-button type="button" (click)="randomizeTeams()">
+            <mat-icon>shuffle</mat-icon>Tirage aléatoire
+          </button>
+        </div>
+      </div>
+
+      <!-- AMICAL -->
+      <div *ngIf="editMatch.typeMatch === 'AMICAL'" class="amical-section">
+        <div class="teams-row">
+          <div class="local-team">
+            <span class="team-label">Votre équipe</span>
+            <div class="team-name">{{ data.currentGroupe?.nom || 'Mon équipe' }}</div>
+            <mat-form-field appearance="outline" class="score-field">
+              <mat-label>Score</mat-label>
+              <input matInput type="number" [(ngModel)]="editMatch.scoreEquipe1" min="0">
+            </mat-form-field>
+          </div>
+
+          <div class="vs-badge">VS</div>
+
+          <div class="adverse-team">
+            <span class="team-label">Adversaire</span>
+            <mat-radio-group [(ngModel)]="selectedSourceAdversaire" (change)="onSourceChange()" class="source-group">
+              <mat-radio-button value="MANUEL">Saisie manuelle</mat-radio-button>
+              <mat-radio-button value="GROUPE_EXISTANT">Groupe existant</mat-radio-button>
+            </mat-radio-group>
+
+            <mat-form-field *ngIf="selectedSourceAdversaire === 'MANUEL'" appearance="outline" class="full-width">
+              <mat-label>Nom de l'adversaire</mat-label>
+              <input matInput [(ngModel)]="editMatch.nomAdversaireManuel">
+            </mat-form-field>
+
+            <mat-form-field *ngIf="selectedSourceAdversaire === 'GROUPE_EXISTANT'" appearance="outline" class="full-width">
+              <mat-label>Sélectionner un groupe</mat-label>
+              <mat-select [(ngModel)]="selectedGroupeAdverseId">
+                <mat-option [value]="null">-- Aucun --</mat-option>
+                <mat-option *ngFor="let g of data.groupes" [value]="g.id">
+                  {{ g.nom }} <span *ngIf="g.ville">({{ g.ville.nom }})</span>
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="score-field">
+              <mat-label>Score adversaire</mat-label>
+              <input matInput type="number" [(ngModel)]="editMatch.scoreAdversaire" min="0">
+            </mat-form-field>
+
+            <div class="current-value" *ngIf="getCurrentAdversaire()">
+              <mat-icon>check_circle</mat-icon><span>Actuel: {{ getCurrentAdversaire() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANNIVERSAIRE -->
+      <div *ngIf="editMatch.typeMatch === 'ANNIVERSAIRE'" class="anniversaire-section">
+        <div class="birthday-members">
+          <h4><mat-icon>cake</mat-icon>Membres fêtés</h4>
+
+          <mat-chip-set *ngIf="selectedMembresAnniversaire.length > 0">
+            <mat-chip *ngFor="let m of selectedMembresAnniversaire" (removed)="removeMembreAnniversaire(m)">
+              {{ m.prenom }} {{ m.nom }}
+              <button matChipRemove><mat-icon>cancel</mat-icon></button>
+            </mat-chip>
+          </mat-chip-set>
+
+          <div *ngIf="selectedMembresAnniversaire.length === 0" class="no-selection">
+            Aucun membre sélectionné
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Ajouter un membre</mat-label>
+            <mat-select (selectionChange)="addMembreAnniversaire($event.value); $event.source.value = null">
+              <mat-option *ngFor="let m of availableMembres" [value]="m">{{ m.nom }} {{ m.prenom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <h4 class="mt">Configuration des équipes</h4>
+        <div class="teams-grid">
+          <div class="team-card team-1">
+            <span class="team-badge">Équipe Fêtés</span>
+            <mat-form-field appearance="outline">
+              <mat-select [(ngModel)]="selectedEquipe1Id">
+                <mat-option [value]="null">-- Aucune --</mat-option>
+                <mat-option *ngFor="let eq of data.equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="team-card team-2">
+            <span class="team-badge">Équipe Adverses</span>
+            <mat-form-field appearance="outline">
+              <mat-select [(ngModel)]="selectedEquipe2Id">
+                <mat-option [value]="null">-- Aucune --</mat-option>
+                <mat-option *ngFor="let eq of data.equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forfait -->
+      <div class="forfait-section">
+        <mat-checkbox [(ngModel)]="editMatch.forfait" (change)="onForfaitChange()">
+          Match déclaré forfait
+        </mat-checkbox>
+        <mat-form-field *ngIf="editMatch.forfait" appearance="outline">
+          <mat-label>Équipe forfait</mat-label>
+          <mat-select [(ngModel)]="editMatch.equipeForfait">
+            <mat-option *ngFor="let eq of equipesForForfait" [value]="eq">{{ eq }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+    </div>
+
+    <!-- TAB 2 : OFFICIELS -->
+    <div class="med-tab-content" *ngIf="activeTab === 2">
+
+      <div class="officials-grid">
+
+        <div class="official-card">
+          <div class="official-header"><mat-icon>sports</mat-icon><span>Arbitre principal</span></div>
+          <mat-form-field appearance="outline">
+            <mat-label>Membre du groupe</mat-label>
+            <mat-select [(ngModel)]="selectedArbitrePrincipalId">
+              <mat-option [value]="null">-- Aucun --</mat-option>
+              <mat-option *ngFor="let m of data.membres" [value]="m.id">{{ m.nom }} {{ m.prenom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="or-divider">ou</div>
+          <mat-form-field appearance="outline">
+            <mat-label>Nom externe</mat-label>
+            <input matInput [(ngModel)]="editMatch.arbitrePrincipalNomOccasionnel" placeholder="Nom de l'arbitre externe">
+          </mat-form-field>
+          <div class="current-value" *ngIf="getCurrentArbitrePrincipal()">
+            <mat-icon>person</mat-icon><span>Actuel: {{ getCurrentArbitrePrincipal() }}</span>
+          </div>
+        </div>
+
+        <div class="official-card">
+          <div class="official-header"><mat-icon>assistant</mat-icon><span>Arbitre assistant</span></div>
+          <mat-form-field appearance="outline">
+            <mat-label>Membre du groupe</mat-label>
+            <mat-select [(ngModel)]="selectedArbitreAssistantId">
+              <mat-option [value]="null">-- Aucun --</mat-option>
+              <mat-option *ngFor="let m of data.membres" [value]="m.id">{{ m.nom }} {{ m.prenom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="or-divider">ou</div>
+          <mat-form-field appearance="outline">
+            <mat-label>Nom externe</mat-label>
+            <input matInput [(ngModel)]="editMatch.arbitreAssistantNomOccasionnel" placeholder="Nom de l'assistant externe">
+          </mat-form-field>
+          <div class="current-value" *ngIf="getCurrentArbitreAssistant()">
+            <mat-icon>person</mat-icon><span>Actuel: {{ getCurrentArbitreAssistant() }}</span>
+          </div>
+        </div>
+
+        <div class="official-card highlighted">
+          <div class="official-header">
+            <mat-icon>description</mat-icon><span>Rapporteur</span>
+            <span class="required-badge">Important</span>
+          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Membre du groupe</mat-label>
+            <mat-select [(ngModel)]="selectedRapporteurId">
+              <mat-option [value]="null">-- Aucun --</mat-option>
+              <mat-option *ngFor="let m of data.membres" [value]="m.id">{{ m.nom }} {{ m.prenom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="or-divider">ou</div>
+          <mat-form-field appearance="outline">
+            <mat-label>Nom externe</mat-label>
+            <input matInput [(ngModel)]="editMatch.rapporteurNomOccasionnel" placeholder="Nom du rapporteur externe">
+          </mat-form-field>
+          <div class="current-value" *ngIf="getCurrentRapporteur()">
+            <mat-icon>person</mat-icon><span>Actuel: {{ getCurrentRapporteur() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box" *ngIf="!hasRapporteur()">
+        <mat-icon>info</mat-icon>
+        <span>Un rapporteur doit être assigné pour que le match soit considéré comme "joué".</span>
+      </div>
+
+    </div>
+
+    <!-- TAB 3 : STATUT -->
+    <div class="med-tab-content" *ngIf="activeTab === 3">
+
+      <div class="status-card" [ngClass]="getStatusClass()">
+        <mat-icon>{{ getStatusIcon() }}</mat-icon>
+        <div class="status-info">
+          <h3>{{ getStatusLabel() }}</h3>
+          <p>{{ getStatusDescription() }}</p>
+        </div>
+      </div>
+
+      <div class="status-checklist">
+        <h4>Critères de validation</h4>
+        <div class="checklist-item" [class.completed]="isMatchDatePast()">
+          <mat-icon>{{ isMatchDatePast() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+          <span>Date du match passée</span>
+        </div>
+        <div class="checklist-item" [class.completed]="hasRapporteur()">
+          <mat-icon>{{ hasRapporteur() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+          <span>Rapporteur assigné</span>
+        </div>
+        <div class="checklist-item" [class.completed]="hasScore()">
+          <mat-icon>{{ hasScore() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+          <span>Score enregistré</span>
+        </div>
+      </div>
+
+      <div class="quick-actions" *ngIf="isMatchDatePast() && !hasRapporteur()">
+        <h4>Actions rapides</h4>
+        <button mat-stroked-button color="primary" (click)="markAsPlayed()">
+          <mat-icon>check</mat-icon>Marquer comme joué (sans rapporteur)
+        </button>
+      </div>
+
+    </div>
+
+  </div><!-- /med-body -->
+
+  <!-- Footer -->
+  <div class="med-footer">
+    <button mat-button (click)="onCancel()">Annuler</button>
+    <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!isValid()">
+      <mat-icon>save</mat-icon>Enregistrer
+    </button>
+  </div>
+
+</div>

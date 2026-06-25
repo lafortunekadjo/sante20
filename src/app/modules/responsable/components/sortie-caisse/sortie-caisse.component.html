@@ -1,430 +1,230 @@
-<!-- sortie-caisse.component.html -->
-<div class="sortie-caisse-container">
+<div class="sortie-container">
 
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">
-            <mat-icon class="header-icon sortie">remove_circle</mat-icon>
-            {{ 'sortie_caisse.titre' | translate }}
-          </h1>
-          <p class="page-subtitle">{{ 'sortie_caisse.sous_titre' | translate }}</p>
+  <div class="fin-page-header sortie">
+    <div class="fph-top">
+      <div class="fph-title-group">
+        <div class="fph-icon sortie"><mat-icon>remove_circle</mat-icon></div>
+        <div>
+          <h1>{{ 'sortie_caisse.titre' | translate }}</h1>
+          <p>{{ exerciceActif?.libelle || ('sortie_caisse.sous_titre' | translate) }}</p>
         </div>
       </div>
-
-      <div class="header-actions">
-        <button mat-raised-button color="primary" (click)="toggleForm()" class="add-btn">
-          <mat-icon>{{ showForm ? 'close' : 'add' }}</mat-icon>
-          {{ (showForm ? 'commun.actions.annuler' : 'sortie_caisse.actions.nouvelle_sortie') | translate }}
-        </button>
-
-        <button mat-stroked-button routerLink="/responsable/finances/dashboard">
+      <div class="fph-actions">
+        <span class="pending-pill" *ngIf="sortiesEnAttente.length > 0">
+          <mat-icon>pending_actions</mat-icon>{{ sortiesEnAttente.length }}
+        </span>
+        <a mat-icon-button class="fph-icon-btn" routerLink="/responsable/finances/dashboard">
           <mat-icon>arrow_back</mat-icon>
-          {{ 'commun.actions.retour_dashboard' | translate }}
-        </button>
+        </a>
       </div>
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="60"></mat-spinner>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'commun.chargement' | translate }}</h3>
-    </div>
+  <div *ngIf="isLoading" class="fin-loading">
+    <mat-spinner diameter="44"></mat-spinner>
   </div>
 
-  <!-- Pas d'exercice actif -->
-  <div *ngIf="!isLoading && !exerciceActif" class="empty-state">
-    <mat-icon class="empty-icon">event_busy</mat-icon>
+  <div *ngIf="!isLoading && !exerciceActif" class="fin-empty">
+    <mat-icon>event_busy</mat-icon>
     <h3>{{ 'finances.exercice.aucun_actif' | translate }}</h3>
-    <p>{{ 'sortie_caisse.vide.aucun_exercice' | translate }}</p>
     <button mat-raised-button color="primary" routerLink="/responsable/finances/exercices">
-      <mat-icon>add</mat-icon>
-      {{ 'finances.exercice.creer' | translate }}
+      <mat-icon>add</mat-icon>{{ 'finances.exercice.creer' | translate }}
     </button>
   </div>
 
-  <!-- Contenu principal -->
-  <div *ngIf="!isLoading && exerciceActif" class="content">
+  <div class="fin-tabs-wrapper" *ngIf="!isLoading && exerciceActif">
+    <div class="fin-tabs-bar">
+      <button class="fin-tab" [class.active]="activeTab === 'form'" (click)="activeTab = 'form'">
+        <mat-icon>remove_circle</mat-icon>
+        <span>{{ 'sortie_caisse.actions.nouvelle_sortie' | translate }}</span>
+      </button>
+      <button class="fin-tab warn-tab" [class.active]="activeTab === 'pending'"
+              (click)="activeTab = 'pending'" *ngIf="sortiesEnAttente.length > 0">
+        <mat-icon>pending_actions</mat-icon>
+        <span>En attente</span>
+        <span class="fin-tab-badge warn">{{ sortiesEnAttente.length }}</span>
+      </button>
+      <button class="fin-tab" [class.active]="activeTab === 'history'" (click)="activeTab = 'history'">
+        <mat-icon>history</mat-icon>
+        <span>{{ 'sortie_caisse.historique.titre' | translate }}</span>
+        <span class="fin-tab-badge" *ngIf="dernieresSorties.length > 0">{{ dernieresSorties.length }}</span>
+      </button>
+    </div>
 
-    <!-- Sorties en attente de validation -->
-    <div class="pending-section" *ngIf="sortiesEnAttente.length > 0">
-      <div class="section-header warning">
-        <div class="header-icon-wrapper">
-          <mat-icon>pending_actions</mat-icon>
-        </div>
-        <div class="header-text">
-          <h2>{{ 'sortie_caisse.en_attente.titre' | translate }}</h2>
-          <span class="badge warning">{{ sortiesEnAttente.length }}</span>
-        </div>
-      </div>
+    <!-- Tab Formulaire -->
+    <div class="fin-tab-content" *ngIf="activeTab === 'form'">
+      <div class="fin-content">
+        <div class="fin-form-card">
+          <form [formGroup]="sortieForm" class="fin-form-body">
+            <div class="fin-form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'sortie_caisse.champs.caisse_source' | translate }} *</mat-label>
+                <mat-icon matPrefix>account_balance</mat-icon>
+                <mat-select formControlName="caisseId" required (selectionChange)="onCaisseChange()">
+                  <mat-option *ngFor="let c of caisses" [value]="c.id">
+                    {{ c.nom }} ({{ formatMontant(c.soldeActuel) }})
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="sortieForm.get('caisseId')?.hasError('required')">
+                  {{ 'finances.entree.erreurs.caisse_requise' | translate }}
+                </mat-error>
+              </mat-form-field>
 
-      <div class="pending-cards">
-        <div class="pending-card" *ngFor="let sortie of sortiesEnAttente">
-          <div class="pending-header">
-            <div class="pending-info">
-              <h4>{{ sortie.libelle }}</h4>
-              <span class="pending-date">{{ sortie.dateMouvement | date:'dd/MM/yyyy' }}</span>
+              <!-- Alerte solde -->
+              <div class="fin-solde-alert" *ngIf="selectedCaisse">
+                <mat-icon [color]="selectedCaisse.soldeActuel < 10000 ? 'warn' : 'primary'">
+                  {{ selectedCaisse.soldeActuel >= 10000 ? 'check_circle' : 'warning' }}
+                </mat-icon>
+                <span>{{ 'sortie_caisse.champs.solde_disponible' | translate }}: <strong>{{ formatMontant(selectedCaisse.soldeActuel) }}</strong></span>
+              </div>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'sortie_caisse.champs.type_depense' | translate }}</mat-label>
+                <mat-icon matPrefix>category</mat-icon>
+                <mat-select formControlName="typeDepenseId">
+                  <mat-option [value]="null">{{ 'sortie_caisse.champs.aucun_type' | translate }}</mat-option>
+                  <mat-option *ngFor="let t of typesDepenses" [value]="t.id">{{ t.nom }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'commun.champs.montant' | translate }} *</mat-label>
+                <mat-icon matPrefix>payments</mat-icon>
+                <input matInput type="number" formControlName="montant" min="1" placeholder="0">
+                <span matSuffix>{{ 'commun.devise' | translate }}</span>
+                <mat-hint *ngIf="!checkSolde()" class="error-hint">
+                  <mat-icon>error</mat-icon>{{ 'sortie_caisse.erreurs.solde_insuffisant' | translate }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'sortie_caisse.champs.date' | translate }}</mat-label>
+                <mat-icon matPrefix>event</mat-icon>
+                <input matInput [matDatepicker]="picker" formControlName="dateMouvement">
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="span-2">
+                <mat-label>{{ 'sortie_caisse.champs.libelle' | translate }}</mat-label>
+                <mat-icon matPrefix>description</mat-icon>
+                <input matInput formControlName="libelle">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'sortie_caisse.champs.beneficiaire_membre' | translate }}</mat-label>
+                <mat-icon matPrefix>person_search</mat-icon>
+                <input matInput formControlName="beneficiaireSearch"
+                       [matAutocomplete]="autoBeneficiaire"
+                       [placeholder]="'commun.filtres.rechercher_membre' | translate">
+                <mat-autocomplete #autoBeneficiaire="matAutocomplete"
+                                  [displayWith]="displayMembre"
+                                  (optionSelected)="onBeneficiaireSelected($event.option.value)">
+                  <mat-option *ngFor="let m of filteredMembres | async" [value]="m">
+                    <mat-icon>person</mat-icon> {{ m.prenom }} {{ m.nom }}
+                  </mat-option>
+                </mat-autocomplete>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'sortie_caisse.champs.beneficiaire_autre' | translate }}</mat-label>
+                <mat-icon matPrefix>store</mat-icon>
+                <input matInput formControlName="beneficiaireTexte">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="span-2">
+                <mat-label>{{ 'finances.entree.formulaire.commentaire' | translate }}</mat-label>
+                <mat-icon matPrefix>comment</mat-icon>
+                <textarea matInput formControlName="commentaire" rows="2"></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="span-2">
+                <mat-label>{{ 'sortie_caisse.champs.piece_justificative' | translate }}</mat-label>
+                <mat-icon matPrefix>attach_file</mat-icon>
+                <input matInput formControlName="pieceJustificative">
+              </mat-form-field>
             </div>
-            <span class="pending-montant">{{ formatMontant(sortie.montant) }}</span>
-          </div>
-          <div class="pending-details">
-            <span class="caisse-badge" [style.background-color]="sortie.caisse?.couleur">
-              {{ sortie.caisse?.nom }}
-            </span>
-            <span class="beneficiaire" *ngIf="sortie.beneficiaire || sortie.beneficiaireTexte">
-              <mat-icon>person</mat-icon>
-              {{ sortie.beneficiaire
-                  ? (sortie.beneficiaire.prenom + ' ' + sortie.beneficiaire.nom)
-                  : sortie.beneficiaireTexte }}
-            </span>
-          </div>
-          <div class="pending-actions">
-            <button mat-raised-button color="primary" (click)="validerSortie(sortie)">
-              <mat-icon>check</mat-icon>
-              {{ 'commun.actions.valider' | translate }}
+          </form>
+          <div class="fin-form-actions">
+            <button mat-raised-button color="warn"
+                    (click)="enregistrerSortie()"
+                    [disabled]="sortieForm.invalid || isSaving || !checkSolde()">
+              <mat-icon>{{ isSaving ? 'hourglass_empty' : 'remove_circle' }}</mat-icon>
+              {{ (isSaving ? 'commun.actions.enregistrement_en_cours' : 'sortie_caisse.actions.enregistrer') | translate }}
             </button>
-            <button mat-stroked-button color="warn" (click)="rejeterSortie(sortie)">
-              <mat-icon>close</mat-icon>
-              {{ 'commun.actions.rejeter' | translate }}
+            <button mat-stroked-button (click)="resetForm()">
+              <mat-icon>refresh</mat-icon>{{ 'commun.actions.reinitialiser' | translate }}
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Formulaire de sortie -->
-    <div class="form-section" *ngIf="showForm">
-      <div class="modern-card form-card">
-        <div class="card-header">
-          <div class="card-icon sortie">
-            <mat-icon>remove_circle</mat-icon>
-          </div>
-          <div class="card-title-group">
-            <h3 class="card-title">{{ 'sortie_caisse.formulaire.titre' | translate }}</h3>
-            <p class="card-subtitle">{{ exerciceActif.libelle }}</p>
-          </div>
-        </div>
-
-        <form [formGroup]="sortieForm" class="card-body">
-          <div class="form-grid">
-
-            <!-- Caisse source -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'sortie_caisse.champs.caisse_source' | translate }}</mat-label>
-              <mat-select formControlName="caisseId"
-                          required
-                          (selectionChange)="onCaisseChange()">
-                <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
-                  <div class="caisse-option">
-                    <div class="caisse-icon" [style.background-color]="caisse.couleur">
-                      <mat-icon>{{ caisse.icone }}</mat-icon>
-                    </div>
-                    <div class="caisse-info">
-                      <span class="caisse-nom">{{ caisse.nom }}</span>
-                      <span class="caisse-solde" [class.low]="caisse.soldeActuel < 10000">
-                        {{ 'sortie_caisse.champs.solde' | translate }}: {{ formatMontant(caisse.soldeActuel) }}
-                      </span>
-                    </div>
-                  </div>
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix>account_balance</mat-icon>
-              <mat-error *ngIf="sortieForm.get('caisseId')?.hasError('required')">
-                {{ 'finances.entree.erreurs.caisse_requise' | translate }}
-              </mat-error>
-            </mat-form-field>
-
-            <!-- Alerte solde -->
-            <div class="solde-alert" *ngIf="selectedCaisse">
-              <div class="solde-disponible" [class.low]="selectedCaisse.soldeActuel < 10000">
-                <mat-icon>{{ selectedCaisse.soldeActuel >= 10000 ? 'check_circle' : 'warning' }}</mat-icon>
-                <span>
-                  {{ 'sortie_caisse.champs.solde_disponible' | translate }}:
-                  <strong>{{ formatMontant(selectedCaisse.soldeActuel) }}</strong>
+    <!-- Tab En attente -->
+    <div class="fin-tab-content" *ngIf="activeTab === 'pending'">
+      <div class="fin-content">
+        <div class="fin-list">
+          <div class="fin-item pending" *ngFor="let s of sortiesEnAttente">
+            <div class="fi-icon warn"><mat-icon>pending_actions</mat-icon></div>
+            <div class="fi-info">
+              <span class="fi-label">{{ s.libelle }}</span>
+              <span class="fi-sub">{{ s.dateMouvement | date:'dd/MM/yyyy' }}</span>
+              <div class="fi-tags">
+                <span class="fin-caisse-badge" [style.background-color]="s.caisse?.couleur">{{ s.caisse?.nom }}</span>
+                <span *ngIf="s.beneficiaire || s.beneficiaireTexte" class="fin-type-badge">
+                  {{ s.beneficiaire ? (s.beneficiaire.prenom + ' ' + s.beneficiaire.nom) : s.beneficiaireTexte }}
                 </span>
               </div>
             </div>
-
-            <!-- Type de dépense -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'sortie_caisse.champs.type_depense' | translate }}</mat-label>
-              <mat-select formControlName="typeDepenseId">
-                <mat-option [value]="null">
-                  <mat-icon>remove</mat-icon>
-                  {{ 'sortie_caisse.champs.aucun_type' | translate }}
-                </mat-option>
-                <mat-option *ngFor="let type of typesDepenses" [value]="type.id">
-                  <div class="type-option">
-                    <mat-icon [style.color]="type.couleur || '#6b7280'">{{ type.icone || 'receipt' }}</mat-icon>
-                    <span>{{ type.nom }}</span>
-                    <mat-icon class="validation-icon" *ngIf="type.necessiteValidation"
-                              [matTooltip]="'sortie_caisse.tooltips.necessite_validation' | translate">
-                      verified_user
-                    </mat-icon>
-                  </div>
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix>category</mat-icon>
-            </mat-form-field>
-
-            <!-- Montant -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'commun.champs.montant' | translate }}</mat-label>
-              <input matInput
-                     type="number"
-                     formControlName="montant"
-                     min="1"
-                     placeholder="0">
-              <span matSuffix>{{ 'commun.devise' | translate }}</span>
-              <mat-icon matPrefix>payments</mat-icon>
-              <mat-error *ngIf="sortieForm.get('montant')?.hasError('required')">
-                {{ 'commun.erreurs.montant_requis' | translate }}
-              </mat-error>
-              <mat-error *ngIf="sortieForm.get('montant')?.hasError('min')">
-                {{ 'commun.erreurs.montant_positif' | translate }}
-              </mat-error>
-              <mat-hint *ngIf="!checkSolde()" class="error-hint">
-                <mat-icon>error</mat-icon>
-                {{ 'sortie_caisse.erreurs.solde_insuffisant' | translate }}
-              </mat-hint>
-            </mat-form-field>
-
-            <!-- Date -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'sortie_caisse.champs.date' | translate }}</mat-label>
-              <input matInput [matDatepicker]="picker" formControlName="dateMouvement">
-              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-              <mat-error *ngIf="sortieForm.get('dateMouvement')?.hasError('required')">
-                {{ 'commun.erreurs.date_requise' | translate }}
-              </mat-error>
-            </mat-form-field>
-
-            <!-- Libellé -->
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>{{ 'sortie_caisse.champs.libelle' | translate }}</mat-label>
-              <input matInput formControlName="libelle"
-                     [placeholder]="'sortie_caisse.champs.libelle_placeholder' | translate">
-              <mat-icon matPrefix>description</mat-icon>
-              <mat-error *ngIf="sortieForm.get('libelle')?.hasError('required')">
-                {{ 'sortie_caisse.erreurs.libelle_requis' | translate }}
-              </mat-error>
-            </mat-form-field>
-
-            <!-- Bénéficiaire (membre) -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'sortie_caisse.champs.beneficiaire_membre' | translate }}</mat-label>
-              <input matInput
-                     formControlName="beneficiaireSearch"
-                     [matAutocomplete]="autoBeneficiaire"
-                     [placeholder]="'commun.filtres.rechercher_membre' | translate">
-              <mat-autocomplete #autoBeneficiaire="matAutocomplete"
-                                [displayWith]="displayMembre"
-                                (optionSelected)="onBeneficiaireSelected($event.option.value)">
-                <mat-option *ngFor="let membre of filteredMembres | async" [value]="membre">
-                  <div class="membre-option">
-                    <mat-icon>person</mat-icon>
-                    <span>{{ membre.prenom }} {{ membre.nom }}</span>
-                  </div>
-                </mat-option>
-              </mat-autocomplete>
-              <mat-icon matPrefix>person_search</mat-icon>
-              <mat-hint>{{ 'sortie_caisse.hints.beneficiaire_membre' | translate }}</mat-hint>
-            </mat-form-field>
-
-            <!-- Bénéficiaire (texte libre) -->
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>{{ 'sortie_caisse.champs.beneficiaire_autre' | translate }}</mat-label>
-              <input matInput formControlName="beneficiaireTexte"
-                     [placeholder]="'sortie_caisse.champs.beneficiaire_autre_placeholder' | translate">
-              <mat-icon matPrefix>store</mat-icon>
-              <mat-hint>{{ 'sortie_caisse.hints.beneficiaire_autre' | translate }}</mat-hint>
-            </mat-form-field>
-
-            <!-- Commentaire -->
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>{{ 'finances.entree.formulaire.commentaire' | translate }}</mat-label>
-              <textarea matInput
-                        formControlName="commentaire"
-                        rows="2"
-                        [placeholder]="'commun.champs.details_placeholder' | translate"></textarea>
-              <mat-icon matPrefix>comment</mat-icon>
-            </mat-form-field>
-
-            <!-- Pièce justificative -->
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>{{ 'sortie_caisse.champs.piece_justificative' | translate }}</mat-label>
-              <input matInput formControlName="pieceJustificative"
-                     [placeholder]="'sortie_caisse.champs.piece_justificative_placeholder' | translate">
-              <mat-icon matPrefix>attach_file</mat-icon>
-            </mat-form-field>
-          </div>
-        </form>
-
-        <div class="card-footer">
-          <div class="primary-actions">
-            <button mat-raised-button
-                    color="warn"
-                    (click)="enregistrerSortie()"
-                    [disabled]="sortieForm.invalid || isSaving || !checkSolde()"
-                    class="save-btn">
-              <mat-icon>{{ isSaving ? 'hourglass_empty' : 'remove_circle' }}</mat-icon>
-              {{ isSaving
-                  ? ('commun.actions.enregistrement_en_cours' | translate)
-                  : ('sortie_caisse.actions.enregistrer' | translate) }}
-            </button>
-            <button mat-stroked-button (click)="resetForm()">
-              <mat-icon>refresh</mat-icon>
-              {{ 'commun.actions.reinitialiser' | translate }}
-            </button>
+            <span class="fi-montant sortie">{{ formatMontant(s.montant) }}</span>
+            <div class="fi-actions">
+              <button mat-icon-button color="primary" (click)="validerSortie(s)"
+                      [matTooltip]="'commun.actions.valider' | translate">
+                <mat-icon>check</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="rejeterSortie(s)"
+                      [matTooltip]="'commun.actions.rejeter' | translate">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Dernières sorties -->
-    <div class="history-section">
-      <div class="section-header">
-        <div class="header-icon-wrapper sortie">
-          <mat-icon>history</mat-icon>
+    <!-- Tab Historique -->
+    <div class="fin-tab-content" *ngIf="activeTab === 'history'">
+      <div class="fin-content">
+        <div class="fin-empty" *ngIf="dernieresSorties.length === 0">
+          <mat-icon>inbox</mat-icon>
+          <p>{{ 'sortie_caisse.historique.vide' | translate }}</p>
         </div>
-        <div class="header-text">
-          <h2>{{ 'sortie_caisse.historique.titre' | translate }}</h2>
-          <span class="badge">{{ dernieresSorties.length }}</span>
-        </div>
-        <button mat-button color="primary" routerLink="/responsable/finances/mouvements">
-          {{ 'commun.actions.voir_tout' | translate }} <mat-icon>arrow_forward</mat-icon>
-        </button>
-      </div>
-
-      <!-- Vue mobile en cartes -->
-      <div class="mobile-cards-view" *ngIf="dernieresSorties.length > 0">
-        <div class="sortie-card" *ngFor="let sortie of dernieresSorties">
-          <div class="card-header">
-            <div class="card-title">
-              <mat-icon class="card-icon sortie">arrow_downward</mat-icon>
-              <div class="title-content">
-                <h4>{{ sortie.libelle }}</h4>
-                <span class="date">{{ sortie.dateMouvement | date:'dd/MM/yyyy' }}</span>
+        <div class="fin-list" *ngIf="dernieresSorties.length > 0">
+          <div class="fin-item sortie" *ngFor="let s of dernieresSorties">
+            <div class="fi-icon sortie"><mat-icon>arrow_downward</mat-icon></div>
+            <div class="fi-info">
+              <span class="fi-label">{{ s.libelle }}</span>
+              <span class="fi-sub">{{ s.dateMouvement | date:'dd/MM/yyyy' }}</span>
+              <div class="fi-tags">
+                <span class="fin-caisse-badge" [style.background-color]="s.caisse?.couleur">{{ s.caisse?.nom }}</span>
+                <span *ngIf="s.beneficiaire || s.beneficiaireTexte" class="fin-type-badge">
+                  {{ s.beneficiaire ? (s.beneficiaire.prenom + ' ' + s.beneficiaire.nom) : s.beneficiaireTexte }}
+                </span>
+                <span class="fin-status-badge" [class]="s.statut?.toLowerCase()">
+                  <mat-icon>{{ s.statut === 'VALIDE' ? 'check_circle' : 'schedule' }}</mat-icon>
+                  {{ ('finances.statut.' + s.statut?.toLowerCase()) | translate }}
+                </span>
               </div>
             </div>
-            <div class="card-montant">
-              <span class="montant sortie">-{{ formatMontant(sortie.montant) }}</span>
-            </div>
-          </div>
-          <div class="card-content">
-            <div class="info-row">
-              <span class="label">{{ 'finances.caisse.titre' | translate }}:</span>
-              <span class="value caisse-badge" [style.background-color]="sortie.caisse?.couleur">
-                {{ sortie.caisse?.nom }}
-              </span>
-            </div>
-            <div class="info-row" *ngIf="sortie.beneficiaire || sortie.beneficiaireTexte">
-              <span class="label">{{ 'sortie_caisse.table.beneficiaire' | translate }}:</span>
-              <span class="value">
-                {{ sortie.beneficiaire
-                    ? (sortie.beneficiaire.prenom + ' ' + sortie.beneficiaire.nom)
-                    : sortie.beneficiaireTexte }}
-              </span>
-            </div>
-            <div class="info-row" *ngIf="sortie.typeDepense">
-              <span class="label">{{ 'sortie_caisse.champs.type_depense' | translate }}:</span>
-              <span class="value">{{ sortie.typeDepense.nom }}</span>
-            </div>
+            <span class="fi-montant sortie">-{{ formatMontant(s.montant) }}</span>
           </div>
         </div>
-      </div>
-
-      <!-- Vue desktop tableau -->
-      <div class="desktop-table-view" *ngIf="dernieresSorties.length > 0">
-        <table mat-table [dataSource]="dataSource" matSort class="sorties-table">
-
-          <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.table.date' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              {{ sortie.dateMouvement | date:'dd/MM/yyyy' }}
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="libelle">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie_caisse.table.libelle' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">{{ sortie.libelle }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="caisse">
-            <th mat-header-cell *matHeaderCellDef>{{ 'finances.caisse.titre' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              <span class="caisse-badge" [style.background-color]="sortie.caisse?.couleur">
-                {{ sortie.caisse?.nom }}
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="beneficiaire">
-            <th mat-header-cell *matHeaderCellDef>{{ 'sortie_caisse.table.beneficiaire' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              <div class="beneficiaire-cell" *ngIf="sortie.beneficiaire || sortie.beneficiaireTexte">
-                <mat-icon>person</mat-icon>
-                <span>{{ sortie.beneficiaire
-                    ? (sortie.beneficiaire.prenom + ' ' + sortie.beneficiaire.nom)
-                    : sortie.beneficiaireTexte }}</span>
-              </div>
-              <span *ngIf="!sortie.beneficiaire && !sortie.beneficiaireTexte">-</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="montant">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'commun.champs.montant' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              <span class="montant sortie">-{{ formatMontant(sortie.montant) }}</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="statut">
-            <th mat-header-cell *matHeaderCellDef>{{ 'utilisateurs.filtres.statut' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              <span class="status-badge" [class]="sortie.statut.toLowerCase()">
-                <mat-icon>{{ sortie.statut === 'VALIDE' ? 'check_circle' : 'schedule' }}</mat-icon>
-                {{ ('finances.statut.' + sortie.statut.toLowerCase()) | translate }}
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>{{ 'commun.table.actions' | translate }}</th>
-            <td mat-cell *matCellDef="let sortie">
-              <div class="action-buttons" *ngIf="sortie.statut === 'EN_ATTENTE'">
-                <button mat-icon-button color="primary" (click)="validerSortie(sortie)"
-                        [matTooltip]="'commun.actions.valider' | translate">
-                  <mat-icon>check</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="rejeterSortie(sortie)"
-                        [matTooltip]="'commun.actions.rejeter' | translate">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-
-        <mat-paginator [pageSizeOptions]="[5, 10]" showFirstLastButtons></mat-paginator>
-      </div>
-
-      <!-- État vide historique -->
-      <div class="empty-history" *ngIf="dernieresSorties.length === 0">
-        <mat-icon>inbox</mat-icon>
-        <p>{{ 'sortie_caisse.historique.vide' | translate }}</p>
+        <div class="fin-voir-tout">
+          <a mat-button color="primary" routerLink="/responsable/finances/mouvements">
+            {{ 'commun.actions.voir_tout' | translate }} <mat-icon>arrow_forward</mat-icon>
+          </a>
+        </div>
       </div>
     </div>
-
   </div>
 </div>

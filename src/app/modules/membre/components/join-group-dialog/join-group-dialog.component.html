@@ -1,66 +1,107 @@
-<div class="dialog-header">
-  <h2 mat-dialog-title>
-    <mat-icon>group_add</mat-icon>
-    {{ 'menu.items.JOIN' | translate }}
-  </h2>
-  <button mat-icon-button (click)="onCancel()" class="close-btn" [disabled]="isLoading">
-    <mat-icon>close</mat-icon>
-  </button>
-</div>
+<div class="jg-container">
 
-<mat-dialog-content>
-  <mat-stepper #stepper linear class="custom-stepper">
-    
-    <mat-step [editable]="!isLoading">
-      <ng-template matStepLabel>{{ 'join.steps.code' | translate }}</ng-template>
-      <div class="step-container">
-        <p class="step-hint">{{ 'join.hints.enter_code' | translate }}</p>
-        
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>{{ 'join.form.code_label' | translate }}</mat-label>
-          <input matInput [(ngModel)]="code" placeholder="Ex: MY-2026" 
-                 (keyup.enter)="verifierCode(stepper)" autocomplete="off">
-          <mat-icon matSuffix>vpn_key</mat-icon>
-        </mat-form-field>
+  <div class="jg-header">
+    <div class="jg-icon"><mat-icon>group_add</mat-icon></div>
+    <h2 mat-dialog-title class="jg-title">{{ 'menu.items.JOIN' | translate }}</h2>
+    <button mat-icon-button (click)="onCancel()" class="jg-close" [disabled]="isLoading">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-        <button mat-flat-button color="primary" class="action-btn"
-                (click)="verifierCode(stepper)" [disabled]="!code || isLoading">
-          <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
-          <span *ngIf="!isLoading">{{ 'join.actions.verify' | translate }}</span>
-        </button>
+  <!-- Indicateur de progression -->
+  <div class="jg-progress">
+    <div class="jg-progress-step" [class.active]="currentStep === 1" [class.done]="currentStep > 1">
+      <div class="jg-progress-dot">
+        <mat-icon *ngIf="currentStep > 1">check</mat-icon>
+        <span *ngIf="currentStep <= 1">1</span>
       </div>
-    </mat-step>
+      <span class="jg-progress-label">Code</span>
+    </div>
+    <div class="jg-progress-bar">
+      <div class="jg-progress-fill" [class.filled]="currentStep > 1"></div>
+    </div>
+    <div class="jg-progress-step" [class.active]="currentStep === 2">
+      <div class="jg-progress-dot"><span>2</span></div>
+      <span class="jg-progress-label">Confirmation</span>
+    </div>
+  </div>
 
-    <mat-step>
-      <ng-template matStepLabel>{{ 'join.steps.confirm' | translate }}</ng-template>
-      
-      <div *ngIf="groupeFound" class="group-info-card">
-        <div class="group-header">
-           <mat-icon color="primary">sports_soccer</mat-icon>
-           <h3>{{ groupeFoundNom }}</h3>
+  <mat-dialog-content class="jg-content">
+
+    <!-- ── ÉTAPE 1 : CODE ────────────────────────────── -->
+    <div class="jg-step" *ngIf="currentStep === 1">
+      <p class="step-hint">{{ 'join.hints.enter_code' | translate }}</p>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'join.form.code_label' | translate }}</mat-label>
+        <mat-icon matPrefix>vpn_key</mat-icon>
+        <input matInput
+               [(ngModel)]="code"
+               placeholder="Ex: MY-2026"
+               (keyup.enter)="verifierCode()"
+               [class.input-error]="codeError"
+               autocomplete="off">
+      </mat-form-field>
+
+      <!-- Message d'erreur inline — visible jusqu'à la prochaine tentative -->
+      <div class="jg-error" *ngIf="codeError">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ codeError }}</span>
+      </div>
+
+      <button mat-flat-button color="primary" class="action-btn"
+              (click)="verifierCode()"
+              [disabled]="!code.trim() || isLoading">
+        <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+        <mat-icon *ngIf="!isLoading">search</mat-icon>
+        <span>{{ isLoading ? ('common.loading' | translate) : ('join.actions.verify' | translate) }}</span>
+      </button>
+
+      <!-- Pas de code → explorer -->
+      <div class="jg-no-code">
+        <mat-icon>info_outline</mat-icon>
+        <div class="jg-no-code-text">
+          <span>{{ 'join.noCode.hint' | translate }}</span>
+          <button mat-button class="jg-explorer-link" (click)="goToExplorer()">
+            <mat-icon>explore</mat-icon>
+            {{ 'join.noCode.exploreBtn' | translate }}
+          </button>
         </div>
-        
-        <div class="info-grid">
-          <div class="info-item">
+      </div>
+
+    </div>
+
+    <!-- ── ÉTAPE 2 : CONFIRMATION ────────────────────── -->
+    <div class="jg-step" *ngIf="currentStep === 2">
+
+      <div class="group-info-card">
+        <div class="group-header">
+          <mat-icon color="primary">sports_soccer</mat-icon>
+          <h3>{{ groupeFoundNom }}</h3>
+        </div>
+
+        <div class="info-grid" *ngIf="groupeFoundAbreviation || groupeFoundVille">
+          <div class="info-item" *ngIf="groupeFoundAbreviation">
             <span class="label">{{ 'join.info.abbr' | translate }}</span>
             <span class="value">{{ groupeFoundAbreviation }}</span>
           </div>
-          <div class="info-item">
+          <div class="info-item" *ngIf="groupeFoundVille">
             <span class="label">{{ 'join.info.location' | translate }}</span>
-            <span class="value">{{ groupeFoundVille || 'Douala' }}</span>
+            <span class="value">{{ groupeFoundVille }}</span>
           </div>
         </div>
-        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>{{ 'join.form.message_label' | translate }}</mat-label>
-          <textarea matInput [(ngModel)]="message" 
-                    [placeholder]="'join.form.message_placeholder' | translate" rows="3"></textarea>
+          <textarea matInput [(ngModel)]="message"
+                    [placeholder]="'join.form.message_placeholder' | translate"
+                    rows="3"></textarea>
         </mat-form-field>
       </div>
 
       <div class="step-actions">
-        <button mat-button matStepperPrevious [disabled]="isLoading">
-          {{ 'join.actions.back' | translate }}
+        <button mat-stroked-button (click)="currentStep = 1; codeError = ''" [disabled]="isLoading">
+          <mat-icon>arrow_back</mat-icon>{{ 'join.actions.back' | translate }}
         </button>
         <button mat-flat-button color="accent" class="action-btn"
                 (click)="envoyerDemande()" [disabled]="isLoading">
@@ -68,6 +109,7 @@
           <span *ngIf="!isLoading">{{ 'join.actions.send' | translate }}</span>
         </button>
       </div>
-    </mat-step>
-  </mat-stepper>
-</mat-dialog-content>
+    </div>
+
+  </mat-dialog-content>
+</div>

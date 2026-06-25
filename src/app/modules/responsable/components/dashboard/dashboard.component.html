@@ -1,605 +1,363 @@
-<div class="dashboard-container">
-  <!-- ============ HEADER ============ -->
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">{{ 'dashboard.title' | translate }}</h1>
-          <p class="page-subtitle">{{ 'dashboard.subtitle' | translate }}</p>
-        </div>
+<div class="db-page">
+
+  <!-- ══ HEADER GRADIENT ══════════════════════════════════ -->
+  <div class="db-header">
+    <div class="db-header-top">
+      <div>
+        <h1>{{ 'dashboard.title' | translate }}</h1>
+        <p>{{ getSelectedExercice()?.libelle || ('dashboard.subtitle' | translate) }}</p>
       </div>
-      <div class="header-stats">
-        <!-- Afficher l'exercice en cours -->
-        <div class="stat-item season-info" *ngIf="getSelectedExercice() as exercice">
-          <span class="stat-number">
-            <mat-icon class="season-icon">sports_soccer</mat-icon>
-          </span>
-          <span class="stat-label">{{ exercice.libelle }}</span>
-        </div>
-        <div class="stat-divider" *ngIf="getSelectedExercice()"></div>
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.memberCount || 0 }}</span>
-          <span class="stat-label">{{ 'dashboard.activeMembers' | translate }}</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.totalMatches || 0 }}</span>
-          <span class="stat-label">{{ 'dashboard.matches' | translate }}</span>
-        </div>
+      <button mat-icon-button class="db-refresh-btn" (click)="loadStats()"
+              [matTooltip]="'dashboard.refresh' | translate">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+
+    <!-- KPIs header -->
+    <div class="db-kpis" *ngIf="!isLoading">
+      <div class="db-kpi">
+        <span class="db-kpi-val">{{ stats.memberCount || 0 }}</span>
+        <span class="db-kpi-lbl">{{ 'dashboard.activeMembers' | translate }}</span>
+      </div>
+      <div class="db-kpi-sep"></div>
+      <div class="db-kpi">
+        <span class="db-kpi-val">{{ stats.totalMatches || 0 }}</span>
+        <span class="db-kpi-lbl">{{ 'dashboard.matches' | translate }}</span>
+      </div>
+      <div class="db-kpi-sep"></div>
+      <div class="db-kpi">
+        <span class="db-kpi-val">{{ stats.participationRate || 0 }}%</span>
+        <span class="db-kpi-lbl">{{ 'dashboard.participationRate' | translate }}</span>
       </div>
     </div>
   </div>
 
-  <!-- ============ LOADING ============ -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="50"></mat-spinner>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'dashboard.loading' | translate }}...</h3>
-      <p>{{ 'dashboard.loadingMessage' | translate }}</p>
-    </div>
+  <!-- ══ LOADING ══════════════════════════════════════════ -->
+  <div *ngIf="isLoading" class="db-loading">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>{{ 'dashboard.loading' | translate }}…</p>
   </div>
 
-  <!-- ============ CONTENT ============ -->
-  <div *ngIf="!isLoading" class="content">
-    
-    <!-- ===== SECTION FILTRES AMÉLIORÉE ===== -->
-    <div class="filters-container">
-      <div class="filters-header">
-        <div class="filters-title">
-          <mat-icon>tune</mat-icon>
-          <h3>{{ 'dashboard.filters.title' | translate }}</h3>
+  <!-- ══ CONTENU ══════════════════════════════════════════ -->
+  <div *ngIf="!isLoading" class="db-tabs-wrapper">
+
+    <!-- Filtres compacts -->
+    <div class="db-filter-bar">
+      <div class="db-filter-toggle">
+        <button [class.active]="filterMode === 'season'"   (click)="onFilterModeChange('season')">
+          <mat-icon>event_note</mat-icon>
+          {{ 'dashboard.filters.bySeason' | translate }}
+        </button>
+        <button [class.active]="filterMode === 'dateRange'" (click)="onFilterModeChange('dateRange')">
+          <mat-icon>date_range</mat-icon>
+          {{ 'dashboard.filters.byDateRange' | translate }}
+        </button>
+      </div>
+
+      <!-- Sélecteur exercice -->
+      <mat-form-field appearance="outline" class="db-season-field" *ngIf="filterMode === 'season'">
+        <mat-icon matPrefix>sports_soccer</mat-icon>
+        <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
+          <mat-option *ngFor="let e of exercices" [value]="e.id">
+            {{ e.libelle }}
+            <span *ngIf="isCurrentExercice(e)" style="color:var(--primary-color);font-size:11px"> · En cours</span>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Dates perso -->
+      <ng-container *ngIf="filterMode === 'dateRange'" [formGroup]="dateRangeForm">
+        <mat-form-field appearance="outline" class="db-date-field">
+          <mat-icon matPrefix>calendar_today</mat-icon>
+          <input matInput [matDatepicker]="pickerStart" formControlName="start"
+                 [placeholder]="'dashboard.filters.startDate' | translate">
+          <mat-datepicker-toggle matSuffix [for]="pickerStart"></mat-datepicker-toggle>
+          <mat-datepicker #pickerStart></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="db-date-field">
+          <mat-icon matPrefix>calendar_today</mat-icon>
+          <input matInput [matDatepicker]="pickerEnd" formControlName="end"
+                 [placeholder]="'dashboard.filters.endDate' | translate">
+          <mat-datepicker-toggle matSuffix [for]="pickerEnd"></mat-datepicker-toggle>
+          <mat-datepicker #pickerEnd></mat-datepicker>
+        </mat-form-field>
+        <button mat-flat-button color="primary" (click)="applyDateFilter()" class="db-apply-btn">
+          <mat-icon>search</mat-icon>
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- ── TABS STICKY ──────────────────────────────────── -->
+    <div class="db-tabs-bar">
+      <button class="db-tab" [class.active]="activeTab === 0" (click)="activeTab = 0">
+        <mat-icon>analytics</mat-icon><span>Général</span>
+      </button>
+      <button class="db-tab" [class.active]="activeTab === 1" (click)="activeTab = 1">
+        <mat-icon>sports_soccer</mat-icon><span>Sport</span>
+      </button>
+      <button class="db-tab" [class.active]="activeTab === 2" (click)="activeTab = 2">
+        <mat-icon>leaderboard</mat-icon><span>Classement</span>
+      </button>
+      <button class="db-tab" [class.active]="activeTab === 3" (click)="activeTab = 3">
+        <mat-icon>emoji_events</mat-icon><span>Top</span>
+      </button>
+    </div>
+
+    <!-- ══ TAB 0 : GÉNÉRAL ══════════════════════════════ -->
+    <div class="db-tab-content" *ngIf="activeTab === 0">
+
+      <!-- KPI cards finance -->
+      <div class="db-cards-grid">
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--members"><mat-icon>groups</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.memberCount || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.activeMembers' | translate }}</span>
+          </div>
         </div>
-        
-        <!-- Indicateur de période actuelle -->
-        <div class="current-period-badge" *ngIf="!isLoadingExercices">
-          <mat-icon>calendar_today</mat-icon>
-          <span>{{ getCurrentPeriodLabel() }}</span>
-          <span class="period-type-chip" [class.season]="filterMode === 'season'" [class.custom]="filterMode === 'dateRange'">
-            {{ filterMode === 'season' ? ('dashboard.filters.season' | translate) : ('dashboard.filters.custom' | translate) }}
-          </span>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--money"><mat-icon>account_balance_wallet</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ (stats.totalContributions || 0) | number:'1.0-0' }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.totalContributions' | translate }} FCFA</span>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--savings"><mat-icon>savings</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.contributionCount || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.totalDues' | translate }}</span>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--fines"><mat-icon>gavel</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ (stats.totalFines || 0) | number:'1.0-0' }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.totalFines' | translate }} FCFA</span>
+          </div>
         </div>
       </div>
 
-      <div class="filters-body">
-        <!-- Toggle Mode de filtrage -->
-        <div class="filter-mode-toggle">
-          <button mat-stroked-button 
-                  [class.active]="filterMode === 'season'"
-                  (click)="onFilterModeChange('season')"
-                  [matTooltip]="'dashboard.filters.seasonTooltip' | translate">
-            <mat-icon>event_note</mat-icon>
-            <span>{{ 'dashboard.filters.bySeason' | translate }}</span>
-          </button>
-          <button mat-stroked-button 
-                  [class.active]="filterMode === 'dateRange'"
-                  (click)="onFilterModeChange('dateRange')"
-                  [matTooltip]="'dashboard.filters.dateRangeTooltip' | translate">
-            <mat-icon>date_range</mat-icon>
-            <span>{{ 'dashboard.filters.byDateRange' | translate }}</span>
-          </button>
-        </div>
+      <!-- Prochains matchs -->
+      <div class="db-section">
+        <h3 class="db-section-title">
+          <mat-icon>event</mat-icon>
+          {{ 'dashboard.upcomingMatches' | translate }}
+          <span class="db-badge">{{ stats.upcomingMatches?.length || 0 }}</span>
+        </h3>
 
-        <!-- Sélecteur de Saison/Exercice -->
-        <div class="season-filter" *ngIf="filterMode === 'season'">
-          <mat-form-field appearance="outline" class="season-select">
-            <mat-label>{{ 'dashboard.filters.selectSeason' | translate }}</mat-label>
-            <mat-icon matPrefix>sports_soccer</mat-icon>
-            <mat-select [(ngModel)]="selectedExerciceId" 
-                        (selectionChange)="onExerciceChange($event.value)"
-                        [disabled]="isLoadingExercices">
-              <mat-select-trigger *ngIf="getSelectedExercice() as exercice">
-                <div class="selected-season-trigger">
-                  <span class="season-name">{{ exercice.libelle }}</span>
-                  <span class="current-badge" *ngIf="isCurrentExercice(exercice)">
-                    {{ 'dashboard.filters.current' | translate }}
-                  </span>
-                </div>
-              </mat-select-trigger>
-              
-              <mat-option *ngFor="let exercice of exercices" [value]="exercice.id">
-                <div class="season-option">
-                  <div class="season-option-main">
-                    <mat-icon [class.active-icon]="isCurrentExercice(exercice)">
-                      {{ isCurrentExercice(exercice) ? 'sports_soccer' : 'history' }}
-                    </mat-icon>
-                    <div class="season-option-info">
-                      <span class="season-name">{{ exercice.libelle }}</span>
-                      <span class="season-period">{{ formatExercicePeriod(exercice) }}</span>
-                    </div>
-                  </div>
-                  <div class="season-option-badges">
-                    <span class="badge current" *ngIf="isCurrentExercice(exercice)">
-                      {{ 'dashboard.filters.inProgress' | translate }}
-                    </span>
-                    <span class="badge closed" *ngIf="exercice.cloture">
-                      {{ 'dashboard.filters.closed' | translate }}
-                    </span>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-select>
-            <mat-hint *ngIf="getSelectedExercice() as exercice">
-              {{ formatExercicePeriod(exercice) }}
-            </mat-hint>
-          </mat-form-field>
-
-          <!-- Info saison sélectionnée -->
-          <div class="season-info-card" *ngIf="getSelectedExercice() as exercice">
-            <div class="season-info-item">
-              <mat-icon>event</mat-icon>
-              <div class="info-content">
-                <span class="info-label">{{ 'dashboard.filters.startDate' | translate }}</span>
-                <span class="info-value">{{ exercice.dateDebut | date:'dd MMM yyyy' }}</span>
-              </div>
+        <div class="db-upcoming" *ngIf="stats.upcomingMatches?.length > 0">
+          <div class="db-match-row" *ngFor="let match of stats.upcomingMatches; let i = index"
+               [class.db-match-row--next]="i === 0">
+            <div class="db-match-date">
+              <span class="db-match-day">{{ match.date | date:'EEE':'':'fr' }}</span>
+              <span class="db-match-num">{{ match.date | date:'d MMM' }}</span>
             </div>
-            <div class="season-info-divider"></div>
-            <div class="season-info-item">
-              <mat-icon>event</mat-icon>
-              <div class="info-content">
-                <span class="info-label">{{ 'dashboard.filters.endDate' | translate }}</span>
-                <span class="info-value">{{ exercice.dateFin | date:'dd MMM yyyy' }}</span>
-              </div>
+            <div class="db-match-info">
+              <span class="db-match-opp">vs {{ match.opponent }}</span>
+              <span class="db-match-time">{{ match.heureMatch?.substring(0, 5) }}</span>
             </div>
-            <div class="season-info-divider"></div>
-            <div class="season-info-item">
-              <mat-icon [class.active]="isCurrentExercice(exercice)">
-                {{ isCurrentExercice(exercice) ? 'play_circle' : 'check_circle' }}
-              </mat-icon>
-              <div class="info-content">
-                <span class="info-label">{{ 'dashboard.filters.status' | translate }}</span>
-                <span class="info-value" [class.active]="isCurrentExercice(exercice)">
-                  {{ isCurrentExercice(exercice) ? ('dashboard.filters.active' | translate) : ('dashboard.filters.finished' | translate) }}
-                </span>
-              </div>
-            </div>
+            <mat-icon class="db-match-arrow">chevron_right</mat-icon>
           </div>
         </div>
 
-        <!-- Filtre par plage de dates -->
-        <div class="date-range-filter" *ngIf="filterMode === 'dateRange'">
-          <form [formGroup]="dateRangeForm" class="date-filter-form">
-            <mat-form-field appearance="outline" class="date-field">
-              <mat-label>{{ 'dashboard.filters.dateRange' | translate }}</mat-label>
-              <mat-date-range-input [rangePicker]="picker">
-                <input matStartDate formControlName="start" placeholder="{{ 'common.from' | translate }}">
-                <input matEndDate formControlName="end" placeholder="{{ 'common.to' | translate }}">
-              </mat-date-range-input>
-              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-date-range-picker #picker></mat-date-range-picker>
-              <mat-hint>{{ 'dashboard.filters.selectPeriod' | translate }}</mat-hint>
-            </mat-form-field>
-            
-            <div class="action-buttons">
-              <button mat-raised-button color="primary" 
-                      (click)="applyDateFilter()" 
-                      [disabled]="dateRangeForm.invalid || !hasDateFilter()">
-                <mat-icon>search</mat-icon>
-                {{ 'common.apply' | translate }}
-              </button>
-              <button mat-stroked-button 
-                      (click)="resetDateFilter()"
-                      [matTooltip]="'dashboard.filters.backToSeason' | translate">
-                <mat-icon>refresh</mat-icon>
-                {{ 'common.reset' | translate }}
-              </button>
-            </div>
-          </form>
+        <div class="db-empty" *ngIf="!stats.upcomingMatches?.length">
+          <mat-icon>event_busy</mat-icon>
+          <span>{{ 'dashboard.noMatches' | translate }}</span>
+        </div>
+      </div>
 
-          <!-- Message d'aide -->
-          <div class="date-filter-help">
-            <mat-icon>info</mat-icon>
-            <span>{{ 'dashboard.filters.dateFilterHelp' | translate }}</span>
+    </div>
+
+    <!-- ══ TAB 1 : SPORT ════════════════════════════════ -->
+    <div class="db-tab-content" *ngIf="activeTab === 1">
+
+      <div class="db-cards-grid">
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--sport"><mat-icon>sports_soccer</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.totalMatches || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.matches' | translate }}</span>
           </div>
         </div>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--goal"><mat-icon>adjust</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.totalGoal || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.goals' | translate }}</span>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--avg"><mat-icon>bar_chart</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.avgGoalsPerMatch || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.avgPerMatch' | translate }}</span>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-icon db-card-icon--players"><mat-icon>person</mat-icon></div>
+          <div class="db-card-body">
+            <span class="db-card-val">{{ stats.activePlayers || 0 }}</span>
+            <span class="db-card-lbl">{{ 'dashboard.activePlayers' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Taux participation -->
+      <div class="db-section">
+        <h3 class="db-section-title"><mat-icon>how_to_reg</mat-icon>{{ 'dashboard.participationRate' | translate }}</h3>
+        <div class="db-progress-bar-wrap">
+          <div class="db-progress-bar">
+            <div class="db-progress-fill" [style.width.%]="stats.participationRate || 0"></div>
+          </div>
+          <span class="db-progress-val">{{ stats.participationRate || 0 }}%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ TAB 2 : CLASSEMENT ═══════════════════════════ -->
+    <div class="db-tab-content" *ngIf="activeTab === 2">
+
+      <div class="db-standings" *ngIf="stats.teamComparison?.length > 0">
+
+        <!-- Leader badge -->
+        <div class="db-leader-badge" *ngIf="stats.bestPerformingTeam">
+          <mat-icon>emoji_events</mat-icon>
+          <span>Leader : <strong>{{ stats.bestPerformingTeam }}</strong></span>
+          <span class="db-leader-pts">{{ stats.bestTeamPoints || 0 }} pts</span>
+        </div>
+
+        <!-- Tableau -->
+        <div class="db-standings-table">
+          <div class="db-standings-head">
+            <span class="sc-rank">#</span>
+            <span class="sc-team">Équipe</span>
+            <span class="sc-num">J</span>
+            <span class="sc-num sc-win">V</span>
+            <span class="sc-num sc-draw">N</span>
+            <span class="sc-num sc-loss">D</span>
+            <span class="sc-num">B</span>
+            <span class="sc-pts">Pts</span>
+          </div>
+
+          <div class="db-standings-row"
+               *ngFor="let team of stats.teamComparison; let i = index"
+               [class.db-standings-row--gold]="i === 0"
+               [class.db-standings-row--podium]="i > 0 && i < 3"
+               [class.db-standings-row--hidden]="i >= 3 && !showAllTeams">
+
+            <span class="sc-rank">
+              <span *ngIf="i === 0">🥇</span>
+              <span *ngIf="i === 1">🥈</span>
+              <span *ngIf="i === 2">🥉</span>
+              <span *ngIf="i > 2" class="sc-rank-num">{{ i + 1 }}</span>
+            </span>
+
+            <span class="sc-team">
+              <span class="sc-dot" [style.background]="i===0?'#F0B429':i===1?'#9E9E9E':i===2?'#CD7F32':'var(--primary-color)'"></span>
+              {{ team.teamName }}
+            </span>
+
+            <span class="sc-num">{{ team.played || 0 }}</span>
+            <span class="sc-num sc-win">{{ team.wins || 0 }}</span>
+            <span class="sc-num sc-draw">{{ team.draws || 0 }}</span>
+            <span class="sc-num sc-loss">{{ team.losses || 0 }}</span>
+            <span class="sc-num">{{ team.totalGoals || 0 }}</span>
+
+            <span class="sc-pts">
+              <span class="sc-pts-badge" [class.sc-pts-badge--gold]="i === 0">{{ team.points || 0 }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Légende -->
+        <div class="db-standings-legend">
+          <span>V +3pts</span><span>N +1pt</span><span>D 0pt</span>
+        </div>
+      </div>
+
+      <!-- Bouton voir plus équipes -->
+      <button class="db-show-more"
+              *ngIf="stats.teamComparison?.length > 3"
+              (click)="showAllTeams = !showAllTeams">
+        <mat-icon>{{ showAllTeams ? 'expand_less' : 'expand_more' }}</mat-icon>
+        {{ showAllTeams ? 'Réduire' : ('Voir les ' + stats.teamComparison.length! + ' équipes') }}
+      </button>
+
+      <div class="db-empty" *ngIf="!stats.teamComparison?.length">
+        <mat-icon>groups</mat-icon>
+        <span>{{ 'dashboard.noTeamComparison' | translate }}</span>
       </div>
     </div>
 
-    <!-- ===== GRILLE DES STATISTIQUES ===== -->
-    <div class="stats-grid">
-      
-      <!-- Section Métriques Principales -->
-      <div class="feed-section metrics-section full-width">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>analytics</mat-icon>
+    <!-- ══ TAB 3 : TOP PERFORMERS ═══════════════════════ -->
+    <div class="db-tab-content" *ngIf="activeTab === 3">
+
+      <!-- Top Buteurs -->
+      <div class="db-section">
+        <h3 class="db-section-title"><mat-icon>sports_soccer</mat-icon>{{ 'dashboard.topScorers' | translate }}</h3>
+        <div class="db-leaderboard">
+          <div class="db-lb-row"
+               *ngFor="let p of stats.topScorers; let i = index"
+               [class.db-lb-row--hidden]="i >= 3 && !showAllScorers">
+            <span class="db-lb-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
+            <span class="db-lb-name">{{ p.name }}</span>
+            <span class="db-lb-val">{{ p.goals }} ⚽</span>
           </div>
-          <div class="header-text">
-            <h2>{{ 'dashboard.mainMetrics' | translate }}</h2>
-            <span class="badge" *ngIf="getSelectedExercice()">{{ getSelectedExercice()?.libelle }}</span>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="card-list horizontal-list">
-            <!-- Membres actifs -->
-            <div class="demande-card metric-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar members">
-                    <mat-icon class="discipline-icon">groups</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ stats.memberCount || 0 }}</h3>
-                    <p class="groupe-discipline">{{ 'dashboard.activeMembers' | translate }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="additional-info">
-                  <div class="info-card">
-                    <mat-icon>trending_up</mat-icon>
-                    <span>{{ 'dashboard.inGroup' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Total Contributions -->
-            <div class="demande-card metric-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar contributions">
-                    <mat-icon class="discipline-icon">account_balance_wallet</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ (stats.totalContributions || 0) | number:'1.0-0' }}</h3>
-                    <p class="groupe-discipline">{{ 'dashboard.totalContributions' | translate }} FCFA</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="additional-info">
-                  <div class="info-card">
-                    <mat-icon>trending_up</mat-icon>
-                    <span>{{ 'dashboard.contributions' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Total Cotisations -->
-            <div class="demande-card metric-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar dues">
-                    <mat-icon class="discipline-icon">savings</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ (stats.contributionCount || 0) | number:'1.0-0' }}</h3>
-                    <p class="groupe-discipline">{{ 'dashboard.totalDues' | translate }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="additional-info">
-                  <div class="info-card">
-                    <mat-icon>trending_up</mat-icon>
-                    <span>{{ 'dashboard.dues' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Total Amendes -->
-            <div class="demande-card metric-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar fines">
-                    <mat-icon class="discipline-icon">gavel</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ (stats.totalFines || 0) | number:'1.0-0' }}</h3>
-                    <p class="groupe-discipline">{{ 'dashboard.totalFines' | translate }} FCFA</p>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="additional-info">
-                  <div class="info-card">
-                    <mat-icon>trending_up</mat-icon>
-                    <span>{{ 'dashboard.fines' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="db-empty-sm" *ngIf="!stats.topScorers?.length">
+            <mat-icon>sports_soccer</mat-icon><span>{{ 'dashboard.noScorers' | translate }}</span>
           </div>
         </div>
+        <button class="db-show-more" *ngIf="stats.topScorers?.length > 3" (click)="showAllScorers = !showAllScorers">
+          <mat-icon>{{ showAllScorers ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ showAllScorers ? 'Réduire' : 'Voir tout' }}
+        </button>
       </div>
 
-      <!-- Section Performance Sportive -->
-      <div class="feed-section performance-section full-width">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>bar_chart</mat-icon>
+      <!-- Top Passeurs -->
+      <div class="db-section">
+        <h3 class="db-section-title"><mat-icon>swap_horiz</mat-icon>{{ 'dashboard.topAssisters' | translate }}</h3>
+        <div class="db-leaderboard">
+          <div class="db-lb-row"
+               *ngFor="let p of stats.topAssists; let i = index"
+               [class.db-lb-row--hidden]="i >= 3 && !showAllAssists">
+            <span class="db-lb-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
+            <span class="db-lb-name">{{ p.name }}</span>
+            <span class="db-lb-val">{{ p.assists }} 🎯</span>
           </div>
-          <div class="header-text">
-            <h2>{{ 'dashboard.sportsPerformance' | translate }}</h2>
-            <span class="badge" *ngIf="getSelectedExercice()">{{ getSelectedExercice()?.libelle }}</span>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="card-list horizontal-list">
-            <!-- Total Matchs -->
-            <div class="demande-card performance-metric-card">
-              <div class="metric-icon-wrapper matches">
-                <mat-icon>sports_soccer</mat-icon>
-              </div>
-              <div class="metric-details">
-                <span class="metric-value">{{ stats.totalMatches || 0 }}</span>
-                <span class="metric-label">{{ 'dashboard.totalMatches' | translate }}</span>
-              </div>
-            </div>
-            <!-- Total But -->
-             <div class="demande-card performance-metric-card">
-              <div class="metric-icon-wrapper goals">
-                <mat-icon>sports</mat-icon>
-              </div>
-              <div class="metric-details">
-                <span class="metric-value">{{ (stats.totalGoal || 0) | number:'1.1-1' }}</span>
-                <span class="metric-label">{{ 'dashboard.totalGoals' | translate }}</span>
-              </div>
-            </div>
-
-
-            <!-- Moyenne buts/match -->
-            <div class="demande-card performance-metric-card">
-              <div class="metric-icon-wrapper goals">
-                <mat-icon>sports</mat-icon>
-              </div>
-              <div class="metric-details">
-                <span class="metric-value">{{ (stats.avgGoalsPerMatch || 0) | number:'1.1-1' }}</span>
-                <span class="metric-label">{{ 'dashboard.avgGoalsPerMatch' | translate }}</span>
-              </div>
-            </div>
-
-            <!-- Joueurs actifs -->
-            <div class="demande-card performance-metric-card">
-              <div class="metric-icon-wrapper players">
-                <mat-icon>person</mat-icon>
-              </div>
-              <div class="metric-details">
-                <span class="metric-value">{{ stats.activePlayers || 0 }}</span>
-                <span class="metric-label">{{ 'dashboard.activePlayers' | translate }}</span>
-              </div>
-            </div>
-
-            <!-- Taux de participation -->
-            <div class="demande-card performance-metric-card">
-              <div class="metric-icon-wrapper participation">
-                <mat-icon>trending_up</mat-icon>
-              </div>
-              <div class="metric-details">
-                <span class="metric-value">{{ (stats.participationRate || 0) | number:'1.0-0' }}%</span>
-                <span class="metric-label">{{ 'dashboard.participationRate' | translate }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Meilleure équipe -->
-          <div class="best-team-card" *ngIf="stats.bestPerformingTeam">
-            <div class="best-team-header">
-              <mat-icon>emoji_events</mat-icon>
-              <h3>{{ 'dashboard.bestTeam' | translate }}</h3>
-            </div>
-            <div class="best-team-content">
-              <div class="team-name">{{ stats.bestPerformingTeam }}</div>
-              <div class="team-stats">
-                <span class="team-stat">
-                  <mat-icon>sports_soccer</mat-icon>
-                  {{ stats.bestTeamTotalGoals || 0 }} {{ 'dashboard.wins' | translate }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comparaison des équipes -->
-          <div class="team-comparison" *ngIf="stats.teamComparison && stats.teamComparison.length > 0">
-            <h4>{{ 'dashboard.teamComparison' | translate }}</h4>
-            <div class="comparison-grid">
-              <div class="comparison-item" *ngFor="let team of stats.teamComparison">
-                <div class="team-info">
-                  <span class="team-name">{{ team.teamName }}</span>
-                  <span class="team-matches">{{ team.playersCount }} {{ 'dashboard.activePlayers' | translate }}</span>
-                </div>
-                <div class="team-metrics">
-                  <div class="metric">
-                    <span class="value">{{ team.totalGoals }}</span>
-                    <span class="label">{{ 'dashboard.goals' | translate }}</span>
-                  </div>
-                  <div class="metric">
-                    <span class="value">{{ team.played }}</span>
-                    <span class="label">{{ 'dashboard.matchs' | translate }}</span>
-                  </div>
-                  <div class="metric">
-                    <span class="value">
-                    {{ ((team?.totalGoals || 0) / (team?.played || 1)) | number:'1.1-1' }}
-                  </span>
-                    <span class="label">{{ 'dashboard.avgPerMatch' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="empty-state" *ngIf="stats.teamComparison?.length === 0">
-            <mat-icon>groups</mat-icon>
-            <span>{{ 'dashboard.noTeamComparison' | translate }}</span>
+          <div class="db-empty-sm" *ngIf="!stats.topAssists?.length">
+            <mat-icon>swap_horiz</mat-icon><span>{{ 'dashboard.noAssisters' | translate }}</span>
           </div>
         </div>
+        <button class="db-show-more" *ngIf="stats.topAssists?.length > 3" (click)="showAllAssists = !showAllAssists">
+          <mat-icon>{{ showAllAssists ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ showAllAssists ? 'Réduire' : 'Voir tout' }}
+        </button>
       </div>
 
-      <!-- Section Meilleurs Performers -->
-      <div class="feed-section performers-section full-width">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>emoji_events</mat-icon>
+      <!-- Top Assiduité -->
+      <div class="db-section">
+        <h3 class="db-section-title"><mat-icon>event_available</mat-icon>{{ 'dashboard.attendance' | translate }}</h3>
+        <div class="db-leaderboard">
+          <div class="db-lb-row"
+               *ngFor="let p of stats.topAttendance; let i = index"
+               [class.db-lb-row--hidden]="i >= 3 && !showAllAttendance">
+            <span class="db-lb-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
+            <span class="db-lb-name">{{ p.name }}</span>
+            <span class="db-lb-val">{{ p.appearances }} matchs</span>
           </div>
-          <div class="header-text">
-            <h2>{{ 'dashboard.topPerformers' | translate }}</h2>
-            <span class="badge" *ngIf="getSelectedExercice()">{{ getSelectedExercice()?.libelle }}</span>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="card-list horizontal-list performers-list">
-            <!-- Meilleurs buteurs -->
-            <div class="demande-card performer-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar scorers">
-                    <mat-icon class="discipline-icon">sports_soccer</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.topScorers' | translate }}</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="leaderboard">
-                  <div class="leaderboard-item" *ngFor="let scorer of stats.topScorers; let i = index">
-                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
-                      {{ i + 1 }}
-                    </div>
-                    <div class="player-info">
-                      <span class="player-name">{{ scorer.name }}</span>
-                      <span class="player-team">{{ scorer.team }}</span>
-                    </div>
-                    <div class="player-score">{{ scorer.goals }}</div>
-                  </div>
-                  <div class="empty-state small" *ngIf="stats.topScorers?.length === 0">
-                    <mat-icon>sports_soccer</mat-icon>
-                    <span>{{ 'dashboard.noScorers' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Meilleurs passeurs -->
-            <div class="demande-card performer-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar assisters">
-                    <mat-icon class="discipline-icon">swap_horiz</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.topAssisters' | translate }}</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="leaderboard">
-                  <div class="leaderboard-item" *ngFor="let assister of stats.topAssists; let i = index">
-                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
-                      {{ i + 1 }}
-                    </div>
-                    <div class="player-info">
-                      <span class="player-name">{{ assister.name }}</span>
-                      <span class="player-team">{{ assister.team }}</span>
-                    </div>
-                    <div class="player-score">{{ assister.assists }}</div>
-                  </div>
-                  <div class="empty-state small" *ngIf="stats.topAssists?.length === 0">
-                    <mat-icon>swap_horiz</mat-icon>
-                    <span>{{ 'dashboard.noAssisters' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Meilleure assiduité -->
-            <div class="demande-card performer-card">
-              <div class="demande-header">
-                <div class="groupe-info">
-                  <div class="groupe-avatar attendance">
-                    <mat-icon class="discipline-icon">event_available</mat-icon>
-                  </div>
-                  <div class="groupe-details">
-                    <h3 class="groupe-nom">{{ 'dashboard.attendance' | translate }}</h3>
-                  </div>
-                </div>
-              </div>
-              <div class="demande-content">
-                <div class="leaderboard">
-                  <div class="leaderboard-item" *ngFor="let member of stats.topAttendance; let i = index">
-                    <div class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">
-                      {{ i + 1 }}
-                    </div>
-                    <div class="player-info">
-                      <span class="player-name">{{ member.name }}</span>
-                      <span class="player-team">{{ member.team }}</span>
-                    </div>
-                    <div class="player-score">{{ member.appearances }}</div>
-                  </div>
-                  <div class="empty-state small" *ngIf="stats.topAttendance?.length === 0">
-                    <mat-icon>event_available</mat-icon>
-                    <span>{{ 'dashboard.noAttendance' | translate }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="db-empty-sm" *ngIf="!stats.topAttendance?.length">
+            <mat-icon>event_available</mat-icon><span>{{ 'dashboard.noAttendance' | translate }}</span>
           </div>
         </div>
+        <button class="db-show-more" *ngIf="stats.topAttendance?.length > 3" (click)="showAllAttendance = !showAllAttendance">
+          <mat-icon>{{ showAllAttendance ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ showAllAttendance ? 'Réduire' : 'Voir tout' }}
+        </button>
       </div>
 
-      <!-- Section Prochains Matchs -->
-      <div class="feed-section activity-section full-width">
-        <div class="section-header">
-          <div class="header-icon-wrapper">
-            <mat-icon>event</mat-icon>
-          </div>
-          <div class="header-text">
-            <h2>{{ 'dashboard.upcomingMatches' | translate }}</h2>
-            <span class="badge">{{ stats.upcomingMatches?.length || 0 }}</span>
-          </div>
-        </div>
-        <div class="section-content">
-          <div class="timeline" *ngIf="stats.upcomingMatches && stats.upcomingMatches.length > 0">
-            <div class="timeline-item" *ngFor="let match of stats.upcomingMatches; let i = index">
-              <div class="timeline-icon" [class.next]="i === 0">
-                <mat-icon>sports_soccer</mat-icon>
-              </div>
-              <div class="timeline-content">
-                <div class="timeline-date">
-                  <span class="day">{{ match.date | date:'EEEE' }}</span>
-                  <span class="full-date">{{ match.date | date:'d MMM yyyy' }}</span>
-                </div>
-                <div class="timeline-details">
-                  <span class="opponent">{{ match.opponent }}</span>
-                  <span class="time">{{ match.date | date:'HH:mm' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="empty-state" *ngIf="!stats.upcomingMatches || stats.upcomingMatches.length === 0">
-            <div class="empty-illustration">
-              <mat-icon class="empty-icon">event_busy</mat-icon>
-            </div>
-            <div class="empty-content">
-              <h3 class="empty-title">{{ 'dashboard.noMatches' | translate }}</h3>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- ============ FOOTER ============ -->
-    <div class="dashboard-footer">
-      <div class="footer-stats">
-        <div class="footer-item">
-          <mat-icon>update</mat-icon>
-          <span>{{ 'dashboard.lastUpdate' | translate }}: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
-        </div>
-        <div class="footer-item" *ngIf="getSelectedExercice() as exercice">
-          <mat-icon>sports_soccer</mat-icon>
-          <span>{{ exercice.libelle }}</span>
-        </div>
-        <div class="footer-item">
-          <mat-icon>visibility</mat-icon>
-          <span>{{ 'dashboard.overview' | translate }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  </div><!-- /db-tabs-wrapper -->
 </div>

@@ -1,0 +1,560 @@
+// invitation-manager.component.scss
+@use '../../../../variables' as *;
+
+// ===================================================
+// VARIABLES LOCALES — couleurs spécifiques à ce composant
+// absentes de _variables.scss
+// ===================================================
+
+// Vert WhatsApp (marque fixe, hors thème)
+$whatsapp-green:      #25d366;
+$whatsapp-green-dark: #128c7e;
+
+// Bleu code d'invitation (fixe, hors thème)
+$code-bg-light:   #f0f9ff;
+$code-bg-dark-m:  #e0f2fe;  // gradient fin
+$code-border:     #0ea5e9;
+$code-text-color: #0369a1;
+
+// Jaune instructions (fixe, hors thème)
+$instr-bg-from:  #fefce8;
+$instr-bg-to:    #fef9c3;
+$instr-border:   #fde047;
+$instr-title:    #854d0e;
+$instr-icon:     #eab308;
+$instr-text:     #713f12;
+
+// Statut actif / inactif (badges — sémantiques fixes)
+$status-active-bg:   #dcfce7;
+$status-active-text: #16a34a;
+$status-inactive-bg: #fee2e2;
+$status-inactive-text:#dc2626;
+
+// Highlight stat (avertissement doux)
+$highlight-bg-from: #fef3c7;
+$highlight-bg-to:   #fde68a;
+$highlight-number:  #d97706;
+
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
+:host {
+  --primary-color:      #{$primary-blue};
+  --primary-dark:       #{$primary-blue-dark};
+  --accent-color:       #{$secondary-emerald};
+  --success-color:      #{$success-color};
+  --warning-color:      #{$warning-color};
+  --error-color:        #{$error-color};
+
+  // Texte — mode clair
+  --text-primary:       #{$light-text-primary};
+  --text-secondary:     #{$light-text-secondary};
+  --text-tertiary:      #{$light-text-tertiary};
+
+  // Fonds — mode clair
+  --bg-primary:         #{$light-bg-primary};
+  --bg-secondary:       #{$light-bg-secondary};
+  --bg-tertiary:        #{$light-bg-tertiary};
+
+  // Bordures — mode clair
+  --border-color:       #{$light-border};
+}
+
+// Dark mode (4 sélecteurs)
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:       #{$dark-text-primary};
+  --text-secondary:     #{$dark-text-secondary};
+  --text-tertiary:      #{$dark-text-tertiary};
+
+  --bg-primary:         #{$dark-bg-primary};
+  --bg-secondary:       #{$dark-bg-secondary};
+  --bg-tertiary:        #{$dark-bg-tertiary};
+
+  --border-color:       #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER
+// ===================================================
+.invitation-manager {
+  padding: $spacing-2xl;
+  max-width: 900px;
+  margin: 0 auto;
+
+  @include mobile { padding: $spacing-lg; }
+}
+
+// ===================================================
+// HEADER
+// ===================================================
+.page-header {
+  margin-bottom: $spacing-3xl;
+
+  @include mobile { margin-bottom: $spacing-2xl; }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-2xl;
+    flex-wrap: wrap;
+
+    @include mobile { flex-direction: column; }
+  }
+
+  .header-text {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-bold;
+      color: var(--text-primary);
+      margin: 0 0 $spacing-sm;
+
+      mat-icon { color: var(--primary-color); }
+
+      @include mobile { font-size: $font-size-2xl; }
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin: 0;
+      font-size: $font-size-md;
+    }
+  }
+
+  .header-stats {
+    display: flex;
+    gap: $spacing-2xl;
+
+    @include mobile { width: 100%; justify-content: space-around; }
+
+    .stat-item {
+      text-align: center;
+      padding: $spacing-md $spacing-xl;
+      background: var(--bg-secondary);
+      border-radius: $border-radius-lg;
+      min-width: 100px;
+
+      @include mobile { min-width: 80px; padding: $spacing-sm $spacing-md; }
+
+      &.highlight {
+        background: linear-gradient(135deg, $highlight-bg-from, $highlight-bg-to);
+        .stat-number { color: $highlight-number; }
+      }
+
+      .stat-number {
+        display: block;
+        font-size: $font-size-3xl;
+        font-weight: $font-weight-bold;
+        color: var(--primary-color);
+
+        @include mobile { font-size: $font-size-2xl; }
+      }
+
+      .stat-label {
+        font-size: $font-size-xs;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+  }
+}
+
+// ===================================================
+// LOADING
+// ===================================================
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+  gap: $spacing-lg;
+
+  p { color: var(--text-secondary); margin: 0; }
+}
+
+// ===================================================
+// TABS
+// ===================================================
+.custom-tabs {
+  ::ng-deep {
+    .mat-mdc-tab { min-width: 140px; }
+    .mat-mdc-tab-label-container { padding: 0 $spacing-lg; }
+    .mat-mdc-tab .mdc-tab__content { gap: $spacing-sm; }
+
+    // Dark mode tab strip
+    .mat-mdc-tab-header       { background: var(--bg-primary); }
+    .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab__text-label {
+      color: var(--text-secondary);
+    }
+    .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+      color: var(--primary-color);
+    }
+  }
+}
+
+.tab-content { padding-top: $spacing-2xl; }
+
+// ===================================================
+// INVITATION CARD
+// ===================================================
+.invitation-card {
+  border-radius: $border-radius-xl;
+  margin-bottom: $spacing-2xl;
+  background: var(--bg-primary);
+
+  mat-card-content { padding: $spacing-2xl; }
+
+  // ----- Statut -----
+  .invitation-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-2xl;
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-lg;
+      border-radius: $border-radius-full;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+      &.active  { background: $status-active-bg;   color: $status-active-text; }
+      &.inactive{ background: $status-inactive-bg; color: $status-inactive-text; }
+    }
+
+    .usage-count { color: var(--text-secondary); font-size: $font-size-sm; }
+  }
+
+  // ----- Code & Lien — label commun -----
+  .code-section,
+  .link-section {
+    margin-bottom: $spacing-xl;
+
+    label {
+      display: block;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: $spacing-sm;
+    }
+  }
+
+  // ----- Affichage du code -----
+  .code-display {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    background: linear-gradient(135deg, $code-bg-light, $code-bg-dark-m);
+    border: 2px dashed $code-border;
+    border-radius: $border-radius-lg;
+    padding: $spacing-lg $spacing-xl;
+
+    .code-text {
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-bold;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 4px;
+      color: $code-text-color;
+      flex: 1;
+
+      @include mobile { font-size: $font-size-xl; letter-spacing: 2px; }
+    }
+  }
+
+  // ----- Affichage du lien -----
+  .link-display {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    background: var(--bg-secondary);
+    border-radius: $border-radius-lg;
+    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-lg;
+
+    input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: $font-size-sm;
+      color: var(--text-primary);
+      outline: none;
+    }
+  }
+
+  // ----- Actions de partage -----
+  .share-actions {
+    display: flex;
+    gap: $spacing-md;
+    margin-bottom: $spacing-2xl;
+    flex-wrap: wrap;
+
+    @include mobile { flex-direction: column; }
+
+    button {
+      border-radius: $border-radius-lg;
+      padding: $spacing-md $spacing-2xl;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      @include mobile { width: 100%; justify-content: center; }
+    }
+
+    .whatsapp-btn {
+      background: $whatsapp-green !important;
+      color: white !important;
+      &:hover { background: $whatsapp-green-dark !important; }
+    }
+  }
+
+  // ----- Gestion -----
+  .management-actions {
+    padding-top: $spacing-lg;
+    display: flex;
+    justify-content: flex-end;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      mat-spinner { flex-shrink: 0; }
+    }
+  }
+}
+
+// ===================================================
+// INSTRUCTIONS CARD (fond jaune fixe — indépendant du thème)
+// ===================================================
+.instructions-card {
+  border-radius: $border-radius-xl;
+  background: linear-gradient(135deg, $instr-bg-from, $instr-bg-to) !important;
+  border: 1px solid $instr-border;
+
+  mat-card-content { padding: $spacing-2xl; }
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $instr-title;
+    margin: 0 0 $spacing-lg;
+
+    mat-icon { color: $instr-icon; }
+  }
+
+  ol {
+    margin: 0;
+    padding-left: $spacing-xl;
+    color: $instr-text;
+
+    li {
+      margin-bottom: $spacing-md;
+      line-height: 1.5;
+
+      &:last-child { margin-bottom: 0; }
+
+      strong { color: $instr-title; }
+    }
+  }
+}
+
+// ===================================================
+// LISTE DES DEMANDES
+// ===================================================
+.demandes-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.demande-card {
+  border-radius: $border-radius-xl;
+  background: var(--bg-primary);
+  transition: transform $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+  }
+
+  mat-card-content { padding: $spacing-xl; }
+
+  .demande-row {
+    display: flex;
+    gap: $spacing-lg;
+    align-items: center;
+
+    @include mobile { flex-direction: column; align-items: flex-start; }
+  }
+
+  // Avatar
+  .demande-avatar {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: $border-radius-full;
+      object-fit: cover;
+    }
+
+    .avatar-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: $border-radius-full;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  // Infos
+  .demande-info {
+    flex: 1;
+    min-width: 0;
+
+    h4 {
+      margin: 0 0 $spacing-xs;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: var(--text-primary);
+    }
+
+    .demande-meta {
+      display: flex;
+      gap: $spacing-lg;
+      flex-wrap: wrap;
+      margin: 0 0 $spacing-xs;
+      color: var(--text-secondary);
+      font-size: $font-size-sm;
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+
+        mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      }
+    }
+
+    .demande-time {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      margin: 0;
+      color: var(--text-tertiary);
+      font-size: $font-size-xs;
+
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    }
+  }
+
+  // Actions accepter / refuser
+  .demande-actions {
+    display: flex;
+    gap: $spacing-md;
+    flex-shrink: 0;
+
+    @include mobile { width: 100%; margin-top: $spacing-md; }
+
+    button {
+      border-radius: $border-radius-lg;
+      padding: $spacing-sm $spacing-xl;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      @include mobile { flex: 1; justify-content: center; }
+
+      mat-spinner { flex-shrink: 0; }
+    }
+  }
+
+  // Message optionnel
+  .demande-message {
+    display: flex;
+    gap: $spacing-md;
+    margin: $spacing-lg (-$spacing-xl) (-$spacing-xl);
+    padding: $spacing-lg $spacing-xl;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: 0 0 $border-radius-xl $border-radius-xl;
+
+    mat-icon { color: var(--text-tertiary); flex-shrink: 0; }
+
+    p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-style: italic;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// ===================================================
+// ÉTAT VIDE
+// ===================================================
+.empty-state {
+  text-align: center;
+  padding: $spacing-3xl $spacing-2xl;
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto $spacing-2xl;
+    background: var(--bg-secondary);
+    border-radius: $border-radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: var(--text-tertiary);
+    }
+  }
+
+  h3 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+    margin: 0 0 $spacing-sm;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: $font-size-md;
+  }
+}
+
+// ===================================================
+// DIVIDER dark mode
+// ===================================================
+mat-divider {
+  border-color: var(--border-color) !important;
+  margin: $spacing-2xl 0;
+}

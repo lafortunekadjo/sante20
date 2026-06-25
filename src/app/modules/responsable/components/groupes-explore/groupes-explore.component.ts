@@ -28,6 +28,7 @@ import { LoginPromptDialogComponent } from '../../../membre/components/login-pro
 import { TranslateModule } from '@ngx-translate/core';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-groupes-explore',
@@ -53,7 +54,8 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
     MatButtonToggleModule,
     TranslateModule,
     MatProgressBarModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatMenuModule
 ],
   templateUrl: './groupes-explore.component.html',
   styleUrl: './groupes-explore.component.scss'
@@ -87,6 +89,7 @@ export class GroupesExploreComponent implements OnInit {
   joursSemaine = JOURS_SEMAINE;
   niveaux = NIVEAUX;
   isCandidat : boolean = false
+  hasGroup : boolean = false
   // imageUrl = `${environment.imageUrl}`;
 
   constructor(
@@ -100,6 +103,7 @@ export class GroupesExploreComponent implements OnInit {
   ngOnInit(): void {
 
     this.isCandidat=this.authService.isCandidat()
+    this.hasGroup=!this.authService.isAuthenticated()
     this.totalDisciplines = this.disciplines.length;
     this.loadGroupes();
     this.loadVilles();
@@ -360,6 +364,8 @@ selectedGroups: any[] = [];
 favoriteGroups: Set<number> = new Set();
 totalDisciplines: number = 0;
 sortBy: string = 'nom';
+activeTab: 'grid' | 'list' | 'filter' = 'grid';
+showCompareModal = false;
 
 // Filtres rapides (optionnel, tu peux les ignorer pour l'instant)
 quickFilterTags: any[] = [];
@@ -395,8 +401,66 @@ selectAll(): void {
 
 compareSelected(): void {
   if (this.selectedGroups.length < 2) return;
-  console.log('Comparing groups:', this.selectedGroups);
-  // Tu peux ajouter ta logique de comparaison plus tard
+  this.showCompareModal = true;
+}
+
+closeCompareModal(): void {
+  this.showCompareModal = false;
+}
+
+clearSelection(): void {
+  this.selectedGroups = [];
+  this.showCompareModal = false;
+}
+
+removeFromCompare(index: number): void {
+  this.selectedGroups.splice(index, 1);
+  if (this.selectedGroups.length < 2) {
+    this.closeCompareModal();
+  }
+}
+
+// Retourne la "meilleure" valeur parmi les groupes comparés pour une métrique donnée
+getBestGroup(field: string): number {
+  if (this.selectedGroups.length === 0) return -1;
+  let bestIdx = 0;
+  let bestVal = this.getFieldValue(this.selectedGroups[0], field);
+  this.selectedGroups.forEach((g, i) => {
+    const val = this.getFieldValue(g, field);
+    // Pour fraisAdhesion : le plus bas est le meilleur
+    if (field === 'fraisAdhesion') {
+      if (val < bestVal) { bestVal = val; bestIdx = i; }
+    } else {
+      if (val > bestVal) { bestVal = val; bestIdx = i; }
+    }
+  });
+  return bestIdx;
+}
+
+getFieldValue(groupe: any, field: string): number {
+  switch(field) {
+    case 'nombreMembres':   return groupe.nombreMembres  ?? 0;
+    case 'capaciteMax':     return groupe.capaciteMax    ?? 0;
+    case 'fraisAdhesion':   return groupe.fraisAdhesion  ?? 0;
+    case 'tauxRemplissage': return this.getCapacityPercentage(groupe);
+    default: return 0;
+  }
+}
+
+getCompareMetrics(): { label: string; field: string; format: (g: any) => string }[] {
+  return [
+    { label: 'Discipline',    field: 'discipline',     format: g => g.discipline || '—' },
+    { label: 'Ville',         field: 'ville',          format: g => g.ville || '—' },
+    { label: 'Stade',         field: 'stade',          format: g => g.stade?.nom || '—' },
+    { label: 'Jour de match', field: 'jourMatch',      format: g => g.jourMatch || '—' },
+    { label: 'Heure',         field: 'heureMatch',     format: g => g.heureMatch || '—' },
+    { label: 'Type équipe', field: 'typeEquipe',    format: g => g.typeEquipe || '—' },
+    { label: 'Niveau requis', field: 'niveauRequis',   format: g => g.niveauRequis || 'Tous niveaux' },
+    { label: 'Membres',       field: 'nombreMembres',  format: g => g.nombreMembres != null ? `${g.nombreMembres}${g.capaciteMax ? ' / ' + g.capaciteMax : ''}` : '—' },
+    { label: 'Remplissage',   field: 'tauxRemplissage',format: g => g.capaciteMax ? this.getCapacityPercentage(g) + '%' : '—' },
+    { label: 'Frais adhésion','field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' FCFA' },
+    { label: 'Recrutement',   field: 'accepte',        format: g => g.accepteNouveauxMembres ? '✅ Ouvert' : '🔒 Fermé' },
+  ];
 }
 
 // Gestion des favoris

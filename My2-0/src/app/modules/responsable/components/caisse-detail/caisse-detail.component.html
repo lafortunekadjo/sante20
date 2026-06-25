@@ -1,0 +1,264 @@
+<!-- caisse-detail.component.html -->
+<div class="caisse-detail-container">
+
+  <!-- Header -->
+  <div class="page-header" *ngIf="caisse" [style.--caisse-color]="caisse.couleur">
+    <div class="header-content">
+      <div class="header-main">
+        <button mat-icon-button class="back-btn" routerLink="/responsable/finances/caisses">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="header-icon" [style.background-color]="caisse.couleur">
+          <mat-icon>{{ caisse.icone || 'account_balance_wallet' }}</mat-icon>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">{{ caisse.nom }}</h1>
+          <p class="page-subtitle">{{ getTypeLibelle(caisse.type) }} • {{ caisse.exercice?.libelle }}</p>
+        </div>
+      </div>
+
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ formatMontant(caisse.soldeActuel) }}</span>
+          <span class="stat-label">Solde actuel</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="60"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>Chargement des détails...</h3>
+      <p>Veuillez patienter</p>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div *ngIf="!isLoading && caisse" class="content">
+
+    <!-- Cartes statistiques -->
+    <div class="stats-grid">
+      <div class="stat-card solde">
+        <div class="stat-icon" [style.background-color]="caisse.couleur">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Solde Actuel</span>
+          <span class="stat-value">{{ formatMontant(caisse.soldeActuel) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card entrees">
+        <div class="stat-icon">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Entrées</span>
+          <span class="stat-value">{{ formatMontant(caisse.totalEntrees) }}</span>
+          <span class="stat-sub">{{ stats.nbEntrees }} opérations</span>
+        </div>
+      </div>
+
+      <div class="stat-card sorties">
+        <div class="stat-icon">
+          <mat-icon>trending_down</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Sorties</span>
+          <span class="stat-value">{{ formatMontant(caisse.totalSorties) }}</span>
+          <span class="stat-sub">{{ stats.nbSorties }} opérations</span>
+        </div>
+      </div>
+
+      <div class="stat-card reporte">
+        <div class="stat-icon">
+          <mat-icon>history</mat-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Solde Reporté</span>
+          <span class="stat-value">{{ formatMontant(caisse.soldeReporte) }}</span>
+          <span class="stat-sub">Exercice précédent</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <button mat-raised-button color="primary" 
+              [routerLink]="['/responsable/finances/entree']" 
+              [queryParams]="{caisseId: caisse.id}">
+        <mat-icon>add_circle</mat-icon>
+        Nouvelle Entrée
+      </button>
+      <button mat-raised-button color="warn" 
+              [routerLink]="['/responsable/finances/sortie']" 
+              [queryParams]="{caisseId: caisse.id}">
+        <mat-icon>remove_circle</mat-icon>
+        Nouvelle Sortie
+      </button>
+      <button mat-stroked-button (click)="exportData()">
+        <mat-icon>download</mat-icon>
+        Exporter
+      </button>
+    </div>
+
+    <!-- Section mouvements -->
+    <div class="mouvements-section">
+      <div class="section-header">
+        <div class="header-icon-wrapper" [style.background-color]="caisse.couleur">
+          <mat-icon>history</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>Historique des Mouvements</h2>
+          <span class="badge">{{ mouvements.length }}</span>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="filters-bar">
+        <div class="filter-chips">
+          <mat-chip-listbox>
+            <mat-chip-option [selected]="filterType === 'ALL'" (click)="setFilter('ALL')">
+              Tous
+            </mat-chip-option>
+            <mat-chip-option [selected]="filterType === 'ENTREE'" (click)="setFilter('ENTREE')" class="entree-chip">
+              <mat-icon>arrow_upward</mat-icon>
+              Entrées ({{ stats.nbEntrees }})
+            </mat-chip-option>
+            <mat-chip-option [selected]="filterType === 'SORTIE'" (click)="setFilter('SORTIE')" class="sortie-chip">
+              <mat-icon>arrow_downward</mat-icon>
+              Sorties ({{ stats.nbSorties }})
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+      </div>
+
+      <!-- Vue mobile en cartes -->
+      <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
+        <div class="mouvement-card" 
+             *ngFor="let mouvement of dataSource.data | slice:0:10"
+             [class]="getMouvementClass(mouvement)">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="mouvement-icon" [class]="getMouvementClass(mouvement)">
+                <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+              </div>
+              <div class="title-content">
+                <h4>{{ mouvement.libelle }}</h4>
+                <span class="date">{{ formatDate(mouvement.dateMouvement) }}</span>
+              </div>
+            </div>
+            <div class="card-montant">
+              <span class="montant" [class]="getMouvementClass(mouvement)">
+                {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
+              </span>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="info-row" *ngIf="getMembreNom(mouvement) !== '-'">
+              <span class="label">{{ mouvement.typeMouvement === 'ENTREE' ? 'Membre' : 'Bénéficiaire' }}:</span>
+              <span class="value">{{ getMembreNom(mouvement) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Référence:</span>
+              <span class="value ref">{{ mouvement.reference }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Statut:</span>
+              <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
+                {{ mouvement.statut }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vue desktop tableau -->
+      <div class="desktop-table-view" *ngIf="dataSource.data.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort class="mouvements-table">
+          
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <td mat-cell *matCellDef="let mouvement">
+              {{ formatDate(mouvement.dateMouvement) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="type-cell" [class]="getMouvementClass(mouvement)">
+                <mat-icon>{{ getMouvementIcon(mouvement) }}</mat-icon>
+                <span>{{ mouvement.typeMouvement === 'ENTREE' ? 'Entrée' : 'Sortie' }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="libelle">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="libelle-cell">
+                <span class="libelle">{{ mouvement.libelle }}</span>
+                <span class="reference">{{ mouvement.reference }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="membre">
+            <th mat-header-cell *matHeaderCellDef>Membre / Bénéficiaire</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <div class="membre-cell" *ngIf="getMembreNom(mouvement) !== '-'">
+                <mat-icon>person</mat-icon>
+                <span>{{ getMembreNom(mouvement) }}</span>
+              </div>
+              <span *ngIf="getMembreNom(mouvement) === '-'">-</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="montant">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <span class="montant" [class]="getMouvementClass(mouvement)">
+                {{ mouvement.typeMouvement === 'ENTREE' ? '+' : '-' }}{{ formatMontant(mouvement.montant) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="statut">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let mouvement">
+              <span class="status-badge" [class]="mouvement.statut.toLowerCase()">
+                {{ mouvement.statut }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+      </div>
+
+      <!-- État vide -->
+      <div class="empty-mouvements" *ngIf="dataSource.data.length === 0">
+        <mat-icon>inbox</mat-icon>
+        <p>Aucun mouvement enregistré pour cette caisse</p>
+        <div class="empty-actions">
+          <button mat-raised-button color="primary" 
+                  [routerLink]="['/responsable/finances/entree']" 
+                  [queryParams]="{caisseId: caisse.id}">
+            <mat-icon>add</mat-icon>
+            Enregistrer une entrée
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

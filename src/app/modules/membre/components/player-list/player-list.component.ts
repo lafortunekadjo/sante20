@@ -116,6 +116,19 @@ toggleMobileFilters(): void {
     }
   }
 
+  hasActiveFilters(): boolean {
+    return !!(this.selectedPostes.length > 0 || this.selectedPied !== 'all' || this.selectedSexe !== 'all' || this.selectedQuartiers.length > 0);
+  }
+
+  getActiveFilterCount(): number {
+    let n = 0;
+    if (this.selectedPostes.length > 0) n++;
+    if (this.selectedPied !== 'all') n++;
+    if (this.selectedSexe !== 'all') n++;
+    if (this.selectedQuartiers.length > 0) n++;
+    return n;
+  }
+
   resetFilters(): void {
     this.searchQuery = '';
     this.selectedPoste = 'all';

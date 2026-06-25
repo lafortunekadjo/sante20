@@ -8,6 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ChatService } from '../../../../core/services/chat.service';
+import { Router } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -27,7 +30,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     MatButtonModule,
     TranslateModule,
     MatExpansionModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    MatSnackBarModule
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']
@@ -37,6 +41,7 @@ export class PlayerProfileComponent implements OnInit {
   isLoading = true;
   hasError = false;
   isOwnProfile = false;
+  isCreatingChat = false;
 
   // Gestion de la visionneuse de médias (Lightbox)
   activeMediaUrl: string | null = null;
@@ -48,7 +53,10 @@ export class PlayerProfileComponent implements OnInit {
     private route: ActivatedRoute,
     private profileService: ProfileService,
     private authService: AuthService,
-    private location: Location // Injection pour le bouton retour
+    private chatService: ChatService,
+    private router: Router,
+    private snackBar: MatSnackBar,
+    private location: Location
   ) {}
 
   @HostListener('window:blur', ['$event'])
@@ -89,6 +97,38 @@ export class PlayerProfileComponent implements OnInit {
 }
 
   // Action du bouton retour
+  startPrivateChat(): void {
+    if (!this.playerProfile?.id) {
+      this.snackBar.open(
+        'Ce joueur ne possède pas encore de compte My2-0',
+        '✕', { duration: 3000, panelClass: ['snackbar-warning'] }
+      );
+      return;
+    }
+
+    this.isCreatingChat = true;
+
+    this.chatService.createPrivateConversation(this.playerProfile.id).subscribe({
+      next: (conversation) => {
+        this.isCreatingChat = false;
+        // Naviguer vers le chat et ouvrir la conversation
+        this.router.navigate(['/chat', conversation.id]);
+      },
+      error: (err) => {
+        this.isCreatingChat = false;
+        const msg = err.status === 409
+          ? 'Conversation déjà existante — redirection...'
+          : 'Impossible d"ouvrir le chat pour le moment';
+        this.snackBar.open(msg, '✕', { duration: 3000 });
+
+        // Si 409 (conversation existante) — l'API retourne souvent la conv dans err.error
+        if (err.status === 409 && err.error?.id) {
+          this.router.navigate(['/chat', err.error.id]);
+        }
+      }
+    });
+  }
+
   goBackToList(): void {
     this.location.back();
   }
@@ -169,5 +209,3 @@ openPhotoLightbox(photoUrl: string | null): void {
     this.activeMediaType = null;
   }
 }
-
-

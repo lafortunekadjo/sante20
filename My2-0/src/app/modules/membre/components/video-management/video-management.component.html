@@ -1,0 +1,112 @@
+<div class="video-management-wrapper">
+  
+  <div class="page-header">
+    <div class="header-title-zone">
+      <h1>{{ 'profile.media.studio_title' | translate }}</h1>
+      <p>{{ 'profile.media.studio_subtitle' | translate }}</p>
+    </div>
+    
+    <button mat-flat-button color="primary" class="toggle-upload-btn" (click)="toggleUploadPanel()">
+      <mat-icon>{{ showUploadPanel ? 'close' : 'video_call' }}</mat-icon>
+      <span>{{ (showUploadPanel ? 'profile.actions.cancel' : 'profile.media.btn_add_video') | translate }}</span>
+    </button>
+  </div>
+
+  <div class="studio-layout" [class.panel-open]="showUploadPanel">
+    
+    <div class="upload-panel-card" *ngIf="showUploadPanel">
+      <h2><mat-icon>video_call</mat-icon> {{ 'profile.media.add_action_title' | translate }}</h2>
+      
+      <form (ngSubmit)="uploadVideo()" #videoForm="ngForm">
+        <div class="file-drop-zone" [class.has-file]="selectedFile">
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime" (change)="onFileSelected($event)" style="display: none;">
+          <label for="videoFileInput" class="drop-zone-label">
+            <mat-icon class="upload-icon">{{ selectedFile ? 'movie' : 'cloud_upload' }}</mat-icon>
+            <span class="file-name" *ngIf="selectedFile">{{ selectedFile.name }}</span>
+            <span class="instruction" *ngIf="!selectedFile">{{ 'profile.media.drop_instruction' | translate }}</span>
+          </label>
+        </div>
+
+        <div class="local-preview-box" *ngIf="videoPreviewUrl">
+          <video [attr.src]="videoPreviewUrl" controls muted></video>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'profile.media.input_title_label' | translate }}</mat-label>
+          <input matInput [(ngModel)]="newVideoTitle" name="title" required [placeholder]="'profile.media.input_title_placeholder' | translate">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'profile.media.input_opponent_label' | translate }}</mat-label>
+          <input matInput [(ngModel)]="newVideoAdversaire" name="adversaire" [placeholder]="'profile.media.input_opponent_placeholder' | translate">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'profile.media.input_desc_label' | translate }}</mat-label>
+          <textarea matInput [(ngModel)]="newVideoDescription" name="description" rows="3" [placeholder]="'profile.media.input_desc_placeholder' | translate"></textarea>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button type="button" mat-button (click)="toggleUploadPanel()" [disabled]="isUploading">
+            {{ 'profile.actions.cancel' | translate }}
+          </button>
+          <div class="error-message-banner" *ngIf="errorMessage">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMessage }}</span>
+            </div>
+          <button type="submit" mat-flat-button color="primary" [disabled]="!selectedFile || !newVideoTitle.trim() || isUploading">
+            <mat-spinner diameter="20" *ngIf="isUploading" style="margin-right: 8px; display: inline-block;"></mat-spinner>
+            {{ (isUploading ? 'profile.media.state_uploading' : 'profile.media.btn_publish') | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="videos-gallery-container">
+      <h2><mat-icon>video_library</mat-icon> {{ 'profile.media.gallery_title' | translate }} ({{ videos.length }})</h2>
+
+      <div class="center-spinner" *ngIf="isLoading">
+        <mat-spinner diameter="45"></mat-spinner>
+      </div>
+
+      <div class="empty-gallery" *ngIf="!isLoading && videos.length === 0">
+        <mat-icon class="placeholder-icon">movie_filter</mat-icon>
+        <h3>{{ 'profile.media.empty_title' | translate }}</h3>
+        <p>{{ 'profile.media.empty_subtitle' | translate }}</p>
+      </div>
+
+      <div class="studio-video-grid" *ngIf="!isLoading && videos.length > 0">
+        <div class="studio-video-card" *ngFor="let video of videos" (click)="openVideo(video.videoUrl)">
+          
+          <div class="video-thumbnail-zone">
+            <video [attr.src]="video.videoUrl" preload="metadata" muted></video>
+            <div class="play-overlay">
+              <mat-icon>play_circle_outline</mat-icon>
+            </div>
+            <button class="delete-action-btn" (click)="deleteVideo(video.id, $event)" [title]="'profile.actions.delete' | translate">
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          </div>
+
+          <div class="video-meta-zone">
+            <h4 class="v-title">{{ video.titre }}</h4>
+            <span class="v-opponent" *ngIf="video.adversaire">⚽ VS {{ video.adversaire }}</span>
+            <p class="v-desc" *ngIf="video.description">{{ video.description }}</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="lightbox-overlay" *ngIf="activeVideoUrl" (click)="closeVideo()">
+    <button class="close-lightbox-btn" (click)="closeVideo()">
+      <mat-icon>close</mat-icon>
+    </button>
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <video [attr.src]="activeVideoUrl" controls autoplay></video>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,272 @@
+<div class="adhesion-container">
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p class="loading-text">Chargement du formulaire...</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && groupe" class="adhesion-content">
+    
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <mat-icon class="header-icon">{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
+        <div>
+          <h1 class="page-title">Demande d'adhésion</h1>
+          <p class="page-subtitle">{{ groupe.nom }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groupe Info Card -->
+    <mat-card class="groupe-info-card">
+      <mat-card-content>
+        <div class="info-grid">
+          <div class="info-item">
+            <mat-icon>sports</mat-icon>
+            <div>
+              <span class="info-label">Discipline</span>
+              <span class="info-value">{{ groupe.discipline }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <mat-icon>place</mat-icon>
+            <div>
+              <span class="info-label">Localisation</span>
+              <span class="info-value">{{ groupe.ville.nom }}{{ groupe.quartier ? ' - ' + groupe.quartier : '' }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <mat-icon>stadium</mat-icon>
+            <div>
+              <span class="info-label">Stade</span>
+              <span class="info-value">{{ groupe.stade.nom }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <mat-icon>event</mat-icon>
+            <div>
+              <span class="info-label">Jour de match</span>
+              <span class="info-value">{{ groupe.jourMatch }}{{ groupe.heureMatch ? ' à ' + groupe.heureMatch : '' }}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <mat-icon>payments</mat-icon>
+            <div>
+              <span class="info-label">Frais d'adhésion</span>
+              <span class="info-value">{{ groupe.fraisAdhesion }} FCFA</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Form Card -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title class="card-title">
+          <mat-icon>quiz</mat-icon>
+          Formulaire de candidature
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div *ngIf="questions.length === 0" class="no-questions">
+          <mat-icon>info</mat-icon>
+          <p>Aucune question configurée pour ce groupe. Vous pouvez directement soumettre votre demande.</p>
+        </div>
+
+        <form [formGroup]="demandeForm" (ngSubmit)="onSubmit()" *ngIf="questions.length > 0">
+          
+          <div *ngFor="let question of questions; let i = index" class="question-container">
+            <label class="question-label">
+              <span class="question-number">{{ i + 1 }}.</span>
+              <span class="question-text">{{ question.texteQuestion }}</span>
+              <span *ngIf="question.obligatoire" class="required-mark">*</span>
+            </label>
+
+            <!-- Type de champ selon question.typeChamp -->
+            <div [ngSwitch]="question.typeChamp" class="question-input">
+              
+              <!-- Texte court -->
+              <mat-form-field *ngSwitchCase="TypeChamp.TEXTE_COURT" appearance="outline" class="full-width">
+                <input 
+                  matInput 
+                  [formControlName]="'question_' + question.id"
+                  placeholder="Votre réponse">
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Texte long -->
+              <mat-form-field *ngSwitchCase="TypeChamp.TEXTE_LONG" appearance="outline" class="full-width">
+                <textarea 
+                  matInput 
+                  [formControlName]="'question_' + question.id"
+                  rows="4"
+                  placeholder="Votre réponse détaillée"></textarea>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Nombre -->
+              <mat-form-field *ngSwitchCase="TypeChamp.NOMBRE" appearance="outline" class="full-width">
+                <input 
+                  matInput 
+                  type="number"
+                  [formControlName]="'question_' + question.id"
+                  placeholder="Votre réponse">
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Date -->
+              <mat-form-field *ngSwitchCase="TypeChamp.DATE" appearance="outline" class="full-width">
+                <input 
+                  matInput 
+                  [matDatepicker]="picker"
+                  [formControlName]="'question_' + question.id"
+                  placeholder="Sélectionnez une date">
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Email -->
+              <mat-form-field *ngSwitchCase="TypeChamp.EMAIL" appearance="outline" class="full-width">
+                <input 
+                  matInput 
+                  type="email"
+                  [formControlName]="'question_' + question.id"
+                  placeholder="exemple@email.com">
+                <mat-icon matPrefix>email</mat-icon>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('email')">
+                  Email invalide
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Téléphone -->
+              <mat-form-field *ngSwitchCase="TypeChamp.TELEPHONE" appearance="outline" class="full-width">
+                <input 
+                  matInput 
+                  type="tel"
+                  [formControlName]="'question_' + question.id"
+                  placeholder="6XX XX XX XX">
+                <mat-icon matPrefix>phone</mat-icon>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
+                  Cette réponse est obligatoire
+                </mat-error>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('pattern')">
+                  Format invalide (9-15 chiffres)
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Choix unique (Radio) -->
+              <mat-radio-group 
+                *ngSwitchCase="TypeChamp.CHOIX_UNIQUE"
+                [formControlName]="'question_' + question.id"
+                class="radio-group">
+                <mat-radio-button 
+                  *ngFor="let option of getOptionsArray(question.optionsChoix)" 
+                  [value]="option"
+                  class="radio-button">
+                  {{ option }}
+                </mat-radio-button>
+                <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required') && demandeForm.get('question_' + question.id)?.touched">
+                  Veuillez sélectionner une option
+                </mat-error>
+              </mat-radio-group>
+
+             <!-- Choix multiple (Checkbox) avec FormArray -->
+<div *ngSwitchCase="TypeChamp.CHOIX_MULTIPLE" class="checkbox-group">
+  <div [formArrayName]="'question_' + question.id">
+    <mat-checkbox 
+      *ngFor="let option of getOptionsArray(question.optionsChoix); let idx = index"
+      [formControlName]="idx"
+      class="checkbox-item">
+      {{ option }}
+    </mat-checkbox>
+  </div>
+  <mat-error 
+    *ngIf="demandeForm.get('question_' + question.id)?.hasError('minSelected') && 
+           demandeForm.get('question_' + question.id)?.touched"
+    class="error-message">
+    {{ getErrorMessage(question.id, question) }}
+  </mat-error>
+</div>
+
+<!-- Oui/Non avec boolean au lieu de string -->
+<div *ngSwitchCase="TypeChamp.OUI_NON" class="oui-non-container">
+  <mat-slide-toggle
+    [formControlName]="'question_' + question.id"
+    color="primary"
+    class="toggle-option">
+    <span class="toggle-label">
+      {{ demandeForm.get('question_' + question.id)?.value ? 'Oui' : 'Non' }}
+    </span>
+  </mat-slide-toggle>
+  <mat-error 
+    *ngIf="demandeForm.get('question_' + question.id)?.hasError('required') && 
+           demandeForm.get('question_' + question.id)?.touched"
+    class="error-message">
+    {{ getErrorMessage(question.id, question) }}
+  </mat-error>
+</div>
+
+            </div>
+          </div>
+
+        </form>
+
+        <!-- Message si pas de questions mais bouton submit quand même -->
+        <div *ngIf="questions.length === 0" class="submit-without-questions">
+          <p class="info-text">
+            <mat-icon>info</mat-icon>
+            Cliquez sur "Envoyer ma demande" pour soumettre votre candidature
+          </p>
+        </div>
+
+      </mat-card-content>
+
+      <mat-card-actions class="form-actions">
+        <button 
+          mat-stroked-button 
+          type="button"
+          (click)="cancel()"
+          [disabled]="isSubmitting">
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+        <button 
+          mat-raised-button 
+          color="primary"
+          type="button"
+          (click)="onSubmit()"
+          [disabled]="isSubmitting || (questions.length > 0 && demandeForm.invalid)">
+          <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
+          <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+          <span>{{ isSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande' }}</span>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <!-- Info Box -->
+    <div class="info-box">
+      <mat-icon>info</mat-icon>
+      <div class="info-content">
+        <h4>Après votre demande</h4>
+        <p>Votre demande sera examinée par les responsables du groupe. Vous recevrez une notification dès qu'une décision sera prise.</p>
+      </div>
+    </div>
+
+  </div>
+</div>

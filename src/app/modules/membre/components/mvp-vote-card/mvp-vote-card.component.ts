@@ -11,7 +11,7 @@ import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { catchError, forkJoin, of } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-mvp-vote-card',
@@ -21,7 +21,8 @@ import { Router } from '@angular/router';
     MatButtonModule, 
     MatIconModule, 
     MatBottomSheetModule, 
-    MatProgressSpinnerModule, 
+    MatProgressSpinnerModule,
+    RouterModule, 
     MatSnackBarModule, 
     TranslateModule, 
     MatTooltipModule
@@ -44,6 +45,8 @@ export class MvpVoteCardComponent implements OnInit {
   hasVoted = signal(false);
   isEligible = signal(true);
   currentMonthLabel = signal<string>('');
+  isLoadingTendances = signal(false);
+  tendances = signal<any[]>([])
 
   ngOnInit() {
     if (!this.groupeId) {
@@ -51,14 +54,25 @@ export class MvpVoteCardComponent implements OnInit {
       return;
     }
     this.setCurrentMonthLabel();
+        this.loadTendances();
     this.checkStatusAndLoad();
   }
 
-onViewResults() {
+loadTendances(): void {
+    const gId = this.authService.getGroupe();
+    if (!gId) return;
+    this.isLoadingTendances.set(true);
+    this.voteService.getTendances(gId).subscribe({
+      next: (data) => { this.tendances.set(data || []); this.isLoadingTendances.set(false); },
+      error: ()    => { this.isLoadingTendances.set(false); }
+    });
+  }
+
+  onViewResults() {
     console.log('L’utilisateur souhaite voir les résultats');
     
     // 3. Redirection vers la route 'membre/vote'
-    this.router.navigate(['/membre/vote']);
+    this.router.navigate(['/membre/vote/winner']);
   }
 
 private setCurrentMonthLabel() {
@@ -132,6 +146,7 @@ private setCurrentMonthLabel() {
     sheetRef.afterDismissed().subscribe(result => {
       if (result?.success) {
         this.hasVoted.set(true);
+        this.loadTendances();
         this.checkStatusAndLoad(); // Recharger pour voir les scores mis à jour
         this.snackBar.open(this.translate.instant('mvpVote.voteSuccess'), 'OK', { duration: 3000 });
       }

@@ -1,0 +1,173 @@
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Injectable, ModelOptions } from '@angular/core';
+import { Observable, catchError, of, throwError } from 'rxjs';
+import { environment } from '../../environment';
+import { AuthService } from './auth.service';
+import { MemberStats, MonthlyStats } from '../models/stats.model';
+import { DatePipe } from '@angular/common';
+
+
+@Injectable({
+  providedIn: 'root' 
+})
+export class StatsService {
+
+  private adminStatsUrl = `${environment.apiUrl}/admin/stats`;
+  private responsableStatsUrl = `${environment.apiUrl}/responsable/stats`;
+  
+
+  constructor(private http: HttpClient, private authService: AuthService) {}
+
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+  }
+
+  getAdminStatss(): Observable<AdminStats> {
+    return this.http.get<AdminStats>(this.adminStatsUrl, { headers: this.getHeaders() }).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la récupération des stats admin:', err);
+        return throwError(err);
+      })
+    );
+  }
+
+   getAdminStats(startDate?: Date, endDate?: Date): Observable<any> {
+    let params = new HttpParams();
+    if (startDate && endDate) {
+      params = params.set('startDate', startDate.toISOString().split('T')[0]);
+      params = params.set('endDate', endDate.toISOString().split('T')[0]);
+    }
+    return this.http.get(`${this.adminStatsUrl}`, { params });
+  }
+
+getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
+  let params = new HttpParams();
+  const datePipe = new DatePipe('fr-FR');
+
+  if (startDate && endDate) {
+    const formattedStart = datePipe.transform(startDate, 'yyyy-MM-dd');
+    const formattedEnd = datePipe.transform(endDate, 'yyyy-MM-dd');
+
+    if (formattedStart && formattedEnd) {
+      params = params.set('startDate', formattedStart);
+      params = params.set('endDate', formattedEnd);
+    }
+  }
+
+  console.log(params.toString());
+  return this.http.get(`${environment.apiUrl}/responsable/stats`, { params });
+}
+
+ getMembreStats(startDate?: Date, endDate?: Date): Observable<any> {
+  let params = new HttpParams();
+  const datePipe = new DatePipe('fr-FR');
+
+  if (startDate && endDate) {
+    const formattedStart = datePipe.transform(startDate, 'yyyy-MM-dd');
+    const formattedEnd = datePipe.transform(endDate, 'yyyy-MM-dd');
+
+    // On s'assure que le formatage a réussi avant de peupler les paramètres
+    if (formattedStart && formattedEnd) {
+      params = params.set('startDate', formattedStart);
+      params = params.set('endDate', formattedEnd);
+    }
+  }
+
+  return this.http.get(`${environment.apiUrl}/membre/stats`, { params });
+}
+  getResponsableStats1(): Observable<ResponsableStats> {
+    return this.http.get<ResponsableStats>(this.responsableStatsUrl, { headers: this.getHeaders() }).pipe(
+      catchError(err => {
+        console.error('Erreur lors de la récupération des stats responsable:', err);
+        return throwError(err);
+      })
+    );
+  }
+
+  //  // Stats du joueur avec filtre de dates
+  // getResponsableStats2(startDate?: Date, endDate?: Date): Observable<MemberStats> {
+  //   let params = new HttpParams();
+    
+  //   if (startDate) {
+  //     params = params.set('startDate', startDate.toISOString());
+  //   }
+  //   if (endDate) {
+  //     params = params.set('endDate', endDate.toISOString());
+  //   }
+    
+  //   return this.http.get<MemberStats>(`${environment.apiUrl}/membre/stats`, { params });
+  // }
+
+  // Dans le service stats.service.ts ou lors de l'appel API
+
+getResponsableStats2(startDate?: Date, endDate?: Date): Observable<MemberStats> {
+  let params = new HttpParams();
+  
+  if (startDate) {
+    // Formater en YYYY-MM-DD uniquement
+    params = params.set('startDate', this.formatDateForApi(startDate));
+  }
+  if (endDate) {
+    params = params.set('endDate', this.formatDateForApi(endDate));
+  }
+  
+  return this.http.get<MemberStats>(`${environment.apiUrl}/membre/stats`, { params });
+}
+
+// Méthode helper pour formater la date
+private formatDateForApi(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`; // Format: 2025-01-01
+}
+
+  // Récupérer les stats mensuelles
+  getMonthlyStats(month: string): Observable<MonthlyStats> {
+    return this.http.get<MonthlyStats>(`${environment.apiUrl}/stats/monthly/${month}`);
+  }
+
+  // Récupérer la liste des mois disponibles
+  getAvailableMonths(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/stats/available-months`);
+  }
+
+  // Stats du joueur avec stats mensuelles
+  getMemberStatsWithMonthly(startDate?: Date, endDate?: Date, month?: string): Observable<MemberStats> {
+    let params = new HttpParams();
+    
+    if (startDate) {
+      params = params.set('startDate', startDate.toISOString());
+    }
+    if (endDate) {
+      params = params.set('endDate', endDate.toISOString());
+    }
+    if (month) {
+      params = params.set('month', month);
+    }
+    
+    return this.http.get<MemberStats>(`${environment.apiUrl}/member/with-monthly`, { params });
+  }
+
+
+}
+
+export interface AdminStats {
+  groupCount: number;
+  userCount: number;
+  roleDistribution: { [key: string]: number };
+  totalContributions: number;
+  totalCartons: number;
+}
+
+export interface ResponsableStats {
+  groupMemberCount: number;
+  groupContributions: number;
+  groupCartons: number;
+}
+
+
+

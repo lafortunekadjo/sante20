@@ -96,6 +96,12 @@ import { VideoManagementComponent } from "./modules/membre/components/video-mana
 import { ForgotPasswordComponent } from "./shared/components/forgot-password/forgot-password.component";
 import { ResetPasswordComponent } from "./shared/components/reset-password/reset-password.component";
 import { StatsDashboardComponent } from "./modules/responsable/components/stats-dashboard/stats-dashboard.component";
+import { PrivacyPolicyComponent } from "./modules/doc/privacy-policy/privacy-policy.component";
+import { SecurityPolicyComponent } from "./modules/doc/security-policy/security-policy.component";
+import { TermsOfServiceComponent } from "./modules/doc/terms-of-service/terms-of-service.component";
+import { ConcoursPublicComponent } from "./modules/jeu/concours-public/concours-public.component";
+import { ConcoursAdminComponent } from "./modules/jeu/concoursadmin/concoursadmin.component";
+import { ConcoursLiveComponent } from "./modules/jeu/concours-live/concours-live.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -122,6 +128,19 @@ export const routes: Routes = [
         path: '',
         component: HomeComponent,
       },
+
+      {
+  path: 'privacy',
+  component: PrivacyPolicyComponent
+},
+{
+  path: 'terms',
+  component: TermsOfServiceComponent
+},
+{
+  path: 'security',
+  component: SecurityPolicyComponent
+},
 
 
   {
@@ -207,7 +226,15 @@ export const routes: Routes = [
       import('./modules/competition/components/match-detail/match-detail.component')
         .then(m => m.MatchDetailComponent)
   },
+{
+  path: 'concours/:slug',
+  component: ConcoursPublicComponent
+},
 
+{
+  path: 'concours/:slug/live',
+  component: ConcoursLiveComponent
+},
 
 
       {
@@ -337,6 +364,10 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: AnalyticsDashboardComponent
+          },
+           {
+            path: 'tirage',
+            component: ConcoursAdminComponent
           },
         
           { path: 'analytics', 
@@ -534,7 +565,7 @@ export const routes: Routes = [
           {
             path: 'demandes',
             component: GestionDemandesGroupeComponent,
-            canActivate: [MenuGuard]
+            canActivate: [RoleGuard]
           },
           {
             path: 'invitation',

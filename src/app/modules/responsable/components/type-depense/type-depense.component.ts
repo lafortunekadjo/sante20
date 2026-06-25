@@ -107,6 +107,7 @@ const COULEURS_DISPONIBLES = [
   styleUrl: './type-depense.component.scss'
 })
 export class TypeDepenseComponent implements OnInit {
+  activeTab: 'list'|'form' = 'list';
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 

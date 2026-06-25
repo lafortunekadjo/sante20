@@ -1,0 +1,216 @@
+<!-- Liste des entreprises partenaire -->
+<div class="entreprises-container">
+  
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-icon">
+          <mat-icon>business</mat-icon>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">{{ 'partenaire.entreprises.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'partenaire.entreprises.subtitle' | translate }}</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          mat-raised-button 
+          color="accent"
+          routerLink="/partenaire/entreprises/new"
+          [disabled]="!canCreate()"
+          [matTooltip]="!canCreate() ? 'Limite atteinte' : ''">
+          <mat-icon>add</mat-icon>
+          {{ 'partenaire.entreprises.add' | translate }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barre de recherche et filtres -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>{{ 'partenaire.common.search' | translate }}</mat-label>
+      <input 
+        matInput 
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        placeholder="Rechercher une entreprise...">
+      <mat-icon matPrefix>search</mat-icon>
+      <button 
+        mat-icon-button 
+        matSuffix 
+        *ngIf="searchQuery"
+        (click)="searchQuery = ''; onSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <!-- Filtres par catégorie - utilisation de boutons au lieu de mat-chip -->
+    <div class="category-filters">
+      <button 
+        *ngFor="let cat of categories.slice(0, 5)"
+        mat-stroked-button
+        [class.active]="selectedCategory === cat.value"
+        (click)="onCategoryFilter(cat.value)">
+        <mat-icon>{{ getCategoryIcon(cat.value) }}</mat-icon>
+        <span class="category-label">{{ cat.labelKey | translate }}</span>
+      </button>
+      
+      <button 
+        mat-icon-button 
+        *ngIf="selectedCategory || searchQuery"
+        (click)="clearFilters()"
+        matTooltip="Effacer les filtres">
+        <mat-icon>filter_alt_off</mat-icon>
+      </button>
+    </div>
+
+    <!-- Compteur -->
+    <div class="results-count">
+      <span>
+        {{ filteredEntreprises.length }} 
+        {{ 'partenaire.entreprises.count' | translate:{ count: filteredEntreprises.length } }}
+      </span>
+      <span *ngIf="partenaire?.maxEntreprises" class="limit">
+        {{ 'partenaire?.entreprises?.limit' | translate:{ max: partenaire?.maxEntreprises } }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>{{ 'partenaire.common.loading' | translate }}</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading">
+    
+    <!-- Liste des entreprises -->
+    <div class="entreprises-grid" *ngIf="filteredEntreprises.length > 0">
+      <mat-card 
+        class="entreprise-card"
+        *ngFor="let entreprise of filteredEntreprises; trackBy: trackByEntreprise">
+        
+        <!-- Banner / Header -->
+        <div class="card-banner">
+          <img 
+            *ngIf="entreprise.bannerUrl" 
+            [src]="entreprise.bannerUrl" 
+            [alt]="entreprise.nom"
+            class="banner-img">
+          <div *ngIf="!entreprise.bannerUrl" class="banner-placeholder">
+            <mat-icon>{{ getCategoryIcon(entreprise.categorie) }}</mat-icon>
+          </div>
+          
+          <!-- Badge catégorie -->
+          <div class="category-badge">
+            <mat-icon>{{ getCategoryIcon(entreprise.categorie) }}</mat-icon>
+            <span>{{ getCategoryLabel(entreprise.categorie) }}</span>
+          </div>
+
+          <!-- Status -->
+          <div class="status-badge" [class.inactive]="!entreprise.actif">
+            {{ entreprise.actif ? 'Actif' : ('partenaire.entreprises.card.inactive' | translate) }}
+          </div>
+        </div>
+
+        <!-- Logo et infos -->
+        <div class="card-content">
+          <div class="entreprise-header">
+            <div class="entreprise-logo">
+              <img 
+                *ngIf="entreprise.logoUrl" 
+                [src]="entreprise.logoUrl" 
+                [alt]="entreprise.nom">
+              <mat-icon *ngIf="!entreprise.logoUrl">business</mat-icon>
+            </div>
+            <div class="entreprise-info">
+              <h3 class="entreprise-name">{{ entreprise.nom }}</h3>
+              <p class="entreprise-slogan" *ngIf="entreprise.slogan">{{ entreprise.slogan }}</p>
+              <p class="entreprise-location" *ngIf="entreprise.ville">
+                <mat-icon>location_on</mat-icon>
+                {{ entreprise.ville }}
+                <span *ngIf="entreprise.quartier">, {{ entreprise.quartier }}</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="entreprise-stats">
+            <div class="stat">
+              <mat-icon>campaign</mat-icon>
+              <span class="stat-value">{{ entreprise.nombrePublicites || 0 }}</span>
+              <span class="stat-label">{{ 'partenaire.entreprises.card.ads' | translate }}</span>
+            </div>
+            <div class="stat">
+              <mat-icon>visibility</mat-icon>
+              <span class="stat-value">{{ formatNumber(entreprise.totalImpressions || 0) }}</span>
+              <span class="stat-label">{{ 'partenaire.entreprises.card.impressions' | translate }}</span>
+            </div>
+            <div class="stat">
+              <mat-icon>touch_app</mat-icon>
+              <span class="stat-value">{{ formatNumber(entreprise.totalClics || 0) }}</span>
+              <span class="stat-label">{{ 'partenaire.entreprises.card.clicks' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button 
+            mat-button 
+            color="primary"
+            [routerLink]="['/partenaire/entreprises', entreprise.id]">
+            <mat-icon>visibility</mat-icon>
+            Voir
+          </button>
+          <button 
+            mat-button
+            [routerLink]="['/partenaire/entreprises', entreprise.id, 'edit']">
+            <mat-icon>edit</mat-icon>
+            {{ 'partenaire.entreprises.edit' | translate }}
+          </button>
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item [routerLink]="['/partenaire/publicite/new']" [queryParams]="{ entreprise: entreprise.id }">
+              <mat-icon>add_circle</mat-icon>
+              <span>Nouvelle publicité</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/partenaire/publicite']" [queryParams]="{ entreprise: entreprise.id }">
+              <mat-icon>campaign</mat-icon>
+              <span>{{ 'partenaire.entreprises.viewAds' | translate }}</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deleteEntreprise(entreprise)" class="delete-item">
+              <mat-icon>delete</mat-icon>
+              <span>{{ 'partenaire.entreprises.delete' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="filteredEntreprises.length === 0">
+      <div class="empty-illustration">
+        <mat-icon>business</mat-icon>
+      </div>
+      <h3>{{ 'partenaire.entreprises.empty.title' | translate }}</h3>
+      <p>{{ 'partenaire.entreprises.empty.description' | translate }}</p>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        routerLink="/partenaire/entreprises/new"
+        *ngIf="canCreate()">
+        <mat-icon>add</mat-icon>
+        {{ 'partenaire.entreprises.empty.action' | translate }}
+      </button>
+    </div>
+  </ng-container>
+</div>

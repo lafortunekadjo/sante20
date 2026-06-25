@@ -1,1950 +1,649 @@
 @import '../../../../../variables';
 
-// ===== DASHBOARD MEMBRE HARMONISÉ =====
+// ================================================================
+// DASHBOARD MEMBRE — Mobile-first refonte SCSS
+// ================================================================
+
 .dashboard-container {
   @include page-container;
+  display: flex;
+  flex-direction: column;
 }
 
-// ===== HEADER HARMONISÉ =====
-.page-header {
-  @include page-header;
+// ── Header compact avec KPIs ────────────────────────────────────
+.dash-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white; padding: $spacing-xl $spacing-2xl $spacing-lg;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  &::before { content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
+}
+.dash-header-top {
+  position: relative; z-index: 1; @include flex-between; gap: $spacing-md; margin-bottom: $spacing-lg;
+  @include mobile { margin-bottom: $spacing-md; }
+}
+.dash-header-title {
+  display: flex; align-items: center; gap: $spacing-md; flex-wrap: wrap;
+  h1 { margin: 0; font-size: $font-size-2xl; font-weight: $font-weight-bold; text-shadow: 0 1px 4px rgba(0,0,0,.2); @include mobile { font-size: $font-size-xl; } }
+  .season-pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px; border-radius: $border-radius-full;
+    background: rgba(255,255,255,.15); font-size: $font-size-xs; font-weight: $font-weight-medium;
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  }
+}
+.filter-toggle-btn {
+  @include button-reset; @include touch-target(40px); display: inline-flex; align-items: center; gap: $spacing-sm;
+  padding: 0 $spacing-md; border-radius: $border-radius-lg;
+  background: rgba(255,255,255,.15); color: white; cursor: pointer; transition: $transition-fast; flex-shrink: 0;
+  .filter-period-label { font-size: $font-size-xs; max-width: 140px; @include text-truncate; }
+  &:hover, &.active { background: rgba(255,255,255,.28); }
+}
+.dash-kpis {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: $spacing-lg;
+  background: rgba(255,255,255,.12); backdrop-filter: blur(10px); border-radius: $border-radius-lg; padding: $spacing-md $spacing-xl;
+  @include mobile {
+    gap: $spacing-md; padding: $spacing-sm $spacing-md; border-radius: $border-radius-md;
+    overflow-x: auto; scrollbar-width: none; &::-webkit-scrollbar { display: none; }
+  }
+}
+.kpi {
+  text-align: center; flex-shrink: 0;
+  .kpi-val { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; color: white; line-height: 1; @include mobile { font-size: $font-size-lg; } }
+  .kpi-lbl { display: block; font-size: 11px; opacity: .85; margin-top: 2px; white-space: nowrap; }
+}
+.kpi-sep { width: 1px; height: 30px; background: rgba(255,255,255,.25); flex-shrink: 0; }
+.hide-mobile { @include mobile { display: none !important; } }
+
+// ── Loading ─────────────────────────────────────────────────────
+.loading-container { @include loading-state; }
+.loading-spinner { display: flex; justify-content: center; margin-bottom: $spacing-lg; }
+.loading-content { text-align: center;
+  h3 { margin: 0 0 $spacing-xs; font-size: $font-size-lg; }
+  p  { margin: 0; color: var(--text-secondary); font-size: $font-size-sm; }
 }
 
-// ===== LOADING HARMONISÉ =====
-.loading-container {
-  @include loading-state;
-}
-
-// ===== CONTENT =====
+// ── Content wrapper ─────────────────────────────────────────────
 .content {
-  padding: $spacing-2xl;
+  padding: $spacing-xl $spacing-2xl;
+  display: flex; flex-direction: column; gap: $spacing-xl;
+  @include mobile { padding: $spacing-lg $spacing-md; gap: $spacing-lg; }
+}
+
+// ── Ad section ──────────────────────────────────────────────────
+.dashboard-ad-section { margin: 0; }
+
+// ── Panneau filtres collapsable ─────────────────────────────────
+.filters-panel {
+  max-height: 0; overflow: hidden; opacity: 0;
+  transition: max-height .3s ease, opacity .25s ease, padding .3s ease;
+  padding: 0 $spacing-2xl;
+
+  &.open {
+    max-height: 600px; opacity: 1;
+    padding: $spacing-lg $spacing-2xl;
+  }
 
   @include mobile {
-    padding: $spacing-lg;
+    padding: 0 $spacing-md;
+    &.open { padding: $spacing-md; }
   }
 }
 
-// ===== FILTRES AMÉLIORÉS =====
-.filters-container {
-  @include card-base;
-  margin-bottom: $spacing-2xl;
-  overflow: hidden;
+.filters-body { @include card-base; padding: $spacing-xl; @include mobile { padding: $spacing-lg; } }
 
-  @include mobile {
-    margin-bottom: $spacing-xl;
-  }
-
-  .filters-header {
-    padding: $spacing-xl;
-    border-bottom: 1px solid var(--divider-color);
-    background: var(--background-tertiary);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: $spacing-lg;
-
-    @include mobile {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: $spacing-lg;
-    }
-
-    .filters-title {
-      display: flex;
-      align-items: center;
-      gap: $spacing-md;
-
-      mat-icon {
-        color: var(--primary-color);
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-      }
-
-      h3 {
-        margin: 0;
-        font-size: $font-size-lg;
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-      }
-    }
-
-    .current-period-badge {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      padding: $spacing-sm $spacing-lg;
-      background: rgba(var(--primary-rgb), 0.1);
-      border-radius: $border-radius-full;
-      font-size: $font-size-sm;
-      color: var(--primary-color);
-      font-weight: $font-weight-medium;
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-
-      .period-type-chip {
-        padding: 2px $spacing-sm;
-        border-radius: $border-radius-sm;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-semibold;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-
-        &.season {
-          background: var(--primary-color);
-          color: white;
-        }
-
-        &.custom {
-          background: $warning-color;
-          color: white;
-        }
-      }
-    }
-  }
-
-  .filters-body {
-    padding: $spacing-xl;
-
-    @include mobile {
-      padding: $spacing-lg;
-    }
-  }
-}
-
-// ===== TOGGLE MODE FILTRAGE =====
 .filter-mode-toggle {
-  display: flex;
-  gap: $spacing-md;
-  margin-bottom: $spacing-xl;
-  padding-bottom: $spacing-xl;
-  border-bottom: 1px solid var(--divider-color);
-
-  @include mobile {
-    flex-direction: column;
-  }
-
+  display: flex; gap: $spacing-sm; margin-bottom: $spacing-lg; flex-wrap: wrap;
   button {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-sm;
-    padding: $spacing-lg;
-    border-radius: $border-radius-lg;
-    font-weight: $font-weight-medium;
-    transition: $transition-base;
-    border: 2px solid var(--border-color);
-    background: var(--background-secondary);
-    color: var(--text-secondary);
-
-    @include mobile {
-      padding: $spacing-md;
-    }
-
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    &:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(var(--primary-rgb), 0.05);
-    }
-
-    &.active {
-      border-color: var(--primary-color);
-      background: var(--primary-color);
-      color: white;
-
-      &:hover {
-        background: var(--primary-dark);
-      }
-    }
+    display: inline-flex !important; align-items: center !important; gap: $spacing-sm !important;
+    border-radius: $border-radius-lg !important; min-height: 44px;
+    &.active { background: var(--primary-color) !important; color: white !important; border-color: var(--primary-color) !important; }
   }
 }
 
-// ===== FILTRE PAR SAISON =====
-.season-filter {
-  animation: fadeSlideIn 0.3s ease;
+.season-filter, .date-range-filter { display: flex; flex-direction: column; gap: $spacing-lg; }
 
-  .season-select {
-    width: 100%;
-    max-width: 500px;
+.season-select { width: 100%; max-width: 360px; @include mobile { max-width: 100%; } }
 
-    @include mobile {
-      max-width: 100%;
-    }
-  }
-
-  .selected-season-trigger {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-
-    .season-name {
-      font-weight: $font-weight-semibold;
-    }
-
-    .current-badge {
-      padding: 2px $spacing-sm;
-      background: $success-color;
-      color: white;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-xs;
-      font-weight: $font-weight-bold;
-      text-transform: uppercase;
-    }
-  }
-}
-
-// ===== OPTIONS DU SELECT SAISON =====
-.season-option {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $spacing-sm 0;
-  width: 100%;
-
-  .season-option-main {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-
-    mat-icon {
-      color: var(--text-tertiary);
-      font-size: 24px;
-
-      &.active-icon {
-        color: $success-color;
-      }
-    }
-
-    .season-option-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-
-      .season-name {
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-        font-size: $font-size-md;
-      }
-
-      .season-period {
-        font-size: $font-size-xs;
-        color: var(--text-tertiary);
-      }
-    }
-  }
-
-  .season-option-badges {
-    display: flex;
-    gap: $spacing-xs;
-
-    .badge {
-      padding: 2px $spacing-sm;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-xs;
-      font-weight: $font-weight-semibold;
-
-      &.current {
-        background: rgba($success-color, 0.1);
-        color: $success-color;
-      }
-
-      &.closed {
-        background: rgba(var(--text-tertiary-rgb), 0.1);
-        color: var(--text-tertiary);
-      }
-    }
-  }
-}
-
-// ===== INFO SAISON SÉLECTIONNÉE =====
 .season-info-card {
-  display: flex;
-  align-items: center;
-  gap: $spacing-lg;
-  margin-top: $spacing-xl;
-  padding: $spacing-xl;
-  background: var(--background-tertiary);
-  border-radius: $border-radius-xl;
-  border: 1px solid var(--border-color);
+  display: flex; align-items: center; gap: $spacing-lg;
+  padding: $spacing-lg; background: var(--background-secondary);
+  border-radius: $border-radius-lg; flex-wrap: wrap;
+  @include mobile { gap: $spacing-md; }
 
-  @include mobile {
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-lg;
-    text-align: center;
-  }
-
-  .season-info-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    flex: 1;
-
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-xs;
-    }
-
-    mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-      color: var(--primary-color);
-
-      &.active {
-        color: $success-color;
-      }
-    }
-
-    .info-content {
-      display: flex;
-      flex-direction: column;
-
-      .info-label {
-        font-size: $font-size-xs;
-        color: var(--text-tertiary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .info-value {
-        font-size: $font-size-md;
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-
-        &.active {
-          color: $success-color;
-        }
-      }
+  .season-info-item { display: flex; align-items: center; gap: $spacing-sm; flex: 1; min-width: 100px;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--primary-color); }
+    .info-label { display: block; font-size: $font-size-xs; color: var(--text-tertiary); }
+    .info-value { display: block; font-size: $font-size-sm; font-weight: $font-weight-semibold;
+      &.active { color: $success-color; }
     }
   }
+  .season-info-divider { width: 1px; height: 36px; background: var(--border-color); @include mobile { display: none; } }
+}
 
-  .season-info-divider {
-    width: 1px;
-    height: 40px;
-    background: var(--divider-color);
+.date-field { width: 100%; max-width: 400px; @include mobile { max-width: 100%; } }
 
-    @include mobile {
-      width: 60%;
-      height: 1px;
-    }
+.action-buttons { display: flex; gap: $spacing-md; flex-wrap: wrap;
+  button { min-height: 44px; flex-shrink: 0; }
+}
+
+.date-filter-help { display: flex; align-items: center; gap: $spacing-sm; font-size: $font-size-xs; color: var(--text-tertiary);
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+
+// Mat-select options
+.season-option { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: $spacing-md; }
+.season-option-main { display: flex; align-items: center; gap: $spacing-sm; flex: 1;
+  mat-icon.active-icon { color: var(--primary-color); }
+}
+.season-option-info { .season-name { display: block; font-size: $font-size-sm; } .season-period { display: block; font-size: $font-size-xs; color: var(--text-tertiary); } }
+.season-option-badges { display: flex; gap: $spacing-xs; }
+.badge.current { font-size: 10px; padding: 1px 7px; border-radius: $border-radius-full; background: rgba(16,185,129,.1); color: $success-color; font-weight: $font-weight-semibold; }
+.badge.closed  { font-size: 10px; padding: 1px 7px; border-radius: $border-radius-full; background: var(--background-tertiary); color: var(--text-tertiary); }
+.selected-season-trigger { display: flex; align-items: center; gap: $spacing-sm; }
+.current-badge { @extend .badge; @extend .current; }
+
+// ── Section headers ─────────────────────────────────────────────
+.section-header {
+  display: flex; align-items: center; gap: $spacing-md; margin-bottom: $spacing-xl;
+  @include mobile { margin-bottom: $spacing-lg; }
+
+  .header-icon-wrapper {
+    width: 44px; height: 44px; border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+    &.trophy-icon { background: linear-gradient(135deg, #b45309, #f59e0b); }
+  }
+
+  .header-text {
+    h2 { margin: 0 0 3px; font-size: $font-size-lg; font-weight: $font-weight-bold; color: var(--text-primary); }
+    .badge { font-size: $font-size-xs; padding: 2px 9px; border-radius: $border-radius-full;
+      background: rgba(37,99,235,.1); color: var(--primary-color); font-weight: $font-weight-semibold; }
   }
 }
 
-// ===== FILTRE PAR DATES =====
-.date-range-filter {
-  animation: fadeSlideIn 0.3s ease;
+// ── Stats mensuelles ────────────────────────────────────────────
+.monthly-stats-section { display: flex; flex-direction: column; gap: $spacing-lg; }
 
-  .date-filter-form {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-lg;
-    flex-wrap: wrap;
-
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-md;
-    }
-
-    .date-field {
-      flex: 1;
-      min-width: 300px;
-
-      @include mobile {
-        min-width: 100%;
-        width: 100%;
-      }
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: $spacing-md;
-      padding-top: $spacing-sm;
-
-      @include mobile {
-        width: 100%;
-        justify-content: stretch;
-
-        button {
-          flex: 1;
-        }
-      }
-
-      button {
-        display: flex;
-        align-items: center;
-        gap: $spacing-sm;
-        padding: $spacing-md $spacing-xl;
-
-        mat-icon {
-          font-size: 20px;
-          width: 20px;
-          height: 20px;
-        }
-      }
-    }
-  }
-
-  .date-filter-help {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    margin-top: $spacing-lg;
-    padding: $spacing-md $spacing-lg;
-    background: rgba($info-color, 0.1);
-    border-radius: $border-radius-md;
-    color: $info-color;
-    font-size: $font-size-sm;
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-  }
-}
-
-// ===== SECTIONS HARMONISÉES =====
-.monthly-stats-section,
-.metrics-section,
-.sanctions-section {
-  margin-bottom: $spacing-3xl;
-
-  @include mobile {
-    margin-bottom: $spacing-2xl;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-lg;
-    margin-bottom: $spacing-2xl;
-    padding: $spacing-xl;
-    background: var(--background-tertiary);
-    border-radius: $border-radius-xl;
-    border: 1px solid var(--border-color);
-
-    @include mobile {
-      gap: $spacing-md;
-      padding: $spacing-lg;
-      margin-bottom: $spacing-xl;
-    }
-
-    .header-icon-wrapper {
-      @include flex-center;
-      width: 60px;
-      height: 60px;
-      border-radius: $border-radius-lg;
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-      color: white;
-      flex-shrink: 0;
-
-      @include mobile {
-        width: 48px;
-        height: 48px;
-      }
-
-      mat-icon {
-        font-size: 28px;
-
-        @include mobile {
-          font-size: 24px;
-        }
-      }
-    }
-
-    .header-text {
-      flex: 1;
-
-      h2 {
-        margin: 0 0 $spacing-xs 0;
-        font-size: $font-size-xl;
-        font-weight: $font-weight-bold;
-        color: var(--text-primary);
-
-        @include mobile {
-          font-size: $font-size-lg;
-        }
-      }
-
-      .badge {
-        background: var(--primary-color);
-        color: white;
-        padding: $spacing-xs $spacing-md;
-        border-radius: $border-radius-full;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
-
-        @include mobile {
-          font-size: $font-size-xs;
-        }
-      }
-    }
-  }
-}
-
-// ===== SÉLECTEUR DE MOIS =====
 .month-selector-card {
   @include card-base;
-  padding: $spacing-xl;
-  margin-bottom: $spacing-2xl;
-
-  @include mobile {
-    padding: $spacing-lg;
-    margin-bottom: $spacing-xl;
-  }
-
-  .month-select {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    display: block;
-  }
+  padding: $spacing-lg $spacing-xl;
+  @include mobile { padding: $spacing-md $spacing-lg; }
+  .month-select { width: 100%; max-width: 280px; @include mobile { max-width: 100%; } }
 }
 
-// ===== MEILLEURE ÉQUIPE =====
+// Meilleure équipe
 .monthly-highlight-card {
   @include card-base;
   overflow: hidden;
-  margin-bottom: $spacing-2xl;
-  transition: $transition-base;
-  position: relative;
+  border-top: 3px solid var(--primary-color);
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: linear-gradient(90deg, $accent-orange, $accent-orange-light, $accent-orange);
-    background-size: 200% 100%;
-    animation: shimmer 3s infinite;
+  &.best-team-card { border-top-color: #f59e0b; }
+}
+
+.highlight-header {
+  display: flex; align-items: center; gap: $spacing-md;
+  padding: $spacing-lg $spacing-xl;
+  background: var(--background-secondary); border-bottom: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-md $spacing-lg; }
+
+  .header-content { flex: 1;
+    h2 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-bold; }
+    .month-label { margin: 0; font-size: $font-size-xs; color: var(--text-secondary); }
   }
 
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: $shadow-xl;
-  }
-
-  .highlight-header {
-    background: linear-gradient(135deg, $accent-orange 0%, darken($accent-orange, 15%) 100%);
-    padding: $spacing-2xl;
-    display: flex;
-    align-items: center;
-    gap: $spacing-lg;
-    color: white;
-    position: relative;
-    overflow: hidden;
-
-    @include mobile {
-      padding: $spacing-xl;
-      gap: $spacing-md;
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 100%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent);
-      animation: rotate-slow 15s linear infinite;
-    }
-
-    .trophy-icon {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: $border-radius-xl;
-      width: 80px;
-      height: 80px;
-      @include flex-center;
-      box-shadow: $shadow-lg;
-      position: relative;
-      z-index: 1;
-
-      @include mobile {
-        width: 60px;
-        height: 60px;
-      }
-
-      mat-icon {
-        font-size: 48px;
-        animation: bounce-trophy 2s infinite;
-
-        @include mobile {
-          font-size: 36px;
-        }
-      }
-    }
-
-    .header-content {
-      flex: 1;
-      position: relative;
-      z-index: 1;
-
-      h2 {
-        font-size: $font-size-2xl;
-        font-weight: $font-weight-bold;
-        margin: 0 0 $spacing-sm 0;
-
-        @include mobile {
-          font-size: $font-size-xl;
-        }
-      }
-
-      .month-label {
-        font-size: $font-size-md;
-        opacity: 0.9;
-        margin: 0;
-
-        @include mobile {
-          font-size: $font-size-sm;
-        }
-      }
-    }
-
-    .trophy-badge {
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      @include flex-center;
-      box-shadow: $shadow-md;
-      position: relative;
-      z-index: 1;
-
-      @include mobile {
-        width: 48px;
-        height: 48px;
-      }
-
-      mat-icon {
-        font-size: 36px;
-        animation: glow-pulse 2s infinite;
-
-        @include mobile {
-          font-size: 28px;
-        }
-      }
-    }
-  }
-
-  .highlight-body {
-    padding: $spacing-2xl;
-
-    @include mobile {
-      padding: $spacing-xl;
-    }
-
-    .team-showcase {
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-2xl;
-
-      @include mobile {
-        gap: $spacing-xl;
-      }
-    }
-
-    .team-name-display {
-      @include flex-center;
-      gap: $spacing-lg;
-      padding: $spacing-2xl;
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-      border-radius: $border-radius-2xl;
-      box-shadow: $shadow-lg;
-
-      @include mobile {
-        flex-direction: column;
-        gap: $spacing-md;
-        padding: $spacing-xl;
-      }
-
-      .team-icon {
-        font-size: 48px;
-        color: white;
-
-        @include mobile {
-          font-size: 36px;
-        }
-      }
-
-      h3 {
-        font-size: $font-size-3xl;
-        font-weight: $font-weight-normal;
-        color: white;
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-
-        @include mobile {
-          font-size: $font-size-2xl;
-          text-align: center;
-        }
-      }
-    }
-
-    .team-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: $spacing-lg;
-
-      @include mobile {
-        grid-template-columns: repeat(2, 1fr);
-        gap: $spacing-md;
-      }
-    }
-
-    .stat-item {
-      @include card-base;
-      padding: $spacing-xl;
-      display: flex;
-      align-items: center;
-      gap: $spacing-lg;
-      transition: $transition-base;
-
-      @include mobile {
-        padding: $spacing-lg;
-        gap: $spacing-md;
-      }
-
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: $shadow-lg;
-      }
-
-      &.victories .stat-icon {
-        background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
-      }
-
-      &.matches .stat-icon {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-      }
-
-      &.win-rate .stat-icon {
-        background: linear-gradient(135deg, $info-color, darken($info-color, 10%));
-      }
-
-      &.goals .stat-icon {
-        background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
-      }
-
-      .stat-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: $border-radius-lg;
-        @include flex-center;
-        color: white;
-        box-shadow: $shadow-md;
-
-        @include mobile {
-          width: 48px;
-          height: 48px;
-        }
-
-        mat-icon {
-          font-size: 28px;
-
-          @include mobile {
-            font-size: 24px;
-          }
-        }
-      }
-
-      .stat-content {
-        flex: 1;
-
-        .stat-value {
-          font-size: $font-size-2xl;
-          font-weight: $font-weight-bold;
-          color: var(--text-primary);
-          line-height: 1;
-          margin-bottom: $spacing-xs;
-
-          @include mobile {
-            font-size: $font-size-xl;
-          }
-        }
-
-        .stat-label {
-          font-size: $font-size-sm;
-          color: var(--text-secondary);
-          font-weight: $font-weight-medium;
-
-          @include mobile {
-            font-size: $font-size-xs;
-          }
-        }
-      }
-    }
-
-    .record-display {
-      @include flex-center;
-      gap: $spacing-lg;
-      padding: $spacing-xl;
-      background: var(--background-tertiary);
-      border-radius: $border-radius-xl;
-      border: 2px solid var(--border-color);
-
-      @include mobile {
-        gap: $spacing-md;
-        padding: $spacing-lg;
-      }
-
-      .record-item {
-        @include flex-center;
-        flex-direction: column;
-        gap: $spacing-sm;
-        padding: $spacing-lg;
-        border-radius: $border-radius-lg;
-        min-width: 80px;
-
-        @include mobile {
-          padding: $spacing-md;
-          min-width: 60px;
-        }
-
-        &.win {
-          background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.05));
-          .record-count, .record-label { color: $success-color; }
-        }
-
-        &.draw {
-          background: linear-gradient(135deg, rgba($warning-color, 0.1), rgba($warning-color, 0.05));
-          .record-count, .record-label { color: $warning-color; }
-        }
-
-        &.loss {
-          background: linear-gradient(135deg, rgba($error-color, 0.1), rgba($error-color, 0.05));
-          .record-count, .record-label { color: $error-color; }
-        }
-
-        .record-count {
-          font-size: $font-size-2xl;
-          font-weight: $font-weight-bold;
-          line-height: 1;
-
-          @include mobile {
-            font-size: $font-size-xl;
-          }
-        }
-
-        .record-label {
-          font-size: $font-size-sm;
-          font-weight: $font-weight-bold;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-
-          @include mobile {
-            font-size: $font-size-xs;
-          }
-        }
-      }
-
-      .record-separator {
-        font-size: $font-size-lg;
-        font-weight: $font-weight-bold;
-        color: var(--text-tertiary);
-
-        @include mobile {
-          font-size: $font-size-md;
-        }
-      }
-    }
+  .trophy-badge {
+    width: 40px; height: 40px; border-radius: $border-radius-full;
+    background: rgba(245,158,11,.12); @include flex-center;
+    mat-icon { color: $warning-color; font-size: 22px; }
   }
 }
 
-// ===== MESSAGE D'ÉGALITÉ =====
+.highlight-body { padding: $spacing-xl; @include mobile { padding: $spacing-lg; } }
+
+.team-showcase { display: flex; flex-direction: column; gap: $spacing-lg; }
+
+.team-name-display {
+  display: flex; align-items: center; gap: $spacing-md;
+  .team-icon { color: var(--primary-color); font-size: 24px; }
+  h3 { margin: 0; font-size: $font-size-xl; font-weight: $font-weight-bold; }
+}
+
+.team-stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: $spacing-md;
+  @include mobile { grid-template-columns: repeat(2, 1fr); gap: $spacing-sm; }
+
+  .stat-item { @include card-base; padding: $spacing-md; display: flex; align-items: center; gap: $spacing-sm;
+    .stat-icon { width: 36px; height: 36px; border-radius: $border-radius-md; @include flex-center; flex-shrink: 0;
+      &.victories { background: rgba(16,185,129,.1); mat-icon { color: $success-color; } }
+      &.matches   { background: rgba(37,99,235,.1);  mat-icon { color: var(--primary-color); } }
+      &.win-rate  { background: rgba(245,158,11,.1); mat-icon { color: $warning-color; } }
+      &.goals     { background: rgba(239,68,68,.1);  mat-icon { color: $error-color; } }
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    }
+    .stat-content { .stat-value { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; } .stat-label { display: block; font-size: 11px; color: var(--text-tertiary); } }
+  }
+}
+
+.record-display {
+  display: flex; align-items: center; justify-content: center; gap: $spacing-md;
+  padding: $spacing-md; background: var(--background-secondary); border-radius: $border-radius-lg;
+
+  .record-item { text-align: center;
+    .record-count { display: block; font-size: $font-size-2xl; font-weight: $font-weight-bold; }
+    .record-label { display: block; font-size: $font-size-xs; color: var(--text-tertiary); text-transform: uppercase; }
+    &.win  .record-count { color: $success-color; }
+    &.draw .record-count { color: $warning-color; }
+    &.loss .record-count { color: $error-color; }
+  }
+  .record-separator { font-size: $font-size-xl; color: var(--text-tertiary); }
+}
+
+// Égalité message
 .equality-message-card {
   @include card-base;
-  padding: $spacing-2xl;
-  margin-bottom: $spacing-2xl;
+  padding: $spacing-xl;
   text-align: center;
-  background: linear-gradient(135deg, rgba($info-color, 0.05), rgba($info-color, 0.02));
-  border: 2px solid rgba($info-color, 0.2);
-
-  @include mobile {
-    padding: $spacing-xl;
-    margin-bottom: $spacing-xl;
+  .equality-header { display: flex; align-items: center; justify-content: center; gap: $spacing-md; margin-bottom: $spacing-lg;
+    mat-icon { font-size: 28px; width: 28px; height: 28px; color: var(--text-secondary); }
+    h3 { margin: 0; font-size: $font-size-lg; font-weight: $font-weight-semibold; }
   }
-
-  .equality-header {
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-lg;
-    margin-bottom: $spacing-xl;
-
-    mat-icon {
-      font-size: 64px;
-      color: $info-color;
-      animation: balance 2s ease-in-out infinite;
-
-      @include mobile {
-        font-size: 48px;
-      }
-    }
-
-    h3 {
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-      margin: 0;
-
-      @include mobile {
-        font-size: $font-size-lg;
-      }
-    }
-  }
-
-  .equality-content {
-    p {
-      font-size: $font-size-md;
-      color: var(--text-secondary);
-      margin-bottom: $spacing-lg;
-      line-height: 1.6;
-
-      @include mobile {
-        font-size: $font-size-sm;
-      }
-    }
-
-    .teams-equality {
-      @include flex-center;
-      gap: $spacing-md;
-      padding: $spacing-lg;
-      background: rgba($success-color, 0.1);
-      border-radius: $border-radius-lg;
-      color: $success-color;
-      font-weight: $font-weight-semibold;
-
-      mat-icon {
-        font-size: 24px;
-      }
-    }
+  .teams-equality { display: inline-flex; align-items: center; gap: $spacing-sm; font-size: $font-size-sm; color: var(--text-secondary);
+    mat-icon { font-size: 18px; }
   }
 }
 
-// ===== JOUEURS DU MOIS =====
+// Awards cards joueurs
 .monthly-players-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: $spacing-xl;
-
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-lg;
-  }
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-lg;
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  @include tablet { grid-template-columns: repeat(2, 1fr); }
 }
 
 .player-award-card {
   @include card-base;
   overflow: hidden;
-  transition: $transition-base;
   position: relative;
+  border-top: 3px solid var(--border-color);
 
-  &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: $shadow-xl;
-  }
+  &.scorer-card  { border-top-color: $success-color; }
+  &.assister-card{ border-top-color: var(--primary-color); }
+  &.motm-card    { border-top-color: $warning-color; }
 
   .award-ribbon {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: linear-gradient(135deg, $accent-orange, lighten($accent-orange, 15%));
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    @include flex-center;
-    box-shadow: $shadow-lg;
-    z-index: 2;
-    animation: float-ribbon 3s ease-in-out infinite;
-
-    @include mobile {
-      width: 60px;
-      height: 60px;
-      top: -5px;
-      right: -5px;
-    }
-
-    mat-icon {
-      font-size: 36px;
-      color: white;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-
-      @include mobile {
-        font-size: 28px;
-      }
-    }
+    position: absolute; top: $spacing-md; right: $spacing-md;
+    width: 32px; height: 32px; border-radius: $border-radius-full;
+    background: var(--background-tertiary); @include flex-center;
+    mat-icon { font-size: 18px; color: var(--text-secondary); }
   }
 
-  .card-header-award {
-    padding: $spacing-xl $spacing-xl $spacing-lg;
-    text-align: center;
-
-    @include mobile {
-      padding: $spacing-lg;
-    }
-
-    h3 {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-      margin: 0 0 $spacing-sm 0;
-
-      @include mobile {
-        font-size: $font-size-md;
-      }
-    }
-
-    p {
-      font-size: $font-size-sm;
-      color: var(--text-secondary);
-      margin: 0;
-      font-weight: $font-weight-medium;
-
-      @include mobile {
-        font-size: $font-size-xs;
-      }
-    }
+  .card-header-award { padding: $spacing-lg $spacing-xl;
+    h3 { margin: 0 0 2px; font-size: $font-size-sm; font-weight: $font-weight-semibold; }
+    p  { margin: 0; font-size: $font-size-xs; color: var(--text-tertiary); }
   }
 
   .card-body-award {
-    padding: 0 $spacing-xl $spacing-2xl;
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-lg;
-
-    @include mobile {
-      padding: 0 $spacing-lg $spacing-xl;
-      gap: $spacing-md;
-    }
+    padding: 0 $spacing-xl $spacing-xl;
+    display: flex; align-items: center; gap: $spacing-md;
+    @include mobile { padding: 0 $spacing-lg $spacing-lg; }
 
     .player-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      @include flex-center;
-      color: white;
-      font-size: $font-size-2xl;
-      font-weight: $font-weight-bold;
-      text-transform: uppercase;
-      box-shadow: $shadow-lg;
-      border: 4px solid white;
-
-      @include mobile {
-        width: 80px;
-        height: 80px;
-        font-size: $font-size-xl;
-      }
-
-      &.gold {
-        background: linear-gradient(135deg, $accent-orange, lighten($accent-orange, 15%));
-      }
-
-      &.silver {
-        background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
-        color: #666;
-      }
-
-      &.star {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-      }
+      width: 48px; height: 48px; border-radius: $border-radius-full; @include flex-center;
+      font-size: $font-size-xl; font-weight: $font-weight-bold; color: white; flex-shrink: 0;
+      &.gold   { background: linear-gradient(135deg, #b45309, #f59e0b); }
+      &.silver { background: linear-gradient(135deg, #64748b, #94a3b8); }
+      &.star   { background: linear-gradient(135deg, #1a3a8a, #2563eb); }
     }
 
-    .player-details {
-      text-align: center;
-      width: 100%;
-
-      .player-name {
-        font-size: $font-size-lg;
-        font-weight: $font-weight-bold;
-        color: var(--text-primary);
-        margin: 0 0 $spacing-xs 0;
-
-        @include mobile {
-          font-size: $font-size-md;
-        }
-      }
-
-      .player-team {
-        font-size: $font-size-sm;
-        color: var(--primary-color);
-        font-weight: $font-weight-semibold;
-        margin: 0;
-
-        @include mobile {
-          font-size: $font-size-xs;
-        }
-      }
+    .player-details { flex: 1; min-width: 0;
+      .player-name { margin: 0 0 2px; font-size: $font-size-sm; font-weight: $font-weight-bold; @include text-truncate; }
+      .player-team { margin: 0; font-size: $font-size-xs; color: var(--text-tertiary); @include text-truncate; }
     }
 
-    .achievement-stats {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-md;
-      padding-top: $spacing-lg;
-      border-top: 2px solid var(--border-color);
-
-      .achievement-number {
-        @include flex-center;
-        flex-direction: column;
-        gap: $spacing-xs;
-        padding: $spacing-lg;
-        background: var(--background-tertiary);
-        border-radius: $border-radius-lg;
-
-        .number {
-          font-size: $font-size-3xl;
-          font-weight: $font-weight-bold;
-          background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          line-height: 1;
-
-          @include mobile {
-            font-size: $font-size-2xl;
-          }
-        }
-
-        .label {
-          font-size: $font-size-sm;
-          color: var(--text-secondary);
-          font-weight: $font-weight-semibold;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-
-          @include mobile {
-            font-size: $font-size-xs;
-          }
-        }
-      }
-
-      .achievement-detail {
-        @include flex-center;
-        gap: $spacing-sm;
-        padding: $spacing-md;
-        background: rgba(var(--primary-rgb), 0.05);
-        border-radius: $border-radius-md;
-
-        mat-icon {
-          font-size: 20px;
-          color: var(--primary-color);
-        }
-
-        span {
-          font-size: $font-size-sm;
-          color: var(--text-secondary);
-          font-weight: $font-weight-medium;
-
-          @include mobile {
-            font-size: $font-size-xs;
-          }
-        }
+    .achievement-stats { text-align: right; flex-shrink: 0;
+      .achievement-number { .number { display: block; font-size: $font-size-2xl; font-weight: $font-weight-bold; color: var(--primary-color); } .label { display: block; font-size: 10px; color: var(--text-tertiary); } }
+      .achievement-detail { display: flex; align-items: center; gap: 3px; justify-content: flex-end; font-size: 11px; color: var(--text-secondary); margin-top: 3px;
+        mat-icon { font-size: 13px; width: 13px; height: 13px; }
       }
     }
   }
 }
 
-// ===== MÉTRIQUES PERSONNELLES =====
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: $spacing-xl;
+// ── Métriques personnelles ───────────────────────────────────────
+.metrics-section { display: flex; flex-direction: column; gap: $spacing-lg; }
 
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-lg;
-  }
+.metrics-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-lg;
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  @include tablet { grid-template-columns: repeat(3, 1fr); }
 }
 
 .metric-card {
-  @include card-base;
+  border-radius: $border-radius-xl; overflow: hidden; position: relative;
   padding: $spacing-xl;
-  position: relative;
-  overflow: hidden;
-  transition: $transition-base;
+  @include mobile { padding: $spacing-lg; }
 
-  @include mobile {
-    padding: $spacing-lg;
-  }
-
-  &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: $shadow-xl;
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    z-index: 1;
-  }
-
-  &.primary-gradient::before {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  }
-
-  &.success-gradient::before {
-    background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
-  }
-
-  &.warning-gradient::before {
-    background: linear-gradient(135deg, $warning-color, darken($warning-color, 10%));
-  }
-
-  .metric-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-lg;
-  }
-
-  .metric-icon-container {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    border-radius: $border-radius-lg;
-    width: 60px;
-    height: 60px;
-    @include flex-center;
-    box-shadow: $shadow-md;
-
-    @include mobile {
-      width: 48px;
-      height: 48px;
+  .metric-header { @include flex-between; margin-bottom: $spacing-lg;
+    .metric-icon-container { width: 44px; height: 44px; border-radius: $border-radius-lg; background: rgba(255,255,255,.2); @include flex-center;
+      .metric-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
     }
-
-    .metric-icon {
-      color: white;
-      font-size: 28px;
-
-      @include mobile {
-        font-size: 24px;
-      }
-    }
-  }
-
-  .metric-trend, .metric-badge {
-    background: rgba($success-color, 0.1);
-    border-radius: $border-radius-full;
-    padding: $spacing-sm;
-
-    .trend-icon {
-      color: $success-color;
-      font-size: 20px;
-
-      &.up {
-        animation: bounce 2s infinite;
-      }
-    }
-  }
-
-  .metric-badge {
-    background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
-    color: white;
-    font-weight: $font-weight-semibold;
-    min-width: 24px;
-    height: 24px;
-    @include flex-center;
-    font-size: $font-size-xs;
+    .metric-trend { .trend-icon.up { color: rgba(255,255,255,.8); } }
+    .metric-badge { font-size: $font-size-xs; background: rgba(255,255,255,.2); color: white; padding: 2px 8px; border-radius: $border-radius-full; font-weight: $font-weight-bold; }
   }
 
   .metric-content {
-    text-align: center;
-    margin: $spacing-lg 0;
-
-    .metric-value {
-      font-size: $font-size-3xl;
-      font-weight: $font-weight-bold;
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-      margin-bottom: $spacing-sm;
-    }
-
-    .metric-label {
-      font-size: $font-size-md;
-      font-weight: $font-weight-semibold;
-      color: var(--text-primary);
-      margin-bottom: $spacing-xs;
-
-      @include mobile {
-        font-size: $font-size-sm;
-      }
-    }
-
-    .metric-sublabel {
-      font-size: $font-size-sm;
-      color: var(--text-secondary);
-
-      @include mobile {
-        font-size: $font-size-xs;
-      }
-    }
+    .metric-value { font-size: 42px; font-weight: $font-weight-bold; color: white; line-height: 1; margin-bottom: $spacing-xs; }
+    .metric-label { font-size: $font-size-sm; color: rgba(255,255,255,.9); font-weight: $font-weight-semibold; }
+    .metric-sublabel { font-size: $font-size-xs; color: rgba(255,255,255,.7); }
   }
 
   .metric-footer {
-    @include flex-center;
-    gap: $spacing-sm;
-    margin-top: $spacing-lg;
-
-    .progress-bar {
-      flex: 1;
-      height: 6px;
-      background: rgba(var(--primary-rgb), 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-        border-radius: 3px;
-        transition: width 1s ease-in-out;
-      }
-    }
-
-    .footer-text {
-      font-size: $font-size-sm;
-      color: var(--text-secondary);
-      font-weight: $font-weight-medium;
-
-      @include mobile {
-        font-size: $font-size-xs;
-      }
-    }
-
-    .status-icon {
-      color: $success-color;
-      font-size: 18px;
+    display: flex; align-items: center; gap: $spacing-sm; margin-top: $spacing-lg; padding-top: $spacing-lg; border-top: 1px solid rgba(255,255,255,.2);
+    .status-icon { font-size: 16px; width: 16px; height: 16px; color: rgba(255,255,255,.8); }
+    .footer-text { font-size: $font-size-xs; color: rgba(255,255,255,.8); }
+    .progress-bar { flex: 1; height: 4px; background: rgba(255,255,255,.2); border-radius: $border-radius-full; overflow: hidden;
+      .progress-fill { height: 100%; background: rgba(255,255,255,.8); border-radius: $border-radius-full; transition: width .6s ease; }
     }
   }
+
+  &.primary-gradient { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+  &.success-gradient { background: linear-gradient(135deg, #0f6e56, #10b981); }
+  &.warning-gradient { background: linear-gradient(135deg, #854f0b, #f59e0b); }
 }
 
-// ===== SANCTIONS =====
-.sanctions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: $spacing-xl;
+// ── Sanctions ────────────────────────────────────────────────────
+.sanctions-section { display: flex; flex-direction: column; gap: $spacing-lg; }
 
-  @include mobile {
-    grid-template-columns: 1fr;
-    gap: $spacing-lg;
-  }
+.sanctions-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-lg;
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
 }
 
 .sanction-card {
-  @include card-base;
-  overflow: hidden;
-  transition: $transition-base;
+  @include card-base; overflow: hidden;
+  border-top: 3px solid var(--border-color);
+  &.paid-theme   { border-top-color: $success-color; }
+  &.unpaid-theme { border-top-color: $error-color; }
+  &.cards-theme  { border-top-color: $warning-color; }
+}
 
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: $shadow-xl;
+.card-header-modern {
+  display: flex; align-items: center; gap: $spacing-md;
+  padding: $spacing-lg $spacing-xl;
+  background: var(--background-secondary); border-bottom: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-md $spacing-lg; }
+
+  .header-icon { width: 36px; height: 36px; border-radius: $border-radius-md; @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    .paid-theme   & { background: rgba(16,185,129,.1); mat-icon { color: $success-color; } }
+    .unpaid-theme & { background: rgba(239,68,68,.1);  mat-icon { color: $error-color; } }
+    .cards-theme  & { background: rgba(245,158,11,.1); mat-icon { color: $warning-color; } }
   }
 
-  .card-header-modern {
-    padding: $spacing-xl;
-    display: flex;
-    align-items: center;
-    gap: $spacing-lg;
-    color: white;
-    position: relative;
-    overflow: hidden;
-
-    @include mobile {
-      padding: $spacing-lg;
-      gap: $spacing-md;
-    }
-
-    .header-icon {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: $border-radius-md;
-      width: 48px;
-      height: 48px;
-      @include flex-center;
-
-      @include mobile {
-        width: 40px;
-        height: 40px;
-      }
-
-      mat-icon {
-        font-size: 24px;
-
-        @include mobile {
-          font-size: 20px;
-        }
-      }
-    }
-
-    .header-content {
-      flex: 1;
-
-      h3 {
-        margin: 0 0 $spacing-xs 0;
-        font-size: $font-size-lg;
-        font-weight: $font-weight-bold;
-
-        @include mobile {
-          font-size: $font-size-md;
-        }
-      }
-
-      p {
-        margin: 0;
-        opacity: 0.9;
-        font-size: $font-size-sm;
-
-        @include mobile {
-          font-size: $font-size-xs;
-        }
-      }
-    }
-
-    .amount-badge {
-      padding: $spacing-sm $spacing-lg;
-      border-radius: $border-radius-full;
-      font-weight: $font-weight-semibold;
-      font-size: $font-size-sm;
-
-      @include mobile {
-        padding: $spacing-xs $spacing-md;
-        font-size: $font-size-xs;
-      }
-
-      &.success {
-        background: rgba($success-color, 0.2);
-        color: white;
-      }
-
-      &.alert {
-        background: rgba($error-color, 0.2);
-        color: white;
-        animation: pulse 2s infinite;
-      }
-    }
+  .header-content { flex: 1;
+    h3 { margin: 0 0 2px; font-size: $font-size-sm; font-weight: $font-weight-semibold; }
+    p  { margin: 0; font-size: $font-size-xs; color: var(--text-secondary); }
   }
 
-  .card-body {
-    padding: $spacing-xl;
-
-    @include mobile {
-      padding: $spacing-lg;
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      padding: $spacing-md $spacing-lg;
-      border-radius: $border-radius-md;
-      font-weight: $font-weight-medium;
-
-      &.positive {
-        background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.05));
-        color: $success-color;
-      }
-
-      &.negative {
-        background: linear-gradient(135deg, rgba($error-color, 0.1), rgba($error-color, 0.05));
-        color: $error-color;
-      }
-    }
-
-    .cards-summary {
-      display: flex;
-      gap: $spacing-lg;
-      justify-content: center;
-
-      @include mobile {
-        flex-direction: column;
-        gap: $spacing-md;
-      }
-
-      .card-stat {
-        display: flex;
-        align-items: center;
-        gap: $spacing-md;
-        padding: $spacing-lg;
-        border-radius: $border-radius-md;
-        flex: 1;
-
-        @include mobile {
-          padding: $spacing-md;
-        }
-
-        &.yellow {
-          background: linear-gradient(135deg, rgba($warning-color, 0.1), rgba($warning-color, 0.05));
-
-          .card-icon mat-icon {
-            color: $warning-color;
-          }
-        }
-
-        &.red {
-          background: linear-gradient(135deg, rgba($error-color, 0.1), rgba($error-color, 0.05));
-
-          .card-icon mat-icon {
-            color: $error-color;
-          }
-        }
-
-        .card-info {
-          @include flex-center;
-          flex-direction: column;
-
-          .card-count {
-            font-size: $font-size-xl;
-            font-weight: $font-weight-bold;
-            line-height: 1;
-
-            @include mobile {
-              font-size: $font-size-lg;
-            }
-          }
-
-          .card-label {
-            font-size: $font-size-xs;
-            opacity: 0.8;
-          }
-        }
-      }
-    }
-  }
-
-  &.paid-theme .card-header-modern {
-    background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
-  }
-
-  &.unpaid-theme .card-header-modern {
-    background: linear-gradient(135deg, $error-color, darken($error-color, 10%));
-  }
-
-  &.cards-theme .card-header-modern {
-    background: linear-gradient(135deg, $warning-color, darken($warning-color, 10%));
+  .amount-badge { font-size: $font-size-xs; font-weight: $font-weight-bold; padding: 3px 9px; border-radius: $border-radius-full; white-space: nowrap;
+    &.success { background: rgba(16,185,129,.1); color: $success-color; }
+    &.alert   { background: rgba(239,68,68,.1);  color: $error-color; }
   }
 }
 
-// ===== FOOTER HARMONISÉ =====
+.card-body { padding: $spacing-lg $spacing-xl; @include mobile { padding: $spacing-md $spacing-lg; } }
+
+.status-indicator { display: flex; align-items: center; gap: $spacing-sm; font-size: $font-size-sm; padding: $spacing-sm $spacing-md; border-radius: $border-radius-md;
+  &.positive { background: rgba(16,185,129,.08); color: $success-color; }
+  &.negative { background: rgba(239,68,68,.06);  color: $error-color; }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.cards-summary { display: flex; gap: $spacing-xl; justify-content: center; padding: $spacing-md;
+  .card-stat { display: flex; align-items: center; gap: $spacing-md;
+    .card-icon { width: 36px; height: 36px; border-radius: $border-radius-md; @include flex-center;
+      mat-icon { font-size: 24px; width: 24px; height: 24px; }
+    }
+    &.yellow .card-icon { background: rgba(245,158,11,.15); mat-icon { color: #f59e0b; } }
+    &.red    .card-icon { background: rgba(239,68,68,.15);  mat-icon { color: $error-color; } }
+    .card-count { display: block; font-size: $font-size-2xl; font-weight: $font-weight-bold; }
+    .card-label { display: block; font-size: $font-size-xs; color: var(--text-tertiary); }
+  }
+}
+
+// ── Contributions ────────────────────────────────────────────────
+.contributions-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: $spacing-lg;
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+}
+
+.contribution-item {
+  @include card-base;
+  padding: $spacing-lg $spacing-xl;
+  @include mobile { padding: $spacing-md $spacing-lg; }
+
+  h6 { font-size: $font-size-sm; font-weight: $font-weight-semibold; margin: 0; @include text-truncate; }
+  .alerte-icon { font-size: 16px; width: 16px; height: 16px; color: $warning-color; vertical-align: middle; }
+
+  .amount-row { @include flex-between; margin: $spacing-md 0; align-items: baseline;
+    .amount-value { font-size: $font-size-lg; font-weight: $font-weight-bold; color: $success-color; }
+    .amount-separator { color: var(--text-tertiary); margin: 0 3px; }
+    .amount-total { font-size: $font-size-sm; color: var(--text-secondary); }
+    .amount-currency { font-size: $font-size-xs; color: var(--text-tertiary); margin-left: 2px; }
+    .amount-percentage { font-size: $font-size-sm; font-weight: $font-weight-bold; color: var(--text-primary); }
+  }
+
+  .progress { height: 6px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden;
+    .progress-bar { height: 100%; border-radius: $border-radius-full; transition: width .4s ease;
+      &.bg-success { background: $success-color; }
+      &.bg-warning { background: $warning-color; }
+    }
+  }
+}
+
+// ── Footer ───────────────────────────────────────────────────────
 .dashboard-footer {
-  padding: $spacing-xl;
-  margin: $spacing-xl;
-  background: var(--background-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: $border-radius-xl;
+  padding: $spacing-lg $spacing-2xl;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  @include mobile { padding: $spacing-md; }
+
+  .footer-stats { display: flex; align-items: center; gap: $spacing-xl; flex-wrap: wrap;
+    @include mobile { gap: $spacing-md; }
+    .footer-item { display: flex; align-items: center; gap: $spacing-sm; font-size: $font-size-xs; color: var(--text-tertiary);
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    }
+  }
+}
+
+
+
+// Utilitaires
+.text-xs { font-size: $font-size-xs !important; }
+.text-muted { color: var(--text-tertiary) !important; }
+.text-success { color: $success-color !important; }
+.text-danger { color: $error-color !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-2 { margin-bottom: $spacing-md !important; }
+.mt-2 { margin-top: $spacing-md !important; }
+.text-truncate { @include text-truncate; }
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.align-items-baseline { align-items: baseline; }
+.Reste-text { font-size: $font-size-xs; font-weight: $font-weight-semibold; }
+
+// ── Mini stats row (stats perso + sanctions compactes) ───────────
+.mini-stats-row {
+  display: flex; gap: $spacing-md;
+  @include mobile { gap: $spacing-sm; }
+}
+
+.mini-stat {
+  flex: 1; display: flex; align-items: center; gap: $spacing-sm;
+  @include card-base; padding: $spacing-md;
+  min-width: 0;
+
+  mat-icon { font-size: 22px; width: 22px; height: 22px; flex-shrink: 0; color: var(--primary-color); }
+
+  .mini-stat-text { display: flex; flex-direction: column; min-width: 0; }
+  .mini-stat-val  { font-size: $font-size-lg; font-weight: $font-weight-bold; color: var(--text-primary); line-height: 1.1;
+    @include mobile { font-size: $font-size-md; } }
+  .mini-stat-lbl  { font-size: 11px; color: var(--text-tertiary); @include text-truncate;
+    @include mobile { font-size: 10px; } }
+
+  &.primary mat-icon { color: var(--primary-color); }
+  &.success mat-icon { color: $success-color; }
+  &.warning mat-icon { color: $warning-color; }
+  &.danger  mat-icon { color: $error-color; }
+  &.cards-mini mat-icon { color: var(--text-secondary); }
+
+  @include mobile { padding: $spacing-sm; gap: 6px; }
+}
+
+.card-pill {
+  display: inline-block; min-width: 18px; text-align: center; padding: 0 4px;
+  border-radius: $border-radius-sm; font-size: 11px; font-weight: $font-weight-bold; color: #1a0a00;
+  &.yellow { background: #fde047; }
+  &.red    { background: #fca5a5; color: #7f1d1d; margin-left: 4px; }
+}
+
+.content{
+  padding-bottom: calc($bottom-nav-height + env(safe-area-inset-bottom) + spacing)
+}
+
+.content {
+  padding: $spacing-2xl;
+  // Espace pour la bottom nav sur mobile
+  padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
 
   @include mobile {
     padding: $spacing-lg;
-    margin: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
   }
 
-  .footer-stats {
-    @include flex-center;
-    gap: $spacing-2xl;
-    flex-wrap: wrap;
-
-    @include mobile {
-      flex-direction: column;
-      gap: $spacing-lg;
-    }
-
-    .footer-item {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      color: var(--text-secondary);
-      font-size: $font-size-sm;
-
-      @include mobile {
-        font-size: $font-size-xs;
-      }
-
-      mat-icon {
-        opacity: 0.7;
-        font-size: 20px;
-
-        @include mobile {
-          font-size: 18px;
-        }
-      }
-    }
+  @include desktop {
+    padding-bottom: $spacing-2xl;
   }
 }
+// ════════════════════════════════════════════════════════════
+// COTISATIONS EN COURS
+// ════════════════════════════════════════════════════════════
 
-// ===== ANIMATIONS =====
-@keyframes fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.contributions-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
 }
 
-@keyframes shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes rotate-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes bounce-trophy {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-10px) rotate(-5deg); }
-  50% { transform: translateY(0) rotate(0deg); }
-  75% { transform: translateY(-5px) rotate(5deg); }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8)); }
-  50% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1)); }
-}
-
-@keyframes float-ribbon {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(5deg); }
-}
-
-@keyframes balance {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba($error-color, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba($error-color, 0); }
-  100% { box-shadow: 0 0 0 0 rgba($error-color, 0); }
-}
-
-// ===== RESPONSIVE SPÉCIFIQUE =====
-@media (max-width: 480px) {
-  .content {
-    padding: $spacing-md;
-  }
-
-  .filters-container,
-  .section-header,
-  .month-selector-card,
-  .monthly-highlight-card,
-  .equality-message-card,
-  .dashboard-footer {
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  .team-name-display {
-    h3 {
-      font-size: $font-size-xl;
-      letter-spacing: 1px;
-    }
-  }
-
-  .team-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .monthly-players-grid {
-    gap: $spacing-md;
-  }
-
-  .metrics-grid,
-  .sanctions-grid {
-    gap: $spacing-md;
-  }
-}
-
-
-/* dashboard.component.scss */
-
-.fa-exclamation-triangle {
-  animation: blink-animation 2s steps(5, start) infinite;
-}
-
-@keyframes blink-animation {
-  to {
-    visibility: hidden;
-  }
+.contributions-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
 .contribution-card {
-  padding: 1.25rem;
-  border-bottom: 1px solid #edf2f9;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: #f8fafd;
-  }
-  
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.badge {
-  font-weight: 500;
-  padding: 0.5em 0.8em;
-  border-radius: 6px;
-}
-
-.alerte-icon {
-  animation: pulse-red 2s infinite;
-}
-
-@keyframes pulse-red {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-// Pour masquer la section équipe si non statique
-.meilleure-equipe-section {
-  display: block;
-  &.hidden {
-    display: none;
-  }
-}
-
-// ===== SECTION CONTRIBUTIONS =====
-
-.contribution-item {
+  @include card-base;
   padding: $spacing-lg;
-  border-radius: $border-radius-lg;
-  background: var(--background-paper);
-  border: 1px solid var(--divider-color);
+  border-top: 3px solid var(--border-color);
+  transition: border-color .2s ease;
+
+  &.complete { border-top-color: $success-color; }
+  &.alert    { border-top-color: $warning-color; }
+
+  @include mobile { padding: $spacing-md; }
+}
+
+.contribution-top {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
   margin-bottom: $spacing-md;
-  transition: all 0.3s ease;
+}
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: $shadow-md;
-    border-color: var(--primary-color-light);
+.contribution-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: $border-radius-lg;
+  @include flex-center;
+  flex-shrink: 0;
+  background: rgba(37,99,235,.1);
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--primary-color); }
+
+  .contribution-card.complete & { background: rgba(16,185,129,.1); mat-icon { color: $success-color; } }
+  .contribution-card.alert    & { background: rgba(245,158,11,.1); mat-icon { color: $warning-color; } }
+}
+
+.contribution-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .contribution-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+    @include text-truncate;
   }
 
-  .contribution-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: $spacing-sm;
-  }
-
-  .title-group {
+  .contribution-deadline {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-
-    h6 {
-      margin: 0;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: var(--text-tertiary);
+    mat-icon { font-size: 13px; width: 13px; height: 13px; }
   }
 }
 
-// ===== ICONE D'ALERTE ANIMÉE =====
-.alerte-icon {
-  color: #ef4444; // Rouge vibrant
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  cursor: help;
-  animation: alerte-pulse 1.5s infinite;
+.contribution-status-pill {
+  font-size: 10px;
+  font-weight: $font-weight-bold;
+  padding: 3px 10px;
+  border-radius: $border-radius-full;
+  background: rgba(16,185,129,.1);
+  color: $success-color;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.alert { background: rgba(245,158,11,.12); color: $warning-color; }
 }
 
-@keyframes alerte-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.7;
-    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5));
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+// ── Barre de progression ─────────────────────────────────────
+.contribution-progress {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
 }
 
-// ===== BADGES DE STATUT =====
-.badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  &.badge-success {
-    background-color: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-
-  &.badge-warning {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.2);
-  }
-
-  &.badge-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-  }
-}
-
-// ===== BARRE DE PROGRESSION =====
-.progress {
-  background-color: var(--background-tertiary);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-
-  .progress-bar {
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 10px;
-
-    &.bg-success {
-      background: linear-gradient(90deg, #10b981, #34d399);
-    }
-
-    &.bg-warning {
-      background: linear-gradient(90deg, #f59e0b, #fbbf24);
-    }
-  }
-}
-
-// ===== DEBUG ZONE (Optionnel) =====
-pre {
-  background: #1e1e1e;
-  color: #dcdcdc;
-  padding: 15px;
-  border-radius: 8px;
-  font-size: 12px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-.contribution-amounts {
-  .label {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    display: block;
-    margin-bottom: -2px;
-  }
-
-  .amount-paid {
-    .value {
-      font-size: 16px;
-      font-weight: 700;
-      color: #10b981; // Vert pour ce qui est déjà acquis
-    }
-  }
-
-  .amount-total {
-    .value-total {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-  }
-}
-
-.text-danger {
-  font-weight: 600;
-}
-
-.amount-row {
-  .amount-detail {
-    .amount-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #10b981; // Vert
-    }
-    
-    .amount-separator {
-      color: var(--text-secondary);
-      margin: 0 4px;
-      font-weight: 300;
-    }
-    
-    .amount-total {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .amount-currency {
-      font-size: 0.75rem;
-      margin-left: 4px;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-  }
-
-  .amount-percentage {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-secondary);
-    background: var(--background-tertiary);
-    padding: 2px 8px;
-    border-radius: 4px;
-  }
-}
-
-// Animation pour l'icône warning
-.alerte-icon {
-  font-size: 18px;
-  height: 18px;
-  width: 18px;
-  vertical-align: middle;
-  color: #ef4444;
-  animation: pulse-red 2s infinite;
-}
-
-@keyframes pulse-red {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
-}
-.contributions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); // Aligne sur la même ligne
-  gap: $spacing-lg; // Espace entre les cartes
+.progress-bar-track {
   width: 100%;
+  height: 8px;
+  border-radius: $border-radius-full;
+  background: var(--background-tertiary);
+  overflow: hidden;
+}
 
-  @include mobile {
-    grid-template-columns: 1fr; // Une seule colonne sur petit écran
-  }
+.progress-bar-fill {
+  height: 100%;
+  border-radius: $border-radius-full;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+  transition: width .6s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.complete { background: linear-gradient(90deg, #10b981, #059669); }
+  &.alert    { background: linear-gradient(90deg, #f59e0b, #d97706); }
+}
+
+.progress-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: $font-size-xs;
+
+  .amount-paid  { font-weight: $font-weight-bold; color: var(--text-primary); }
+  .amount-sep   { color: var(--text-tertiary); }
+  .amount-total { color: var(--text-tertiary); }
 }

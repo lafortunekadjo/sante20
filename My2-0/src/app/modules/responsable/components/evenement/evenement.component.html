@@ -1,0 +1,257 @@
+<div class="evenement-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'evenement.management' | translate }}</h1>
+          <p class="page-subtitle">{{ 'evenement.managementSubtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ dataSource.data.length }}</span>
+          <span class="stat-label">{{ 'evenement.totalEvents' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'evenement.loadingData' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+    <!-- Bouton de création -->
+    <div class="action-buttons">
+      <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+        <mat-icon>add</mat-icon>
+        <span>{{ 'evenement.createEvent' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Formulaire de création -->
+    <div *ngIf="showCreateRow" class="demande-card create-card">
+      <div class="demande-header">
+        <div class="groupe-info">
+          <div class="groupe-avatar">
+            <mat-icon class="discipline-icon">add_circle</mat-icon>
+          </div>
+          <div class="groupe-details">
+            <h3 class="groupe-nom">{{ 'evenement.newEvent' | translate }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="demande-content">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'evenement.eventName' | translate }}</mat-label>
+          <input matInput [(ngModel)]="newEvenement.nomEvenement" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'evenement.description' | translate }}</mat-label>
+          <textarea matInput [(ngModel)]="newEvenement.description" required></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'evenement.eventDate' | translate }}</mat-label>
+          <input matInput [matDatepicker]="picker" [(ngModel)]="newEvenement.dateEvenement" required>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'evenement.eventType' | translate }}</mat-label>
+          <mat-select [(ngModel)]="newEvenement.typeEvenement" required>
+            <mat-option value="ANNIVERSAIRE">{{ 'evenement.birthday' | translate }}</mat-option>
+            <mat-option value="DECES">{{ 'evenement.death' | translate }}</mat-option>
+            <mat-option value="MARIAGE">{{ 'evenement.marriage' | translate }}</mat-option>
+            <mat-option value="BAPTEME">{{ 'evenement.baptism' | translate }}</mat-option>
+            <mat-option value="AUTRE">{{ 'evenement.other' | translate }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-checkbox [(ngModel)]="newEvenement.estContributionOuverte">{{ 'evenement.openContributions' | translate }}</mat-checkbox>
+        <!-- <mat-form-field appearance="outline" *ngIf="newEvenement.estContributionOuverte">
+          <mat-label>{{ 'evenement.contributionDeadline' | translate }}</mat-label>
+          <input matInput [matDatepicker]="pickerDelai" [(ngModel)]="newEvenement.delaiContribution" required>
+          <mat-datepicker-toggle matSuffix [for]="pickerDelai"></mat-datepicker-toggle>
+          <mat-datepicker #pickerDelai></mat-datepicker>
+        </mat-form-field> -->
+        <!-- <mat-form-field appearance="outline" *ngIf="newEvenement.estContributionOuverte">
+          <mat-label>{{ 'evenement.targetAmount' | translate }}</mat-label>
+          <input matInput type="number" [(ngModel)]="newEvenement.montantCible" required>
+        </mat-form-field> -->
+      </div>
+      <div class="demande-actions">
+        <div class="primary-actions">
+          <button mat-raised-button color="primary" (click)="saveEvenement()" [disabled]="!isCreateFormValid()">
+            <mat-icon>save</mat-icon>
+            <span>{{ 'common.save' | translate }}</span>
+          </button>
+          <button mat-stroked-button color="warn" (click)="cancelCreate()">
+            <mat-icon>cancel</mat-icon>
+            <span>{{ 'common.cancel' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau des événements -->
+    <div class="table-wrapper" *ngIf="dataSource.data.length > 0">
+      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+        <ng-container matColumnDef="idEvenement">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.id' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement">{{ evenement.idEvenement }}</td>
+        </ng-container>
+        <ng-container matColumnDef="nomEvenement">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventName' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editNom">
+              {{ evenement.nomEvenement }}
+            </ng-container>
+            <ng-template #editNom>
+              <mat-form-field appearance="outline">
+                <input matInput [(ngModel)]="editEvenement.nomEvenement" required>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.description' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editDesc">
+              {{ evenement.description }}
+            </ng-container>
+            <ng-template #editDesc>
+              <mat-form-field appearance="outline">
+                <textarea matInput [(ngModel)]="editEvenement.description" required></textarea>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="dateEvenement">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventDate' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editDate">
+              {{ evenement.dateEvenement | date:'dd/MM/yyyy' }}
+            </ng-container>
+            <ng-template #editDate>
+              <mat-form-field appearance="outline">
+                <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editEvenement.dateEvenement" required>
+                <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
+                <mat-datepicker #pickerEdit></mat-datepicker>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="typeEvenement">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventType' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editType">
+              {{ evenement.typeEvenement | translate }}
+            </ng-container>
+            <ng-template #editType>
+              <mat-form-field appearance="outline">
+                <mat-select [(ngModel)]="editEvenement.typeEvenement" required>
+                  <mat-option value="ANNIVERSAIRE">{{ 'evenement.birthday' | translate }}</mat-option>
+                  <mat-option value="DECES">{{ 'evenement.death' | translate }}</mat-option>
+                  <mat-option value="MARIAGE">{{ 'evenement.marriage' | translate }}</mat-option>
+                  <mat-option value="BAPTEME">{{ 'evenement.baptism' | translate }}</mat-option>
+                  <mat-option value="AUTRE">{{ 'evenement.other' | translate }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="estContributionOuverte">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.openContributions' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editOpen">
+              <mat-icon [color]="evenement.estContributionOuverte ? 'primary' : 'warn'">
+                {{ evenement.estContributionOuverte ? 'check_circle' : 'cancel' }}
+              </mat-icon>
+            </ng-container>
+            <ng-template #editOpen>
+              <mat-checkbox [(ngModel)]="editEvenement.estContributionOuverte"></mat-checkbox>
+            </ng-template>
+          </td>
+        </ng-container>
+        <!-- <ng-container matColumnDef="delaiContribution">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.contributionDeadline' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editDelai">
+              {{ evenement.delaiContribution | date:'dd/MM/yyyy' }}
+            </ng-container>
+            <ng-template #editDelai>
+              <mat-form-field appearance="outline" *ngIf="editEvenement.estContributionOuverte">
+                <input matInput [matDatepicker]="pickerDelaiEdit" [(ngModel)]="editEvenement.delai" required>
+                <mat-datepicker-toggle matSuffix [for]="pickerDelaiEdit"></mat-datepicker-toggle>
+                <mat-datepicker #pickerDelaiEdit></mat-datepicker>
+              </mat-form-field>
+            </ng-template>
+          </td>
+        </ng-container> -->
+        <!-- <ng-container matColumnDef="montantCible">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.targetAmount' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]; else editCible">
+              {{ evenement.montantCible | number }} FCFA
+            </ng-container>
+        
+          </td>
+        </ng-container> -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
+          <td mat-cell *matCellDef="let evenement; let i = index">
+            <ng-container *ngIf="!editingRows[i]">
+              <div class="action-buttons-horizontal">
+                <!-- <button mat-icon-button color="primary" (click)="saveEdit(evenement)">
+                  <mat-icon>edit</mat-icon>
+                </button> -->
+                <button mat-icon-button color="warn" (click)="openDeleteDialog(evenement.idEvenement)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="editingRows[i]">
+              <div class="action-buttons-horizontal">
+                <!-- <button mat-raised-button color="primary" (click)="saveEdit(i)" >
+                  {{ 'common.save' | translate }}
+                </button> -->
+                <!-- <button mat-raised-button color="warn" (click)="cancelEdit(i)">
+                  {{ 'common.cancel' | translate }}
+                </button> -->
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+      <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="dataSource.data.length === 0">
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">event_busy</mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'evenement.noEvents' | translate }}</h3>
+        <p class="empty-text">{{ 'evenement.noEventsMessage' | translate }}</p>
+        <div class="empty-actions">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+            <mat-icon>add</mat-icon>
+            <span>{{ 'evenement.createEvent' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

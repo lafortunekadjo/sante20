@@ -1,0 +1,238 @@
+<!-- Formulaire Entreprise - Nouvelle mise en page -->
+<div class="form-page">
+  
+  <!-- Header -->
+  <div class="form-page-header">
+    <button mat-icon-button (click)="cancel()" class="back-btn">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="header-info">
+      <h1>{{ getTitle() }}</h1>
+      <p>{{ isEditMode ? 'Modifiez les informations de ' + entreprise?.nom : 'Ajoutez une nouvelle entreprise à votre espace partenaire' }}</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Chargement...</span>
+  </div>
+
+  <!-- Formulaire -->
+  <div class="form-content" *ngIf="!isLoading">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      
+      <!-- Tabs -->
+      <mat-tab-group animationDuration="200ms" class="form-tabs">
+        
+        <!-- Tab 1: Informations -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>info</mat-icon>
+            <span>{{ 'partenaire.entreprises.form.tabs.info' | translate }}</span>
+          </ng-template>
+          
+          <div class="tab-panel">
+            <h3 class="section-label">Informations générales</h3>
+            
+            <div class="fields-grid">
+              <!-- Nom -->
+              <mat-form-field appearance="outline" class="field-md">
+                <mat-label>{{ 'partenaire.entreprises.form.name' | translate }} *</mat-label>
+                <mat-icon matPrefix>business</mat-icon>
+                <input matInput formControlName="nom" [placeholder]="'partenaire.entreprises.form.namePlaceholder' | translate">
+                <mat-error *ngIf="form.get('nom')?.hasError('required')">Le nom est requis</mat-error>
+              </mat-form-field>
+
+              <!-- Slogan -->
+              <mat-form-field appearance="outline" class="field-md">
+                <mat-label>{{ 'partenaire.entreprises.form.slogan' | translate }}</mat-label>
+                <mat-icon matPrefix>format_quote</mat-icon>
+                <input matInput formControlName="slogan" [placeholder]="'partenaire.entreprises.form.sloganPlaceholder' | translate">
+                <mat-hint align="end">{{ form.get('slogan')?.value?.length || 0 }} / 150</mat-hint>
+              </mat-form-field>
+
+              <!-- Catégorie -->
+              <mat-form-field appearance="outline" class="field-md">
+                <mat-label>{{ 'partenaire.entreprises.form.category' | translate }} *</mat-label>
+                <mat-icon matPrefix>category</mat-icon>
+                <mat-select formControlName="categorie">
+                  <mat-option *ngFor="let cat of categories" [value]="cat.value">
+                    {{ cat.labelKey | translate }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('categorie')?.hasError('required')">La catégorie est requise</mat-error>
+              </mat-form-field>
+
+              <!-- Description -->
+              <mat-form-field appearance="outline" class="field-full">
+                <mat-label>{{ 'partenaire.entreprises.form.description' | translate }}</mat-label>
+                <textarea matInput formControlName="description" rows="4" [placeholder]="'partenaire.entreprises.form.descriptionPlaceholder' | translate"></textarea>
+                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }} / 500</mat-hint>
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Tab 2: Contact -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>phone</mat-icon>
+            <span>{{ 'partenaire.entreprises.form.tabs.contact' | translate }}</span>
+          </ng-template>
+          
+          <div class="tab-panel">
+            <h3 class="section-label">Coordonnées</h3>
+            
+            <div class="fields-grid">
+              <!-- Téléphone -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.phone' | translate }}</mat-label>
+                <mat-icon matPrefix>phone</mat-icon>
+                <input matInput formControlName="telephone" [placeholder]="'partenaire.entreprises.form.phonePlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- Email -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.email' | translate }}</mat-label>
+                <mat-icon matPrefix>email</mat-icon>
+                <input matInput type="email" formControlName="email" [placeholder]="'partenaire.entreprises.form.emailPlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- Site web -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.website' | translate }}</mat-label>
+                <mat-icon matPrefix>language</mat-icon>
+                <input matInput formControlName="siteWeb" [placeholder]="'partenaire.entreprises.form.websitePlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- WhatsApp -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.whatsapp' | translate }}</mat-label>
+                <mat-icon matPrefix>chat</mat-icon>
+                <input matInput formControlName="whatsapp" [placeholder]="'partenaire.entreprises.form.whatsappPlaceholder' | translate">
+              </mat-form-field>
+            </div>
+
+            <h3 class="section-label">Réseaux sociaux</h3>
+            
+            <div class="fields-grid">
+              <!-- Facebook -->
+              <mat-form-field appearance="outline" class="field-md">
+                <mat-label>{{ 'partenaire.entreprises.form.facebook' | translate }}</mat-label>
+                <mat-icon matPrefix>facebook</mat-icon>
+                <input matInput formControlName="facebookUrl" [placeholder]="'partenaire.entreprises.form.facebookPlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- Instagram -->
+              <mat-form-field appearance="outline" class="field-md">
+                <mat-label>{{ 'partenaire.entreprises.form.instagram' | translate }}</mat-label>
+                <mat-icon matPrefix>photo_camera</mat-icon>
+                <input matInput formControlName="instagramUrl" [placeholder]="'partenaire.entreprises.form.instagramPlaceholder' | translate">
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Tab 3: Localisation -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>location_on</mat-icon>
+            <span>{{ 'partenaire.entreprises.form.tabs.location' | translate }}</span>
+          </ng-template>
+          
+          <div class="tab-panel">
+            <h3 class="section-label">Adresse</h3>
+            
+            <div class="fields-grid">
+              <!-- Adresse -->
+              <mat-form-field appearance="outline" class="field-full">
+                <mat-label>{{ 'partenaire.entreprises.form.address' | translate }}</mat-label>
+                <mat-icon matPrefix>home</mat-icon>
+                <input matInput formControlName="adresse" [placeholder]="'partenaire.entreprises.form.addressPlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- Ville -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.city' | translate }}</mat-label>
+                <mat-icon matPrefix>location_city</mat-icon>
+                <input matInput formControlName="ville" [placeholder]="'partenaire.entreprises.form.cityPlaceholder' | translate">
+              </mat-form-field>
+
+              <!-- Quartier -->
+              <mat-form-field appearance="outline" class="field-sm">
+                <mat-label>{{ 'partenaire.entreprises.form.neighborhood' | translate }}</mat-label>
+                <mat-icon matPrefix>map</mat-icon>
+                <input matInput formControlName="quartier" [placeholder]="'partenaire.entreprises.form.neighborhoodPlaceholder' | translate">
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Tab 4: Médias -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>image</mat-icon>
+            <span>{{ 'partenaire.entreprises.form.tabs.media' | translate }}</span>
+          </ng-template>
+          
+          <div class="tab-panel">
+            <div class="media-grid">
+              <!-- Logo -->
+              <div class="media-upload-card">
+                <h3 class="section-label">{{ 'partenaire.entreprises.form.logo' | translate }}</h3>
+                <p class="upload-hint">{{ 'partenaire.entreprises.form.logoHint' | translate }}</p>
+                
+                <div class="upload-area" [class.has-file]="logoPreview" (click)="logoInput.click()">
+                  <ng-container *ngIf="!logoPreview">
+                    <mat-icon>add_photo_alternate</mat-icon>
+                    <span>Cliquez pour ajouter un logo</span>
+                  </ng-container>
+                  <ng-container *ngIf="logoPreview">
+                    <img [src]="logoPreview" alt="Logo preview">
+                    <button mat-mini-fab color="warn" class="remove-btn" (click)="removeLogo(); $event.stopPropagation()">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </ng-container>
+                </div>
+                <input type="file" #logoInput hidden accept="image/*" (change)="onLogoSelected($event)">
+              </div>
+
+              <!-- Banner -->
+              <div class="media-upload-card banner">
+                <h3 class="section-label">{{ 'partenaire.entreprises.form.banner' | translate }}</h3>
+                <p class="upload-hint">{{ 'partenaire.entreprises.form.bannerHint' | translate }}</p>
+                
+                <div class="upload-area banner-area" [class.has-file]="bannerPreview" (click)="bannerInput.click()">
+                  <ng-container *ngIf="!bannerPreview">
+                    <mat-icon>panorama</mat-icon>
+                    <span>Cliquez pour ajouter une bannière</span>
+                  </ng-container>
+                  <ng-container *ngIf="bannerPreview">
+                    <img [src]="bannerPreview" alt="Banner preview">
+                    <button mat-mini-fab color="warn" class="remove-btn" (click)="removeBanner(); $event.stopPropagation()">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </ng-container>
+                </div>
+                <input type="file" #bannerInput hidden accept="image/*" (change)="onBannerSelected($event)">
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button mat-button type="button" (click)="cancel()">
+          {{ 'partenaire.entreprises.form.cancel' | translate }}
+        </button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="isSaving || form.invalid">
+          <mat-spinner diameter="18" *ngIf="isSaving"></mat-spinner>
+          <mat-icon *ngIf="!isSaving">save</mat-icon>
+          <span>{{ isSaving ? ('partenaire.entreprises.form.saving' | translate) : ('partenaire.entreprises.form.save' | translate) }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

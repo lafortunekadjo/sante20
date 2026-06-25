@@ -1,0 +1,324 @@
+<div class="contribution-form-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'contribution.management' | translate }}</h1>
+          <p class="page-subtitle">{{ 'contribution.managementSubtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ dataSource.data.length }}</span>
+          <span class="stat-label">{{ 'contribution.totalIndividual' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'contribution.loadingData' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+    <!-- Filtres harmonisés -->
+    <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <h3>{{ 'common.filterBy' | translate }}</h3>
+        </div>
+      </div>
+      <div class="filter-chips">
+        <div class="filter-row">
+          <mat-form-field appearance="outline" class="search-filter">
+            <mat-label>{{ 'contribution.searchName' | translate }}</mat-label>
+            <input matInput (keyup)="applySearchFilter($event)" />
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="type-filter">
+            <mat-label>{{ 'contribution.type' | translate }}</mat-label>
+            <mat-select [(ngModel)]="selectedType" (selectionChange)="applyTypeFilter($event.value)">
+              <mat-option value="">{{ 'common.all' | translate }}</mat-option>
+              <mat-option *ngFor="let type of contributions$" [value]="type.id">
+                {{ type.commentaire }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+          </mat-form-field>
+        </div>
+        
+        <div class="filter-row">
+          <mat-form-field appearance="outline" class="amount-filter">
+            <mat-label>{{ 'contribution.minAmount' | translate }}</mat-label>
+            <input matInput type="number" [(ngModel)]="minAmount" (input)="applyAmountFilter()" />
+            <mat-icon matPrefix>arrow_downward</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="amount-filter">
+            <mat-label>{{ 'contribution.maxAmount' | translate }}</mat-label>
+            <input matInput type="number" [(ngModel)]="maxAmount" (input)="applyAmountFilter()" />
+            <mat-icon matPrefix>arrow_upward</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <form [formGroup]="dateRangeForm" class="date-filter-form">
+          <div class="filter-row">
+            <mat-form-field appearance="outline" class="date-filter">
+              <mat-label>{{ 'contribution.dateFrom' | translate }}</mat-label>
+              <input matInput [matDatepicker]="pickerStart" formControlName="start" (dateChange)="applyDateFilter()" />
+              <mat-datepicker-toggle matSuffix [for]="pickerStart"></mat-datepicker-toggle>
+              <mat-datepicker #pickerStart></mat-datepicker>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="date-filter">
+              <mat-label>{{ 'contribution.dateTo' | translate }}</mat-label>
+              <input matInput [matDatepicker]="pickerEnd" formControlName="end" (dateChange)="applyDateFilter()" />
+              <mat-datepicker-toggle matSuffix [for]="pickerEnd"></mat-datepicker-toggle>
+              <mat-datepicker #pickerEnd></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bouton de création -->
+    <div class="action-buttons">
+      <button mat-raised-button color="primary" (click)="toggleCreateRow()" class="add-button">
+        <mat-icon>add</mat-icon>
+        <span class="button-text">{{ 'contribution.create' | translate }}</span>
+      </button>
+    </div>
+
+    <!-- Formulaire de création -->
+    <div *ngIf="showCreateRow" class="demande-card create-card">
+      <div class="demande-header">
+        <div class="groupe-info">
+          <div class="groupe-avatar">
+            <mat-icon class="discipline-icon">add_circle</mat-icon>
+          </div>
+          <div class="groupe-details">
+            <h3 class="groupe-nom">{{ 'contribution.newIndividual' | translate }}</h3>
+          </div>
+        </div>
+      </div>
+      <div class="demande-content">
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'contribution.member' | translate }}</mat-label>
+            <mat-select [(ngModel)]="newContribution.idMembre" required>
+              <mat-option *ngFor="let membre of membres" [value]="membre.id">{{ membre.prenom + ' ' + membre.nom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'contribution.contribution' | translate }}</mat-label>
+            <mat-select [(ngModel)]="newContribution.idContribution" required>
+              <mat-option *ngFor="let contrib of contributions$" [value]="contrib.id">{{ contrib.commentaire }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'contribution.amount' | translate }}</mat-label>
+            <input matInput type="number" [(ngModel)]="newContribution.montant" required>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'contribution.date' | translate }}</mat-label>
+            <input matInput [matDatepicker]="pickerNew" [(ngModel)]="newContribution.dateContribution" required>
+            <mat-datepicker-toggle matSuffix [for]="pickerNew"></mat-datepicker-toggle>
+            <mat-datepicker #pickerNew></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="demande-actions">
+        <div class="primary-actions">
+          <button mat-raised-button color="primary" (click)="saveContribution()" [disabled]="!isCreateFormValid()" class="action-button">
+            <mat-icon>save</mat-icon>
+            <span class="button-text">{{ 'common.save' | translate }}</span>
+          </button>
+          <button mat-stroked-button color="warn" (click)="cancelCreate()" class="action-button">
+            <mat-icon>cancel</mat-icon>
+            <span class="button-text">{{ 'common.cancel' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue mobile en cartes -->
+    <div class="mobile-cards-view" *ngIf="dataSource.data.length > 0">
+      <div class="contribution-card" *ngFor="let contribution of dataSource.data; let i = index">
+        <div class="card-header">
+          <div class="card-title">
+            <mat-icon class="card-icon">account_balance_wallet</mat-icon>
+            <div class="title-content">
+              <h4 class="contribution-type">{{ contribution.contribution.commentaire }}</h4>
+              <span class="member-name">{{ contribution.membre.prenom }} {{ contribution.membre?.nom }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <ng-container *ngIf="!editingRows[i]; else editActionsMobile">
+              <button mat-icon-button color="primary" (click)="editRow(i, contribution)" class="action-btn">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="openDeleteDialog(contribution)" class="action-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </ng-container>
+            <ng-template #editActionsMobile>
+              <button mat-icon-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()" class="action-btn">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="cancelEdit(i)" class="action-btn">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="card-content">
+          <div class="info-grid">
+            <div class="info-item highlight">
+              <label class="info-label">{{ 'contribution.amount' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editMontantMobile">
+                  <span class="amount-value">{{ contribution.montant | number }} FCFA</span>
+                </ng-container>
+                <ng-template #editMontantMobile>
+                  <mat-form-field appearance="outline" class="mobile-field">
+                    <input matInput type="number" [(ngModel)]="editContribution.montant" required>
+                  </mat-form-field>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <label class="info-label">{{ 'contribution.date' | translate }}</label>
+              <div class="info-value">
+                <ng-container *ngIf="!editingRows[i]; else editDateMobile">
+                  <span class="date-value">{{ contribution.dateContribution | date:'dd/MM/yyyy' }}</span>
+                </ng-container>
+                <ng-template #editDateMobile>
+                  <mat-form-field appearance="outline" class="mobile-field">
+                    <input matInput [matDatepicker]="pickerEditMobile" [(ngModel)]="editContribution.dateContribution" required>
+                    <mat-datepicker-toggle matSuffix [for]="pickerEditMobile"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerEditMobile></mat-datepicker>
+                  </mat-form-field>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="info-item full-width">
+              <label class="info-label">{{ 'contribution.member' | translate }}</label>
+              <div class="info-value">
+                <span class="member-full">{{ contribution.membre.prenom }} {{ contribution.membre?.nom }}</span>
+              </div>
+            </div>
+
+            <div class="info-item full-width">
+              <label class="info-label">{{ 'contribution.type' | translate }}</label>
+              <div class="info-value">
+                <span class="type-badge">{{ contribution.contribution.commentaire }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue desktop (tableau) -->
+    <div class="desktop-table-view">
+      <div class="table-wrapper" *ngIf="dataSource.data.length > 0">
+        <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+          <ng-container matColumnDef="contribution">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.id' | translate }}</th>
+            <td mat-cell *matCellDef="let contribution">{{ contribution.contribution?.commentaire }}</td>
+          </ng-container>
+          <ng-container matColumnDef="membre">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.member' | translate }}</th>
+            <td mat-cell *matCellDef="let contribution">{{ contribution.membre?.nom }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="montant">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.amount' | translate }}</th>
+            <td mat-cell *matCellDef="let contribution; let i = index">
+              <ng-container *ngIf="!editingRows[i]; else editMontant">
+                {{ contribution.montant | number }} FCFA
+              </ng-container>
+              <ng-template #editMontant>
+                <mat-form-field appearance="outline">
+                  <input matInput type="number" [(ngModel)]="editContribution.montant" required>
+                </mat-form-field>
+              </ng-template>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="dateContribution">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'contribution.date' | translate }}</th>
+            <td mat-cell *matCellDef="let contribution; let i = index">
+              <ng-container *ngIf="!editingRows[i]; else editDate">
+                {{ contribution.dateContribution | date:'dd/MM/yyyy' }}
+              </ng-container>
+              <ng-template #editDate>
+                <mat-form-field appearance="outline">
+                  <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editContribution.dateContribution" required>
+                  <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
+                  <mat-datepicker #pickerEdit></mat-datepicker>
+                </mat-form-field>
+              </ng-template>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
+            <td mat-cell *matCellDef="let contribution; let i = index">
+              <ng-container *ngIf="!editingRows[i]">
+                <div class="action-buttons-horizontal">
+                  <button mat-icon-button color="primary" (click)="editRow(i, contribution)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="openDeleteDialog(contribution)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="editingRows[i]">
+                <div class="action-buttons-horizontal">
+                  <button mat-raised-button color="primary" (click)="saveEdit(i)" [disabled]="!isEditFormValid()">
+                    {{ 'common.save' | translate }}
+                  </button>
+                  <button mat-raised-button color="warn" (click)="cancelEdit(i)">
+                    {{ 'common.cancel' | translate }}
+                  </button>
+                </div>
+              </ng-container>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="dataSource.data.length === 0">
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">account_balance_wallet</mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'contribution.noContributions' | translate }}</h3>
+        <p class="empty-text">{{ 'contribution.noContributionsMessage' | translate }}</p>
+        <div class="empty-actions">
+          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
+            <mat-icon>add</mat-icon>
+            <span>{{ 'contribution.create' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

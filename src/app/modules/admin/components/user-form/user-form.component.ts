@@ -111,6 +111,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   hidePassword = true;
   viewMode: 'grid' | 'list' = 'grid';
+  activeTab: 'list'|'filter'|'create' = 'list';
   isAdmin=false;
   currentUser: any; // Pour stocker l'utilisateur connecté
   isResponsable: boolean = false;

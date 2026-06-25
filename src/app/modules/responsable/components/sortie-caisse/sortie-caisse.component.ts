@@ -83,6 +83,7 @@ interface TypeDepense {
   styleUrl: './sortie-caisse.component.scss'
 })
 export class SortieCaisseComponent implements OnInit {
+  activeTab: 'form'|'pending'|'history' = 'form';
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   showForm: boolean = false;

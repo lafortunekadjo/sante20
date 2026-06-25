@@ -328,6 +328,10 @@ export class InvitationService {
   soumettreVote(voteData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/votes/soumettre`, voteData);
   }
+
+   getTendances(groupeId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/votes/tendances/${groupeId}`);
+  }
   
   
 

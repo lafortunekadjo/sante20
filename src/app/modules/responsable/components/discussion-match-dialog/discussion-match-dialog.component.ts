@@ -17,6 +17,7 @@ import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
 import { DiscussionMatch, DiscussionMatchService, MessageDiscussionMatch } from '../../../../core/services/discussion-match.service';
+import { CryptoService } from '../../../../core/services/crypto.service';
 
 export interface DiscussionMatchDialogData {
   defiMatchId: number;
@@ -52,6 +53,7 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
   isLoading = true;
   isSending = false;
   currentUserId: number | null = null;
+  private pollingSub!: Subscription;
   
   private refreshSubscription?: Subscription;
 
@@ -60,40 +62,103 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: DiscussionMatchDialogData,
     private discussionService: DiscussionMatchService,
     private authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cryptoService: CryptoService
   ) {}
 
+
   ngOnInit(): void {
-    this.currentUserId = this.authService.getUserId();
-    this.chargerDiscussion();
-    
-    // Rafraîchir les messages toutes les 5 secondes
-    this.refreshSubscription = interval(5000).pipe(
-      switchMap(() => {
-        if (this.discussion) {
-          return this.discussionService.getDiscussion(this.discussion.id);
-        }
-        return [];
-      })
-    ).subscribe({
-      next: (discussion: any) => {
-        if (discussion && this.discussion) {
-          const anciennesTaille = this.discussion.messages.length;
-          this.discussion = discussion;
+  this.loadDiscussion(true);
+  
+  // Polling toutes les 5 secondes
+  this.pollingSub = interval(5000).pipe(
+    switchMap(() => this.discussionService.getDiscussion(this.data.defiMatchId))
+  ).subscribe({
+    next: (data) => {
+      if (data && data.messages) {
+        // 🔥 On décrypte STRICTEMENT la propriété 'contenu'
+        data.messages = data.messages.map(msg => ({
+          ...msg,
+          contenu: this.cryptoService.dechiffrer(msg.contenu, data.id)
+        }));
+        
+        const hasNewMessages = this.discussion 
+          ? data.messages.length > this.discussion.messages.length 
+          : false;
           
-          // Scroller si nouveaux messages
-          if (discussion.messages.length > anciennesTaille) {
-            setTimeout(() => this.scrollToBottom(), 100);
-          }
+        this.discussion = data;
+        if (hasNewMessages) {
+          setTimeout(() => this.scrollToBottom(), 100);
         }
-      },
-      error: (err) => console.error('Erreur rafraîchissement:', err)
-    });
+      }
+    }
+  });
+}
+
+  loadDiscussion(isFirstLoad = false): void {
+  if (isFirstLoad) this.isLoading = true;
+
+  this.discussionService.getDiscussion(this.data.defiMatchId).subscribe({
+    next: (data) => {
+      if (data) {
+        // 🔥 On décrypte STRICTEMENT la propriété 'contenu' au premier chargement
+        if (data.messages) {
+          data.messages = data.messages.map(msg => ({
+            ...msg,
+            contenu: this.cryptoService.dechiffrer(msg.contenu, data.id)
+          }));
+        }
+
+        this.discussion = data;
+        setTimeout(() => this.scrollToBottom(), 100);
+      }
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Erreur chargement discussion:', err);
+      this.snackBar.open('Erreur lors du chargement de la discussion', 'Fermer', { duration: 3000 });
+      this.isLoading = false;
+    }
+  });
+}
+ envoyerMessage(): void {
+  if (!this.nouveauMessage.trim() || !this.discussion) {
+    return;
   }
 
+  this.isSending = true;
+  const texteBrut = this.nouveauMessage.trim();
+
+  // Chiffrement avant envoi
+  const texteChiffre = this.cryptoService.chiffrer(texteBrut, this.discussion.id);
+
+  this.discussionService.envoyerMessage({
+    discussionId: this.discussion.id,
+    contenu: texteChiffre
+  }).subscribe({
+    next: (messageEnregistre) => {
+      if (this.discussion) {
+        // 🔥 TRÈS IMPORTANT : On force l'affichage du texte en clair localement
+        // pour éviter qu'il n'affiche la version cryptée juste après le clic.
+        messageEnregistre.contenu = texteBrut;
+        
+        this.discussion.messages.push(messageEnregistre);
+        this.nouveauMessage = '';
+        this.isSending = false;
+        
+        setTimeout(() => this.scrollToBottom(), 100);
+      }
+    },
+    error: (err) => {
+      console.error('Erreur envoi message:', err);
+      this.snackBar.open('Erreur lors de l\'envoi du message', 'Fermer', { duration: 3000 });
+      this.isSending = false;
+    }
+  });
+}
   ngOnDestroy(): void {
-    if (this.refreshSubscription) {
-      this.refreshSubscription.unsubscribe();
+   if (this.pollingSub) {
+      this.pollingSub.unsubscribe();
     }
   }
 
@@ -117,35 +182,35 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
     });
   }
 
-  envoyerMessage(): void {
-    if (!this.nouveauMessage.trim() || !this.discussion) {
-      return;
-    }
+  // envoyerMessage(): void {
+  //   if (!this.nouveauMessage.trim() || !this.discussion) {
+  //     return;
+  //   }
 
-    this.isSending = true;
+  //   this.isSending = true;
 
-    this.discussionService.envoyerMessage({
-      discussionId: this.discussion.id,
-      contenu: this.nouveauMessage.trim()
-    }).subscribe({
-      next: (message) => {
-        if (this.discussion) {
-          this.discussion.messages.push(message);
-          this.nouveauMessage = '';
-          this.isSending = false;
+  //   this.discussionService.envoyerMessage({
+  //     discussionId: this.discussion.id,
+  //     contenu: this.nouveauMessage.trim()
+  //   }).subscribe({
+  //     next: (message) => {
+  //       if (this.discussion) {
+  //         this.discussion.messages.push(message);
+  //         this.nouveauMessage = '';
+  //         this.isSending = false;
           
-          setTimeout(() => this.scrollToBottom(), 100);
-        }
-      },
-      error: (err) => {
-        console.error('Erreur envoi message:', err);
-        this.snackBar.open('Erreur lors de l\'envoi du message', 'Fermer', {
-          duration: 3000
-        });
-        this.isSending = false;
-      }
-    });
-  }
+  //         setTimeout(() => this.scrollToBottom(), 100);
+  //       }
+  //     },
+  //     error: (err) => {
+  //       console.error('Erreur envoi message:', err);
+  //       this.snackBar.open('Erreur lors de l\'envoi du message', 'Fermer', {
+  //         duration: 3000
+  //       });
+  //       this.isSending = false;
+  //     }
+  //   });
+  // }
 
   estMonMessage(message: MessageDiscussionMatch): boolean {
     return message.auteurId === this.currentUserId;

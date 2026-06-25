@@ -1,184 +1,209 @@
 <div class="announcement-admin-glass-container">
-  
-  <div class="module-header glass-effect">
-    <div class="header-icon-wrapper">
-      <mat-icon class="gold-icon">campaign</mat-icon>
+
+  <!-- ══ HEADER GRADIENT ══════════════════════════════ -->
+  <div class="an-header">
+    <div class="an-title-group">
+      <div class="an-icon"><mat-icon>campaign</mat-icon></div>
+      <div>
+        <h1>{{ 'announcement.admin.title' | translate }}</h1>
+        <p>{{ 'announcement.admin.subtitle' | translate }}</p>
+      </div>
     </div>
-    <div class="header-text">
-      <h1>{{ 'announcement.admin.title' | translate }}</h1>
-      <p class="subtitle">{{ 'announcement.admin.subtitle' | translate }}</p>
-    </div>
-  </div>
-  
-  <div class="actions-bar glass-effect">
-    <button mat-raised-button color="primary" class="btn-create" (click)="toggleForm()">
-      <mat-icon>{{ showForm ? 'close' : 'add' }}</mat-icon>
-      {{ showForm ? ('common.cancel' | translate) : ('announcement.add' | translate) }}
-    </button>
-
-    <mat-form-field appearance="outline" class="search-field glass-field">
-      <mat-label>{{ 'common.search' | translate }}</mat-label>
-      <input matInput [(ngModel)]="searchTerm" (input)="applySearch()" placeholder="Ex: Entraînement de ce soir">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="filter-field glass-field">
-      <mat-label>{{ 'announcement.filter.team' | translate }}</mat-label>
-      <mat-select [(value)]="selectedEquipe" (selectionChange)="filterByEquipe($event.value)">
-        <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
-        <mat-option *ngFor="let eq of equipes" [value]="eq.id">
-          {{ eq.nom }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="filter-field glass-field">
-      <mat-label>{{ 'announcement.filter.role' | translate }}</mat-label>
-      <mat-select [(value)]="selectedRole" (selectionChange)="filterByRole($event.value)">
-        <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
-        <mat-option *ngFor="let role of roles" [value]="role.id">
-          {{ role.nom | translate }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+    <span class="an-count" *ngIf="filteredAnnouncements.length > 0">{{ filteredAnnouncements.length }}</span>
   </div>
 
-  <mat-card class="announcement-form-card glass-effect" *ngIf="showForm">
-    <mat-card-header>
-      <mat-card-title class="gold-title">
-        {{ isEditing ? ('announcement.edit.title' | translate) : ('announcement.create.title' | translate) }}
-      </mat-card-title>
-    </mat-card-header>
-    
-    <mat-card-content>
-      <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()" class="announcement-form">
-        
-        <mat-form-field appearance="outline" class="full-width glass-field">
-          <mat-label>{{ 'announcement.form.title' | translate }} *</mat-label>
-          <input matInput formControlName="title" placeholder="Ex: Rappel important : Entraînement">
-          <mat-error *ngIf="announcementForm.get('title')?.invalid">
-            {{ 'announcement.errors.title' | translate }}
-          </mat-error>
-        </mat-form-field>
+  <!-- ══ TABS STICKY ══════════════════════════════════ -->
+  <div class="an-tabs-wrapper">
+    <div class="an-tabs-bar">
+      <button class="an-tab" [class.active]="activeTab === 'list'" (click)="activeTab = 'list'">
+        <mat-icon>campaign</mat-icon>
+        <span>{{ 'announcement.list.title' | translate }}</span>
+        <span class="an-tab-badge" *ngIf="filteredAnnouncements.length > 0">{{ filteredAnnouncements.length }}</span>
+      </button>
+      <button class="an-tab" [class.active]="activeTab === 'filter'" (click)="activeTab = 'filter'">
+        <mat-icon>tune</mat-icon>
+        <span>{{ 'commun.filtres.titre' | translate }}</span>
+      </button>
+      <button class="an-tab" [class.active]="activeTab === 'create'"
+              (click)="activeTab = 'create'; toggleForm()">
+        <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
+        <span>{{ (isEditing ? 'announcement.edit.title' : 'announcement.create.title') | translate }}</span>
+      </button>
+    </div>
 
-        <mat-form-field appearance="outline" class="full-width glass-field">
-          <mat-label>{{ 'announcement.form.content' | translate }} *</mat-label>
-          <textarea matInput formControlName="content" rows="5" placeholder="Écrivez votre annonce ici..."></textarea>
-          <mat-error *ngIf="announcementForm.get('content')?.invalid">
-            {{ 'announcement.errors.content' | translate }}
-          </mat-error>
-        </mat-form-field>
+    <!-- ── TAB LISTE ─────────────────────────────────── -->
+    <div class="an-tab-content" *ngIf="activeTab === 'list'">
+      <div class="an-content">
 
-        <div class="targeting-row">
-          <mat-form-field appearance="outline" class="glass-field">
-            <mat-label>{{ 'announcement.form.targetTeam' | translate }}</mat-label>
-            <mat-select formControlName="equipeId">
-              <mat-option [value]="null">{{ 'announcement.target.allTeams' | translate }}</mat-option>
-              <mat-option *ngFor="let eq of equipes" [value]="eq.id">
-                {{ eq.nom }}
-              </mat-option>
+        <!-- Recherche -->
+        <div class="an-search">
+          <mat-icon>search</mat-icon>
+          <input type="text" [(ngModel)]="searchTerm" (input)="applySearch()"
+                 placeholder="Ex: Entraînement de ce soir">
+        </div>
+
+        <!-- État vide -->
+        <div class="an-empty" *ngIf="filteredAnnouncements.length === 0">
+          <mat-icon>campaign</mat-icon>
+          <p>{{ 'announcement.list.empty' | translate }}</p>
+        </div>
+
+        <!-- Liste -->
+        <div class="an-list">
+          <div class="an-item" *ngFor="let actu of filteredAnnouncements"
+               [class.disabled-announcement]="actu.actifSeulement === false">
+
+            <div class="ai-header">
+              <div class="ai-avatar">📢</div>
+              <div class="ai-title-group">
+                <h3>
+                  {{ actu.title }}
+                  <span *ngIf="actu.actifSeulement === false" class="ai-inactive-badge">
+                    ({{ 'common.inactive' | translate }})
+                  </span>
+                </h3>
+                <span class="ai-subtitle">
+                  {{ actu.date | date:'dd/MM/yyyy HH:mm' }}
+                  <span *ngIf="actu.createur"> • Par {{ actu.createur.nom }}</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="ai-body">
+              <p class="ai-text">
+                <ng-container *ngIf="shouldTruncate(actu.content) && !isExpanded(actu.id)">
+                  {{ actu.content | slice:0:maxTextLength }}...
+                </ng-container>
+                <ng-container *ngIf="!shouldTruncate(actu.content) || isExpanded(actu.id)">
+                  {{ actu.content }}
+                </ng-container>
+              </p>
+              <button *ngIf="shouldTruncate(actu.content)" type="button" class="ai-read-more" (click)="toggleExpand(actu.id)">
+                {{ (isExpanded(actu.id) ? 'common.readLess' : 'common.readMore') | translate }}
+              </button>
+            </div>
+
+            <div class="ai-footer">
+              <div class="ai-tags">
+                <span class="ai-badge ai-badge-team" *ngIf="actu.equipeId">
+                  👥 {{ getTeamName(actu.equipeId) }}
+                </span>
+                <span class="ai-badge ai-badge-role" *ngIf="actu.roleCible">
+                  🔑 {{ getRoleName(actu.roleCible) }}
+                </span>
+                <span class="ai-badge ai-badge-global" *ngIf="!actu.equipeId && !actu.roleCible">
+                  🌍 {{ 'announcement.target.global' | translate }}
+                </span>
+              </div>
+
+              <div class="ai-actions">
+                <button mat-icon-button
+                        (click)="toggleAnnouncementStatus(actu)"
+                        [color]="actu.actifSeulement !== false ? 'primary' : 'default'"
+                        [matTooltip]="(actu.actifSeulement !== false ? 'common.deactivate' : 'common.activate') | translate">
+                  <mat-icon>{{ actu.actifSeulement !== false ? 'visibility' : 'visibility_off' }}</mat-icon>
+                </button>
+                <button mat-icon-button (click)="editAnnouncement(actu); activeTab = 'create'" color="accent">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button (click)="deleteAnnouncement(actu.id)" color="warn">
+                  <mat-icon>delete_forever</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TAB FILTRES ───────────────────────────────── -->
+    <div class="an-tab-content" *ngIf="activeTab === 'filter'">
+      <div class="an-content">
+        <div class="an-filter-card">
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'announcement.filter.team' | translate }}</mat-label>
+            <mat-icon matPrefix>groups</mat-icon>
+            <mat-select [(value)]="selectedEquipe" (selectionChange)="filterByEquipe($event.value)">
+              <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
+              <mat-option *ngFor="let eq of equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="glass-field">
-            <mat-label>{{ 'announcement.form.targetRole' | translate }}</mat-label>
-            <mat-select formControlName="roleCible">
-              <mat-option [value]="null">{{ 'announcement.target.allRoles' | translate }}</mat-option>
-              <mat-option *ngFor="let role of roles" [value]="role.id">
-                {{ role.nom | translate }}
-              </mat-option>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'announcement.filter.role' | translate }}</mat-label>
+            <mat-icon matPrefix>badge</mat-icon>
+            <mat-select [(value)]="selectedRole" (selectionChange)="filterByRole($event.value)">
+              <mat-option value="all">{{ 'common.all' | translate }}</mat-option>
+              <mat-option *ngFor="let role of roles" [value]="role.id">{{ role.nom | translate }}</mat-option>
             </mat-select>
           </mat-form-field>
-        </div>
 
-        <div class="form-actions">
-          <button mat-button type="button" class="btn-cancel" (click)="toggleForm()">
-            {{ 'common.cancel' | translate }}
-          </button>
-          <button mat-raised-button color="primary" class="btn-submit" type="submit" [disabled]="announcementForm.invalid">
-            {{ isEditing ? ('common.update' | translate) : ('common.create' | translate) }}
-          </button>
+          <div class="an-filter-apply">
+            <button mat-raised-button color="primary" (click)="activeTab = 'list'">
+              <mat-icon>visibility</mat-icon>Voir les résultats ({{ filteredAnnouncements.length }})
+            </button>
+          </div>
         </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <div class="news-feed-list">
-    <div class="no-data-alert glass-effect" *ngIf="filteredAnnouncements.length === 0">
-      <mat-icon class="gold-icon">campaign</mat-icon>
-      <p>{{ 'announcement.list.empty' | translate }}</p>
+      </div>
     </div>
 
-    <mat-card class="announcement-news-item glass-effect" 
-          *ngFor="let actu of filteredAnnouncements"
-          [class.disabled-announcement]="actu.actifSeulement === false"> <mat-card-header>
-    <div mat-card-avatar class="news-avatar">📢</div>
-    <mat-card-title>
-      {{ actu.title }}
-      <span *ngIf="actu.actifSeulement === false" class="inactive-badge">
-        ({{ 'common.inactive' | translate }})
-      </span>
-    </mat-card-title>
-    <mat-card-subtitle class="muted-subtitle">
-      {{ actu.date | date:'dd/MM/yyyy HH:mm' }} 
-      <span *ngIf="actu.createur"> • Par {{ actu.createur.nom }}</span>
-    </mat-card-subtitle>
-    
-    <div class="card-admin-actions">
-      <button mat-icon-button 
-              (click)="toggleAnnouncementStatus(actu)" 
-              [color]="actu.actifSeulement !== false ? 'primary' : 'default'"
-              [matTooltip]="(actu.actifSeulement !== false ? 'common.deactivate' : 'common.activate') | translate">
-        <mat-icon>{{ actu.actifSeulement !== false ? 'visibility' : 'visibility_off' }}</mat-icon>
-      </button>
+    <!-- ── TAB CRÉER / MODIFIER ──────────────────────── -->
+    <div class="an-tab-content" *ngIf="activeTab === 'create'">
+      <div class="an-content">
+        <div class="an-form-card" *ngIf="showForm">
+          <div class="an-form-header">
+            <div class="an-form-icon"><mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon></div>
+            <h3>{{ (isEditing ? 'announcement.edit.title' : 'announcement.create.title') | translate }}</h3>
+          </div>
 
-      <button mat-icon-button (click)="editAnnouncement(actu)" color="accent">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <button mat-icon-button (click)="deleteAnnouncement(actu.id)" color="warn">
-        <mat-icon>delete_forever</mat-icon>
-      </button>
+          <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement(); activeTab = 'list'" class="an-form-body">
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>{{ 'announcement.form.title' | translate }} *</mat-label>
+              <input matInput formControlName="title" placeholder="Ex: Rappel important : Entraînement">
+              <mat-error *ngIf="announcementForm.get('title')?.invalid">
+                {{ 'announcement.errors.title' | translate }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>{{ 'announcement.form.content' | translate }} *</mat-label>
+              <textarea matInput formControlName="content" rows="5" placeholder="Écrivez votre annonce ici..."></textarea>
+              <mat-error *ngIf="announcementForm.get('content')?.invalid">
+                {{ 'announcement.errors.content' | translate }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'announcement.form.targetTeam' | translate }}</mat-label>
+              <mat-icon matPrefix>groups</mat-icon>
+              <mat-select formControlName="equipeId">
+                <mat-option [value]="null">{{ 'announcement.target.allTeams' | translate }}</mat-option>
+                <mat-option *ngFor="let eq of equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'announcement.form.targetRole' | translate }}</mat-label>
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-select formControlName="roleCible">
+                <mat-option [value]="null">{{ 'announcement.target.allRoles' | translate }}</mat-option>
+                <mat-option *ngFor="let role of roles" [value]="role.id">{{ role.nom | translate }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </form>
+
+          <div class="an-form-actions">
+            <button mat-raised-button color="primary" (click)="submitAnnouncement(); activeTab = 'list'" [disabled]="announcementForm.invalid">
+              {{ (isEditing ? 'common.update' : 'common.create') | translate }}
+            </button>
+            <button mat-stroked-button (click)="toggleForm(); activeTab = 'list'">
+              {{ 'common.cancel' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  </mat-card-header>
 
-      <mat-card-content>
-        <p class="announcement-text">
-          <ng-container *ngIf="shouldTruncate(actu.content) && !isExpanded(actu.id)">
-            {{ actu.content | slice:0:maxTextLength }}...
-          </ng-container>
-          
-          <ng-container *ngIf="!shouldTruncate(actu.content) || isExpanded(actu.id)">
-            {{ actu.content }}
-          </ng-container>
-
-         <button *ngIf="shouldTruncate(actu.content)" 
-                  type="button"
-                  class="read-more-btn" 
-                  (click)="toggleExpand(actu.id)">
-            
-            <ng-container *ngIf="isExpanded(actu.id)">
-              {{ 'common.readLess' | translate }}
-            </ng-container>
-
-            <ng-container *ngIf="!isExpanded(actu.id)">
-              {{ 'common.readMore' | translate }}
-            </ng-container>
-
-          </button>
-        </p>
-      </mat-card-content>
-
-      <mat-card-actions class="news-tags-footer">
-        <span class="news-badge badge-team" *ngIf="actu.equipeId">
-          👥 {{ getTeamName(actu.equipeId) }}
-        </span>
-        <span class="news-badge badge-role" *ngIf="actu.roleCible">
-          🔑 {{ getRoleName(actu.roleCible) }}
-        </span>
-        <span class="news-badge badge-global" *ngIf="!actu.equipeId && !actu.roleCible">
-          🌍 {{ 'announcement.target.global' | translate }}
-        </span>
-      </mat-card-actions>
-    </mat-card>
   </div>
 </div>

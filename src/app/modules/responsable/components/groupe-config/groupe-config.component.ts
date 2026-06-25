@@ -79,6 +79,9 @@ export class GroupeConfigComponent implements OnInit {
    isDialogOpen = signal(false);
    isUploadingPhoto = false;
 
+  // ── Navigation tabs ──
+  activeTab: 'info' | 'questions' | 'preview' = 'info';
+
 
    // Signal pour stocker la valeur de l'input du nom du stade
   stadeNom : string | ''='';

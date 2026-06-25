@@ -1,3 +1,5 @@
+@use '../../../../../variables' as *;
+
 $primary: #1D9E75;
 $primary-light: #E1F5EE;
 $dark: #2c3e50;
@@ -242,6 +244,20 @@ $text-muted: #6c757d;
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  @include mobile  { padding: 0 $spacing-md; }
+
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
 }
 .center-content {
   flex: 1;
@@ -551,4 +567,270 @@ th.col-sticky-player { background-color: #fdfdfd; }
 @media (max-width: 992px) {
   .main-layout { flex-direction: column; }
   .side-panel-wrapper { width: 100%; position: static; }
+}
+// ════════════════════════════════════════════════════════════
+// PATCH MOBILE-FIRST
+// ════════════════════════════════════════════════════════════
+
+// ── Container ─────────────────────────────────────────────────
+@media (max-width: 599px) {
+  .stats-container {
+    padding: 12px;
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────
+.hide-mobile { @media (max-width: 599px) { display: none !important; } }
+.hide-desktop { @media (min-width: 600px) { display: none !important; } }
+
+@media (max-width: 599px) {
+  .stats-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+
+    .title-area {
+      gap: 10px;
+      flex: 1;
+      .header-icon { font-size: 26px; width: 26px; height: 26px; }
+      h1 { font-size: 18px; }
+      .subtitle { font-size: 12px; }
+    }
+
+    .header-actions {
+      .export-btn { min-width: 44px; min-height: 44px; padding: 0 12px; }
+      .close-btn  { width: 44px; height: 44px; }
+    }
+  }
+}
+
+// ── KPIs — 2 colonnes sur mobile ──────────────────────────────
+@media (max-width: 599px) {
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .kpi-card {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 12px;
+
+    .kpi-icon-wrapper { width: 38px; height: 38px; flex-shrink: 0;
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    }
+    .kpi-content {
+      .kpi-label { font-size: 10px; }
+      .kpi-value { font-size: 17px; }
+    }
+  }
+}
+
+// ── Filtres ────────────────────────────────────────────────────
+@media (max-width: 599px) {
+  .filter-toolbar {
+    padding: 12px;
+    gap: 12px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+
+    .search-and-select {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .search-box-full {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .filter-toolbar-controls {
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .form-field-narrow {
+        width: calc(50% - 4px);
+        min-width: 0;
+      }
+    }
+  }
+
+  .period-and-view {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .period-chips-container { flex-direction: column; gap: 8px; }
+
+  .period-chips {
+    overflow-x: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+    display: flex;
+    .chip-btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; min-height: 36px; }
+  }
+
+  .custom-date-inputs {
+    flex-wrap: wrap; height: auto; padding: 8px;
+    input[type="date"] { flex: 1; min-width: 120px; }
+  }
+
+  .view-toggle {
+    align-self: flex-end;
+    .toggle-btn { width: 44px; height: 40px; }
+  }
+}
+
+// ── Tables — scroll horizontal propre ─────────────────────────
+@media (max-width: 599px) {
+  .table-responsive {
+    overflow-x: auto;                  // s'assurer que c'est bien défini
+    -webkit-overflow-scrolling: touch; // scroll inertiel iOS
+    touch-action: pan-x;               // autoriser le glissement horizontal sans déclencher le scroll de page
+    cursor: grab;
+    &:active { cursor: grabbing; }
+
+    // Ombre droite pour indiquer qu'il y a du contenu à droite
+    background:
+      linear-gradient(to right, white 30%, rgba(255,255,255,0)) left,
+      linear-gradient(to left,  white 30%, rgba(255,255,255,0)) right,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.08), transparent) left,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.08), transparent) right;
+    background-repeat: no-repeat;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  .stats-table {
+    font-size: 12px;
+
+    th, td { padding: 10px 10px; }
+
+    .col-sticky-player { width: 150px; min-width: 150px; }
+
+    .player-cell {
+      gap: 8px;
+      .avatar { width: 28px; height: 28px; font-size: 11px; flex-shrink: 0; }
+      .p-name { font-size: 12px; }
+      .p-meta { font-size: 10px; }
+    }
+
+    .badge-taux { padding: 4px 7px; font-size: 11px; }
+  }
+}
+
+// ── Layout principal — mobile : colonne ───────────────────────
+@media (max-width: 768px) {
+  .main-layout { flex-direction: column; gap: 16px; }
+  .side-panel-wrapper { width: 100%; position: static; }
+}
+
+// ── Side panel mobile — slide-up overlay ─────────────────────
+@media (max-width: 599px) {
+  .side-panel-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(0,0,0,.45);
+    padding: 0;
+    transform: translateY(100%);
+    transition: transform .3s ease, opacity .3s ease;
+    opacity: 0;
+    pointer-events: none;
+
+    &.mobile-open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+  }
+
+  .side-panel-card {
+    width: 100%;
+    max-height: 85dvh;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    // Drag handle visuel
+    &::before {
+      content: '';
+      display: block;
+      width: 40px; height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+
+    .side-close { top: 16px; right: 16px; }
+
+    .side-header { position: relative; }
+  }
+
+  .side-scroll-content { max-height: calc(85dvh - 160px); }
+}
+
+// ── Comparateur — plus compact mobile ────────────────────────
+@media (max-width: 599px) {
+  .compare-workspace {
+    padding: 12px;
+
+    // Supprimer la margin fixe de 200px incompatible mobile
+    .compare-header-row { margin-left: 0; flex-direction: column; gap: 10px; }
+    .compare-head-player { flex: none; }
+
+    .metric-row {
+      flex-direction: column;
+      gap: 8px;
+      label { width: 100%; font-size: 12px; margin-bottom: 4px; }
+    }
+  }
+
+  .scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #6c757d;
+    margin-bottom: 8px;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}
+
+// ── Hover uniquement sur appareils avec souris ────────────────
+@media (hover: hover) {
+  .stats-table .row-hover:hover { background-color: #fafbfc; }
+}
+
+// ── Scroll hint bar ───────────────────────────────────────────
+.scroll-hint-bar {
+  display: none; // caché sur desktop
+
+  @media (max-width: 599px) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #6c757d;
+    padding: 6px 4px 4px;
+    animation: fade-hint 3s ease forwards;
+    animation-delay: .5s;
+    opacity: 0;
+
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  }
+}
+
+@keyframes fade-hint {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
 }

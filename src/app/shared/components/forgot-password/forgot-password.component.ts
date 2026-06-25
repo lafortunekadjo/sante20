@@ -18,6 +18,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
+import { Router, RouterModule } from '@angular/router';
 
 
 @Component({
@@ -41,7 +42,8 @@ import { TranslateModule } from '@ngx-translate/core';
     MatDividerModule,
     MatTooltipModule,
     TranslateModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    RouterModule 
   ],
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss']
@@ -51,12 +53,17 @@ export class ForgotPasswordComponent {
   isLoading = false;
   emailSent = false;
 
-  constructor(private fb: FormBuilder, private http: HttpClient) {
+  constructor(private fb: FormBuilder, private http: HttpClient,    private router: Router) {
     this.forgotForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
     });
   }
 
+
+  openLogin(): void {
+  // Redirige l'utilisateur vers ton nouveau composant de demande
+  this.router.navigate(['/forgot-login']);
+}
   onSubmit() {
     if (this.forgotForm.invalid) return;
 

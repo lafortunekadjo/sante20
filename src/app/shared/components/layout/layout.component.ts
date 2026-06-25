@@ -1,45 +1,49 @@
 // ============================================================
-// LAYOUT COMPONENT - AVEC INTÉGRATION PUBLICITÉS
+// LAYOUT COMPONENT — Mobile-first refactor
 // ============================================================
 
-import { Component, ViewChild, OnInit, OnDestroy } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatListModule } from '@angular/material/list';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { MatSelectModule } from '@angular/material/select';
+import {
+  Component, OnInit, OnDestroy,
+  ChangeDetectorRef,
+  NgZone
+} from '@angular/core';
+import { MatToolbarModule }   from '@angular/material/toolbar';
+import { MatSidenavModule }   from '@angular/material/sidenav';
+import { MatIconModule }      from '@angular/material/icon';
+import { MatButtonModule }    from '@angular/material/button';
+import { MatListModule }      from '@angular/material/list';
+import { CommonModule }       from '@angular/common';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { MatSelectModule }    from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule }      from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { MatDialog } from '@angular/material/dialog';
-import { Subscription, distinctUntilChanged, skip } from 'rxjs';
-
-import { AuthService } from '../../../core/services/auth.service';
-import { RoleCustomService } from '../../../core/services/role-custom.service';
-import { NavbarComponent } from '../navbar/navbar.component';
-import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
-import { Menu, MenuCategorie } from '../../../core/models/menu.model';
-import { TranslateModule } from '@ngx-translate/core';
-import { OnboardingService } from '../../../core/services/onboarding.service';
-import { PubliciteAffichageService } from '../../../core/services/publicite-affichage.service';
-import { PubliciteBannerComponent } from '../../../modules/publicite/publicite-banner/publicite-banner.component';
-import { PubliciteSidebarComponent } from '../../../modules/publicite/publicite-sidebar/publicite-sidebar.component';
-import { PubliciteSplashComponent } from '../../../modules/publicite/publicite-splash/publicite-splash.component';
-import { SplashScreenService } from '../../../core/services/splash-screen.service';
-import { JoinGroupDialogComponent } from '../../../modules/membre/components/join-group-dialog/join-group-dialog.component';
+import { MatDividerModule }   from '@angular/material/divider';
+import { MatTooltipModule }   from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { MatDialog }          from '@angular/material/dialog';
+import { Subject, Subscription, distinctUntilChanged, skip, takeUntil } from 'rxjs';
 
-
-
-
-
+import { AuthService }            from '../../../core/services/auth.service';
+import { RoleCustomService }      from '../../../core/services/role-custom.service';
+import { NavbarComponent }        from '../navbar/navbar.component';
+import { ProfilEditComponent }    from '../profil-edit/profil-edit.component';
+import { Menu, MenuCategorie }    from '../../../core/models/menu.model';
+import { TranslateModule }        from '@ngx-translate/core';
+import { OnboardingService }      from '../../../core/services/onboarding.service';
+import { SplashScreenService }    from '../../../core/services/splash-screen.service';
+import { JoinGroupDialogComponent } from '../../../modules/membre/components/join-group-dialog/join-group-dialog.component';
+import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
+import { MoreDrawerComponent } from '../more-drawer/more-drawer.component';
+import { VideoManagementComponent } from '../../../modules/membre/components/video-management/video-management.component';
+import { SafeUrl } from '@angular/platform-browser';
+import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
+import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
+import { EquipeSelectionDialogComponent } from '../equipe-selection-dialog/equipe-selection-dialog.component';
+import { MembreService } from '../../../core/services/membre.service';
+import { GeneralService } from '../../../core/services/general.service';
+import { PushNotificationService } from '../../../core/services/push-notification.service';
 
 @Component({
   selector: 'app-layout',
@@ -58,63 +62,92 @@ import { MatExpansionModule } from '@angular/material/expansion';
     MatProgressSpinnerModule,
     MatDividerModule,
     MatTooltipModule,
+    MatExpansionModule,
     NavbarComponent,
     TranslateModule,
-    MatExpansionModule
-    // ✅ COMPOSANTS PUBLICITÉ
-    // PubliciteBannerComponent,
+    BottomNavComponent,
+    MoreDrawerComponent,
+    NotificationBellComponent
   ],
   templateUrl: './layout.component.html',
-  styleUrls: ['./layout.component.scss']
+  styleUrls: ['./layout.component.scss'],
 })
 export class LayoutComponent implements OnInit, OnDestroy {
-  @ViewChild('sidenav') sidenav!: MatSidenav;
 
-  // Rôles et permissions
-  isAdmin: boolean = false;
-  isPartenaire: boolean = false;
-  isResponsable: boolean = false;
-  isMembre: boolean = false;
-  roles: string[] = [];
-  selectedRole: string = '';
-  
-  // État du groupe utilisateur
-  userHasGroup: boolean = false;
+  // ── Rôles ──
+  isAdmin       = false;
+  isPartenaire  = false;
+  isResponsable = false;
+  isMembre      = false;
+  roles: string[]   = [];
+  selectedRole      = '';
+  userHasGroup      = false;
 
-  // Menus dynamiques
+  // ── Menus ──
   menuCategories: MenuCategorie[] = [];
-  menusCommuns: Menu[] = [];
-  isLoadingMenus = false;
-  
-  // UI State
-  user: any = null;
+  menusCommuns:   Menu[]          = [];
+  isLoadingMenus  = false;
+
+  // ── User ──
+  user:             any    = null;
   userProfileImage: string | null = null;
-  isMobile = false;
-  sidebarOpen = true;
+  userInitials      = '??';
+  avatarBg          = '#2563eb';
+
+  // ── UI ──
+  private destroy$ = new Subject<void>();
+  isMobile        = false;
+  isMobileSize    = false;
+  sidebarOpen     = true;
+  sidebarCollapsed = false;
+  moreDrawerOpen  = false;
   currentGroupeId: number | null = null;
-  isLoggedIn = false;
 
-  // ✅ PUBLICITÉS - Ville pour ciblage
-  userVille: string | undefined;
+  // ── isLoggedIn : propriété locale synchronisée avec authService ──
+  // On utilise une PROPRIÉTÉ (pas authService.isLoggedIn() dans le template)
+  // pour que detectChanges() la rende immédiatement dans la vue
+  isLoggedIn      = false;
 
-  private menusSubscription?: Subscription;
-  private groupeSubscription?: Subscription;
+  // ── Capacitor ──
+  isCapacitor     = !!(window as any).Capacitor?.isNativePlatform?.();
+
+  // ── Badges ──
+  notifCount          = 0;
+  unreadChatCount     = 0;
+  upcomingMatchCount  = 0;
+  error = '';
+  isChecking = false;
+  success = false;
+
+  private menusSubscription?:      Subscription;
+  private groupeSubscription?:     Subscription;
   private authStatusSubscription?: Subscription;
   private menuRefreshSubscription?: Subscription;
 
   constructor(
-    public authService: AuthService,
+    public  authService:       AuthService,
     private roleCustomService: RoleCustomService,
-    private router: Router,
-    private dialog: MatDialog,
-    private breakpointObserver: BreakpointObserver,
-    public onboardingService: OnboardingService,
-    private publiciteService: PubliciteAffichageService, // ✅ INJECTION SERVICE PUB
-    private splashService: SplashScreenService
-  ) {}
+    public  router:            Router,
+    private dialog:            MatDialog,
+    private breakpointObserver:BreakpointObserver,
+    public  onboardingService: OnboardingService,
+    private splashService:     SplashScreenService,
+    private cdr:               ChangeDetectorRef,
+    private memberService:     MembreService,
+    private equipeService:     GeneralService,
+    private pushService: PushNotificationService
+  ) {
+    this.isMobile     = window.innerWidth < 768;
+    this.isMobileSize = window.innerWidth < 1024;
+    this.sidebarOpen  = !this.isMobile;
+    // Init isLoggedIn dès le constructeur (évite flash au 1er rendu)
+    this.isLoggedIn   = this.authService.isLoggedIn();
+  }
 
   ngOnInit(): void {
     this.setupResponsiveLayout();
+    this.loadProfilePhoto();
+    this.listenToRouter();
 
     this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady => {
       if (isReady && this.authService.isLoggedIn()) {
@@ -125,24 +158,23 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.loadMenusCommuns();
         this.loadUserMenus();
         this.setupGroupeSubscription();
-        
-        // ✅ PUBLICITÉS - Récupérer la ville de l'utilisateur et afficher splash
         this.setupPublicites();
+        this.pushService.init();
       } else if (isReady && !this.authService.isLoggedIn()) {
         this.isLoggedIn = false;
         this.resetUserSpecificState();
       }
+      this.cdr.detectChanges();
     });
 
     this.menuRefreshSubscription = this.authService.forceMenuRefresh$.pipe(
-      skip(1),
-      distinctUntilChanged()
+      skip(1), distinctUntilChanged()
     ).subscribe(() => {
-      console.log('[LayoutComponent] Signal de refresh reçu');
       this.setupRoles();
       this.updateGroupStatus();
       this.loadMenusCommuns();
       this.loadUserMenus();
+      this.cdr.detectChanges();
     });
 
     this.menusSubscription = this.roleCustomService.userMenus$.subscribe(menus => {
@@ -151,88 +183,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
       } else {
         this.menuCategories = [];
       }
+      this.cdr.detectChanges();
     });
 
     this.checkOnboardingStatus();
-  }
-
-  // ✅ NOUVELLE MÉTHODE - Configuration des publicités
-  // private setupPublicites(): void {
-  //   // Récupérer la ville depuis le profil utilisateur ou le groupe
-  //   const user = this.authService.getUser();
-  //   this.userVille = user?.ville || user?.groupe?.ville;
-    
-  //   // Afficher le splash screen (une fois par jour)
-  //   setTimeout(() => {
-  //     this.publiciteService.showSplash();
-  //   }, 1000); // Délai pour laisser la page se charger
-  // }
-
-  // private setupPublicites(): void {
-  //   const userVille = this.authService.getUser()?.ville || '';
-    
-  //   // // Splash au login (1x/jour)
-  //   // this.splashService.checkAndShowLoginSplash(userVille);
-    
-  //   // // Splash après 10 min (1x/session)
-  //   // this.splashService.startUsageTimer(10, userVille);
-  // }
-
-
-  private updateGroupStatus(): void {
-    const groupeId = this.authService.getGroupe();
-    this.userHasGroup = groupeId !== null && groupeId !== undefined && groupeId > 0;
-    this.currentGroupeId = groupeId;
-    console.log('[LayoutComponent] userHasGroup:', this.userHasGroup, 'groupeId:', groupeId);
-  }
-
-  setupRoles(): void {
-    this.roles = this.authService.getRoles();
-    
-    console.log('[LayoutComponent] setupRoles - Rôles:', this.roles);
-    
-    this.isAdmin = false;
-    this.isResponsable = false;
-    this.isMembre = false;
-
-    if (this.roles.includes('RESPONSABLE') || this.roles.includes('ROLE_RESPONSABLE')) {
-      this.selectedRole = 'RESPONSABLE';
-      this.isResponsable = true;
-    } else if (this.roles.includes('ADMIN') || this.roles.includes('ROLE_ADMIN')) {
-      this.selectedRole = 'ADMIN';
-      this.isAdmin = true;
-    } else if (this.roles.includes('PARTENAIRE') || this.roles.includes('ROLE_PARTENAIRE')) {
-      this.selectedRole = 'PARTENAIRE';
-      this.isPartenaire = true;
-    } else if (this.roles.includes('MEMBRE') || this.roles.includes('ROLE_MEMBRE')) {
-      this.selectedRole = 'MEMBRE';
-      this.isMembre = true;
-    }
-    
-
-  }
-
-  setupGroupeSubscription(): void {
-    if (this.groupeSubscription) {
-      this.groupeSubscription.unsubscribe();
-    }
-    
-    this.groupeSubscription = this.authService.currentGroupeId$.pipe(
-      distinctUntilChanged()
-    ).subscribe(groupeId => {
-      console.log('[LayoutComponent] currentGroupeId$ changé:', groupeId);
-      
-      if (groupeId !== this.currentGroupeId) {
-        this.currentGroupeId = groupeId;
-        this.userHasGroup = !!groupeId && groupeId > 0;
-        
-        this.loadMenusCommuns();
-        
-        if (this.isLoggedIn && this.isResponsable) {
-          this.loadUserMenus();
-        }
-      }
-    });
   }
 
   private checkOnboardingStatus(): void {
@@ -246,332 +200,340 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  stopOnboarding(event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.onboardingService.stopTemporarily();
-  }
+  async checkIn(): Promise<void> {
+    this.isChecking = true;
+    this.error = '';
+    this.success = false;
 
-  resetUserSpecificState(): void {
-    this.user = null;
-    this.roles = [];
-    this.isAdmin = false;
-    this.isResponsable = false;
-    this.isPartenaire = false;
-    this.isMembre = false;
-    this.userHasGroup = false;
-    this.menuCategories = [];
-    this.menusCommuns = [];
-    this.currentGroupeId = null;
-    this.userVille = undefined; // ✅ Reset ville
+    try {
+      const equipes = await this.equipeService.getEquipesByGroupe().toPromise();
+      const userId: number | null = this.authService.getUserId();
 
-    this.groupeSubscription?.unsubscribe();
-    this.groupeSubscription = undefined;
+      if (userId === null) {
+        this.isChecking = false;
+        this.error = 'Utilisateur non authentifié ou ID introuvable.';
+        return;
+      }
+
+      const membre = await this.memberService.getMembreByUserId(userId).toPromise();
+      const membreEquipeId = membre?.equipe?.id ?? null;
+
+      const dialogRef = this.dialog.open(EquipeSelectionDialogComponent, {
+        width: '90vw', maxWidth: '500px',
+        data: {
+          equipes, defaultEquipeId: membreEquipeId,
+          joueur: { id: membre?.id, nom: membre?.nom, prenom: membre?.prenom }
+        }
+      });
+
+      const checkInResult = await dialogRef.afterClosed().toPromise();
+
+      if (!checkInResult) {
+        this.isChecking = false;
+        this.error = 'Check-in annulé.';
+        return;
+      }
+
+      const result = await this.authService.checkIn(
+        checkInResult.equipe?.id || null,
+        checkInResult.hasPlayed
+      );
+
+      this.isChecking = false;
+
+      const confirmRef = this.dialog.open(ConfirmationDialogComponent, {
+        width: '90vw', maxWidth: '400px', panelClass: 'scrollable-dialog',
+        data: {
+          message: checkInResult.hasPlayed
+            ? result.message
+            : 'Votre présence a été enregistrée. Vous n\'avez pas participé au match.'
+        }
+      });
+
+      confirmRef.afterClosed().subscribe(confirmed => {
+        if (confirmed) this.success = result.success;
+        else this.error = result.success ? '' : result.message;
+      });
+
+    } catch (err: any) {
+      this.isChecking = false;
+      this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+      console.error(err);
+    }
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.menusSubscription?.unsubscribe();
     this.groupeSubscription?.unsubscribe();
     this.authStatusSubscription?.unsubscribe();
     this.menuRefreshSubscription?.unsubscribe();
-    // this.splashService.cancelUsageTimer();
   }
+
+  // ──────────────────── Setup ────────────────────────────────
 
   setupResponsiveLayout(): void {
     this.breakpointObserver
-      .observe([Breakpoints.Handset, Breakpoints.Tablet])
-      .subscribe(result => {
-        this.isMobile = result.matches;
-        this.sidebarOpen = !this.isMobile;
-        
-        if (this.isMobile && this.sidenav) {
-          this.sidenav.close();
-        }
-      });
+      .observe([Breakpoints.Handset, Breakpoints.TabletPortrait, '(max-width: 1023px)'])
+      .subscribe(() => this.updateMobileState());
   }
+
+  private listenToRouter(): void {
+    this.router.events.pipe(takeUntil(this.destroy$)).subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        setTimeout(() => this.cdr.detectChanges(), 0);
+      }
+    });
+  }
+
+  private updateMobileState(): void {
+    const wasMobile   = this.isMobile;
+    this.isMobile     = window.innerWidth < 768;
+    this.isMobileSize = window.innerWidth < 1024;
+
+    if (this.isMobile !== wasMobile) {
+      this.sidebarOpen = !this.isMobile;
+      if (this.moreDrawerOpen && !this.isMobile) this.moreDrawerOpen = false;
+    }
+    this.cdr.detectChanges();
+  }
+
+  private setupPublicites(): void {
+    const userVille = this.authService.getUser()?.ville || '';
+    this.splashService.checkAndShowLoginSplash(userVille);
+    this.splashService.startUsageTimer(10, userVille);
+  }
+
+  private updateGroupStatus(): void {
+    const groupeId    = this.authService.getGroupe();
+    this.userHasGroup = !!groupeId && groupeId > 0;
+    this.currentGroupeId = groupeId;
+  }
+
+  setupRoles(): void {
+    this.roles = this.authService.getRoles() || [];
+    this.isAdmin = this.isResponsable = this.isMembre = this.isPartenaire = false;
+
+    if (this.roles.some(r => r === 'RESPONSABLE' || r === 'ROLE_RESPONSABLE')) {
+      this.selectedRole = 'RESPONSABLE'; this.isResponsable = true;
+    } else if (this.roles.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN')) {
+      this.selectedRole = 'ADMIN'; this.isAdmin = true;
+    } else if (this.roles.some(r => r === 'PARTENAIRE' || r === 'ROLE_PARTENAIRE')) {
+      this.selectedRole = 'PARTENAIRE'; this.isPartenaire = true;
+    } else if (this.roles.some(r => r === 'MEMBRE' || r === 'ROLE_MEMBRE')) {
+      this.selectedRole = 'MEMBRE'; this.isMembre = true;
+    }
+  }
+
+  setupGroupeSubscription(): void {
+    if (this.groupeSubscription) this.groupeSubscription.unsubscribe();
+
+    this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
+      this.currentGroupeId = groupeId;
+      this.userHasGroup = !!groupeId && groupeId > 0;
+      this.loadMenusCommuns();
+      if (this.isLoggedIn && this.isResponsable) this.loadUserMenus();
+    });
+  }
+
+  // ──────────────────── User data ────────────────────────────
 
   loadUserData(): void {
     this.user = this.authService.getUser();
-    this.userProfileImage = this.user?.profileImage || null;
+    this.loadProfilePhoto();
+
+    const nom    = this.user?.nom    || '';
+    const prenom = this.user?.prenom || '';
+    const uname  = this.user?.username || '';
+
+    if (nom && prenom) this.userInitials = (nom[0] + prenom[0]).toUpperCase();
+    else if (uname)    this.userInitials = uname.slice(0,2).toUpperCase();
+
+    const hash   = (this.user?.userId || 1) % 8;
+    const colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+    this.avatarBg = colors[hash];
   }
 
-  openJoinDialog() {
-  const dialogRef = this.dialog.open(JoinGroupDialogComponent, {
-    width: '450px',
-    disableClose: true
-  });
-
-  dialogRef.afterClosed().subscribe(result => {
-    if (result) {
-      // Optionnel : rafraîchir les données de l'utilisateur 
-      // pour faire disparaître le menu "Rejoindre"
-      this.loadUserData(); 
+  loadProfilePhoto(): void {
+    const storedUrl = localStorage.getItem('profilUrl');
+    if (storedUrl) {
+      this.userProfileImage = this.getFullImageUrl(storedUrl);
+    } else {
+      this.authService.getProfilePhoto2().subscribe({
+        next: (url: SafeUrl) => { this.userProfileImage = url as string; },
+        error: () => { this.userProfileImage = null; }
+      });
     }
-  });
   }
+
+  getFullImageUrl(url: string): string {
+    if (!url) return '';
+    return url;
+  }
+
+  resetUserSpecificState(): void {
+    this.user             = null;
+    this.userProfileImage = null;
+    this.userInitials     = '??';
+    this.avatarBg         = '#2563eb';
+    this.roles            = [];
+    this.isAdmin          = false;
+    this.isResponsable    = false;
+    this.isMembre         = false;
+    this.isPartenaire     = false;
+    this.userHasGroup     = false;
+    this.menuCategories   = [];
+    this.menusCommuns     = [];
+    this.currentGroupeId  = null;
+    this.moreDrawerOpen   = false;
+    this.groupeSubscription?.unsubscribe();
+    this.groupeSubscription = undefined;
+  }
+
+  // ──────────────────── Navigation ───────────────────────────
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    if (this.isMobile && this.sidebarOpen) {
+      setTimeout(() => this.cdr.detectChanges(), 0);
+    }
+  }
+
+  toggleCollapse(): void { this.sidebarCollapsed = !this.sidebarCollapsed; }
+
+  closeSidebar(): void {
+    if (this.isMobile) this.sidebarOpen = false;
+  }
+
+  toggleMoreDrawer(): void {
+    this.moreDrawerOpen = !this.moreDrawerOpen;
+    this.cdr.detectChanges();
+  }
+
+  closeMoreDrawer(): void {
+    this.moreDrawerOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  goToNotifications(): void { this.router.navigate(['/notifications']); }
+
+  // ──────────────────── Menus ────────────────────────────────
 
   loadMenusCommuns(): void {
     const baseMenus: Menu[] = [
-      {
-        id: 1,
-        code: 'EXPLORER',
-        label: 'Explorer',
-        icone: 'explore',
-        route: '/explorer',
-        description: 'Explorer les groupes',
-        ordre: 1,
-        actif: true,
-        categorie: 'COMMUN'
-      },
-      {
-        id: 5,
-        code: 'SUGGESTIONS',
-        label: 'Suggestions',
-        icone: 'lightbulb',
-        route: '/suggestions',
-        description: 'Faites des suggestions',
-        ordre: 6,
-        actif: true,
-        categorie: 'COMMUN'
-      }
-      ,
-         {
-        id: 11,
-        code: 'sc',
-        label: 'Scouting',
-        icone: 'search',
-        route: '/joueurs',
-        description: 'Trouvez des joueurs',
-        ordre: 5,
-        actif: true,
-        categorie: 'COMMUN'
-      }
+      { id:1,  code:'EXPLORER',    label:'Explorer',    icone:'explore',    route:'/explorer',    description:'', ordre:1, actif:true, categorie:'COMMUN' },
+      { id:5,  code:'SUGGESTIONS', label:'Suggestions', icone:'lightbulb',  route:'/suggestions', description:'', ordre:6, actif:true, categorie:'COMMUN' },
+      { id:11, code:'sc',          label:'Scouting',    icone:'search',     route:'/joueurs',     description:'', ordre:5, actif:true, categorie:'COMMUN' },
     ];
 
     if (!this.userHasGroup) {
-      baseMenus.push({
-        id: 6,
-        code: 'CREATEG',
-        label: 'Créer un groupe',
-        icone: 'group_add',
-        route: '/creategroup',
-        description: 'Envoyez une demande de création de groupe',
-        ordre: 2,
-        actif: true,
-        categorie: 'COMMUN'
-      });
-    }
-
-   if (!this.userHasGroup) {
-  baseMenus.push({
-    id: 13,
-    code: 'JOIN',
-    label: 'Rejoindre un groupe',
-    icone: 'group_add',
-    description: 'Rejoindre un groupe via le code',
-    ordre: 2,
-    actif: true,
-    categorie: 'COMMUN',
-    route: null
-  });
-}
-
-    if (this.userHasGroup) {
       baseMenus.push(
-        {
-          id: 10,
-          code: 'TB',
-          label: 'Tableau de bord',
-          icone: 'newspaper',
-          route: '/membre',
-          description: 'Tableau de bord du membre',
-          ordre: 1,
-          actif: true,
-          categorie: 'COMMUN'
-        },
-        {
-          id: 3,
-          code: 'ACTUALITES',
-          label: 'Actualités',
-          icone: 'newspaper',
-          route: '/actualites',
-          description: 'Fil d\'actualités',
-          ordre: 3,
-          actif: true,
-          categorie: 'COMMUN'
-        },
-        {
-          id: 4,
-          code: 'OBJECTIFS',
-          label: 'Objectifs',
-          icone: 'flag',
-          route: '/objectifs',
-          description: 'Fixer vos objectifs',
-          ordre: 5,
-          actif: true,
-          categorie: 'COMMUN'
-        }
+        { id:6,  code:'CREATEG', label:'Créer un groupe',    icone:'group_add', route:'/creategroup', description:'', ordre:2, actif:true, categorie:'COMMUN' },
+        { id:13, code:'JOIN',    label:'Rejoindre un groupe', icone:'group_add', route:null as any,    description:'', ordre:3, actif:true, categorie:'COMMUN' },
       );
     }
 
-    this.menusCommuns = baseMenus.sort((a, b) => a.ordre - b.ordre);
-    console.log('[LayoutComponent] Menus communs chargés:', this.menusCommuns.map(m => m.code));
-  }
-
-
-  handleMenuAction(menuCode: string): void {
-    if (menuCode === 'JOIN') {
-      this.openJoinGroupDialog();
+    if (this.userHasGroup) {
+      baseMenus.push(
+        { id:10, code:'TB',         label:'Tableau de bord', icone:'newspaper', route:'/membre',     description:'', ordre:1, actif:true, categorie:'COMMUN' },
+        { id:3,  code:'ACTUALITES', label:'Actualités',      icone:'newspaper', route:'/actualites', description:'', ordre:3, actif:true, categorie:'COMMUN' },
+        { id:4,  code:'OBJECTIFS',  label:'Objectifs',       icone:'flag',      route:'/objectifs',  description:'', ordre:5, actif:true, categorie:'COMMUN' },
+      );
     }
+
+    this.menusCommuns = baseMenus.sort((a,b) => a.ordre - b.ordre);
   }
 
-  /**
-   * Ouvre la boîte de dialogue pour rejoindre un groupe
-   */
-  openJoinGroupDialog(): void {
+  handleMenuAction(code: string): void {
+    if (code === 'JOIN') this.openJoinGroupDialog();
+  }
+
+ openJoinGroupDialog(): void {
+    // Fermer le more-drawer EN PREMIER
+    // z-index drawer (1070) > dialog (1060) => drawer masque le dialog sur mobile
+    this.closeMoreDrawer();
+
     this.dialog.open(JoinGroupDialogComponent, {
       width: '450px',
       maxWidth: '90vw',
-      disableClose: false // Permet de fermer en cliquant à l'extérieur
+      disableClose: false
     });
-    
-    // Optionnel : Ferme la sidebar sur mobile après avoir cliqué sur le menu
+
     if (this.isMobile) {
       this.closeSidebar();
     }
   }
 
   loadUserMenus(): void {
-    console.log('[LayoutComponent] loadUserMenus - isResponsable:', this.isResponsable, 'userHasGroup:', this.userHasGroup);
-    
-    if (!this.isResponsable) {
-      console.log('[LayoutComponent] Pas responsable, skip loadUserMenus');
-      this.menuCategories = [];
-      return;
+    if (!this.isResponsable || !this.userHasGroup) {
+      this.menuCategories = []; return;
     }
-
-    if (!this.userHasGroup) {
-      console.log('[LayoutComponent] Pas de groupe, skip loadUserMenus');
-      this.menuCategories = [];
-      return;
-    }
-
     this.isLoadingMenus = true;
-
     this.roleCustomService.getUserMenus().subscribe({
-      next: (userMenus) => {
-        console.log('[LayoutComponent] Menus utilisateur reçus:', userMenus);
-        this.organiserMenusParCategorie(userMenus.menus);
-        this.isLoadingMenus = false;
-      },
-      error: (err) => {
-        console.error('[LayoutComponent] Erreur chargement menus:', err);
-        this.menuCategories = [];
-        this.isLoadingMenus = false;
-      }
+      next:  (um) => { this.organiserMenusParCategorie(um.menus); this.isLoadingMenus = false; this.cdr.detectChanges(); },
+      error: ()   => { this.menuCategories = []; this.isLoadingMenus = false; this.cdr.detectChanges(); }
     });
   }
 
   organiserMenusParCategorie(menus: Menu[]): void {
-    const categoriesMap = new Map<string, Menu[]>();
-
-    menus.forEach(menu => {
-      if (!categoriesMap.has(menu.categorie)) {
-        categoriesMap.set(menu.categorie, []);
-      }
-      categoriesMap.get(menu.categorie)?.push(menu);
+    const map = new Map<string, Menu[]>();
+    menus.forEach(m => {
+      if (!map.has(m.categorie)) map.set(m.categorie, []);
+      map.get(m.categorie)!.push(m);
     });
-
-    const categoriesConfig = {
-      'GESTION': { label: 'Gestion', icone: 'settings' },
-      'SPORT': { label: 'Sport', icone: 'sports_soccer' },
-      'FINANCES': { label: 'Finances', icone: 'account_balance' },
-      'COMMUNICATION': { label: 'Communication', icone: 'campaign' }
+    const cfg: Record<string,{label:string;icone:string}> = {
+      'GESTION':       { label:'Gestion',       icone:'settings'       },
+      'SPORT':         { label:'Sport',          icone:'sports_soccer'  },
+      'FINANCES':      { label:'Finances',       icone:'account_balance'},
+      'COMMUNICATION': { label:'Communication',  icone:'campaign'       },
     };
-
-    this.menuCategories = Array.from(categoriesMap.entries())
+    this.menuCategories = Array.from(map.entries())
       .map(([code, menus]) => ({
-        code,
-        label: categoriesConfig[code as keyof typeof categoriesConfig]?.label || code,
-        icone: categoriesConfig[code as keyof typeof categoriesConfig]?.icone || 'folder',
-        menus: menus.sort((a, b) => a.ordre - b.ordre)
+        code, label: cfg[code]?.label || code, icone: cfg[code]?.icone || 'folder',
+        menus: menus.sort((a,b) => a.ordre - b.ordre)
       }))
-      .sort((a, b) => {
-        const order = ['GESTION', 'SPORT', 'FINANCES', 'COMMUNICATION'];
-        return order.indexOf(a.code) - order.indexOf(b.code);
+      .sort((a,b) =>
+        ['GESTION','SPORT','FINANCES','COMMUNICATION'].indexOf(a.code) -
+        ['GESTION','SPORT','FINANCES','COMMUNICATION'].indexOf(b.code)
+      );
+  }
+
+  // ──────────────────── Actions ───────────────────────────────
+
+  openProfileEdit(): void {
+    this.dialog.open(ProfilEditComponent, { width:'400px', data:{ user: this.user } })
+      .afterClosed().subscribe(r => { if(r) this.loadUserData(); });
+  }
+
+  openVideoEdit(): void {
+    import('../../../modules/membre/components/video-management/video-management.component')
+      .then(m => {
+        this.dialog.open(m.VideoManagementComponent, {
+          width: '95vw', maxWidth: '600px', maxHeight: '90vh',
+        });
       });
   }
 
-  // Helpers
-  trackByMenuId(index: number, menu: Menu): any {
-    return menu.id;
-  }
-
-  trackByCategoryId(index: number, category: MenuCategorie): any {
-    return category.code;
-  }
-
-  getCurrentDate(): Date {
-    return new Date();
-  }
-
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
-    if (this.sidenav) {
-      this.sidenav.toggle();
-    }
-  }
-
-  closeSidebar(): void {
-    if (this.isMobile) {
-      this.sidebarOpen = false;
-      if (this.sidenav) {
-        this.sidenav.close();
-      }
-    }
-  }
-
-  onNavClick(menuCode: string): void {
-    this.closeSidebar();
-    if (menuCode === 'CREATEG' && this.onboardingService.getStep() === 'CREATE_GROUPE') {
-      // Avancer l'onboarding
-    }
-  }
-
-  openProfileEdit(): void {
-    const dialogRef = this.dialog.open(ProfilEditComponent, {
-      width: '400px',
-      data: { user: this.user }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadUserData();
-      }
-    });
-  }
-
-  viewNotifications(): void {
-    this.router.navigate(['/notifications']);
-  }
-
-  viewSettings(): void {
-    this.router.navigate(['/settings']);
+  openVideo(): void {
+    this.dialog.open(VideoManagementComponent, { width:'400px', data:{ user: this.user } })
+      .afterClosed().subscribe(r => { if(r) this.loadUserData(); });
   }
 
   logout(): void {
-    this.authService.logout();
+    // 1. Nettoyer état local + repaint immédiat
+    this.isLoggedIn = false;
+    this.resetUserSpecificState();
+    this.cdr.detectChanges();
+ 
+    // 2. Supprimer token FCM Android
+    this.pushService.removeFcmToken();
+ 
+    // 3. Nettoyer auth + menus
+    this.authService.logout(false);
     this.roleCustomService.clearUserMenus();
-    this.router.navigate(['/']);
-  }
-
-  private setupPublicites(): void {
-    const userVille = this.authService.getUser()?.ville || '';
-    
-    // Splash au login (1x/jour)
-    this.splashService.checkAndShowLoginSplash(userVille);
-    
-    // Splash après 10 min (1x/session)
-    this.splashService.startUsageTimer(10, userVille);
+ 
+    // 4. Naviguer
+    this.router.navigate(['/home']);
   }
 }

@@ -1,185 +1,379 @@
-.winner-page-container {
-  padding: 20px;
-  max-width: 600px;
-  margin: 0 auto;
-  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+@import '../../../../../variables';
 
-  .celebration-header {
-    text-align: center;
-    margin-bottom: 40px;
-    h1 { font-weight: 900; font-size: 2rem; margin: 0; color: #1e293b; }
-    .period-label { color: var(--primary-color); font-weight: 700; text-transform: uppercase; }
-  }
+// ═══════════════════════════════════════════════════════════
+// MVP WINNER — Redesign mobile-first
+// ═══════════════════════════════════════════════════════════
 
-  .winner-podium {
-    position: relative;
-    text-align: center;
-    margin-bottom: 60px;
-
-    .gold-trophy {
-      font-size: 80px; width: 80px; height: 80px;
-      color: #fbbf24;
-      filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.4));
-    }
-
-    .winner-card {
-      background: white;
-      border-radius: 30px;
-      padding: 40px 20px 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      border: 2px solid #fbbf24;
-      margin-top: -30px;
-
-      .winner-avatar {
-        position: relative;
-        width: 120px; height: 120px;
-        margin: 0 auto 15px;
-        border-radius: 50%;
-        border: 4px solid #fbbf24;
-        img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .crown { position: absolute; top: -20px; right: -10px; font-size: 30px; }
-      }
-
-      .winner-name { font-weight: 800; font-size: 1.5rem; margin-bottom: 20px; }
-    }
-  }
-
-  .comments-grid {
-    display: grid; gap: 15px;
-  }
-
-  .comment-bubble {
-    background: #f1f5f9;
-    border-radius: 20px 20px 20px 0;
-    padding: 20px;
-    position: relative;
-    border-left: 5px solid var(--primary-color);
-
-    p { font-style: italic; color: #334155; font-size: 1.1rem; line-height: 1.4; margin: 0; }
-    .quote-icon { position: absolute; top: 5px; right: 10px; opacity: 0.1; font-size: 40px; }
-    .anon-tag { display: block; margin-top: 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
-  }
-}
-
-// Animation pour le "Whaou"
-.animate-pop {
-  animation: pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-@keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.winner-stats-summary {
+.mw-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  margin-top: 20px;
+  gap: $spacing-lg;
+  padding: $spacing-lg $spacing-md;
+  min-height: 100%;
+  background: var(--background-secondary);
+  @include mobile  { padding: 0 $spacing-md; }
 
-  .primary-stat {
-    .val { font-size: 2rem; color: var(--primary-color); }
-    .lbl { font-size: 0.9rem; letter-spacing: 1px; }
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
   }
 
-  .stats-divider {
-    width: 50px;
-    height: 2px;
-    background: #e2e8f0;
-    border-radius: 2px;
-  }
-
-  .technical-stats {
-    display: flex;
-    justify-content: center;
-    gap: 30px; // Espace entre Buts, Passes et HMD
-    width: 100%;
-
-    .stat {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      .val {
-        font-size: 1.4rem;
-        font-weight: 800;
-        color: #1e293b;
-      }
-
-      .lbl {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-      }
-    }
+  @include desktop {
+    padding-bottom: $spacing-2xl;
   }
 }
 
-// Variables de couleurs My2-0 pour les dégradés
-$premium-gradients: (
-  (linear-gradient(135deg, #6366f1 0%, #a855f7 100%)), // Indigo-Purple
-  (linear-gradient(135deg, #2563eb 0%, #c026d3 100%)), // Blue-Fuchsia
-  (linear-gradient(135deg, #059669 0%, #16a34a 100%)), // Emerald-Green
-  (linear-gradient(135deg, #1d4ed8 0%, #0369a1 100%))  // Blue-Ocean
-);
+// ── Sélecteur période ────────────────────────────────────────
+.mw-period-bar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 
-.winner-podium {
+.mw-period-field {
+  width: 100%;
+  max-width: 280px;
+  ::ng-deep .mat-mdc-form-field-flex { background: var(--background-primary); border-radius: $border-radius-xl; }
+  ::ng-deep .mat-mdc-select-value    { font-weight: $font-weight-semibold; }
+}
+
+.curr-tag {
+  color: var(--primary-color);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+}
+
+// ── États ───────────────────────────────────────────────────
+.mw-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-5xl $spacing-xl;
+  color: var(--text-secondary);
+  font-size: $font-size-sm;
+}
+
+.mw-empty {
+  mat-icon { font-size: 56px; width: 56px; height: 56px; opacity: .25; }
+  h3 { margin: 0; font-size: $font-size-lg; font-weight: $font-weight-semibold; color: var(--text-primary); }
+  p  { margin: 0; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BADGE HERO
+// ═══════════════════════════════════════════════════════════
+
+.mw-badge {
   position: relative;
-  text-align: center;
-  margin-bottom: 50px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-  // L'anneau de l'avatar (Style FIFA Gold)
-  .winner-avatar-ring {
-    position: relative;
-    width: 130px; 
-    height: 130px;
-    margin: 0 auto 15px;
-    border-radius: 50%;
-    border: 4px solid #fbbf24; // Couleur Or
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); // Halo doré
-    padding: 3px; // Espace entre l'anneau et l'avatar
-    background: white;
-    z-index: 2;
-
-    .crown { position: absolute; top: -25px; right: -15px; font-size: 35px; z-index: 10; }
-    
-    .winner-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  }
-
-  // Les initiales DECOREES
-  .initials-avatar-decorated {
-    width: 100%; height: 100%;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: inset 0 0 15px rgba(0,0,0,0.2); // Ombre interne
-
-    .initials-text {
-      font-family: 'Poppins', sans-serif; // Ou une police technique stylisée
-      font-weight: 900;
-      font-size: 3rem;
-      color: white;
-      text-transform: uppercase;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3); // Ombre sous le texte
-      letter-spacing: -2px;
-      z-index: 2;
-    }
-
-    // Effet de lumière "Glint"
-    .light-effect {
-      position: absolute;
-      top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
-      transform: rotate(30deg);
-      opacity: 0.6;
-    }
-  }
-
-  .winner-name { font-weight: 800; font-size: 1.6rem; margin: 10px 0; color: #1e293b; }
+  // Card glassmorphism
+  background: linear-gradient(160deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+  border: 1px solid var(--border-color);
+  border-top: 3px solid #F0B429;
+  border-radius: $border-radius-2xl;
+  padding: $spacing-xl $spacing-xl $spacing-lg;
+  overflow: hidden;
+  box-shadow: $shadow-lg;
 }
 
-// Classe optionnelle pour la bordure de la carte
-.gold-border { border: 2px solid #fbbf24 !important; }
+// Halo doré en arrière-plan
+.mw-halo {
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(240,180,41,.18) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+// Couronne
+.mw-crown {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: -8px;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+  animation: crown-bounce 2.5s ease-in-out infinite;
+}
+
+@keyframes crown-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+// Anneau avatar
+.mw-avatar-ring {
+  position: relative;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 4px solid #F0B429;
+  box-shadow: 0 0 0 4px rgba(240,180,41,.15), 0 8px 24px rgba(0,0,0,.15);
+  padding: 3px;
+  background: var(--background-primary);
+  z-index: 1;
+  overflow: hidden;
+}
+
+.mw-avatar-img {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mw-avatar-initials {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: $font-weight-bold;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mw-glint {
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 65%);
+  transform: rotate(30deg);
+  pointer-events: none;
+}
+
+// Trophée
+.mw-trophy {
+  font-size: 44px !important;
+  width: 44px !important; height: 44px !important;
+  color: #F0B429;
+  filter: drop-shadow(0 2px 8px rgba(240,180,41,.4));
+  margin: $spacing-sm 0 $spacing-xs;
+}
+
+// Nom
+.mw-name {
+  margin: 0 0 $spacing-xs;
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.mw-period-lbl {
+  margin: 0 0 $spacing-lg;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--text-tertiary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+// Ruban votes
+.mw-votes-ribbon {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-xl;
+  background: linear-gradient(135deg, #F0B429 0%, #d4940e 100%);
+  border-radius: $border-radius-full;
+  box-shadow: 0 4px 14px rgba(240,180,41,.35);
+}
+
+.mw-votes-num {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  color: #0a1628;
+  line-height: 1;
+}
+
+.mw-votes-lbl {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+  color: rgba(10,22,40,.65);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+// ── Stats ────────────────────────────────────────────────────
+.mw-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  width: 100%;
+  max-width: 360px;
+  padding: $spacing-lg $spacing-xl;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl;
+  box-shadow: $shadow-sm;
+}
+
+.mw-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+}
+
+.mw-stat-val {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: var(--primary-color);
+  line-height: 1;
+}
+
+.mw-stat-lbl {
+  font-size: 10px;
+  font-weight: $font-weight-semibold;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.mw-stat-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+// ── Commentaires ─────────────────────────────────────────────
+.mw-comments {
+  width: 100%;
+  max-width: 360px;
+}
+
+.mw-comments-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: 0 0 $spacing-md;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: var(--text-primary);
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: var(--primary-color); }
+}
+
+.mw-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.mw-comment {
+  position: relative;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0 $border-radius-xl $border-radius-xl 0;
+  padding: $spacing-md $spacing-lg $spacing-md $spacing-xl;
+  animation: slide-in .35s ease both;
+
+  p {
+    margin: 0;
+    font-style: italic;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+}
+
+.mw-quote {
+  position: absolute;
+  top: $spacing-sm; right: $spacing-md;
+  font-size: 28px !important;
+  width: 28px !important; height: 28px !important;
+  color: var(--border-color);
+  opacity: .5;
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+// ── Action ───────────────────────────────────────────────────
+.mw-actions {
+  width: 100%;
+  max-width: 360px;
+  padding-bottom: $spacing-xl;
+}
+
+.mw-dl-btn {
+  width: 100% !important;
+  height: 52px !important;
+  border-radius: $border-radius-lg !important;
+  font-size: $font-size-md !important;
+  font-weight: $font-weight-semibold !important;
+  gap: $spacing-sm;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  ::ng-deep circle { stroke: white !important; }
+}
+
+// ── Animation d'entrée page ──────────────────────────────────
+.mw-badge  { animation: pop-in .5s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+.mw-stats  { animation: pop-in .5s cubic-bezier(0.175,0.885,0.32,1.275) .1s both; }
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(.9) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+// ── Vote en cours ─────────────────────────────────────────────
+.mw-vote-in-progress {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  width: 100%;
+  padding: $spacing-md $spacing-lg;
+  background: rgba(37,99,235,.08);
+  border: 1px solid rgba(37,99,235,.2);
+  border-left: 3px solid var(--primary-color);
+  border-radius: $border-radius-lg;
+  margin-bottom: $spacing-sm;
+
+  mat-icon {
+    color: var(--primary-color);
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  strong {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: var(--primary-color);
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-xs;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+}

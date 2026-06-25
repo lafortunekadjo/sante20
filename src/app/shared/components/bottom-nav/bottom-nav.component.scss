@@ -1,0 +1,172 @@
+@use '../../../../variables' as *;
+
+:host {
+  display: block;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-bottom-nav;
+  display: flex;
+  align-items: stretch;
+  background: var(--bottom-nav-bg, var(--background-primary));
+  border-top: 1px solid var(--bottom-nav-border, var(--border-color));
+  box-shadow: $shadow-bottom-nav;
+  // Safe area iOS home indicator
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom));
+
+  // Masqué via classe
+  &.hidden {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  // Desktop : toujours masqué
+  @include desktop {
+    display: none;
+  }
+
+  // Animation d'apparition
+  transition: transform $transition-base;
+}
+
+// ── Chaque onglet ────────────────────────────────────────────
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  padding: $spacing-sm $spacing-xs;
+  color: var(--bottom-nav-inactive, var(--text-tertiary));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color $transition-fast;
+  min-height: $bottom-nav-height;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+
+  // Ripple au tap
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 6px 4px;
+    border-radius: $border-radius-lg;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity $transition-fast;
+  }
+
+  &:active::after { opacity: .06; }
+
+  // ── État actif ──
+  &.active {
+    color: var(--bottom-nav-active, var(--primary-color));
+
+    .tab-icon-wrap mat-icon {
+      transform: scale(1.1);
+    }
+
+    .tab-label {
+      font-weight: $font-weight-semibold;
+    }
+
+    // Indicateur actif (pastille sous l'icône)
+    .tab-icon-wrap::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  &:hover:not(.active) {
+    color: var(--text-secondary);
+  }
+}
+
+// ── Zone icône avec badge ────────────────────────────────────
+.tab-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $border-radius-lg;
+  transition: background $transition-fast;
+
+  // Indicateur actif — pill en dessous
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 20px;
+    height: 3px;
+    border-radius: $border-radius-full;
+    background: var(--bottom-nav-active, var(--primary-color));
+    opacity: 0;
+    transition: opacity $transition-fast, transform $transition-spring;
+  }
+
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    transition: transform $transition-spring;
+  }
+}
+
+// ── Label ────────────────────────────────────────────────────
+.tab-label {
+  font-size: 10px;
+  font-weight: $font-weight-medium;
+  letter-spacing: .2px;
+  transition: font-weight $transition-fast;
+  white-space: nowrap;
+  margin-top: 2px;
+
+  @include small-phone {
+    font-size: 9px;
+  }
+}
+
+// ── Badge (count) ────────────────────────────────────────────
+.tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--error-color, #ef4444);
+  color: white;
+  font-size: 10px;
+  font-weight: $font-weight-bold;
+  border-radius: $border-radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bottom-nav-bg, var(--background-primary));
+  line-height: 1;
+}
+
+// ── Bouton "Plus" ────────────────────────────────────────────
+.more-btn {
+  // Hérite des styles .nav-tab
+  &.active {
+    color: var(--bottom-nav-active, var(--primary-color));
+
+    .tab-icon-wrap mat-icon {
+      transform: rotate(180deg) scale(1.1);
+    }
+  }
+}

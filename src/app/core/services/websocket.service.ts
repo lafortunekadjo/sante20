@@ -22,6 +22,9 @@ export class WebSocketService {
   private connectedSubject = new BehaviorSubject<boolean>(false);
   public connected$ = this.connectedSubject.asObservable();
 
+  // Flux de notification global requis par ChatMainComponent
+  private messageNotificationSubject = new Subject<MessageNotification>();
+
   constructor(private authService: AuthService) {}
 
   connect(): void {
@@ -47,16 +50,11 @@ export class WebSocketService {
       webSocketFactory: () => {
         console.log('🏭 Creating WebSocket connection');
         
-        // Construction de l'URL à partir de la config environment
-        let baseApiUrl = environment.apiUrl; // Récupère '/api'
-        let wsEndpoint = `${baseApiUrl}/ws`;  // Devient '/api/ws'
+        let baseApiUrl = environment.apiUrl; 
+        let wsEndpoint = `${baseApiUrl}/ws`;  
 
-        // Sécurisation stricte : transforme le chemin relatif en URL absolue HTTPS
         if (wsEndpoint.startsWith('/')) {
-          wsEndpoint = `https://${window.location.host}${wsEndpoint}`;
-        } else {
-          // Si une URL absolue incorrecte s'était glissée, on la nettoie pour SockJS
-          wsEndpoint = wsEndpoint.replace('http://', 'https://').replace('wss://', 'https://');
+          wsEndpoint = `http://${window.location.host}${wsEndpoint}`;
         }
 
         console.log('[WebSocket] URL SockJS sécurisée générée :', wsEndpoint);
@@ -78,6 +76,8 @@ export class WebSocketService {
       onConnect: (frame) => {
         console.log('✅ WebSocket Connected!', frame);
         this.connectedSubject.next(true);
+        // S'abonner aux notifications personnelles globales dès la connexion
+        this.subscribeToUserNotifications();
       },
       
       onStompError: (frame) => {
@@ -103,7 +103,6 @@ export class WebSocketService {
   disconnect(): void {
     console.log('🔌 Disconnecting WebSocket');
     
-    // Unsubscribe from all subscriptions
     this.subscriptions.forEach((sub, key) => {
       console.log('📤 Unsubscribing from:', key);
       sub.unsubscribe();
@@ -115,6 +114,35 @@ export class WebSocketService {
     }
     
     this.connectedSubject.next(false);
+  }
+
+  /**
+   * Retourne le flux global de notifications de messages (Requis par ChatMainComponent)
+   */
+  onMessageNotification(): Observable<MessageNotification> {
+    return this.messageNotificationSubject.asObservable();
+  }
+
+  /**
+   * S'abonne au canal utilisateur spécifique pour recevoir les notifications hors-conversation
+   */
+  private subscribeToUserNotifications(): void {
+    if (!this.client?.active) return;
+
+    const destination = '/user/queue/notifications';
+    console.log('📥 Subscribing to global user notifications:', destination);
+
+    const subscription = this.client.subscribe(destination, (message: IMessage) => {
+      console.log('📨 Received global user notification');
+      try {
+        const notification = JSON.parse(message.body) as MessageNotification;
+        this.messageNotificationSubject.next(notification);
+      } catch (error) {
+        console.error('Error parsing global notification:', error);
+      }
+    });
+
+    this.subscriptions.set('user-notifications', subscription);
   }
 
   subscribeToConversation(conversationId: number): Observable<MessageNotification> {
@@ -133,6 +161,9 @@ export class WebSocketService {
       try {
         const notification = JSON.parse(message.body) as MessageNotification;
         subject.next(notification);
+        
+        // On pousse également dans le flux général au cas où le composant parent écoute
+        this.messageNotificationSubject.next(notification);
       } catch (error) {
         console.error('Error parsing message:', error);
       }
@@ -143,13 +174,9 @@ export class WebSocketService {
     return subject.asObservable();
   }
 
-  /**
-   * Se désabonner d'une conversation
-   */
   unsubscribeFromConversation(conversationId: number): void {
     console.log('📤 Unsubscribing from conversation:', conversationId);
     
-    // Désabonner des messages
     const conversationKey = `conversation-${conversationId}`;
     const conversationSub = this.subscriptions.get(conversationKey);
     
@@ -159,7 +186,6 @@ export class WebSocketService {
       console.log('✅ Unsubscribed from conversation messages:', conversationId);
     }
     
-    // Désabonner des typing indicators
     const typingKey = `typing-${conversationId}`;
     const typingSub = this.subscriptions.get(typingKey);
     

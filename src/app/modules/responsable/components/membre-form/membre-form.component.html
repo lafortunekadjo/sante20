@@ -1,257 +1,573 @@
 <div class="membres-container">
-  <!-- Header avec design moderne -->
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-icon-wrapper">
-          <mat-icon class="header-icon">groups</mat-icon>
-          <div class="icon-glow"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════ -->
+  <div class="membres-header">
+    <div class="header-bg"></div>
+    <div class="header-inner">
+      <div class="header-top">
+        <div class="header-title-group">
+          <h1 class="header-title">{{ 'membres.management' | translate }}</h1>
+          <p class="header-sub">{{ groupe?.nom || '' }}</p>
         </div>
-        <div class="header-text">
-          <h1 class="page-title">{{ 'membres.management' | translate }}</h1>
-          <p class="page-subtitle">{{ 'membres.managementSubtitle' | translate }} {{ groupe?.nom || '' }}</p>
+        <!-- Actions rapides header -->
+        <div class="header-actions">
+          <a mat-icon-button class="header-icon-btn"
+             [routerLink]="['/responsable/invitations']"
+             [matTooltip]="'membres.inviteMember' | translate">
+            <mat-icon>send</mat-icon>
+          </a>
+          <button mat-icon-button class="header-icon-btn"
+                  (click)="openExcelImportDialog()"
+                  [matTooltip]="'membres.importExcel' | translate">
+            <mat-icon>upload_file</mat-icon>
+          </button>
         </div>
       </div>
-      <div class="header-stats">
-        <div class="stat-item">
-          <div class="stat-icon">
-            <mat-icon>people</mat-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">{{ dataSource.data.length }}</span>
-            <span class="stat-label">{{ 'membres.total' | translate }}</span>
-          </div>
+
+      <!-- KPIs -->
+      <div class="header-kpis">
+        <div class="hkpi">
+          <span class="hkpi-val">{{ dataSource.data.length }}</span>
+          <span class="hkpi-lbl">{{ 'membres.total' | translate }}</span>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-icon active">
-            <mat-icon>check_circle</mat-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">{{ getActiveCount() }}</span>
-            <span class="stat-label">{{ 'membres.active' | translate }}</span>
-          </div>
+        <div class="hkpi-sep"></div>
+        <div class="hkpi active">
+          <span class="hkpi-val">{{ getActiveCount() }}</span>
+          <span class="hkpi-lbl">{{ 'membres.active' | translate }}</span>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-icon warning">
-            <mat-icon>money_off</mat-icon>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">{{ getUnpaidCount() }}</span>
-            <span class="stat-label">{{ 'membres.unpaid' | translate }}</span>
-          </div>
+        <div class="hkpi-sep"></div>
+        <div class="hkpi warn">
+          <span class="hkpi-val">{{ getUnpaidCount() }}</span>
+          <span class="hkpi-lbl">{{ 'membres.unpaid' | translate }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Loading State -->
+  <!-- ══════════════════════════════════════════════════
+       LOADING
+  ══════════════════════════════════════════════════ -->
   <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner-wrapper">
-      <mat-spinner diameter="56"></mat-spinner>
-      <div class="spinner-glow"></div>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'common.loading' | translate }}...</h3>
-      <p>{{ 'membres.loadingMembers' | translate }}</p>
-    </div>
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>{{ 'membres.loadingMembers' | translate }}</p>
   </div>
 
-  <!-- Content Principal -->
-  <div *ngIf="!isLoading" class="content" @fadeIn>
-    
-    <!-- Toolbar Actions -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button 
-          mat-raised-button 
-          class="btn-create"
-          (click)="toggleCreateRow()"
-          [class.active]="showCreateRow">
-          <mat-icon>{{ showCreateRow ? 'close' : 'person_add' }}</mat-icon>
-          <span>{{ showCreateRow ? ('common.cancel' | translate) : ('membres.addMember' | translate) }}</span>
-        </button>
-         <button 
-          mat-raised-button 
-          class="btn-create"
-          [routerLink]="['/responsable/invitations']">
-          <mat-icon>person_add</mat-icon>
-          <span>{{ 'membres.inviteMember' | translate }}</span>
-        </button>
+  <!-- ══════════════════════════════════════════════════
+       TABS STICKY
+  ══════════════════════════════════════════════════ -->
+  <div class="tabs-wrapper" *ngIf="!isLoading">
 
-        <button 
-          mat-stroked-button 
-          class="btn-import"
-          (click)="openExcelImportDialog()">
-          <mat-icon>upload_file</mat-icon>
-          <span class="btn-text">{{ 'membres.importExcel' | translate }}</span>
-        </button>
-
-        <button 
-          mat-stroked-button 
-          class="btn-filter"
-          (click)="showFilters = !showFilters"
-          [class.active]="showFilters || activeFiltersCount > 0">
-          <mat-icon>{{ showFilters ? 'filter_list_off' : 'filter_list' }}</mat-icon>
-          <span class="btn-text">{{ 'membres.filters' | translate }}</span>
-          <span class="filter-badge" *ngIf="activeFiltersCount > 0">{{ activeFiltersCount }}</span>
-        </button>
-      </div>
-
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input 
-          type="text" 
-          [placeholder]="'membres.searchPlaceholder' | translate"
-          (keyup)="applyFilter($event)"
-          #searchInput>
-        <button *ngIf="searchInput.value" class="clear-search" (click)="clearSearch(searchInput)">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-    
+    <div class="tabs-bar" role="tablist">
+      <button class="tab-btn" [class.active]="activeTab === 'list'"
+              (click)="activeTab = 'list'" role="tab">
+        <mat-icon>group</mat-icon>
+        <span>{{ 'membres.management' | translate }}</span>
+        <span class="tab-badge">{{ filteredCount }}</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'add'"
+              (click)="activeTab = 'add'; openCreateTab()" role="tab">
+        <mat-icon>person_add</mat-icon>
+        <span>{{ 'membres.addMember' | translate }}</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'filter'"
+              (click)="activeTab = 'filter'" role="tab">
+        <mat-icon>tune</mat-icon>
+        <span class="hide-mobile">{{ 'membres.advancedFilters' | translate }}</span>
+        <span class="show-mobile">Filtres</span>
+        <span class="tab-badge warn" *ngIf="activeFiltersCount > 0">{{ activeFiltersCount }}</span>
+      </button>
     </div>
 
-    <!-- Panneau de filtres -->
-    <div *ngIf="showFilters" class="filters-panel" @slideDown>
-      <div class="filters-header">
-        <h3>
-          <mat-icon>tune</mat-icon>
-          {{ 'membres.advancedFilters' | translate }}
-        </h3>
-        <button mat-button class="btn-clear-filters" (click)="clearAllFilters()" *ngIf="activeFiltersCount > 0">
-          <mat-icon>clear_all</mat-icon>
-          {{ 'membres.clearAll' | translate }}
-        </button>
-      </div>
+    <!-- ── TAB : LISTE ────────────────────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'list'">
+      <div class="content-inner">
 
-      <div class="filters-grid">
-        <!-- Filtre Équipe -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterTeam' | translate }}</mat-label>
-          <mat-select [(ngModel)]="filters.equipe" (selectionChange)="applyFilters()">
-            <mat-option [value]="null">{{ 'membres.allTeams' | translate }}</mat-option>
-            <mat-option *ngFor="let equipe of equipes" [value]="equipe.id">
-              {{ equipe.nom }}
-            </mat-option>
-          </mat-select>
-          <mat-icon matPrefix>shield</mat-icon>
-        </mat-form-field>
+        <!-- Barre de recherche -->
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <mat-icon>search</mat-icon>
+            <input type="text"
+                   [placeholder]="'membres.searchPlaceholder' | translate"
+                   (keyup)="applyFilter($event)"
+                   #searchInput>
+            <button *ngIf="searchInput.value" (click)="clearSearch(searchInput)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <button class="filter-quick-btn"
+                  [class.active]="activeFiltersCount > 0"
+                  (click)="activeTab = 'filter'"
+                  [matTooltip]="'membres.filters' | translate">
+            <mat-icon>tune</mat-icon>
+            <span *ngIf="activeFiltersCount > 0" class="filter-count">{{ activeFiltersCount }}</span>
+          </button>
+        </div>
 
-        <!-- Filtre Statut -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterStatus' | translate }}</mat-label>
-          <mat-select [(ngModel)]="filters.active" (selectionChange)="applyFilters()">
-            <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
-            <mat-option [value]="true">{{ 'membres.activeOnly' | translate }}</mat-option>
-            <mat-option [value]="false">{{ 'membres.inactiveOnly' | translate }}</mat-option>
-          </mat-select>
-          <mat-icon matPrefix>verified_user</mat-icon>
-        </mat-form-field>
+        <!-- Résumé filtres actifs -->
+        <div class="filters-active-bar" *ngIf="activeFiltersCount > 0">
+          <mat-icon>info</mat-icon>
+          <span>{{ activeFiltersCount }} {{ 'membres.activeFilters' | translate }} · {{ filteredCount }} {{ 'membres.results' | translate }}</span>
+          <button mat-button (click)="clearAllFilters()">
+            <mat-icon>clear_all</mat-icon>{{ 'membres.clearAll' | translate }}
+          </button>
+        </div>
 
-        <!-- Filtre Sexe -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterGender' | translate }}</mat-label>
-          <mat-select [(ngModel)]="filters.sexe" (selectionChange)="applyFilters()">
-            <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
-            <mat-option value="masculin">{{ 'membres.male' | translate }}</mat-option>
-            <mat-option value="feminin">{{ 'membres.female' | translate }}</mat-option>
-          </mat-select>
-          <mat-icon matPrefix>wc</mat-icon>
-        </mat-form-field>
+        <!-- ── Liste members ──────────────────────── -->
+        <div class="members-list">
+          <div class="member-card"
+               *ngFor="let membre of paginatedMembers; let i = index"
+               [class.expanded]="expandedRowIndex === getGlobalIndex(i)"
+               [class.inactive]="!membre.active">
 
-        <!-- Filtre Rôle -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterRole' | translate }}</mat-label>
-          <mat-select [(ngModel)]="filters.roleCustom" (selectionChange)="applyFilters()">
-            <mat-option [value]="null">{{ 'membres.allRoles' | translate }}</mat-option>
-            <mat-option [value]="0">{{ 'membres.noRole' | translate }}</mat-option>
-            <mat-option *ngFor="let role of roles" [value]="role.id">
-              <div class="role-option">
-                <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
-                <span>{{ role.nom }}</span>
+            <!-- Header card -->
+            <div class="mc-header" (click)="expandPanel(i)">
+              <div class="mc-identity">
+                <!-- Avatar -->
+                <div class="mc-avatar"
+                     [style.background]="!getMemberPhoto(membre) ? getAvatarGradient(membre) : 'transparent'">
+                  <img *ngIf="getMemberPhoto(membre)"
+                       [src]="getMemberPhoto(membre)"
+                       [alt]="membre.prenom + ' ' + membre.nom"
+                       class="avatar-img"
+                       (error)="onImageError($event, membre)">
+                  <span *ngIf="!getMemberPhoto(membre)" class="avatar-initials">
+                    {{ getInitials(membre.prenom, membre.nom) }}
+                  </span>
+                  <div class="status-dot" [class.active]="membre.active" [class.inactive]="!membre.active"></div>
+                </div>
+
+                <!-- Infos -->
+                <div class="mc-info">
+                  <span class="mc-name">{{ membre.prenom }} {{ membre.nom }}</span>
+                  <div class="mc-meta">
+                    <span class="meta-chip" *ngIf="membre.equipe?.nom">
+                      <mat-icon>shield</mat-icon>{{ membre.equipe?.nom }}
+                    </span>
+                    <span class="meta-chip" *ngIf="membre.poste">
+                      <mat-icon>sports_soccer</mat-icon>{{ membre.poste }}
+                    </span>
+                    <span class="meta-chip role" *ngIf="membre.roleCustom"
+                          [style.color]="membre.roleCustom.couleur">
+                      <mat-icon [style.color]="membre.roleCustom.couleur">{{ membre.roleCustom.icone }}</mat-icon>
+                      {{ membre.roleCustom.nom }}
+                    </span>
+                  </div>
+                  <!-- Badges financiers -->
+                  <div class="financial-badges">
+                    <span class="fin-badge"
+                          *ngIf="hasContributionLink('adhesionPayee')"
+                          [class.ok]="membre.adhesionPayee"
+                          [class.ko]="!membre.adhesionPayee">
+                      <mat-icon>{{ membre.adhesionPayee ? 'verified' : 'unpublished' }}</mat-icon>
+                      Adhésion
+                    </span>
+                    <span class="fin-badge"
+                          *ngIf="hasContributionLink('cotisationAJour')"
+                          [class.ok]="membre.cotisationAJour"
+                          [class.ko]="!membre.cotisationAJour">
+                      <mat-icon>{{ membre.cotisationAJour ? 'account_balance_wallet' : 'running_with_errors' }}</mat-icon>
+                      Cotisation
+                    </span>
+                    <span class="fin-badge"
+                          *ngIf="hasSanctionsEnabled()"
+                          [class.ok]="membre.sanctionsPayees"
+                          [class.warn]="!membre.sanctionsPayees">
+                      <mat-icon>{{ membre.sanctionsPayees ? 'gavel' : 'warning_amber' }}</mat-icon>
+                      {{ membre.sanctionsPayees ? 'OK' : ((membre.totalSanctionsNonPayees || 0) + ' F') }}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </mat-option>
-          </mat-select>
-          <mat-icon matPrefix>admin_panel_settings</mat-icon>
-        </mat-form-field>
 
-        <!-- Filtre Cotisation -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterPayment' | translate }}</mat-label>
-          <mat-select [(ngModel)]="filters.cotisation" (selectionChange)="applyFilters()">
-            <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
-            <mat-option [value]="true">{{ 'membres.paid' | translate }}</mat-option>
-            <mat-option [value]="false">{{ 'membres.unpaidFilter' | translate }}</mat-option>
-          </mat-select>
-          <mat-icon matPrefix>payment</mat-icon>
-        </mat-form-field>
+              <!-- Badges statut + expand -->
+              <div class="mc-right">
+                <span class="status-badge" [class.active]="membre.active" [class.inactive]="!membre.active">
+                  <mat-icon>{{ membre.active ? 'check_circle' : 'cancel' }}</mat-icon>
+                </span>
+                <span class="pay-badge" [class.paid]="membre.cotisationPayee" [class.unpaid]="!membre.cotisationPayee">
+                  <mat-icon>{{ membre.cotisationPayee ? 'paid' : 'money_off' }}</mat-icon>
+                </span>
+                <mat-icon class="expand-icon" [class.rotated]="expandedRowIndex === getGlobalIndex(i)">
+                  expand_more
+                </mat-icon>
+              </div>
+            </div>
 
-        <!-- Filtre Poste -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>{{ 'membres.filterPosition' | translate }}</mat-label>
-          <input matInput [(ngModel)]="filters.poste" (keyup)="applyFilters()" [placeholder]="'membres.positionPlaceholder' | translate">
-          <mat-icon matPrefix>sports</mat-icon>
-        </mat-form-field>
+            <!-- Contenu expandable -->
+            <div class="mc-body" *ngIf="expandedRowIndex === getGlobalIndex(i)">
 
-         <div class="filter-checkbox-wrapper">
-        <mat-checkbox 
-          color="primary" 
-          [(ngModel)]="filterWithoutAccount" 
-          (change)="applyFilters()">
-          {{ 'membres.withoutAccount' | translate }}
-        </mat-checkbox>
+              <!-- Stats rapides -->
+              <div class="member-stats-row">
+                <div class="mstat">
+                  <span class="mstat-val">{{ membre.buts || 0 }}</span>
+                  <span class="mstat-lbl">{{ 'membres.goals' | translate }}</span>
+                </div>
+                <div class="mstat">
+                  <span class="mstat-val">{{ membre.passes || 0 }}</span>
+                  <span class="mstat-lbl">{{ 'membres.assists' | translate }}</span>
+                </div>
+                <div class="mstat">
+                  <span class="mstat-val">{{ membre.cartons || 0 }}</span>
+                  <span class="mstat-lbl">{{ 'membres.cards' | translate }}</span>
+                </div>
+                <div class="mstat">
+                  <span class="mstat-val small">{{ (membre.totalContributions || 0) | number:'1.0-0' }}</span>
+                  <span class="mstat-lbl">FCFA</span>
+                </div>
+              </div>
 
-  </div>
+              <!-- Formulaire d'édition -->
+              <div class="edit-form" *ngIf="editingRows[getGlobalIndex(i)]">
+                <div class="edit-grid">
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.lastName' | translate }}</mat-label>
+                    <input matInput [(ngModel)]="editMembre.nom">
+                    <mat-icon matPrefix>badge</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.firstName' | translate }}</mat-label>
+                    <input matInput [(ngModel)]="editMembre.prenom">
+                    <mat-icon matPrefix>badge</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.gender' | translate }}</mat-label>
+                    <mat-select [(ngModel)]="editMembre.sexe">
+                      <mat-option value="masculin">{{ 'membres.male' | translate }}</mat-option>
+                      <mat-option value="feminin">{{ 'membres.female' | translate }}</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>wc</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.position' | translate }}</mat-label>
+                    <mat-select [(ngModel)]="editMembre.poste" [name]="'editPoste_'+getGlobalIndex(i)">
+                      <mat-option value="Gardien de but">Gardien de but</mat-option>
+                      <mat-option value="Défenseur Central">Défenseur Central</mat-option>
+                      <mat-option value="Arrière Latéral">Arrière Latéral</mat-option>
+                      <mat-option value="Milieu Défensif">Milieu Défensif</mat-option>
+                      <mat-option value="Milieu Offensif">Milieu Offensif</mat-option>
+                      <mat-option value="Ailier">Ailier</mat-option>
+                      <mat-option value="Avant-centre">Avant-centre</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>sports_soccer</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.email' | translate }}</mat-label>
+                    <input matInput type="email" [(ngModel)]="editMembre.email">
+                    <mat-icon matPrefix>email</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.phone' | translate }}</mat-label>
+                    <input matInput [(ngModel)]="editMembre.tel">
+                    <mat-icon matPrefix>phone</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.team' | translate }}</mat-label>
+                    <mat-select [(ngModel)]="editMembre.equipe" [compareWith]="compareEquipes">
+                      <mat-option [value]="null">{{ 'membres.noTeam' | translate }}</mat-option>
+                      <mat-option *ngFor="let eq of equipes" [value]="eq">{{ eq.nom }}</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>shield</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.associatedUser' | translate }}</mat-label>
+                    <mat-select [(ngModel)]="editMembre.user" [compareWith]="compareUsers">
+                      <mat-option [value]="null">{{ 'membres.noUser' | translate }}</mat-option>
+                      <mat-option *ngFor="let u of users" [value]="u">{{ u.username }}</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>account_circle</mat-icon>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'membres.role' | translate }}</mat-label>
+                    <mat-select [(ngModel)]="editMembre.roleCustom" [compareWith]="compareRoles">
+                      <mat-option [value]="null">{{ 'membres.noRole' | translate }}</mat-option>
+                      <mat-option *ngFor="let r of roles" [value]="r">
+                        <div class="role-option">
+                          <mat-icon [style.color]="r.couleur">{{ r.icone }}</mat-icon>
+                          <span>{{ r.nom }}</span>
+                        </div>
+                      </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>admin_panel_settings</mat-icon>
+                  </mat-form-field>
+                </div>
+                <!-- Checkboxes édition -->
+                <div class="edit-checks">
+                  <mat-checkbox [(ngModel)]="editMembre.active">{{ 'membres.activeMember' | translate }}</mat-checkbox>
+                  <mat-checkbox [(ngModel)]="editMembre.assurance">{{ 'membres.hasInsurance' | translate }}</mat-checkbox>
+                  <mat-checkbox [(ngModel)]="editMembre.cotisationPayee" disabled>
+                    {{ 'membres.subscriptionPaid' | translate }} ({{ 'membres.readOnly' | translate }})
+                  </mat-checkbox>
+                </div>
+              </div>
 
-        
-      </div>
+              <!-- Infos lecture seule -->
+              <div class="read-info" *ngIf="!editingRows[getGlobalIndex(i)]">
+                <div class="info-row" *ngIf="membre.email">
+                  <mat-icon>email</mat-icon><span>{{ membre.email }}</span>
+                </div>
+                <div class="info-row" *ngIf="membre.tel">
+                  <mat-icon>phone</mat-icon><span>{{ membre.tel }}</span>
+                </div>
+                <div class="info-row" *ngIf="membre.user?.username">
+                  <mat-icon>account_circle</mat-icon><span>{{ membre.user?.username }}</span>
+                </div>
+              </div>
 
-      <div class="filters-summary" *ngIf="activeFiltersCount > 0">
-        <mat-icon>info</mat-icon>
-        <span>{{ activeFiltersCount }} {{ 'membres.activeFilters' | translate }} • {{ filteredCount }} {{ 'membres.results' | translate }}</span>
+              <!-- Saving overlay -->
+              <div *ngIf="isSaving" class="saving-overlay">
+                <mat-spinner diameter="32"></mat-spinner>
+                <span>{{ 'membres.saving' | translate }}...</span>
+              </div>
+
+              <!-- Actions -->
+              <div class="mc-actions">
+                <ng-container *ngIf="!editingRows[getGlobalIndex(i)]">
+                  <button mat-stroked-button (click)="editRow(i, membre); $event.stopPropagation()">
+                    <mat-icon>edit</mat-icon>{{ 'common.edit' | translate }}
+                  </button>
+                  <button mat-stroked-button (click)="openToggleActiveDialog(membre); $event.stopPropagation()">
+                    <mat-icon>{{ membre.active ? 'block' : 'check_circle' }}</mat-icon>
+                    {{ membre.active ? ('membres.deactivate' | translate) : ('membres.activate' | translate) }}
+                  </button>
+                  <button mat-stroked-button class="btn-delete"
+                          (click)="openDeleteDialog(membre); $event.stopPropagation()">
+                    <mat-icon>delete</mat-icon>{{ 'common.delete' | translate }}
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="editingRows[getGlobalIndex(i)]">
+                  <button mat-raised-button color="primary"
+                          (click)="saveEdit(i); $event.stopPropagation()"
+                          [disabled]="!isEditFormValid() || isSaving">
+                    <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+                    <mat-icon *ngIf="!isSaving">check</mat-icon>
+                    {{ isSaving ? ('membres.saving' | translate) : ('common.save' | translate) }}
+                  </button>
+                  <button mat-stroked-button (click)="cancelEdit(getGlobalIndex(i)); $event.stopPropagation()"
+                          [disabled]="isSaving">
+                    <mat-icon>close</mat-icon>{{ 'common.cancel' | translate }}
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div><!-- /members-list -->
+
+        <!-- État vide -->
+        <div class="empty-state" *ngIf="paginatedMembers.length === 0">
+          <mat-icon>person_off</mat-icon>
+          <h3>{{ 'membres.noMembers' | translate }}</h3>
+          <p>{{ searchInput.value || activeFiltersCount > 0
+               ? ('membres.tryDifferentFilters' | translate)
+               : ('membres.addFirstMember' | translate) }}</p>
+          <button *ngIf="!searchInput.value && activeFiltersCount === 0"
+                  mat-raised-button color="primary"
+                  (click)="activeTab = 'add'; openCreateTab()">
+            <mat-icon>person_add</mat-icon>{{ 'membres.addMember' | translate }}
+          </button>
+          <button *ngIf="activeFiltersCount > 0" mat-stroked-button (click)="clearAllFilters()">
+            <mat-icon>clear_all</mat-icon>{{ 'membres.clearFilters' | translate }}
+          </button>
+        </div>
+
+        <!-- Pagination -->
+        <mat-paginator *ngIf="filteredCount > 0"
+                       [length]="filteredCount"
+                       [pageSize]="pageSize"
+                       [pageSizeOptions]="[5, 10, 25, 50]"
+                       [pageIndex]="pageIndex"
+                       (page)="onPageChange($event)"
+                       showFirstLastButtons
+                       class="members-paginator">
+        </mat-paginator>
+
       </div>
     </div>
 
-    <!-- Formulaire de création -->
-    <div *ngIf="showCreateRow" class="create-form-card" @slideDown>
-      <div class="create-form-header">
-        <div class="form-icon">
-          <mat-icon>person_add</mat-icon>
-        </div>
-        <div class="form-title">
-          <h3>{{ 'membres.newMember' | translate }}</h3>
-          <p>{{ 'membres.newMemberSubtitle' | translate }}</p>
+    <!-- ── TAB : AJOUTER UN MEMBRE ────────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'add'">
+      <div class="content-inner">
+
+        <div class="create-form">
+
+          <!-- Infos personnelles -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <mat-icon>person</mat-icon>
+              {{ 'membres.personalInfo' | translate }}
+            </div>
+            <div class="form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.lastName' | translate }} *</mat-label>
+                <input matInput [(ngModel)]="newMembre.nom" required>
+                <mat-icon matPrefix>badge</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.firstName' | translate }} *</mat-label>
+                <input matInput [(ngModel)]="newMembre.prenom" required>
+                <mat-icon matPrefix>badge</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.gender' | translate }} *</mat-label>
+                <mat-select [(ngModel)]="newMembre.sexe" required>
+                  <mat-option value="masculin">{{ 'membres.male' | translate }}</mat-option>
+                  <mat-option value="feminin">{{ 'membres.female' | translate }}</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>wc</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.birthDate' | translate }}</mat-label>
+                <input matInput [matDatepicker]="picker" [(ngModel)]="newMembre.dateNaissance">
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.email' | translate }}</mat-label>
+                <input matInput type="email" [(ngModel)]="newMembre.email">
+                <mat-icon matPrefix>email</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.phone' | translate }}</mat-label>
+                <input matInput [(ngModel)]="newMembre.tel">
+                <mat-icon matPrefix>phone</mat-icon>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Infos sportives -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <mat-icon>sports_soccer</mat-icon>
+              {{ 'membres.sportInfo' | translate }}
+            </div>
+            <div class="form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.position' | translate }}</mat-label>
+                <mat-select [(ngModel)]="newMembre.poste" name="poste">
+                  <mat-option value="Gardien de but">{{ 'directory.positions.goalkeeper' | translate }}</mat-option>
+                  <mat-option value="Défenseur Central">{{ 'directory.positions.center_back' | translate }}</mat-option>
+                  <mat-option value="Arrière Latéral">{{ 'directory.positions.full_back' | translate }}</mat-option>
+                  <mat-option value="Milieu Défensif">{{ 'directory.positions.defensive_midfielder' | translate }}</mat-option>
+                  <mat-option value="Milieu Offensif">{{ 'directory.positions.attacking_midfielder' | translate }}</mat-option>
+                  <mat-option value="Ailier">{{ 'directory.positions.winger' | translate }}</mat-option>
+                  <mat-option value="Avant-centre">{{ 'directory.positions.striker' | translate }}</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>sports</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'membres.team' | translate }}</mat-label>
+                <mat-select [(ngModel)]="newMembre.equipe" [compareWith]="compareEquipes">
+                  <mat-option [value]="null">{{ 'membres.noTeam' | translate }}</mat-option>
+                  <mat-option *ngFor="let eq of equipes" [value]="eq">{{ eq.nom }}</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>shield</mat-icon>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="span-2">
+                <mat-label>{{ 'membres.role' | translate }}</mat-label>
+                <mat-select [(ngModel)]="newMembre.roleCustom" [compareWith]="compareRoles">
+                  <mat-option [value]="null">{{ 'membres.noRole' | translate }}</mat-option>
+                  <mat-option *ngFor="let r of roles" [value]="r">
+                    <div class="role-option">
+                      <mat-icon [style.color]="r.couleur">{{ r.icone }}</mat-icon>
+                      <span>{{ r.nom }}</span>
+                    </div>
+                  </mat-option>
+                </mat-select>
+                <mat-icon matPrefix>admin_panel_settings</mat-icon>
+              </mat-form-field>
+            </div>
+            <div class="checks-row">
+              <mat-checkbox [(ngModel)]="newMembre.cotisationPayee">{{ 'membres.subscriptionPaid' | translate }}</mat-checkbox>
+              <mat-checkbox [(ngModel)]="newMembre.active">{{ 'membres.activeMember' | translate }}</mat-checkbox>
+              <mat-checkbox [(ngModel)]="newMembre.assurance">{{ 'membres.hasInsurance' | translate }}</mat-checkbox>
+            </div>
+          </div>
+
+          <!-- Compte utilisateur -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <mat-icon>account_circle</mat-icon>
+              {{ 'membres.userAccount' | translate }}
+            </div>
+            <mat-checkbox [(ngModel)]="createUserForMembre"
+                          (ngModelChange)="toggleUserCreation()"
+                          class="user-checkbox">
+              {{ 'membres.createUserAccount' | translate }}
+            </mat-checkbox>
+            <mat-form-field *ngIf="!createUserForMembre" appearance="outline"
+                            class="full-width" style="margin-top:12px">
+              <mat-label>{{ 'membres.existingUser' | translate }}</mat-label>
+              <mat-select [(ngModel)]="newMembre.user">
+                <mat-option [value]="null">{{ 'membres.noUser' | translate }}</mat-option>
+                <mat-option *ngFor="let u of users" [value]="u">{{ u.username }}</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>account_circle</mat-icon>
+            </mat-form-field>
+            <div *ngIf="createUserForMembre" class="user-info-box">
+              <mat-icon>info</mat-icon>
+              <p>{{ 'membres.autoCreateUserInfo' | translate }}:
+                <strong>{{ newMembre.nom?.toLowerCase() }}_{{ newMembre.prenom?.toLowerCase() }}</strong>
+              </p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions-bar">
+            <button mat-raised-button color="primary"
+                    (click)="saveMembre()"
+                    [disabled]="!isCreateFormValid()">
+              <mat-icon>check</mat-icon>
+              {{ 'membres.createMember' | translate }}
+            </button>
+            <button mat-stroked-button (click)="cancelCreate(); activeTab = 'list'">
+              <mat-icon>close</mat-icon>{{ 'common.cancel' | translate }}
+            </button>
+          </div>
+
         </div>
       </div>
-      
-      <div class="create-form-content">
-        <!-- Section Informations personnelles -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <mat-icon>person</mat-icon>
-            {{ 'membres.personalInfo' | translate }}
-          </h4>
-          
-          <div class="form-grid">
+    </div>
+
+    <!-- ── TAB : FILTRES ─────────────────────────── -->
+    <div class="tab-content" *ngIf="activeTab === 'filter'">
+      <div class="content-inner">
+
+        <div class="filter-panel">
+          <div class="filter-panel-header">
+            <div class="filter-panel-title">
+              <mat-icon>tune</mat-icon>
+              {{ 'membres.advancedFilters' | translate }}
+            </div>
+            <button mat-button *ngIf="activeFiltersCount > 0" (click)="clearAllFilters()">
+              <mat-icon>clear_all</mat-icon>{{ 'membres.clearAll' | translate }}
+            </button>
+          </div>
+
+          <div class="filter-grid">
             <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.lastName' | translate }} *</mat-label>
-              <input matInput [(ngModel)]="newMembre.nom" required>
-              <mat-icon matPrefix>badge</mat-icon>
+              <mat-label>{{ 'membres.filterTeam' | translate }}</mat-label>
+              <mat-select [(ngModel)]="filters.equipe" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">{{ 'membres.allTeams' | translate }}</mat-option>
+                <mat-option *ngFor="let eq of equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>shield</mat-icon>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.firstName' | translate }} *</mat-label>
-              <input matInput [(ngModel)]="newMembre.prenom" required>
-              <mat-icon matPrefix>badge</mat-icon>
+              <mat-label>{{ 'membres.filterStatus' | translate }}</mat-label>
+              <mat-select [(ngModel)]="filters.active" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
+                <mat-option [value]="true">{{ 'membres.activeOnly' | translate }}</mat-option>
+                <mat-option [value]="false">{{ 'membres.inactiveOnly' | translate }}</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>verified_user</mat-icon>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.gender' | translate }} *</mat-label>
-              <mat-select [(ngModel)]="newMembre.sexe" required>
+              <mat-label>{{ 'membres.filterGender' | translate }}</mat-label>
+              <mat-select [(ngModel)]="filters.sexe" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
                 <mat-option value="masculin">{{ 'membres.male' | translate }}</mat-option>
                 <mat-option value="feminin">{{ 'membres.female' | translate }}</mat-option>
               </mat-select>
@@ -259,451 +575,67 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.birthDate' | translate }}</mat-label>
-              <input matInput [matDatepicker]="picker" [(ngModel)]="newMembre.dateNaissance">
-              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.email' | translate }}</mat-label>
-              <input matInput type="email" [(ngModel)]="newMembre.email">
-              <mat-icon matPrefix>email</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.phone' | translate }}</mat-label>
-              <input matInput [(ngModel)]="newMembre.tel">
-              <mat-icon matPrefix>phone</mat-icon>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <!-- Section Informations sportives -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <mat-icon>sports_soccer</mat-icon>
-            {{ 'membres.sportInfo' | translate }}
-          </h4>
-          
-          <div class="form-grid">
-           <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.position' | translate }}</mat-label>
-              <mat-icon matPrefix>sports</mat-icon>
-              <mat-select [(ngModel)]="newMembre.poste" name="poste">
-                <mat-option value="Gardien de but">{{ 'directory.positions.goalkeeper' | translate }}</mat-option>
-                <mat-option value="Défenseur Central">{{ 'directory.positions.center_back' | translate }}</mat-option>
-                <mat-option value="Arrière Latéral">{{ 'directory.positions.full_back' | translate }}</mat-option>
-                <mat-option value="Milieu Défensif">{{ 'directory.positions.defensive_midfielder' | translate }}</mat-option>
-                <mat-option value="Milieu Offensif">{{ 'directory.positions.attacking_midfielder' | translate }}</mat-option>
-                <mat-option value="Ailier">{{ 'directory.positions.winger' | translate }}</mat-option>
-                <mat-option value="Avant-centre">{{ 'directory.positions.striker' | translate }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.team' | translate }}</mat-label>
-              <mat-select [(ngModel)]="newMembre.equipe" [compareWith]="compareEquipes">
-                <mat-option [value]="null">{{ 'membres.noTeam' | translate }}</mat-option>
-                <mat-option *ngFor="let equipe of equipes" [value]="equipe">
-                  {{ equipe.nom }}
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix>shield</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>{{ 'membres.role' | translate }}</mat-label>
-              <mat-select [(ngModel)]="newMembre.roleCustom" [compareWith]="compareRoles">
-                <mat-option [value]="null">{{ 'membres.noRole' | translate }}</mat-option>
-                <mat-option *ngFor="let role of roles" [value]="role">
+              <mat-label>{{ 'membres.filterRole' | translate }}</mat-label>
+              <mat-select [(ngModel)]="filters.roleCustom" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">{{ 'membres.allRoles' | translate }}</mat-option>
+                <mat-option [value]="0">{{ 'membres.noRole' | translate }}</mat-option>
+                <mat-option *ngFor="let r of roles" [value]="r.id">
                   <div class="role-option">
-                    <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
-                    <span>{{ role.nom }}</span>
+                    <mat-icon [style.color]="r.couleur">{{ r.icone }}</mat-icon>
+                    <span>{{ r.nom }}</span>
                   </div>
                 </mat-option>
               </mat-select>
               <mat-icon matPrefix>admin_panel_settings</mat-icon>
             </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'membres.filterPayment' | translate }}</mat-label>
+              <mat-select [(ngModel)]="filters.cotisation" (selectionChange)="applyFilters()">
+                <mat-option [value]="null">{{ 'membres.all' | translate }}</mat-option>
+                <mat-option [value]="true">{{ 'membres.paid' | translate }}</mat-option>
+                <mat-option [value]="false">{{ 'membres.unpaidFilter' | translate }}</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>payment</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'membres.filterPosition' | translate }}</mat-label>
+              <input matInput [(ngModel)]="filters.poste" (keyup)="applyFilters()"
+                     [placeholder]="'membres.positionPlaceholder' | translate">
+              <mat-icon matPrefix>sports</mat-icon>
+            </mat-form-field>
+
+            <div class="filter-checkbox-wrap">
+              <mat-checkbox color="primary"
+                            [(ngModel)]="filterWithoutAccount"
+                            (change)="applyFilters()">
+                {{ 'membres.withoutAccount' | translate }}
+              </mat-checkbox>
+            </div>
           </div>
 
-          <div class="checkbox-group">
-            <mat-checkbox [(ngModel)]="newMembre.cotisationPayee">
-              {{ 'membres.subscriptionPaid' | translate }}
-            </mat-checkbox>
-            <mat-checkbox [(ngModel)]="newMembre.active">
-              {{ 'membres.activeMember' | translate }}
-            </mat-checkbox>
-            <mat-checkbox [(ngModel)]="newMembre.assurance">
-              {{ 'membres.hasInsurance' | translate }}
-            </mat-checkbox>
-          </div>
-        </div>
-
-        <!-- Section Compte utilisateur -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <mat-icon>account_circle</mat-icon>
-            {{ 'membres.userAccount' | translate }}
-          </h4>
-
-          <mat-checkbox 
-            [(ngModel)]="createUserForMembre" 
-            (ngModelChange)="toggleUserCreation()"
-            class="user-checkbox">
-            {{ 'membres.createUserAccount' | translate }}
-          </mat-checkbox>
-
-          <mat-form-field *ngIf="!createUserForMembre" appearance="outline" class="full-width">
-            <mat-label>{{ 'membres.existingUser' | translate }}</mat-label>
-            <mat-select [(ngModel)]="newMembre.user">
-              <mat-option [value]="null">{{ 'membres.noUser' | translate }}</mat-option>
-              <mat-option *ngFor="let user of users" [value]="user">
-                {{ user.username }}
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>account_circle</mat-icon>
-          </mat-form-field>
-
-          <div *ngIf="createUserForMembre" class="user-info-box">
+          <!-- Résumé -->
+          <div class="filter-summary" *ngIf="activeFiltersCount > 0">
             <mat-icon>info</mat-icon>
-            <p>{{ 'membres.autoCreateUserInfo' | translate }}: <strong>{{ newMembre.nom.toLowerCase() }}_{{ newMembre.prenom.toLowerCase() }}</strong></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="create-form-actions">
-        <button mat-stroked-button (click)="cancelCreate()">
-          <mat-icon>close</mat-icon>
-          {{ 'common.cancel' | translate }}
-        </button>
-        <button 
-          mat-raised-button 
-          class="btn-save"
-          (click)="saveMembre()" 
-          [disabled]="!isCreateFormValid()">
-          <mat-icon>check</mat-icon>
-          {{ 'membres.createMember' | translate }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Liste des membres -->
-    <div class="members-grid">
-      <div 
-        class="member-card" 
-        *ngFor="let membre of paginatedMembers; let i = index"
-        [class.expanded]="expandedRowIndex === getGlobalIndex(i)"
-        [class.inactive]="!membre.active"
-        @cardAnimation>
-        
-        <!-- Header de la carte membre -->
-        <div class="member-card-header" (click)="expandPanel(i)">
-          <div class="member-identity">
-            <!-- Avatar avec photo ou initiales -->
-            <div class="member-avatar" [style.background]="!getMemberPhoto(membre) ? getAvatarGradient(membre) : 'transparent'">
-              <img 
-                *ngIf="getMemberPhoto(membre)" 
-                [src]="getMemberPhoto(membre)" 
-                [alt]="membre.prenom + ' ' + membre.nom"
-                class="avatar-image"
-                (error)="onImageError($event, membre)">
-              <span *ngIf="!getMemberPhoto(membre)" class="avatar-initials">
-                {{ getInitials(membre.prenom, membre.nom) }}
-              </span>
-              <div class="status-dot" [class.active]="membre.active" [class.inactive]="!membre.active"></div>
-            </div>
-
-            <div class="member-info">
-              <h3 class="member-name">{{ membre.prenom }} {{ membre.nom }}</h3>
-              <div class="member-meta">
-                <span class="meta-item" *ngIf="membre.equipe?.nom">
-                  <mat-icon>shield</mat-icon>
-                  {{ membre.equipe?.nom }}
-                </span>
-                <span class="meta-item" *ngIf="membre.poste">
-                  <mat-icon>sports_soccer</mat-icon>
-                  {{ membre.poste }}
-                </span>
-                <span class="meta-item role" *ngIf="membre.roleCustom" [style.color]="membre.roleCustom.couleur">
-                  <mat-icon [style.color]="membre.roleCustom.couleur">{{ membre.roleCustom.icone }}</mat-icon>
-                  {{ membre.roleCustom.nom }}
-                </span>
-              </div>
-               <div class="financial-status-badges">
-
-              <div class="status-badge" 
-                  *ngIf="hasContributionLink('adhesionPayee')"
-                  [ngClass]="membre.adhesionPayee ? 'status-success' : 'status-danger'">
-                <mat-icon>{{ membre.adhesionPayee ? 'verified' : 'unpublished' }}</mat-icon>
-                <span>Adhésion</span>
-              </div>
-
-              <div class="status-badge" 
-                  *ngIf="hasContributionLink('cotisationAJour')"
-                  [ngClass]="membre.cotisationAJour ? 'status-success' : 'status-danger'">
-                <mat-icon>{{ membre.cotisationAJour ? 'account_balance_wallet' : 'running_with_errors' }}</mat-icon>
-                <span>Cotisation</span>
-              </div>
-
-              <div class="status-badge" 
-                  *ngIf="hasSanctionsEnabled()"
-                  [ngClass]="membre.sanctionsPayees ? 'status-success' : 'status-warning'">
-                <mat-icon>{{ membre.sanctionsPayees ? 'gavel' : 'warning_amber' }}</mat-icon>
-                <span>
-                  {{ membre.sanctionsPayees ? 'Sanctions OK' : ((membre.totalSanctionsNonPayees || 0) + ' F') }}
-                </span>
-              </div>
-
-            </div>
-            </div>
-
-           
-          </div>
-          
-          <div class="member-badges">
-            <span class="badge" [class.success]="membre.active" [class.danger]="!membre.active">
-              <mat-icon>{{ membre.active ? 'check_circle' : 'cancel' }}</mat-icon>
-              {{ membre.active ? ('membres.active' | translate) : ('membres.inactive' | translate) }}
-            </span>
-            <span class="badge" [class.success]="membre.cotisationPayee" [class.warning]="!membre.cotisationPayee">
-              <mat-icon>{{ membre.cotisationPayee ? 'paid' : 'money_off' }}</mat-icon>
-              {{ membre.cotisationPayee ? ('membres.paid' | translate) : ('membres.unpaidFilter' | translate) }}
-            </span>
-            <button mat-icon-button class="expand-btn" [class.rotated]="expandedRowIndex === getGlobalIndex(i)">
-              <mat-icon>expand_more</mat-icon>
+            <span>{{ activeFiltersCount }} {{ 'membres.activeFilters' | translate }} · {{ filteredCount }} {{ 'membres.results' | translate }}</span>
+            <button mat-button (click)="activeTab = 'list'">
+              <mat-icon>visibility</mat-icon>Voir les résultats
             </button>
           </div>
         </div>
 
-        <!-- Contenu expandable -->
-        <div class="member-card-content" *ngIf="expandedRowIndex === getGlobalIndex(i)" @expandCollapse>
-          
-          <!-- Section Informations -->
-          <div class="detail-section">
-            <h4 class="section-header">
-              <mat-icon>info</mat-icon>
-              {{ 'membres.details' | translate }}
-            </h4>
-
-            <div class="detail-grid">
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.lastName' | translate }}</mat-label>
-                <input matInput [(ngModel)]="editMembre.nom" [disabled]="!editingRows[getGlobalIndex(i)]">
-                <mat-icon matPrefix>badge</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.firstName' | translate }}</mat-label>
-                <input matInput [(ngModel)]="editMembre.prenom" [disabled]="!editingRows[getGlobalIndex(i)]">
-                <mat-icon matPrefix>badge</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.gender' | translate }}</mat-label>
-                <mat-select [(ngModel)]="editMembre.sexe" [disabled]="!editingRows[getGlobalIndex(i)]">
-                  <mat-option value="masculin">{{ 'membres.male' | translate }}</mat-option>
-                  <mat-option value="feminin">{{ 'membres.female' | translate }}</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>wc</mat-icon>
-              </mat-form-field>
-
-             <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.position' | translate }}</mat-label>
-                <mat-icon matPrefix>sports_soccer</mat-icon>
-                <mat-select [(ngModel)]="editMembre.poste" 
-                            name="editPoste_{{getGlobalIndex(i)}}"
-                            [disabled]="!editingRows[getGlobalIndex(i)]">
-                  <mat-option value="Gardien de but">Gardien de but</mat-option>
-                  <mat-option value="Défenseur Central">Défenseur Central</mat-option>
-                  <mat-option value="Arrière Latéral">Arrière Latéral</mat-option>
-                  <mat-option value="Milieu Défensif">Milieu Défensif</mat-option>
-                  <mat-option value="Milieu Offensif">Milieu Offensif</mat-option>
-                  <mat-option value="Ailier">Ailier</mat-option>
-                  <mat-option value="Avant-centre">Avant-centre</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.email' | translate }}</mat-label>
-                <input matInput type="email" [(ngModel)]="editMembre.email" [disabled]="!editingRows[getGlobalIndex(i)]">
-                <mat-icon matPrefix>email</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.phone' | translate }}</mat-label>
-                <input matInput [(ngModel)]="editMembre.tel" [disabled]="!editingRows[getGlobalIndex(i)]">
-                <mat-icon matPrefix>phone</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.team' | translate }}</mat-label>
-                <mat-select [(ngModel)]="editMembre.equipe" [compareWith]="compareEquipes" [disabled]="!editingRows[getGlobalIndex(i)]">
-                  <mat-option [value]="null">{{ 'membres.noTeam' | translate }}</mat-option>
-                  <mat-option *ngFor="let equipe of equipes" [value]="equipe">
-                    {{ equipe.nom }}
-                  </mat-option>
-                </mat-select>
-                <mat-icon matPrefix>shield</mat-icon>
-              </mat-form-field>
-                 <mat-form-field appearance="outline">
-            <mat-label>{{ 'membres.associatedUser' | translate }}</mat-label>
-            <mat-select [(ngModel)]="editMembre.user" [compareWith]="compareUsers" [disabled]="!editingRows[getGlobalIndex(i)]">
-              <mat-option [value]="null">{{ 'membres.noUser' | translate }}</mat-option>
-              <mat-option *ngFor="let user of users" [value]="user">
-                {{ user.username }}
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>account_circle</mat-icon>
-          </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'membres.role' | translate }}</mat-label>
-                <mat-select [(ngModel)]="editMembre.roleCustom" [compareWith]="compareRoles" [disabled]="!editingRows[getGlobalIndex(i)]">
-                  <mat-option [value]="null">{{ 'membres.noRole' | translate }}</mat-option>
-                  <mat-option *ngFor="let role of roles" [value]="role">
-                    <div class="role-option">
-                      <mat-icon [style.color]="role.couleur">{{ role.icone }}</mat-icon>
-                      <span>{{ role.nom }}</span>
-                    </div>
-                  </mat-option>
-                </mat-select>
-                <mat-icon matPrefix>admin_panel_settings</mat-icon>
-              </mat-form-field>
-            </div>
-
-            <!-- Checkboxes -->
-            <div class="checkbox-group">
-              <mat-checkbox [(ngModel)]="editMembre.active" [disabled]="!editingRows[getGlobalIndex(i)]">
-                {{ 'membres.activeMember' | translate }}
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="editMembre.assurance" [disabled]="!editingRows[getGlobalIndex(i)]">
-                {{ 'membres.hasInsurance' | translate }}
-              </mat-checkbox>
-              <mat-checkbox [(ngModel)]="editMembre.cotisationPayee" disabled>
-                {{ 'membres.subscriptionPaid' | translate }} ({{ 'membres.readOnly' | translate }})
-              </mat-checkbox>
-            </div>
-          </div>
-
-          <!-- Section Statistiques -->
-          <div class="stats-section">
-            <h4 class="section-header">
-              <mat-icon>bar_chart</mat-icon>
-              {{ 'membres.statistics' | translate }}
-            </h4>
-
-            <div class="stats-grid">
-              <div class="stat-card goals">
-                <mat-icon>sports_soccer</mat-icon>
-                <div class="stat-info">
-                  <span class="stat-value">{{ membre.buts || 0 }}</span>
-                  <span class="stat-label">{{ 'membres.goals' | translate }}</span>
-                </div>
-              </div>
-
-              <div class="stat-card assists">
-                <mat-icon>arrow_forward</mat-icon>
-                <div class="stat-info">
-                  <span class="stat-value">{{ membre.passes || 0 }}</span>
-                  <span class="stat-label">{{ 'membres.assists' | translate }}</span>
-                </div>
-              </div>
-
-              <div class="stat-card cards">
-                <mat-icon>style</mat-icon>
-                <div class="stat-info">
-                  <span class="stat-value">{{ membre.cartons || 0 }}</span>
-                  <span class="stat-label">{{ 'membres.cards' | translate }}</span>
-                </div>
-              </div>
-
-              <div class="stat-card contributions">
-                <mat-icon>payments</mat-icon>
-                <div class="stat-info">
-                  <span class="stat-value">{{ membre.totalContributions || 0 }} FCFA</span>
-                  <span class="stat-label">{{ 'membres.contributions' | translate }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Loading overlay -->
-          <div *ngIf="isSaving" class="saving-overlay">
-            <mat-spinner diameter="40"></mat-spinner>
-            <p>{{ 'membres.saving' | translate }}...</p>
-          </div>
-
-          <!-- Actions -->
-          <div class="member-card-actions">
-            <ng-container *ngIf="!editingRows[getGlobalIndex(i)]">
-              <button mat-stroked-button class="btn-edit" (click)="editRow(i, membre); $event.stopPropagation()">
-                <mat-icon>edit</mat-icon>
-                {{ 'common.edit' | translate }}
-              </button>
-              <button mat-stroked-button class="btn-toggle" (click)="openToggleActiveDialog(membre); $event.stopPropagation()">
-                <mat-icon>{{ membre.active ? 'block' : 'check_circle' }}</mat-icon>
-                {{ membre.active ? ('membres.deactivate' | translate) : ('membres.activate' | translate) }}
-              </button>
-              <button mat-stroked-button class="btn-delete" (click)="openDeleteDialog(membre); $event.stopPropagation()">
-                <mat-icon>delete</mat-icon>
-                {{ 'common.delete' | translate }}
-              </button>
-            </ng-container>
-            <ng-container *ngIf="editingRows[getGlobalIndex(i)]">
-              <button 
-                mat-raised-button 
-                class="btn-save" 
-                (click)="saveEdit(i); $event.stopPropagation()" 
-                [disabled]="!isEditFormValid() || isSaving">
-                <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
-                <mat-icon *ngIf="!isSaving">check</mat-icon>
-                {{ isSaving ? ('membres.saving' | translate) : ('common.save' | translate) }}
-              </button>
-              <button mat-stroked-button (click)="cancelEdit(getGlobalIndex(i)); $event.stopPropagation()" [disabled]="isSaving">
-                <mat-icon>close</mat-icon>
-                {{ 'common.cancel' | translate }}
-              </button>
-            </ng-container>
-          </div>
-        </div>
       </div>
     </div>
 
-    <!-- État vide -->
-    <div class="empty-state" *ngIf="paginatedMembers.length === 0" @fadeIn>
-      <div class="empty-illustration">
-        <div class="empty-icon-wrapper">
-          <mat-icon class="empty-icon">person_off</mat-icon>
-          <div class="empty-decoration"></div>
-        </div>
-      </div>
-      <div class="empty-content">
-        <h3 class="empty-title">{{ 'membres.noMembers' | translate }}</h3>
-        <p class="empty-text">
-          {{ searchInput.value || activeFiltersCount > 0 ? ('membres.tryDifferentFilters' | translate) : ('membres.addFirstMember' | translate) }}
-        </p>
-        <button *ngIf="!searchInput.value && activeFiltersCount === 0" mat-raised-button class="btn-create-first" (click)="toggleCreateRow()">
-          <mat-icon>person_add</mat-icon>
-          {{ 'membres.addMember' | translate }}
-        </button>
-        <button *ngIf="activeFiltersCount > 0" mat-stroked-button (click)="clearAllFilters()">
-          <mat-icon>clear_all</mat-icon>
-          {{ 'membres.clearFilters' | translate }}
-        </button>
-      </div>
-    </div>
+  </div><!-- /tabs-wrapper -->
 
-    <!-- Pagination -->
-    <mat-paginator 
-      *ngIf="filteredCount > 0"
-      [length]="filteredCount"
-      [pageSize]="pageSize"
-      [pageSizeOptions]="[5, 10, 25, 50]"
-      [pageIndex]="pageIndex"
-      (page)="onPageChange($event)"
-      showFirstLastButtons
-      class="members-paginator">
-    </mat-paginator>
-  </div>
+  <!-- FAB Ajouter -->
+  <button class="fab-add"
+          *ngIf="!isLoading && activeTab === 'list'"
+          (click)="activeTab = 'add'; openCreateTab()"
+          [matTooltip]="'membres.addMember' | translate">
+    <mat-icon>person_add</mat-icon>
+  </button>
+
 </div>

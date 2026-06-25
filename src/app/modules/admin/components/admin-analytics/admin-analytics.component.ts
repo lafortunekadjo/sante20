@@ -147,7 +147,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
   groupesInactifs: GroupeEngagement[] = [];
 
   // ── Charts ────────────────────────────────────────────────────────────────
-  private charts: Record<string, Chart> = {};
+  private charts: Record<string, any> = {};
 
   // ── Palette — calquée sur _variables.scss ────────────────────────────────
   private readonly C = {

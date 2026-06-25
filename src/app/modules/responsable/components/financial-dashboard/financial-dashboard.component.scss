@@ -1,611 +1,485 @@
-// financial-dashboard.component.scss
-@import '../../../../../variables';
+@use '../../../../../variables' as *;
 
-.financial-dashboard-container {
+// ================================================================
+// FINANCIAL DASHBOARD — Mobile-first
+// ================================================================
+
+// Theming
+:host {
+  --primary-color:      #{$primary-blue};
+  --primary-dark:       #{$primary-blue-dark};
+  --accent-color:       #{$secondary-emerald};
+  --success-color:      #{$success-color};
+  --warning-color:      #{$warning-color};
+  --error-color:        #{$error-color};
+  --text-primary:       #{$light-text-primary};
+  --text-secondary:     #{$light-text-secondary};
+  --text-tertiary:      #{$light-text-tertiary};
+  --background-primary: #{$light-bg-primary};
+  --background-secondary:#{$light-bg-secondary};
+  --background-tertiary:#{$light-bg-tertiary};
+  --border-color:       #{$light-border};
+}
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:       #{$dark-text-primary};
+  --text-secondary:     #{$dark-text-secondary};
+  --text-tertiary:      #{$dark-text-tertiary};
+  --background-primary: #{$dark-bg-primary};
+  --background-secondary:#{$dark-bg-secondary};
+  --background-tertiary:#{$dark-bg-tertiary};
+  --border-color:       #{$dark-border};
+}
+
+// ── Container ─────────────────────────────────────────────────
+.fin-dashboard-container {
   @include page-container;
+  display: flex;
+  flex-direction: column;
 }
 
-// ===== HEADER =====
-.page-header {
-  @include page-header;
-  
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: $spacing-lg;
-
-    @include mobile {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  }
-
-  .exercice-selector {
-    .exercice-select {
-      min-width: 250px;
-
-      @include mobile {
-        width: 100%;
-      }
-    }
-
-    .exercice-option {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-
-      .exercice-badge {
-        font-size: $font-size-xs;
-        padding: 2px 8px;
-        border-radius: $border-radius-full;
-        font-weight: $font-weight-semibold;
-
-        &.actif {
-          background: rgba($success-color, 0.15);
-          color: $success-color;
-        }
-
-        &.cloture {
-          background: rgba($warning-color, 0.15);
-          color: $warning-color;
-        }
-      }
-    }
-  }
-}
-
-// ===== LOADING =====
-.loading-container {
-  @include loading-state;
-}
-
-// ===== CONTENU =====
-.content {
-  padding: $spacing-2xl;
-
-  @include mobile {
-    padding: $spacing-lg;
-  }
-}
-
-// ===== CARTE SOLDE GLOBAL =====
-.solde-global-card {
-  background: linear-gradient(135deg, $primary-blue 0%, darken($primary-blue, 15%) 100%);
-  border-radius: $border-radius-2xl;
-  padding: $spacing-2xl;
+// ── Header ────────────────────────────────────────────────────
+.fin-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  margin-bottom: $spacing-2xl;
-  box-shadow: $shadow-xl;
+  padding: $spacing-xl $spacing-2xl $spacing-lg;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 
-  @include mobile {
-    padding: $spacing-lg;
-    margin-bottom: $spacing-lg;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
-  .solde-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-lg;
-    margin-bottom: $spacing-xl;
+  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
+}
 
-    @include mobile {
-      flex-wrap: wrap;
-    }
+.fin-header-top {
+  position: relative;
+  z-index: 1;
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+  gap: $spacing-md;
 
-    .solde-icon-wrapper {
-      width: 64px;
-      height: 64px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: $border-radius-lg;
-      @include flex-center;
+  @include mobile { margin-bottom: $spacing-md; }
+}
 
-      @include mobile {
-        width: 48px;
-        height: 48px;
-      }
+.fin-header-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
 
-      mat-icon {
-        font-size: 32px;
-        width: 32px;
-        height: 32px;
-
-        @include mobile {
-          font-size: 24px;
-          width: 24px;
-          height: 24px;
-        }
-      }
-    }
-
-    .solde-info {
-      flex: 1;
-
-      .solde-label {
-        display: block;
-        font-size: $font-size-sm;
-        opacity: 0.9;
-        margin-bottom: $spacing-xs;
-      }
-
-      .solde-value {
-        display: block;
-        font-size: 2.5rem;
-        font-weight: $font-weight-bold;
-        line-height: 1;
-
-        @include mobile {
-          font-size: 1.75rem;
-        }
-      }
-    }
-
-    .actions-btn {
-      color: white;
-      opacity: 0.8;
-
-      &:hover {
-        opacity: 1;
-        background: rgba(255, 255, 255, 0.1);
-      }
-    }
+  .fin-header-icon {
+    width: 44px; height: 44px;
+    border-radius: $border-radius-xl;
+    background: rgba(255,255,255,.15);
+    @include flex-center;
+    flex-shrink: 0;
+    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } }
   }
 
-  .solde-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-lg;
+  h1 {
+    margin: 0;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    text-shadow: 0 1px 4px rgba(0,0,0,.2);
+    @include mobile { font-size: $font-size-xl; }
+  }
 
-    @include mobile {
-      grid-template-columns: 1fr;
-      gap: $spacing-md;
-    }
-
-    .stat-card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: $border-radius-lg;
-      padding: $spacing-lg;
-      display: flex;
-      align-items: center;
-      gap: $spacing-md;
-      backdrop-filter: blur(10px);
-
-      .stat-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: $border-radius-md;
-        @include flex-center;
-
-        mat-icon {
-          font-size: 20px;
-          width: 20px;
-          height: 20px;
-        }
-      }
-
-      &.entrees .stat-icon {
-        background: rgba($success-color, 0.3);
-        color: lighten($success-color, 20%);
-      }
-
-      &.sorties .stat-icon {
-        background: rgba($error-color, 0.3);
-        color: lighten($error-color, 20%);
-      }
-
-      &.caisses .stat-icon {
-        background: rgba($secondary-emerald, 0.3);
-        color: lighten($secondary-emerald, 20%);
-      }
-
-      .stat-content {
-        .stat-label {
-          display: block;
-          font-size: $font-size-xs;
-          opacity: 0.8;
-        }
-
-        .stat-value {
-          display: block;
-          font-size: $font-size-lg;
-          font-weight: $font-weight-bold;
-
-          @include mobile {
-            font-size: $font-size-md;
-          }
-        }
-      }
-    }
+  p {
+    margin: 3px 0 0;
+    font-size: $font-size-sm;
+    opacity: .85;
+    @include mobile { font-size: $font-size-xs; }
   }
 }
 
-// ===== ACTIONS RAPIDES =====
+.fin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+
+  .exercice-select-compact {
+    min-width: 150px;
+    @include mobile { min-width: 110px; }
+
+    ::ng-deep .mat-mdc-text-field-wrapper { background: rgba(255,255,255,.15) !important; }
+    ::ng-deep .mat-mdc-select-value,
+    ::ng-deep .mat-mdc-select-arrow,
+    ::ng-deep label { color: rgba(255,255,255,.9) !important; }
+    ::ng-deep .mdc-notched-outline__leading,
+    ::ng-deep .mdc-notched-outline__notch,
+    ::ng-deep .mdc-notched-outline__trailing { border-color: rgba(255,255,255,.3) !important; }
+  }
+
+  .fin-header-icon-btn {
+    color: white !important;
+    background: rgba(255,255,255,.15) !important;
+    border-radius: $border-radius-md !important;
+    &:hover { background: rgba(255,255,255,.25) !important; }
+  }
+}
+
+// KPIs header
+.fin-kpis {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xl;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(10px);
+  border-radius: $border-radius-lg;
+  padding: $spacing-md $spacing-xl;
+
+  @include mobile {
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    overflow-x: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+}
+
+.fkpi {
+  text-align: center;
+  flex: 1;
+  flex-shrink: 0;
+
+  .fkpi-val {
+    display: block;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: white;
+    line-height: 1;
+    @include mobile { font-size: $font-size-lg; }
+  }
+
+  .fkpi-lbl {
+    display: block;
+    font-size: 11px;
+    opacity: .8;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  &.entrees .fkpi-val { color: #86efac; }
+  &.sorties .fkpi-val { color: #fca5a5; }
+}
+
+.fkpi-sep {
+  width: 1px; height: 32px;
+  background: rgba(255,255,255,.25);
+  flex-shrink: 0;
+}
+
+// ── Loading / Empty ────────────────────────────────────────────
+.loading-container {
+  @include flex-center;
+  flex-direction: column;
+  gap: $spacing-xl;
+  padding: $spacing-5xl;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  @include empty-state;
+  padding: $spacing-4xl $spacing-2xl;
+  mat-icon { font-size: 64px !important; width: 64px !important; height: 64px !important; opacity: .3; }
+  h3, p { margin: 0; }
+  button { margin-top: $spacing-lg; }
+}
+
+// ── Contenu ────────────────────────────────────────────────────
+.fin-content {
+  padding: $spacing-xl $spacing-2xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+
+  // @include mobile { padding: $spacing-lg $spacing-md; gap: $spacing-lg; }
+}
+
+// Actions rapides
 .quick-actions {
   display: flex;
   gap: $spacing-md;
-  margin-bottom: $spacing-2xl;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+  &::-webkit-scrollbar { display: none; }
 
-  @include mobile {
-    margin-bottom: $spacing-lg;
-  }
-
-  .action-btn {
-    display: flex;
+  button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-md $spacing-xl;
-    font-weight: $font-weight-semibold;
-    border-radius: $border-radius-lg;
-
-    @include mobile {
-      flex: 1;
-      min-width: calc(50% - #{$spacing-sm});
-      justify-content: center;
-      padding: $spacing-md;
-
-      span {
-        display: none;
-      }
-    }
-
-    mat-icon {
-      font-size: 20px;
-    }
   }
 }
 
-// ===== GRILLE PRINCIPALE =====
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: $spacing-2xl;
-
-  @include mobile {
-    gap: $spacing-lg;
-  }
-}
-
-// ===== SECTION CAISSES =====
-.caisses-section {
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-lg;
-
-    h2 {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      margin: 0;
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-
-      mat-icon {
-        color: $primary-blue;
-      }
-    }
-
-    button {
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-    }
-  }
-
-  .caisses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: $spacing-lg;
-
-    @include mobile {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-// ===== CARTE CAISSE =====
-.caisse-card {
-  @include card-base;
+// Section générique
+.fin-section {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl;
   overflow: hidden;
-  transition: all $transition-base;
-  border-left: 4px solid var(--caisse-color, $primary-blue);
+}
 
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-xl;
-  }
+.fin-section-header {
+  @include flex-between;
+  padding: $spacing-lg $spacing-xl;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-secondary);
 
-  .caisse-header {
+  @include mobile { padding: $spacing-md $spacing-lg; }
+
+  .fsh-title {
     display: flex;
     align-items: center;
     gap: $spacing-md;
-    padding: $spacing-lg;
-    background: var(--background-tertiary);
-    border-bottom: 1px solid var(--border-color);
 
-    .caisse-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: $border-radius-md;
-      @include flex-center;
-      color: white;
+    mat-icon { color: var(--primary-color); font-size: 20px; width: 20px; height: 20px; }
+    h2 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
 
-      mat-icon {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-      }
-    }
-
-    .caisse-title {
-      flex: 1;
-
-      h3 {
-        margin: 0 0 $spacing-xs 0;
-        font-size: $font-size-md;
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-      }
-
-      .caisse-type {
-        font-size: $font-size-xs;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-    }
-  }
-
-  .caisse-body {
-    padding: $spacing-lg;
-
-    .caisse-solde {
-      margin-bottom: $spacing-md;
-
-      .solde-amount {
-        font-size: $font-size-2xl;
-        font-weight: $font-weight-bold;
-        color: var(--text-primary);
-      }
-    }
-
-    .caisse-progress {
-      margin-bottom: $spacing-lg;
-
-      .progress-bar {
-        height: 8px;
-        background: var(--background-tertiary);
-        border-radius: $border-radius-full;
-        overflow: hidden;
-        margin-bottom: $spacing-xs;
-
-        .progress-fill {
-          height: 100%;
-          border-radius: $border-radius-full;
-          transition: width 0.5s ease;
-        }
-      }
-
-      .progress-label {
-        font-size: $font-size-xs;
-        color: var(--text-secondary);
-      }
-    }
-
-    .caisse-details {
-      display: flex;
-      gap: $spacing-lg;
-
-      .detail-item {
-        display: flex;
-        align-items: center;
-        gap: $spacing-xs;
-        font-size: $font-size-sm;
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
-
-        &.entree {
-          color: $success-color;
-        }
-
-        &.sortie {
-          color: $error-color;
-        }
-      }
-    }
-  }
-
-  .caisse-footer {
-    padding: $spacing-md $spacing-lg;
-    border-top: 1px solid var(--border-color);
-    background: var(--background-tertiary);
-
-    button {
-      width: 100%;
-    }
-  }
-}
-
-// ===== SECTION GRAPHIQUES =====
-.charts-section {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: $spacing-lg;
-
-  @include tablet {
-    grid-template-columns: 1fr;
-  }
-
-  .chart-card {
-    @include card-base;
-    overflow: hidden;
-
-    .chart-header {
-      padding: $spacing-lg;
-      border-bottom: 1px solid var(--border-color);
-      background: var(--background-tertiary);
-
-      h3 {
-        display: flex;
-        align-items: center;
-        gap: $spacing-sm;
-        margin: 0;
-        font-size: $font-size-md;
-        font-weight: $font-weight-semibold;
-        color: var(--text-primary);
-
-        mat-icon {
-          color: $accent-orange;
-        }
-      }
-    }
-
-    .chart-body {
-      padding: $spacing-lg;
-      height: 300px;
-
-      &.bar-chart {
-        height: 350px;
-      }
-
-      canvas {
-        max-width: 100%;
-        max-height: 100%;
-      }
-    }
-  }
-}
-
-// ===== SECTION MOUVEMENTS =====
-.mouvements-section {
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-lg;
-
-    h2 {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      margin: 0;
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-
-      mat-icon {
-        color: $accent-orange;
-      }
-    }
-  }
-
-  .mouvements-list {
-    @include card-base;
-    overflow: hidden;
-  }
-
-  .mouvement-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-lg;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color $transition-base;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background: var(--background-tertiary);
-    }
-
-    .mouvement-icon {
-      width: 40px;
-      height: 40px;
+    .fsh-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px;
       border-radius: $border-radius-full;
-      @include flex-center;
-
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-
-      &.entree {
-        background: rgba($success-color, 0.1);
-        color: $success-color;
-      }
-
-      &.sortie {
-        background: rgba($error-color, 0.1);
-        color: $error-color;
-      }
-    }
-
-    .mouvement-info {
-      flex: 1;
-
-      .mouvement-libelle {
-        display: block;
-        font-weight: $font-weight-medium;
-        color: var(--text-primary);
-        margin-bottom: $spacing-xs;
-      }
-
-      .mouvement-details {
-        font-size: $font-size-sm;
-        color: var(--text-secondary);
-      }
-    }
-
-    .mouvement-montant {
-      font-weight: $font-weight-bold;
-      font-size: $font-size-md;
-
-      &.entree {
-        color: $success-color;
-      }
-
-      &.sortie {
-        color: $error-color;
-      }
-    }
-  }
-
-  .empty-mouvements {
-    @include card-base;
-    padding: $spacing-3xl;
-    text-align: center;
-    color: var(--text-secondary);
-
-    mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      opacity: 0.5;
-      margin-bottom: $spacing-md;
-    }
-
-    p {
-      margin: 0;
+      background: var(--primary-color);
+      color: white;
+      font-size: 11px; font-weight: $font-weight-bold;
+      padding: 0 6px;
     }
   }
 }
 
-// ===== ÉTAT VIDE =====
-.empty-state {
-  @include empty-state;
-  margin: $spacing-3xl auto;
-  max-width: 500px;
+// ── Caisses ────────────────────────────────────────────────────
+.caisses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: $spacing-lg;
+  padding: $spacing-xl;
+
+  @include mobile { grid-template-columns: 1fr; padding: $spacing-md; gap: $spacing-md; }
+}
+
+.caisse-card {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl;
+  overflow: hidden;
+  border-top: 3px solid var(--caisse-color, var(--primary-color));
+  transition: box-shadow .2s ease;
+
+  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+}
+
+.cc-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-xl;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--border-color);
+
+  .cc-icon {
+    width: 38px; height: 38px;
+    border-radius: $border-radius-lg;
+    @include flex-center;
+    flex-shrink: 0;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+  }
+
+  .cc-title {
+    h3 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-primary); }
+    .cc-type { font-size: $font-size-xs; color: var(--text-tertiary); }
+  }
+}
+
+.cc-body {
+  padding: $spacing-lg $spacing-xl;
+
+  .cc-solde {
+    display: block;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+    margin-bottom: $spacing-md;
+    @include mobile { font-size: $font-size-xl; }
+  }
+}
+
+.cc-progress {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  .cc-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--background-tertiary);
+    border-radius: $border-radius-full;
+    overflow: hidden;
+
+    .cc-progress-fill {
+      height: 100%;
+      border-radius: $border-radius-full;
+      transition: width .4s ease;
+    }
+  }
+
+  .cc-pct {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+}
+
+.cc-flows {
+  display: flex;
+  gap: $spacing-xl;
+
+  .cc-flow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+    &.entree { color: $success-color; mat-icon { color: $success-color; } }
+    &.sortie { color: $error-color;   mat-icon { color: $error-color; } }
+  }
+}
+
+.cc-footer {
+  padding: $spacing-sm $spacing-xl;
+  border-top: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  display: flex;
+  justify-content: flex-end;
+}
+
+// ── Charts ─────────────────────────────────────────────────────
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-xl;
+
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+}
+
+.chart-card {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl;
+  overflow: hidden;
+
+  .chart-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+
+    mat-icon { color: var(--primary-color); font-size: 18px; width: 18px; height: 18px; }
+  }
+
+  .chart-body {
+    padding: $spacing-xl;
+    @include mobile { padding: $spacing-md; }
+
+    canvas { max-height: 240px; }
+
+    &.bar-chart canvas { max-height: 200px; }
+  }
+}
+
+// ── Mouvements récents ─────────────────────────────────────────
+.mouvements-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mvt-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-xl;
+  border-bottom: 1px solid var(--border-color);
+  transition: background .15s ease;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--background-secondary); }
+
+  @include mobile { padding: $spacing-md $spacing-lg; }
+}
+
+.mvt-icon {
+  width: 36px; height: 36px;
+  border-radius: $border-radius-full;
+  @include flex-center;
+  flex-shrink: 0;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: white; }
+
+  &.entree { background: rgba(16,185,129,.15); mat-icon { color: $success-color; } }
+  &.sortie { background: rgba(239,68,68,.12);  mat-icon { color: $error-color; } }
+}
+
+.mvt-info {
+  flex: 1;
+  min-width: 0;
+
+  .mvt-libelle { display: block; font-size: $font-size-sm; font-weight: $font-weight-medium; color: var(--text-primary); @include text-truncate; }
+  .mvt-sub     { display: block; font-size: $font-size-xs; color: var(--text-tertiary); margin-top: 2px; }
+}
+
+.mvt-montant {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.entree { color: $success-color; }
+  &.sortie { color: $error-color; }
+}
+
+.empty-mouvements {
+  @include flex-center;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-3xl;
+  color: var(--text-tertiary);
+  mat-icon { font-size: 40px; width: 40px; height: 40px; opacity: .4; }
+  p { margin: 0; font-size: $font-size-sm; }
+}
+
+.exercice-option {
+  display: flex; align-items: center; justify-content: space-between; gap: $spacing-sm; width: 100%;
+  .exercice-badge {
+    font-size: 11px; padding: 1px 7px; border-radius: $border-radius-full; font-weight: $font-weight-semibold;
+    &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
+    &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
+  }
 }

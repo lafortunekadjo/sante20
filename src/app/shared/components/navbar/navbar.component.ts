@@ -68,6 +68,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isUploadingPhoto = false;
   success = false;
   error = '';
+  
   isMobile = false;
    isMembre: boolean = false;
   currentTheme: Theme = 'light';

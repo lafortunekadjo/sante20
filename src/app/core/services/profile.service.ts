@@ -16,6 +16,7 @@ export interface ClubHistory {
 export interface PlayerProfile {
   id: number;
   username: string;
+  userId : number; 
   email: string;
   profilePhotoUrl: string | null;
   poste: string;

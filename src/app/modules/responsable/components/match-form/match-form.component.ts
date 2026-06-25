@@ -153,6 +153,9 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   
   showCreateRow: boolean = false;
   isLoading: boolean = true;
+
+  // ── Navigation tabs ──
+  activeTab: 'list' | 'create' | 'filter' = 'list';
   isAmical: boolean = false;
   
   // Modèle de match pour création
@@ -192,6 +195,25 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private snackBar: MatSnackBar
   ) {}
+
+  // ============ TABS NAVIGATION ============
+
+  setTab(tab: 'list' | 'create' | 'filter'): void {
+    this.activeTab = tab;
+  }
+
+  openCreateForm(): void {
+    if (!this.editingMatch) {
+      this.newMatch    = this.getEmptyMatch();
+      this.editingMatch = null;
+    }
+    this.showCreateRow = true;
+  }
+
+  editMatchTab(match: any): void {
+    this.editMatch(match);
+    this.activeTab = 'create';
+  }
 
   // ============ LIFECYCLE ============
 

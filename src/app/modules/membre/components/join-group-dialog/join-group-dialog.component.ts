@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -6,13 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatStepperModule, MatStepper } from '@angular/material/stepper';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InvitationService } from '../../../../core/services/invitation.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../../core/services/auth.service';
-
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-join-group-dialog',
@@ -25,7 +24,6 @@ import { AuthService } from '../../../../core/services/auth.service';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatStepperModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
     TranslateModule
@@ -33,76 +31,102 @@ import { AuthService } from '../../../../core/services/auth.service';
   templateUrl: './join-group-dialog.component.html',
   styleUrls: ['./join-group-dialog.component.scss']
 })
-export class JoinGroupDialogComponent implements OnInit {
-  code: string = '';
-  message: string = '';
-  isLoading: boolean = false;
-  groupeFoundNom: any = null;
-  groupeFound: any = null;
-  groupeFoundAbreviation: any = null;
-  groupeFoundVille: any = null;
-    userId: number | null = null;
+export class JoinGroupDialogComponent {
+
+  code                    = '';
+  message                 = '';
+  isLoading               = false;
+  currentStep: 1 | 2      = 1;
+
+  // Groupe trouvé
+  groupeFoundNom          = '';
+  groupeFoundAbreviation  = '';
+  groupeFoundVille        = '';
+
+  // Message d'erreur inline (étape 1)
+  codeError               = '';
+
+  userId: number | null = null;
 
   constructor(
-    private dialogRef: MatDialogRef<JoinGroupDialogComponent>,
+    private dialogRef:         MatDialogRef<JoinGroupDialogComponent>,
     private invitationService: InvitationService,
-    private authService: AuthService,
-    private snackBar: MatSnackBar
+    private authService:       AuthService,
+    private snackBar:          MatSnackBar,
+    private router: Router,
   ) {}
 
-  ngOnInit(): void {}
+  // ── Étape 1 : vérifier le code ─────────────────────────────
+  verifierCode(): void {
+    if (!this.code.trim()) return;
 
-  /**
-   * Étape 1 : Vérifie si le code d'invitation est valide
-   * et récupère les infos du groupe associé.
-   */
-  verifierCode(stepper: MatStepper) {
-    if (!this.code) return;
-
+    this.codeError = '';
     this.isLoading = true;
-    this.invitationService.verifierInvitation(this.code.toUpperCase()).subscribe({
+
+    this.invitationService.verifierInvitation(this.code.trim().toUpperCase()).subscribe({
       next: (invitation) => {
-        this.groupeFoundNom = invitation.groupeNom;
-        this.groupeFound= invitation.groupeNom;
-        this.groupeFoundAbreviation = invitation.groupeDescription
-        this.groupeFoundVille = invitation.groupeVille
         this.isLoading = false;
-        stepper.next(); // Passe à l'étape de confirmation
+
+        // Le backend retourne 200 même pour les codes invalides.
+        // Jackson sérialise isValide() → "valide" en JSON (retire le préfixe is)
+        // On vérifie les deux noms possibles selon la config Jackson du backend.
+        const isValid = (invitation as any).valide ?? invitation.isValide;
+        if (!isValid) {
+          this.codeError = invitation.messageErreur
+            || (invitation as any).messageErreur
+            || 'Code invalide ou expiré. Vérifiez et réessayez.';
+          return;
+        }
+
+        // Code valide → remplir les infos et passer à l'étape 2
+        this.groupeFoundNom         = invitation.groupeNom         || '';
+        this.groupeFoundAbreviation = invitation.groupeDescription || '';
+        this.groupeFoundVille       = invitation.groupeVille       || '';
+        this.codeError              = '';
+        this.currentStep            = 2;
       },
       error: (err) => {
         this.isLoading = false;
-        const errorMsg = err.error?.message || "Code invalide ou expiré";
-        this.snackBar.open(errorMsg, "Fermer", { duration: 3000 });
+        // Erreur HTTP réelle (réseau, 5xx, etc.)
+        this.codeError = err.error?.message
+          || err.error?.messageErreur
+          || 'Code invalide ou expiré. Vérifiez et réessayez.';
       }
     });
   }
 
-  /**
-   * Étape 2 : Envoie la demande d'adhésion pour l'utilisateur connecté
-   */
-  envoyerDemande() {
+  // 3. Ajouter la méthode goToExplorer()
+goToExplorer(): void {
+  this.dialogRef.close();           // fermer le dialog d'abord
+  this.router.navigate(['/explorer']);
+}
+
+  // ── Étape 2 : envoyer la demande ───────────────────────────
+  envoyerDemande(): void {
     this.isLoading = true;
     this.userId = this.authService.getUserId();
-    // On prépare l'objet pour ton backend
+
     const payload = {
-      codeInvitation: this.code.toUpperCase(),
-      message: this.message,
-      userId:this.userId,
-      dateCreation: new Date() // Date locale
+      codeInvitation: this.code.trim().toUpperCase(),
+      message:        this.message,
+      userId:         this.userId,
+      dateCreation:   new Date()
     };
 
     this.invitationService.rejoindreGroupeConnecte(payload).subscribe({
-      next: (res) => {
+      next: () => {
         this.isLoading = false;
-        this.snackBar.open(`Demande envoyée avec succès au groupe ${this.groupeFoundNom}`, "OK", { 
-          duration: 5000 
-        });
+        this.snackBar.open(
+          `Demande envoyée avec succès au groupe ${this.groupeFoundNom}`,
+          'OK',
+          { duration: 5000 }
+        );
         this.dialogRef.close(true);
       },
       error: (err) => {
         this.isLoading = false;
         const errorMsg = err.error?.message || "Erreur lors de l'envoi de la demande";
-        this.snackBar.open(errorMsg, "Fermer", { duration: 5000 });
+        this.snackBar.open(errorMsg, 'Fermer', { duration: 5000 });
       }
     });
   }

@@ -73,6 +73,7 @@ export class EntreeCaisseComponent implements OnInit {
   isLoading = true;
   isSaving = false;
   showForm = false;
+  activeTab: 'form'|'history' = 'form';
 
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];

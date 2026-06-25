@@ -1,0 +1,129 @@
+<div class="mvp-voting-lobby">
+  
+  <div class="lobby-header">
+    <div class="icon-circle">
+      <mat-icon>military_tech</mat-icon>
+    </div>
+    <h2>{{ 'mvpVote.title' | translate }}</h2>
+    <p>{{ 'mvpVote.subtitle' | translate }}</p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loader-box">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } 
+  @else { 
+
+    @if (nomines().length === 0) {
+      <div class="closed-state-container animate-in">
+        <div class="closed-card">
+          <mat-icon class="lock-icon">lock_clock</mat-icon>
+          <h3>{{ 'mvpVote.closedTitle' | translate }}</h3>
+          <p>{{ 'mvpVote.closedMsg' | translate }}</p>
+          
+          <div class="info-box">
+            <mat-icon>info</mat-icon>
+            <span>{{ 'mvpVote.closedTimeline' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    } 
+    
+    @else {
+
+      @if (!isEligible() || hasVoted()) {
+        <div class="trends-container animate-in">
+          <div class="trends-header">
+            <mat-icon class="status-icon">{{ hasVoted() ? 'check_circle' : 'visibility' }}</mat-icon>
+            <h3>{{ 'mvpVote.trendsTitle' | translate }} - {{ currentMonthLabel() }}</h3>
+            <p class="status-subtitle">
+              {{ hasVoted() ? ('mvpVote.votedMsg' | translate) : ('mvpVote.notEligibleMsg' | translate) }}
+            </p>
+          </div>
+
+          <div class="trends-list">
+            @for (player of nomines(); track player.id; let i = $index) {
+              <div class="trend-item">
+                <div class="player-info">
+                  <span class="rank-badge">#{{ i + 1 }}</span>
+                  
+                  <div class="mini-avatar-wrapper">
+                    <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="mini-img">
+                    <div *ngIf="!player.photoUrl" class="initials-avatar mini" [style.background-color]="getAvatarColor(player.id)">
+                      {{ getInitials(player.prenom, player.nom) }}
+                    </div>
+                  </div>
+
+                  <span class="name">{{ player.prenom }} {{ player.nom }}</span>
+                  <span class="vote-count-label">{{ player.votesCount || 0 }} {{ 'mvpVote.votes' | translate }}</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-fill" [style.width.%]="calculatePercentage(player.votesCount)"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <button mat-flat-button color="primary" (click)="checkStatusAndLoad()" class="refresh-btn w-100">
+            <mat-icon>refresh</mat-icon> {{ 'common.refresh' | translate }}
+          </button>
+        </div>
+      }
+
+      @else {
+        <div class="candidates-grid">
+          @for (player of nomines(); track player.id; let i = $index) {
+            <div class="fifa-card animate-in" [style.animation-delay]="i * 0.1 + 's'" (click)="openVoteSheet(player)">
+              <div class="card-inner">
+                <div class="player-rank">#{{ i + 1 }}</div>
+                
+                <div class="player-visual">
+                  <div class="avatar-ring">
+                    <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="player-img">
+                    <div *ngIf="!player.photoUrl" class="initials-avatar" [style.background-color]="getAvatarColor(player.id)">
+                      {{ getInitials(player.prenom, player.nom) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="player-name">
+                  <strong>{{ player.prenom }}</strong>
+                  <span>{{ player.nom }}</span>
+                </div>
+
+                <div class="player-stats-row">
+                  <div class="stat-item" title="Buts">
+                    <span class="icon">⚽</span>
+                    <span class="val">{{ player.buts }}</span>
+                  </div>
+                  <div class="stat-item" title="Passes">
+                    <span class="icon">👟</span>
+                    <span class="val">{{ player.passes }}</span>
+                  </div>
+                  <div class="stat-item mvp-equipe" title="MVP Équipe">
+                    <span class="icon">🛡️</span>
+                    <span class="val">{{ player.mvpEquipe }}</span>
+                  </div>
+                  <div class="stat-item" title="HDM">
+                    <span class="icon">⭐</span>
+                    <span class="val">{{ player.motm }}</span>
+                  </div>
+                  <div class="stat-item vote-count" title="Votes">
+                    <span class="icon">🗳️</span>
+                    <span class="val">{{ player.votesCount || 0 }}</span>
+                  </div>
+                
+                </div>
+
+                <button class="vote-btn-overlay">
+                  {{ 'mvpVote.voteAction' | translate }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</div>

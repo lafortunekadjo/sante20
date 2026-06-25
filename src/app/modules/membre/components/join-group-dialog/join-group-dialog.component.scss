@@ -1,55 +1,165 @@
-.dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-right: 8px;
+@import '../../../../../variables';
 
-  h2 { margin: 0; display: flex; align-items: center; gap: 10px; }
+.jg-container { background: var(--background-primary); color: var(--text-primary); }
+
+// ── Header ─────────────────────────────────────────────────────
+.jg-header {
+  display: flex; align-items: center; gap: $spacing-md;
+  padding: $spacing-lg $spacing-lg 0;
+  @include mobile { padding: $spacing-md $spacing-md 0; }
+}
+.jg-icon {
+  width: 40px; height: 40px; border-radius: $border-radius-full; flex-shrink: 0;
+  background: rgba(37,99,235,.1); @include flex-center;
+  mat-icon { color: var(--primary-color); font-size: 22px; width: 22px; height: 22px; }
+}
+.jg-title { margin: 0 !important; padding: 0 !important; flex: 1; font-size: $font-size-lg; font-weight: $font-weight-bold; }
+.jg-close { flex-shrink: 0; }
+
+// ── Progress indicator ───────────────────────────────────────────
+.jg-progress {
+  display: flex; align-items: center; gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg 0;
+  @include mobile { padding: $spacing-sm $spacing-md 0; }
+}
+.jg-progress-step {
+  display: flex; align-items: center; gap: $spacing-sm; flex-shrink: 0;
+
+  .jg-progress-dot {
+    width: 28px; height: 28px; border-radius: $border-radius-full;
+    @include flex-center; flex-shrink: 0;
+    background: var(--background-tertiary); color: var(--text-tertiary);
+    font-size: $font-size-xs; font-weight: $font-weight-bold;
+    border: 2px solid var(--border-color); transition: all .2s ease;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+  .jg-progress-label {
+    font-size: $font-size-xs; font-weight: $font-weight-medium; color: var(--text-tertiary); white-space: nowrap;
+    @include mobile { display: none; }
+  }
+  &.active .jg-progress-dot { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
+  &.active .jg-progress-label { color: var(--primary-color); font-weight: $font-weight-semibold; }
+  &.done .jg-progress-dot { background: $success-color; color: white; border-color: $success-color; }
+  &.done .jg-progress-label { color: $success-color; }
+}
+.jg-progress-bar {
+  flex: 1; height: 3px; background: var(--border-color); border-radius: $border-radius-full; overflow: hidden;
+  .jg-progress-fill { height: 100%; width: 0%; background: $success-color; border-radius: $border-radius-full; transition: width .3s ease;
+    &.filled { width: 100%; } }
 }
 
-.full-width { width: 100%; }
+// ── Content ───────────────────────────────────────────────────
+.jg-content { padding: $spacing-lg !important; }
+.jg-step { animation: jgFadeIn .25s ease forwards; display: flex; flex-direction: column; gap: $spacing-md; }
+@keyframes jgFadeIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
 
-.step-container {
-  padding: 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.full-width { width: 100%; }
+.step-hint { font-size: $font-size-sm; color: var(--text-secondary); margin: 0; }
+
+.action-btn {
+  min-height: 46px; width: 100%; display: flex !important; align-items: center; justify-content: center; gap: $spacing-sm;
 }
 
 .group-info-card {
-  background: var(--mat-sys-surface-variant, #f5f5f5); // S'adapte au thème
-  border-radius: 12px;
-  padding: 16px;
-  margin: 10px 0;
-  border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  background: var(--background-secondary); border: 1px solid var(--border-color);
+  border-radius: $border-radius-lg; padding: $spacing-lg;
 
   .group-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    h3 { margin: 0; font-weight: 600; }
+    display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-md;
+    h3 { margin: 0; font-weight: $font-weight-semibold; font-size: $font-size-md; }
   }
 }
 
 .info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-bottom: 15px;
-  
-  .label { font-size: 0.8rem; opacity: 0.7; display: block; }
-  .value { font-weight: 500; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-md; margin-bottom: $spacing-md;
+  .label { font-size: $font-size-xs; color: var(--text-tertiary); display: block; }
+  .value { font-weight: $font-weight-medium; font-size: $font-size-sm; }
 }
 
 .step-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  display: flex; justify-content: flex-end; gap: $spacing-md; margin-top: $spacing-md;
+
+  button { min-height: 44px; }
+
+  @include mobile {
+    flex-direction: column-reverse;
+    .action-btn { width: 100%; }
+    button { width: 100%; justify-content: center; }
+  }
 }
 
-.action-btn { min-width: 140px; }
+// ── Erreur inline étape 1 ────────────────────────────────────
+.jg-error {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25);
+  border-radius: $border-radius-lg;
+  color: $error-color;
+  font-size: $font-size-sm;
+  line-height: 1.4;
 
-// Style pour les textes d'aide
-.step-hint { font-size: 0.9rem; margin-bottom: 15px; opacity: 0.8; }
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+.input-error {
+  // Bordure rouge sur le champ quand erreur
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__notch,
+  ::ng-deep .mdc-notched-outline__trailing {
+    border-color: $error-color !important;
+  }
+}
+
+.jg-no-code {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(26,62,181,.05);
+  border: 1px solid rgba(26,62,181,.15);
+  border-radius: 12px;
+ 
+  > mat-icon {
+    font-size: 18px; width: 18px; height: 18px;
+    color: #1A3EB5; flex-shrink: 0; margin-top: 2px;
+  }
+}
+ 
+.jg-no-code-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+ 
+  > span {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+}
+ 
+.jg-explorer-link {
+  color: #1A3EB5 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+ 
+  mat-icon {
+    font-size: 16px; width: 16px; height: 16px;
+  }
+ 
+  &:hover { text-decoration: underline; }
+}

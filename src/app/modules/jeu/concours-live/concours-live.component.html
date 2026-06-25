@@ -1,0 +1,153 @@
+<div class="live-wrap" [class.tirage-actif]="phase !== 'attente' && phase !== 'resultats'">
+
+  <!-- ══════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════ -->
+  <div class="live-header">
+    <div class="live-header-left">
+      <img *ngIf="concours?.sponsorLogoUrl" [src]="concours?.sponsorLogoUrl"
+           class="sponsor-logo" [alt]="concours?.sponsorNom">
+      <div>
+        <h2 class="live-titre">{{ concours?.titre }}</h2>
+        <span class="live-sponsor" *ngIf="concours?.sponsorNom">
+          par {{ concours?.sponsorNom }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Badge live / résultats -->
+    <div class="live-badge" [class.pulsing]="isLiveActif()">
+      <span class="live-dot" *ngIf="isLiveActif()"></span>
+      <span>{{ isLiveActif() ? 'LIVE' : (phase === 'resultats' ? 'TERMINÉ' : 'EN ATTENTE') }}</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PHASE : ATTENTE (avant le tirage)
+  ══════════════════════════════════════ -->
+  <div class="live-attente" *ngIf="phase === 'attente'">
+    <div class="attente-inner">
+      <div class="attente-emoji">⏳</div>
+      <h3>Le tirage n'a pas encore commencé</h3>
+      <p>Reste connecté — le tirage démarrera automatiquement à la date prévue.</p>
+
+      <!-- Compte à rebours -->
+      <div class="attente-countdown" *ngIf="timeLeft">
+        <div class="cdown-unit"><span class="cn">{{ timeLeft.days }}</span><span class="cl">j</span></div>
+        <span class="cs">:</span>
+        <div class="cdown-unit"><span class="cn">{{ timeLeft.hours }}</span><span class="cl">h</span></div>
+        <span class="cs">:</span>
+        <div class="cdown-unit"><span class="cn">{{ timeLeft.minutes }}</span><span class="cl">min</span></div>
+        <span class="cs">:</span>
+        <div class="cdown-unit"><span class="cn">{{ timeLeft.seconds }}</span><span class="cl">s</span></div>
+      </div>
+
+      <div class="attente-stats">
+        <span>👥 {{ concours?.nbParticipants | number }} participants</span>
+        <span>🏆 {{ concours?.lots?.length }} lots à gagner</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PHASE : TIRAGE EN COURS (live)
+  ══════════════════════════════════════ -->
+  <div class="live-scene" *ngIf="isLiveActif()">
+
+    <!-- Message courant -->
+    <div class="live-message" [class.pulse]="messagePulse">
+      <span>{{ currentMessage }}</span>
+    </div>
+
+    <!-- Animation boule de tirage -->
+    <div class="tirage-ball-wrap" *ngIf="phase === 'melange'">
+      <div class="tirage-ball">
+        <span>🎰</span>
+      </div>
+      <div class="tirage-particles">
+        <span *ngFor="let p of particles" class="particle"
+              [style.left.%]="p.x" [style.top.%]="p.y"
+              [style.animation-delay]="p.delay + 's'">
+          {{ p.emoji }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Révélation gagnant -->
+    <div class="revelation-wrap" *ngIf="phase === 'revelation' && dernierGagnant">
+      <div class="revelation-card" [@revealAnim]>
+        <div class="rev-rang-badge" [class]="'rang-' + dernierGagnant.rang">
+          {{ getRangEmoji(dernierGagnant!.rang) }}
+        </div>
+        <div class="rev-lot">
+          <span class="rev-lot-label">{{ dernierGagnant.lotLabel }}</span>
+          <span class="rev-lot-valeur">{{ dernierGagnant.lotValeur }}</span>
+        </div>
+        <div class="rev-gagnant">
+          <div class="rev-avatar">
+            {{ dernierGagnant.gagnantNomMasque?.charAt(0) }}
+          </div>
+          <span class="rev-nom">{{ dernierGagnant.gagnantNomMasque }}</span>
+        </div>
+        <div class="rev-confettis">🎉🎊✨🎉🎊</div>
+      </div>
+    </div>
+
+    <!-- Compteur participants en live -->
+    <div class="live-counter">
+      <mat-icon>people</mat-icon>
+      <span>{{ concours?.nbParticipants | number }} participants</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PHASE : RÉSULTATS (après tirage)
+  ══════════════════════════════════════ -->
+  <div class="live-resultats" *ngIf="phase === 'resultats'">
+
+    <div class="resultats-header">
+      <div class="resultats-emoji">🏆</div>
+      <h3>Résultats du tirage</h3>
+      <p>{{ dateEffectif | date:'dd MMMM yyyy à HH:mm':'':'fr' }}</p>
+    </div>
+
+    <div class="resultats-list">
+      <div class="resultat-item"
+           *ngFor="let g of gagnants"
+           [class.gold]="g.rang === 1"
+           [class.silver]="g.rang === 2"
+           [class.bronze]="g.rang === 3">
+
+        <div class="ri-rang">{{ getRangEmoji(g.rang) }}</div>
+        <div class="ri-info">
+          <span class="ri-lot-label">{{ g.lotLabel }}</span>
+          <span class="ri-lot-valeur">{{ g.lotValeur }}</span>
+          <span class="ri-gagnant">{{ g.gagnant }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton partager les résultats -->
+    <button mat-stroked-button class="share-btn" (click)="partagerResultats()">
+      <mat-icon>share</mat-icon>
+      Partager les résultats
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       HISTORIQUE DES ÉVÉNEMENTS LIVE
+  ══════════════════════════════════════ -->
+  <div class="live-log" *ngIf="liveLog.length > 0 && phase !== 'resultats'">
+    <div class="log-item" *ngFor="let log of liveLog">
+      <span class="log-time">{{ log.time }}</span>
+      <span class="log-msg">{{ log.message }}</span>
+    </div>
+  </div>
+
+  <!-- Reconnexion WebSocket -->
+  <div class="live-reconnect" *ngIf="wsDisconnected">
+    <mat-spinner diameter="16"></mat-spinner>
+    <span>Reconnexion en cours...</span>
+  </div>
+
+</div>

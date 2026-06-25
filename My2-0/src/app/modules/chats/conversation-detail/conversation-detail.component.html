@@ -1,0 +1,46 @@
+<!-- src/app/modules/chat/components/conversation-detail/conversation-detail.component.html -->
+
+<div class="conversation-detail">
+  <div class="conversation-header">
+    <div class="header-info">
+      <h3>{{ getConversationTitle() }}</h3>
+      <p class="participants-info">{{ getParticipantsInfo() }}</p>
+    </div>
+    
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item>
+        <mat-icon>info</mat-icon>
+        <span>{{ 'chat.conversationInfo' | translate }}</span>
+      </button>
+      <button mat-menu-item>
+        <mat-icon>notifications_off</mat-icon>
+        <span>{{ 'chat.muteNotifications' | translate }}</span>
+      </button>
+      <button mat-menu-item *ngIf="conversation.settings?.canLeave">
+        <mat-icon>exit_to_app</mat-icon>
+        <span>{{ 'chat.leaveConversation' | translate }}</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item class="danger">
+        <mat-icon>archive</mat-icon>
+        <span>{{ 'chat.archive' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  <app-message-list
+    [messages]="messages"
+    [loading]="loading"
+    [hasMore]="hasMore"
+    (loadMore)="loadMoreMessages()">
+  </app-message-list>
+
+  <app-message-input
+    [conversationId]="conversation.id"
+    (messageSent)="onMessageSent($event)">
+  </app-message-input>
+</div>

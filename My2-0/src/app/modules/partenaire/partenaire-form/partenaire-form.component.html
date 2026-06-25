@@ -1,0 +1,593 @@
+<!-- Formulaire Création/Édition Partenaire -->
+<div class="form-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Formulaire -->
+  <ng-container *ngIf="!isLoading">
+
+    <!-- Header -->
+    <header class="form-header">
+      <button mat-icon-button (click)="cancel()" class="back-btn">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="header-text">
+        <h1>{{ getTitle() }}</h1>
+        <p *ngIf="!isEditMode">Ajoutez un nouveau partenaire publicitaire à la plateforme</p>
+        <p *ngIf="isEditMode">Modifiez les informations du partenaire {{ partenaire?.nom }}</p>
+      </div>
+    </header>
+
+    <!-- Stepper -->
+    <mat-card class="form-card">
+      <mat-stepper linear #stepper orientation="horizontal">
+
+        <!-- ============================================================ -->
+        <!-- ÉTAPE 1: INFORMATIONS GÉNÉRALES -->
+        <!-- ============================================================ -->
+        <mat-step [stepControl]="infoForm" label="Informations">
+          <form [formGroup]="infoForm">
+            <div class="step-content">
+              <div class="step-header">
+                <mat-icon>business</mat-icon>
+                <div>
+                  <h2>Informations du partenaire</h2>
+                  <p>Renseignez les informations principales de l'entreprise partenaire</p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <!-- Nom entreprise -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Nom de l'entreprise *</mat-label>
+                  <input matInput formControlName="nom" placeholder="Ex: Société ABC">
+                  <mat-icon matPrefix>business</mat-icon>
+                  <mat-error *ngIf="infoForm.get('nom')?.hasError('required')">
+                    Le nom est requis
+                  </mat-error>
+                  <mat-error *ngIf="infoForm.get('nom')?.hasError('minlength')">
+                    Minimum 2 caractères
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput formControlName="description" rows="3"
+                    placeholder="Décrivez brièvement l'activité du partenaire..."></textarea>
+                  <mat-hint align="end">{{ infoForm.get('description')?.value?.length || 0 }} / 500</mat-hint>
+                </mat-form-field>
+
+                <!-- Personne de contact -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Personne de contact *</mat-label>
+                  <input matInput formControlName="personneContact" placeholder="Nom complet">
+                  <mat-icon matPrefix>person</mat-icon>
+                  <mat-error *ngIf="infoForm.get('personneContact')?.hasError('required')">
+                    Le contact est requis
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Email -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Email *</mat-label>
+                  <input matInput type="email" formControlName="email" placeholder="contact@entreprise.com">
+                  <mat-icon matPrefix>email</mat-icon>
+                  <mat-error *ngIf="infoForm.get('email')?.hasError('required')">
+                    L'email est requis
+                  </mat-error>
+                  <mat-error *ngIf="infoForm.get('email')?.hasError('email')">
+                    Format email invalide
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Téléphone -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Téléphone *</mat-label>
+                  <input matInput formControlName="telephone" placeholder="+237 6XX XXX XXX">
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <mat-error *ngIf="infoForm.get('telephone')?.hasError('required')">
+                    Le téléphone est requis
+                  </mat-error>
+                  <mat-error *ngIf="infoForm.get('telephone')?.hasError('pattern')">
+                    Format téléphone invalide
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Actions étape -->
+            <div class="step-actions">
+              <span></span>
+              <button mat-raised-button color="primary" matStepperNext [disabled]="infoForm.invalid">
+                Suivant
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- ============================================================ -->
+        <!-- ÉTAPE 2: ADRESSE -->
+        <!-- ============================================================ -->
+        <mat-step [stepControl]="contactForm" label="Adresse">
+          <form [formGroup]="contactForm">
+            <div class="step-content">
+              <div class="step-header">
+                <mat-icon>location_on</mat-icon>
+                <div>
+                  <h2>Adresse</h2>
+                  <p>Localisation de l'entreprise partenaire</p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <!-- Adresse -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Adresse complète</mat-label>
+                  <input matInput formControlName="adresse" placeholder="Rue, numéro, quartier...">
+                  <mat-icon matPrefix>home</mat-icon>
+                </mat-form-field>
+
+                <!-- Ville -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Ville *</mat-label>
+                  <mat-select formControlName="ville">
+                    <mat-option value="Douala">Douala</mat-option>
+                    <mat-option value="Yaoundé">Yaoundé</mat-option>
+                    <mat-option value="Bafoussam">Bafoussam</mat-option>
+                    <mat-option value="Garoua">Garoua</mat-option>
+                    <mat-option value="Bamenda">Bamenda</mat-option>
+                    <mat-option value="Maroua">Maroua</mat-option>
+                    <mat-option value="Ngaoundéré">Ngaoundéré</mat-option>
+                    <mat-option value="Bertoua">Bertoua</mat-option>
+                    <mat-option value="Kribi">Kribi</mat-option>
+                    <mat-option value="Limbé">Limbé</mat-option>
+                    <mat-option value="Autre">Autre</mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>location_city</mat-icon>
+                  <mat-error *ngIf="contactForm.get('ville')?.hasError('required')">
+                    La ville est requise
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Pays -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Pays</mat-label>
+                  <input matInput formControlName="pays" readonly>
+                  <mat-icon matPrefix>flag</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Actions étape -->
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Retour
+              </button>
+              <button mat-raised-button color="primary" matStepperNext [disabled]="contactForm.invalid">
+                Suivant
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- ============================================================ -->
+        <!-- ÉTAPE 3: CONTRAT -->
+        <!-- ============================================================ -->
+        <mat-step [stepControl]="contratForm" label="Contrat">
+          <form [formGroup]="contratForm">
+            <div class="step-content">
+              <div class="step-header">
+                <mat-icon>description</mat-icon>
+                <div>
+                  <h2>Détails du contrat</h2>
+                  <p>Définissez les termes et limites du partenariat</p>
+                </div>
+              </div>
+
+              <!-- Type de contrat -->
+              <div class="contract-types">
+                <label class="section-label">Type de contrat *</label>
+                <div class="contract-cards">
+                  <div 
+                    *ngFor="let type of typesContrat"
+                    class="contract-card"
+                    [class.selected]="contratForm.get('typeContrat')?.value === type.value"
+                    (click)="contratForm.patchValue({ typeContrat: type.value })">
+                    <div class="card-radio">
+                      <mat-icon *ngIf="contratForm.get('typeContrat')?.value === type.value">radio_button_checked</mat-icon>
+                      <mat-icon *ngIf="contratForm.get('typeContrat')?.value !== type.value">radio_button_unchecked</mat-icon>
+                    </div>
+                    <div class="card-content">
+                      <span class="card-title">{{ type.label }}</span>
+                      <span class="card-description">{{ type.description }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              <div class="form-grid">
+                <!-- Dates -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Date début contrat *</mat-label>
+                  <input matInput [matDatepicker]="startPicker" formControlName="dateDebutContrat">
+                  <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Date fin contrat</mat-label>
+                  <input matInput [matDatepicker]="endPicker" formControlName="dateFinContrat">
+                  <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #endPicker></mat-datepicker>
+                  <mat-hint>Laisser vide pour illimité</mat-hint>
+                </mat-form-field>
+
+                <!-- Montant et fréquence -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Montant (FCFA)</mat-label>
+                  <input matInput type="number" formControlName="montantContrat" placeholder="0">
+                  <mat-icon matPrefix>payments</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Fréquence facturation</mat-label>
+                  <mat-select formControlName="frequenceFacturation">
+                    <mat-option *ngFor="let freq of frequencesFacturation" [value]="freq.value">
+                      {{ freq.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              <!-- Limites -->
+              <div class="limits-section">
+                <label class="section-label">Limites du partenaire</label>
+                <div class="limits-grid">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max entreprises</mat-label>
+                    <input matInput type="number" formControlName="maxEntreprises" min="1">
+                    <mat-icon matPrefix>business</mat-icon>
+                    <mat-hint>Nombre d'entreprises que le partenaire peut créer</mat-hint>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max publicités actives</mat-label>
+                    <input matInput type="number" formControlName="maxPublicitesActives" min="1">
+                    <mat-icon matPrefix>campaign</mat-icon>
+                    <mat-hint>Nombre de publicités actives simultanément</mat-hint>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              <!-- Emplacements autorisés -->
+              <div class="emplacements-section">
+                <div class="section-header">
+                  <label class="section-label">Emplacements autorisés *</label>
+                  <div class="section-actions">
+                    <button mat-button type="button" (click)="selectAllEmplacements()">
+                      <mat-icon>check_box</mat-icon>
+                      Tout sélectionner
+                    </button>
+                    <button mat-button type="button" (click)="clearEmplacements()">
+                      <mat-icon>check_box_outline_blank</mat-icon>
+                      Désélectionner
+                    </button>
+                  </div>
+                </div>
+
+                <div class="emplacements-grid">
+                  <div 
+                    *ngFor="let emp of emplacements"
+                    class="emplacement-chip"
+                    [class.selected]="isEmplacementSelected(emp.value)"
+                    (click)="toggleEmplacement(emp.value)">
+                    <mat-icon>{{ getEmplacementIcon(emp.value) }}</mat-icon>
+                    <span>{{ getEmplacementLabel(emp.value) }}</span>
+                    <mat-icon class="check-icon" *ngIf="isEmplacementSelected(emp.value)">check_circle</mat-icon>
+                  </div>
+                </div>
+
+                <mat-error *ngIf="contratForm.get('emplacementsAutorises')?.touched && selectedEmplacements.length === 0">
+                  Sélectionnez au moins un emplacement
+                </mat-error>
+              </div>
+
+              <!-- Notes -->
+              <mat-form-field appearance="outline" class="full-width" style="margin-top: 24px;">
+                <mat-label>Notes internes</mat-label>
+                <textarea matInput formControlName="notes" rows="3"
+                  placeholder="Notes ou remarques sur ce partenariat..."></textarea>
+                <mat-icon matPrefix>note</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Actions étape -->
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Retour
+              </button>
+              <button mat-raised-button color="primary" matStepperNext 
+                [disabled]="contratForm.invalid || selectedEmplacements.length === 0">
+                Suivant
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- ============================================================ -->
+        <!-- ÉTAPE 4: UTILISATEUR ADMIN -->
+        <!-- ============================================================ -->
+        <mat-step [stepControl]="utilisateurForm" label="Utilisateur">
+          <form [formGroup]="utilisateurForm">
+            <div class="step-content">
+              <div class="step-header">
+                <mat-icon>person_add</mat-icon>
+                <div>
+                  <h2>Compte administrateur</h2>
+                  <p>Créez un compte pour que le partenaire puisse accéder à son espace</p>
+                </div>
+              </div>
+
+              <!-- Toggle création utilisateur -->
+              <div class="toggle-section" *ngIf="!isEditMode">
+                <mat-slide-toggle formControlName="creerUtilisateur" color="primary">
+                  Créer un compte administrateur pour ce partenaire
+                </mat-slide-toggle>
+              </div>
+
+              <div class="user-form" *ngIf="utilisateurForm.get('creerUtilisateur')?.value && !isEditMode">
+                <div class="form-grid">
+                  <!-- Prénom -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>Prénom *</mat-label>
+                    <input matInput formControlName="prenom" placeholder="Prénom de l'utilisateur">
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-error *ngIf="utilisateurForm.get('prenom')?.hasError('required')">
+                      Le prénom est requis
+                    </mat-error>
+                  </mat-form-field>
+
+                  <!-- Nom -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>Nom *</mat-label>
+                    <input matInput formControlName="nomUtilisateur" placeholder="Nom de famille">
+                    <mat-icon matPrefix>person</mat-icon>
+                    <mat-error *ngIf="utilisateurForm.get('nomUtilisateur')?.hasError('required')">
+                      Le nom est requis
+                    </mat-error>
+                  </mat-form-field>
+
+                  <!-- Email utilisateur -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>Email de connexion</mat-label>
+                    <input matInput type="email" formControlName="emailUtilisateur" 
+                      placeholder="Sera utilisé pour la connexion">
+                    <mat-icon matPrefix>email</mat-icon>
+                    <mat-hint>Par défaut, l'email du partenaire sera utilisé</mat-hint>
+                  </mat-form-field>
+
+                  <!-- Téléphone utilisateur -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>Téléphone</mat-label>
+                    <input matInput formControlName="telephoneUtilisateur" placeholder="+237 6XX XXX XXX">
+                    <mat-icon matPrefix>phone</mat-icon>
+                  </mat-form-field>
+                </div>
+
+                <!-- Option envoi credentials -->
+                <div class="checkbox-section">
+                  <mat-checkbox formControlName="envoyerCredentials" color="primary">
+                    Envoyer les identifiants de connexion par email
+                  </mat-checkbox>
+                  <p class="checkbox-hint">
+                    Un email sera envoyé avec les instructions de connexion et un mot de passe temporaire
+                  </p>
+                </div>
+              </div>
+
+              <!-- Message si édition-->
+              <div class="info-message" *ngIf="isEditMode">
+                <mat-icon>info</mat-icon>
+                <p>
+                  Pour gérer les utilisateurs de ce partenaire, rendez-vous dans la section 
+                  <strong>Utilisateurs</strong> après avoir sauvegardé.
+                </p>
+              </div> 
+
+              <!-- Message si pas de création utilisateur -->
+              <div class="info-message" *ngIf="!utilisateurForm.get('creerUtilisateur')?.value && !isEditMode">
+                <mat-icon>info</mat-icon>
+                <p>
+                  Vous pourrez créer des utilisateurs plus tard depuis la page de détails du partenaire.
+                </p>
+              </div>
+            </div>
+
+            <!-- Actions étape -->
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Retour
+              </button>
+              <button mat-raised-button color="primary" matStepperNext>
+                Récapitulatif
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- ============================================================ -->
+        <!-- ÉTAPE 5: RÉCAPITULATIF -->
+        <!-- ============================================================ -->
+        <mat-step label="Validation">
+          <div class="step-content">
+            <div class="step-header">
+              <mat-icon>fact_check</mat-icon>
+              <div>
+                <h2>Récapitulatif</h2>
+                <p>Vérifiez les informations avant de créer le partenaire</p>
+              </div>
+            </div>
+
+            <!-- Résumé -->
+            <div class="summary-sections">
+              <!-- Infos générales -->
+              <div class="summary-card">
+                <div class="summary-header">
+                  <mat-icon>business</mat-icon>
+                  <h3>Informations</h3>
+                  <button mat-icon-button (click)="stepper.selectedIndex = 0">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="summary-content">
+                  <div class="summary-row">
+                    <span class="label">Nom:</span>
+                    <span class="value">{{ infoForm.get('nom')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Contact:</span>
+                    <span class="value">{{ infoForm.get('personneContact')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ infoForm.get('email')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Téléphone:</span>
+                    <span class="value">{{ infoForm.get('telephone')?.value }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Adresse -->
+              <div class="summary-card">
+                <div class="summary-header">
+                  <mat-icon>location_on</mat-icon>
+                  <h3>Adresse</h3>
+                  <button mat-icon-button (click)="stepper.selectedIndex = 1">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="summary-content">
+                  <div class="summary-row" *ngIf="contactForm.get('adresse')?.value">
+                    <span class="label">Adresse:</span>
+                    <span class="value">{{ contactForm.get('adresse')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Ville:</span>
+                    <span class="value">{{ contactForm.get('ville')?.value }}, {{ contactForm.get('pays')?.value }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contrat -->
+              <div class="summary-card">
+                <div class="summary-header">
+                  <mat-icon>description</mat-icon>
+                  <h3>Contrat</h3>
+                  <button mat-icon-button (click)="stepper.selectedIndex = 2">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="summary-content">
+                  <div class="summary-row">
+                    <span class="label">Type:</span>
+                    <span class="value contract-badge">{{ contratForm.get('typeContrat')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Période:</span>
+                    <span class="value">
+                      {{ contratForm.get('dateDebutContrat')?.value | date:'dd/MM/yyyy' }}
+                      <span *ngIf="contratForm.get('dateFinContrat')?.value">
+                        → {{ contratForm.get('dateFinContrat')?.value | date:'dd/MM/yyyy' }}
+                      </span>
+                      <span *ngIf="!contratForm.get('dateFinContrat')?.value">(Illimité)</span>
+                    </span>
+                  </div>
+                  <div class="summary-row" *ngIf="contratForm.get('montantContrat')?.value > 0">
+                    <span class="label">Montant:</span>
+                    <span class="value">{{ contratForm.get('montantContrat')?.value | number }} FCFA / {{ contratForm.get('frequenceFacturation')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Limites:</span>
+                    <span class="value">
+                      {{ contratForm.get('maxEntreprises')?.value }} entreprises, 
+                      {{ contratForm.get('maxPublicitesActives')?.value }} publicités
+                    </span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Emplacements:</span>
+                    <span class="value">{{ selectedEmplacements.length }} autorisé(s)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Utilisateur -->
+              <div class="summary-card" *ngIf="utilisateurForm.get('creerUtilisateur')?.value && !isEditMode">
+                <div class="summary-header">
+                  <mat-icon>person</mat-icon>
+                  <h3>Utilisateur admin</h3>
+                  <button mat-icon-button (click)="stepper.selectedIndex = 3">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="summary-content">
+                  <div class="summary-row">
+                    <span class="label">Nom:</span>
+                    <span class="value">{{ utilisateurForm.get('prenom')?.value }} {{ utilisateurForm.get('nomUtilisateur')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ utilisateurForm.get('emailUtilisateur')?.value || infoForm.get('email')?.value }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="label">Envoi credentials:</span>
+                    <span class="value">{{ utilisateurForm.get('envoyerCredentials')?.value ? 'Oui' : 'Non' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions finales -->
+          <div class="step-actions final">
+            <button mat-button matStepperPrevious>
+              <mat-icon>arrow_back</mat-icon>
+              Retour
+            </button>
+            <div class="action-buttons">
+              <button mat-button (click)="cancel()">
+                Annuler
+              </button>
+              <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isSaving">
+                <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
+                <mat-icon *ngIf="!isSaving">{{ isEditMode ? 'save' : 'add_circle' }}</mat-icon>
+                <span *ngIf="!isSaving">{{ isEditMode ? 'Enregistrer' : 'Créer le partenaire' }}</span>
+                <span *ngIf="isSaving">Enregistrement...</span>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+      </mat-stepper>
+    </mat-card>
+  </ng-container>
+</div>

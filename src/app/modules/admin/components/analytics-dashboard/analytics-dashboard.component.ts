@@ -139,6 +139,7 @@ interface ConversionFunnel {
   styleUrl: './analytics-dashboard.component.scss'
 })
 export class AnalyticsDashboardComponent implements OnInit, OnDestroy {
+  activeTab: 'acquisition'|'engagement'|'retention'|'charts'|'funnel'|'groupes' = 'acquisition';
   
   
   private destroy$ = new Subject<void>();
@@ -494,7 +495,7 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
   }
 
   formatPercent(value: number): string {
-    return value.toFixed(1) + '%';
+    return value?.toFixed(1) + '%';
   }
 
   formatNumber(value: number): string {

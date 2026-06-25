@@ -1,0 +1,674 @@
+// pages/competition-detail/competition-detail.component.scss
+@use '../../../../../variables' as *;
+
+:host { display: block; }
+
+.comp-detail {
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    height: 60vh;
+    color: var(--text-secondary);
+  }
+
+  // ── Hero
+  &__hero {
+    position: relative;
+    background: linear-gradient(135deg, $primary-blue-dark 0%, $primary-blue 100%);
+    padding: $spacing-2xl;
+    overflow: hidden;
+
+    &-bg {
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    &-content {
+      position: relative;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+  }
+
+  &__identity {
+    display: flex;
+    gap: $spacing-2xl;
+    align-items: flex-start;
+    margin: $spacing-lg 0;
+    flex-wrap: wrap;
+  }
+
+  &__logo {
+    width: 80px;
+    height: 80px;
+    border-radius: $border-radius-xl;
+    overflow: hidden;
+    background: rgba(white, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid rgba(white, 0.2);
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+    i   { font-size: 40px; color: $accent-orange; }
+  }
+
+  &__info { flex: 1; min-width: 200px; }
+
+  &__badges {
+    display: flex;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    flex-wrap: wrap;
+  }
+
+  &__nom {
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-bold;
+    color: white;
+    margin: 0 0 $spacing-sm;
+  }
+
+  &__desc {
+    font-size: $font-size-sm;
+    color: rgba(white, 0.75);
+    margin: 0 0 $spacing-md;
+  }
+
+  &__meta {
+    display: flex;
+    gap: $spacing-lg;
+    flex-wrap: wrap;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: $font-size-sm;
+      color: rgba(white, 0.8);
+      i { font-size: 16px; }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    margin-top: $spacing-lg;
+  }
+
+  // ── Tabs
+  &__tabs {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--background-primary);
+  padding: 0 $spacing-2xl;
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.tab-btn {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-lg $spacing-xl;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  i { font-size: 20px; }
+
+  &:hover  { color: $primary-blue; }
+  &.active {
+    color: $primary-blue;
+    border-bottom-color: $primary-blue;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.tabs-content {
+  padding: $spacing-2xl;
+}
+
+// ── Badges
+.badge-type {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  padding: 4px $spacing-md;
+  border-radius: $border-radius-full;
+  background: rgba(white, 0.15);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-statut {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  padding: 4px $spacing-md;
+  border-radius: $border-radius-full;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.statut-brouillon           { background: rgba(white, 0.1);            color: rgba(white, 0.7); }
+  &.statut-inscription_ouverte { background: rgba($info-color, 0.2);      color: lighten($info-color, 20%); }
+  &.statut-en_cours            { background: rgba($success-color, 0.2);   color: lighten($success-color, 20%); }
+  &.statut-termine             { background: rgba($accent-orange, 0.2);   color: $accent-orange-light; }
+  &.statut-annule              { background: rgba($error-color, 0.2);     color: lighten($error-color, 20%); }
+}
+
+// ── Boutons action hero
+.btn-back {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  color: rgba(white, 0.7);
+  cursor: pointer;
+  transition: $transition-fast;
+  i { font-size: 20px; }
+  &:hover { color: white; }
+}
+
+.btn-action {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-xl;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+
+  i { font-size: 20px; }
+
+  &--success {
+    background: $secondary-emerald;
+    color: white;
+    &:hover { background: $secondary-emerald-dark; transform: translateY(-1px); }
+  }
+  &--warning {
+    background: $accent-orange;
+    color: white;
+    &:hover { background: $accent-orange-dark; transform: translateY(-1px); }
+  }
+  &--ghost {
+    background: rgba(white, 0.15);
+    color: white;
+    border: 1px solid rgba(white, 0.3);
+    &:hover { background: rgba(white, 0.25); }
+  }
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: $primary-blue;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@include mobile {
+  .comp-detail__hero { padding: $spacing-lg; }
+  .comp-detail__nom  { font-size: $font-size-xl; }
+  .tabs-nav          { padding: 0 $spacing-md; }
+  .tabs-content      { padding: $spacing-lg; }
+}
+
+// ── Hero top bar
+.hero-top-bar {
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+}
+
+.btn-edit {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-lg;
+  background: rgba(white, 0.15);
+  color: white;
+  border: 1px solid rgba(white, 0.3);
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: $transition-fast;
+  i { font-size: 18px; }
+  &:hover { background: rgba(white, 0.25); }
+}
+
+// ── Statut selector
+.statut-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.badge-statut {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  padding: 4px $spacing-md;
+  border-radius: $border-radius-full;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+
+  i { font-size: 16px; }
+
+  &.statut-brouillon           { background: rgba(white, 0.1);            color: rgba(white, 0.7); }
+  &.statut-inscription_ouverte { background: rgba($info-color, 0.2);      color: lighten($info-color, 20%); }
+  &.statut-en_cours            { background: rgba($success-color, 0.2);   color: lighten($success-color, 20%); }
+  &.statut-termine             { background: rgba($accent-orange, 0.2);   color: $accent-orange-light; }
+  &.statut-annule              { background: rgba($error-color, 0.2);     color: lighten($error-color, 20%); }
+}
+
+.statut-menu {
+  position: absolute;
+  top: calc(100% + $spacing-sm);
+  left: 0;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-xl;
+  z-index: $z-dropdown;
+  min-width: 200px;
+  overflow: hidden;
+
+  &__item {
+    @include button-reset;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-sm;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: $transition-fast;
+    text-align: left;
+
+    &:hover { background: var(--background-secondary); }
+  }
+}
+
+.statut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $border-radius-full;
+  flex-shrink: 0;
+
+  &.dot-brouillon           { background: #94a3b8; }
+  &.dot-inscription_ouverte { background: $info-color; }
+  &.dot-en_cours            { background: $success-color; }
+  &.dot-termine             { background: $accent-orange; }
+  &.dot-annule              { background: $error-color; }
+}
+
+.date-limit-warning {
+  color: $accent-orange-light !important;
+  i { color: $accent-orange-light !important; }
+}
+
+// ── Drawer
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: $z-modal-backdrop;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity $transition-base;
+  backdrop-filter: blur(2px);
+
+  &.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 100vw;
+  background: var(--background-primary);
+  border-left: 1px solid var(--border-color);
+  box-shadow: $shadow-2xl;
+  z-index: $z-modal;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform $transition-base;
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  &__header {
+    @include flex-between;
+    padding: $spacing-xl $spacing-2xl;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: var(--text-primary);
+      margin: 0;
+      i { color: $primary-blue; font-size: 22px; }
+    }
+  }
+
+  &__close {
+    @include button-reset;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: $transition-fast;
+    i { font-size: 22px; }
+    &:hover { background: var(--background-tertiary); color: var(--text-primary); }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-xl $spacing-2xl;
+    scrollbar-width: thin;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-lg $spacing-2xl;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+
+    .btn-ghost { margin-right: auto; }
+  }
+}
+
+// ── Sections du drawer
+.drawer-section {
+  margin-bottom: $spacing-2xl;
+  padding-bottom: $spacing-2xl;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: $spacing-lg;
+
+    i { font-size: 18px; color: $primary-blue; }
+  }
+}
+
+.brouillon-only {
+  font-size: 11px;
+  font-weight: $font-weight-normal;
+  background: rgba($accent-orange, 0.1);
+  color: $accent-orange-dark;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-sm;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: auto;
+}
+
+// ── Alertes drawer
+.drawer-alert {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $border-radius-md;
+  margin-bottom: $spacing-lg;
+
+  i { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+
+  div { flex: 1; }
+  strong { display: block; font-size: $font-size-sm; font-weight: $font-weight-semibold; margin-bottom: 4px; }
+  p { font-size: $font-size-xs; margin: 0; line-height: 1.5; }
+
+  &--warning {
+    background: rgba($warning-color, 0.08);
+    border: 1px solid rgba($warning-color, 0.2);
+    i, strong { color: $warning-color-dark; }
+    p { color: $warning-color-dark; opacity: 0.8; }
+  }
+
+  &--info {
+    background: rgba($info-color, 0.08);
+    border: 1px solid rgba($info-color, 0.2);
+    i, strong { color: $info-color; }
+    p { color: $info-color; opacity: 0.8; }
+  }
+}
+
+// ── Modal confirmation
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: $z-modal + 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--background-primary);
+  border-radius: $border-radius-xl;
+  box-shadow: $shadow-2xl;
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-xl $spacing-2xl;
+    border-bottom: 1px solid var(--border-color);
+
+    i {
+      font-size: 28px;
+      padding: $spacing-sm;
+      border-radius: $border-radius-full;
+    }
+
+    h3 {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: var(--text-primary);
+      margin: 0;
+    }
+  }
+
+  &__body {
+    padding: $spacing-xl $spacing-2xl;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-lg $spacing-2xl;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+.icon-success { background: rgba($success-color, 0.1); color: $success-color; }
+.icon-warning { background: rgba($warning-color, 0.1); color: $warning-color-dark; }
+.icon-danger  { background: rgba($error-color, 0.1);   color: $error-color; }
+
+// ── Form fields drawer
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-lg;
+  &:last-child { margin-bottom: 0; }
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--text-secondary);
+}
+
+.form-input, .form-textarea {
+  padding: $spacing-sm $spacing-md;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-md;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: $font-size-sm;
+  font-family: $font-family-primary;
+  transition: $transition-fast;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: 0 0 0 3px rgba($primary-blue, 0.1);
+    background: var(--background-primary);
+  }
+}
+
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.form-hint {
+  font-size: $font-size-xs;
+  color: var(--text-tertiary);
+}
+
+.badge-warning {
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  background: rgba($warning-color, 0.1);
+  color: $warning-color-dark;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-sm;
+}
+
+// ── Boutons drawer footer
+.btn-primary, .btn-ghost, .btn-danger,
+.btn-danger-outline {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-xl;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+  i { font-size: 18px; }
+}
+
+.btn-primary {
+  background: $primary-blue; color: white;
+  &:hover:not(:disabled) { background: $primary-blue-dark; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-ghost {
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  &:hover { border-color: $primary-blue; color: $primary-blue; }
+}
+
+.btn-danger {
+  background: $error-color; color: white;
+  &:hover { background: darken($error-color, 8%); }
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: $error-color;
+  border: 1px solid rgba($error-color, 0.3);
+  &:hover { background: rgba($error-color, 0.06); border-color: $error-color; }
+}
+
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: $primary-blue;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+:host-context(.dark-theme) {
+  .drawer { border-left-color: $dark-border; }
+  .statut-menu { background: $dark-bg-tertiary; border-color: $dark-border; }
+}
+
+@include mobile {
+  .drawer { width: 100%; }
+  .modal { margin: $spacing-lg; }
+}

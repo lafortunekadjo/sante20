@@ -15,33 +15,22 @@
       </div>
 
       <div class="header-actions">
-        <!-- Sélecteur exercice -->
         <mat-form-field appearance="outline" class="exercice-select" *ngIf="exercices.length > 0">
           <mat-label>{{ 'bilan.exercice.label' | translate }}</mat-label>
           <mat-select [(ngModel)]="selectedExerciceId" (selectionChange)="onExerciceChange($event.value)">
             <mat-option *ngFor="let ex of exercices" [value]="ex.id">
               <div class="exercice-option">
                 <span>{{ ex.libelle }}</span>
-                <span class="exercice-badge actif"   *ngIf="ex.actif">{{ 'bilan.exercice.badge_actif'   | translate }}</span>
+                <span class="exercice-badge actif" *ngIf="ex.actif">{{ 'bilan.exercice.badge_actif' | translate }}</span>
                 <span class="exercice-badge cloture" *ngIf="ex.cloture">{{ 'bilan.exercice.badge_cloture' | translate }}</span>
               </div>
             </mat-option>
           </mat-select>
         </mat-form-field>
-
-        <!-- Export -->
         <div class="export-actions">
-          <button mat-stroked-button (click)="exportPDF()"   [matTooltip]="'bilan.export.pdf_tooltip'   | translate">
-            <mat-icon>picture_as_pdf</mat-icon>
-            {{ 'bilan.export.pdf' | translate }}
-          </button>
-          <button mat-stroked-button (click)="exportExcel()" [matTooltip]="'bilan.export.excel_tooltip' | translate">
-            <mat-icon>table_chart</mat-icon>
-            {{ 'bilan.export.excel' | translate }}
-          </button>
-          <button mat-icon-button (click)="print()" [matTooltip]="'bilan.export.print_tooltip' | translate">
-            <mat-icon>print</mat-icon>
-          </button>
+          <button mat-icon-button (click)="exportPDF()" [matTooltip]="'bilan.export.pdf_tooltip' | translate"><mat-icon>picture_as_pdf</mat-icon></button>
+          <button mat-icon-button (click)="exportExcel()" [matTooltip]="'bilan.export.excel_tooltip' | translate"><mat-icon>table_chart</mat-icon></button>
+          <button mat-icon-button (click)="print()" [matTooltip]="'bilan.export.print_tooltip' | translate"><mat-icon>print</mat-icon></button>
         </div>
       </div>
     </div>
@@ -205,16 +194,29 @@
       </div>
     </div>
 
-    <!-- ── ONGLETS ── -->
-    <mat-tab-group class="bilan-tabs" animationDuration="300ms">
+    <!-- ── TABS STICKY ── -->
+    <div class="bilan-tabs-wrapper">
+      <div class="bilan-tabs-bar">
+        <button class="btab" [class.active]="bilanTab==='caisses'" (click)="bilanTab='caisses'">
+          <mat-icon>account_balance</mat-icon><span>{{ 'bilan.tabs.caisses' | translate }}</span>
+        </button>
+        <button class="btab" [class.active]="bilanTab==='contributions'" (click)="bilanTab='contributions'">
+          <mat-icon>payments</mat-icon><span>{{ 'bilan.tabs.contributions' | translate }}</span>
+        </button>
+        <button class="btab" [class.active]="bilanTab==='depenses'" (click)="bilanTab='depenses'">
+          <mat-icon>shopping_cart</mat-icon><span>{{ 'bilan.tabs.depenses' | translate }}</span>
+        </button>
+        <button class="btab" [class.active]="bilanTab==='impayes'" (click)="bilanTab='impayes'">
+          <mat-icon>warning</mat-icon><span>{{ 'bilan.tabs.impayes' | translate }}</span>
+        </button>
+        <button class="btab" [class.active]="bilanTab==='statistiques'" (click)="bilanTab='statistiques'">
+          <mat-icon>bar_chart</mat-icon><span>{{ 'bilan.tabs.statistiques' | translate }}</span>
+        </button>
+      </div>
+      <div class="bilan-tab-pane">
 
       <!-- Tab Caisses -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>account_balance</mat-icon>
-          <span>{{ 'bilan.tabs.caisses' | translate }}</span>
-        </ng-template>
-        <div class="tab-content">
+        <div class="bilan-pane" *ngIf="bilanTab==='caisses'">
           <div class="caisses-grid">
             <div class="caisse-card" *ngFor="let caisse of bilanData.detailCaisses" [style.--caisse-color]="caisse.couleur">
               <div class="caisse-header">
@@ -255,15 +257,9 @@
             </div>
           </div>
         </div>
-      </mat-tab>
 
       <!-- Tab Contributions -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>payments</mat-icon>
-          <span>{{ 'bilan.tabs.contributions' | translate }}</span>
-        </ng-template>
-        <div class="tab-content">
+        <div class="bilan-pane" *ngIf="bilanTab==='contributions'">
           <div class="contributions-list" *ngIf="bilanData.detailContributions?.length > 0">
             <div class="contribution-card" *ngFor="let contrib of bilanData.detailContributions">
               <div class="contrib-header">
@@ -308,15 +304,9 @@
             <p>{{ 'bilan.contributions.vide' | translate }}</p>
           </div>
         </div>
-      </mat-tab>
 
       <!-- Tab Dépenses -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>shopping_cart</mat-icon>
-          <span>{{ 'bilan.tabs.depenses' | translate }}</span>
-        </ng-template>
-        <div class="tab-content">
+        <div class="bilan-pane" *ngIf="bilanTab==='depenses'">
           <div class="depenses-list" *ngIf="bilanData.detailDepenses?.length > 0">
             <div class="depense-card" *ngFor="let depense of bilanData.detailDepenses">
               <div class="depense-header">
@@ -361,15 +351,9 @@
             <p>{{ 'bilan.depenses.vide' | translate }}</p>
           </div>
         </div>
-      </mat-tab>
 
       <!-- Tab Impayés -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>warning</mat-icon>
-          <span>{{ 'bilan.tabs.impayes' | translate }}</span>
-        </ng-template>
-        <div class="tab-content">
+        <div class="bilan-pane" *ngIf="bilanTab==='impayes'">
           <div class="impayes-section" *ngIf="bilanData.impayes">
             <div class="impayes-summary">
               <div class="impaye-card total">
@@ -402,15 +386,9 @@
             <p>{{ 'bilan.impayes.vide' | translate }}</p>
           </div>
         </div>
-      </mat-tab>
 
       <!-- Tab Statistiques -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>bar_chart</mat-icon>
-          <span>{{ 'bilan.tabs.statistiques' | translate }}</span>
-        </ng-template>
-        <div class="tab-content">
+        <div class="bilan-pane" *ngIf="bilanTab==='statistiques'">
           <div class="stats-section" *ngIf="bilanData.statistiques">
             <div class="stats-grid">
               <div class="stat-card">
@@ -451,9 +429,9 @@
             </div>
           </div>
         </div>
-      </mat-tab>
 
-    </mat-tab-group>
+      </div>
+    </div>
 
   </div>
 

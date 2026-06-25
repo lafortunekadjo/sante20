@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -96,6 +96,10 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   // Groupe actif pour les matchs amicaux
   groupeActif: Groupe | null = null;
     groupeId: number | null = null;
+
+    // Variables pour le tactile (Swipe)
+  private touchStartX = 0;
+  private touchEndX = 0;
     
   
   // ✅ NOUVEAU: Exercice en cours
@@ -104,6 +108,13 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exerciceDateDebut: Date | null = null;
   exerciceDateFin: Date | null = null;
   isOpeningDialog = false;
+  activeTab: 'actus' | 'matchs' | 'stats' | 'annonces' = 'actus';
+  isLightboxOpen = false;
+  activeMediaList: any[] = [];
+  currentMediaIndex = 0;
+
+  lightbox: { open: boolean; urls: string[]; index: number; match: any } =
+    { open: false, urls: [], index: 0, match: null };
   expandedAnnouncements = new Set<number>();
   readonly maxTextLength = 150;
 
@@ -143,6 +154,71 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
 isExpanded(id: number | undefined): boolean {
   return id ? this.expandedAnnouncements.has(id) : false;
 }
+
+// Ouvre la visionneuse au clic sur une image
+  openLightbox(mediaList: any[], startIndex: number): void {
+    if (!mediaList || mediaList.length === 0) return;
+    this.activeMediaList = mediaList;
+    this.currentMediaIndex = startIndex;
+    this.isLightboxOpen = true;
+    document.body.style.overflow = 'hidden'; // Bloque le scroll en arrière-plan
+  }
+
+  closeLightbox(): void {
+    this.isLightboxOpen = false;
+    document.body.style.overflow = 'auto'; // Rétablit le scroll
+  }
+
+  nextMedia(event?: Event): void {
+    if (event) event.stopPropagation();
+    if (this.currentMediaIndex < this.activeMediaList.length - 1) {
+      this.currentMediaIndex++;
+    } else {
+      this.currentMediaIndex = 0; // Boucle au début
+    }
+  }
+
+  prevMedia(event?: Event): void {
+    if (event) event.stopPropagation();
+    if (this.currentMediaIndex > 0) {
+      this.currentMediaIndex--;
+    } else {
+      this.currentMediaIndex = this.activeMediaList.length - 1; // Boucle à la fin
+    }
+  }
+
+  // Écouteur clavier pour Ordi (Flèches et Échap)
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    if (!this.isLightboxOpen) return;
+    
+    if (event.key === 'ArrowRight') this.nextMedia();
+    if (event.key === 'ArrowLeft') this.prevMedia();
+    if (event.key === 'Escape') this.closeLightbox();
+  }
+
+  // Gestion du Tactile sur Smartphone (Swipe)
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.changedTouches[0].clientX;
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    this.touchEndX = event.changedTouches[0].clientX;
+    this.handleSwipe();
+  }
+
+  private handleSwipe(): void {
+    const swipeThreshold = 50; // Distance minimale en pixels pour valider le swipe
+    const diffX = this.touchStartX - this.touchEndX;
+
+    if (Math.abs(diffX) > swipeThreshold) {
+      if (diffX > 0) {
+        this.nextMedia(); // Glissement vers la gauche -> Suivant
+      } else {
+        this.prevMedia(); // Glissement vers la droite -> Précédent
+      }
+    }
+  }
 
 shouldTruncate(content: string): boolean {
   return content ? content.length > this.maxTextLength : false;
@@ -435,7 +511,7 @@ get matchesToDisplay(): Match[] {
 
   const mainData$ = forkJoin({
     events: this.generalService.getAllEvenements(),
-    matches: this.matchService.getAllMatches(),
+    matches: this.matchService.getMatchesByExercice(this.exerciceId!),
     contributions: this.financeService.getTypesContributionByExercice(this.exerciceId),
     membres: this.membreService.getAllMembres(),
     presences: this.matchService.getAllPresences()
@@ -462,6 +538,7 @@ get matchesToDisplay(): Match[] {
 
       this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
       this.allMatches = matches.filter(m => this.isDateInCurrentExercice(m.dateMatch));
+      console.log(this.recentMatches)
 
       // --- ANNIVERSAIRES (Les 10 prochains) ---
       this.upcomingBirthdays = membres
@@ -682,6 +759,56 @@ getHommeDuMatch(match: Match): string {
     const individuelles = this.contributionService.getContributionsIndividuellesById(contribution.id || 0) || [];
     return individuelles.reduce((sum: number, c: { montant: any; }) => sum + (c.montant || 0), 0);
   }
+
+  // openLightbox(match: any, index: number): void {
+  //   this.lightbox = { open: true, urls: match.mediaUrls || [], index, match };
+  //   document.body.style.overflow = 'hidden';
+  // }
+
+  // closeLightbox(): void {
+  //   this.lightbox.open = false;
+  //   document.body.style.overflow = '';
+  // }
+
+  lightboxPrev(): void {
+    this.lightbox.index =
+      (this.lightbox.index - 1 + this.lightbox.urls.length) % this.lightbox.urls.length;
+  }
+
+  lightboxNext(): void {
+    this.lightbox.index = (this.lightbox.index + 1) % this.lightbox.urls.length;
+  }
+
+  downloadSingleMedia(url: string, matchId: number, idx: number): void {
+    const token = this.authService.getToken();
+    if (!token) return;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const ext = url.includes('.') ? url.slice(url.lastIndexOf('.')) : '.jpg';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `media_match_${matchId}_${idx}${ext}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+  }
+
+    downloadSingleMedia2(url: string, idx: number): void {
+    const token = this.authService.getToken();
+    if (!token) return;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const ext = url.includes('.') ? url.slice(url.lastIndexOf('.')) : '.jpg';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `media_match_${idx}${ext}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+  }
+
 
   openMediaPreview(match: Match, mediaUrl: string): void {
     this.dialog.open(MediaPreviewDialogComponent, {

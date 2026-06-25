@@ -43,11 +43,62 @@
 }
 
 // ===================================================
-// HEADER
+// HEADER GRADIENT COMPACT
 // ===================================================
-.page-header {
-  @include page-header;
+.ts-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white; padding: $spacing-xl $spacing-2xl $spacing-lg;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  &::before { content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
 }
+.ts-title-group {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: $spacing-md; margin-bottom: $spacing-lg;
+  @include mobile { margin-bottom: $spacing-md; }
+  .ts-icon { width: 44px; height: 44px; border-radius: $border-radius-xl; background: rgba(255,255,255,.15);
+    @include flex-center; flex-shrink: 0; mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } } }
+  h1 { margin: 0; font-size: $font-size-2xl; font-weight: $font-weight-bold; text-shadow: 0 1px 4px rgba(0,0,0,.2); @include mobile { font-size: $font-size-xl; } }
+  p  { margin: 3px 0 0; font-size: $font-size-sm; opacity: .85; @include mobile { font-size: $font-size-xs; } }
+}
+.ts-kpis {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: $spacing-lg;
+  background: rgba(255,255,255,.12); backdrop-filter: blur(10px); border-radius: $border-radius-lg; padding: $spacing-md $spacing-xl;
+  @include mobile { gap: $spacing-md; padding: $spacing-sm $spacing-md; border-radius: $border-radius-md; }
+}
+.ts-kpi { text-align: center; flex: 1;
+  .ts-kpi-val { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; color: white; line-height: 1; @include mobile { font-size: $font-size-lg; } }
+  .ts-kpi-lbl { display: block; font-size: 11px; opacity: .85; margin-top: 2px; }
+}
+.ts-kpi-sep { width: 1px; height: 30px; background: rgba(255,255,255,.25); flex-shrink: 0; }
+
+// ===================================================
+// TABS STICKY
+// ===================================================
+.ts-tabs-wrapper { display: flex; flex-direction: column; flex: 1; }
+.ts-tabs-bar {
+  position: sticky; top: 0; z-index: 10; display: flex;
+  background: var(--background-primary); border-bottom: 2px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow-x: auto; flex-shrink: 0;
+  scrollbar-width: none; &::-webkit-scrollbar { display: none; }
+}
+.ts-tab {
+  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-md $spacing-xl;
+  font-size: $font-size-sm; font-weight: $font-weight-medium; color: var(--text-secondary);
+  background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: color .15s, background .15s;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
+  &.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: $font-weight-semibold; background: rgba(37,99,235,.04); mat-icon { color: var(--primary-color); } }
+  @include mobile { padding: $spacing-md $spacing-lg; font-size: $font-size-xs; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
+}
+.ts-tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: $border-radius-full; background: var(--primary-color); color: white; font-size: 11px; font-weight: $font-weight-bold; }
+.ts-tab-panel { padding: $spacing-xl $spacing-2xl; animation: tsFadeIn .2s ease forwards; @include mobile { padding: $spacing-lg $spacing-md; } }
+@keyframes tsFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.ts-filter-apply { display: flex; justify-content: flex-end; margin-top: $spacing-lg;
+  @include mobile { button { width: 100%; justify-content: center; } } }
 
 // ===================================================
 // LOADING
@@ -60,9 +111,23 @@
 // CONTENT
 // ===================================================
 .content {
-  padding: $spacing-2xl;
-  @include mobile  { padding: $spacing-lg; }
-  @media (max-width: 480px) { padding: $spacing-md; }
+  // Le padding est désormais géré par .ts-tab-panel pour éviter le double padding.
+  // .content ne sert plus que de wrapper pour les messages succès/erreur.
+  padding: 0 $spacing-2xl;
+  @include mobile  { padding: 0 $spacing-md; }
+
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
 }
 
 // ===================================================
@@ -168,32 +233,6 @@
       .mdc-floating-label   { color: var(--text-secondary); }
       .mat-mdc-input-element,
       .mat-mdc-select-value { color: var(--text-primary); }
-    }
-  }
-}
-
-// ===================================================
-// BOUTON AJOUTER
-// ===================================================
-.action-buttons {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: $spacing-xl;
-
-  @include mobile  { justify-content: stretch; }
-
-  .add-button {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-xl;
-    font-weight: $font-weight-medium;
-    border-radius: $border-radius-lg;
-
-    @include mobile  { width: 100%; justify-content: center; }
-
-    .button-text {
-      @media (max-width: 480px) { display: none; }
     }
   }
 }

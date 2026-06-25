@@ -1,516 +1,127 @@
-// objectifs.component.scss
-@use '../../../../../variables' as *;
+@import '../../../../../variables';
 
-// ===================================================
-// VARIABLES LOCALES — absentes de _variables.scss
-// ===================================================
+.objectifs-container { @include page-container; display: flex; flex-direction: column; }
 
-// Couleur "expiré" (gris neutre spécifique à ce composant)
-$expired-color: #757575;
-
-// Dégradés des avatars par type (couleurs fixes, hors thème)
-$avatar-buts-from:      #2196f3;
-$avatar-buts-to:        #1565c0;
-$avatar-passes-from:    #9c27b0;
-$avatar-passes-to:      #6a1b9a;
-$avatar-presence-from:  #4caf50;
-$avatar-presence-to:    #388e3c;
-$avatar-carton-from:    #ff9800;
-$avatar-carton-to:      #f57c00;
-
-// Header orange (couleur marque objectifs — fixe)
-$header-from: #ff9800;
-$header-to:   #f57c00;
-
-// ===================================================
-// THEMING — CSS Custom Properties
-// ===================================================
-:host {
-  --primary-color:  #{$primary-blue};
-  --success-color:  #{$success-color};
-  --warning-color:  #{$warning-color};
-  --error-color:    #{$error-color};
-
-  // Texte — mode clair
-  --text-primary:   #{$light-text-primary};
-  --text-secondary: #{$light-text-secondary};
-
-  // Fonds — mode clair
-  --bg-primary:     #{$light-bg-primary};
-  --bg-secondary:   #{$light-bg-secondary};
-  --bg-tertiary:    #{$light-bg-tertiary};
-
-  // Bordures — mode clair
-  --border-color:   #{$light-border};
+// ── Header gradient ─────────────────────────────────────────────
+.obj-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white; padding: $spacing-xl $spacing-2xl $spacing-lg;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  &::before { content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
+}
+.obj-top { position: relative; z-index: 1; }
+.obj-title-group { display: flex; align-items: center; gap: $spacing-md;
+  .obj-icon { width: 44px; height: 44px; border-radius: $border-radius-xl; background: rgba(255,255,255,.15);
+    @include flex-center; flex-shrink: 0; mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } } }
+  h1 { margin: 0; font-size: $font-size-2xl; font-weight: $font-weight-bold; text-shadow: 0 1px 4px rgba(0,0,0,.2); @include mobile { font-size: $font-size-xl; } }
+  p  { margin: 3px 0 0; font-size: $font-size-sm; opacity: .85; @include mobile { font-size: $font-size-xs; } }
 }
 
-// Dark mode (4 sélecteurs)
-:host-context(.dark-theme),
-:host-context([data-theme="dark"]),
-:host-context(body.dark-theme),
-:host-context(.dark-mode) {
-  --text-primary:   #{$dark-text-primary};
-  --text-secondary: #{$dark-text-secondary};
+// ── Tabs ───────────────────────────────────────────────────────
+.obj-tabs-wrapper { display: flex; flex-direction: column; flex: 1; }
+.obj-tabs-bar {
+  position: sticky; top: 0; z-index: 10; display: flex;
+  background: var(--background-primary); border-bottom: 2px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06); flex-shrink: 0;
+}
+.obj-tab {
+  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-md $spacing-xl;
+  font-size: $font-size-sm; font-weight: $font-weight-medium; color: var(--text-secondary);
+  background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; flex: 1; justify-content: center; transition: color .15s, background .15s;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
+  &.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: $font-weight-semibold; background: rgba(37,99,235,.04); mat-icon { color: var(--primary-color); } }
+  @include mobile { padding: $spacing-md $spacing-lg; font-size: $font-size-xs; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
+}
+.obj-tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: $border-radius-full; background: var(--primary-color); color: white; font-size: 11px; font-weight: $font-weight-bold; }
+.obj-tab-content { flex: 1; animation: objFadeIn .2s ease forwards; }
+@keyframes objFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.obj-content { padding: $spacing-xl $spacing-2xl; @include mobile { padding: $spacing-lg $spacing-md; } }
 
-  --bg-primary:     #{$dark-bg-primary};
-  --bg-secondary:   #{$dark-bg-secondary};
-  --bg-tertiary:    #{$dark-bg-tertiary};
-
-  --border-color:   #{$dark-border};
+// ── Loading / Empty ──────────────────────────────────────────────
+.obj-loading { @include flex-center; flex-direction: column; gap: $spacing-xl; padding: $spacing-5xl; color: var(--text-secondary); }
+.obj-empty { @include empty-state; padding: $spacing-3xl;
+  mat-icon { font-size: 56px !important; width: 56px !important; height: 56px !important; opacity: .3; }
+  h3, p { margin: 0; }
+  button { margin-top: $spacing-md; }
 }
 
-// ===================================================
-// CONTAINER
-// ===================================================
-.objectifs-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0;
-  animation: fadeIn 0.3s ease-out;
-}
-
-// ===================================================
-// EN-TÊTE
-// ===================================================
-.page-header {
-  background: linear-gradient(135deg, $header-from 0%, $header-to 100%);
-  color: white;
-  padding: $spacing-3xl $spacing-2xl;
-  border-radius: $border-radius-lg;
-  margin-bottom: $spacing-2xl;
-  box-shadow: $shadow-md;
-
-  @include mobile {
-    padding: $spacing-2xl $spacing-lg;
-    border-radius: 0;
-    margin-bottom: $spacing-lg;
-  }
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    gap: $spacing-lg;
-
-    .header-icon { font-size: 48px; width: 48px; height: 48px; }
-  }
-
-  .page-title {
-    margin: 0;
-    font-size: $font-size-3xl;
-    font-weight: $font-weight-bold;
-
-    @include mobile { font-size: $font-size-2xl; }
-  }
-
-  .page-subtitle {
-    margin: $spacing-xs 0 0;
-    font-size: $font-size-sm;
-    opacity: 0.9;
-  }
-}
-
-// ===================================================
-// BARRE D'ACTION
-// ===================================================
-.action-bar {
-  display: flex;
-  justify-content: center;
-  margin-bottom: $spacing-2xl;
-
-  .create-btn {
-    height: 48px;
-    font-weight: $font-weight-medium;
-    padding: 0 $spacing-3xl;
-    font-size: $font-size-md;
-    transition: $transition-base;
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-
-    &:hover { transform: translateY(-2px); box-shadow: $shadow-md; }
-
-    @include mobile { width: 100%; padding: 0 $spacing-lg; }
-  }
-}
-
-// ===================================================
-// CARD CRÉATION / MODIFICATION
-// ===================================================
-.create-card {
-  border-radius: $border-radius-lg;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: $spacing-3xl;
-  border-top: 4px solid var(--primary-color);
-  background: var(--bg-primary);
-
-  @include mobile { border-radius: 0; }
-
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    font-size: $font-size-xl;
-    font-weight: $font-weight-semibold;
-    color: var(--text-primary);
-
-    mat-icon { color: var(--primary-color); }
-  }
-
-  .objectif-form {
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: $spacing-lg;
-      margin-bottom: $spacing-lg;
-
-      @include mobile { grid-template-columns: 1fr; }
-
-      .form-field-full { grid-column: 1 / -1; }
-    }
-
-    .form-field,
-    .form-field-full {
-      width: 100%;
-
-      ::ng-deep {
-        .mdc-notched-outline   { border-color: var(--border-color); }
-        .mdc-floating-label    { color: var(--text-secondary); }
-        .mat-mdc-select-value,
-        .mat-mdc-input-element { color: var(--text-primary); }
-      }
-    }
-
-    .form-actions {
-      display: flex;
-      gap: $spacing-md;
-      margin-top: $spacing-xl;
-
-      @include mobile { flex-direction: column; }
-
-      button {
-        flex: 1;
-        height: 48px;
-        font-weight: $font-weight-medium;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: $spacing-sm;
-
-        &:hover:not(:disabled) { transform: translateY(-2px); }
-      }
-    }
-  }
-}
-
-// ===================================================
-// SECTION LISTE
-// ===================================================
-.objectifs-section {
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    font-size: $font-size-2xl;
-    font-weight: $font-weight-semibold;
-    color: var(--text-primary);
-    margin-bottom: $spacing-2xl;
-
-    mat-icon { color: var(--warning-color); }
-
-    .objectifs-count {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-normal;
-      color: var(--text-secondary);
-    }
-  }
-}
-
-// ===================================================
-// GRILLE
-// ===================================================
+// ── Grille objectifs ───────────────────────────────────────────
 .objectifs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: $spacing-2xl;
-
-  @include mobile { grid-template-columns: 1fr; gap: $spacing-lg; }
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: $spacing-lg;
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
 }
 
-// ===================================================
-// CARTE OBJECTIF
-// ===================================================
 .objectif-card {
-  border-radius: $border-radius-lg;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: $transition-base;
-  position: relative;
-  overflow: hidden;
-  background: var(--bg-primary);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: var(--warning-color);
-  }
-
-  &.status-completed::before { background: var(--success-color); }
-  &.status-expired::before   { background: $expired-color; }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  }
-
-  // Avatars par type
-  .objectif-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: $border-radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    mat-icon { color: white; font-size: 28px; width: 28px; height: 28px; }
-
-    &.type-buts    { background: linear-gradient(135deg, $avatar-buts-from    0%, $avatar-buts-to    100%); }
-    &.type-passes  { background: linear-gradient(135deg, $avatar-passes-from  0%, $avatar-passes-to  100%); }
-    &.type-presence{ background: linear-gradient(135deg, $avatar-presence-from 0%, $avatar-presence-to 100%); }
-    &.type-carton  { background: linear-gradient(135deg, $avatar-carton-from  0%, $avatar-carton-to  100%); }
-  }
-
-  .objectif-title {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-semibold;
-    color: var(--text-primary);
-  }
-
-  .objectif-period {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    font-size: $font-size-xs;
-    color: var(--text-secondary);
-    margin-top: $spacing-xs;
-
-    .subtitle-icon { font-size: 16px; width: 16px; height: 16px; }
-  }
-
-  .objectif-content {
-    padding: $spacing-xl $spacing-lg !important;
-
-    .progress-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: $spacing-md;
-
-      .progress-values {
-        display: flex;
-        align-items: baseline;
-        gap: $spacing-sm;
-
-        .current-value {
-          font-size: $font-size-3xl;
-          font-weight: $font-weight-bold;
-          color: var(--primary-color);
-
-          @include mobile { font-size: 28px; }
-        }
-
-        .separator {
-          font-size: $font-size-2xl;
-          font-weight: $font-weight-normal;
-          color: var(--text-secondary);
-        }
-
-        .target-value {
-          font-size: $font-size-2xl;
-          font-weight: $font-weight-medium;
-          color: var(--text-secondary);
-
-          @include mobile { font-size: $font-size-xl; }
-        }
-      }
-
-      .progress-percentage {
-        font-size: $font-size-lg;
-        font-weight: $font-weight-semibold;
-        color: var(--primary-color);
-        padding: $spacing-xs $spacing-md;
-        background-color: rgba($primary-blue, 0.1);
-        border-radius: $border-radius-lg;
-
-        @include mobile { font-size: $font-size-md; }
-      }
-    }
-
-    .progress-bar {
-      height: 12px;
-      border-radius: $border-radius-sm;
-      margin-bottom: $spacing-lg;
-
-      ::ng-deep {
-        .mat-progress-bar-buffer      { background-color: rgba(0, 0, 0, 0.05); }
-        .mat-progress-bar-fill::after { border-radius: $border-radius-sm; }
-      }
-    }
-
-    .objectif-status {
-      display: inline-flex;
-      align-items: center;
-      gap: $spacing-sm;
-      padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-md;
-      font-size: $font-size-sm;
-      font-weight: $font-weight-medium;
-
-      mat-icon { font-size: 20px; width: 20px; height: 20px; }
-
-      &.completed {
-        background-color: rgba($success-color, 0.1);
-        color: var(--success-color);
-        mat-icon { color: var(--success-color); }
-      }
-
-      &.in-progress {
-        background-color: rgba($warning-color, 0.1);
-        color: var(--warning-color);
-        mat-icon { color: var(--warning-color); }
-      }
-
-      &.expired {
-        background-color: rgba(117, 117, 117, 0.1);
-        color: $expired-color;
-        mat-icon { color: $expired-color; }
-      }
-    }
-  }
-
-  .objectif-actions {
-    border-top: 1px solid var(--border-color);
-    padding: $spacing-sm $spacing-lg !important;
-    display: flex;
-    justify-content: flex-end;
-    gap: $spacing-sm;
-
-    button {
-      transition: $transition-base;
-      color: var(--text-secondary);
-
-      &:hover:not(:disabled) {
-        transform: scale(1.1);
-        background-color: rgba(0, 0, 0, 0.04);
-      }
-
-      &:disabled { opacity: 0.4; cursor: not-allowed; }
-
-      &:first-child mat-icon { color: var(--primary-color); }
-    }
-  }
-
-  // Overrides statut complété
-  &.status-completed {
-    .progress-info {
-      .current-value,
-      .progress-percentage { color: var(--success-color); }
-      .progress-percentage  { background-color: rgba($success-color, 0.1); }
-    }
-  }
-
-  // Overrides statut expiré
-  &.status-expired {
-    opacity: 0.8;
-
-    .progress-info {
-      .current-value,
-      .progress-percentage { color: $expired-color; }
-      .progress-percentage  { background-color: rgba(117, 117, 117, 0.1); }
-    }
-
-    .objectif-title,
-    .objectif-period { opacity: 0.7; }
-  }
+  @include card-base; overflow: hidden; border-top: 3px solid var(--border-color);
+  &.status-completed  { border-top-color: $success-color; }
+  &.status-inProgress, &.status-in-progress { border-top-color: var(--primary-color); }
+  &.status-expired    { border-top-color: $error-color; }
+  &.status-failed     { border-top-color: $error-color; }
 }
 
-// ===================================================
-// ÉTAT VIDE
-// ===================================================
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-4xl $spacing-xl;
-  text-align: center;
-  background-color: var(--bg-tertiary);
-  border-radius: $border-radius-lg;
-  margin-top: $spacing-xl;
-
-  .empty-icon {
-    font-size: 80px;
-    width: 80px;
-    height: 80px;
-    color: var(--warning-color);
-    opacity: 0.5;
-    margin-bottom: $spacing-lg;
-  }
-
-  .empty-title {
-    margin: 0 0 $spacing-sm;
-    font-size: $font-size-xl;
-    font-weight: $font-weight-semibold;
-    color: var(--text-primary);
-  }
-
-  .empty-text {
-    margin: 0 0 $spacing-2xl;
-    font-size: $font-size-sm;
-    color: var(--text-secondary);
-  }
-
-  button { height: 48px; padding: 0 $spacing-3xl; }
+.oc-header { display: flex; align-items: flex-start; gap: $spacing-md; padding: $spacing-lg $spacing-xl; border-bottom: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-md $spacing-lg; }
+}
+.objectif-avatar {
+  width: 44px; height: 44px; border-radius: $border-radius-lg; @include flex-center; flex-shrink: 0;
+  mat-icon { font-size: 22px; width: 22px; height: 22px; color: white; }
+  &.type-buts     { background: linear-gradient(135deg, #0f6e56, #10b981); }
+  &.type-passes   { background: linear-gradient(135deg, #1a3a8a, #2563eb); }
+  &.type-presence { background: linear-gradient(135deg, #854f0b, #f59e0b); }
+  &.type-carton   { background: linear-gradient(135deg, #991b1b, #ef4444); }
+}
+.oc-title-group { flex: 1; min-width: 0;
+  h3 { margin: 0 0 3px; font-size: $font-size-md; font-weight: $font-weight-semibold; }
+  .oc-period { display: flex; align-items: center; gap: 4px; font-size: $font-size-xs; color: var(--text-tertiary);
+    mat-icon { font-size: 14px; width: 14px; height: 14px; } }
 }
 
-// ===================================================
-// CHARGEMENT
-// ===================================================
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-4xl $spacing-xl;
-  gap: $spacing-lg;
+.oc-body { padding: $spacing-lg $spacing-xl; @include mobile { padding: $spacing-md $spacing-lg; } }
 
-  .loading-text {
-    color: var(--text-secondary);
-    font-size: $font-size-sm;
-    margin: 0;
+.progress-info { @include flex-between; margin-bottom: $spacing-sm;
+  .progress-values { font-size: $font-size-xl; font-weight: $font-weight-bold;
+    .current-value { color: var(--primary-color); }
+    .separator { color: var(--text-tertiary); margin: 0 4px; }
+    .target-value { color: var(--text-secondary); }
   }
+  .progress-percentage { font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-secondary); }
 }
 
-// ===================================================
-// ICÔNE D'OPTION (mat-select)
-// ===================================================
-.option-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  margin-right: $spacing-sm;
-  vertical-align: middle;
+.progress-bar { height: 8px !important; border-radius: $border-radius-full; margin-bottom: $spacing-md; }
+
+.objectif-status {
+  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md; font-size: $font-size-sm; font-weight: $font-weight-medium;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &.completed   { background: rgba(16,185,129,.08); color: $success-color; }
+  &.inProgress, &.in-progress { background: rgba(37,99,235,.06); color: var(--primary-color); }
+  &.expired, &.failed { background: rgba(239,68,68,.06); color: $error-color; }
 }
 
-// ===================================================
-// BOTTOM SHEET
-// ===================================================
-::ng-deep .mat-bottom-sheet-container { padding: 0 !important; }
+.oc-actions { display: flex; gap: $spacing-xs; padding: $spacing-sm $spacing-md; border-top: 1px solid var(--border-color); background: var(--background-secondary); justify-content: flex-end;
+  button { @include touch-target(40px); }
+}
 
-// ===================================================
-// ANIMATION
-// ===================================================
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+// ── Formulaire ───────────────────────────────────────────────────
+.obj-form-card { @include card-base; overflow: hidden; max-width: 600px; }
+.obj-form-header { display: flex; align-items: center; gap: $spacing-md; padding: $spacing-lg $spacing-xl; background: var(--background-secondary); border-bottom: 1px solid var(--border-color);
+  .obj-form-icon { width: 44px; height: 44px; border-radius: $border-radius-lg; background: rgba(37,99,235,.1); @include flex-center; flex-shrink: 0; mat-icon { color: var(--primary-color); font-size: 24px; } }
+  h3 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-semibold; }
+}
+.obj-form-body {
+  display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-md; padding: $spacing-xl;
+  @include mobile { grid-template-columns: 1fr; padding: $spacing-lg; gap: $spacing-sm; }
+  .span-2 { grid-column: 1 / -1; }
+  mat-form-field { width: 100%; }
+  .option-icon { margin-right: $spacing-sm; vertical-align: middle; }
+}
+.obj-form-actions { display: flex; gap: $spacing-md; flex-wrap: wrap; padding: $spacing-md $spacing-xl $spacing-xl; border-top: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-md $spacing-lg; button { flex: 1; justify-content: center; } }
+  button { min-height: 44px; }
 }

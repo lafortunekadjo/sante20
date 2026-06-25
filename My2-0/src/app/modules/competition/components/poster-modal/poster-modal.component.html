@@ -1,0 +1,145 @@
+<!-- poster-modal.component.html -->
+<div class="poster-modal">
+  <h2>🎨 Créer votre affiche</h2>
+  
+  <div class="available-types" *ngIf="availableTypes.length > 0">
+    <span *ngFor="let type of availableTypes" class="badge">
+      {{ type === 'AVANT_MATCH' ? '📅 Avant-match' : type === 'MI_TEMPS' ? '⏸️ Mi-temps' : '🏆 Après-match' }}
+    </span>
+  </div>
+  
+  <form [formGroup]="posterForm">
+    <!-- Type d'affiche -->
+    <div class="form-group" *ngIf="availableTypes.length > 1">
+      <label>📋 Type d'affiche</label>
+      <select formControlName="type" class="form-control">
+        <option *ngFor="let type of availableTypes" [value]="type">
+          {{ type === 'AVANT_MATCH' ? '📅 Avant-match' : type === 'MI_TEMPS' ? '⏸️ Mi-temps' : '🏆 Après-match' }}
+        </option>
+      </select>
+    </div>
+    
+    <!-- Format -->
+    <div class="form-group">
+      <label>📐 Format</label>
+      <div class="format-options">
+        <button *ngFor="let format of formats" 
+                type="button"
+                [class.active]="posterForm.get('format')?.value === format.value"
+                (click)="posterForm.patchValue({format: format.value})">
+          {{ format.icon }} {{ format.label }}
+        </button>
+      </div>
+    </div>
+    
+    <!-- Template -->
+    <div class="form-group">
+      <label>🎨 Style de l'affiche</label>
+      <div class="template-grid">
+        <div *ngFor="let template of templates"
+             class="template-card"
+             [class.active]="posterForm.get('templateId')?.value === template.id"
+             (click)="posterForm.patchValue({templateId: template.id})">
+          <img [src]="template.preview" [alt]="template.name">
+          <span>{{ template.name }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sélecteur de couleurs -->
+    <div class="form-group">
+      <label>🎨 Couleurs de l'affiche</label>
+      
+      <!-- Presets -->
+      <div class="color-presets">
+        <div *ngFor="let preset of colorPresets" 
+             class="color-preset"
+             (click)="applyColorPreset(preset)"
+             [title]="preset.name">
+          <div class="color-preview" [style.background]="preset.primary"></div>
+          <div class="color-preview small" [style.background]="preset.secondary"></div>
+        </div>
+      </div>
+      
+      <!-- Pickers -->
+      <div class="color-pickers">
+        <div class="color-field">
+          <label>Couleur principale</label>
+          <input type="color" formControlName="primaryColor" class="color-input">
+          <span class="color-value">{{ posterForm.get('primaryColor')?.value }}</span>
+        </div>
+        <div class="color-field">
+          <label>Couleur secondaire</label>
+          <input type="color" formControlName="secondaryColor" class="color-input">
+          <span class="color-value">{{ posterForm.get('secondaryColor')?.value }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Message personnalisé -->
+    <div class="form-group">
+      <label>💬 Message (optionnel)</label>
+      <input type="text" formControlName="message" 
+             class="form-control" 
+             placeholder="Ex: Allez les gars ! 🔥"
+             maxlength="60">
+    </div>
+    
+    <!-- Photos -->
+    <div class="form-group">
+      <label>📸 Photos</label>
+      <div class="photo-mode">
+        <label>
+          <input type="radio" formControlName="photoMode" value="single">
+          Une photo globale
+        </label>
+        <label>
+          <input type="radio" formControlName="photoMode" value="double">
+          Une photo par équipe
+        </label>
+      </div>
+      
+      <div class="photo-upload" *ngIf="posterForm.get('photoMode')?.value === 'single'">
+        <input type="file" (change)="onPhotoSelected($event, 'photo1')" accept="image/*">
+        <div *ngIf="posterForm.get('photo1')?.value" class="photo-preview">
+          <img [src]="posterForm.get('photo1')?.value" alt="Aperçu">
+        </div>
+      </div>
+      
+      <div class="photo-upload-double" *ngIf="posterForm.get('photoMode')?.value === 'double'">
+        <div>
+          <label>🏠 Équipe 1</label>
+          <input type="file" (change)="onPhotoSelected($event, 'photo1')" accept="image/*">
+          <div *ngIf="posterForm.get('photo1')?.value" class="photo-preview">
+            <img [src]="posterForm.get('photo1')?.value" alt="Equipe 1">
+          </div>
+        </div>
+        <div>
+          <label>✈️ Équipe 2</label>
+          <input type="file" (change)="onPhotoSelected($event, 'photo2')" accept="image/*">
+          <div *ngIf="posterForm.get('photo2')?.value" class="photo-preview">
+            <img [src]="posterForm.get('photo2')?.value" alt="Equipe 2">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Aperçu -->
+    <div class="preview" *ngIf="previewImage">
+      <h3>🔍 Aperçu</h3>
+      <img [src]="previewImage" alt="Aperçu affiche">
+      <div class="actions">
+        <button (click)="downloadPoster()" class="btn-primary">⬇️ Télécharger</button>
+        <button (click)="close()" class="btn-secondary">Fermer</button>
+      </div>
+    </div>
+    
+    <!-- Bouton générer -->
+    <button type="button" 
+            (click)="generatePoster()" 
+            [disabled]="posterForm.invalid || isLoading"
+            class="btn-generate">
+      {{ isLoading ? '⏳ Génération...' : '✨ Générer l\'affiche' }}
+    </button>
+  </form>
+</div>

@@ -1,0 +1,643 @@
+// profil-edit.component.scss
+@use '../../../../variables' as *;
+
+// ===================================================
+// VARIABLES LOCALES — couleurs spécifiques au dialog
+// ===================================================
+$dialog-primary:       #1976d2;    // bleu Material (≠ $primary-blue #2563eb)
+$dialog-primary-dark:  #1565c0;    // gradient header
+$dialog-primary-hover: #3a91e7;    // lighten(#1976d2, 20%) — hover form fields
+$dialog-success:       #4caf50;    // vert assurance
+$dialog-warning:       #ff9800;    // orange indicateur
+$dialog-warning-dark:  #e58800;    // darken(#ff9800, 10%) — texte hint assurance
+$dialog-danger:        #f44336;    // rouge erreurs required marker
+
+// Scrollbar — darken(#f5f5f5, 15%/25%)
+$scrollbar-thumb:      #d0d0d0;
+$scrollbar-thumb-hover:#b7b7b7;
+
+$transition-dialog: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
+:host {
+  --dialog-text-primary:   #{$light-text-primary};
+  --dialog-text-secondary: #{$light-text-secondary};
+  --dialog-bg:             #{$light-bg-primary};
+  --dialog-bg-light:       #{$light-bg-secondary};
+  --dialog-border:         #{$light-border};
+  --dialog-field-bg:       #{$light-bg-primary};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --dialog-text-primary:   #{$dark-text-primary};
+  --dialog-text-secondary: #{$dark-text-secondary};
+  --dialog-bg:             #{$dark-bg-secondary};
+  --dialog-bg-light:       #{$dark-bg-tertiary};
+  --dialog-border:         #{$dark-border};
+  --dialog-field-bg:       #{$dark-bg-tertiary};
+}
+
+// ===================================================
+// CONTAINER PRINCIPAL
+// ===================================================
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 100%;
+  background: var(--dialog-bg);
+
+  @include mobile { max-height: 100vh; }
+}
+
+// ===================================================
+// HEADER (fond bleu fixe — indépendant du thème)
+// ===================================================
+.dialog-header {
+  background: linear-gradient(135deg, $dialog-primary 0%, $dialog-primary-dark 100%);
+  color: white;
+  padding: $spacing-2xl;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: $shadow-md;
+
+  @include mobile { padding: $spacing-xl $spacing-lg; }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .avatar-section {
+      display: flex;
+      align-items: center;
+      gap: $spacing-lg;
+
+      @include mobile { gap: $spacing-md; }
+
+      .avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: $border-radius-full;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: $font-size-2xl;
+        font-weight: $font-weight-bold;
+        color: white;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+
+        @include mobile { width: 48px; height: 48px; font-size: $font-size-xl; }
+      }
+
+      .header-text {
+        .dialog-title {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          margin: 0 0 $spacing-xs;
+          font-size: $font-size-2xl;
+          font-weight: $font-weight-semibold;
+
+          mat-icon { font-size: 28px; width: 28px; height: 28px; }
+
+          @include mobile {
+            font-size: $font-size-xl;
+            mat-icon { font-size: 24px; width: 24px; height: 24px; }
+          }
+        }
+
+        .dialog-subtitle {
+          margin: 0;
+          font-size: $font-size-sm;
+          opacity: 0.9;
+
+          @include mobile { font-size: $font-size-xs; }
+        }
+      }
+    }
+
+    .close-button {
+      color: white;
+      flex-shrink: 0;
+      &:hover { background-color: rgba(255, 255, 255, 0.1); }
+    }
+  }
+}
+
+// ===================================================
+// LOADING
+// ===================================================
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px $spacing-xl;
+  gap: $spacing-lg;
+
+  .loading-text {
+    color: var(--dialog-text-secondary);
+    font-size: $font-size-sm;
+    margin: 0;
+  }
+}
+
+// ===================================================
+// CONTENU SCROLLABLE
+// ===================================================
+.dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-2xl;
+  background: var(--dialog-bg);
+
+  @include mobile { padding: $spacing-lg; }
+
+  &::-webkit-scrollbar { width: 8px; }
+  &::-webkit-scrollbar-track { background: var(--dialog-bg-light); }
+  &::-webkit-scrollbar-thumb {
+    background: $scrollbar-thumb;
+    border-radius: $border-radius-sm;
+    &:hover { background: $scrollbar-thumb-hover; }
+  }
+}
+
+// ===================================================
+// SECTIONS DU FORMULAIRE
+// ===================================================
+.form-section {
+  margin-bottom: $spacing-3xl;
+
+  @include mobile { margin-bottom: $spacing-2xl; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+
+    .section-icon {
+      color: $dialog-primary;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+
+      @include mobile { font-size: 24px; width: 24px; height: 24px; }
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: var(--dialog-text-primary);
+
+      @include mobile { font-size: $font-size-md; }
+    }
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-lg;
+
+    @include mobile { grid-template-columns: 1fr; }
+
+    .form-field {
+      width: 100%;
+      &.full-width { grid-column: 1 / -1; }
+    }
+  }
+}
+
+// form-field hors grille (poste)
+.form-field { width: 100%; }
+
+// ===================================================
+// DIVIDER
+// ===================================================
+mat-divider {
+  margin: $spacing-2xl 0;
+  border-color: var(--dialog-border) !important;
+}
+
+// ===================================================
+// SECTION ASSURANCE
+// ===================================================
+.assurance-container {
+  background-color: var(--dialog-bg-light);
+  border-radius: $border-radius-md;
+  padding: $spacing-xl;
+
+  @include mobile { padding: $spacing-lg; }
+
+  .assurance-checkbox {
+    ::ng-deep .mat-checkbox-label { font-size: $font-size-md; }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-weight: $font-weight-medium;
+      color: var(--dialog-text-primary);
+
+      .checkbox-icon {
+        color: $dialog-success;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+  .assurance-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    margin: $spacing-md 0 0 $spacing-3xl;
+    padding: $spacing-md;
+    background-color: rgba($dialog-warning, 0.1);
+    border-left: 3px solid $dialog-warning;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    // darken($warning-color, 10%) = #e58800
+    color: $dialog-warning-dark;
+
+    @include mobile { margin-left: 0; }
+
+    .hint-icon {
+      color: $dialog-warning;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+  }
+}
+
+// ===================================================
+// ACTIONS (sticky footer)
+// ===================================================
+.dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-xl $spacing-2xl;
+  border-top: 1px solid var(--dialog-border);
+  background-color: var(--dialog-bg-light);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin: 0 (-$spacing-2xl) (-$spacing-2xl);
+
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    margin: 0 (-$spacing-lg) (-$spacing-lg);
+  }
+
+  .actions-left {
+    @include mobile { width: 100%; order: 2; }
+
+    button {
+      color: var(--dialog-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      &:hover:not(:disabled) { background-color: rgba(0, 0, 0, 0.04); }
+
+      @include mobile { width: 100%; }
+    }
+  }
+
+  .actions-right {
+    display: flex;
+    gap: $spacing-md;
+
+    @include mobile { width: 100%; order: 1; flex-direction: column-reverse; }
+
+    button {
+      height: 44px;
+      font-weight: $font-weight-medium;
+      transition: $transition-dialog;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      &:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: $shadow-md;
+      }
+
+      @include mobile { width: 100%; justify-content: center; }
+    }
+
+    .cancel-button { min-width: 120px; }
+
+    .save-button {
+      min-width: 140px;
+      position: relative;
+
+      mat-spinner { position: absolute; left: $spacing-md; }
+      &:disabled { opacity: 0.6; }
+    }
+  }
+}
+
+// ===================================================
+// INDICATEUR DE MODIFICATIONS
+// ===================================================
+.changes-indicator {
+  position: fixed;
+  bottom: $spacing-xl;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: $dialog-warning;
+  color: white;
+  padding: $spacing-md $spacing-xl;
+  border-radius: $border-radius-full;
+  box-shadow: $shadow-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+  white-space: nowrap;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
+// ===================================================
+// ICÔNES OPTIONS SELECT
+// ===================================================
+.option-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: $spacing-sm;
+  vertical-align: middle;
+}
+
+// ===================================================
+// FORM FIELDS MATERIAL — dark mode via ::ng-deep
+// ===================================================
+::ng-deep {
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper { background-color: var(--dialog-field-bg); }
+
+    &.mat-focused .mat-mdc-notch-piece { border-color: $dialog-primary; }
+  }
+
+  // hover — lighten($primary-color, 20%) = #3a91e7
+  .mat-mdc-form-field:hover .mat-mdc-text-field-wrapper .mat-mdc-notch-piece {
+    border-color: $dialog-primary-hover;
+  }
+
+  .mat-mdc-form-field.mat-focused .mat-mdc-form-field-focus-overlay { opacity: 0.05; }
+
+  .mat-mdc-form-field-error {
+    font-size: $font-size-xs;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    animation: shake 0.3s ease-in-out;
+  }
+
+  .mat-mdc-form-field-hint {
+    font-size: $font-size-xs;
+    color: var(--dialog-text-secondary);
+  }
+
+  .mat-mdc-form-field-hint-wrapper { padding: 0 $spacing-lg; }
+
+  // Required marker
+  .mat-mdc-form-field-required-marker { color: $dialog-danger; }
+
+  // Dark mode — labels & inputs
+  .mat-mdc-floating-label,
+  .mdc-floating-label   { color: var(--dialog-text-secondary) !important; }
+  .mat-mdc-input-element{ color: var(--dialog-text-primary) !important; }
+  .mat-mdc-select-value { color: var(--dialog-text-primary); }
+
+  // Select panel
+  .mat-mdc-select-panel {
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+  }
+
+  .mat-mdc-option {
+    color: var(--dialog-text-primary);
+    &:hover            { background-color: rgba($dialog-primary, 0.08); }
+    &.mat-mdc-option-active { background-color: rgba($dialog-primary, 0.12); }
+  }
+
+  // Datepicker
+  .mat-datepicker-content {
+    box-shadow: $shadow-lg;
+    border-radius: $border-radius-md;
+  }
+
+  // Checkbox
+  .mat-mdc-checkbox {
+    .mdc-checkbox__background { border-radius: $border-radius-sm; }
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+      background-color: $dialog-primary;
+      border-color: $dialog-primary;
+    }
+  }
+}
+
+// ===================================================
+// BOUTONS DÉSACTIVÉS
+// ===================================================
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+// ===================================================
+// ANIMATIONS
+// ===================================================
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-4px); }
+  75%       { transform: translateX(4px); }
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #1a237e, #0d47a1); // Ton thème bleu My2-0
+  padding: 16px 20px;
+  color: white;
+
+  .header-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap; // Aligne verticalement sur petit écran automatiquement
+
+    @media (max-width: 599px) {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+  }
+
+  // Zone Photo + Bouton à côté
+  .profile-photo-zone {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  // Le petit rond de la photo (Taille fixe et optimisée)
+  .avatar-mini-container {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.1);
+
+    .avatar-mini-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; // Empêche la photo d'être déformée/écrasée
+    }
+
+    .avatar-mini-initials {
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      text-transform: uppercase;
+    }
+  }
+
+  // Bouton d'action à côté du rond
+  .edit-photo-action-btn {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    color: white !important;
+    height: 36px;
+    line-height: 34px;
+    border-radius: 20px;
+    padding: 0 14px !important;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease-in-out;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 6px;
+      color: #ff9800; // Orange pour attirer subtilement l'attention
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: white !important;
+    }
+
+    @media (max-width: 400px) {
+      .btn-text {
+        display: none; // Sur les très petits écrans, on cache le texte pour ne laisser que l'icône appareil photo
+      }
+      padding: 0 10px !important;
+    }
+  }
+
+  // Textes du Header
+  .header-titles {
+    flex: 1;
+    
+    .main-title {
+      font-size: 20px;
+      margin: 0 0 4px 0;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .sub-title {
+      font-size: 13px;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+}
+
+// Style pour la section de visibilité du profil
+.profile-visibility-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(var(--dialog-text-primary-rgb, 0, 0, 0), 0.02);
+  border: 1px solid rgba(var(--dialog-text-primary-rgb, 0, 0, 0), 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  gap: 16px;
+  transition: all 0.2s ease-in-out;
+
+  .visibility-info {
+    flex: 1;
+
+    .visibility-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+
+      .visibility-icon {
+        color: var(--dialog-primary, #1976d2);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--dialog-text-primary);
+      }
+    }
+
+    .visibility-hint {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b; // text-secondary fluide
+      line-height: 1.4;
+    }
+  }
+
+  mat-slide-toggle {
+    font-weight: 500;
+    font-size: 13px;
+  }
+}
+
+.form-divider {
+  margin: 16px 0;
+  opacity: 0.6;
+}

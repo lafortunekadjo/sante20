@@ -63,6 +63,12 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
   styleUrl: './type-contribution.component.scss'
 })
 export class TypeContributionComponent implements OnInit {
+  activeTab: 'list'|'form' = 'list';
+
+  resetTypeForm(): void {
+    this.editingId = null;
+    this.typeForm?.reset({ actif: true, obligatoire: false, genererEcheancesAuto: false, lieEvenement: false, reportable: false, majStatutMembre: false });
+  }
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   private translate = inject(TranslateService);

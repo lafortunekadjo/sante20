@@ -1,0 +1,1340 @@
+<!-- presence-form.component.html -->
+<div class="presence-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'PRESENCE.TITLE' | translate }}</h1>
+          <p class="page-subtitle">
+            {{ match?.typeMatch }} - {{ match?.dateMatch | date:'EEEE d MMMM yyyy' }}
+          </p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ dataSource.data.length }}</span>
+          <span class="stat-label">{{ 'PRESENCE.STATS.REGISTERED' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ equipe1Count }}</span>
+          <span class="stat-label">{{ equipeNames[0] }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ equipe2Count }}</span>
+          <span class="stat-label">{{ equipeNames[1] }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'COMMON.LOADING' | translate }}</h3>
+      <p>{{ 'PRESENCE.LOADING_MSG' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+
+    <!-- Info Match -->
+    <div class="match-info-card">
+      <div class="match-badge" [ngClass]="'type-' + match?.typeMatch?.toLowerCase()">
+        {{ match?.typeMatch }}
+      </div>
+      <div class="match-teams">
+        <span class="team team-1">{{ equipeNames[0] }}</span>
+        <span class="vs">VS</span>
+        <span class="team team-2">{{ equipeNames[1] }}</span>
+      </div>
+      <div class="match-score">
+        <span class="score">{{ getMatchScore(1) }}</span>
+        <span class="separator">-</span>
+        <span class="score">{{ getMatchScore(2) }}</span>
+      </div>
+
+      <!-- Tag info groupe adverse (match amical inter-groupes) -->
+      <div class="match-info-tag" *ngIf="isAmicalWithPlatformGroup">
+        <mat-icon>groups</mat-icon>
+        <span>
+          {{ 'PRESENCE.FRIENDLY_TAG' | translate:{ nom: groupeAdverse?.nom, count: membresAdverse.length } }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ===== SECTION AJOUT MEMBRES — VERSION CLASSIQUE ===== -->
+<div class="add-member-section" *ngIf="!isAmicalWithPlatformGroup">
+
+   <div class="add-member-card">
+    <h3>
+      <mat-icon>group_add</mat-icon>
+      {{ 'PRESENCE.ADD.TITLE_MEMBER' | translate }}
+    </h3>
+    <div class="add-member-form">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+        <input matInput [(ngModel)]="membreSearch"
+               [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="select-field">
+        <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBERS' | translate }}</mat-label>
+        <mat-select [(ngModel)]="selectedMembreIdsToAdd" 
+                    multiple 
+                    (selectionChange)="_refreshCounter = _refreshCounter + 1"> <mat-option (click)="selectAllMembres()">
+            <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
+          </mat-option>
+          <mat-divider></mat-divider>
+          
+          <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
+            <div class="member-option-container" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+    
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px;">block</mat-icon>
+              
+              <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
+                    [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+                {{ membre.nom }} {{ membre.prenom }}
+              </span>
+            </div>
+
+            <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
+                  style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+              Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+            </span>
+            
+            <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">
+              ({{ membre.equipe.nom }})
+            </span>
+          </div>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary"
+              [disabled]="!selectedMembreIdsToAdd || selectedMembreIdsToAdd.length === 0"
+              (click)="addMembresToPresenceList()">
+        <mat-icon>playlist_add</mat-icon>
+        {{ 'COMMON.ADD' | translate }} ({{ selectedMembreIdsToAdd?.length || 0 }})
+      </button>
+    </div>
+ <!-- Ajout joueur occasionnel -->
+      <div class="add-member-card occasional">
+        <h3>
+          <mat-icon>person_outline</mat-icon>
+          {{ 'PRESENCE.ADD.TITLE_OCCASIONAL' | translate }}
+        </h3>
+        <div class="add-member-form">
+          <mat-form-field appearance="outline" class="name-field">
+            <mat-label>{{ 'PRESENCE.ADD.PLAYER_NAME' | translate }}</mat-label>
+            <input matInput [(ngModel)]="occasionalPlayerName"
+                   [placeholder]="'PRESENCE.ADD.NAME_PLACEHOLDER' | translate">
+            <mat-icon matPrefix>badge</mat-icon>
+          </mat-form-field>
+
+          <button mat-raised-button color="accent"
+                  [disabled]="!occasionalPlayerName"
+                  (click)="addOccasionalPlayer()">
+            <mat-icon>add</mat-icon>
+            {{ 'COMMON.ADD' | translate }}
+          </button>
+        </div>
+      </div>
+      </div>
+
+  </div>
+
+    <!-- ===== SECTION AJOUT MEMBRES — VERSION AMICAL INTER-GROUPES ===== -->
+   <div class="add-member-section-amical" *ngIf="isAmicalWithPlatformGroup">
+  <mat-tab-group class="teams-tabs" animationDuration="200ms">
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label team-1-tab">
+          <mat-icon>home</mat-icon>
+          <span>{{ equipeNames[0] }}</span>
+          <span class="tab-count">{{ membresNonPresents.length }}</span>
+        </div>
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="add-member-card">
+          <h3>
+            <mat-icon>person_add</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_LOCAL' | translate:{ nom: groupeActif?.nom } }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+              <input matInput [(ngModel)]="membreSearch"
+                     [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="select-field">
+              <mat-label>{{ 'PRESENCE.ADD.SELECT_MEMBERS' | translate }}</mat-label>
+              <mat-select [(ngModel)]="selectedMembreIdsToAdd" multiple (selectionChange)="triggerRefresh()">
+                <mat-option (click)="selectAllLocalMembres()">
+                  <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
+                </mat-option>
+                <mat-divider></mat-divider>
+                
+                <mat-option *ngFor="let membre of filteredMembres()" [value]="membre.id">
+                  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px; height: 18px; width: 18px;">block</mat-icon>
+                      <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
+                            [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+                        {{ membre.nom }} {{ membre.prenom }}
+                      </span>
+                    </div>
+                    <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
+                          style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+                      Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                    </span>
+                    <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">{{ membre.equipe.nom }}</span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-hint>
+                {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresNonPresents.length } }}
+              </mat-hint>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary"
+                    [disabled]="!selectedMembreIdsToAdd || selectedMembreIdsToAdd.length === 0"
+                    (click)="addMembresLocalToPresenceList()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }} ({{ selectedMembreIdsToAdd?.length || 0 }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label team-2-tab">
+          <mat-icon>flight</mat-icon>
+          <span>{{ equipeNames[1] }}</span>
+          <span class="tab-count">{{ membresAdverseNonPresents.length }}</span>
+        </div>
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="add-member-card adverse">
+          <h3>
+            <mat-icon>person_add</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_ADVERSE' | translate:{ nom: groupeAdverse?.nom } }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>{{ 'COMMON.SEARCH' | translate }}</mat-label>
+              <input matInput [(ngModel)]="membreAdverseSearch"
+                     [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+
+        <mat-icon>playlist_add</mat-icon>
+            <mat-form-field appearance="outline" class="select-field">
+              <mat-label>{{ 'PRESENCE.ADD.SELECT_ADVERSE' | translate }}</mat-label>
+              <mat-select [(ngModel)]="selectedMembreAdverseIdsToAdd" multiple (selectionChange)="triggerRefresh()">
+                <mat-option (click)="selectAllAdverseMembres()">
+                  <strong>{{ 'COMMON.SELECT_ALL' | translate }}</strong>
+                </mat-option>
+                <mat-divider></mat-divider>
+
+                <mat-option *ngFor="let membre of filteredMembresAdverse()" [value]="membre.id">
+                  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <mat-icon *ngIf="membre.estSuspendu" style="color: #f44336; font-size: 18px; height: 18px; width: 18px;">block</mat-icon>
+                      <span [style.text-decoration]="membre.estSuspendu ? 'line-through' : 'none'"
+                            [style.color]="membre.estSuspendu ? '#999' : 'inherit'">
+                        {{ membre.nom }} {{ membre.prenom }}
+                      </span>
+                    </div>
+                    <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" 
+                          style="font-size: 10px; color: #f44336; background: #ffebee; padding: 2px 6px; border-radius: 4px;">
+                      Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                    </span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-hint>
+                {{ 'PRESENCE.ADD.AVAILABLE_COUNT' | translate:{ count: membresAdverseNonPresents.length } }}
+              </mat-hint>
+            </mat-form-field>
+
+            <button mat-raised-button color="warn"
+                    [disabled]="!selectedMembreAdverseIdsToAdd || selectedMembreAdverseIdsToAdd.length === 0"
+                    (click)="addMembresAdverseToPresenceList()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }} ({{ selectedMembreAdverseIdsToAdd?.length || 0 }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label occasional-tab">
+          <mat-icon>person_outline</mat-icon>
+          <span>{{ 'PRESENCE.ADD.TAB_OCCASIONAL' | translate }}</span>
+        </div>
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="add-member-card occasional">
+          <h3>
+            <mat-icon>person_outline</mat-icon>
+            {{ 'PRESENCE.ADD.TITLE_OCCASIONAL' | translate }}
+          </h3>
+          <div class="add-member-form">
+            <mat-form-field appearance="outline" class="name-field">
+              <mat-label>{{ 'PRESENCE.ADD.PLAYER_NAME' | translate }}</mat-label>
+              <input matInput [(ngModel)]="occasionalPlayerName"
+                     [placeholder]="'PRESENCE.ADD.NAME_PLACEHOLDER' | translate">
+              <mat-icon matPrefix>badge</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="team-field">
+              <mat-label>{{ 'PRESENCE.ADD.TEAM_LABEL' | translate }}</mat-label>
+              <mat-select [(ngModel)]="occasionalPlayerTeam">
+                <mat-option [value]="equipeNames[0]">
+                  <mat-icon>home</mat-icon> {{ equipeNames[0] }}
+                </mat-option>
+                <mat-option [value]="equipeNames[1]">
+                  <mat-icon>flight</mat-icon> {{ equipeNames[1] }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <button mat-raised-button color="accent"
+                    [disabled]="!occasionalPlayerName || !occasionalPlayerTeam"
+                    (click)="addOccasionalPlayer()">
+              <mat-icon>add</mat-icon>
+              {{ 'COMMON.ADD' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>
+
+    
+    
+
+    <!-- ===== LISTE DES PRÉSENCES PAR ÉQUIPE ===== -->
+    <div class="presences-grid">
+
+      <!-- Équipe 1 -->
+      <div class="team-section team-1">
+        <div class="team-header">
+          <div class="team-color"></div>
+          <h3>{{ equipeNames[0] }}</h3>
+          <span class="team-count">
+            {{ 'PRESENCE.TEAM.PLAYER_COUNT' | translate:{ count: equipe1Count } }}
+          </span>
+        </div>
+
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let presence of equipe1Players; trackBy: trackByPresence"
+                               class="presence-panel"
+                               [class.capitaine]="presence.estCapitaine"
+                               [class.mvp]="presence.estHommeDuMatchEq">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <div class="player-info">
+                  <div class="player-avatar">
+                    <mat-icon *ngIf="presence.estCapitaine" class="captain-badge">star</mat-icon>
+                    <span>{{ getMembreName(presence) | slice:0:2 }}</span>
+                  </div>
+                  <span class="player-name">{{ getMembreName(presence) }}</span>
+                </div>
+              </mat-panel-title>
+              <mat-panel-description>
+                <div class="player-badges">
+                  <span class="badge present" *ngIf="presence.present && presence.aJoue">
+                    {{ 'PRESENCE.BADGE.PLAYED' | translate }}
+                  </span>
+                  <span class="badge goals" *ngIf="presence.buts && presence.buts > 0">
+                    {{ presence.buts }} {{ 'PRESENCE.BADGE.GOALS' | translate }}
+                  </span>
+                  <span class="badge yellow" *ngIf="presence.cartonsJaunes && presence.cartonsJaunes > 0">
+                    {{ presence.cartonsJaunes }} {{ 'PRESENCE.BADGE.YC' | translate }}
+                  </span>
+                  <span class="badge red" *ngIf="presence.cartonsRouges && presence.cartonsRouges > 0">
+                    {{ presence.cartonsRouges }} {{ 'PRESENCE.BADGE.RC' | translate }}
+                  </span>
+                </div>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="presence-details">
+              <div class="checkbox-row">
+                <mat-checkbox [(ngModel)]="presence.present" (change)="onPresenceChange(presence)">
+                  {{ 'PRESENCE.FIELD.PRESENT' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.aJoue" (change)="onAJoueChange(presence)">
+                  {{ 'PRESENCE.FIELD.PLAYED' | translate }}
+                </mat-checkbox>
+              </div>
+
+              <div class="fields-row" *ngIf="presence.aJoue">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'PRESENCE.FIELD.TEAM' | translate }}</mat-label>
+                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange(presence)">
+                    <mat-option *ngFor="let equipe of equipeNames" [value]="equipe">{{ equipe }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-checkbox [(ngModel)]="presence.estCapitaine" (change)="setCapitaine(presence)">
+                  {{ 'PRESENCE.FIELD.CAPTAIN' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estGardien" (change)="setGardien(presence)">
+                  {{ 'PRESENCE.FIELD.GOALKEEPER' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estHommeDuMatchEq" (change)="setMvpEquipe(presence)">
+                  {{ 'PRESENCE.FIELD.MVP_TEAM' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estHommeDuMatch" (change)="setHommeDuMatch(presence)">
+                  {{ 'PRESENCE.FIELD.MVP_MATCH' | translate }}
+                </mat-checkbox>
+              </div>
+
+              <div class="stats-row" *ngIf="presence.aJoue">
+
+                <!-- Football / Futsal -->
+                <ng-container *ngIf="groupeActif?.discipline === 'Football' || groupeActif?.discipline === 'Futsal'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.GOALS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.OWN_GOAL' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.butsContreSonCamp" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.PENALTY' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.penalti" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.ASSISTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.passes" min="0">
+                  </mat-form-field>
+                </ng-container>
+
+                <!-- Basketball -->
+                <ng-container *ngIf="groupeActif?.discipline === 'Basketball'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.POINTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.REBOUNDS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.rebonds" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.ASSISTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.passes" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.FOULS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.fautes" min="0" max="5">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.POINTS_TOTAL' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                </ng-container>
+
+                <!-- Cartons (hors Volleyball) -->
+                <ng-container *ngIf="groupeActif?.discipline !== 'Volleyball'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.YELLOW_CARD' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.cartonsJaunes" min="0" max="2">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.RED_CARD' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.cartonsRouges" min="0" max="1">
+                  </mat-form-field>
+                </ng-container>
+
+              </div>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>
+
+        <div class="empty-team" *ngIf="equipe1Count === 0">
+          <mat-icon>group_off</mat-icon>
+          <p>{{ 'PRESENCE.TEAM.EMPTY' | translate }}</p>
+        </div>
+      </div>
+
+      <!-- Équipe 2 -->
+      <div class="team-section team-2">
+        <div class="team-header">
+          <div class="team-color"></div>
+          <h3>{{ equipeNames[1] }}</h3>
+          <span class="team-count">
+            {{ 'PRESENCE.TEAM.PLAYER_COUNT' | translate:{ count: equipe2Count } }}
+          </span>
+        </div>
+
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let presence of equipe2Players; trackBy: trackByPresence"
+                               class="presence-panel"
+                               [class.capitaine]="presence.estCapitaine"
+                               [class.mvp]="presence.estHommeDuMatchEq">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <div class="player-info">
+                  <div class="player-avatar">
+                    <mat-icon *ngIf="presence.estCapitaine" class="captain-badge">star</mat-icon>
+                    <span>{{ getMembreName(presence) | slice:0:2 }}</span>
+                  </div>
+                  <span class="player-name">{{ getMembreName(presence) }}</span>
+                </div>
+              </mat-panel-title>
+              <mat-panel-description>
+                <div class="player-badges">
+                  <span class="badge present" *ngIf="presence.present && presence.aJoue">
+                    {{ 'PRESENCE.BADGE.PLAYED' | translate }}
+                  </span>
+                  <span class="badge goals" *ngIf="presence.buts && presence.buts > 0">
+                    {{ presence.buts }} {{ 'PRESENCE.BADGE.GOALS' | translate }}
+                  </span>
+                  <span class="badge yellow" *ngIf="presence.cartonsJaunes && presence.cartonsJaunes > 0">
+                    {{ presence.cartonsJaunes }} {{ 'PRESENCE.BADGE.YC' | translate }}
+                  </span>
+                  <span class="badge red" *ngIf="presence.cartonsRouges && presence.cartonsRouges > 0">
+                    {{ presence.cartonsRouges }} {{ 'PRESENCE.BADGE.RC' | translate }}
+                  </span>
+                </div>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="presence-details">
+              <div class="checkbox-row">
+                <mat-checkbox [(ngModel)]="presence.present" (change)="onPresenceChange(presence)">
+                  {{ 'PRESENCE.FIELD.PRESENT' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.aJoue" (change)="onAJoueChange(presence)">
+                  {{ 'PRESENCE.FIELD.PLAYED' | translate }}
+                </mat-checkbox>
+              </div>
+
+              <div class="fields-row" *ngIf="presence.aJoue">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'PRESENCE.FIELD.TEAM' | translate }}</mat-label>
+                  <mat-select [(ngModel)]="presence.equipeMatch" (selectionChange)="onEquipeChange(presence)">
+                    <mat-option *ngFor="let equipe of equipeNames" [value]="equipe">{{ equipe }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-checkbox [(ngModel)]="presence.estCapitaine" (change)="setCapitaine(presence)">
+                  {{ 'PRESENCE.FIELD.CAPTAIN' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estGardien" (change)="setGardien(presence)">
+                  {{ 'PRESENCE.FIELD.GOALKEEPER' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estHommeDuMatchEq" (change)="setMvpEquipe(presence)">
+                  {{ 'PRESENCE.FIELD.MVP_TEAM' | translate }}
+                </mat-checkbox>
+                <mat-checkbox [(ngModel)]="presence.estHommeDuMatch" (change)="setHommeDuMatch(presence)">
+                  {{ 'PRESENCE.FIELD.MVP_MATCH' | translate }}
+                </mat-checkbox>
+              </div>
+
+              <div class="stats-row" *ngIf="presence.aJoue">
+
+                <!-- Football / Futsal -->
+                <ng-container *ngIf="groupeActif?.discipline === 'Football' || groupeActif?.discipline === 'Futsal'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.GOALS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.OWN_GOAL' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.butsContreSonCamp" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.PENALTY' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.penalti" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.ASSISTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.passes" min="0">
+                  </mat-form-field>
+                </ng-container>
+
+                <!-- Basketball -->
+                <ng-container *ngIf="groupeActif?.discipline === 'Basketball'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.POINTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.REBOUNDS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.rebonds" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.ASSISTS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.passes" min="0">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.FOULS' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.fautes" min="0" max="5">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.POINTS_TOTAL' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.buts" min="0">
+                  </mat-form-field>
+                </ng-container>
+
+                <!-- Cartons (hors Volleyball) -->
+                <ng-container *ngIf="groupeActif?.discipline !== 'Volleyball'">
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.YELLOW_CARD' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.cartonsJaunes" min="0" max="2">
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="stat-field">
+                    <mat-label>{{ 'PRESENCE.STATS_FIELD.RED_CARD' | translate }}</mat-label>
+                    <input matInput type="number" [(ngModel)]="presence.cartonsRouges" min="0" max="1">
+                  </mat-form-field>
+                </ng-container>
+
+              </div>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>
+
+        <div class="empty-team" *ngIf="equipe2Count === 0">
+          <mat-icon>group_off</mat-icon>
+          <p>{{ 'PRESENCE.TEAM.EMPTY' | translate }}</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== BARRE D'ACTIONS ===== -->
+    <div class="actions-bar">
+      <button mat-stroked-button [routerLink]="['/responsable/matchs']">
+        <mat-icon>arrow_back</mat-icon>
+        {{ 'COMMON.BACK' | translate }}
+      </button>
+
+      <!-- Menu export image -->
+      <button mat-stroked-button [matMenuTriggerFor]="exportMenu" color="primary">
+        <mat-icon>image</mat-icon>
+        {{ 'COMMON.EXPORT' | translate }}
+      </button>
+
+      <mat-menu #exportMenu="matMenu">
+        <button mat-menu-item (click)="downloadMatchSheetAsImage('full')">
+          <mat-icon>aspect_ratio</mat-icon>
+          <span>{{ 'PRESENCE.EXPORT.FULL_IMAGE' | translate }}</span>
+        </button>
+        <!-- <button mat-menu-item (click)="downloadMatchSheetAsImage('story')">
+          <mat-icon>stay_current_portrait</mat-icon>
+          <span>{{ 'PRESENCE.EXPORT.STORY_FORMAT' | translate }}</span>
+        </button> -->
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="shareMatchSheetAsImage('full')">
+          <mat-icon>share</mat-icon>
+          <span>{{ 'COMMON.SHARE' | translate }}</span>
+        </button>
+      </mat-menu>
+
+      <div class="primary-actions">
+        <button mat-stroked-button color="primary" (click)="downloadMatchSheetAsPdf()">
+          <mat-icon>picture_as_pdf</mat-icon>
+          {{ 'PRESENCE.EXPORT.MATCH_SHEET_PDF' | translate }}
+        </button>
+        <button mat-stroked-button color="accent" (click)="downloadPresenceSheetAsPdf()">
+          <mat-icon>picture_as_pdf</mat-icon>
+          {{ 'PRESENCE.EXPORT.PRESENCE_SHEET_PDF' | translate }}
+        </button>
+        <button mat-raised-button color="primary"
+                (click)="savePresences()"
+                [disabled]="!isPresenceValid()">
+          <mat-icon>save</mat-icon>
+          {{ 'COMMON.SAVE' | translate }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SECTIONS D'IMPRESSION (masquées à l'écran, rendues en image/PDF) -->
+  <!-- ================================================================ -->
+
+  <!-- Feuille de Match (PDF / image) -->
+  <div id="print-section" style="display: none; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 12px; background: white; color: #333; font-size: 9pt; max-width: 210mm;">
+
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 2px solid #333; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img *ngIf="groupeActif?.profilePhotoUrl" [src]="groupeActif?.profilePhotoUrl" alt="Logo"
+             style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd;">
+        <div *ngIf="!groupeActif?.profilePhotoUrl"
+             style="width: 45px; height: 45px; border-radius: 50%; background: #333; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11pt;">
+          {{ groupeActif?.abreviation || groupeActif?.nom?.substring(0,3) }}
+        </div>
+        <div>
+          <div style="font-size: 14pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+            {{ 'PRESENCE.PRINT.MATCH_SHEET_TITLE' | translate }}
+          </div>
+          <div style="font-size: 9pt; color: #000;">{{ groupeActif?.nom }}</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 10pt; font-weight: 600; color: #333;">{{ match?.typeMatch }}</div>
+        <div style="font-size: 9pt; color: #000;">{{ match?.dateMatch | date:'EEEE dd MMMM yyyy' }}</div>
+        <div style="font-size: 8pt; color: #999;" *ngIf="match?.lieu">{{ match?.lieu }}</div>
+      </div>
+    </div>
+
+    <!-- Score central -->
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px; padding: 12px 0;">
+      <div style="flex: 1; text-align: right; padding-right: 20px;">
+        <span style="font-size: 14pt; font-weight: 600; color: #333;">{{ equipeNames[0] }}</span>
+      </div>
+      <div style="text-align: center; padding: 0 15px;">
+        <span style="font-size: 28pt; font-weight: 800; color: #333;">{{ getMatchScore(1) }}</span>
+        <span style="font-size: 16pt; color: #999; margin: 0 8px;">-</span>
+        <span style="font-size: 28pt; font-weight: 800; color: #333;">{{ getMatchScore(2) }}</span>
+      </div>
+      <div style="flex: 1; text-align: left; padding-left: 20px;">
+        <span style="font-size: 14pt; font-weight: 600; color: #333;">{{ equipeNames[1] }}</span>
+      </div>
+    </div>
+
+    <!-- Info groupes (match amical) -->
+    <div *ngIf="isAmicalWithPlatformGroup" style="display: flex; gap: 10px; margin-bottom: 12px; padding: 8px; background: #fafafa; border-radius: 4px; font-size: 8pt;">
+      <div style="flex: 1; border-right: 1px solid #ddd; padding-right: 10px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 2px;">{{ groupeActif?.nom }}</div>
+        <div style="color: #000;" *ngIf="groupeActif?.discipline">{{ groupeActif?.discipline }}</div>
+      </div>
+      <div style="flex: 1; padding-left: 10px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 2px;">{{ groupeAdverse?.nom }}</div>
+        <div style="color: #000;" *ngIf="groupeAdverse?.discipline">{{ groupeAdverse?.discipline }}</div>
+      </div>
+    </div>
+
+    <!-- Officiels -->
+    <div style="display: flex; gap: 20px; padding: 6px 0; margin-bottom: 10px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; font-size: 8pt; color: #000;">
+      <div>
+        <span style="font-weight: 600;">{{ 'PRESENCE.PRINT.REFEREE' | translate }}:</span>
+        {{ getArbitrePrincipal() || '________________' }}
+      </div>
+      <div>
+        <span style="font-weight: 600;">{{ 'PRESENCE.PRINT.ASSISTANT' | translate }}:</span>
+        {{ getArbitreAssistant() || '________________' }}
+      </div>
+      <div>
+        <span style="font-weight: 600;">{{ 'PRESENCE.PRINT.REPORTER' | translate }}:</span>
+        {{ getRapporteur() || '________________' }}
+      </div>
+    </div>
+
+    <!-- Tableaux équipes -->
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+
+      <!-- Équipe 1 -->
+      <div style="flex: 1; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
+          <span style="font-size: 10pt; font-weight: 600;">{{ equipeNames[0] }}</span>
+          <span style="font-size: 8pt; color: #000;">
+            {{ getPlayersAJoue(equipeNames[0]).length }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}
+          </span>
+        </div>
+        <div style="padding: 4px 10px; font-size: 8pt; border-bottom: 1px solid #eee; color: #000;">
+          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span>
+          {{ getCapitaine(equipeNames[0]) }}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
+          <thead>
+            <tr style="background: #fafafa;">
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 18px; border-bottom: 1px solid #ddd;">#</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: left; border-bottom: 1px solid #ddd;">
+                {{ 'PRESENCE.PRINT.COL_PLAYER' | translate }}
+              </th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;" title="Buts">B</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;" title="Pénalty">P</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;" title="Passes Décisives">PD</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;" title="Contre Son Camp">CSC</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd; background: #fffde7;" title="Carton Jaune">CJ</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd; background: #ffebee;" title="Carton Rouge">CR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let presence of getPlayersAJoue(equipeNames[0]); let i = index"
+                [style.background]="presence.estCapitaine ? '#f0f7ff' : presence.estHommeDuMatch ? '#fff8e1' : 'white'">
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; color: #999; font-size: 7pt;">{{ i + 1 }}</td>
+              <td style="padding: 3px 4px; text-align: left; border-bottom: 1px solid #eee;">
+                {{ getMembreNameAbbreviated(presence) }}
+                <span *ngIf="presence.estCapitaine" style="font-weight: 700; color: #1565c0;">(C)</span>
+                <span *ngIf="presence.estHommeDuMatchEq" style="color: #000;">★</span>
+                <span *ngIf="presence.estHommeDuMatch" style="color: #ff9800;">♛</span>
+              </td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.buts > 0 ? '700' : 'normal'">{{ presence.buts || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.penalti > 0 ? '700' : 'normal'">{{ presence.penalti || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.passes > 0 ? '700' : 'normal'">{{ presence.passes || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.butsContreSonCamp > 0 ? '700' : 'normal'"
+                  [style.color]="presence.butsContreSonCamp > 0 ? '#c62828' : 'inherit'">{{ presence.butsContreSonCamp || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; background: rgba(255,253,231,0.5);"
+                  [style.fontWeight]="presence.cartonsJaunes > 0 ? '700' : 'normal'"
+                  [style.color]="presence.cartonsJaunes > 0 ? '#f9a825' : '#ccc'">{{ presence.cartonsJaunes || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; background: rgba(255,235,238,0.5);"
+                  [style.fontWeight]="presence.cartonsRouges > 0 ? '700' : 'normal'"
+                  [style.color]="presence.cartonsRouges > 0 ? '#c62828' : '#ccc'">{{ presence.cartonsRouges || '-' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="background: #f5f5f5; font-weight: 600;">
+              <td colspan="2" style="padding: 4px 3px; border-top: 1px solid #ddd; font-size: 8pt;">
+                {{ 'PRESENCE.PRINT.TOTAL' | translate }}
+              </td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalButs(equipeNames[0]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalPenaltis(equipeNames[0]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalPasses(equipeNames[0]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalCSC(equipeNames[0]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd; background: rgba(255,253,231,0.5);">{{ getTotalCartons(equipeNames[0], 'JAUNES') }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd; background: rgba(255,235,238,0.5);">{{ getTotalCartons(equipeNames[0], 'ROUGES') }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Équipe 2 -->
+      <div style="flex: 1; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
+          <span style="font-size: 10pt; font-weight: 600;">{{ equipeNames[1] }}</span>
+          <span style="font-size: 8pt; color: #000;">
+            {{ getPlayersAJoue(equipeNames[1]).length }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}
+          </span>
+        </div>
+        <div style="padding: 4px 10px; font-size: 8pt; border-bottom: 1px solid #eee; color: #000;">
+          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span>
+          {{ getCapitaine(equipeNames[1]) }}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
+          <thead>
+            <tr style="background: #fafafa;">
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 18px; border-bottom: 1px solid #ddd;">#</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: left; border-bottom: 1px solid #ddd;">
+                {{ 'PRESENCE.PRINT.COL_PLAYER' | translate }}
+              </th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;">B</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;">P</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;">PD</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd;">CSC</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd; background: #fffde7;">CJ</th>
+              <th style="padding: 4px 3px; font-weight: 600; text-align: center; width: 22px; border-bottom: 1px solid #ddd; background: #ffebee;">CR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let presence of getPlayersAJoue(equipeNames[1]); let i = index"
+                [style.background]="presence.estCapitaine ? '#f0f7ff' : presence.estHommeDuMatch ? '#fff8e1' : 'white'">
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; color: #999; font-size: 7pt;">{{ i + 1 }}</td>
+              <td style="padding: 3px 4px; text-align: left; border-bottom: 1px solid #eee;">
+                {{ getMembreNameAbbreviated(presence) }}
+                <span *ngIf="presence.estCapitaine" style="font-weight: 700; color: #1565c0;">(C)</span>
+                <span *ngIf="presence.estHommeDuMatchEq" style="color: #000;">★</span>
+                <span *ngIf="presence.estHommeDuMatch" style="color: #ff9800;">♛</span>
+              </td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.buts > 0 ? '700' : 'normal'">{{ presence.buts || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.penalti > 0 ? '700' : 'normal'">{{ presence.penalti || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.passes > 0 ? '700' : 'normal'">{{ presence.passes || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee;"
+                  [style.fontWeight]="presence.butsContreSonCamp > 0 ? '700' : 'normal'"
+                  [style.color]="presence.butsContreSonCamp > 0 ? '#c62828' : 'inherit'">{{ presence.butsContreSonCamp || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; background: rgba(255,253,231,0.5);"
+                  [style.fontWeight]="presence.cartonsJaunes > 0 ? '700' : 'normal'"
+                  [style.color]="presence.cartonsJaunes > 0 ? '#f9a825' : '#ccc'">{{ presence.cartonsJaunes || '-' }}</td>
+              <td style="padding: 3px; text-align: center; border-bottom: 1px solid #eee; background: rgba(255,235,238,0.5);"
+                  [style.fontWeight]="presence.cartonsRouges > 0 ? '700' : 'normal'"
+                  [style.color]="presence.cartonsRouges > 0 ? '#c62828' : '#ccc'">{{ presence.cartonsRouges || '-' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="background: #f5f5f5; font-weight: 600;">
+              <td colspan="2" style="padding: 4px 3px; border-top: 1px solid #ddd; font-size: 8pt;">
+                {{ 'PRESENCE.PRINT.TOTAL' | translate }}
+              </td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalButs(equipeNames[1]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalPenaltis(equipeNames[1]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalPasses(equipeNames[1]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd;">{{ getTotalCSC(equipeNames[1]) }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd; background: rgba(255,253,231,0.5);">{{ getTotalCartons(equipeNames[1], 'JAUNES') }}</td>
+              <td style="padding: 4px 3px; text-align: center; border-top: 1px solid #ddd; background: rgba(255,235,238,0.5);">{{ getTotalCartons(equipeNames[1], 'ROUGES') }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Stats résumé -->
+    <div style="display: flex; gap: 10px; margin-bottom: 10px; font-size: 8pt;">
+      <div style="flex: 1; padding: 6px 10px; border: 1px solid #eee; border-radius: 4px;">
+        <div style="color: #000; margin-bottom: 3px; font-weight: 600;">
+          {{ 'PRESENCE.PRINT.SCORERS' | translate }}
+        </div>
+        <div>
+          <span *ngIf="buteursPlayers.length === 0" style="color: #999; font-style: italic;">
+            {{ 'PRESENCE.PRINT.NONE' | translate }}
+          </span>
+          <span *ngFor="let p of buteursPlayers; let last = last">
+            {{ getMembreNameAbbreviated(p) }}<span *ngIf="(p.buts || 0) + (p.penalti || 0) > 1"> ({{ (p.buts || 0) + (p.penalti || 0) }})</span><span *ngIf="!last">, </span>
+          </span>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 6px 10px; border: 1px solid #eee; border-radius: 4px;">
+        <div style="color: #000; margin-bottom: 3px; font-weight: 600;">
+          {{ 'PRESENCE.PRINT.ASSISTERS' | translate }}
+        </div>
+        <div>
+          <span *ngIf="passeursPlayers.length === 0" style="color: #999; font-style: italic;">
+            {{ 'PRESENCE.PRINT.NONE' | translate }}
+          </span>
+          <span *ngFor="let p of passeursPlayers; let last = last">
+            {{ getMembreNameAbbreviated(p) }}<span *ngIf="p.passes > 1"> ({{ p.passes }})</span><span *ngIf="!last">, </span>
+          </span>
+        </div>
+      </div>
+      <div style="padding: 6px 10px; border: 1px solid #eee; border-radius: 4px; text-align: center; min-width: 120px;">
+        <div style="color: #000; margin-bottom: 3px; font-weight: 600;">
+          {{ 'PRESENCE.PRINT.MOM' | translate }}
+        </div>
+        <div style="font-weight: 600;">{{ getHommeDuMatch() }}</div>
+      </div>
+    </div>
+
+    <!-- MVP par équipe -->
+    <div style="display: flex; gap: 10px; margin-bottom: 12px; font-size: 8pt;">
+      <div style="flex: 1; padding: 5px 10px; background: #fafafa; border-radius: 4px;">
+        <span style="color: #000;">MVP {{ equipeNames[0] }}:</span>
+        <strong>{{ getMvpEquipeFor(equipeNames[0]) }}</strong>
+      </div>
+      <div style="flex: 1; padding: 5px 10px; background: #fafafa; border-radius: 4px;">
+        <span style="color: #000;">MVP {{ equipeNames[1] }}:</span>
+        <strong>{{ getMvpEquipeFor(equipeNames[1]) }}</strong>
+      </div>
+    </div>
+
+    <!-- Sanctions -->
+    <div *ngIf="hasSanctions()" style="margin-bottom: 12px; padding: 6px 10px; border: 1px solid #eee; border-radius: 4px; font-size: 8pt;">
+      <div style="font-weight: 600; color: #000; margin-bottom: 4px;">
+        {{ 'PRESENCE.PRINT.SANCTIONS' | translate }}
+      </div>
+      <div style="display: flex; gap: 20px;">
+        <div *ngIf="getTotalCartonsJaunes() > 0">
+          <span style="color: #f9a825; font-weight: 600;">
+            {{ 'PRESENCE.PRINT.YELLOW_CARDS' | translate }}:
+          </span>
+          <span *ngFor="let p of cartonsJaunesPlayers; let last = last">
+            {{ getMembreNameAbbreviated(p) }}<span *ngIf="p.cartonsJaunes > 1"> ({{ p.cartonsJaunes }})</span><span *ngIf="!last">,</span>
+          </span>
+        </div>
+        <div *ngIf="getTotalCartonsRouges() > 0">
+          <span style="color: #c62828; font-weight: 600;">
+            {{ 'PRESENCE.PRINT.RED_CARDS' | translate }}:
+          </span>
+          <span *ngFor="let p of cartonsRougesPlayers; let last = last">
+            {{ getMembreNameAbbreviated(p) }}<span *ngIf="!last">,</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div style="display: flex; justify-content: space-between; gap: 15px; padding-top: 12px; border-top: 1px dashed #ccc; margin-bottom: 10px;">
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 7pt; color: #000; margin-bottom: 18px;">
+          {{ 'PRESENCE.PRINT.SIGN_REFEREE' | translate }}
+        </div>
+        <div style="border-bottom: 1px solid #333; margin: 0 10px;"></div>
+      </div>
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 7pt; color: #000; margin-bottom: 18px;">
+          {{ 'PRESENCE.PRINT.SIGN_CAP' | translate }} {{ equipeNames[0] }}
+        </div>
+        <div style="border-bottom: 1px solid #333; margin: 0 10px;"></div>
+      </div>
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 7pt; color: #000; margin-bottom: 18px;">
+          {{ 'PRESENCE.PRINT.SIGN_CAP' | translate }} {{ equipeNames[1] }}
+        </div>
+        <div style="border-bottom: 1px solid #333; margin: 0 10px;"></div>
+      </div>
+      <div style="flex: 1; text-align: center;">
+        <div style="font-size: 7pt; color: #000; margin-bottom: 18px;">
+          {{ 'PRESENCE.PRINT.SIGN_REPORTER' | translate }}
+        </div>
+        <div style="border-bottom: 1px solid #333; margin: 0 10px;"></div>
+      </div>
+    </div>
+
+    <!-- Légende -->
+    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7pt; color: #999; padding-top: 6px; border-top: 1px solid #eee;">
+      <div>{{ 'PRESENCE.PRINT.LEGEND' | translate }}</div>
+      <div>{{ today | date:'dd/MM/yyyy HH:mm' }}</div>
+    </div>
+  </div>
+
+  <!-- ===== FICHE DE PRÉSENCE (PDF) ===== -->
+  <div id="print-presence-section"
+       style="display: none; width: 700px; font-family: 'Segoe UI', 'Roboto', sans-serif; background: white; color: #333;">
+
+    <div [style.background]="'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%)'"
+         style="padding: 20px; text-align: center; color: white;">
+      <div style="font-size: 22px; font-weight: 700; margin-bottom: 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+        {{ 'PRESENCE.PRINT.PRESENCE_SHEET_TITLE' | translate }}
+      </div>
+      <div style="font-size: 14px; opacity: 0.95;">{{ groupeActif?.nom }}</div>
+      <div style="font-size: 12px; opacity: 0.85; margin-top: 5px;">
+        {{ match?.typeMatch }} - {{ match?.dateMatch | date:'EEEE d MMMM yyyy' | titlecase }}
+      </div>
+    </div>
+
+    <div style="padding: 10px 20px; background: #f5f5f5; font-size: 11px; color: #666; text-align: center;">
+      {{ 'PRESENCE.PRINT.REFEREE' | translate }}: {{ getArbitrePrincipal() || '________' }} |
+      {{ 'PRESENCE.PRINT.ASSISTANT' | translate }}: {{ getArbitreAssistant() || '________' }} |
+      {{ 'PRESENCE.PRINT.REPORTER' | translate }}: {{ getRapporteur() || '________' }}
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+      <thead>
+        <tr [style.background]="'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%)'">
+          <th style="padding: 10px; color: white; text-align: center; width: 40px;">N°</th>
+          <th style="padding: 10px; color: white; text-align: left;">
+            {{ 'PRESENCE.PRINT.COL_FULLNAME' | translate }}
+          </th>
+          <th style="padding: 10px; color: white; text-align: center; width: 100px;">
+            {{ 'PRESENCE.PRINT.COL_TEAM' | translate }}
+          </th>
+          <th style="padding: 10px; color: white; text-align: center; width: 120px;">
+            {{ 'PRESENCE.PRINT.COL_SIGNATURE' | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of dataSource.data; let i = index; let odd = odd"
+            [style.background]="odd ? '#fafafa' : 'white'">
+          <td style="padding: 8px; text-align: center; border-bottom: 1px solid #eee;">{{ i + 1 }}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ getMembreName(p) }}</td>
+          <td style="padding: 8px; text-align: center; border-bottom: 1px solid #eee;">
+            <span [style.color]="p.equipeMatch === equipeNames[0] ? team1HexColor : team2HexColor"
+                  [style.background]="p.equipeMatch === equipeNames[0] ? team1LightHexColor : team2LightHexColor"
+                  style="padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 10px;">
+              {{ p.equipeMatch }}
+            </span>
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;"></td>
+        </tr>
+        <!-- Lignes vides supplémentaires -->
+        <tr *ngFor="let _ of [1,2,3,4,5]">
+          <td style="padding: 8px; border-bottom: 1px solid #eee; height: 25px;"></td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;"></td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;"></td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #eee;">
+      <div style="font-size: 12px;">
+        <strong>{{ 'PRESENCE.PRINT.TOTAL' | translate }}:</strong>
+        {{ dataSource.data.length }} {{ 'PRESENCE.STATS.REGISTERED' | translate }}
+      </div>
+      <div style="display: flex; gap: 20px; font-size: 11px;">
+        <span [style.color]="team1HexColor">
+          <strong>{{ equipeNames[0] }}:</strong> {{ equipe1Count }}
+        </span>
+        <span [style.color]="team2HexColor">
+          <strong>{{ equipeNames[1] }}:</strong> {{ equipe2Count }}
+        </span>
+      </div>
+      <div style="font-size: 10px; color: #888;">
+        My2-0 · {{ today | date:'dd/MM/yyyy' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== IMAGE RÉSEAUX SOCIAUX (format carré) ===== -->
+  <div id="print-match-image"
+       style="display: none; width: 600px; font-family: 'Segoe UI', 'Roboto', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 0; overflow: hidden;">
+
+    <div style="background: linear-gradient(90deg, #43a047 0%, #2e7d32 100%); padding: 20px; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+        <img *ngIf="groupeActif?.profilePhotoUrl" [src]="groupeActif?.profilePhotoUrl" alt="Logo"
+             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
+        <div *ngIf="!groupeActif?.profilePhotoUrl"
+             style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; border: 2px solid white;">
+          {{ groupeActif?.abreviation || groupeActif?.nom?.substring(0,3) }}
+        </div>
+        <div>
+          <div style="font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+            {{ 'PRESENCE.PRINT.MATCH_SHEET_TITLE' | translate }}
+          </div>
+          <div style="font-size: 12px; opacity: 0.9;">{{ groupeActif?.nom }}</div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 15px; font-size: 11px;">
+        <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 12px;">
+          {{ match?.typeMatch }}
+        </span>
+        <span style="opacity: 0.9;">{{ match?.dateMatch | date:'EEEE d MMMM yyyy' | titlecase }}</span>
+      </div>
+    </div>
+
+    <!-- Score -->
+    <div style="background: #1a1a2e; padding: 25px 20px; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+        <div style="flex: 1; text-align: center;">
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #64b5f6;">{{ equipeNames[0] }}</div>
+          <div style="font-size: 48px; font-weight: 800; color: #64b5f6;">{{ getMatchScore(1) }}</div>
+          <div style="font-size: 11px; color: #888; margin-top: 5px;">
+            {{ equipe1Count }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}
+          </div>
+        </div>
+        <div style="font-size: 20px; color: #666; font-weight: 300;">VS</div>
+        <div style="flex: 1; text-align: center;">
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef5350;">{{ equipeNames[1] }}</div>
+          <div style="font-size: 48px; font-weight: 800; color: #ef5350;">{{ getMatchScore(2) }}</div>
+          <div style="font-size: 11px; color: #888; margin-top: 5px;">
+            {{ equipe2Count }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div style="background: #16213e; padding: 15px 20px;">
+      <div *ngIf="buteursPlayers.length > 0" style="margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 16px;">⚽</span>
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">
+            {{ 'PRESENCE.PRINT.SCORERS' | translate }}
+          </span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+          <span *ngFor="let p of buteursPlayers; let last = last">
+            <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+              {{ getMembreNameAbbreviated(p) }}
+            </span>
+            <span *ngIf="(p.buts || 0) + (p.penalti || 0) > 1" style="color: #888;">
+              ({{ (p.buts || 0) + (p.penalti || 0) }})
+            </span>
+            <span *ngIf="p.penalti && p.penalti > 0" style="color: #ffd54f; font-size: 10px;"> P</span>
+            <span *ngIf="!last" style="color: #444;"> · </span>
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="passeursPlayers.length > 0" style="margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 16px;">👟</span>
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">
+            {{ 'PRESENCE.PRINT.ASSISTERS' | translate }}
+          </span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+          <span *ngFor="let p of passeursPlayers; let last = last">
+            <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+              {{ getMembreNameAbbreviated(p) }}
+            </span>
+            <span *ngIf="p.passes > 1" style="color: #888;"> ({{ p.passes }})</span>
+            <span *ngIf="!last" style="color: #444;"> · </span>
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="getTotalCSCForAll() > 0" style="margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 16px;">🥅</span>
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">CSC</span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; padding-left: 24px; color: #ef5350;">
+          <span *ngFor="let p of cscPlayers; let last = last">
+            {{ getMembreNameAbbreviated(p) }}
+            <span *ngIf="p.butsContreSonCamp > 1"> ({{ p.butsContreSonCamp }})</span>
+            <span *ngIf="!last"> · </span>
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="hasSanctions()" style="margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 16px;">🟨</span>
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888;">
+            {{ 'PRESENCE.PRINT.SANCTIONS' | translate }}
+          </span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; padding-left: 24px;">
+          <span *ngIf="getTotalCartonsJaunes() > 0">
+            <span *ngFor="let p of cartonsJaunesPlayers; let last = last">
+              <span style="color: #ffd54f;">{{ getMembreNameAbbreviated(p) }}</span>
+              <span *ngIf="p.cartonsJaunes > 1" style="color: #888;"> ({{ p.cartonsJaunes }})</span>
+              <span *ngIf="!last" style="color: #444;"> · </span>
+            </span>
+          </span>
+          <span *ngIf="getTotalCartonsJaunes() > 0 && getTotalCartonsRouges() > 0" style="color: #444;"> | </span>
+          <span *ngIf="getTotalCartonsRouges() > 0">
+            <span *ngFor="let p of cartonsRougesPlayers; let last = last">
+              <span style="color: #f44336;">🟥 {{ getMembreNameAbbreviated(p) }}</span>
+              <span *ngIf="!last" style="color: #444;"> · </span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MVP -->
+    <div style="background: linear-gradient(90deg, #1a1a2e 0%, #0f3460 50%, #1a1a2e 100%); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="text-align: center; flex: 1;">
+        <div style="font-size: 10px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+          ⭐ MVP {{ equipeNames[0] }}
+        </div>
+        <div style="font-size: 14px; font-weight: 600; color: white;">{{ getMvpEquipeFor(equipeNames[0]) || '-' }}</div>
+      </div>
+      <div style="text-align: center; flex: 1; padding: 10px; background: linear-gradient(135deg, #ffd700 0%, #ffab00 100%); border-radius: 8px; margin: 0 10px;">
+        <div style="font-size: 10px; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+          👑 {{ 'PRESENCE.PRINT.MOM' | translate }}
+        </div>
+        <div style="font-size: 16px; font-weight: 700; color: #1a1a2e;">{{ getHommeDuMatch() || '-' }}</div>
+      </div>
+      <div style="text-align: center; flex: 1;">
+        <div style="font-size: 10px; color: #ef5350; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+          ⭐ MVP {{ equipeNames[1] }}
+        </div>
+        <div style="font-size: 14px; font-weight: 600; color: white;">{{ getMvpEquipeFor(equipeNames[1]) || '-' }}</div>
+      </div>
+    </div>
+
+    <!-- Compositions -->
+    <div style="background: #1a1a2e; padding: 15px 20px; display: flex; gap: 15px;">
+      <div style="flex: 1;">
+        <div style="font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #333;">
+          {{ equipeNames[0] }}
+        </div>
+        <div style="font-size: 11px; line-height: 1.8; color: #ccc;">
+          <div *ngFor="let p of equipe1Players">
+            <span *ngIf="p.estCapitaine" style="color: #ffd54f;">©</span>
+            <span *ngIf="p.estGardien" style="color: #81d4fa;">🧤</span>
+            {{ getMembreNameAbbreviated(p) }}
+            <span *ngIf="p.estHommeDuMatchEq" style="color: #ffd54f;">⭐</span>
+            <span *ngIf="p.estHommeDuMatch" style="color: #ffd700;">👑</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex: 1;">
+        <div style="font-size: 11px; color: #ef5350; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #333;">
+          {{ equipeNames[1] }}
+        </div>
+        <div style="font-size: 11px; line-height: 1.8; color: #ccc;">
+          <div *ngFor="let p of equipe2Players">
+            <span *ngIf="p.estCapitaine" style="color: #ffd54f;">©</span>
+            <span *ngIf="p.estGardien" style="color: #81d4fa;">🧤</span>
+            {{ getMembreNameAbbreviated(p) }}
+            <span *ngIf="p.estHommeDuMatchEq" style="color: #ffd54f;">⭐</span>
+            <span *ngIf="p.estHommeDuMatch" style="color: #ffd700;">👑</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer image -->
+    <div style="background: #0f0f1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-size: 10px; color: #666;">
+        {{ 'PRESENCE.PRINT.LEGEND_SHORT' | translate }}
+      </div>
+      <div style="font-size: 10px; color: #43a047; font-weight: 600;">
+        My2-0 · {{ today | date:'dd/MM/yyyy HH:mm' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FORMAT STORY (Instagram / WhatsApp) ===== -->
+  <div id="print-match-story"
+       style="display: none; width: 400px; font-family: 'Segoe UI', 'Roboto', sans-serif; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 0;">
+
+    <div style="padding: 20px; text-align: center;">
+      <div style="font-size: 11px; color: #43a047; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">
+        {{ match?.typeMatch }}
+      </div>
+      <div style="font-size: 12px; color: #888;">{{ match?.dateMatch | date:'d MMM yyyy' }}</div>
+    </div>
+
+    <div style="padding: 30px 20px; text-align: center;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 25px;">
+        <div style="flex: 1; text-align: right;">
+          <div style="font-size: 16px; font-weight: 600; color: #64b5f6; margin-bottom: 10px;">{{ equipeNames[0] }}</div>
+          <div style="font-size: 56px; font-weight: 800; color: #64b5f6;">{{ getMatchScore(1) }}</div>
+        </div>
+        <div style="font-size: 24px; color: #444;">-</div>
+        <div style="flex: 1; text-align: left;">
+          <div style="font-size: 16px; font-weight: 600; color: #ef5350; margin-bottom: 10px;">{{ equipeNames[1] }}</div>
+          <div style="font-size: 56px; font-weight: 800; color: #ef5350;">{{ getMatchScore(2) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="buteursPlayers.length > 0"
+         style="padding: 15px 20px; background: rgba(0,0,0,0.2); text-align: center;">
+      <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+        ⚽ {{ 'PRESENCE.PRINT.SCORERS' | translate }}
+      </div>
+      <div style="font-size: 12px; line-height: 1.8;">
+        <span *ngFor="let p of buteursPlayers; let last = last">
+          <span [style.color]="p.equipeMatch === equipeNames[0] ? '#64b5f6' : '#ef5350'">
+            {{ getMembreNameAbbreviated(p) }}
+          </span>
+          <span *ngIf="(p.buts || 0) + (p.penalti || 0) > 1" style="color: #888;">
+            ({{ (p.buts || 0) + (p.penalti || 0) }})
+          </span>
+          <span *ngIf="!last" style="color: #333;"> · </span>
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="getHommeDuMatch()" style="padding: 15px 20px; text-align: center;">
+      <div style="display: inline-block; padding: 10px 25px; background: linear-gradient(135deg, #ffd700 0%, #ffab00 100%); border-radius: 25px;">
+        <div style="font-size: 10px; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px;">
+          👑 {{ 'PRESENCE.PRINT.MOM' | translate }}
+        </div>
+        <div style="font-size: 16px; font-weight: 700; color: #1a1a2e; margin-top: 3px;">
+          {{ getHommeDuMatch() }}
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 15px 20px; text-align: center;">
+      <div style="font-size: 14px; font-weight: 600; color: #43a047;">{{ groupeActif?.nom }}</div>
+      <div style="font-size: 10px; color: #666; margin-top: 3px;">My2-0</div>
+    </div>
+  </div>
+
+</div>

@@ -54,6 +54,7 @@ export class AnnouncementAdminComponent implements OnInit {
 
   announcementForm!: FormGroup;
   showForm = false;
+  activeTab: 'list'|'filter'|'create' = 'list';
   isEditing = false;
   editingId: number | null = null;
 

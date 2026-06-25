@@ -1,0 +1,225 @@
+<!-- Statistiques Admin Partenaires -->
+<div class="stats-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <mat-icon class="header-icon">bar_chart</mat-icon>
+        <div class="header-text">
+          <h1>Statistiques globales</h1>
+          <p>Performances des partenariats et publicités</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button mat-stroked-button (click)="exportStats()" [disabled]="isExporting || isLoading">
+          <mat-spinner diameter="18" *ngIf="isExporting"></mat-spinner>
+          <mat-icon *ngIf="!isExporting">download</mat-icon>
+          Exporter
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filtres -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Période</mat-label>
+      <mat-select [(ngModel)]="selectedPeriode" (selectionChange)="onPeriodeChange()">
+        <mat-option value="30j">30 derniers jours</mat-option>
+        <mat-option value="90j">90 derniers jours</mat-option>
+        <mat-option value="6m">6 derniers mois</mat-option>
+        <mat-option value="12m">12 derniers mois</mat-option>
+        <mat-option value="custom">Personnalisé</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <ng-container *ngIf="selectedPeriode === 'custom'">
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date début</mat-label>
+        <input matInput [matDatepicker]="startPicker" [(ngModel)]="dateDebut">
+        <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date fin</mat-label>
+        <input matInput [matDatepicker]="endPicker" [(ngModel)]="dateFin">
+        <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+
+      <button mat-stroked-button (click)="applyCustomDates()" [disabled]="!dateDebut || !dateFin">
+        Appliquer
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && stats">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card revenue">
+        <div class="kpi-header">
+          <mat-icon>payments</mat-icon>
+          <span class="kpi-trend" [ngClass]="getEvolutionClass()">
+            <mat-icon>{{ getEvolutionIcon() }}</mat-icon>
+            {{ stats.evolutionRevenus > 0 ? '+' : '' }}{{ stats.evolutionRevenus }}%
+          </span>
+        </div>
+        <div class="kpi-value">{{ formatCurrency(stats.revenusMois) }}</div>
+        <div class="kpi-label">Revenus ce mois</div>
+        <div class="kpi-sub">Total: {{ formatCurrency(stats.revenusTotal) }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <mat-icon>visibility</mat-icon>
+        </div>
+        <div class="kpi-value">{{ formatNumber(stats.totalImpressions) }}</div>
+        <div class="kpi-label">Impressions totales</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <mat-icon>touch_app</mat-icon>
+        </div>
+        <div class="kpi-value">{{ formatNumber(stats.totalClics) }}</div>
+        <div class="kpi-label">Clics totaux</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="kpi-value">{{ stats.tauxClicMoyen | number:'1.2-2' }}%</div>
+        <div class="kpi-label">CTR moyen</div>
+      </div>
+    </div>
+
+    <!-- Évolution mensuelle -->
+    <section class="stats-section">
+      <div class="section-header">
+        <h2>
+          <mat-icon>show_chart</mat-icon>
+          Évolution mensuelle
+        </h2>
+      </div>
+
+      <div class="chart-container">
+        <div class="bar-chart">
+          <div 
+            class="chart-bar"
+            *ngFor="let mois of stats.evolutionMensuelle"
+            [matTooltip]="mois.mois + ': ' + formatNumber(mois.impressions) + ' impressions'">
+            <div class="bar-fill" [style.height.%]="getBarHeight(mois.impressions)"></div>
+            <span class="bar-label">{{ mois.mois }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats par emplacement -->
+    <section class="stats-section">
+      <div class="section-header">
+        <h2>
+          <mat-icon>grid_view</mat-icon>
+          Performances par emplacement
+        </h2>
+      </div>
+
+      <div class="emplacements-list">
+        <div 
+          class="emplacement-item"
+          *ngFor="let emp of stats.statsParEmplacement">
+          <div class="emplacement-header">
+            <span class="emplacement-name">{{ getEmplacementLabel(emp.emplacement) }}</span>
+            <span class="emplacement-ctr">{{ emp.tauxClics | number:'1.1-1' }}% CTR</span>
+          </div>
+          <div class="emplacement-stats">
+            <span class="stat">
+              <mat-icon>visibility</mat-icon>
+              {{ formatNumber(emp.impressions) }} impressions
+            </span>
+            <span class="stat">
+              <mat-icon>touch_app</mat-icon>
+              {{ formatNumber(emp.clics) }} clics
+            </span>
+          </div>
+          <div class="emplacement-bar">
+            <div class="bar-fill" [style.width.%]="getBarWidth(emp.impressions)"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Résumé revenus -->
+    <section class="stats-section revenue-section">
+      <div class="section-header">
+        <h2>
+          <mat-icon>account_balance</mat-icon>
+          Résumé financier
+        </h2>
+      </div>
+
+      <div class="revenue-grid">
+        <div class="revenue-card">
+          <div class="revenue-icon">
+            <mat-icon>calendar_today</mat-icon>
+          </div>
+          <div class="revenue-info">
+            <span class="revenue-label">Ce mois</span>
+            <span class="revenue-value">{{ formatCurrency(stats.revenusMois) }}</span>
+          </div>
+        </div>
+
+        <div class="revenue-card">
+          <div class="revenue-icon total">
+            <mat-icon>savings</mat-icon>
+          </div>
+          <div class="revenue-info">
+            <span class="revenue-label">Total cumulé</span>
+            <span class="revenue-value">{{ formatCurrency(stats.revenusTotal) }}</span>
+          </div>
+        </div>
+
+        <div class="revenue-card">
+          <div class="revenue-icon" [ngClass]="getEvolutionClass()">
+            <mat-icon>{{ getEvolutionIcon() }}</mat-icon>
+          </div>
+          <div class="revenue-info">
+            <span class="revenue-label">Évolution</span>
+            <span class="revenue-value" [ngClass]="getEvolutionClass()">
+              {{ stats.evolutionRevenus > 0 ? '+' : '' }}{{ stats.evolutionRevenus }}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions rapides -->
+    <section class="quick-actions">
+      <button mat-stroked-button routerLink="/admin/partenaires/liste">
+        <mat-icon>group</mat-icon>
+        Voir les partenaires
+      </button>
+      <button mat-stroked-button routerLink="/admin/partenaires/publicites">
+        <mat-icon>campaign</mat-icon>
+        Gérer les publicités
+      </button>
+      <button mat-stroked-button routerLink="/admin/partenaires">
+        <mat-icon>dashboard</mat-icon>
+        Dashboard
+      </button>
+    </section>
+
+  </ng-container>
+</div>

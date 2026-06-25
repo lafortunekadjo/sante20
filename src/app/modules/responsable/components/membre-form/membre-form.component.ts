@@ -111,6 +111,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   dataSource = new MatTableDataSource<Membre>([]);
   expandedRowIndex: number | null = null;
   showCreateRow = false;
+  activeTab: 'list' | 'add' | 'filter' = 'list';
   roles: RoleCustom[] = [];
   
   // Membre vide pour création
@@ -555,6 +556,12 @@ hasSanctionsEnabled(): boolean {
     }
   }
 
+  openCreateTab(): void {
+    // Réinitialiser le formulaire et s'assurer que le groupe est bien assigné
+    this.resetNewMembre();
+    this.createUserForMembre = false;
+  }
+
   isCreateFormValid(): boolean {
     return !!this.newMembre.nom && !!this.newMembre.sexe;
   }
@@ -578,6 +585,7 @@ hasSanctionsEnabled(): boolean {
         this.showSuccessMessage(this.translate.instant('membres.createSuccess'));
         this.loadData();
         this.toggleCreateRow();
+        this.activeTab = 'list'; // revenir à la liste après création
       },
       error: (err) => this.handleError(err, this.translate.instant('membres.createError'))
     });

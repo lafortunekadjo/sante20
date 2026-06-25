@@ -64,6 +64,9 @@ export class ContributionComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['commentaire', 'idEvenement', 'delaiContribution', 'montantMin', 'montantCible', 'montantCollecteActuel', 'active', 'adhesion', 'actions'];
   
   showCreateRow: boolean = false;
+
+  // ── Navigation tabs ──
+  activeTab: 'list' | 'create' = 'list';
   
   newContribution: Contribution = {
     evenement: {} as Evenement, // Initialisation avec un Evenement vide
@@ -137,6 +140,29 @@ get activeContributionsCount(): number {
     }
   });
 }
+
+  openCreateTab(): void {
+    this.newContribution = {
+      commentaire: '',
+      description: '',
+      evenement: null,
+      montantMin: 0,
+      montantCible: 0,
+      delaiContribution: null,
+      open: true,
+      isAdhesion: false
+    } as any;
+    this.showCreateRow = true;
+  }
+
+  getProgressPercent(c: any): number {
+    if (!c.montantCible || c.montantCible === 0) return 0;
+    return Math.min(100, ((c.montantCollecteActuel || 0) / c.montantCible) * 100);
+  }
+
+  getTotalCollected(): number {
+    return (this.dataSource.data || []).reduce((sum: number, c: any) => sum + (c.montantCollecteActuel || 0), 0);
+  }
 
   toggleCreateRow(): void {
     this.showCreateRow = !this.showCreateRow;

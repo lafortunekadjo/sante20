@@ -1,0 +1,652 @@
+<div class="dashboard-container">
+
+  <!-- ============ HEADER ============ -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">
+            <mat-icon class="header-icon">dashboard</mat-icon>
+            {{ 'dashboard.member.title' | translate }}
+          </h1>
+          <p class="page-subtitle">{{ 'dashboard.member.subtitle' | translate }}</p>
+        </div>
+      </div>
+      
+      <!-- Stats dans le header -->
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.matchesPlayed || 0 }}</span>
+          <span class="stat-label">{{ 'dashboard.member.matches' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.goalsScored || 0 }}</span>
+          <span class="stat-label">{{ 'dashboard.member.goals' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ============ LOADING ============ -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'dashboard.member.loadingStats' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- ============ CONTENT ============ -->
+  <div *ngIf="!isLoading" class="content">
+    
+    <!-- ===== SECTION FILTRES AMÉLIORÉE ===== -->
+    <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>tune</mat-icon>
+          <h3>{{ 'dashboard.filters.title' | translate }}</h3>
+        </div>
+        
+        <!-- Indicateur de période actuelle -->
+        <div class="current-period-badge" *ngIf="!isLoadingExercices">
+          <mat-icon>calendar_today</mat-icon>
+          <span>{{ getCurrentPeriodLabel() }}</span>
+          <span class="period-type-chip" [class.season]="filterMode === 'season'" [class.custom]="filterMode === 'dateRange'">
+            {{ filterMode === 'season' ? ('dashboard.filters.season' | translate) : ('dashboard.filters.custom' | translate) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="filters-body">
+        <!-- Toggle Mode de filtrage -->
+        <div class="filter-mode-toggle">
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'season'"
+                  (click)="onFilterModeChange('season')"
+                  [matTooltip]="'dashboard.filters.seasonTooltip' | translate">
+            <mat-icon>event_note</mat-icon>
+            <span>{{ 'dashboard.filters.bySeason' | translate }}</span>
+          </button>
+          <button mat-stroked-button 
+                  [class.active]="filterMode === 'dateRange'"
+                  (click)="onFilterModeChange('dateRange')"
+                  [matTooltip]="'dashboard.filters.dateRangeTooltip' | translate">
+            <mat-icon>date_range</mat-icon>
+            <span>{{ 'dashboard.filters.byDateRange' | translate }}</span>
+          </button>
+        </div>
+
+        <!-- Sélecteur de Saison/Exercice -->
+        <div class="season-filter" *ngIf="filterMode === 'season'" [@fadeSlideIn]>
+          <mat-form-field appearance="outline" class="season-select">
+            <mat-label>{{ 'dashboard.filters.selectSeason' | translate }}</mat-label>
+            <mat-icon matPrefix>sports_soccer</mat-icon>
+            <mat-select [(ngModel)]="selectedExerciceId" 
+                        (selectionChange)="onExerciceChange($event.value)"
+                        [disabled]="isLoadingExercices">
+              <mat-select-trigger *ngIf="getSelectedExercice() as exercice">
+                <div class="selected-season-trigger">
+                  <span class="season-name">{{ exercice.libelle }}</span>
+                  <span class="current-badge" *ngIf="isCurrentExercice(exercice)">
+                    {{ 'dashboard.filters.current' | translate }}
+                  </span>
+                </div>
+              </mat-select-trigger>
+              
+              <mat-option *ngFor="let exercice of exercices" [value]="exercice.id">
+                <div class="season-option">
+                  <div class="season-option-main">
+                    <mat-icon [class.active-icon]="isCurrentExercice(exercice)">
+                      {{ isCurrentExercice(exercice) ? 'sports_soccer' : 'history' }}
+                    </mat-icon>
+                    <div class="season-option-info">
+                      <span class="season-name">{{ exercice.libelle }}</span>
+                      <span class="season-period">{{ formatExercicePeriod(exercice) }}</span>
+                    </div>
+                  </div>
+                  <div class="season-option-badges">
+                    <span class="badge current" *ngIf="isCurrentExercice(exercice)">
+                      {{ 'dashboard.filters.inProgress' | translate }}
+                    </span>
+                    <span class="badge closed" *ngIf="exercice.cloture">
+                      {{ 'dashboard.filters.closed' | translate }}
+                    </span>
+                  </div>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="getSelectedExercice() as exercice">
+              {{ formatExercicePeriod(exercice) }}
+            </mat-hint>
+          </mat-form-field>
+
+          <!-- Info saison sélectionnée -->
+          <div class="season-info-card" *ngIf="getSelectedExercice() as exercice">
+            <div class="season-info-item">
+              <mat-icon>event</mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.startDate' | translate }}</span>
+                <span class="info-value">{{ exercice.dateDebut | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div class="season-info-divider"></div>
+            <div class="season-info-item">
+              <mat-icon>event</mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.endDate' | translate }}</span>
+                <span class="info-value">{{ exercice.dateFin | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div class="season-info-divider"></div>
+            <div class="season-info-item">
+              <mat-icon [class.active]="isCurrentExercice(exercice)">
+                {{ isCurrentExercice(exercice) ? 'play_circle' : 'check_circle' }}
+              </mat-icon>
+              <div class="info-content">
+                <span class="info-label">{{ 'dashboard.filters.status' | translate }}</span>
+                <span class="info-value" [class.active]="isCurrentExercice(exercice)">
+                  {{ isCurrentExercice(exercice) ? ('dashboard.filters.active' | translate) : ('dashboard.filters.finished' | translate) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtre par plage de dates -->
+        <div class="date-range-filter" *ngIf="filterMode === 'dateRange'" [@fadeSlideIn]>
+          <form [formGroup]="dateRangeForm" class="date-filter-form">
+            <mat-form-field appearance="outline" class="date-field">
+              <mat-label>{{ 'dashboard.filters.dateRange' | translate }}</mat-label>
+              <mat-date-range-input [rangePicker]="picker">
+                <input matStartDate formControlName="start" placeholder="{{ 'dashboard.filters.from' | translate }}">
+                <input matEndDate formControlName="end" placeholder="{{ 'dashboard.filters.to' | translate }}">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-date-range-picker #picker></mat-date-range-picker>
+              <mat-hint>{{ 'dashboard.filters.selectPeriod' | translate }}</mat-hint>
+            </mat-form-field>
+            
+            <div class="action-buttons">
+              <button mat-raised-button color="primary" 
+                      (click)="applyDateFilter()" 
+                      [disabled]="dateRangeForm.invalid || !hasDateFilter()">
+                <mat-icon>search</mat-icon>
+                {{ 'dashboard.filters.apply' | translate }}
+              </button>
+              <button mat-stroked-button 
+                      (click)="resetDateFilter()"
+                      [matTooltip]="'dashboard.filters.backToSeason' | translate">
+                <mat-icon>refresh</mat-icon>
+                {{ 'dashboard.filters.reset' | translate }}
+              </button>
+            </div>
+          </form>
+
+          <!-- Message d'aide -->
+          <div class="date-filter-help">
+            <mat-icon>info</mat-icon>
+            <span>{{ 'dashboard.filters.dateFilterHelp' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ PUB 1: Après les filtres, avant les métriques (compact, discret) -->
+    <div class="dashboard-ad-section">
+      <app-publicite-feed 
+        [ville]="userVille" 
+        [compact]="true"
+        pageSource="dashboard-top">
+      </app-publicite-feed>
+    </div>
+
+    <!-- ===== SECTION: Stats Mensuelles ===== -->
+    <div class="monthly-stats-section" *ngIf="hasMonthlyStats()" >
+      <div class="section-header">
+        <div class="header-icon-wrapper">
+          <mat-icon>emoji_events</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>{{ 'dashboard.monthly.title' | translate }}</h2>
+          <span class="badge">{{ getAvailableMonthsCount() }} {{ 'dashboard.monthly.months' | translate }}</span>
+        </div>
+      </div>
+
+      <!-- Sélecteur de mois optimisé -->
+      <div class="month-selector-card">
+        <form [formGroup]="monthFilterForm">
+          <mat-form-field appearance="outline" class="month-select">
+            <mat-label>{{ 'dashboard.monthly.selectMonth' | translate }}</mat-label>
+            <mat-select formControlName="selectedMonth" (selectionChange)="onMonthChange($event.value)">
+              <mat-option *ngFor="let month of getFilteredAvailableMonths()" [value]="month.value">
+                {{ month.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </form>
+      </div>
+
+      <!-- Meilleure équipe du mois -->
+      <div *ngIf="shouldShowBestTeam()" class="monthly-highlight-card best-team-card">
+        <div class="highlight-header">
+          <div class="header-icon-wrapper trophy-icon">
+            <mat-icon>emoji_events</mat-icon>
+          </div>
+          <div class="header-content">
+            <h2>{{ 'dashboard.monthly.bestTeam' | translate }}</h2>
+            <p class="month-label">{{ stats.monthlyStats?.monthLabel }}</p>
+          </div>
+          <div class="trophy-badge">
+            <mat-icon>workspace_premium</mat-icon>
+          </div>
+        </div>
+        
+        <div class="highlight-body">
+          <div class="team-showcase">
+            <div class="team-name-display">
+              <mat-icon class="team-icon">groups</mat-icon>
+              <h3>{{ stats.monthlyStats?.bestTeam?.teamName }}</h3>
+            </div>
+            
+            <div class="team-stats-grid">
+              <div class="stat-item victories">
+                <div class="stat-icon">
+                  <mat-icon>military_tech</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.wins }}</span>
+                  <span class="stat-label">{{ 'dashboard.monthly.victories' | translate }}</span>
+                </div>
+              </div>
+              
+              <div class="stat-item matches">
+                <div class="stat-icon">
+                  <mat-icon>event</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.matchesPlayed }}</span>
+                  <span class="stat-label">{{ 'dashboard.monthly.matches' | translate }}</span>
+                </div>
+              </div>
+              
+              <div class="stat-item win-rate">
+                <div class="stat-icon">
+                  <mat-icon>percent</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <span class="stat-value">{{ getWinRateFormatted() }}</span>
+                  <span class="stat-label">{{ 'dashboard.monthly.winRate' | translate }}</span>
+                </div>
+              </div>
+              
+              <div class="stat-item goals">
+                <div class="stat-icon">
+                  <mat-icon>sports_soccer</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <span class="stat-value">{{ stats.monthlyStats?.bestTeam?.goalsScored }}</span>
+                  <span class="stat-label">{{ 'dashboard.monthly.goalsScored' | translate }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="record-display">
+              <div class="record-item win">
+                <span class="record-count">{{ stats.monthlyStats?.bestTeam?.wins }}</span>
+                <span class="record-label">V</span>
+              </div>
+              <div class="record-separator">-</div>
+              <div class="record-item draw">
+                <span class="record-count">{{ stats.monthlyStats?.bestTeam?.draws }}</span>
+                <span class="record-label">N</span>
+              </div>
+              <div class="record-separator">-</div>
+              <div class="record-item loss">
+                <span class="record-count">{{ stats.monthlyStats?.bestTeam?.losses }}</span>
+                <span class="record-label">D</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message d'égalité -->
+      <div *ngIf="!shouldShowBestTeam() && stats.monthlyStats" class="equality-message-card">
+        <div class="equality-header">
+          <mat-icon>balance</mat-icon>
+          <h3>{{ 'dashboard.monthly.equality.title' | translate }}</h3>
+        </div>
+        <div class="equality-content">
+          <p>{{ 'dashboard.monthly.equality.message' | translate }}</p>
+          <div class="teams-equality">
+            <mat-icon>handshake</mat-icon>
+            <span>{{ 'dashboard.monthly.equality.fairPlay' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meilleurs joueurs du mois -->
+      <div class="monthly-players-grid">
+        <!-- Meilleur buteur -->
+        <div class="player-award-card scorer-card" *ngIf="stats.monthlyStats?.topScorer">
+          <div class="award-ribbon">
+            <mat-icon>sports_soccer</mat-icon>
+          </div>
+          <div class="card-header-award">
+            <h3>{{ 'dashboard.monthly.topScorer' | translate }}</h3>
+            <p>{{ stats.monthlyStats?.monthLabel }}</p>
+          </div>
+          <div class="card-body-award">
+            <div class="player-avatar gold">
+              <span>{{ stats.monthlyStats?.topScorer?.playerName?.charAt(0) || 'N' }}</span>
+            </div>
+            <div class="player-details">
+              <h4 class="player-name">{{ stats.monthlyStats?.topScorer?.playerName }}</h4>
+              <p class="player-team">{{ stats.monthlyStats?.topScorer?.teamName }}</p>
+            </div>
+            <div class="achievement-stats">
+              <div class="achievement-number">
+                <span class="number">{{ stats.monthlyStats?.topScorer?.goals }}</span>
+                <span class="label">{{ 'dashboard.monthly.goals' | translate }}</span>
+              </div>
+              <div class="achievement-detail">
+                <mat-icon>event</mat-icon>
+                <span>{{ stats.monthlyStats?.topScorer?.appearances }} {{ 'dashboard.monthly.matches' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meilleur passeur -->
+        <div class="player-award-card assister-card" *ngIf="stats.monthlyStats?.topAssister">
+          <div class="award-ribbon">
+            <mat-icon>swap_horiz</mat-icon>
+          </div>
+          <div class="card-header-award">
+            <h3>{{ 'dashboard.monthly.topAssister' | translate }}</h3>
+            <p>{{ stats.monthlyStats?.monthLabel }}</p>
+          </div>
+          <div class="card-body-award">
+            <div class="player-avatar silver">
+              <span>{{ stats.monthlyStats?.topAssister?.playerName?.charAt(0) || 'N' }}</span>
+            </div>
+            <div class="player-details">
+              <h4 class="player-name">{{ stats.monthlyStats?.topAssister?.playerName }}</h4>
+              <p class="player-team">{{ stats.monthlyStats?.topAssister?.teamName }}</p>
+            </div>
+            <div class="achievement-stats">
+              <div class="achievement-number">
+                <span class="number">{{ stats.monthlyStats?.topAssister?.assists }}</span>
+                <span class="label">{{ 'dashboard.monthly.assists' | translate }}</span>
+              </div>
+              <div class="achievement-detail">
+                <mat-icon>event</mat-icon>
+                <span>{{ stats.monthlyStats?.topAssister?.appearances }} {{ 'dashboard.monthly.matches' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Homme du match -->
+        <div class="player-award-card motm-card" *ngIf="stats.monthlyStats?.mostManOfTheMatch">
+          <div class="award-ribbon">
+            <mat-icon>star</mat-icon>
+          </div>
+          <div class="card-header-award">
+            <h3>{{ 'dashboard.monthly.manOfTheMatch' | translate }}</h3>
+            <p>{{ stats.monthlyStats?.monthLabel }}</p>
+          </div>
+          <div class="card-body-award">
+            <div class="player-avatar star">
+              <span>{{ stats.monthlyStats?.mostManOfTheMatch?.playerName?.charAt(0) || 'N' }}</span>
+            </div>
+            <div class="player-details">
+              <h4 class="player-name">{{ stats.monthlyStats?.mostManOfTheMatch?.playerName }}</h4>
+              <p class="player-team">{{ stats.monthlyStats?.mostManOfTheMatch?.teamName }}</p>
+            </div>
+            <div class="achievement-stats">
+              <div class="achievement-number">
+                <span class="number">{{ stats.monthlyStats?.mostManOfTheMatch?.manOfTheMatchCount }}</span>
+                <span class="label">{{ 'dashboard.monthly.awards' | translate }}</span>
+              </div>
+              <div class="achievement-detail">
+                <mat-icon>sports_soccer</mat-icon>
+                <span>{{ stats.monthlyStats?.mostManOfTheMatch?.goals }}B / {{ stats.monthlyStats?.mostManOfTheMatch?.assists }}P</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Section des métriques personnelles ===== -->
+    <div class="metrics-section">
+      <div class="section-header">
+        <div class="header-icon-wrapper">
+          <mat-icon>analytics</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>{{ 'dashboard.member.myPerformance' | translate }}</h2>
+          <span class="badge">{{ 'dashboard.member.personal' | translate }}</span>
+        </div>
+      </div>
+      
+      <div class="metrics-grid">
+        <div class="metric-card primary-gradient">
+          <div class="metric-header">
+            <div class="metric-icon-container">
+              <mat-icon class="metric-icon">event</mat-icon>
+            </div>
+            <div class="metric-trend">
+              <mat-icon class="trend-icon up">trending_up</mat-icon>
+            </div>
+          </div>
+          <div class="metric-content">
+            <div class="metric-value">{{ stats.matchesPlayed || 0 }}</div>
+            <div class="metric-label">{{ 'dashboard.member.matches' | translate }}</div>
+            <div class="metric-sublabel">{{ 'dashboard.member.played' | translate }}</div>
+          </div>
+          <div class="metric-footer">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="getMatchesProgress()"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card success-gradient">
+          <div class="metric-header">
+            <div class="metric-icon-container">
+              <mat-icon class="metric-icon">sports_soccer</mat-icon>
+            </div>
+            <div class="metric-badge">{{ stats.goalsScored || 0 }}</div>
+          </div>
+          <div class="metric-content">
+            <div class="metric-value">{{ stats.goalsScored || 0 }}</div>
+            <div class="metric-label">{{ 'dashboard.member.goals' | translate }}</div>
+            <div class="metric-sublabel">{{ 'dashboard.member.scored' | translate }}</div>
+          </div>
+          <div class="metric-footer">
+            <mat-icon class="status-icon">sports_soccer</mat-icon>
+            <span class="footer-text">{{ 'dashboard.member.attack' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="metric-card warning-gradient">
+          <div class="metric-header">
+            <div class="metric-icon-container">
+              <mat-icon class="metric-icon">swap_horiz</mat-icon>
+            </div>
+            <div class="metric-badge">{{ stats.totalPasses || 0 }}</div>
+          </div>
+          <div class="metric-content">
+            <div class="metric-value">{{ stats.totalPasses || 0 }}</div>
+            <div class="metric-label">{{ 'dashboard.member.passes' | translate }}</div>
+            <div class="metric-sublabel">{{ 'dashboard.member.successful' | translate }}</div>
+          </div>
+          <div class="metric-footer">
+            <mat-icon class="status-icon">done_all</mat-icon>
+            <span class="footer-text">{{ 'dashboard.member.precision' | translate }}</span>
+          </div>
+        </div>
+      </div>
+        <div class="sanctions-section" *ngIf="stats.sanctions">
+      <div class="section-header">
+        <div class="header-icon-wrapper">
+          <mat-icon>gavel</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>{{ 'dashboard.member.sanctions' | translate }}</h2>
+          <span class="badge">{{ getTotalSanctions() }}</span>
+        </div>
+      </div>
+
+      <div class="sanctions-grid">
+        <!-- Sanctions payées -->
+        <div class="sanction-card paid-theme">
+          <div class="card-header-modern">
+            <div class="header-icon">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="header-content">
+              <h3>{{ 'dashboard.member.paidSanctions' | translate }}</h3>
+              <p>{{ stats.sanctions.paid.count }} {{ 'dashboard.member.sanctions' | translate }}</p>
+            </div>
+            <div class="amount-badge success">
+              {{ stats.sanctions.paid.amount }} FCFA
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="status-indicator positive">
+              <mat-icon>done</mat-icon>
+              <span>{{ 'dashboard.member.allPaid' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sanctions non payées -->
+        <div class="sanction-card unpaid-theme">
+          <div class="card-header-modern">
+            <div class="header-icon">
+              <mat-icon>error</mat-icon>
+            </div>
+            <div class="header-content">
+              <h3>{{ 'dashboard.member.unpaidSanctions' | translate }}</h3>
+              <p>{{ stats.sanctions.unpaid.count }} {{ 'dashboard.member.pending' | translate }}</p>
+            </div>
+            <div class="amount-badge alert">
+              {{ stats.sanctions.unpaid.amount }} FCFA
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="status-indicator" [class]="stats.sanctions.unpaid.count > 0 ? 'negative' : 'positive'">
+              <mat-icon>{{ stats.sanctions.unpaid.count > 0 ? 'warning' : 'done' }}</mat-icon>
+              <span>{{ stats.sanctions.unpaid.count > 0 ? ('dashboard.member.paymentRequired' | translate) : ('dashboard.member.noPending' | translate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cartons -->
+        <div class="sanction-card cards-theme">
+          <div class="card-header-modern">
+            <div class="header-icon">
+              <mat-icon>style</mat-icon>
+            </div>
+            <div class="header-content">
+              <h3>{{ 'dashboard.member.cards' | translate }}</h3>
+              <p>{{ 'dashboard.member.discipline' | translate }}</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cards-summary">
+              <div class="card-stat yellow">
+                <div class="card-icon">
+                  <mat-icon>crop_portrait</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="card-count">{{ stats.sanctions.yellowCards }}</span>
+                  <span class="card-label">{{ 'dashboard.member.yellow' | translate }}</span>
+                </div>
+              </div>
+              <div class="card-stat red">
+                <div class="card-icon">
+                  <mat-icon>crop_portrait</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="card-count">{{ stats.sanctions.redCards }}</span>
+                  <span class="card-label">{{ 'dashboard.member.red' | translate }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+
+  </div>
+<div class="contributions-grid">
+  <div class="contribution-item" *ngFor="let contrib of contributionsEnCours">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="title-group">
+        <h6 class="mb-0 text-truncate" [matTooltip]="contrib.libelle">
+          {{ contrib.libelle }}
+          <mat-icon *ngIf="contrib.enAlerte" class="alerte-icon">warning</mat-icon>
+        </h6>
+      </div>
+      <span class="badge" [ngClass]="getStatusClass(contrib)">
+        {{ getStatusLabel(contrib) }}
+      </span>
+    </div>
+
+    <div class="amount-row d-flex justify-content-between align-items-baseline mb-2">
+      <div class="amount-detail">
+        <span class="amount-value text-success">{{ contrib.montantVerse | number }}</span>
+        <span class="amount-separator">/</span>
+        <span class="amount-total">{{ contrib.montantObjectif | number }}</span>
+        <span class="amount-currency">FCFA</span>
+      </div>
+      <div class="amount-percentage">
+        {{ (contrib.montantVerse / contrib.montantObjectif) | percent:'1.0-0' }}
+      </div>
+    </div>
+
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar" 
+           [ngClass]="{'bg-success': getStatusLabel(contrib) === 'Payé', 'bg-warning': getStatusLabel(contrib) === 'Partiel'}"
+           [style.width.%]="(contrib.montantVerse / contrib.montantObjectif) * 100">
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-muted text-xs">{{ contrib.delaiContribution | date:'dd/MM' }}</small>
+      <small class="text-danger Reste-text" *ngIf="contrib.montantVerse < contrib.montantObjectif">
+        -{{ (contrib.montantObjectif - contrib.montantVerse) | number }}
+      </small>
+    </div>
+  </div>
+</div>
+
+  <!-- ============ FOOTER ============ -->
+  <div class="dashboard-footer">
+    <div class="footer-stats">
+      <div class="footer-item">
+        <mat-icon>update</mat-icon>
+        <span>{{ 'dashboard.member.lastUpdate' | translate }}: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="footer-item" *ngIf="getSelectedExercice() as exercice">
+        <mat-icon>sports_soccer</mat-icon>
+        <span>{{ exercice.libelle }}</span>
+      </div>
+      <div class="footer-item">
+        <mat-icon>person</mat-icon>
+        <span>{{ 'dashboard.member.personalDashboard' | translate }}</span>
+      </div>
+    </div>
+  </div>
+  <app-publicite-banner position="FOOTER" [ville]="userVille"></app-publicite-banner>
+</div>

@@ -51,86 +51,10 @@ $transition-dialog: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: 90vh;
   width: 100%;
   background: var(--dialog-bg);
+  border-radius: $border-radius-2xl;
+  overflow: hidden;
 
-  @include mobile { max-height: 100vh; }
-}
-
-// ===================================================
-// HEADER (fond bleu fixe — indépendant du thème)
-// ===================================================
-.dialog-header {
-  background: linear-gradient(135deg, $dialog-primary 0%, $dialog-primary-dark 100%);
-  color: white;
-  padding: $spacing-2xl;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: $shadow-md;
-
-  @include mobile { padding: $spacing-xl $spacing-lg; }
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .avatar-section {
-      display: flex;
-      align-items: center;
-      gap: $spacing-lg;
-
-      @include mobile { gap: $spacing-md; }
-
-      .avatar {
-        width: 56px;
-        height: 56px;
-        border-radius: $border-radius-full;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: $font-size-2xl;
-        font-weight: $font-weight-bold;
-        color: white;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        flex-shrink: 0;
-
-        @include mobile { width: 48px; height: 48px; font-size: $font-size-xl; }
-      }
-
-      .header-text {
-        .dialog-title {
-          display: flex;
-          align-items: center;
-          gap: $spacing-sm;
-          margin: 0 0 $spacing-xs;
-          font-size: $font-size-2xl;
-          font-weight: $font-weight-semibold;
-
-          mat-icon { font-size: 28px; width: 28px; height: 28px; }
-
-          @include mobile {
-            font-size: $font-size-xl;
-            mat-icon { font-size: 24px; width: 24px; height: 24px; }
-          }
-        }
-
-        .dialog-subtitle {
-          margin: 0;
-          font-size: $font-size-sm;
-          opacity: 0.9;
-
-          @include mobile { font-size: $font-size-xs; }
-        }
-      }
-    }
-
-    .close-button {
-      color: white;
-      flex-shrink: 0;
-      &:hover { background-color: rgba(255, 255, 255, 0.1); }
-    }
-  }
+  @include mobile { max-height: 100vh; border-radius: 0; }
 }
 
 // ===================================================
@@ -187,11 +111,15 @@ $transition-dialog: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     .section-icon {
       color: $dialog-primary;
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      background: rgba($dialog-primary, .08);
+      border-radius: $border-radius-lg;
+      padding: 8px;
+      box-sizing: content-box;
 
-      @include mobile { font-size: 24px; width: 24px; height: 24px; }
+      @include mobile { font-size: 20px; width: 20px; height: 20px; padding: 6px; }
     }
 
     .section-title {
@@ -291,18 +219,20 @@ mat-divider {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-xl $spacing-2xl;
+  padding: $spacing-lg $spacing-2xl;
   border-top: 1px solid var(--dialog-border);
   background-color: var(--dialog-bg-light);
+  box-shadow: 0 -4px 16px rgba(0,0,0,.04);
   position: sticky;
   bottom: 0;
   z-index: 10;
   margin: 0 (-$spacing-2xl) (-$spacing-2xl);
 
   @include mobile {
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-lg;
+    flex-direction: column-reverse;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    padding-bottom: max($spacing-md, env(safe-area-inset-bottom));
     margin: 0 (-$spacing-lg) (-$spacing-lg);
   }
 
@@ -348,9 +278,10 @@ mat-divider {
     .save-button {
       min-width: 140px;
       position: relative;
+      box-shadow: 0 4px 14px rgba(37,99,235,.25);
 
       mat-spinner { position: absolute; left: $spacing-md; }
-      &:disabled { opacity: 0.6; }
+      &:disabled { opacity: 0.45; box-shadow: none; }
     }
   }
 }
@@ -463,7 +394,7 @@ mat-divider {
 // ===================================================
 // BOUTONS DÉSACTIVÉS
 // ===================================================
-button:disabled { cursor: not-allowed; opacity: 0.5; }
+button:disabled { cursor: not-allowed; opacity: 0.4; }
 
 // ===================================================
 // ANIMATIONS
@@ -480,45 +411,58 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 }
 
 .dialog-header {
-  background: linear-gradient(135deg, #1a237e, #0d47a1); // Ton thème bleu My2-0
-  padding: 16px 20px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  padding: $spacing-xl $spacing-xl;
   color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 16px rgba(37,99,235,.15);
+
+  @include mobile { padding: $spacing-lg $spacing-lg $spacing-xl; }
 
   .header-content-wrapper {
     display: flex;
     align-items: center;
-    gap: 24px;
-    flex-wrap: wrap; // Aligne verticalement sur petit écran automatiquement
+    gap: $spacing-xl;
+    flex-wrap: wrap;
 
     @media (max-width: 599px) {
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 12px;
+      gap: $spacing-sm;
     }
   }
 
-  // Zone Photo + Bouton à côté
+  // Zone Photo + Boutons — empilés proprement sur mobile
   .profile-photo-zone {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    @media (max-width: 599px) {
+      width: 100%;
+      .upload-video-btn { width: 100%; justify-content: center; }
+    }
   }
 
   // Le petit rond de la photo (Taille fixe et optimisée)
   .avatar-mini-container {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    min-height: 56px;
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
 
     .avatar-mini-image {
       width: 100%;
@@ -536,27 +480,30 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
   // Bouton d'action à côté du rond
   .edit-photo-action-btn {
-    border-color: rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
     color: white !important;
-    height: 36px;
-    line-height: 34px;
-    border-radius: 20px;
-    padding: 0 14px !important;
+    height: 38px;
+    line-height: 36px;
+    border-radius: $border-radius-full;
+    padding: 0 $spacing-lg !important;
     font-size: 13px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    transition: $transition-dialog;
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
       margin-right: 6px;
-      color: #ff9800; // Orange pour attirer subtilement l'attention
+      color: #fbbf24;
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: white !important;
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255,255,255,.6) !important;
+      transform: translateY(-1px);
     }
 
     @media (max-width: 400px) {
@@ -640,4 +587,136 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .form-divider {
   margin: 16px 0;
   opacity: 0.6;
+}
+// ===================================================
+// UPLOAD VIDEO BUTTON — manquant dans le SCSS original
+// ===================================================
+.upload-video-btn {
+  height: 38px;
+  border-radius: $border-radius-full;
+  padding: 0 $spacing-lg !important;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(16,185,129,.3) !important;
+  transition: $transition-dialog;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+  &:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,.4) !important; }
+
+  @media (max-width: 400px) {
+    .btn-text { display: none; }
+    padding: 0 10px !important;
+  }
+}
+
+// ===================================================
+// SECTION ASSURANCE — style manquant pour .assurance-section
+// (présent dans le HTML mais pas stylé dans le SCSS original,
+// seul .assurance-container existait sans usage)
+// ===================================================
+.assurance-section {
+  background-color: var(--dialog-bg-light);
+  border: 1px solid var(--dialog-border);
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg $spacing-xl;
+  transition: $transition-dialog;
+
+  @include mobile { padding: $spacing-md $spacing-lg; }
+
+  &.insured {
+    border-color: rgba($dialog-success, .4);
+    background: linear-gradient(135deg, rgba($dialog-success,.04), var(--dialog-bg-light));
+  }
+
+  .section-header { margin-bottom: $spacing-md; }
+
+  .assurance-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .assurance-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    margin: 0;
+    padding: $spacing-md;
+    background-color: rgba($dialog-warning, 0.1);
+    border-left: 3px solid $dialog-warning;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    color: $dialog-warning-dark;
+
+    mat-icon {
+      color: $dialog-warning;
+      font-size: 18px; width: 18px; height: 18px;
+      flex-shrink: 0; margin-top: 1px;
+    }
+  }
+}
+
+// ===================================================
+// TOUCH TARGETS — formulaire mobile-friendly
+// ===================================================
+@include mobile {
+  // Champs de formulaire — hauteur tactile suffisante
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    min-height: 52px;
+  }
+
+  // Password action button — pleine largeur sur mobile
+  .password-action-zone {
+    .btn-password {
+      width: 100%;
+      justify-content: center;
+      min-height: 46px;
+    }
+  }
+
+  // Visibility section — empilée sur très petit écran
+  .profile-visibility-section {
+    flex-direction: column;
+    align-items: flex-start;
+
+    mat-slide-toggle { align-self: flex-end; }
+  }
+
+  // Form sections — espacement réduit
+  mat-divider { margin: $spacing-lg 0; }
+}
+
+// Très petit écran
+@media (max-width: 360px) {
+  .avatar-mini-container { width: 48px; height: 48px; min-width: 48px; min-height: 48px; }
+  .header-titles .main-title { font-size: 17px; }
+  .header-titles .sub-title  { font-size: 11px; }
+}
+
+
+// ===================================================
+// FORM FIELDS — coins arrondis, look plus doux
+// ===================================================
+::ng-deep {
+  .mat-mdc-form-field {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-radius: 0;
+    }
+    .mdc-notched-outline__leading  { border-radius: $border-radius-lg 0 0 $border-radius-lg; }
+    .mdc-notched-outline__trailing { border-radius: 0 $border-radius-lg $border-radius-lg 0; }
+  }
+
+  // Select panel plus doux
+  .mat-mdc-select-panel { border-radius: $border-radius-lg !important; }
+
+  // Boutons globaux plus arrondis
+  .mat-mdc-raised-button, .mat-mdc-stroked-button, .mat-mdc-unelevated-button {
+    border-radius: $border-radius-lg !important;
+  }
 }

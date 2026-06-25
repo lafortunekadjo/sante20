@@ -52,6 +52,8 @@ import { TranslateModule } from '@ngx-translate/core';
   styleUrl: './type-sortie.component.scss'
 })
 export class TypeSortieComponent implements OnInit, AfterViewInit{
+
+  activeTab: 'sorties'|'types' = 'sorties';
    @ViewChild('sortiesPaginator') sortiesPaginator!: MatPaginator;
   @ViewChild('sortiesSort') sortiesSort!: MatSort;
   @ViewChild('typesPaginator') typesPaginator!: MatPaginator;

@@ -1,0 +1,796 @@
+// exercice-management.component.scss
+@use '../../../../../variables' as *;
+
+// ===================================================
+// THEMING — CSS Custom Properties
+// ===================================================
+:host {
+  --primary-color:    #{$primary-blue};
+  --primary-dark:     #{$primary-blue-dark};
+  --accent-color:     #{$secondary-emerald};
+  --success-color:    #{$success-color};
+  --warning-color:    #{$warning-color};
+  --error-color:      #{$error-color};
+  --info-color:       #{$info-color};
+
+  // Mode clair
+  --text-primary:     #{$light-text-primary};
+  --text-secondary:   #{$light-text-secondary};
+  --text-tertiary:    #{$light-text-tertiary};
+  --bg-primary:       #{$light-bg-primary};
+  --bg-secondary:     #{$light-bg-secondary};
+  --bg-tertiary:      #{$light-bg-tertiary};
+  --border-color:     #{$light-border};
+}
+
+:host-context(.dark-theme),
+:host-context([data-theme="dark"]),
+:host-context(body.dark-theme),
+:host-context(.dark-mode) {
+  --text-primary:     #{$dark-text-primary};
+  --text-secondary:   #{$dark-text-secondary};
+  --text-tertiary:    #{$dark-text-tertiary};
+  --bg-primary:       #{$dark-bg-primary};
+  --bg-secondary:     #{$dark-bg-secondary};
+  --bg-tertiary:      #{$dark-bg-tertiary};
+  --border-color:     #{$dark-border};
+}
+
+// ===================================================
+// CONTAINER & HEADER
+// ===================================================
+.exercice-management-container {
+  @include page-container;
+}
+
+.page-header {
+  @include page-header;
+}
+
+// ===================================================
+// LOADING
+// ===================================================
+.loading-container {
+  @include loading-state;
+}
+
+// ===================================================
+// CONTENU
+// ===================================================
+.content {
+  padding: $spacing-2xl;
+
+  @include mobile { padding: $spacing-lg; }
+}
+
+// ===================================================
+// CARTE EXERCICE ACTIF
+// ===================================================
+.exercice-actif-card {
+  @include card-base;
+  margin-bottom: $spacing-2xl;
+  overflow: hidden;
+  border-left: 4px solid $success-color;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    padding: $spacing-xl;
+    background: linear-gradient(135deg, rgba($success-color, 0.08) 0%, rgba($success-color, 0.03) 100%);
+    border-bottom: 1px solid var(--border-color);
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-md;
+    }
+
+    .header-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: $border-radius-lg;
+      @include flex-center;
+
+      &.active {
+        // darken($success-color, 15%) = darken(#10b981, 15%) ≈ #059669
+        background: linear-gradient(135deg, $success-color 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba($success-color, 0.3);
+      }
+
+      mat-icon { font-size: 28px; width: 28px; height: 28px; }
+    }
+
+    .header-info {
+      flex: 1;
+
+      h2 {
+        margin: 0 0 $spacing-xs;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: var(--text-primary);
+      }
+
+      .badge.actif {
+        display: inline-flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-xs $spacing-md;
+        background: rgba($success-color, 0.1);
+        color: $success-color;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+        border-radius: $border-radius-full;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: $spacing-md;
+
+      @include mobile { width: 100%; button { flex: 1; } }
+
+      button { display: flex; align-items: center; gap: $spacing-sm; }
+    }
+  }
+
+  .card-body {
+    padding: $spacing-xl;
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: $spacing-xl;
+
+      .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: $spacing-md;
+
+        mat-icon {
+          color: $primary-blue;
+          margin-top: 2px;
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+
+        .info-content {
+          .info-label {
+            display: block;
+            font-size: $font-size-sm;
+            color: var(--text-secondary);
+            margin-bottom: $spacing-xs;
+          }
+
+          .info-value {
+            display: block;
+            font-size: $font-size-md;
+            font-weight: $font-weight-semibold;
+            color: var(--text-primary);
+
+            &.solde   { color: $primary-blue; font-size: $font-size-lg; }
+            &.entrees { color: $success-color; }
+            &.sorties { color: $error-color; }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ===================================================
+// CONTRÔLES D'ACTION
+// ===================================================
+.action-controls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-2xl;
+  flex-wrap: wrap;
+
+  @include mobile { flex-direction: column; align-items: stretch; }
+
+  .create-button {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-lg;
+
+    @include mobile { width: 100%; justify-content: center; }
+
+    mat-icon { font-size: 20px; transition: transform $transition-base; }
+    &:hover mat-icon { transform: rotate(90deg); }
+  }
+
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+    padding: $spacing-md $spacing-lg;
+    background: rgba($info-color, 0.08);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba($info-color, 0.2);
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $info-color; }
+  }
+}
+
+// ===================================================
+// FORMULAIRES (animation slide-down)
+// ===================================================
+.create-form-container,
+.close-form-container {
+  margin-bottom: $spacing-2xl;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ===================================================
+// MODERN CARD (formulaires création / clôture)
+// ===================================================
+.modern-card {
+  @include card-base;
+  overflow: hidden;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    padding: $spacing-xl;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+
+    &.warn {
+      background: linear-gradient(135deg, rgba($error-color, 0.08) 0%, rgba($error-color, 0.03) 100%);
+
+      .card-icon {
+        // darken($error-color, 15%) = darken(#ef4444, 15%) ≈ #b91c1c
+        background: linear-gradient(135deg, $error-color 0%, #b91c1c 100%);
+      }
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius-md;
+      @include flex-center;
+      background: linear-gradient(135deg, $primary-blue 0%, $primary-blue-dark 100%);
+      color: white;
+
+      mat-icon { font-size: 24px; width: 24px; height: 24px; }
+    }
+
+    .card-title-group {
+      flex: 1;
+
+      .card-title {
+        margin: 0 0 $spacing-xs;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: var(--text-primary);
+      }
+
+      .card-subtitle {
+        margin: 0;
+        font-size: $font-size-sm;
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  .card-body { padding: $spacing-xl; }
+
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    padding: $spacing-lg $spacing-xl;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+
+    .primary-actions {
+      display: flex;
+      gap: $spacing-md;
+      button { display: flex; align-items: center; gap: $spacing-sm; }
+    }
+  }
+}
+
+// ===================================================
+// GRILLE FORMULAIRE
+// ===================================================
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-xl;
+
+  @include mobile { grid-template-columns: 1fr; gap: $spacing-lg; }
+
+  .form-field {
+    &.full-width { grid-column: 1 / -1; }
+
+    mat-icon[matPrefix] { color: var(--text-secondary); margin-right: $spacing-sm; }
+
+    ::ng-deep {
+      .mdc-notched-outline { border-color: var(--border-color); }
+      .mdc-floating-label   { color: var(--text-secondary); }
+      .mat-mdc-input-element{ color: var(--text-primary); }
+    }
+  }
+
+  .checkbox-content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm 0;
+
+    mat-icon { color: $primary-blue; font-size: 20px; width: 20px; height: 20px; }
+  }
+}
+
+// ===================================================
+// APERÇU DU BILAN
+// ===================================================
+.bilan-preview {
+  margin-bottom: $spacing-xl;
+  padding: $spacing-xl;
+  background: var(--bg-tertiary);
+  border-radius: $border-radius-lg;
+  border: 1px solid var(--border-color);
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0 0 $spacing-lg;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+
+    mat-icon { color: $primary-blue; }
+  }
+
+  .bilan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+
+    @include tablet { grid-template-columns: repeat(2, 1fr); }
+    @include mobile { grid-template-columns: 1fr; }
+
+    .bilan-item {
+      padding: $spacing-lg;
+      background: var(--bg-primary);
+      border-radius: $border-radius-md;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      transition: all $transition-base;
+
+      &:hover { box-shadow: $shadow-md; transform: translateY(-2px); }
+
+      .bilan-label {
+        display: block;
+        font-size: $font-size-xs;
+        color: var(--text-secondary);
+        margin-bottom: $spacing-xs;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .bilan-value {
+        display: block;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+        color: var(--text-primary);
+      }
+
+      &.entree .bilan-value { color: $success-color; }
+      &.sortie .bilan-value { color: $error-color; }
+
+      &.solde-final {
+        background: linear-gradient(135deg, $primary-blue 0%, $primary-blue-dark 100%);
+        border: none;
+        box-shadow: 0 4px 12px rgba($primary-blue, 0.3);
+
+        .bilan-label,
+        .bilan-value { color: white; }
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba($primary-blue, 0.4);
+        }
+      }
+    }
+  }
+
+  .impayes-section {
+    padding: $spacing-lg;
+    background: rgba($warning-color, 0.08);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba($warning-color, 0.2);
+
+    h5 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      margin: 0 0 $spacing-md;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      color: $warning-color;
+
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    }
+
+    .impayes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: $spacing-md;
+      margin-bottom: $spacing-md;
+
+      @include mobile { grid-template-columns: 1fr; }
+
+      .impaye-item {
+        display: flex;
+        justify-content: space-between;
+        padding: $spacing-md;
+        background: var(--bg-primary);
+        border-radius: $border-radius-sm;
+
+        span { font-size: $font-size-sm; color: var(--text-secondary); }
+
+        .impaye-value {
+          font-weight: $font-weight-semibold;
+          color: $error-color;
+        }
+      }
+    }
+
+    .membres-retard {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      margin: 0;
+      font-size: $font-size-sm;
+      color: var(--text-secondary);
+      padding-top: $spacing-md;
+      border-top: 1px solid rgba($warning-color, 0.2);
+
+      mat-icon { font-size: 18px; width: 18px; height: 18px; color: $warning-color; }
+      strong { color: $warning-color; }
+    }
+  }
+}
+
+// ===================================================
+// OPTIONS DE CLÔTURE
+// ===================================================
+.cloture-options {
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0 0 $spacing-lg;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid var(--border-color);
+
+    mat-icon { color: $primary-blue; }
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    mat-checkbox .checkbox-content {
+      display: flex;
+      align-items: flex-start;
+      gap: $spacing-md;
+      padding: $spacing-sm 0;
+
+      mat-icon {
+        margin-top: 2px;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: $primary-blue;
+      }
+
+      div {
+        span  { display: block; font-weight: $font-weight-medium; color: var(--text-primary); }
+        small { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-top: $spacing-xs; }
+      }
+    }
+  }
+}
+
+// ===================================================
+// SECTION EXERCICES
+// ===================================================
+.exercices-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+    padding-bottom: $spacing-md;
+    border-bottom: 2px solid var(--border-color);
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+      border-radius: $border-radius-md;
+      @include flex-center;
+      background: linear-gradient(135deg, $accent-orange 0%, $accent-orange-dark 100%);
+      color: white;
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    }
+
+    .header-text {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+
+      h2 {
+        margin: 0;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: var(--text-primary);
+      }
+
+      .badge {
+        background: $primary-blue;
+        color: white;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        padding: $spacing-xs $spacing-md;
+        border-radius: $border-radius-full;
+      }
+    }
+  }
+}
+
+// ===================================================
+// VUE MOBILE — CARTES
+// ===================================================
+.mobile-cards-view {
+  display: none;
+
+  @include mobile {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  .exercice-card {
+    @include card-base;
+    overflow: hidden;
+    transition: all $transition-base;
+
+    &:hover { box-shadow: $shadow-lg; }
+    &.actif  { border-left: 4px solid $success-color; }
+    &.cloture{ border-left: 4px solid var(--text-tertiary); opacity: 0.8; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: $spacing-lg;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+
+      .card-title {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+
+        .card-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+          &.actif  { color: $success-color; }
+          &.cloture{ color: var(--text-tertiary); }
+        }
+
+        .title-content {
+          h4 {
+            margin: 0 0 $spacing-xs;
+            font-size: $font-size-md;
+            font-weight: $font-weight-semibold;
+            color: var(--text-primary);
+          }
+
+          .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: $spacing-xs;
+            padding: 2px $spacing-sm;
+            font-size: $font-size-xs;
+            font-weight: $font-weight-semibold;
+            border-radius: $border-radius-full;
+            text-transform: uppercase;
+
+            &.actif  { background: rgba($success-color, 0.1); color: $success-color; }
+            &.cloture{ background: rgba(0, 0, 0, 0.05); color: var(--text-tertiary); }
+          }
+        }
+      }
+
+      .card-actions {
+        display: flex;
+        gap: $spacing-xs;
+
+        button {
+          width: 36px;
+          height: 36px;
+          mat-icon { font-size: 18px; width: 18px; height: 18px; }
+        }
+      }
+    }
+
+    .card-content {
+      padding: $spacing-lg;
+
+      .info-grid {
+        display: grid;
+        gap: $spacing-md;
+
+        .info-item {
+          display: flex;
+          justify-content: space-between;
+          padding: $spacing-sm 0;
+          border-bottom: 1px solid var(--border-color);
+
+          &:last-child { border-bottom: none; }
+
+          label { font-size: $font-size-sm; color: var(--text-secondary); }
+          span  { font-weight: $font-weight-medium; color: var(--text-primary); }
+
+          .solde-final { color: $primary-blue; font-weight: $font-weight-bold; }
+          .entrees     { color: $success-color; }
+          .sorties     { color: $error-color; }
+        }
+      }
+    }
+  }
+}
+
+// ===================================================
+// VUE DESKTOP — TABLEAU
+// ===================================================
+.desktop-table-view {
+  @include card-base;
+  overflow: hidden;
+
+  @include mobile { display: none; }
+
+  .exercices-table {
+    width: 100%;
+
+    th.mat-header-cell {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: $font-weight-semibold;
+      font-size: $font-size-sm;
+      padding: $spacing-lg;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    td.mat-cell {
+      padding: $spacing-lg;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      font-size: $font-size-sm;
+    }
+
+    tr.mat-row {
+      transition: background-color $transition-base;
+
+      &:hover { background: var(--bg-tertiary); }
+
+      &.actif {
+        background: rgba($success-color, 0.05);
+        &:hover { background: rgba($success-color, 0.08); }
+      }
+
+      &.cloture { opacity: 0.7; }
+    }
+
+    .exercice-name {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        &.actif  { color: $success-color; }
+        &.cloture{ color: var(--text-tertiary); }
+      }
+
+      span { font-weight: $font-weight-medium; }
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      padding: $spacing-xs $spacing-md;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      border-radius: $border-radius-full;
+      text-transform: uppercase;
+
+      mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+      &.actif  { background: rgba($success-color, 0.1); color: $success-color; }
+      &.cloture{ background: rgba(0, 0, 0, 0.05); color: var(--text-tertiary); }
+    }
+
+    .solde-value  { font-weight: $font-weight-bold; color: $primary-blue; }
+    .solde-reporte{ font-size: $font-size-xs; color: var(--text-secondary); }
+    .entrees      { color: $success-color; font-weight: $font-weight-medium; }
+    .sorties      { color: $error-color;   font-weight: $font-weight-medium; }
+
+    .action-buttons {
+      display: flex;
+      gap: $spacing-xs;
+
+      button {
+        width: 36px;
+        height: 36px;
+        mat-icon { font-size: 18px; width: 18px; height: 18px; }
+      }
+    }
+  }
+
+  mat-paginator {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+
+    ::ng-deep {
+      .mat-mdc-paginator-container { color: var(--text-primary); }
+      .mat-mdc-select-value,
+      .mat-mdc-paginator-page-size-label { color: var(--text-secondary); }
+    }
+  }
+}
+
+// ===================================================
+// ÉTAT VIDE
+// ===================================================
+.empty-state {
+  @include empty-state;
+  margin: $spacing-3xl auto;
+  max-width: 500px;
+
+  .empty-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: var(--text-tertiary);
+    margin-bottom: $spacing-xl;
+  }
+
+  h3 { margin: 0 0 $spacing-md; font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
+  p  { margin: 0 0 $spacing-xl; color: var(--text-secondary); }
+
+  button { display: flex; align-items: center; gap: $spacing-sm; }
+}

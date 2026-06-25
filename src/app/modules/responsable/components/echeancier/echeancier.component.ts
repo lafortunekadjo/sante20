@@ -91,6 +91,7 @@ interface TypeContribution {
   styleUrls: ['./echeancier.component.scss']
 })
 export class EcheancierComponent implements OnInit, OnDestroy {
+  activeTab: 'list'|'retard'|'filter' = 'list';
   
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -256,6 +257,15 @@ export class EcheancierComponent implements OnInit, OnDestroy {
     this.stats.tauxRecouvrement = this.stats.totalAttendu > 0 
       ? (this.stats.totalPaye / this.stats.totalAttendu) * 100 
       : 0;
+  }
+
+  hasActiveFilters(): boolean {
+    const f = this.filterForm.value;
+    return !!(f.search || f.typeId || f.statut !== 'ALL');
+  }
+
+  getEcheancesEnRetard(): any[] {
+    return this.echeances.filter(e => e.statut === 'EN_RETARD');
   }
 
   resetFilters(): void {

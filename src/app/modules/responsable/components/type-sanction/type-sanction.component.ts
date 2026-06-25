@@ -90,6 +90,7 @@ export class TypeSanctionComponent implements OnInit {
   dataSource = new MatTableDataSource<TypeSanction>();
   isLoading = true;
   showCreateRow = false;
+  activeTab: 'list'|'filter'|'create' = 'list';
   editingRows: boolean[] = [];
 
   caisses: Caisse[] = [];

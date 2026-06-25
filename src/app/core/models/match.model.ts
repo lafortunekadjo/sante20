@@ -47,7 +47,7 @@ export interface Match {
   rapporteurNomOccasionnel?: string | null;
   
   // ===== MÉDIAS =====
-  mediaUrls?: string[];
+  mediaUrls: string[];
 }
 
 // ===== DTOs pour la création/mise à jour =====

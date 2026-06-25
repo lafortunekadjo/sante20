@@ -1,5 +1,6 @@
 <div class="mvp-vote-card-container news-feed-card animate-in">
-  
+
+  <!-- Header -->
   <div class="card-header">
     <div class="header-main">
       <div class="icon-wrap">
@@ -10,55 +11,131 @@
         <p class="card-subtitle">{{ currentMonthLabel() }}</p>
       </div>
     </div>
-    <button mat-icon-button (click)="shareVote()" [matTooltip]="'mvpVote.shareTooltip' | translate" class="share-btn">
+    <button mat-icon-button (click)="shareVote()"
+            [matTooltip]="'mvpVote.shareTooltip' | translate"
+            class="share-btn">
       <mat-icon>share</mat-icon>
     </button>
   </div>
 
+  <!-- Contenu -->
   <div class="card-content">
+
+    <!-- Loading -->
     @if (isLoading()) {
       <div class="loading-shade">
         <mat-spinner diameter="40"></mat-spinner>
       </div>
-    } 
+    }
+
     @else {
+
+      <!-- Vote fermé / pas de nominés -->
       @if (nomines().length === 0) {
         <div class="empty-state-feed">
           <mat-icon class="wait-icon">hourglass_empty</mat-icon>
           <p>{{ 'mvpVote.closedMsgShort' | translate }}</p>
           <span class="next-opening">{{ 'mvpVote.closedTimeline' | translate }}</span>
         </div>
-      } 
+      }
+
       @else {
-        
+
+        <!-- ══ ÉTAT : A DÉJÀ VOTÉ — Tendances live ══ -->
         @if (hasVoted()) {
-          <div class="voted-state text-center animate-in">
-            <mat-icon class="success-icon">check_circle</mat-icon>
-            <h4>{{ 'mvpVote.thanksTitle' | translate }}</h4>
-            <p>{{ 'mvpVote.thanksMsg' | translate }}</p>
-            <button mat-stroked-button color="primary" class="mt-3" (click)="onViewResults()">
-              {{ 'mvpVote.viewResultsBtn' | translate }}
-            </button>
+          <div class="voted-state animate-in">
+
+            <!-- Badge "Merci" -->
+            <div class="thanks-badge">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ 'mvpVote.thanksTitle' | translate }}</span>
+            </div>
+
+            <!-- Tendances -->
+            <div class="tendances-section">
+              <p class="tendances-title">
+                <mat-icon>trending_up</mat-icon>
+                Tendances du moment
+              </p>
+
+              @if (isLoadingTendances()) {
+                <div class="tendances-loading">
+                  <mat-spinner diameter="24"></mat-spinner>
+                </div>
+              }
+
+              @else if (tendances().length === 0) {
+                <p class="tendances-empty">Pas encore assez de votes.</p>
+              }
+
+              @else {
+                <div class="tendances-list">
+                  @for (t of tendances(); track t.membreId; let i = $index) {
+                    <div class="tendance-row" [style.animation-delay]="i * 0.08 + 's'">
+
+                      <!-- Rang + avatar -->
+                      <div class="t-rank" [class.t-rank--gold]="i === 0"
+                                         [class.t-rank--silver]="i === 1"
+                                         [class.t-rank--bronze]="i === 2">
+                        {{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i+1) }}
+                      </div>
+
+                      <div class="t-avatar">
+                        <img *ngIf="t.photoUrl" [src]="t.photoUrl">
+                        <span *ngIf="!t.photoUrl">{{ t.prenom[0] }}{{ t.nom[0] }}</span>
+                      </div>
+
+                      <!-- Nom + barre -->
+                                        <!-- Nom + barre -->
+                  <div class="t-info">
+                    <div class="t-name-row">
+                      <span class="t-name">{{ t.prenom }} {{ t.nom }}</span>
+                      <!-- ══ AJOUT : Affichage des points finaux et des votes ══ -->
+                      <div class="t-score-badge-wrap">
+                        <span class="t-pts-badge" title="Points combinés (Stats + Votes)">
+                          <strong>{{ t.pourcentage }}</strong> pts
+                        </span>
+                        <span class="t-votes-count" title="Nombre de votes reçus">
+                          ({{ t.votes }} {{ t.votes > 1 ? 'votes' : 'vote' }})
+                        </span>
+                      </div>
+                    </div>
+                    <div class="t-bar-bg">
+                      <!-- Pour la jauge, on peut limiter à 100% au cas où les points dépassent, ou laisser tel quel -->
+                      <div class="t-bar-fill"
+                          [class.t-bar--gold]="i === 0"
+                          [style.width.%]="t.pourcentage > 100 ? 100 : t.pourcentage">
+                      </div>
+                    </div>
+                  </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
           </div>
-        } 
+        }
+
+        <!-- ══ ÉTAT : PAS ENCORE VOTÉ ══ -->
         @else {
           <p class="instruction-text">{{ 'mvpVote.instruction' | translate }}</p>
-          
+
           <div class="candidates-list">
             @for (player of nomines(); track player.id; let i = $index) {
-              <div class="candidate-item animate-in" 
-                   [style.animation-delay]="i * 0.1 + 's'" 
+              <div class="candidate-item animate-in"
+                   [style.animation-delay]="i * 0.1 + 's'"
                    (click)="isEligible() ? openVoteSheet(player) : null">
-                
+
                 <div class="player-rank">#{{ i + 1 }}</div>
-                
+
                 <div class="player-avatar">
                   <img *ngIf="player.photoUrl" [src]="player.photoUrl">
                   <div *ngIf="!player.photoUrl" class="initials-placeholder">
                     {{ player.prenom[0] }}{{ player.nom[0] }}
                   </div>
                 </div>
-                
+
                 <div class="player-info">
                   <span class="player-name">{{ player.prenom }} {{ player.nom }}</span>
                   <div class="player-stats">
@@ -66,10 +143,9 @@
                     <span title="Passes">👟 <strong>{{ player.passes }}</strong></span>
                     <span title="MVP Équipe">🛡️ <strong>{{ player.mvpEquipe }}</strong></span>
                     <span title="MDM">⭐ <strong>{{ player.motm }}</strong></span>
-                    
                   </div>
                 </div>
-                
+
                 <div class="vote-action" *ngIf="isEligible()">
                   <mat-icon>how_to_vote</mat-icon>
                 </div>
@@ -77,7 +153,18 @@
             }
           </div>
         }
+
       }
     }
   </div>
+
+  <!-- Footer — lien palmarès toujours visible -->
+  <div class="card-footer-link">
+    <a routerLink="/membre/vote/winner" class="palmares-link">
+      <mat-icon>emoji_events</mat-icon>
+      <span>Voir le palmarès MVP</span>
+      <mat-icon class="arrow-icon">chevron_right</mat-icon>
+    </a>
+  </div>
+
 </div>
