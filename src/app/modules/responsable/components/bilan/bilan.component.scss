@@ -1,514 +1,450 @@
 @import '../../../../../variables';
 
+// ════════════════════════════════════════════════════════════
+// BILAN — Mobile-first
+// ════════════════════════════════════════════════════════════
+
 .bilan-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  background: var(--background-secondary);
-}
-.content{
-   padding: $spacing-2xl;
-  // Espace pour la bottom nav sur mobile
-  padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
-
-  @include mobile {
-    padding: $spacing-lg;
-    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
-  }
-
-  @include desktop {
-    padding-bottom: $spacing-2xl;
-  }
+  @include page-container;
+  display: flex; flex-direction: column; min-height: 100%;
 }
 
-// ── Header ────────────────────────────────────────────────────
-.page-header {
-  @include page-header;
-  margin-bottom: 0;
-  border-radius: 0;
+// ══════════════════════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════════════════════
 
-  .header-content {
-    align-items: center;
-    flex-wrap: wrap;
-    gap: $spacing-md;
+.bilan-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white; padding: $spacing-md $spacing-lg; flex-shrink: 0;
+  position: relative; overflow: hidden;
+
+  &::before {
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='2' fill='%23fff' fill-opacity='.06'/%3E%3C/svg%3E");
   }
 
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    flex-wrap: wrap;
+  @include desktop { padding: $spacing-xl $spacing-2xl $spacing-lg; }
+}
 
-    .exercice-select { min-width: 160px; }
-    .export-actions  { display: flex; gap: $spacing-xs; }
+.bh-top {
+  position: relative; z-index: 1;
+  display: flex; flex-wrap: wrap;
+  align-items: center; gap: $spacing-sm;
+
+  @include desktop { flex-wrap: nowrap; @include flex-between; }
+}
+
+.bh-title-group {
+  display: flex; align-items: center; gap: $spacing-sm; flex: 1; min-width: 0;
+
+  .bh-icon {
+    width: 36px; height: 36px; border-radius: $border-radius-xl;
+    background: rgba(255,255,255,.15); @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+    @include desktop { width: 44px; height: 44px; mat-icon { font-size: 24px; width: 24px; height: 24px; } }
+  }
+
+  h1 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-bold;
+    text-shadow: 0 1px 4px rgba(0,0,0,.2);
+    @include desktop { font-size: $font-size-2xl; } }
+  p  { margin: 2px 0 0; font-size: 11px; opacity: .85; @include desktop { font-size: $font-size-sm; } }
+}
+
+.bh-actions {
+  display: flex; align-items: center; gap: $spacing-xs;
+  flex-shrink: 0; margin-left: auto;
+  position: relative; z-index: 1;
+
+  button { color: white !important; background: rgba(255,255,255,.15) !important;
+    border-radius: $border-radius-md !important; width: 36px !important; height: 36px !important;
+    &:hover { background: rgba(255,255,255,.25) !important; } }
+
+  .exercice-select {
+    width: 140px;
+    @include desktop { width: 180px; }
+    ::ng-deep .mat-mdc-text-field-wrapper   { background: rgba(255,255,255,.15) !important; }
+    ::ng-deep .mat-mdc-select-value,
+    ::ng-deep .mat-mdc-select-arrow,
+    ::ng-deep label                          { color: rgba(255,255,255,.9) !important; }
+    ::ng-deep .mdc-notched-outline__leading,
+    ::ng-deep .mdc-notched-outline__notch,
+    ::ng-deep .mdc-notched-outline__trailing { border-color: rgba(255,255,255,.3) !important; }
   }
 }
 
-// ── Loading ───────────────────────────────────────────────────
-.loading-container {
-  @include flex-center;
-  flex-direction: column;
-  gap: $spacing-xl;
-  padding: $spacing-5xl;
+.ex-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 6px;
+  border-radius: $border-radius-full; font-size: 10px; font-weight: 700;
+  &.actif   { background: rgba(16,185,129,.15); color: $success-color; }
+  &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
 }
 
-// ── Contenu ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// LOADING / EMPTY
+// ══════════════════════════════════════════════════════════════
 
+.bilan-loading {
+  display: flex; flex-direction: column; align-items: center;
+  gap: $spacing-lg; padding: $spacing-4xl; color: var(--text-secondary);
+}
 
+.bilan-empty {
+  @include empty-state; padding: $spacing-4xl $spacing-2xl;
+  mat-icon { font-size: 56px !important; width: 56px !important; height: 56px !important; opacity: .2; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONTENU
+// ══════════════════════════════════════════════════════════════
+
+.bilan-content {
+  padding: $spacing-md; display: flex; flex-direction: column; gap: $spacing-md;
+  @include desktop { padding: $spacing-xl $spacing-2xl; gap: $spacing-xl; }
+}
+
+// ── Période ────────────────────────────────────────────────────
 .period-bar {
-  @include flex-between;
-  padding: $spacing-md $spacing-2xl;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: $spacing-sm;
   background: var(--background-primary);
-  border-bottom: 1px solid var(--border-color);
-  gap: $spacing-md;
-  flex-wrap: wrap;
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-lg; padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
 
-  @include mobile { padding: $spacing-md; }
-
-  .period-left {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    font-size: $font-size-sm;
-    color: var(--text-secondary);
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  }
-
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: $border-radius-full;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    mat-icon { font-size: 14px; width: 14px; height: 14px; }
-
-    &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
-    &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
-  }
+  .pb-left { display: flex; align-items: center; gap: $spacing-sm; color: var(--text-secondary);
+    mat-icon { font-size: 16px; width: 16px; height: 16px; } }
 }
 
-// ── KPI row ───────────────────────────────────────────────────
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: $spacing-md;
-  padding: $spacing-xl $spacing-2xl;
+.status-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: $border-radius-full;
+  font-size: 11px; font-weight: 700;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
 
-  @include mobile { grid-template-columns: repeat(2, 1fr); padding: $spacing-md; }
+  &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
+  &.cloture { background: rgba(100,116,139,.1); color: var(--text-tertiary); }
+}
+
+// ── KPIs ───────────────────────────────────────────────────────
+.kpi-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+  @include desktop { grid-template-columns: repeat(4, 1fr); gap: $spacing-lg; }
 }
 
 .kpi-card {
-  @include card-base;
-  padding: $spacing-lg;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl; padding: $spacing-md;
   border-top: 3px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
 
-  .kpi-top { @include flex-between; }
-
-  .kpi-icon {
-    width: 36px; height: 36px;
-    border-radius: $border-radius-md;
-    @include flex-center;
-    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+  .kpi-icon-wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: $spacing-sm;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; opacity: .6; }
   }
 
-  .kpi-delta {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
-    padding: 2px 7px;
-    border-radius: $border-radius-full;
-    &.delta-up  { background: rgba(16,185,129,.1); color: $success-color; }
-    &.delta-down{ background: rgba(239,68,68,.08); color: $error-color; }
-  }
+  .kpi-lbl { display: block; font-size: 10px; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
 
-  .kpi-label { font-size: $font-size-xs; color: var(--text-secondary); }
-  .kpi-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); @include mobile { font-size: $font-size-lg; } }
+  .kpi-val { display: block; font-size: $font-size-md; font-weight: $font-weight-bold;
+    color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    @include desktop { font-size: $font-size-xl; } }
 
-  &.k-init  { border-top-color: var(--text-tertiary); .kpi-icon { background: linear-gradient(135deg,#64748b,#94a3b8); } }
-  &.k-in    { border-top-color: $success-color; .kpi-icon { background: linear-gradient(135deg,#0f6e56,#10b981); } .kpi-value { color: $success-color; } }
-  &.k-out   { border-top-color: $error-color;   .kpi-icon { background: linear-gradient(135deg,#991b1b,#ef4444); } .kpi-value { color: $error-color; } }
-  &.k-final { border-top-color: var(--primary-color); .kpi-icon { background: linear-gradient(135deg,var(--primary-dark),var(--primary-color)); } }
+  &.k-init  { border-top-color: var(--text-tertiary); }
+  &.k-in    { border-top-color: $success-color; .kpi-val { color: $success-color; } }
+  &.k-out   { border-top-color: $error-color;   .kpi-val { color: $error-color; } }
+  &.k-final { border-top-color: #1A3EB5; }
 }
 
-// ── Mid row ───────────────────────────────────────────────────
-.mid-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
-  padding: 0 $spacing-2xl $spacing-xl;
+.kpi-delta {
+  display: inline-flex; align-items: center;
+  padding: 2px 6px; border-radius: $border-radius-full;
+  font-size: 10px; font-weight: 700;
+  &.up   { background: rgba(16,185,129,.1); color: $success-color; }
+  &.down { background: rgba(239,68,68,.1);  color: $error-color; }
+}
 
-  @include mobile { grid-template-columns: 1fr; padding: 0 $spacing-md $spacing-md; }
+// ── Mid row ────────────────────────────────────────────────────
+.mid-row {
+  display: grid; grid-template-columns: 1fr; gap: $spacing-md;
+  @include desktop { grid-template-columns: 1fr 1fr; gap: $spacing-lg; }
 }
 
 .chart-card {
-  @include card-base;
-  padding: $spacing-xl;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl; overflow: hidden;
 
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    font-size: $font-size-md;
-    font-weight: $font-weight-semibold;
-    margin-bottom: $spacing-xl;
-    mat-icon { color: var(--primary-color); font-size: 20px; }
+  .cc-title {
+    display: flex; align-items: center; gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: $font-size-sm; font-weight: $font-weight-semibold;
+    mat-icon { color: var(--primary-color); font-size: 18px; width: 18px; height: 18px; }
   }
 }
 
-.donut-layout {
-  display: flex;
-  gap: $spacing-xl;
-  align-items: center;
-  flex-wrap: wrap;
+// Répartition caisses
+.donut-layout { padding: $spacing-lg; display: flex; flex-direction: column; gap: $spacing-md; }
+
+.donut-center {
+  text-align: center; padding: $spacing-md;
+  background: var(--background-secondary); border-radius: $border-radius-lg;
+  .dc-amount { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
+  .dc-sub    { display: block; font-size: $font-size-xs; color: var(--text-tertiary); margin-top: 2px; }
 }
 
-.donut-placeholder {
-  width: 100px; height: 100px;
-  border-radius: $border-radius-full;
-  border: 8px solid var(--border-color);
-  @include flex-center;
-  flex-shrink: 0;
-  background: var(--background-secondary);
+.donut-legend { display: flex; flex-direction: column; gap: $spacing-sm; }
 
-  .donut-center-text { text-align: center;
-    .donut-amount { display: block; font-size: $font-size-sm; font-weight: $font-weight-bold; color: var(--text-primary); }
-    .donut-sub    { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
-  }
-}
-
-.donut-legend { flex: 1; display: flex; flex-direction: column; gap: $spacing-sm; }
-
-.donut-leg-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
+.dl-row {
+  display: flex; align-items: center; gap: $spacing-sm;
   font-size: $font-size-sm;
 
-  .donut-leg-dot { width: 10px; height: 10px; border-radius: $border-radius-full; flex-shrink: 0; }
-  .donut-leg-name{ flex: 1; @include text-truncate; color: var(--text-secondary); }
-  .donut-leg-pct  { color: var(--text-tertiary); font-size: $font-size-xs; }
-  .donut-leg-amt  { font-weight: $font-weight-semibold; white-space: nowrap; }
+  .dl-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dl-name { flex: 1; color: var(--text-primary); font-weight: $font-weight-medium;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dl-pct  { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
+  .dl-amt  { font-weight: $font-weight-semibold; color: var(--text-primary); flex-shrink: 0;
+    font-size: $font-size-sm; }
 }
 
-.recouv-big { font-size: 42px; font-weight: $font-weight-bold; color: var(--primary-color); text-align: center; line-height: 1; margin: $spacing-md 0 $spacing-sm; }
-.recouv-bar-track { height: 8px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden; margin-bottom: $spacing-lg;
-  .recouv-bar-fill { height: 100%; background: var(--primary-color); border-radius: $border-radius-full; transition: width $transition-base; }
+// Recouvrement
+.recouv-big {
+  text-align: center; font-size: 40px; font-weight: 800;
+  color: var(--primary-color); padding: $spacing-lg $spacing-lg $spacing-sm;
 }
-.recouv-info-row { @include flex-between; margin-bottom: $spacing-md;
-  .recouv-sub { font-size: $font-size-sm; color: var(--text-secondary); }
-  .variation-chip { font-size: $font-size-xs; font-weight: $font-weight-bold; padding: 2px 8px; border-radius: $border-radius-full;
-    &.chip-pos { background: rgba(16,185,129,.1); color: $success-color; }
-    &.chip-neg { background: rgba(239,68,68,.08); color: $error-color; }
+
+.recouv-track {
+  height: 8px; background: var(--background-tertiary);
+  border-radius: $border-radius-full; margin: 0 $spacing-lg $spacing-sm; overflow: hidden;
+  .recouv-fill {
+    height: 100%; border-radius: $border-radius-full;
+    background: linear-gradient(90deg, #1A3EB5, #10b981);
+    transition: width .5s ease;
   }
 }
-.recouv-chips { display: flex; gap: $spacing-sm; flex-wrap: wrap; }
-.r-chip { flex: 1; min-width: 80px; padding: $spacing-sm; border-radius: $border-radius-lg; text-align: center;
-  .rv { display: block; font-size: $font-size-sm; font-weight: $font-weight-bold; }
-  .rl { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
-  &.r-green { background: rgba(16,185,129,.08); .rv { color: $success-color; } }
-  &.r-red   { background: rgba(239,68,68,.06);  .rv { color: $error-color; } }
-  &.r-blue  { background: rgba(37,99,235,.06);  .rv { color: var(--primary-color); } }
+
+.recouv-sub { margin: 0 $spacing-lg $spacing-md; font-size: $font-size-xs; color: var(--text-tertiary); }
+
+.recouv-chips {
+  display: flex; gap: $spacing-sm; padding: 0 $spacing-lg $spacing-lg; flex-wrap: wrap;
+  .rc {
+    flex: 1; min-width: 80px; text-align: center; padding: $spacing-sm;
+    border-radius: $border-radius-lg; border: 1px solid var(--border-color);
+    .rc-val { display: block; font-size: $font-size-sm; font-weight: $font-weight-bold; }
+    .rc-lbl { display: block; font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+    &.green { background: rgba(16,185,129,.06); .rc-val { color: $success-color; } }
+    &.red   { background: rgba(239,68,68,.06);  .rc-val { color: $error-color; } }
+    &.blue  { .rc-val { color: var(--primary-color); } }
+  }
 }
 
-// ── Bannière impayés ──────────────────────────────────────────
+// ── Bannière impayés ───────────────────────────────────────────
 .impayes-banner {
-  @include flex-between;
-  gap: $spacing-lg;
-  padding: $spacing-lg $spacing-2xl;
-  background: rgba(245,158,11,.08);
-  border: 1px solid rgba(245,158,11,.25);
-  margin: 0 $spacing-2xl $spacing-xl;
-  border-radius: $border-radius-xl;
-  flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: $spacing-sm;
+  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.2);
+  border-radius: $border-radius-lg; padding: $spacing-md $spacing-lg;
 
-  @include mobile { margin: 0 $spacing-md $spacing-md; padding: $spacing-md; }
+  .ib-left {
+    display: flex; align-items: flex-start; gap: $spacing-sm; flex: 1;
+    mat-icon { color: $error-color; flex-shrink: 0; }
+    strong { display: block; font-size: $font-size-sm; color: $error-color; }
+    span   { font-size: 11px; color: var(--text-secondary); }
+  }
 
-  .imp-left { display: flex; align-items: center; gap: $spacing-md;
-    .imp-icon { font-size: 24px; width: 24px; height: 24px; color: $warning-color; flex-shrink: 0; }
-    .imp-title { font-weight: $font-weight-semibold; color: var(--text-primary); font-size: $font-size-sm; }
-    .imp-sub   { font-size: $font-size-xs; color: var(--text-secondary); margin-top: 2px; }
-  }
-  .imp-right { text-align: right;
-    .imp-amount      { display: block; font-size: $font-size-xl; font-weight: $font-weight-bold; color: $warning-color; }
-    .imp-detail-link { display: block; font-size: $font-size-xs; color: var(--primary-color); cursor: pointer; }
-  }
+  .ib-amount { font-size: $font-size-md; font-weight: $font-weight-bold; color: $error-color; white-space: nowrap; }
 }
 
-// ── Tabs sticky (custom — remplace mat-tab-group) ─────────────
-.bilan-tabs-wrapper { display: flex; flex-direction: column; }
+// ══════════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════════
+
+.bilan-tabs-wrapper { display: flex; flex-direction: column; flex: 1; }
 
 .bilan-tabs-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
+  position: sticky; top: 0; z-index: $z-sticky;
+  display: flex; overflow-x: auto; scrollbar-width: none;
   background: var(--background-primary);
   border-bottom: 2px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  overflow-x: auto;
-  scrollbar-width: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06); flex-shrink: 0;
   &::-webkit-scrollbar { display: none; }
 }
 
 .btab {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-xl;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: $transition-fast;
+  display: flex; align-items: center; gap: 4px;
+  padding: $spacing-sm $spacing-md; flex-shrink: 0;
+  font-size: $font-size-xs; font-weight: $font-weight-medium;
+  color: var(--text-secondary); background: transparent; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; white-space: nowrap;
+  transition: color .15s, background .15s;
 
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
-  &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
+  &:hover { color: var(--primary-color); background: rgba(26,62,181,.04); }
   &.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-    font-weight: $font-weight-semibold;
-    background: rgba(37,99,235,.04);
+    color: var(--primary-color); border-bottom-color: var(--primary-color);
+    font-weight: $font-weight-semibold; background: rgba(26,62,181,.04);
     mat-icon { color: var(--primary-color); }
   }
-
-  @include mobile {
-    padding: $spacing-md $spacing-lg;
-    font-size: $font-size-xs;
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-  }
 }
 
-.bilan-tab-pane { flex: 1; }
+.bilan-tab-pane { animation: tabIn .2s ease; }
+@keyframes tabIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-.bilan-pane {
-  padding: $spacing-2xl;
-  animation: fadeIn .2s ease forwards;
-  @include mobile { padding: $spacing-lg $spacing-md; }
-}
+.bilan-pane { padding: $spacing-md; @include desktop { padding: $spacing-xl; } }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-// ── Tab Caisses ───────────────────────────────────────────────
+// ── Caisses tab ────────────────────────────────────────────────
 .caisses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: $spacing-xl;
-
-  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  display: grid; grid-template-columns: 1fr; gap: $spacing-sm;
+  @media (min-width: 500px) { grid-template-columns: 1fr 1fr; }
+  @include desktop { grid-template-columns: repeat(3, 1fr); gap: $spacing-lg; }
 }
 
 .caisse-card {
-  @include card-base;
-  overflow: hidden;
-  border-top: 3px solid var(--caisse-color, var(--primary-color));
-}
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl; overflow: hidden;
+  border-top: 3px solid var(--cc, var(--primary-color));
 
-.caisse-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-lg $spacing-xl;
-  background: var(--background-secondary);
-  border-bottom: 1px solid var(--border-color);
+  .cc-head {
+    display: flex; align-items: center; gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--border-color);
 
-  .caisse-icon {
-    width: 40px; height: 40px;
-    border-radius: $border-radius-lg;
-    @include flex-center;
-    mat-icon { font-size: 22px; width: 22px; height: 22px; color: white; }
-  }
-
-  .caisse-info {
-    h4 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; }
-    .caisse-type { font-size: $font-size-xs; color: var(--text-tertiary); }
-  }
-}
-
-.caisse-body { padding: $spacing-lg $spacing-xl; }
-
-.caisse-solde {
-  @include flex-between;
-  margin-bottom: $spacing-md;
-  .solde-label { font-size: $font-size-xs; color: var(--text-secondary); }
-  .solde-value { font-size: $font-size-xl; font-weight: $font-weight-bold; }
-}
-
-.caisse-progress {
-  margin-bottom: $spacing-md;
-  .progress-bar { height: 6px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden; margin-bottom: 4px;
-    .progress-fill { height: 100%; border-radius: $border-radius-full; transition: width $transition-base; }
-  }
-  .progress-label { font-size: $font-size-xs; color: var(--text-tertiary); }
-}
-
-.caisse-details {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-
-  .detail-row {
-    @include flex-between;
-    font-size: $font-size-sm;
-    .detail-label { color: var(--text-secondary); }
-    .detail-value { font-weight: $font-weight-semibold;
-      &.entree { color: $success-color; }
-      &.sortie { color: $error-color; }
+    .cc-ico {
+      width: 32px; height: 32px; border-radius: $border-radius-md;
+      @include flex-center; flex-shrink: 0;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; color: white; }
     }
+
+    h4 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-primary); }
+    .cc-type { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; }
+  }
+
+  .cc-body { padding: $spacing-sm $spacing-md; }
+
+  .cc-solde {
+    display: block; font-size: $font-size-lg; font-weight: $font-weight-bold;
+    color: var(--text-primary); margin-bottom: $spacing-sm;
   }
 }
 
-// ── Tab Contributions / Dépenses ──────────────────────────────
-.contributions-list, .depenses-list { display: flex; flex-direction: column; gap: $spacing-lg; }
+.cc-bar-wrap {
+  display: flex; align-items: center; gap: $spacing-sm; margin-bottom: $spacing-sm;
+  .cc-bar-track { flex: 1; height: 5px; background: var(--background-tertiary);
+    border-radius: $border-radius-full; overflow: hidden;
+    .cc-bar-fill { height: 100%; border-radius: $border-radius-full; transition: width .4s; } }
+  .cc-pct { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+}
 
-.contribution-card, .depense-card {
-  @include card-base;
-  padding: $spacing-xl;
-
-  h4 { margin: 0 0 $spacing-sm; font-size: $font-size-md; font-weight: $font-weight-semibold; }
-
-  .contrib-count, .depense-count { font-size: $font-size-xs; color: var(--text-tertiary); }
-
-  .contrib-amounts, .depense-amounts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
-
-    .amount-item {
-      .amount-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
-      .amount-value { font-size: $font-size-lg; font-weight: $font-weight-bold; }
-
-      &.attendu .amount-value { color: var(--primary-color); }
-      &.recu    .amount-value { color: $success-color; }
-      &.budget  .amount-value { color: var(--text-secondary); }
-      &.depense .amount-value { color: $error-color; }
-    }
-  }
-
-  .progress-header { @include flex-between; margin-bottom: $spacing-xs;
-    .progress-value {
-      font-weight: $font-weight-bold; font-size: $font-size-sm;
-      &.success { color: $success-color; }
-      &.warning { color: $warning-color; }
-      &.danger  { color: $error-color; }
-    }
-  }
-
-  .progress-bar { height: 8px; background: var(--background-tertiary); border-radius: $border-radius-full; overflow: hidden;
-    .progress-fill {
-      height: 100%; border-radius: $border-radius-full; transition: width $transition-base;
-      &.success { background: $success-color; }
-      &.warning { background: $warning-color; }
-      &.danger  { background: $error-color; }
-    }
+.cc-flows {
+  display: flex; gap: $spacing-sm; flex-wrap: wrap;
+  .flow { display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: $font-weight-medium;
+    mat-icon { font-size: 13px; width: 13px; height: 13px; }
+    &.in  { color: $success-color; }
+    &.out { color: $error-color; }
   }
 }
 
-// ── Tab Impayés ───────────────────────────────────────────────
+.cc-reporte { font-size: 11px; color: var(--text-tertiary); margin-top: $spacing-xs; }
+
+// ── Detail list (contributions + dépenses) ────────────────────
+.detail-list { display: flex; flex-direction: column; gap: $spacing-sm; &.mt { margin-top: $spacing-md; } }
+
+.detail-item {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-lg; padding: $spacing-md;
+
+  .di-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: $spacing-sm;
+    h4 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-primary); flex: 1; min-width: 0; @include text-truncate; }
+    .di-amount { font-size: $font-size-sm; font-weight: $font-weight-bold; white-space: nowrap; margin-left: $spacing-sm;
+      &.in  { color: $success-color; }
+      &.out { color: $error-color; } }
+  }
+
+  .di-bar-wrap { display: flex; align-items: center; gap: $spacing-sm;
+    .di-bar-track { flex: 1; height: 5px; background: var(--background-tertiary);
+      border-radius: $border-radius-full; overflow: hidden;
+      .di-bar-fill { height: 100%; border-radius: $border-radius-full; transition: width .4s;
+        &.in  { background: $success-color; }
+        &.out { background: $error-color; } } }
+    .di-pct { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; } }
+}
+
+// ── Impayés ────────────────────────────────────────────────────
 .impayes-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-xl;
-
-  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-sm; margin-bottom: $spacing-md;
+  @include desktop { grid-template-columns: 1fr 1fr; gap: $spacing-lg; }
 }
 
-.impaye-card {
-  @include card-base;
-  padding: $spacing-xl;
-  display: flex;
-  align-items: center;
-  gap: $spacing-lg;
-
-  mat-icon { font-size: 28px; width: 28px; height: 28px; flex-shrink: 0; }
-
-  &.total   mat-icon { color: $error-color; }
-  &.membres mat-icon { color: var(--primary-color); }
-
-  .impaye-content {
-    .impaye-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
-    .impaye-value { font-size: $font-size-xl; font-weight: $font-weight-bold; }
-  }
+.is-card {
+  display: flex; align-items: center; gap: $spacing-md;
+  padding: $spacing-md; border-radius: $border-radius-lg;
+  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.15);
+  mat-icon { color: $error-color; font-size: 24px; flex-shrink: 0; }
+  .is-lbl { display: block; font-size: 11px; color: var(--text-tertiary); }
+  .is-val { display: block; font-size: $font-size-lg; font-weight: $font-weight-bold; color: $error-color; }
 }
 
-.impayes-detail h4 { margin: 0 0 $spacing-md; font-size: $font-size-md; font-weight: $font-weight-semibold; }
-
-.detail-list { display: flex; flex-direction: column; gap: $spacing-sm; }
-.detail-item { @include flex-between; padding: $spacing-sm $spacing-md; background: var(--background-secondary); border-radius: $border-radius-md;
-  .detail-type    { font-size: $font-size-sm; color: var(--text-secondary); }
-  .detail-montant { font-weight: $font-weight-bold; color: $error-color; }
-}
-
-// ── Tab Stats ─────────────────────────────────────────────────
+// ── Stats ──────────────────────────────────────────────────────
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: $spacing-lg;
-
-  @include mobile { grid-template-columns: 1fr 1fr; gap: $spacing-md; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-sm;
+  @include desktop { grid-template-columns: repeat(3, 1fr); gap: $spacing-lg; }
 }
 
 .stat-card {
-  @include card-base;
-  padding: $spacing-xl;
-  display: flex;
-  align-items: center;
-  gap: $spacing-lg;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: $spacing-lg;
+  background: var(--background-primary); border: 1px solid var(--border-color);
+  border-radius: $border-radius-xl;
 
-  .stat-icon {
-    width: 44px; height: 44px;
-    border-radius: $border-radius-lg;
-    @include flex-center;
-    flex-shrink: 0;
-    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+  mat-icon { font-size: 28px; width: 28px; height: 28px; opacity: .6; margin-bottom: $spacing-sm; }
+  .st-val  { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
+  .st-lbl  { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
 
-    &.membres      { background: linear-gradient(135deg, var(--primary-dark), var(--primary-color)); }
-    &.contributions{ background: linear-gradient(135deg, #0f6e56, #10b981); }
-    &.moyenne-entree { background: linear-gradient(135deg, #0f6e56, #10b981); }
-    &.sorties      { background: linear-gradient(135deg, #991b1b, #ef4444); }
-    &.moyenne-sortie { background: linear-gradient(135deg, #991b1b, #ef4444); }
-  }
-
-  .stat-content {
-    .stat-label { display: block; font-size: $font-size-xs; color: var(--text-secondary); margin-bottom: 3px; }
-    .stat-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: var(--text-primary); }
-  }
+  &.membres      mat-icon { color: #1A3EB5; }
+  &.contributions mat-icon { color: $success-color; }
+  &.moy-in       mat-icon { color: $success-color; }
+  &.sorties      mat-icon { color: $error-color; }
+  &.moy-out      mat-icon { color: $error-color; }
 }
 
-// ── Vide ──────────────────────────────────────────────────────
+// ── Empty tab ──────────────────────────────────────────────────
 .empty-tab {
-  @include empty-state;
-  padding: $spacing-3xl $spacing-2xl;
-
-  mat-icon { font-size: 48px; width: 48px; height: 48px; opacity: .4; }
-  p { margin: 0; }
-
-  &.success mat-icon { color: $success-color; opacity: .7; }
+  display: flex; flex-direction: column; align-items: center;
+  gap: $spacing-md; padding: $spacing-3xl; text-align: center;
+  color: var(--text-tertiary);
+  mat-icon { font-size: 48px !important; width: 48px !important; height: 48px !important; opacity: .25; }
+  p { margin: 0; font-size: $font-size-sm; }
+  &.success mat-icon { color: $success-color; opacity: .6; }
 }
 
-.empty-state { @include empty-state; padding: $spacing-4xl;
-  .empty-icon { font-size: 64px; width: 64px; height: 64px; opacity: .3; }
-  .empty-title, .empty-text { margin: 0; }
-  .empty-actions { margin-top: $spacing-lg; }
-}
+// ══════════════════════════════════════════════════════════════
+// IMPRESSION PDF — @media print
+// ══════════════════════════════════════════════════════════════
 
-.exercice-option { display: flex; align-items: center; gap: $spacing-sm; justify-content: space-between; width: 100%; }
-.exercice-badge { font-size: 10px; padding: 1px 7px; border-radius: $border-radius-full; font-weight: $font-weight-semibold;
-  &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
-  &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
+@media print {
+  // Masquer navigation, tabs, actions
+  .bh-actions, .bilan-tabs-bar { display: none !important; }
+
+  // Afficher tous les panes en une page
+  .bilan-tab-pane { height: auto !important; overflow: visible !important; }
+  .bilan-pane     { display: block !important; page-break-inside: avoid; }
+
+  // Forcer couleurs de fond (chrome)
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .kpi-row    { break-inside: avoid; }
+  .mid-row    { break-inside: avoid; }
+  .caisse-card { break-inside: avoid; }
+
+  .bilan-container { padding: 0; }
+  .bilan-content   { padding: 16px; gap: 16px; }
 }

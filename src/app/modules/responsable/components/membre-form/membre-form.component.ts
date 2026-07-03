@@ -18,7 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { switchMap, forkJoin, map, lastValueFrom, finalize, Observable, of } from 'rxjs';
+import { switchMap, forkJoin, map, lastValueFrom, finalize, Observable, of, takeUntil, Subject } from 'rxjs';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GeneralService } from '../../../../core/services/general.service';
@@ -39,6 +39,7 @@ import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterModule } from '@angular/router';
 import { Exercice, FinancesService } from '../../../../core/services/finances.service';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 
 @Component({
   selector: 'app-membre-form',
@@ -168,7 +169,8 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   // Map pour gérer les erreurs d'images
   private brokenImages = new Set<number>();
   groupeId!: number | null;
-
+ private destroy$ = new Subject<void>()
+ 
   constructor(
     private adminService: MembreService,
     private equipeService: GeneralService,
@@ -180,14 +182,25 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     private authService: AuthService,
     private translate: TranslateService,
     private cdr: ChangeDetectorRef,
-    private financesService: FinancesService
+    private financesService: FinancesService,
+    private groupeContext : GroupeContextService,
   ) {}
 
-  ngOnInit(): void {
-    this.groupeId = this.authService.getGroupe();
-    this.loadData();
-    this.loadRoles();
-  }
+ // APRÈS :
+ngOnInit(): void {
+  this.groupeId = this.authService.getGroupe();
+  this.loadData();
+  this.loadRoles();
+ 
+  // S'abonner au changement de groupe — recharger quand l'utilisateur switche
+  this.groupeContext.groupeChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((newGroupeId) => {
+      this.groupeId = newGroupeId;   // ← mettre à jour groupeId
+      this.loadData();               // ← recharger avec le bon groupe
+      this.loadRoles();
+    });
+}
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
@@ -302,23 +315,23 @@ compareUsers(u1: any, u2: any): boolean {
 
   // ===== CHARGEMENT DES DONNÉES =====
 
-  async loadRoles(): Promise<void> {
-    const groupeId = this.authService.getCurrentGroupeId();
-    if (groupeId === null) {
-      console.warn('Aucun groupe actif défini.');
-      this.roles = [];
-      return;
-    }
-
-    try {
-      const roles = await lastValueFrom(this.roleCustomService.getRolesByGroupe());
-      this.roles = roles?.filter(r => r.actif) || [];
-      this.initializeRoleCustomFromRoleCO();
-    } catch (err) {
-      console.error('Erreur chargement rôles:', err);
-      this.roles = [];
-    }
+ async loadRoles(): Promise<void> {
+  const groupeId = this.authService.getGroupe();  // ← getGroupe() existe
+  if (groupeId === null) {
+    console.warn('Aucun groupe actif défini.');
+    this.roles = [];
+    return;
   }
+  try {
+    const roles = await lastValueFrom(this.roleCustomService.getRolesByGroupe());
+    this.roles = roles?.filter((r: any) => r.actif) || [];
+    this.initializeRoleCustomFromRoleCO();
+  } catch (err) {
+    console.error('Erreur chargement rôles:', err);
+    this.roles = [];
+  }
+}
+ 
 
   initializeRoleCustomFromRoleCO(): void {
     const roleCOMapping: { [key: string]: string } = {
@@ -616,12 +629,20 @@ hasSanctionsEnabled(): boolean {
     this.toggleCreateRow();
   }
 
-  resetNewMembre(): void {
-    this.newMembre = this.getEmptyMembre();
-    if (this.groupe) {
-      this.newMembre.groupe = this.groupe;
-    }
+resetNewMembre(): void {
+  this.newMembre = this.getEmptyMembre();
+  if (this.groupe) {
+    this.newMembre.groupe = this.groupe;
   }
+  // Vérification supplémentaire : s'assurer que le groupe correspond au groupe actif
+  const groupeIdActif = this.authService.getGroupe();
+  if (groupeIdActif && this.newMembre.groupe?.id !== groupeIdActif) {
+    // Le groupe chargé ne correspond pas au groupe actif — forcer le bon
+    console.warn('[MembreForm] Groupe du formulaire corrigé vers le groupe actif');
+    this.newMembre.groupe = { id: groupeIdActif } as any;
+  }
+}
+ 
 
   toggleUserCreation(): void {
     if (this.createUserForMembre) {

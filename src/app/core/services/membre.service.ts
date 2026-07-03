@@ -137,7 +137,6 @@ export class MembreService {
       equipe: membre.equipe?.id || null,
       id:id,
       // groupe: membre.groupe.id,
-      user: membre.user?.id || null,
       active: true,
       sexe:membre.sexe,
 
@@ -145,7 +144,6 @@ export class MembreService {
 
 
     };
-    console.log(payload)
     return this.http.put<Membre>(`${this.apiUrl}/${id}`, payload);
   }
 

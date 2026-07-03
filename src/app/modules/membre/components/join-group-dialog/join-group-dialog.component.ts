@@ -12,20 +12,16 @@ import { InvitationService } from '../../../../core/services/invitation.service'
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Router } from '@angular/router';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+
 
 @Component({
   selector: 'app-join-group-dialog',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
+    CommonModule, FormsModule, MatDialogModule,
+    MatButtonModule, MatFormFieldModule, MatInputModule,
+    MatIconModule, MatProgressSpinnerModule, MatSnackBarModule,
     TranslateModule
   ],
   templateUrl: './join-group-dialog.component.html',
@@ -33,30 +29,34 @@ import { Router } from '@angular/router';
 })
 export class JoinGroupDialogComponent {
 
-  code                    = '';
-  message                 = '';
-  isLoading               = false;
-  currentStep: 1 | 2      = 1;
+  code                   = '';
+  message                = '';
+  isLoading              = false;
+  currentStep: 1 | 2 | 3 = 1;   // FIX : étape 3 = succès
 
   // Groupe trouvé
-  groupeFoundNom          = '';
-  groupeFoundAbreviation  = '';
-  groupeFoundVille        = '';
+  groupeFoundNom         = '';
+  groupeFoundAbreviation = '';
+  groupeFoundVille       = '';
+  groupeFoundDiscipline  = '';
+  groupeFoundNbMembres   = 0;
 
-  // Message d'erreur inline (étape 1)
-  codeError               = '';
+  // FIX : stocker le groupeId pour le switch après succès
+  groupeFoundId: number | null = null;
 
+  codeError = '';
   userId: number | null = null;
 
   constructor(
     private dialogRef:         MatDialogRef<JoinGroupDialogComponent>,
     private invitationService: InvitationService,
     private authService:       AuthService,
+    private groupeContext:     GroupeContextService,
     private snackBar:          MatSnackBar,
-    private router: Router,
+    private router:            Router,
   ) {}
 
-  // ── Étape 1 : vérifier le code ─────────────────────────────
+  // ── Étape 1 : vérifier le code ───────────────────────────────
   verifierCode(): void {
     if (!this.code.trim()) return;
 
@@ -67,9 +67,6 @@ export class JoinGroupDialogComponent {
       next: (invitation) => {
         this.isLoading = false;
 
-        // Le backend retourne 200 même pour les codes invalides.
-        // Jackson sérialise isValide() → "valide" en JSON (retire le préfixe is)
-        // On vérifie les deux noms possibles selon la config Jackson du backend.
         const isValid = (invitation as any).valide ?? invitation.isValide;
         if (!isValid) {
           this.codeError = invitation.messageErreur
@@ -78,16 +75,17 @@ export class JoinGroupDialogComponent {
           return;
         }
 
-        // Code valide → remplir les infos et passer à l'étape 2
+        // Code valide → remplir les infos
         this.groupeFoundNom         = invitation.groupeNom         || '';
         this.groupeFoundAbreviation = invitation.groupeDescription || '';
         this.groupeFoundVille       = invitation.groupeVille       || '';
+        this.groupeFoundDiscipline  = invitation.groupeDiscipline  || '';
+        this.groupeFoundNbMembres   = invitation.nombreMembres     || 0;
         this.codeError              = '';
         this.currentStep            = 2;
       },
       error: (err) => {
         this.isLoading = false;
-        // Erreur HTTP réelle (réseau, 5xx, etc.)
         this.codeError = err.error?.message
           || err.error?.messageErreur
           || 'Code invalide ou expiré. Vérifiez et réessayez.';
@@ -95,13 +93,7 @@ export class JoinGroupDialogComponent {
     });
   }
 
-  // 3. Ajouter la méthode goToExplorer()
-goToExplorer(): void {
-  this.dialogRef.close();           // fermer le dialog d'abord
-  this.router.navigate(['/explorer']);
-}
-
-  // ── Étape 2 : envoyer la demande ───────────────────────────
+  // ── Étape 2 : envoyer la demande ─────────────────────────────
   envoyerDemande(): void {
     this.isLoading = true;
     this.userId = this.authService.getUserId();
@@ -114,24 +106,65 @@ goToExplorer(): void {
     };
 
     this.invitationService.rejoindreGroupeConnecte(payload).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.snackBar.open(
-          `Demande envoyée avec succès au groupe ${this.groupeFoundNom}`,
-          'OK',
-          { duration: 5000 }
-        );
-        this.dialogRef.close(true);
+      next: (res: any) => {
+        this.isLoading   = false;
+        this.currentStep = 3;  // FIX : passer à l'étape succès dans le dialog
       },
       error: (err) => {
         this.isLoading = false;
-        const errorMsg = err.error?.message || "Erreur lors de l'envoi de la demande";
-        this.snackBar.open(errorMsg, 'Fermer', { duration: 5000 });
+        const msg = err.error?.message || "Erreur lors de l'envoi de la demande";
+
+        // FIX : si déjà membre → proposer de switcher directement
+        if (err.status === 409 || msg.toLowerCase().includes('déjà membre')) {
+          this.snackBar.open(
+            `Vous êtes déjà membre de "${this.groupeFoundNom}"`,
+            'Aller sur ce groupe',
+            { duration: 6000 }
+          ).onAction().subscribe(() => {
+            // Tenter de switcher vers ce groupe si on a l'ID
+            if (this.groupeFoundId) {
+              this.authService.switchGroupe(this.groupeFoundId).subscribe(() => {
+                this.groupeContext.notifyGroupeChanged(this.groupeFoundId!);
+                this.dialogRef.close(true);
+              });
+            } else {
+              this.dialogRef.close(false);
+              this.router.navigate(['/mes-demandes']);
+            }
+          });
+        } else {
+          this.snackBar.open(msg, 'Fermer', { duration: 5000 });
+        }
       }
     });
   }
 
+  // ── Actions nav ───────────────────────────────────────────────
+  goToMesDemandes(): void {
+    this.dialogRef.close(true);
+    this.router.navigate(['/mes-demandes']);
+  }
+
+  goToExplorer(): void {
+    this.dialogRef.close(false);
+    this.router.navigate(['/explorer2']);
+  }
+
+  retourEtape1(): void {
+    this.currentStep = 1;
+    this.code        = '';
+    this.codeError   = '';
+  }
+
   onCancel(): void {
     this.dialogRef.close(false);
+  }
+
+  getDisciplineIcon(discipline?: string): string {
+    const map: Record<string, string> = {
+      'FOOTBALL':   'sports_soccer',
+      'BASKETBALL': 'sports_basketball',
+    };
+    return discipline ? (map[discipline] ?? 'sports') : 'sports';
   }
 }

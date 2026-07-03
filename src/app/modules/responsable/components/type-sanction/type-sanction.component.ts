@@ -22,8 +22,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { TranslateModule } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { TypeSanction } from '../../../../core/models/sanction.model';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 
 // Icônes disponibles
 const ICONS_DISPONIBLES = [
@@ -107,6 +108,9 @@ export class TypeSanctionComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
+  private destroy$       = new Subject<void>();
+private allTypeSanctions: TypeSanction[] = []; // source complète
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -114,11 +118,21 @@ export class TypeSanctionComponent implements OnInit {
     private sanctionService: SanctionService,
     private financesService: FinancesService,
     private authService: AuthService,
+    private groupeContext: GroupeContextService
   ) {}
 
   ngOnInit(): void {
-    this.loadData();
-  }
+  this.loadData();
+ 
+  this.groupeContext.groupeChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.loadData());
+}
+ 
+ngOnDestroy(): void {
+  this.destroy$.next();
+  this.destroy$.complete();
+}
 
   getEmptyTypeSanction(): TypeSanction {
     return {
@@ -140,46 +154,52 @@ export class TypeSanctionComponent implements OnInit {
 
 
 
-  loadData(): void {
-    this.isLoading = true;
-    const groupeId = this.authService.getGroupe();
-
-    forkJoin({
-      typeSanctions: this.sanctionService.getTypeSanctions(),
-      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : [],
-    }).subscribe({
+ loadData(): void {
+  this.isLoading = true;
+  const groupeId = this.authService.getGroupe();
+ 
+  forkJoin({
+    typeSanctions: this.sanctionService.getTypeSanctions(),
+    caisses: groupeId
+      ? this.financesService.getCaissesByGroupe(groupeId)
+      : this.financesService.getCaissesByGroupe(0) // fallback
+  }).pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: ({ typeSanctions, caisses }) => {
-        this.dataSource.data = typeSanctions;
+        this.allTypeSanctions  = typeSanctions;  // ← source complète
+        this.dataSource.data   = typeSanctions;  // ← affiché
         this.dataSource.paginator = this.paginator;
-        this.dataSource.sort = this.sort;
+        this.dataSource.sort      = this.sort;
         this.editingRows = new Array(typeSanctions.length).fill(false);
-        this.caisses = caisses;
-        this.isLoading = false;
+        this.caisses     = caisses;
+        this.isLoading   = false;
         this.errorMessage = null;
       },
       error: (err) => {
         this.errorMessage = 'Erreur lors du chargement : ' + err.message;
         this.isLoading = false;
-        console.error(err);
-      },
+      }
     });
-  }
+}
 
-  applyFilters(): void {
-    let filtered = [...this.dataSource.data];
-    if (this.searchTerm.trim()) {
-      const search = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.nom.toLowerCase().includes(search) ||
-          t.description?.toLowerCase().includes(search) ||
-          t.materiel?.toLowerCase().includes(search),
-      );
-    }
-    if (this.filterActif === 'actif')   filtered = filtered.filter((t) => t.actif);
-    if (this.filterActif === 'inactif') filtered = filtered.filter((t) => !t.actif);
-    this.dataSource.data = filtered;
+ applyFilters(): void {
+  // Toujours filtrer depuis la source complète
+  let filtered = [...this.allTypeSanctions];
+ 
+  if (this.searchTerm.trim()) {
+    const search = this.searchTerm.toLowerCase();
+    filtered = filtered.filter(t =>
+      t.nom.toLowerCase().includes(search) ||
+      t.description?.toLowerCase().includes(search) ||
+      t.materiel?.toLowerCase().includes(search)
+    );
   }
+ 
+  if (this.filterActif === 'actif')   filtered = filtered.filter(t =>  t.actif);
+  if (this.filterActif === 'inactif') filtered = filtered.filter(t => !t.actif);
+ 
+  this.dataSource.data = filtered;
+}
 
   filterByDate(date: Date | null): void {
     this.dateFilter = date;

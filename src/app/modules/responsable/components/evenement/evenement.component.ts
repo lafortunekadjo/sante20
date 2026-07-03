@@ -26,6 +26,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject, takeUntil } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 
 @Component({
   selector: 'app-evenement',
@@ -62,17 +65,20 @@ export class EvenementComponent implements OnInit, AfterViewInit {
   showCreateRow: boolean = false;
     editingRows: boolean[] = [];
   editingEvenementId: number | null = null;
+  editEvenement: any = {};
+  private destroy$ = new Subject<void>();
+// editingRows: boolean[] = [];
 
-  editEvenement: Evenement={
-    id: 0,
-    idGroupe: 0,
-    nomEvenement: '',
-    description: '',
-    typeEvenement: '',
-    dateCreation: new Date(),
-    estContributionOuverte: false,
-    dateEvenement: new Date(),
-  }
+  // editEvenement: Evenement={
+  //   id: 0,
+  //   idGroupe: 0,
+  //   nomEvenement: '',
+  //   description: '',
+  //   typeEvenement: '',
+  //   dateCreation: new Date(),
+  //   estContributionOuverte: false,
+  //   dateEvenement: new Date(),
+  // }
 
 
   newEvenement: Evenement = {
@@ -96,12 +102,44 @@ export class EvenementComponent implements OnInit, AfterViewInit {
     private router: Router,
     private dialog: MatDialog,
      private snackBar: MatSnackBar,
+     private authService: AuthService,
+    private groupeContext: GroupeContextService
   ) {}
 
-  ngOnInit() {
-    this.loadEvenements();
-    this.loadMembres();
-  }
+ngOnInit(): void {
+  const groupeId = this.authService.getGroupe() ?? 0;
+ 
+  // Initialiser newEvenement avec le bon groupeId
+  this.newEvenement = {
+    idGroupe: groupeId,          // ← plus de hardcode à 1
+    nomEvenement: '',
+    description: '',
+    typeEvenement: 'Autre',
+    dateCreation: new Date(),
+    estContributionOuverte: false,
+    idMembreLie: null,
+    dateEvenement: new Date(),
+    id: 0
+  };
+ 
+  this.loadEvenements();
+  this.loadMembres();
+ 
+  // FIX 2 — recharger au switch de groupe
+  this.groupeContext.groupeChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((newGroupeId) => {
+      this.newEvenement.idGroupe = newGroupeId;
+      this.loadEvenements();
+      this.loadMembres();
+    });
+}
+
+ngOnDestroy(): void {
+  this.destroy$.next();
+  this.destroy$.complete();
+}
+ 
 
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
@@ -152,20 +190,20 @@ export class EvenementComponent implements OnInit, AfterViewInit {
       this.resetNewEvenement();
     }
   }
-
-  resetNewEvenement() {
-    this.newEvenement = {
-      idGroupe: 1,
-      nomEvenement: '',
-      description: '',
-      typeEvenement: 'Autre',
-      dateCreation: new Date(),
-      estContributionOuverte: false,
-      idMembreLie: null,
-      dateEvenement: new Date(),
-      id:0
-    };
-  }
+resetNewEvenement(): void {
+  const groupeId = this.authService.getGroupe() ?? 0;
+  this.newEvenement = {
+    idGroupe: groupeId,         // ← dynamique
+    nomEvenement: '',
+    description: '',
+    typeEvenement: 'Autre',
+    dateCreation: new Date(),
+    estContributionOuverte: false,
+    idMembreLie: null,
+    dateEvenement: new Date(),
+    id: 0
+  };
+}
 
   isCreateFormValid(): boolean {
     return !!this.newEvenement.nomEvenement && !!this.newEvenement.description;
@@ -300,6 +338,34 @@ editRow(localIndex: number, membre: Evenement) {
 //   });
 // }
 
+// Déclencher le mode édition d'une ligne/carte
+startEdit(index: number, evenement: any) {
+  this.editingRows[index] = true;
+  // On fait une copie profonde pour ne pas altérer directement le tableau d'origine avant sauvegarde
+  this.editEvenement = { ...evenement }; 
+}
+
+// Annuler la modification
+cancelEdit(index: number) {
+  this.editingRows[index] = false;
+  this.editEvenement = {};
+}
+
+// Sauvegarder les modifications (Appel API)
+saveEdit(index: number): void {
+  this.isLoading = true;
+  const evenementId = this.editEvenement.id ?? this.editEvenement.idEvenement;
+  this.evenementService.updateEvenement(evenementId, this.editEvenement).subscribe({
+    next: () => {
+      this.editingRows[index] = false;
+      this.loadEvenements();
+      this.snackBar.open('Événement modifié avec succès', 'Fermer', { duration: 3000 });
+      this.isLoading = false;
+    },
+    error: () => { this.isLoading = false; }
+  });
+}
+ 
   // Méthodes pour afficher les messages
 showSuccessMessage(message: string) {
   this.snackBar.open(message, 'Fermer', {

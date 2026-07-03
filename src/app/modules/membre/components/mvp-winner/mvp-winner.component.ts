@@ -152,9 +152,8 @@ export class MvpWinnerComponent implements OnInit {
 
     if (Capacitor.isNativePlatform()) {
       // ─── Android / iOS (APK) ──────────────────────────────
-      // createObjectURL ne fonctionne pas dans WebView Android
-      // → convertir en base64, écrire dans le cache, puis partager
 
+      // 1. Convertir blob → base64 pur (sans préfixe data:...)
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload  = () => resolve((reader.result as string).split(',')[1]);
@@ -162,19 +161,27 @@ export class MvpWinnerComponent implements OnInit {
         reader.readAsDataURL(blob);
       });
 
+      // 2. Écrire dans External (Documents publics) — accessible par Share
+      //    Directory.Cache est privé à l'app sur Android → "impossible de charger le media"
       const saved = await Filesystem.writeFile({
-        path: filename,
-        data: base64,
-        directory: Directory.Cache,   // pas besoin de permission READ/WRITE_EXTERNAL
+        path:      filename,
+        data:      base64,
+        directory: Directory.Documents,
         recursive: true
       });
 
-      // Ouvre la feuille de partage native Android/iOS
-      // L'utilisateur peut choisir "Enregistrer dans Photos", "Télécharger", WhatsApp, etc.
+      // 3. Obtenir l'URI public lisible par le système Android
+      //    getUri() retourne un chemin content:// ou file:// selon l'OS
+      const { uri } = await Filesystem.getUri({
+        path:      filename,
+        directory: Directory.Documents
+      });
+
+      // 4. Partager via Share (déclenche la feuille de partage Android/iOS)
       await Share.share({
         title:       'Badge MVP My2-0',
         text:        '🏆 Badge MVP du mois — My2-0',
-        url:          saved.uri,
+        files:       [uri],
         dialogTitle: 'Enregistrer ou partager le badge'
       });
 
@@ -202,6 +209,18 @@ export class MvpWinnerComponent implements OnInit {
       }
     }
   }
+
+  private blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]); // enlève le préfixe data:...;base64,
+    };
+    reader.readAsDataURL(blob);
+  });
+}
 
   // ── Helpers ───────────────────────────────────────────────
   toApiFormat(d: Date): string {

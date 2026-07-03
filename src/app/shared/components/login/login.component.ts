@@ -92,56 +92,72 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  private handleSuccessfulLogin(): void {
-    if (this.authService.isPasswordResetRequired()) {
-      this.dialog.open(PasswordResetDialogComponent, {
-        width: '500px',
-        disableClose: true,
-        autoFocus: true
-      });
-      this.isLoading = false;
-    } else {
-      this.redirectBasedOnRole();
-    }
-  }
-
-  private redirectBasedOnRole(): void {
-    // 1. Lire returnUrl depuis les queryParams de l'URL
-    let returnUrl = this.route.snapshot.queryParams['returnUrl'];
-
-    // 2. Fallback sessionStorage — mis par concours-public ou signup
-    //    quand le signup redirige vers /login sans passer le returnUrl
-    if (!returnUrl) {
-      returnUrl = sessionStorage.getItem('concours_returnUrl') ?? null;
-    }
-
+private handleSuccessfulLogin(): void {
+  if (this.authService.isPasswordResetRequired()) {
+    this.dialog.open(PasswordResetDialogComponent, {
+      width: '500px',
+      disableClose: true,
+      autoFocus: true
+    });
     this.isLoading = false;
-
-    // 3. Si returnUrl trouvé → y aller directement
-    if (returnUrl) {
-      sessionStorage.removeItem('concours_returnUrl'); // nettoyage
-      this.router.navigateByUrl(returnUrl);
-      return;
-    }
-
-    // 4. Sinon, redirection par rôle
-    const roles = this.authService.getRoles();
-
-    if (roles.includes('ADMIN')) {
-      this.router.navigate(['/admin']);
-    } else if (roles.includes('RESPONSABLE')) {
-      this.router.navigate(['/responsable']);
-    } else if (roles.includes('MEMBRE')) {
-      this.router.navigate(['/membre2']);
-    } else if (roles.includes('CANDIDAT')) {
-      this.router.navigate(['/explorer']);
-    } else if (roles.includes('PARTENAIRE')) {
-      this.router.navigate(['/partenaire/dashboard']);
-    } else {
-      this.authService.logout();
-      this.setErrorMessage('Compte non autorisé.');
-    }
+    return;
   }
+ 
+  // FIX : charger les groupes + l'accès réel AVANT de décider la redirection
+  this.authService.getMesGroupes().subscribe({
+    next: () => this.redirectBasedOnRole(),
+    error: () => this.redirectBasedOnRole() // fallback si erreur réseau
+  });
+}
+
+ private redirectBasedOnRole(): void {
+  let returnUrl = this.route.snapshot.queryParams['returnUrl'];
+ 
+  if (!returnUrl) {
+    returnUrl = sessionStorage.getItem('concours_returnUrl') ?? null;
+  }
+ 
+  this.isLoading = false;
+ 
+  if (returnUrl) {
+    sessionStorage.removeItem('concours_returnUrl');
+    this.router.navigateByUrl(returnUrl);
+    return;
+  }
+ 
+  const roles = this.authService.getRoles();
+ 
+  // ADMIN et PARTENAIRE/CANDIDAT restent des rôles GLOBAUX —
+  // inchangé, basé sur le JWT
+  if (roles.includes('ADMIN')) {
+    this.router.navigate(['/admin']);
+    return;
+  }
+  if (roles.includes('PARTENAIRE')) {
+    this.router.navigate(['/partenaire/dashboard']);
+    return;
+  }
+  if (roles.includes('CANDIDAT') && !roles.includes('MEMBRE')) {
+    this.router.navigate(['/explorer']);
+    return;
+  }
+ 
+  // FIX : RESPONSABLE est maintenant déterminé PAR GROUPE ACTIF,
+  // pas par le JWT global. isResponsable() lit groupeActifAccess
+  // (peuplé par getMesGroupes() appelé juste avant ce point).
+  if (this.authService.isResponsable()) {
+    this.router.navigate(['/responsable']);
+    return;
+  }
+ 
+  if (roles.includes('MEMBRE')) {
+    this.router.navigate(['/membre2']);
+    return;
+  }
+ 
+  this.authService.logout();
+  this.setErrorMessage('Compte non autorisé.');
+}
 
   private handleLoginError(err: any): void {
     console.log('Erreur de connexion:', JSON.stringify(err));

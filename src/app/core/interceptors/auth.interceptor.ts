@@ -1,18 +1,15 @@
-// auth.interceptor.ts - Version CORRIGÉE sans dépendance circulaire
-
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 
 /**
- * Intercepteur fonctionnel qui ajoute le token JWT aux requêtes.
- * 
- * ⚠️ IMPORTANT: On NE PEUT PAS injecter AuthService ici car cela crée une dépendance circulaire:
- * AuthService → HttpClient → AuthInterceptor → AuthService
- * 
- * Solution: Lire le token directement depuis localStorage
+ * Intercepteur fonctionnel — lit token ET groupeId depuis localStorage
+ * (pas d'injection AuthService → pas de dépendance circulaire)
  */
-export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
-  
-  // URLs qui ne nécessitent PAS de token (endpoints publics)
+export const authInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn
+) => {
+
+  // URLs publiques — pas de token nécessaire
   const publicUrls = [
     '/auth/login',
     '/auth/register',
@@ -21,26 +18,27 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
     '/public/'
   ];
 
-  // Vérifier si c'est une URL publique
-  const isPublicUrl = publicUrls.some(url => req.url.includes(url));
-  
-  if (isPublicUrl) {
+  if (publicUrls.some(url => req.url.includes(url))) {
     return next(req);
   }
 
-  // ✅ Récupérer le token DIRECTEMENT depuis localStorage (pas via AuthService)
-  const token = localStorage.getItem('token');
+  const token    = localStorage.getItem('token');
+  const groupeId = localStorage.getItem('currentGroupeId');
+
+  // Construire les headers à ajouter
+  const headersToAdd: Record<string, string> = {};
 
   if (token) {
-    // Cloner la requête et ajouter le header Authorization
-    const authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return next(authReq);
+    headersToAdd['Authorization'] = `Bearer ${token}`;
   }
 
-  // Pas de token, continuer sans modification
-  return next(req);
+  if (groupeId) {
+    headersToAdd['X-Groupe-Id'] = groupeId;
+  }
+
+  if (Object.keys(headersToAdd).length === 0) {
+    return next(req);
+  }
+
+  return next(req.clone({ setHeaders: headersToAdd }));
 };

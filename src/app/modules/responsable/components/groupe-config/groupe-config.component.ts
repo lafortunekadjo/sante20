@@ -23,9 +23,11 @@ import { Ville } from '../../../../core/models/ville';
 import { AuthService } from '../../../../core/services/auth.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { QuestionCandidatureService } from '../../../../core/services/question-candidature.service';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap, takeUntil } from 'rxjs/operators';
 import { environment } from '../../../../environment';
 import { TranslateModule } from '@ngx-translate/core';
+import { forkJoin, Subject } from 'rxjs';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 
 
 @Component({
@@ -78,6 +80,7 @@ export class GroupeConfigComponent implements OnInit {
   typesEquipe = ['Senior', 'Junior', 'Vétéran', 'Féminin', 'Masculin', 'Mixte'];
    isDialogOpen = signal(false);
    isUploadingPhoto = false;
+   private destroy$ = new Subject<void>();
 
   // ── Navigation tabs ──
   activeTab: 'info' | 'questions' | 'preview' = 'info';
@@ -102,7 +105,8 @@ export class GroupeConfigComponent implements OnInit {
     private groupeService: GroupeService,
     private questionService: QuestionCandidatureService,
     private authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private groupeContext: GroupeContextService
   ) {
     this.groupeForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(3)]],
@@ -147,8 +151,18 @@ export class GroupeConfigComponent implements OnInit {
   errorMessage = signal<string | null>(null); 
 
   ngOnInit(): void {
-    this.loadData();
-  }
+  this.loadData();
+ 
+  // FIX 3 : recharger au switch de groupe
+  this.groupeContext.groupeChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => this.loadData());
+}
+ 
+ngOnDestroy(): void {
+  this.destroy$.next();
+  this.destroy$.complete();
+}
 
   
 
@@ -412,40 +426,45 @@ export class GroupeConfigComponent implements OnInit {
 
 loadData(): void {
   this.isLoading = true;
-  
-  // 1. Charger les listes de Villes et Stades en premier
-  // Utilisez un forkJoin si possible, ou enchaînez les observables si nécessaire.
-  // Pour la simplicité, utilisons les callbacks (next) pour enchaîner l'ordre:
-
-  // ÉTAPE 1: Charger les villes et stades
-  this.loadVillesEtStades(() => {
-    // ÉTAPE 2: Charger les données du Groupe une fois que les listes de référence sont prêtes
-    this.groupeService.getGroupeConn().subscribe({
-      next: (groupe) => {
-        this.groupe = groupe;
-        if (groupe) {
-          // --- CORRECTION CLÉ ---
-          // Si l'objet 'groupe' contient l'entité 'ville' complète,
-          // vous devez extraire l'ID de la ville pour le formControl.
-          const villeId = typeof groupe.ville === 'object' && groupe.ville !== null ? groupe.ville.id : groupe.ville;
-          const stadeId = typeof groupe.stade === 'object' && groupe.stade !== null ? groupe.stade.id : groupe.stade;
-          
-          this.groupeForm.patchValue({
-            ...groupe, // Applique toutes les autres valeurs
-            ville: villeId, // Applique seulement l'ID de la ville au FormControl 'ville'
-            stade:stadeId
-          });
-          
-          this.loadQuestions(groupe.id);
-        }
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Erreur chargement groupe:', err);
-        this.snackBar.open('Erreur lors du chargement du groupe', 'Fermer', { duration: 3000 });
-        this.isLoading = false;
+ 
+  // AVANT : loadVillesEtStades(callback) avec callbacks imbriqués
+  // APRÈS : forkJoin pour paralléliser, puis switchMap pour le groupe
+ 
+  forkJoin({
+    villes: this.groupeService.getVilles(),
+    stades: this.groupeService.getStades()
+  }).pipe(
+    takeUntil(this.destroy$),
+    switchMap(({ villes, stades }) => {
+      this.villes = villes ?? [];
+      this.stades = stades ?? [];
+      // Charger le groupe après avoir les listes de référence
+      return this.groupeService.getGroupeConn();
+    })
+  ).subscribe({
+    next: (groupe) => {
+      this.groupe = groupe;
+      if (groupe) {
+        const villeId = typeof groupe.ville === 'object' && groupe.ville !== null
+          ? groupe.ville.id : groupe.ville;
+        const stadeId = typeof groupe.stade === 'object' && groupe.stade !== null
+          ? groupe.stade.id : groupe.stade;
+ 
+        this.groupeForm.patchValue({
+          ...groupe,
+          ville: villeId,
+          stade: stadeId
+        });
+ 
+        this.loadQuestions(groupe.id);
       }
-    });
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Erreur chargement:', err);
+      this.snackBar.open('Erreur lors du chargement du groupe', 'Fermer', { duration: 3000 });
+      this.isLoading = false;
+    }
   });
 }
 

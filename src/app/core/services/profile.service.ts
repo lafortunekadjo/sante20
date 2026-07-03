@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, EMPTY } from 'rxjs';
+import { expand, reduce } from 'rxjs/operators';
 import { environment } from '../../environment';
 
 
@@ -16,7 +17,7 @@ export interface ClubHistory {
 export interface PlayerProfile {
   id: number;
   username: string;
-  userId : number; 
+  userId: number;
   email: string;
   profilePhotoUrl: string | null;
   poste: string;
@@ -34,13 +35,12 @@ export interface PlayerProfile {
   historiqueSaisons: SaisonStats[];
   mediaUrls?: string[];
   isPublic?: boolean;
-
 }
 
 export interface SaisonStats {
   exerciceId: number;
   exerciceLibelle: string;
-  dateDebut: string;       // Reçu sous forme de chaîne ISO (AAAA-MM-JJ)
+  dateDebut: string;
   dateFin: string;
   clubNom: string | null;
   statut: string | null;
@@ -61,11 +61,8 @@ export interface MembreHistory {
   matchsJoues: number;
   buts: number;
   passes: number;
-  // Ajout facultatif si tu veux aussi stocker des médias agrégés par club, 
-  // ou si tu préfères qu'on liste tous les médias collectés sur ses fiches :
 }
 
-// À ajouter dans ton interface PlayerProfile si tu veux embarquer les vidéos directement
 export interface VideoHighlight {
   id: number;
   titre: string;
@@ -75,12 +72,22 @@ export interface VideoHighlight {
   createdDate?: string;
 }
 
+// ── Réponse paginée Spring Data ──────────────────────────────
+interface SpringPage<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  last: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ProfileService {
   private apiUrl = `${environment.apiUrl}/profiles`;
-    private apiUrl2 = `${environment.apiUrl}/videos`;
+  private apiUrl2 = `${environment.apiUrl}/videos`;
 
   constructor(private http: HttpClient) {}
 
@@ -89,30 +96,46 @@ export class ProfileService {
   }
 
   deleteVideo(videoId: number, username: string): Observable<any> {
-  return this.http.delete(`${this.apiUrl2}/${videoId}/${username}`);
-}
-  
+    return this.http.delete(`${this.apiUrl2}/${videoId}/${username}`);
+  }
+
+  uploadPlayerVideo(username: string, formData: FormData): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl2}/${username}/videos`, formData);
+  }
+
+  getVideosByUsername(username: string): Observable<VideoHighlight[]> {
+    return this.http.get<VideoHighlight[]>(`${environment.apiUrl}/videos/${username}/videos`);
+  }
+
+  uploadVideo(formData: FormData): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/videos/upload`, formData);
+  }
+
   /**
- * Envoie le FormData (Fichier vidéo binaire + métadonnées) à l'API Spring Boot
- */
-uploadPlayerVideo(username: string, formData: FormData): Observable<any> {
-  return this.http.post<any>(`${this.apiUrl2}/${username}/videos`, formData);
-}
-  // Dans ta classe ProfileService :
-getVideosByUsername(username: string): Observable<VideoHighlight[]> {
-  return this.http.get<VideoHighlight[]>(`${environment.apiUrl}/videos/${username}/videos`);
-}
+   * Récupère TOUS les joueurs publics en dépaginant automatiquement.
+   *
+   * Le backend pagine désormais /api/profiles/all (Page<ProfileStatsDTO>)
+   * pour des raisons de performance, mais PlayerListComponent attend
+   * toujours un tableau complet pour son filtrage/tri/comparaison
+   * côté client. Cette méthode agrège donc toutes les pages en interne
+   * — aucun changement requis côté composant.
+   */
+  getAllPlayers(): Observable<PlayerProfile[]> {
+    const pageSize = 100;
 
-// // Dans ton ProfileService :
-// getPlayerVideos(username: string): Observable<VideoHighlight[]> {
-//   return this.http.get<VideoHighlight[]>(`${this.apiUrl}/api/profile/${username}/videos`);
-// }
+    return this.fetchPage(0, pageSize).pipe(
+      expand((page: SpringPage<PlayerProfile>) =>
+        page.last ? EMPTY : this.fetchPage(page.number + 1, pageSize)
+      ),
+      reduce((acc: PlayerProfile[], page: SpringPage<PlayerProfile>) =>
+        [...acc, ...page.content], [] as PlayerProfile[]
+      )
+    );
+  }
 
-uploadVideo(formData: FormData): Observable<any> {
-  return this.http.post(`${environment.apiUrl}/videos/upload`, formData);
-}
-
-getAllPlayers(): Observable<PlayerProfile[]> {
-  return this.http.get<PlayerProfile[]>(`${environment.apiUrl}/profiles/all`);
-}
+  private fetchPage(page: number, size: number): Observable<SpringPage<PlayerProfile>> {
+    return this.http.get<SpringPage<PlayerProfile>>(
+      `${this.apiUrl}/all?page=${page}&size=${size}`
+    );
+  }
 }

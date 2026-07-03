@@ -1,31 +1,44 @@
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../environment';
-import { Objectif } from '../models/objectifs.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+
+import { environment } from '../../environment';
+import { CreateObjectifPersonnelDTO, CreateObjectifGroupeDTO, ObjectifDTO } from '../models/objectifs.model';
+
+@Injectable({ providedIn: 'root' })
 export class ObjectifsService {
 
+  private http = inject(HttpClient);
+  private base = `${environment.apiUrl}/objectifs`;
 
-
-  constructor(private http: HttpClient) { }
-
-  getObjectifsByMembre(membreId: number): Observable<Objectif[]> {
-    return this.http.get<Objectif[]>(`${environment.apiUrl}/objectifs/membre/${membreId}`);
+  // ── Membre : ses propres objectifs ────────────────────────
+  getMesObjectifs(): Observable<ObjectifDTO[]> {
+    return this.http.get<ObjectifDTO[]>(`${this.base}/mes-objectifs`);
   }
 
-  createObjectif(objectif: Objectif): Observable<Objectif> {
-    return this.http.post<Objectif>(`${environment.apiUrl}/objectifs`, objectif);
+  // ── Membre : créer objectif personnel ─────────────────────
+  creerObjectifPersonnel(dto: CreateObjectifPersonnelDTO): Observable<ObjectifDTO> {
+    return this.http.post<ObjectifDTO>(`${this.base}/personnel`, dto);
   }
 
-   updateObjectif(id: number, objectif: Objectif): Observable<Objectif> {
-    return this.http.post<Objectif>(`${environment.apiUrl}/objectifs`, objectif);
+  // ── Responsable : objectifs de son groupe ─────────────────
+  getObjectifsGroupe(groupeId: number): Observable<ObjectifDTO[]> {
+    return this.http.get<ObjectifDTO[]>(`${this.base}/groupe/${groupeId}`);
   }
 
-  deleteObjectif(objectifId: number): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/${objectifId}`);
+  // ── Responsable : créer objectif pour membres ─────────────
+  creerObjectifGroupe(dto: CreateObjectifGroupeDTO): Observable<any> {
+    return this.http.post(`${this.base}/groupe`, dto);
+  }
+
+  // ── Modifier ──────────────────────────────────────────────
+  updateObjectif(id: number, dto: Partial<CreateObjectifPersonnelDTO>): Observable<ObjectifDTO> {
+    return this.http.put<ObjectifDTO>(`${this.base}/${id}`, dto);
+  }
+
+  // ── Supprimer ─────────────────────────────────────────────
+  deleteObjectif(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
   }
 }

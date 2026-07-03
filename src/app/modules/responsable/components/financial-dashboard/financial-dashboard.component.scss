@@ -1,118 +1,125 @@
 @use '../../../../../variables' as *;
 
 // ================================================================
-// FINANCIAL DASHBOARD — Mobile-first
+// FINANCIAL DASHBOARD — Mobile-first fixes
 // ================================================================
 
-// Theming
 :host {
-  --primary-color:      #{$primary-blue};
-  --primary-dark:       #{$primary-blue-dark};
-  --accent-color:       #{$secondary-emerald};
-  --success-color:      #{$success-color};
-  --warning-color:      #{$warning-color};
-  --error-color:        #{$error-color};
-  --text-primary:       #{$light-text-primary};
-  --text-secondary:     #{$light-text-secondary};
-  --text-tertiary:      #{$light-text-tertiary};
-  --background-primary: #{$light-bg-primary};
+  --primary-color:       #{$primary-blue};
+  --primary-dark:        #{$primary-blue-dark};
+  --accent-color:        #{$secondary-emerald};
+  --success-color:       #{$success-color};
+  --warning-color:       #{$warning-color};
+  --error-color:         #{$error-color};
+  --text-primary:        #{$light-text-primary};
+  --text-secondary:      #{$light-text-secondary};
+  --text-tertiary:       #{$light-text-tertiary};
+  --background-primary:  #{$light-bg-primary};
   --background-secondary:#{$light-bg-secondary};
-  --background-tertiary:#{$light-bg-tertiary};
-  --border-color:       #{$light-border};
+  --background-tertiary: #{$light-bg-tertiary};
+  --border-color:        #{$light-border};
 }
 :host-context(.dark-theme),
 :host-context([data-theme="dark"]),
 :host-context(body.dark-theme),
 :host-context(.dark-mode) {
-  --text-primary:       #{$dark-text-primary};
-  --text-secondary:     #{$dark-text-secondary};
-  --text-tertiary:      #{$dark-text-tertiary};
-  --background-primary: #{$dark-bg-primary};
+  --text-primary:        #{$dark-text-primary};
+  --text-secondary:      #{$dark-text-secondary};
+  --text-tertiary:       #{$dark-text-tertiary};
+  --background-primary:  #{$dark-bg-primary};
   --background-secondary:#{$dark-bg-secondary};
-  --background-tertiary:#{$dark-bg-tertiary};
-  --border-color:       #{$dark-border};
+  --background-tertiary: #{$dark-bg-tertiary};
+  --border-color:        #{$dark-border};
 }
 
-// ── Container ─────────────────────────────────────────────────
 .fin-dashboard-container {
   @include page-container;
   display: flex;
   flex-direction: column;
 }
 
-// ── Header ────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════════════════════
+
 .fin-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: $spacing-xl $spacing-2xl $spacing-lg;
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
+  padding: $spacing-md $spacing-lg $spacing-md;
+  position: relative; overflow: hidden; flex-shrink: 0;
 
   &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+    content: ''; position: absolute; inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
-  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
+  @include desktop { padding: $spacing-xl $spacing-2xl $spacing-lg; }
 }
 
+// ── header-top : flex-wrap sur mobile ─────────────────────────
 .fin-header-top {
-  position: relative;
-  z-index: 1;
-  @include flex-between;
-  margin-bottom: $spacing-lg;
-  gap: $spacing-md;
+  position: relative; z-index: 1;
+  display: flex;
+  flex-wrap: wrap;          // évite le chevauchement
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
 
-  @include mobile { margin-bottom: $spacing-md; }
+  @include desktop {
+    flex-wrap: nowrap;
+    @include flex-between;
+    margin-bottom: $spacing-lg;
+    gap: $spacing-md;
+  }
 }
 
 .fin-header-title {
   display: flex;
   align-items: center;
-  gap: $spacing-md;
-  flex: 1;
+  gap: $spacing-sm;
+  flex: 1 1 auto;           // prend la place disponible
   min-width: 0;
 
   .fin-header-icon {
-    width: 44px; height: 44px;
+    width: 34px; height: 34px;
     border-radius: $border-radius-xl;
     background: rgba(255,255,255,.15);
-    @include flex-center;
-    flex-shrink: 0;
-    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
-    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } }
+    @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; color: white; }
+
+    @include desktop { width: 44px; height: 44px; mat-icon { font-size: 24px; width: 24px; height: 24px; } }
   }
 
   h1 {
     margin: 0;
-    font-size: $font-size-2xl;
+    font-size: $font-size-md;    // compact sur mobile
     font-weight: $font-weight-bold;
     text-shadow: 0 1px 4px rgba(0,0,0,.2);
-    @include mobile { font-size: $font-size-xl; }
+    line-height: 1.2;
+
+    @include desktop { font-size: $font-size-2xl; }
   }
 
   p {
-    margin: 3px 0 0;
-    font-size: $font-size-sm;
-    opacity: .85;
-    @include mobile { font-size: $font-size-xs; }
+    margin: 2px 0 0;
+    font-size: 11px; opacity: .85;
+    // masquer sur très petits écrans
+    @media (max-width: 360px) { display: none; }
+    @include desktop { font-size: $font-size-sm; }
   }
 }
 
 .fin-header-actions {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
   flex-shrink: 0;
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
+  margin-left: auto;          // colle à droite
 
   .exercice-select-compact {
-    min-width: 150px;
-    @include mobile { min-width: 110px; }
+    width: 130px;             // fixe — ne déborde pas
+    @include desktop { width: 160px; }
 
     ::ng-deep .mat-mdc-text-field-wrapper { background: rgba(255,255,255,.15) !important; }
     ::ng-deep .mat-mdc-select-value,
@@ -124,6 +131,7 @@
   }
 
   .fin-header-icon-btn {
+    width: 36px !important; height: 36px !important;
     color: white !important;
     background: rgba(255,255,255,.15) !important;
     border-radius: $border-radius-md !important;
@@ -131,48 +139,43 @@
   }
 }
 
-// KPIs header
+// ── KPIs : grille 3 colonnes compacte sur mobile ──────────────
 .fin-kpis {
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
   display: flex;
-  align-items: center;
-  gap: $spacing-xl;
+  align-items: stretch;
   background: rgba(255,255,255,.12);
   backdrop-filter: blur(10px);
-  border-radius: $border-radius-lg;
-  padding: $spacing-md $spacing-xl;
-
-  @include mobile {
-    gap: $spacing-md;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-md;
-    overflow-x: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-  }
+  border-radius: $border-radius-md;
+  overflow: hidden;           // contient les séparateurs
 }
 
 .fkpi {
-  text-align: center;
   flex: 1;
-  flex-shrink: 0;
+  text-align: center;
+  padding: $spacing-sm $spacing-xs;
 
   .fkpi-val {
     display: block;
-    font-size: $font-size-xl;
+    font-size: $font-size-md;   // taille réduite — tout tient sur une ligne
     font-weight: $font-weight-bold;
     color: white;
     line-height: 1;
-    @include mobile { font-size: $font-size-lg; }
+    white-space: nowrap;
+
+    @include desktop { font-size: $font-size-xl; }
   }
 
   .fkpi-lbl {
     display: block;
-    font-size: 11px;
+    font-size: 10px;
     opacity: .8;
-    margin-top: 2px;
+    margin-top: 3px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @include desktop { font-size: 11px; }
   }
 
   &.entrees .fkpi-val { color: #86efac; }
@@ -180,54 +183,67 @@
 }
 
 .fkpi-sep {
-  width: 1px; height: 32px;
+  width: 1px;
   background: rgba(255,255,255,.25);
+  align-self: stretch;
   flex-shrink: 0;
 }
 
-// ── Loading / Empty ────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// LOADING / EMPTY
+// ══════════════════════════════════════════════════════════════
+
 .loading-container {
-  @include flex-center;
-  flex-direction: column;
-  gap: $spacing-xl;
-  padding: $spacing-5xl;
+  @include flex-center; flex-direction: column;
+  gap: $spacing-xl; padding: $spacing-5xl;
   color: var(--text-secondary);
 }
 
 .empty-state {
-  @include empty-state;
-  padding: $spacing-4xl $spacing-2xl;
+  @include empty-state; padding: $spacing-4xl $spacing-2xl;
   mat-icon { font-size: 64px !important; width: 64px !important; height: 64px !important; opacity: .3; }
   h3, p { margin: 0; }
   button { margin-top: $spacing-lg; }
 }
 
-// ── Contenu ────────────────────────────────────────────────────
-.fin-content {
-  padding: $spacing-xl $spacing-2xl;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xl;
+// ══════════════════════════════════════════════════════════════
+// CONTENU
+// ══════════════════════════════════════════════════════════════
 
-  // @include mobile { padding: $spacing-lg $spacing-md; gap: $spacing-lg; }
+.content-inner {
+  padding: $spacing-md;
+  display: flex; flex-direction: column;
+  gap: $spacing-md;
+
+  @include desktop { padding: $spacing-xl $spacing-2xl; gap: $spacing-xl; }
+  @include mobile  { padding: 0 $spacing-md; }
+
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
 }
 
 // Actions rapides
 .quick-actions {
-  display: flex;
-  gap: $spacing-md;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 4px;
+  display: flex; gap: $spacing-sm;
+  overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
   &::-webkit-scrollbar { display: none; }
 
   button {
-    flex-shrink: 0;
-    white-space: nowrap;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-sm;
+    flex-shrink: 0; white-space: nowrap;
+    min-height: 40px;
+    display: inline-flex; align-items: center; gap: $spacing-xs;
+    font-size: $font-size-sm !important;
+    padding: 0 $spacing-md !important;
   }
 }
 
@@ -235,250 +251,234 @@
 .fin-section {
   background: var(--background-primary);
   border: 1px solid var(--border-color);
-  border-radius: $border-radius-xl;
-  overflow: hidden;
+  border-radius: $border-radius-xl; overflow: hidden;
 }
 
 .fin-section-header {
   @include flex-between;
-  padding: $spacing-lg $spacing-xl;
+  padding: $spacing-md $spacing-lg;
   border-bottom: 1px solid var(--border-color);
   background: var(--background-secondary);
 
-  @include mobile { padding: $spacing-md $spacing-lg; }
-
   .fsh-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-
-    mat-icon { color: var(--primary-color); font-size: 20px; width: 20px; height: 20px; }
-    h2 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-primary); }
+    display: flex; align-items: center; gap: $spacing-sm;
+    mat-icon { color: var(--primary-color); font-size: 18px; width: 18px; height: 18px; }
+    h2 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-primary); }
 
     .fsh-count {
       display: inline-flex; align-items: center; justify-content: center;
-      min-width: 22px; height: 22px;
-      border-radius: $border-radius-full;
-      background: var(--primary-color);
-      color: white;
-      font-size: 11px; font-weight: $font-weight-bold;
-      padding: 0 6px;
+      min-width: 20px; height: 20px; border-radius: $border-radius-full;
+      background: var(--primary-color); color: white;
+      font-size: 11px; font-weight: $font-weight-bold; padding: 0 5px;
     }
   }
+
+  a { font-size: $font-size-xs !important; }
 }
 
-// ── Caisses ────────────────────────────────────────────────────
+// ── Caisses : 1 col mobile, 2 col desktop ────────────────────
 .caisses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: $spacing-lg;
-  padding: $spacing-xl;
+  grid-template-columns: 1fr;           // une seule colonne sur mobile
+  gap: $spacing-sm;
+  padding: $spacing-sm;
 
-  @include mobile { grid-template-columns: 1fr; padding: $spacing-md; gap: $spacing-md; }
+  @include desktop {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: $spacing-lg; padding: $spacing-xl;
+  }
 }
 
 .caisse-card {
   background: var(--background-primary);
   border: 1px solid var(--border-color);
-  border-radius: $border-radius-xl;
-  overflow: hidden;
+  border-radius: $border-radius-lg; overflow: hidden;
   border-top: 3px solid var(--caisse-color, var(--primary-color));
-  transition: box-shadow .2s ease;
+  transition: box-shadow .2s;
 
-  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  // Version compacte horizontal sur mobile
+  @include mobile {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    border-top: none;
+    border-left: 4px solid var(--caisse-color, var(--primary-color));
+  }
 }
 
 .cc-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-xl;
+  display: flex; align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
   background: var(--background-secondary);
   border-bottom: 1px solid var(--border-color);
 
+  @include mobile {
+    grid-column: 1 / -1;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: none; border-bottom: 1px solid var(--border-color);
+  }
+
   .cc-icon {
-    width: 38px; height: 38px;
-    border-radius: $border-radius-lg;
-    @include flex-center;
-    flex-shrink: 0;
-    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+    width: 32px; height: 32px;
+    border-radius: $border-radius-md;
+    @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; color: white; }
   }
 
   .cc-title {
     h3 { margin: 0; font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-primary); }
-    .cc-type { font-size: $font-size-xs; color: var(--text-tertiary); }
+    .cc-type { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .4px; }
   }
 }
 
 .cc-body {
-  padding: $spacing-lg $spacing-xl;
+  padding: $spacing-sm $spacing-md;
 
   .cc-solde {
     display: block;
-    font-size: $font-size-2xl;
+    font-size: $font-size-lg;     // réduit sur mobile
     font-weight: $font-weight-bold;
     color: var(--text-primary);
-    margin-bottom: $spacing-md;
-    @include mobile { font-size: $font-size-xl; }
+    margin-bottom: $spacing-sm;
+
+    @include desktop { font-size: $font-size-2xl; margin-bottom: $spacing-md; }
   }
 }
 
 .cc-progress {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
+  display: flex; align-items: center; gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
 
   .cc-progress-bar {
-    flex: 1;
-    height: 6px;
+    flex: 1; height: 5px;
     background: var(--background-tertiary);
-    border-radius: $border-radius-full;
-    overflow: hidden;
+    border-radius: $border-radius-full; overflow: hidden;
 
     .cc-progress-fill {
-      height: 100%;
-      border-radius: $border-radius-full;
+      height: 100%; border-radius: $border-radius-full;
       transition: width .4s ease;
     }
   }
 
   .cc-pct {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: var(--text-secondary);
-    white-space: nowrap;
+    font-size: 11px; font-weight: $font-weight-semibold;
+    color: var(--text-secondary); white-space: nowrap;
   }
 }
 
 .cc-flows {
-  display: flex;
-  gap: $spacing-xl;
+  display: flex; gap: $spacing-md;
 
   .cc-flow {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    display: flex; align-items: center; gap: 3px;
+    font-size: $font-size-xs; font-weight: $font-weight-medium;
 
-    mat-icon { font-size: 14px; width: 14px; height: 14px; }
-
+    mat-icon { font-size: 13px; width: 13px; height: 13px; }
     &.entree { color: $success-color; mat-icon { color: $success-color; } }
     &.sortie { color: $error-color;   mat-icon { color: $error-color; } }
   }
 }
 
 .cc-footer {
-  padding: $spacing-sm $spacing-xl;
+  padding: $spacing-xs $spacing-md;
   border-top: 1px solid var(--border-color);
   background: var(--background-secondary);
-  display: flex;
-  justify-content: flex-end;
+  display: flex; justify-content: flex-end;
 }
 
-// ── Charts ─────────────────────────────────────────────────────
+// ── Charts ────────────────────────────────────────────────────
 .charts-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
+  grid-template-columns: 1fr;
+  gap: $spacing-md;
 
-  @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
+  @include desktop { grid-template-columns: 1fr 1fr; gap: $spacing-xl; }
 }
 
 .chart-card {
   background: var(--background-primary);
   border: 1px solid var(--border-color);
-  border-radius: $border-radius-xl;
-  overflow: hidden;
+  border-radius: $border-radius-xl; overflow: hidden;
 
   .chart-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-lg $spacing-xl;
+    display: flex; align-items: center; gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
     border-bottom: 1px solid var(--border-color);
     background: var(--background-secondary);
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm; font-weight: $font-weight-semibold;
     color: var(--text-primary);
-
     mat-icon { color: var(--primary-color); font-size: 18px; width: 18px; height: 18px; }
   }
 
   .chart-body {
-    padding: $spacing-xl;
-    @include mobile { padding: $spacing-md; }
-
-    canvas { max-height: 240px; }
-
-    &.bar-chart canvas { max-height: 200px; }
+    padding: $spacing-md;
+    @include desktop { padding: $spacing-xl; }
+    canvas { max-height: 200px; }
+    &.bar-chart canvas { max-height: 180px; }
   }
 }
 
-// ── Mouvements récents ─────────────────────────────────────────
-.mouvements-list {
-  display: flex;
-  flex-direction: column;
-}
+// ── Mouvements récents ────────────────────────────────────────
+.mouvements-list { display: flex; flex-direction: column; }
 
 .mvt-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-xl;
+  display: flex; align-items: center; gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
   border-bottom: 1px solid var(--border-color);
-  transition: background .15s ease;
+  transition: background .15s;
 
   &:last-child { border-bottom: none; }
   &:hover { background: var(--background-secondary); }
 
-  @include mobile { padding: $spacing-md $spacing-lg; }
+  @include desktop { gap: $spacing-md; padding: $spacing-md $spacing-xl; }
 }
 
 .mvt-icon {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   border-radius: $border-radius-full;
-  @include flex-center;
-  flex-shrink: 0;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; color: white; }
+  @include flex-center; flex-shrink: 0;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
   &.entree { background: rgba(16,185,129,.15); mat-icon { color: $success-color; } }
   &.sortie { background: rgba(239,68,68,.12);  mat-icon { color: $error-color; } }
 }
 
 .mvt-info {
-  flex: 1;
-  min-width: 0;
-
-  .mvt-libelle { display: block; font-size: $font-size-sm; font-weight: $font-weight-medium; color: var(--text-primary); @include text-truncate; }
-  .mvt-sub     { display: block; font-size: $font-size-xs; color: var(--text-tertiary); margin-top: 2px; }
+  flex: 1; min-width: 0;
+  .mvt-libelle {
+    display: block; font-size: $font-size-sm;
+    font-weight: $font-weight-medium; color: var(--text-primary);
+    @include text-truncate;
+  }
+  .mvt-sub {
+    display: block; font-size: 11px;
+    color: var(--text-tertiary); margin-top: 1px;
+    @include text-truncate;
+  }
 }
 
 .mvt-montant {
-  font-size: $font-size-sm;
-  font-weight: $font-weight-bold;
-  white-space: nowrap;
-  flex-shrink: 0;
-
+  font-size: $font-size-sm; font-weight: $font-weight-bold;
+  white-space: nowrap; flex-shrink: 0;
   &.entree { color: $success-color; }
   &.sortie { color: $error-color; }
 }
 
 .empty-mouvements {
-  @include flex-center;
-  flex-direction: column;
-  gap: $spacing-md;
-  padding: $spacing-3xl;
+  @include flex-center; flex-direction: column;
+  gap: $spacing-md; padding: $spacing-2xl;
   color: var(--text-tertiary);
   mat-icon { font-size: 40px; width: 40px; height: 40px; opacity: .4; }
   p { margin: 0; font-size: $font-size-sm; }
 }
 
 .exercice-option {
-  display: flex; align-items: center; justify-content: space-between; gap: $spacing-sm; width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: $spacing-sm; width: 100%;
   .exercice-badge {
-    font-size: 11px; padding: 1px 7px; border-radius: $border-radius-full; font-weight: $font-weight-semibold;
+    font-size: 11px; padding: 1px 7px; border-radius: $border-radius-full;
+    font-weight: $font-weight-semibold;
     &.actif   { background: rgba(16,185,129,.1); color: $success-color; }
     &.cloture { background: var(--background-tertiary); color: var(--text-tertiary); }
   }

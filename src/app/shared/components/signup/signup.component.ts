@@ -92,53 +92,49 @@ export class SignupComponent implements OnInit {
   }
 
   // ── Soumission ────────────────────────────────────────────────
-  onSubmit(): void {
-    if (this.accountForm.invalid || this.profileForm.invalid) return;
-
-    this.isLoading = true;
-
-    const signupData: any = {
-      username: this.accountForm.value.username,
-      email: this.accountForm.value.email,
-      motDePasse: this.accountForm.value.password,
-      roles: 'ROLE_CANDIDAT',
-      membre: {
-        nom: this.profileForm.value.nom,
-        prenom: this.profileForm.value.prenom,
-        dateNaissance: this.profileForm.value.dateNaissance,
-        sexe: this.profileForm.value.sexe,
-        tel: this.profileForm.value.tel,
-        adresse: this.profileForm.value.adresse
+ onSubmit(): void {
+  if (this.accountForm.invalid || this.profileForm.invalid) return;
+  this.isLoading = true;
+ 
+  const profileData = {
+    nom:           this.profileForm.value.nom,
+    prenom:        this.profileForm.value.prenom,
+    dateNaissance: this.profileForm.value.dateNaissance,
+    sexe:          this.profileForm.value.sexe,
+    tel:           this.profileForm.value.tel,
+    adresse:       this.profileForm.value.adresse
+  };
+ 
+  const signupData: any = {
+    username:   this.accountForm.value.username,
+    email:      this.accountForm.value.email,
+    motDePasse: this.accountForm.value.password,
+    roles:      'ROLE_CANDIDAT',
+    // Gardé pour rétrocompat (backend crée encore un Membre)
+    membre:     { ...profileData },
+    // NOUVEAU : données de profil centralisé (UserProfile)
+    userProfile: { ...profileData }
+  };
+ 
+  this.authService.addUser(signupData).subscribe({
+    next: (response) => {
+      this.isLoading = false;
+      if (response.success) {
+        this.snackBar.open('Inscription réussie ! Vous pouvez vous connecter.', 'OK', {
+          duration: 5000, panelClass: 'success-snackbar'
+        });
+        const queryParams: any = {};
+        if (this.returnUrl) queryParams['returnUrl'] = this.returnUrl;
+        this.router.navigate(['/login'], { queryParams });
       }
-    };
-
-    this.authService.addUser(signupData).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        if (response.success) {
-          this.snackBar.open('Inscription réussie ! Vous pouvez vous connecter.', 'OK', {
-            duration: 5000,
-            panelClass: 'success-snackbar'
-          });
-
-          // ── FIX : transmettre le returnUrl au login ──────────
-          // Sans ça, la chaîne concours → signup → login → concours est brisée
-          const queryParams: any = {};
-          if (this.returnUrl) {
-            queryParams['returnUrl'] = this.returnUrl;
-            // sessionStorage reste en place comme filet de sécurité pour le login
-          }
-          this.router.navigate(['/login'], { queryParams });
-        }
-      },
-      error: (err) => {
-        this.isLoading = false;
-        const message = err.error?.message || 'Erreur lors de l\'inscription';
-        this.snackBar.open(message, 'Fermer', { duration: 5000, panelClass: 'error-snackbar' });
-      }
-    });
-  }
-
+    },
+    error: (err) => {
+      this.isLoading = false;
+      const message = err.error?.message || 'Erreur lors de l\'inscription';
+      this.snackBar.open(message, 'Fermer', { duration: 5000, panelClass: 'error-snackbar' });
+    }
+  });
+}
   // ── Vérifications async ───────────────────────────────────────
   checkUsername(): void {
     const username = this.accountForm.get('username')?.value;

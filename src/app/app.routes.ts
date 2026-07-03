@@ -102,6 +102,8 @@ import { TermsOfServiceComponent } from "./modules/doc/terms-of-service/terms-of
 import { ConcoursPublicComponent } from "./modules/jeu/concours-public/concours-public.component";
 import { ConcoursAdminComponent } from "./modules/jeu/concoursadmin/concoursadmin.component";
 import { ConcoursLiveComponent } from "./modules/jeu/concours-live/concours-live.component";
+import { responsableGuard } from "./core/guards/responsable.guard";
+import { UserMergeComponent } from "./modules/shared/components/user-merge/user-merge.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -365,6 +367,10 @@ export const routes: Routes = [
             path: 'dashboard',
             component: AnalyticsDashboardComponent
           },
+            {
+            path: 'merge',
+            component: UserMergeComponent
+          },
            {
             path: 'tirage',
             component: ConcoursAdminComponent
@@ -536,7 +542,7 @@ export const routes: Routes = [
       // ==================== ROUTES RESPONSABLE ====================
       {
         path: 'responsable',
-        canActivate: [RoleGuard],
+        canActivate: [responsableGuard],
         data: { roles: ['RESPONSABLE', 'ROLE_RESPONSABLE'] },
         children: [
           // Dashboard - accessible à tous les responsables

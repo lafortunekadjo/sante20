@@ -48,16 +48,20 @@ export class DemandeAdhesionComponent implements OnInit {
   groupe: any | null = null;
   questions: QuestionCandidature[] = [];
   demandeForm: FormGroup;
-  
+
   isLoading = true;
   isSubmitting = false;
   groupeId!: number;
   TypeChamp = TypeChamp;
 
+  // FIX : état "déjà membre" — bloque le formulaire si vrai
+  dejaMembre = false;
+  isCheckingMembership = true;
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
-    private router: Router,
+    public router: Router,
     private groupesService: GroupeService,
     private questionnaireService: QuestionCandidatureService,
     private authService: AuthService,
@@ -67,7 +71,6 @@ export class DemandeAdhesionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Vérifier si l'utilisateur est connecté
     if (!this.authService.isLoggedIn()) {
       this.snackBar.open('Vous devez être connecté pour faire une demande', 'Fermer', {
         duration: 3000
@@ -77,7 +80,41 @@ export class DemandeAdhesionComponent implements OnInit {
     }
     this.route.params.subscribe(params => {
       this.groupeId = +params['id'];
-      this.loadGroupeAndQuestions();
+      this.checkDejaMembrePuisCharger();
+    });
+  }
+
+  /**
+   * FIX : vérifie que l'user n'est pas déjà membre de ce groupe
+   * AVANT de charger le formulaire de candidature. Couvre le cas
+   * d'accès direct par URL (/adhesion/:id/candidature) qui
+   * contournait la vérification faite dans groupes-explore.component.
+   */
+  private checkDejaMembrePuisCharger(): void {
+    this.isCheckingMembership = true;
+
+    this.groupesService.verifierDejaMembre(this.groupeId).subscribe({
+      next: (dejaMembre) => {
+        this.dejaMembre = dejaMembre;
+        this.isCheckingMembership = false;
+
+        if (dejaMembre) {
+          this.isLoading = false;
+          // Charger quand même les infos du groupe pour l'affichage
+          this.groupesService.getGroupeId(this.groupeId).subscribe({
+            next: (groupe) => { this.groupe = groupe; },
+            error: () => {}
+          });
+        } else {
+          this.loadGroupeAndQuestions();
+        }
+      },
+      error: () => {
+        // Si la vérification échoue (réseau...), on laisse continuer —
+        // le backend bloquera proprement via soumettreDemande() si jamais déjà membre
+        this.isCheckingMembership = false;
+        this.loadGroupeAndQuestions();
+      }
     });
   }
 
@@ -119,7 +156,6 @@ export class DemandeAdhesionComponent implements OnInit {
       const validators = question.obligatoire ? [Validators.required] : [];
       let defaultValue: any = '';
 
-      // Ajouter des validateurs spécifiques selon le type
       switch (question.typeChamp) {
         case TypeChamp.EMAIL:
           validators.push(Validators.email);
@@ -145,14 +181,13 @@ export class DemandeAdhesionComponent implements OnInit {
           break;
 
         case TypeChamp.CHOIX_MULTIPLE:
-          // Pour choix multiple, créer un FormArray avec des contrôles boolean
           const options = this.getOptionsArray(question.optionsChoix);
           const checkboxArray = this.fb.array(
             options.map(() => this.fb.control(false)),
             question.obligatoire ? this.minSelectedCheckboxes(1) : null
           );
           this.demandeForm.addControl(`question_${question.id}`, checkboxArray);
-          return; // Important: sortir ici car on a déjà ajouté le contrôle
+          return;
 
         case TypeChamp.TEXTE_LONG:
           validators.push(Validators.maxLength(1000));
@@ -168,7 +203,6 @@ export class DemandeAdhesionComponent implements OnInit {
           defaultValue = '';
       }
 
-      // Créer le contrôle pour tous les types sauf CHOIX_MULTIPLE
       this.demandeForm.addControl(
         `question_${question.id}`,
         new FormControl(defaultValue, validators)
@@ -176,39 +210,32 @@ export class DemandeAdhesionComponent implements OnInit {
     });
   }
 
-  // Validateur personnalisé pour les checkboxes (choix multiple)
-// Validateur personnalisé pour les checkboxes (choix multiple)
-minSelectedCheckboxes(min: number = 1): ValidatorFn {
-  return (control: AbstractControl): { [key: string]: any } | null => {
-    if (!(control instanceof FormArray)) {
-      return null;
-    }
-    
-    const totalSelected = control.controls
-      .map(ctrl => ctrl.value)
-      .reduce((prev, next) => next ? prev + 1 : prev, 0);
-    
-    return totalSelected >= min ? null : { minSelected: true };
-  };
-}
+  minSelectedCheckboxes(min: number = 1): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      if (!(control instanceof FormArray)) {
+        return null;
+      }
+      const totalSelected = control.controls
+        .map(ctrl => ctrl.value)
+        .reduce((prev, next) => next ? prev + 1 : prev, 0);
+      return totalSelected >= min ? null : { minSelected: true };
+    };
+  }
 
   getOptionsArray(optionsChoix: string | undefined): string[] {
     if (!optionsChoix) return [];
     return optionsChoix.split(',').map(o => o.trim()).filter(o => o.length > 0);
   }
 
-  // Pour CHOIX_MULTIPLE avec FormArray
   getCheckboxFormArray(questionId: number): FormArray {
     return this.demandeForm.get(`question_${questionId}`) as FormArray;
   }
 
-  // Vérifier si une checkbox est cochée (pour choix multiple)
   isCheckboxChecked(questionId: number, optionIndex: number): boolean {
     const formArray = this.getCheckboxFormArray(questionId);
     return formArray?.at(optionIndex)?.value || false;
   }
 
-  // Obtenir l'icône selon le type de question
   getQuestionIcon(typeChamp: TypeChamp): string {
     const icons: { [key: string]: string } = {
       [TypeChamp.TEXTE_COURT]: 'text_fields',
@@ -225,6 +252,12 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
   }
 
   onSubmit(): void {
+    // FIX : garde-fou supplémentaire — ne jamais soumettre si déjà membre
+    if (this.dejaMembre) {
+      this.snackBar.open('Vous êtes déjà membre de ce groupe', 'Fermer', { duration: 3000 });
+      return;
+    }
+
     if (this.demandeForm.invalid) {
       this.snackBar.open('Veuillez répondre à toutes les questions obligatoires', 'Fermer', {
         duration: 3000
@@ -235,7 +268,6 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
 
     this.isSubmitting = true;
 
-    // Préparer les réponses
     const reponses = this.questions.map(question => {
       const controlName = `question_${question.id}`;
       let value = this.demandeForm.get(controlName)?.value;
@@ -243,7 +275,6 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
 
       switch (question.typeChamp) {
         case TypeChamp.CHOIX_MULTIPLE:
-          // Pour FormArray, récupérer les options cochées
           const options = this.getOptionsArray(question.optionsChoix);
           const selectedOptions = options.filter((_, index) => value[index]);
           reponseText = selectedOptions.join('; ');
@@ -278,8 +309,6 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
       dateCreation: new Date()
     };
 
-    console.log('Demande à envoyer:', demande);
-
     this.questionnaireService.createDemandeAdhesion(this.groupeId, demande).subscribe({
       next: () => {
         this.snackBar.open('Demande envoyée avec succès !', 'Fermer', {
@@ -289,18 +318,21 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
       },
       error: (err) => {
         console.error('Erreur soumission demande:', err);
-        this.snackBar.open('Erreur lors de l\'envoi de la demande', 'Fermer', {
-          duration: 3000
-        });
+        // FIX : afficher le message d'erreur réel du backend
+        // (ex: "Vous êtes déjà membre de ce groupe" ou
+        // "Vous avez déjà une demande en attente" — voir
+        // CandidatureController.patch.java qui retourne désormais
+        // un message clair au lieu d'un 500 générique)
+        const message = err.error?.error || err.error?.message || 'Erreur lors de l\'envoi de la demande';
+        this.snackBar.open(message, 'Fermer', { duration: 4000 });
         this.isSubmitting = false;
       }
     });
   }
 
-  // Message d'erreur personnalisé selon le type de champ
   getErrorMessage(questionId: number, question: QuestionCandidature): string {
     const control = this.demandeForm.get(`question_${questionId}`);
-    
+
     if (!control?.errors || !control.touched) {
       return '';
     }
@@ -334,8 +366,7 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
     Object.keys(formGroup.controls).forEach(key => {
       const control = formGroup.get(key);
       control?.markAsTouched();
-      
-      // Si c'est un FormArray, marquer tous ses contrôles
+
       if (control instanceof FormArray) {
         control.controls.forEach(c => c.markAsTouched());
       }
@@ -346,6 +377,17 @@ minSelectedCheckboxes(min: number = 1): ValidatorFn {
     if (confirm('Êtes-vous sûr de vouloir annuler ? Vos réponses seront perdues.')) {
       this.router.navigate(['/explorer2']);
     }
+  }
+
+  /**
+   * FIX : action depuis l'écran "déjà membre" — switcher
+   * directement vers ce groupe plutôt que de laisser l'user bloqué.
+   */
+  switchVersGroupe(): void {
+    this.authService.switchGroupe(this.groupeId).subscribe({
+      next: () => this.router.navigate(['/membre']),
+      error: () => this.snackBar.open('Erreur lors du changement de groupe', 'Fermer', { duration: 3000 })
+    });
   }
 
   getDisciplineIcon(discipline: string): string {

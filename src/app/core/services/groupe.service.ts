@@ -37,6 +37,12 @@ export class GroupeService {
     return this.http.post<any>(url, formData);
   }
 
+  verifierDejaMembre(groupeId: number): Observable<boolean> {
+  return this.http.get<boolean>(
+    `${environment.apiUrl}/candidatures/groupes/${groupeId}/deja-membre`
+  );
+}
+
   // --- Fonctions simulées pour un exemple complet (non requises mais utiles) ---
 
   /**

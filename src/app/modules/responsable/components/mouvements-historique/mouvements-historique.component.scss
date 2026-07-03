@@ -1,7 +1,7 @@
 @import '../../../../../variables';
 
 // ============================================================
-// MOUVEMENTS HISTORIQUE — même pattern que dashboard refonte
+// MOUVEMENTS HISTORIQUE — Mobile-first
 // ============================================================
 
 .mouvements-container {
@@ -12,68 +12,80 @@
 }
 
 // ══════════════════════════════════════════════════════════════
-// HEADER (même structure que dash-header)
+// HEADER
 // ══════════════════════════════════════════════════════════════
 
 .mouvements-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: $spacing-xl $spacing-2xl $spacing-lg;
+  padding: $spacing-lg $spacing-lg $spacing-md;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
 
   &::before {
     content: '';
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
-  @include mobile { padding: $spacing-lg $spacing-lg $spacing-md; }
+  @include desktop { padding: $spacing-xl $spacing-2xl $spacing-lg; }
 }
 
+// ── header-top : empile sur mobile ───────────────────────────
 .header-top {
-  position: relative;
-  z-index: 1;
-  @include flex-between;
-  margin-bottom: $spacing-lg;
-  gap: $spacing-md;
+  position: relative; z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;           // ← clé : évite le chevauchement
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
 
-  @include mobile { margin-bottom: $spacing-md; }
+  @include desktop {
+    @include flex-between;
+    flex-wrap: nowrap;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
 }
 
 .header-title-group {
   display: flex;
   align-items: center;
-  gap: $spacing-md;
+  gap: $spacing-sm;
   flex: 1;
   min-width: 0;
 
   .header-icon-wrap {
-    width: 44px; height: 44px;
+    width: 36px; height: 36px;
     border-radius: $border-radius-xl;
     background: rgba(255,255,255,.15);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
-    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } }
+    mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+
+    @include desktop { width: 44px; height: 44px; mat-icon { font-size: 24px; width: 24px; height: 24px; } }
   }
 
   h1 {
     margin: 0;
-    font-size: $font-size-2xl;
+    font-size: $font-size-lg;   // plus petit sur mobile
     font-weight: $font-weight-bold;
     text-shadow: 0 2px 4px rgba(0,0,0,.2);
-    line-height: 1.1;
-    @include mobile { font-size: $font-size-xl; }
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @include desktop { font-size: $font-size-2xl; white-space: normal; }
   }
 
   p {
-    margin: 3px 0 0;
-    font-size: $font-size-sm;
+    margin: 2px 0 0;
+    font-size: $font-size-xs;
     opacity: .85;
-    @include mobile { font-size: $font-size-xs; }
+    // cacher sur très petit écran pour économiser l'espace
+    @media (max-width: 360px) { display: none; }
   }
 }
 
@@ -82,18 +94,20 @@
   align-items: center;
   gap: $spacing-sm;
   flex-shrink: 0;
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
+  // Aligner à droite sur mobile grâce au flex-wrap du parent
+  margin-left: auto;
 
   .exercice-select-compact {
-    min-width: 150px;
-    @include mobile { min-width: 120px; }
+    width: 140px;              // fixe sur mobile — ne s'étire pas
 
-    ::ng-deep .mat-mdc-form-field-flex { background: rgba(255,255,255,.15) !important; }
+    @include desktop { min-width: 160px; width: auto; }
+
+    ::ng-deep .mat-mdc-form-field-flex   { background: rgba(255,255,255,.15) !important; }
     ::ng-deep .mat-mdc-text-field-wrapper { background: transparent !important; }
     ::ng-deep .mat-mdc-select-value,
-    ::ng-deep .mat-mdc-select-arrow { color: white !important; }
-    ::ng-deep label { color: rgba(255,255,255,.8) !important; }
+    ::ng-deep .mat-mdc-select-arrow       { color: white !important; }
+    ::ng-deep label                        { color: rgba(255,255,255,.8) !important; }
     ::ng-deep .mdc-notched-outline__leading,
     ::ng-deep .mdc-notched-outline__notch,
     ::ng-deep .mdc-notched-outline__trailing { border-color: rgba(255,255,255,.3) !important; }
@@ -103,158 +117,137 @@
     color: white !important;
     background: rgba(255,255,255,.15) !important;
     border-radius: $border-radius-md !important;
+    width: 36px !important; height: 36px !important;
     &:hover { background: rgba(255,255,255,.25) !important; }
   }
 }
 
-// ── KPIs bande ───────────────────────────────────────────────
+// ── KPIs — grille 2×2 sur mobile, 1 ligne sur desktop ────────
 .header-kpis {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: $spacing-lg;
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;  // 3 cols : val sep val
+  grid-template-rows: auto auto;
+  gap: 0;
   background: rgba(255,255,255,.12);
   backdrop-filter: blur(10px);
-  padding: $spacing-lg $spacing-xl;
-  border-radius: $border-radius-lg;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $border-radius-md;
 
-  @include mobile {
-    justify-content: center;
-    padding: $spacing-md $spacing-lg;
-    gap: $spacing-md;
-    border-radius: $border-radius-md;
-    overflow-x: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
+  @include desktop {
+    display: flex;
+    align-items: center;
+    padding: $spacing-lg $spacing-xl;
+    border-radius: $border-radius-lg;
+    gap: $spacing-lg;
   }
 }
 
 .hkpi {
   text-align: center;
-  flex: 1;
-  flex-shrink: 0;
+  padding: $spacing-sm $spacing-md;
 
   .hkpi-val {
     display: block;
-    font-size: $font-size-2xl;
+    font-size: $font-size-lg;           // réduit sur mobile
     font-weight: $font-weight-bold;
     color: var(--accent-color, #F0B429);
     line-height: 1;
-    @include mobile { font-size: $font-size-xl; }
+    white-space: nowrap;
+
+    @include desktop { font-size: $font-size-2xl; }
   }
 
   .hkpi-lbl {
     display: block;
-    font-size: $font-size-xs;
-    opacity: .9;
-    margin-top: $spacing-xs;
+    font-size: 10px;
+    opacity: .85;
+    margin-top: 3px;
     white-space: nowrap;
-    @include mobile { font-size: 11px; }
+
+    @include desktop { font-size: $font-size-xs; }
   }
 
-  &.entrees  .hkpi-val { color: #86efac; }
-  &.sorties  .hkpi-val { color: #fca5a5; }
+  &.entrees   .hkpi-val { color: #86efac; }
+  &.sorties   .hkpi-val { color: #fca5a5; }
   &.balance-pos .hkpi-val { color: #86efac; }
   &.balance-neg .hkpi-val { color: #fca5a5; }
+
+  // Sur desktop avec flex, chaque KPI prend la même place
+  @include desktop { flex: 1; }
 }
 
 .hkpi-sep {
   width: 1px;
-  height: 40px;
   background: rgba(255,255,255,.3);
-  flex-shrink: 0;
-  @include mobile { height: 28px; }
+  align-self: stretch;
+
+  // Sur mobile grille : les séparateurs horizontaux entre les 2 lignes
+  &:nth-child(4) {
+    grid-column: 1 / -1;
+    width: auto; height: 1px;
+    background: rgba(255,255,255,.2);
+  }
+
+  @include desktop { height: 40px; width: 1px; align-self: center; }
 }
 
 // ══════════════════════════════════════════════════════════════
 // LOADING
 // ══════════════════════════════════════════════════════════════
 
-.loading-container {
-  @include loading-state;
-}
+.loading-container { @include loading-state; }
 
 // ══════════════════════════════════════════════════════════════
-// TABS STICKY (identique au dashboard)
+// TABS STICKY
 // ══════════════════════════════════════════════════════════════
 
 .tabs-wrapper {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  display: flex; flex-direction: column; flex: 1;
 }
 
 .tabs-bar {
-  position: sticky;
-  top: 0;
-  z-index: $z-sticky;
+  position: sticky; top: 0; z-index: $z-sticky;
   display: flex;
   background: var(--background-primary);
   border-bottom: 2px solid var(--border-color);
   box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
+  overflow-x: auto; flex-shrink: 0;
+  scrollbar-width: none; &::-webkit-scrollbar { display: none; }
 }
 
 .tab-btn {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-xl;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
+  display: flex; align-items: center; gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  font-size: $font-size-sm; font-weight: $font-weight-medium;
   color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: color .15s ease, background .15s ease;
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: color .15s, background .15s;
 
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
   &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
   &.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-    font-weight: $font-weight-semibold;
-    background: rgba(37,99,235,.04);
+    color: var(--primary-color); border-bottom-color: var(--primary-color);
+    font-weight: $font-weight-semibold; background: rgba(37,99,235,.04);
     mat-icon { color: var(--primary-color); }
   }
 
-  @include mobile {
-    padding: $spacing-md $spacing-lg;
-    font-size: $font-size-xs;
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-  }
+  @include mobile { padding: $spacing-md; font-size: $font-size-xs; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
 }
 
 .tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 5px;
   border-radius: $border-radius-full;
-  background: var(--primary-color);
-  color: white;
-  font-size: 11px;
-  font-weight: $font-weight-bold;
-  line-height: 1;
-
+  background: var(--primary-color); color: white;
+  font-size: 11px; font-weight: $font-weight-bold; line-height: 1;
   &.warn { background: $warning-color; color: #1a0a00; }
 }
 
-.tab-content {
-  flex: 1;
-  animation: tabFadeIn .2s ease forwards;
-}
+.tab-content { flex: 1; animation: tabFadeIn .2s ease forwards; }
 
 @keyframes tabFadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -262,8 +255,8 @@
 }
 
 .content-inner {
-  padding: $spacing-2xl;
-  @include mobile { padding: $spacing-lg; }
+  padding: $spacing-lg;
+  @include desktop { padding: $spacing-2xl; }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -271,21 +264,16 @@
 // ══════════════════════════════════════════════════════════════
 
 .quick-actions-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  margin-bottom: $spacing-xl;
-  flex-wrap: wrap;
+  display: flex; align-items: center;
+  gap: $spacing-sm; margin-bottom: $spacing-lg; flex-wrap: wrap;
+
+  button { min-height: 40px; }
 
   .results-count {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    font-size: $font-size-sm;
-    color: var(--text-secondary);
+    display: flex; align-items: center; gap: $spacing-sm;
+    font-size: $font-size-sm; color: var(--text-secondary);
     margin-left: auto;
     mat-icon { font-size: 16px; width: 16px; height: 16px; }
-
     @include mobile { display: none; }
   }
 
@@ -294,22 +282,11 @@
     background: var(--background-secondary) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: $border-radius-md !important;
-
-    &.active {
-      color: var(--primary-color) !important;
-      border-color: var(--primary-color) !important;
-      background: rgba(37,99,235,.06) !important;
-    }
+    &.active { color: var(--primary-color) !important; border-color: var(--primary-color) !important; background: rgba(37,99,235,.06) !important; }
   }
-
-  @include mobile { gap: $spacing-sm; button { min-height: 44px; } }
 }
 
-.mouvements-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
+.mouvements-list { display: flex; flex-direction: column; gap: $spacing-sm; }
 
 .mouvement-card {
   background: var(--background-primary);
@@ -317,7 +294,7 @@
   border-radius: $border-radius-xl;
   overflow: hidden;
   border-left: 4px solid var(--border-color);
-  transition: box-shadow .2s ease, transform .2s ease;
+  transition: box-shadow .2s, transform .2s;
 
   &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
   &.entree { border-left-color: $success-color; }
@@ -326,106 +303,99 @@
 }
 
 .mc-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-xl;
+  display: flex; align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
   background: var(--background-secondary);
   border-bottom: 1px solid var(--border-color);
 
-  @include mobile { padding: $spacing-md $spacing-lg; }
+  @include desktop { gap: $spacing-md; padding: $spacing-md $spacing-xl; }
 }
 
 .mc-icon-wrap {
-  width: 38px; height: 38px;
+  width: 34px; height: 34px;
   border-radius: $border-radius-full;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   background: var(--background-tertiary);
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
   &.entree { background: rgba(16,185,129,.15); mat-icon { color: $success-color; } }
   &.sortie { background: rgba(239,68,68,.12);  mat-icon { color: $error-color; } }
+
+  @include desktop { width: 38px; height: 38px; }
 }
 
 .mc-info {
-  flex: 1;
-  min-width: 0;
+  flex: 1; min-width: 0;
 
   .mc-libelle {
     display: block;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm; font-weight: $font-weight-semibold;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     margin-bottom: 2px;
+    max-width: 140px;             // empêche le débordement sur mobile
+
+    @include desktop { max-width: none; }
   }
 
   .mc-sub {
     display: block;
-    font-size: $font-size-xs;
-    color: var(--text-tertiary);
+    font-size: 11px; color: var(--text-tertiary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 140px;             // tronque la référence longue
+
+    @include desktop { max-width: none; font-size: $font-size-xs; }
   }
 }
 
 .mc-right {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 
   .mc-montant {
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-sm; font-weight: $font-weight-bold;
     white-space: nowrap;
     &.entree { color: $success-color; }
     &.sortie { color: $error-color; }
+
+    @include desktop { font-size: $font-size-md; }
   }
 
-  .mc-menu-btn {
-    color: var(--text-tertiary) !important;
-  }
+  .mc-menu-btn { color: var(--text-tertiary) !important; }
 }
 
 .mc-footer {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-sm $spacing-xl;
+  display: flex; align-items: center;
+  gap: $spacing-sm; padding: $spacing-xs $spacing-md;
   flex-wrap: wrap;
 
-  @include mobile { padding: $spacing-sm $spacing-lg; gap: $spacing-sm; }
+  @include desktop { padding: $spacing-sm $spacing-xl; gap: $spacing-md; }
 }
 
 .caisse-badge {
   display: inline-block;
-  padding: 2px 10px;
-  border-radius: $border-radius-full;
-  font-size: 11px;
-  font-weight: $font-weight-semibold;
-  color: white;
-  filter: brightness(.85);
+  padding: 2px 8px; border-radius: $border-radius-full;
+  font-size: 10px; font-weight: $font-weight-semibold;
+  color: white; filter: brightness(.85);
+  white-space: nowrap;
 }
 
 .membre-info {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: $font-size-xs;
-  color: var(--text-secondary);
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 140px;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; flex-shrink: 0; }
+
+  @include desktop { font-size: $font-size-xs; max-width: none; }
 }
 
 .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 9px;
-  border-radius: $border-radius-full;
-  font-size: 11px;
-  font-weight: $font-weight-semibold;
-  margin-left: auto;
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: $border-radius-full;
+  font-size: 10px; font-weight: $font-weight-semibold;
+  margin-left: auto; white-space: nowrap;
 
   &.valide     { background: rgba(16,185,129,.1);  color: $success-color; }
   &.en_attente { background: rgba(245,158,11,.12); color: $warning-color; }
@@ -437,11 +407,7 @@
 // FILTRE PANEL
 // ══════════════════════════════════════════════════════════════
 
-.filter-panel {
-  @include card-base;
-  overflow: hidden;
-  max-width: 800px;
-}
+.filter-panel { @include card-base; overflow: hidden; max-width: 800px; }
 
 .filter-panel-header {
   @include flex-between;
@@ -450,45 +416,44 @@
   border-bottom: 1px solid var(--border-color);
 
   .fph-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    font-size: $font-size-md;
-    font-weight: $font-weight-semibold;
+    display: flex; align-items: center; gap: $spacing-md;
+    font-size: $font-size-md; font-weight: $font-weight-semibold;
     color: var(--text-primary);
     mat-icon { color: var(--primary-color); }
   }
 }
 
 .filter-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-md;
-  padding: $spacing-xl;
+  display: grid; grid-template-columns: 1fr;
+  gap: $spacing-md; padding: $spacing-lg;
 
-  @include mobile { grid-template-columns: 1fr; padding: $spacing-lg; }
+  @include desktop { grid-template-columns: 1fr 1fr; padding: $spacing-xl; }
 
   .span-2 { grid-column: 1 / -1; }
   mat-form-field { width: 100%; }
 }
 
 .filter-apply-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: $spacing-md $spacing-xl $spacing-xl;
+  display: flex; justify-content: flex-end;
+  padding: $spacing-md $spacing-lg;
   border-top: 1px solid var(--border-color);
 
-  @include mobile { padding: $spacing-md $spacing-lg; button { width: 100%; } }
+  button { width: 100%; @include desktop { width: auto; } }
 }
 
 .exercice-option {
-  display: flex; align-items: center; justify-content: space-between; gap: $spacing-sm; width: 100%;
-  .exercice-badge.actif { font-size: 11px; padding: 1px 7px; border-radius: $border-radius-full; background: rgba(16,185,129,.1); color: $success-color; font-weight: $font-weight-semibold; }
+  display: flex; align-items: center; justify-content: space-between;
+  gap: $spacing-sm; width: 100%;
+  .exercice-badge.actif {
+    font-size: 11px; padding: 1px 7px;
+    border-radius: $border-radius-full;
+    background: rgba(16,185,129,.1); color: $success-color;
+    font-weight: $font-weight-semibold;
+  }
 }
 
-// Pagination
 .list-paginator {
-  margin-top: $spacing-xl;
+  margin-top: $spacing-lg;
   background: var(--background-primary);
   border-radius: $border-radius-xl;
   border: 1px solid var(--border-color);
@@ -501,10 +466,9 @@
 .empty-state {
   @include empty-state;
   margin: $spacing-2xl 0;
-
   .empty-icon { font-size: 64px !important; width: 64px !important; height: 64px !important; opacity: .3; }
   h3, p { margin: 0; }
 }
 
-.hide-mobile { @include mobile { display: none !important; } }
+.hide-mobile { @include mobile  { display: none !important; } }
 .show-mobile { @include desktop { display: none !important; } }

@@ -47,6 +47,7 @@ export class MvpVoteCardComponent implements OnInit {
   currentMonthLabel = signal<string>('');
   isLoadingTendances = signal(false);
   tendances = signal<any[]>([])
+  showCalculationHelp = signal<boolean>(false);
 
   ngOnInit() {
     if (!this.groupeId) {
@@ -57,7 +58,9 @@ export class MvpVoteCardComponent implements OnInit {
         this.loadTendances();
     this.checkStatusAndLoad();
   }
-
+toggleHelpFormula() {
+  this.showCalculationHelp.update(value => !value);
+}
 loadTendances(): void {
     const gId = this.authService.getGroupe();
     if (!gId) return;
@@ -66,11 +69,10 @@ loadTendances(): void {
       next: (data) => { this.tendances.set(data || []); this.isLoadingTendances.set(false); },
       error: ()    => { this.isLoadingTendances.set(false); }
     });
+    console.log(this.tendances)
   }
 
-  onViewResults() {
-    console.log('L’utilisateur souhaite voir les résultats');
-    
+  onViewResults() { 
     // 3. Redirection vers la route 'membre/vote'
     this.router.navigate(['/membre/vote/winner']);
   }

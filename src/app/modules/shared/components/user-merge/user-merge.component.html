@@ -1,0 +1,223 @@
+<div class="merge-container">
+
+  <!-- ══ HEADER ═══════════════════════════════════════════════ -->
+  <div class="merge-header">
+    <div class="header-icon"><mat-icon>merge_type</mat-icon></div>
+    <div>
+      <h1>Fusion de comptes</h1>
+      <p>Fusionner deux comptes d'un même joueur en un seul</p>
+    </div>
+  </div>
+
+  <!-- ══ SÉLECTION DES DEUX USERS ════════════════════════════ -->
+  <div class="selection-area">
+
+    <!-- User A (principal) -->
+    <div class="user-slot" [class.selected]="selectedA">
+      <div class="slot-label">
+        <mat-icon>person</mat-icon>
+        <span>Compte principal <em>(conservé)</em></span>
+      </div>
+
+      <div class="selected-user" *ngIf="selectedA">
+        <div class="user-avatar">{{ selectedA.username[0].toUpperCase() }}</div>
+        <div class="user-info">
+          <strong>{{ selectedA.username }}</strong>
+          <span>{{ selectedA.email }}</span>
+        </div>
+        <button mat-icon-button (click)="clearSelection('A')" matTooltip="Changer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="search-field" *ngIf="!selectedA">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Rechercher un utilisateur</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput
+                 [(ngModel)]="searchA"
+                 (ngModelChange)="searchUsers($event, 'A')"
+                 placeholder="Username ou email...">
+        </mat-form-field>
+        <div class="autocomplete-results" *ngIf="resultsA.length > 0">
+          <div class="result-item" *ngFor="let u of resultsA" (click)="selectUser(u, 'A')">
+            <div class="result-avatar">{{ u.username[0].toUpperCase() }}</div>
+            <div class="result-info">
+              <strong>{{ u.username }}</strong>
+              <span>{{ u.email }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton swap + flèche -->
+    <div class="merge-arrow">
+      <button mat-icon-button (click)="swap()"
+              [disabled]="!selectedA && !selectedB"
+              matTooltip="Inverser A et B">
+        <mat-icon>swap_horiz</mat-icon>
+      </button>
+      <mat-icon class="arrow-icon">arrow_back</mat-icon>
+      <span class="arrow-label">absorbé par</span>
+    </div>
+
+    <!-- User B (à absorber) -->
+    <div class="user-slot" [class.selected]="selectedB">
+      <div class="slot-label">
+        <mat-icon>person_off</mat-icon>
+        <span>Compte à absorber <em>(désactivé)</em></span>
+      </div>
+
+      <div class="selected-user" *ngIf="selectedB">
+        <div class="user-avatar secondary">{{ selectedB.username[0].toUpperCase() }}</div>
+        <div class="user-info">
+          <strong>{{ selectedB.username }}</strong>
+          <span>{{ selectedB.email }}</span>
+        </div>
+        <button mat-icon-button (click)="clearSelection('B')" matTooltip="Changer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="search-field" *ngIf="!selectedB">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Rechercher un utilisateur</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput
+                 [(ngModel)]="searchB"
+                 (ngModelChange)="searchUsers($event, 'B')"
+                 placeholder="Username ou email...">
+        </mat-form-field>
+        <div class="autocomplete-results" *ngIf="resultsB.length > 0">
+          <div class="result-item" *ngFor="let u of resultsB" (click)="selectUser(u, 'B')">
+            <div class="result-avatar secondary">{{ u.username[0].toUpperCase() }}</div>
+            <div class="result-info">
+              <strong>{{ u.username }}</strong>
+              <span>{{ u.email }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Aperçu -->
+  <div class="preview-action" *ngIf="canPreview() && !preview && !result">
+    <button mat-raised-button color="primary"
+            (click)="loadPreview()"
+            [disabled]="isLoadingPreview">
+      <mat-spinner diameter="18" *ngIf="isLoadingPreview"></mat-spinner>
+      <mat-icon *ngIf="!isLoadingPreview">preview</mat-icon>
+      Voir l'aperçu de la fusion
+    </button>
+  </div>
+
+  <!-- ══ APERÇU ════════════════════════════════════════════════ -->
+  <div class="preview-card" *ngIf="preview" @fadeIn>
+    <h3><mat-icon>info</mat-icon> Aperçu de la fusion</h3>
+
+    <!-- Profil -->
+    <div class="preview-section">
+      <h4>Profil personnel</h4>
+      <div class="profil-comparison">
+        <div class="profil-item kept">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ preview.userA.username }} — {{ preview.profilANom || '(aucun nom)' }}</span>
+          <span class="badge kept">Conservé</span>
+        </div>
+        <div class="profil-item merged">
+          <mat-icon>merge_type</mat-icon>
+          <span>{{ preview.userB.username }} — {{ preview.profilBNom || '(aucun nom)' }}</span>
+          <span class="badge merged">Comble les champs vides</span>
+        </div>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Groupes à transférer -->
+    <div class="preview-section" *ngIf="preview.groupesATransferer.length > 0">
+      <h4>
+        <mat-icon class="icon-success">check_circle</mat-icon>
+        {{ preview.groupesATransferer.length }} groupe(s) à transférer
+      </h4>
+      <div class="groupe-list">
+        <div class="groupe-item transfer" *ngFor="let g of preview.groupesATransferer">
+          <mat-icon>groups</mat-icon>
+          <span>{{ g.groupeNom }}</span>
+          <mat-chip class="chip-transfer">Transféré</mat-chip>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groupes en doublon -->
+    <div class="preview-section" *ngIf="preview.groupesDoublon.length > 0">
+      <h4>
+        <mat-icon class="icon-warn">warning</mat-icon>
+        {{ preview.groupesDoublon.length }} doublon(s) — fiche désactivée
+      </h4>
+      <p class="hint">
+        {{ preview.userA.username }} est déjà membre de ces groupes.
+        La fiche de {{ preview.userB.username }} sera désactivée, ses stats restent dans l'historique.
+      </p>
+      <div class="groupe-list">
+        <div class="groupe-item doublon" *ngFor="let g of preview.groupesDoublon">
+          <mat-icon>warning</mat-icon>
+          <span>{{ g.groupeNom }}</span>
+          <mat-chip class="chip-doublon">Doublon ignoré</mat-chip>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="preview-actions">
+      <button mat-raised-button color="warn"
+              (click)="confirmMerge()"
+              [disabled]="isMerging">
+        <mat-spinner diameter="18" *ngIf="isMerging"></mat-spinner>
+        <mat-icon *ngIf="!isMerging">merge_type</mat-icon>
+        Fusionner maintenant
+      </button>
+      <button mat-stroked-button (click)="preview = null">
+        <mat-icon>arrow_back</mat-icon>
+        Modifier la sélection
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ RÉSULTAT ══════════════════════════════════════════════ -->
+  <div class="result-card" *ngIf="result" @fadeIn>
+    <div class="result-icon success">
+      <mat-icon>check_circle</mat-icon>
+    </div>
+    <h2>Fusion réussie !</h2>
+    <p class="result-message">{{ result.message }}</p>
+
+    <div class="result-stats">
+      <div class="stat-item">
+        <span class="stat-number">{{ result.fichesMembresTransferees }}</span>
+        <span class="stat-label">Fiches membres transférées</span>
+      </div>
+      <div class="stat-item" *ngIf="result.groupesFusionnes.length > 0">
+        <span class="stat-number">{{ result.groupesFusionnes.length }}</span>
+        <span class="stat-label">Groupes fusionnés</span>
+      </div>
+      <div class="stat-item warn" *ngIf="result.groupesIgnores.length > 0">
+        <span class="stat-number">{{ result.groupesIgnores.length }}</span>
+        <span class="stat-label">Doublons ignorés</span>
+      </div>
+    </div>
+
+    <div class="result-detail" *ngIf="result.groupesFusionnes.length > 0">
+      <strong>Groupes transférés :</strong>
+      {{ result.groupesFusionnes.join(', ') }}
+    </div>
+
+    <button mat-raised-button color="primary" (click)="reset()">
+      <mat-icon>add</mat-icon>
+      Nouvelle fusion
+    </button>
+  </div>
+
+</div>

@@ -2,7 +2,7 @@
 
 .objectifs-container { @include page-container; display: flex; flex-direction: column; }
 
-// ── Header gradient ─────────────────────────────────────────────
+// ── Header ──────────────────────────────────────────────────────
 .obj-header {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white; padding: $spacing-xl $spacing-2xl $spacing-lg;
@@ -13,15 +13,31 @@
 }
 .obj-top { position: relative; z-index: 1; }
 .obj-title-group { display: flex; align-items: center; gap: $spacing-md;
-  .obj-icon { width: 44px; height: 44px; border-radius: $border-radius-xl; background: rgba(255,255,255,.15);
-    @include flex-center; flex-shrink: 0; mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
-    @include mobile { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } } }
-  h1 { margin: 0; font-size: $font-size-2xl; font-weight: $font-weight-bold; text-shadow: 0 1px 4px rgba(0,0,0,.2); @include mobile { font-size: $font-size-xl; } }
-  p  { margin: 3px 0 0; font-size: $font-size-sm; opacity: .85; @include mobile { font-size: $font-size-xs; } }
+  .obj-icon { width: 44px; height: 44px; border-radius: $border-radius-xl;
+    background: rgba(255,255,255,.15); @include flex-center; flex-shrink: 0;
+    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; } }
+  h1 { margin: 0; font-size: $font-size-2xl; font-weight: $font-weight-bold;
+    @include mobile { font-size: $font-size-xl; } }
+  p  { margin: 3px 0 0; font-size: $font-size-sm; opacity: .85; }
 }
 
-// ── Tabs ───────────────────────────────────────────────────────
-.obj-tabs-wrapper { display: flex; flex-direction: column; flex: 1; }
+// ── Tabs ────────────────────────────────────────────────────────
+.obj-tabs-wrapper { display: flex; flex-direction: column; flex: 1; 
+@include mobile  { padding: 0 $spacing-md; }
+
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
+}
 .obj-tabs-bar {
   position: sticky; top: 0; z-index: 10; display: flex;
   background: var(--background-primary); border-bottom: 2px solid var(--border-color);
@@ -34,94 +50,153 @@
   cursor: pointer; flex: 1; justify-content: center; transition: color .15s, background .15s;
   mat-icon { font-size: 18px; width: 18px; height: 18px; }
   &:hover { color: var(--primary-color); background: rgba(37,99,235,.04); }
-  &.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: $font-weight-semibold; background: rgba(37,99,235,.04); mat-icon { color: var(--primary-color); } }
-  @include mobile { padding: $spacing-md $spacing-lg; font-size: $font-size-xs; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
+  &.active { color: var(--primary-color); border-bottom-color: var(--primary-color);
+    font-weight: $font-weight-semibold; background: rgba(37,99,235,.04);
+    mat-icon { color: var(--primary-color); } }
+  @include mobile { padding: $spacing-md; font-size: $font-size-xs; }
 }
-.obj-tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: $border-radius-full; background: var(--primary-color); color: white; font-size: 11px; font-weight: $font-weight-bold; }
+.obj-tab-badge { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: $border-radius-full;
+  background: var(--primary-color); color: white; font-size: 11px; font-weight: $font-weight-bold; }
 .obj-tab-content { flex: 1; animation: objFadeIn .2s ease forwards; }
 @keyframes objFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 .obj-content { padding: $spacing-xl $spacing-2xl; @include mobile { padding: $spacing-lg $spacing-md; } }
 
-// ── Loading / Empty ──────────────────────────────────────────────
+// ── Filtres rapides ─────────────────────────────────────────────
+.list-filters {
+  display: flex; gap: $spacing-sm; margin-bottom: $spacing-lg; flex-wrap: wrap;
+}
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 14px; border-radius: $border-radius-full;
+  font-size: $font-size-sm; font-weight: $font-weight-medium;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary); color: var(--text-secondary);
+  cursor: pointer; transition: all .15s;
+  mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  &:hover { border-color: var(--primary-color); color: var(--primary-color); }
+  &.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+}
+
+// ── Loading / Empty ─────────────────────────────────────────────
 .obj-loading { @include flex-center; flex-direction: column; gap: $spacing-xl; padding: $spacing-5xl; color: var(--text-secondary); }
 .obj-empty { @include empty-state; padding: $spacing-3xl;
   mat-icon { font-size: 56px !important; width: 56px !important; height: 56px !important; opacity: .3; }
-  h3, p { margin: 0; }
-  button { margin-top: $spacing-md; }
+  h3, p { margin: 0; } button { margin-top: $spacing-md; }
 }
 
-// ── Grille objectifs ───────────────────────────────────────────
+// ── Grille ──────────────────────────────────────────────────────
 .objectifs-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: $spacing-lg;
   @include mobile { grid-template-columns: 1fr; gap: $spacing-md; }
 }
 
 .objectif-card {
-  @include card-base; overflow: hidden; border-top: 3px solid var(--border-color);
+  @include card-base; overflow: hidden; border-top: 3px solid var(--border-color); position: relative;
   &.status-completed  { border-top-color: $success-color; }
-  &.status-inProgress, &.status-in-progress { border-top-color: var(--primary-color); }
+  &.status-in-progress { border-top-color: var(--primary-color); }
   &.status-expired    { border-top-color: $error-color; }
-  &.status-failed     { border-top-color: $error-color; }
 }
 
-.oc-header { display: flex; align-items: flex-start; gap: $spacing-md; padding: $spacing-lg $spacing-xl; border-bottom: 1px solid var(--border-color);
-  @include mobile { padding: $spacing-md $spacing-lg; }
+// Badges scope + responsable
+.scope-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin: $spacing-sm $spacing-md 0;
+  padding: 2px 8px; border-radius: $border-radius-full;
+  font-size: 10px; font-weight: $font-weight-semibold;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+}
+.responsable-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin: 4px $spacing-md 0;
+  padding: 2px 8px; border-radius: $border-radius-full;
+  background: rgba(245,158,11,.1); color: #d97706;
+  font-size: 10px; font-weight: $font-weight-semibold;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+}
+
+.oc-header { display: flex; align-items: flex-start; gap: $spacing-md;
+  padding: $spacing-md $spacing-lg; border-bottom: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-sm $spacing-md; }
 }
 .objectif-avatar {
-  width: 44px; height: 44px; border-radius: $border-radius-lg; @include flex-center; flex-shrink: 0;
-  mat-icon { font-size: 22px; width: 22px; height: 22px; color: white; }
-  &.type-buts     { background: linear-gradient(135deg, #0f6e56, #10b981); }
-  &.type-passes   { background: linear-gradient(135deg, #1a3a8a, #2563eb); }
-  &.type-presence { background: linear-gradient(135deg, #854f0b, #f59e0b); }
-  &.type-carton   { background: linear-gradient(135deg, #991b1b, #ef4444); }
+  width: 40px; height: 40px; border-radius: $border-radius-lg; @include flex-center; flex-shrink: 0;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: white; }
+  &.type-buts      { background: linear-gradient(135deg, #0f6e56, #10b981); }
+  &.type-passes    { background: linear-gradient(135deg, #1a3a8a, #2563eb); }
+  &.type-presence  { background: linear-gradient(135deg, #854f0b, #f59e0b); }
+  &.type-carton    { background: linear-gradient(135deg, #991b1b, #ef4444); }
+  &.type-motm      { background: linear-gradient(135deg, #6d28d9, #a78bfa); }
+  &.type-mvp_equipe { background: linear-gradient(135deg, #b45309, #fbbf24); }
 }
 .oc-title-group { flex: 1; min-width: 0;
-  h3 { margin: 0 0 3px; font-size: $font-size-md; font-weight: $font-weight-semibold; }
-  .oc-period { display: flex; align-items: center; gap: 4px; font-size: $font-size-xs; color: var(--text-tertiary);
-    mat-icon { font-size: 14px; width: 14px; height: 14px; } }
+  h3 { margin: 0 0 3px; font-size: $font-size-sm; font-weight: $font-weight-semibold; @include text-truncate; }
+  .oc-groupe, .oc-period { display: flex; align-items: center; gap: 3px;
+    font-size: 11px; color: var(--text-tertiary); margin-top: 1px;
+    mat-icon { font-size: 13px; width: 13px; height: 13px; } }
 }
 
-.oc-body { padding: $spacing-lg $spacing-xl; @include mobile { padding: $spacing-md $spacing-lg; } }
-
+.oc-body { padding: $spacing-md $spacing-lg; @include mobile { padding: $spacing-sm $spacing-md; } }
 .progress-info { @include flex-between; margin-bottom: $spacing-sm;
-  .progress-values { font-size: $font-size-xl; font-weight: $font-weight-bold;
+  .progress-values { font-size: $font-size-lg; font-weight: $font-weight-bold;
     .current-value { color: var(--primary-color); }
-    .separator { color: var(--text-tertiary); margin: 0 4px; }
-    .target-value { color: var(--text-secondary); }
-  }
-  .progress-percentage { font-size: $font-size-md; font-weight: $font-weight-semibold; color: var(--text-secondary); }
+    .separator     { color: var(--text-tertiary); margin: 0 3px; }
+    .target-value  { color: var(--text-secondary); } }
+  .progress-percentage { font-size: $font-size-sm; font-weight: $font-weight-semibold; color: var(--text-secondary); }
 }
-
-.progress-bar { height: 8px !important; border-radius: $border-radius-full; margin-bottom: $spacing-md; }
-
+.progress-bar { height: 8px !important; border-radius: $border-radius-full; margin-bottom: $spacing-sm; }
 .objectif-status {
-  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-md; font-size: $font-size-sm; font-weight: $font-weight-medium;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-md; font-size: $font-size-xs; font-weight: $font-weight-medium;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
   &.completed   { background: rgba(16,185,129,.08); color: $success-color; }
-  &.inProgress, &.in-progress { background: rgba(37,99,235,.06); color: var(--primary-color); }
-  &.expired, &.failed { background: rgba(239,68,68,.06); color: $error-color; }
+  &.in-progress { background: rgba(37,99,235,.06); color: var(--primary-color); }
+  &.expired     { background: rgba(239,68,68,.06);  color: $error-color; }
 }
 
-.oc-actions { display: flex; gap: $spacing-xs; padding: $spacing-sm $spacing-md; border-top: 1px solid var(--border-color); background: var(--background-secondary); justify-content: flex-end;
-  button { @include touch-target(40px); }
-}
+.oc-actions { display: flex; gap: $spacing-xs; padding: $spacing-xs $spacing-sm;
+  border-top: 1px solid var(--border-color); background: var(--background-secondary); justify-content: flex-end; }
 
-// ── Formulaire ───────────────────────────────────────────────────
-.obj-form-card { @include card-base; overflow: hidden; max-width: 600px; }
-.obj-form-header { display: flex; align-items: center; gap: $spacing-md; padding: $spacing-lg $spacing-xl; background: var(--background-secondary); border-bottom: 1px solid var(--border-color);
-  .obj-form-icon { width: 44px; height: 44px; border-radius: $border-radius-lg; background: rgba(37,99,235,.1); @include flex-center; flex-shrink: 0; mat-icon { color: var(--primary-color); font-size: 24px; } }
+// ── Formulaire ──────────────────────────────────────────────────
+.obj-form-card { @include card-base; overflow: hidden; max-width: 640px; }
+.obj-form-header { display: flex; align-items: center; gap: $spacing-md;
+  padding: $spacing-lg $spacing-xl; background: var(--background-secondary); border-bottom: 1px solid var(--border-color);
+  .obj-form-icon { width: 44px; height: 44px; border-radius: $border-radius-lg;
+    background: rgba(37,99,235,.1); @include flex-center; flex-shrink: 0;
+    mat-icon { color: var(--primary-color); font-size: 24px; } }
   h3 { margin: 0; font-size: $font-size-md; font-weight: $font-weight-semibold; }
+  p  { margin: 2px 0 0; font-size: $font-size-xs; color: var(--text-tertiary); }
 }
 .obj-form-body {
   display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-md; padding: $spacing-xl;
   @include mobile { grid-template-columns: 1fr; padding: $spacing-lg; gap: $spacing-sm; }
   .span-2 { grid-column: 1 / -1; }
   mat-form-field { width: 100%; }
-  .option-icon { margin-right: $spacing-sm; vertical-align: middle; }
+  .option-row { display: flex; align-items: center; gap: $spacing-sm; }
+  .option-icon { font-size: 18px; width: 18px; height: 18px; }
 }
-.obj-form-actions { display: flex; gap: $spacing-md; flex-wrap: wrap; padding: $spacing-md $spacing-xl $spacing-xl; border-top: 1px solid var(--border-color);
-  @include mobile { padding: $spacing-md $spacing-lg; button { flex: 1; justify-content: center; } }
+
+// ── Scope section ───────────────────────────────────────────────
+.scope-section {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-lg;
+  padding: $spacing-md; display: flex; flex-direction: column; gap: $spacing-md;
+
+  &.responsable { border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.04); }
+}
+.scope-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; gap: $spacing-md;
+}
+.scope-label {
+  display: flex; align-items: flex-start; gap: $spacing-sm; flex: 1;
+  mat-icon { color: var(--primary-color); margin-top: 2px; flex-shrink: 0; }
+  strong { display: block; font-size: $font-size-sm; font-weight: $font-weight-semibold; }
+  p { margin: 2px 0 0; font-size: 11px; color: var(--text-tertiary); }
+}
+
+.obj-form-actions { display: flex; gap: $spacing-md; flex-wrap: wrap;
+  padding: $spacing-md $spacing-xl $spacing-xl; border-top: 1px solid var(--border-color);
+  @include mobile { padding: $spacing-md; button { flex: 1; justify-content: center; } }
   button { min-height: 44px; }
 }

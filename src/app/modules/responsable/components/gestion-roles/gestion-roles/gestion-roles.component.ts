@@ -20,11 +20,13 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatBadgeModule } from '@angular/material/badge';
 ;
-import { finalize } from 'rxjs';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { Menu, MenuCategorie } from '../../../../../core/models/menu.model';
 import { RoleCustom, CreateRoleCustomDTO } from '../../../../../core/models/role-custom.model';
 import { RoleCustomService } from '../../../../../core/services/role-custom.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../../../../core/services/auth.service';
+import { GroupeContextService } from '../../../../../core/services/groupe-context.service';
 
 @Component({
   selector: 'app-gestion-roles',
@@ -68,6 +70,7 @@ export class GestionRolesComponent implements OnInit {
   // Signals
   isDialogOpen = signal(false);
   selectedMenuIds = signal<number[]>([]);
+  private destroy$ = new Subject<void>();
 
   // Couleurs prédéfinies pour les rôles
   couleursPredefinies = [
@@ -96,7 +99,9 @@ export class GestionRolesComponent implements OnInit {
     private route: ActivatedRoute,
     private roleCustomService: RoleCustomService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private authService: AuthService,
+private groupeContext: GroupeContextService
   ) {
     this.roleForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(3)]],
@@ -108,10 +113,26 @@ export class GestionRolesComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    this.groupeId = +this.route.snapshot.params['id'];
-    this.loadData();
-  }
+ngOnInit(): void {
+  // FIX 1 : utiliser le groupe actif au lieu de la route
+  // this.groupeId = +this.route.snapshot.params['id']; ← SUPPRIMER
+  this.groupeId = this.authService.getGroupe() ?? 0;
+ 
+  this.loadData();
+ 
+  // FIX 3 : recharger au switch de groupe
+  this.groupeContext.groupeChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe((newGroupeId) => {
+      this.groupeId = newGroupeId;
+      this.loadData();
+    });
+}
+
+  ngOnDestroy(): void {
+  this.destroy$.next();
+  this.destroy$.complete();
+}
 
   loadData(): void {
     this.isLoading = true;

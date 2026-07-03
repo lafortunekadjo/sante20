@@ -38,12 +38,13 @@ import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { MoreDrawerComponent } from '../more-drawer/more-drawer.component';
 import { VideoManagementComponent } from '../../../modules/membre/components/video-management/video-management.component';
 import { SafeUrl } from '@angular/platform-browser';
-import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 import { EquipeSelectionDialogComponent } from '../equipe-selection-dialog/equipe-selection-dialog.component';
 import { MembreService } from '../../../core/services/membre.service';
 import { GeneralService } from '../../../core/services/general.service';
 import { PushNotificationService } from '../../../core/services/push-notification.service';
+import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
+import { GroupeSwitcherComponent } from '../../../modules/shared/components/groupe-switcher/groupe-switcher.component';
 
 @Component({
   selector: 'app-layout',
@@ -67,7 +68,8 @@ import { PushNotificationService } from '../../../core/services/push-notificatio
     TranslateModule,
     BottomNavComponent,
     MoreDrawerComponent,
-    NotificationBellComponent
+    NotificationBellComponent,
+    GroupeSwitcherComponent,
   ],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss'],
@@ -148,24 +150,31 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.setupResponsiveLayout();
     this.loadProfilePhoto();
     this.listenToRouter();
-
-    this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady => {
-      if (isReady && this.authService.isLoggedIn()) {
-        this.isLoggedIn = true;
-        this.loadUserData();
-        this.setupRoles();
-        this.updateGroupStatus();
-        this.loadMenusCommuns();
-        this.loadUserMenus();
-        this.setupGroupeSubscription();
-        this.setupPublicites();
-        this.pushService.init();
-      } else if (isReady && !this.authService.isLoggedIn()) {
-        this.isLoggedIn = false;
-        this.resetUserSpecificState();
-      }
+this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady => {
+  if (isReady && this.authService.isLoggedIn()) {
+    this.isLoggedIn = true;
+    this.loadUserData();
+    this.updateGroupStatus();
+    this.loadMenusCommuns();
+    this.setupGroupeSubscription();
+    this.setupPublicites();
+    this.pushService.init();
+ 
+    // FIX : charger mes-groupes pour peupler groupeActifAccess
+    // AVANT de calculer isResponsable() — sinon setupRoles()
+    // tourne avec un accès null et loadUserMenus() ne charge rien.
+    this.authService.getMesGroupes().subscribe(() => {
+      this.setupRoles();          // calcule isResponsable maintenant correct
+      this.loadUserMenus();       // charge les menus du groupe actif réel
       this.cdr.detectChanges();
     });
+ 
+  } else if (isReady && !this.authService.isLoggedIn()) {
+    this.isLoggedIn = false;
+    this.resetUserSpecificState();
+  }
+  this.cdr.detectChanges();
+});
 
     this.menuRefreshSubscription = this.authService.forceMenuRefresh$.pipe(
       skip(1), distinctUntilChanged()
@@ -199,6 +208,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
       }
     }
   }
+
+  private revalidateCurrentRoute(): void {
+  const currentUrl = this.router.url;
+ 
+  this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+    this.router.navigateByUrl(currentUrl);
+    // Si le guard de currentUrl échoue maintenant (plus responsable,
+    // ou route hors roleCustom), il redirigera lui-même vers /membre.
+    // Si le guard passe, on atterrit simplement sur la même page.
+  });
+}
 
   async checkIn(): Promise<void> {
     this.isChecking = true;
@@ -311,31 +331,48 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.currentGroupeId = groupeId;
   }
 
-  setupRoles(): void {
-    this.roles = this.authService.getRoles() || [];
-    this.isAdmin = this.isResponsable = this.isMembre = this.isPartenaire = false;
+setupRoles(): void {
+  this.roles = this.authService.getRoles() || [];
+ 
+  // isAdmin reste basé sur le JWT — ROLE_ADMIN est volontairement
+  // global à la plateforme entière (pas par groupe)
+  this.isAdmin = this.roles.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN');
+ 
+  // FIX : isResponsable est maintenant calculé PAR GROUPE ACTIF
+  // via authService.isResponsable() qui lit l'accès du groupe switché
+  this.isResponsable = this.authService.isResponsable();
+ 
+  this.isPartenaire = this.roles.some(r => r === 'PARTENAIRE' || r === 'ROLE_PARTENAIRE');
+  this.isMembre      = !this.isAdmin && !this.isResponsable && !this.isPartenaire;
+ 
+  // selectedRole pour l'affichage (badge dans le menu profil)
+  if (this.isResponsable)      this.selectedRole = 'RESPONSABLE';
+  else if (this.isAdmin)       this.selectedRole = 'ADMIN';
+  else if (this.isPartenaire)  this.selectedRole = 'PARTENAIRE';
+  else                          this.selectedRole = 'MEMBRE';
+}
 
-    if (this.roles.some(r => r === 'RESPONSABLE' || r === 'ROLE_RESPONSABLE')) {
-      this.selectedRole = 'RESPONSABLE'; this.isResponsable = true;
-    } else if (this.roles.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN')) {
-      this.selectedRole = 'ADMIN'; this.isAdmin = true;
-    } else if (this.roles.some(r => r === 'PARTENAIRE' || r === 'ROLE_PARTENAIRE')) {
-      this.selectedRole = 'PARTENAIRE'; this.isPartenaire = true;
-    } else if (this.roles.some(r => r === 'MEMBRE' || r === 'ROLE_MEMBRE')) {
-      this.selectedRole = 'MEMBRE'; this.isMembre = true;
+ setupGroupeSubscription(): void {
+  if (this.groupeSubscription) this.groupeSubscription.unsubscribe();
+ 
+  this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
+    this.currentGroupeId = groupeId;
+    this.userHasGroup     = !!groupeId && groupeId > 0;
+    this.loadMenusCommuns();
+  });
+ 
+  // FIX : s'abonner AUSSI à l'accès du groupe actif (estResponsableGroupe)
+  // pour réévaluer isResponsable + recharger les menus à chaque switch
+  this.authService.groupeActifAccess$.subscribe(() => {
+    this.setupRoles();             // recalcule isResponsable pour CE groupe
+    if (this.isLoggedIn && this.isResponsable) {
+      this.loadUserMenus();        // recharge les menus du nouveau groupe
+    } else {
+      this.menuCategories = [];    // FIX : vider les menus si plus responsable
     }
-  }
-
-  setupGroupeSubscription(): void {
-    if (this.groupeSubscription) this.groupeSubscription.unsubscribe();
-
-    this.groupeSubscription = this.authService.currentGroupeId$.subscribe(groupeId => {
-      this.currentGroupeId = groupeId;
-      this.userHasGroup = !!groupeId && groupeId > 0;
-      this.loadMenusCommuns();
-      if (this.isLoggedIn && this.isResponsable) this.loadUserMenus();
-    });
-  }
+    this.revalidateCurrentRoute();
+  });
+}
 
   // ──────────────────── User data ────────────────────────────
 

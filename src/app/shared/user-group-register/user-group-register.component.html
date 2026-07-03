@@ -1,5 +1,5 @@
 <div class="create-group-container">
-  
+
   <!-- Overlay de chargement -->
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loading-content">
@@ -9,184 +9,212 @@
     </div>
   </div>
 
-  <!-- Header -->
-  <div class="page-header">
-    <button mat-icon-button class="back-button" (click)="onCancel()" matTooltip="Retour">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <div class="header-content">
-      <h1 class="page-title">Créer un groupe</h1>
-      <p class="page-subtitle">Configurez votre nouveau groupe sportif</p>
+  <!-- ══════════════════════════════════════════════════════
+       FORMULAIRE — visible uniquement si showForm = true
+  ══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="showForm">
+
+    <!-- Header -->
+    <div class="page-header">
+      <button mat-icon-button class="back-button" (click)="onCancel()" matTooltip="Retour">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="header-content">
+        <h1 class="page-title">{{ isModeAjout ? 'Créer un nouveau 2-0' : 'Créer un groupe' }}</h1>
+        <p class="page-subtitle">
+          {{ isModeAjout
+            ? 'Tu seras responsable de ce nouveau groupe, tout en gardant tes groupes actuels'
+            : 'Configurez votre nouveau groupe sportif' }}
+        </p>
+      </div>
     </div>
-  </div>
 
-  <!-- Card principale -->
-  <div class="form-card">
-    
-    <!-- Icône décorative -->
-    <div class="card-icon">
-      <mat-icon>groups</mat-icon>
-    </div>
+    <!-- Card principale -->
+    <div class="form-card">
 
-    <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm.valid)">
-      
-      <!-- Section: Informations principales -->
-      <div class="form-section">
-        <h3 class="section-title">
-          <mat-icon>info</mat-icon>
-          Informations principales
-        </h3>
-
-        <!-- Nom du Groupe -->
-        <div class="form-field">
-          <label class="field-label">Nom du groupe <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <mat-icon class="input-icon">badge</mat-icon>
-            <input 
-              type="text"
-              [(ngModel)]="groupData.nom" 
-              name="nom" 
-              required
-              minlength="3"
-              maxlength="100"
-              placeholder="Ex: Les Champions du Dimanche"
-              class="custom-input"
-              (blur)="generateAbbreviation()"
-              #nomInput="ngModel">
-          </div>
-          <span class="field-hint" *ngIf="!nomInput.errors">Le nom complet de votre groupe</span>
-          <span class="field-error" *ngIf="nomInput.touched && nomInput.errors?.['required']">
-            Le nom du groupe est obligatoire
-          </span>
-          <span class="field-error" *ngIf="nomInput.touched && nomInput.errors?.['minlength']">
-            Le nom doit contenir au moins 3 caractères
-          </span>
-        </div>
-
-        <!-- Abréviation -->
-        <div class="form-field">
-          <label class="field-label">Abréviation</label>
-          <div class="input-wrapper">
-            <mat-icon class="input-icon">tag</mat-icon>
-            <input 
-              type="text"
-              [(ngModel)]="groupData.abreviation" 
-              name="abreviation"
-              maxlength="10"
-              placeholder="Ex: LCD"
-              class="custom-input"
-              style="text-transform: uppercase;">
-          </div>
-          <span class="field-hint">Acronyme court pour identifier votre groupe (généré automatiquement)</span>
-        </div>
+      <!-- Icône décorative -->
+      <div class="card-icon">
+        <mat-icon>groups</mat-icon>
       </div>
 
-      <!-- Section: Localisation -->
-      <div class="form-section">
-        <h3 class="section-title">
-          <mat-icon>location_on</mat-icon>
-          Localisation
-        </h3>
+      <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm.valid)">
 
-        <!-- Ville -->
-        <div class="form-field">
-          <label class="field-label">Ville <span class="required">*</span></label>
-          <div class="select-wrapper" [class.loading]="isVillesLoading">
-            <mat-icon class="input-icon">location_city</mat-icon>
-            <select 
-              [(ngModel)]="groupData.ville1" 
-              name="ville1" 
-              required
-              class="custom-select"
-              [disabled]="isVillesLoading"
-              #villeInput="ngModel">
-              <option value="" disabled>
-                {{ isVillesLoading ? 'Chargement des villes...' : 'Sélectionnez une ville' }}
-              </option>
-              <option *ngFor="let ville of villesList" [value]="ville.id">
-                {{ ville.nom }}
-              </option>
-            </select>
-            <mat-icon class="select-arrow">expand_more</mat-icon>
-            <mat-spinner *ngIf="isVillesLoading" diameter="20" class="select-spinner"></mat-spinner>
+        <!-- Section: Informations principales -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>info</mat-icon>
+            Informations principales
+          </h3>
+
+          <!-- Nom du Groupe -->
+          <div class="form-field">
+            <label class="field-label">Nom du groupe <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">badge</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="groupData.nom"
+                name="nom"
+                required
+                minlength="3"
+                maxlength="100"
+                placeholder="Ex: Les Champions du Dimanche"
+                class="custom-input"
+                (blur)="generateAbbreviation()"
+                #nomInput="ngModel">
+            </div>
+            <span class="field-hint" *ngIf="!nomInput.errors">Le nom complet de votre groupe</span>
+            <span class="field-error" *ngIf="nomInput.touched && nomInput.errors?.['required']">
+              Le nom du groupe est obligatoire
+            </span>
+            <span class="field-error" *ngIf="nomInput.touched && nomInput.errors?.['minlength']">
+              Le nom doit contenir au moins 3 caractères
+            </span>
           </div>
-          <span class="field-error" *ngIf="villeInput.touched && villeInput.errors?.['required']">
-            La ville est obligatoire
-          </span>
+
+          <!-- Abréviation -->
+          <div class="form-field">
+            <label class="field-label">Abréviation</label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">tag</mat-icon>
+              <input
+                type="text"
+                [(ngModel)]="groupData.abreviation"
+                name="abreviation"
+                maxlength="10"
+                placeholder="Ex: LCD"
+                class="custom-input"
+                style="text-transform: uppercase;">
+            </div>
+            <span class="field-hint">Acronyme court pour identifier votre groupe (généré automatiquement)</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Section: Sport -->
-      <div class="form-section">
-        <h3 class="section-title">
-          <mat-icon>sports</mat-icon>
-          Discipline sportive
-        </h3>
+        <!-- Section: Localisation -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>location_on</mat-icon>
+            Localisation
+          </h3>
 
-        <!-- Discipline -->
-        <div class="form-field">
-          <label class="field-label">Discipline</label>
-          <div class="discipline-grid">
-            <div 
-              *ngFor="let discipline of disciplines"
-              class="discipline-option"
-              [class.selected]="groupData.discipline === discipline.value"
-              (click)="groupData.discipline = discipline.value">
-              <mat-icon>{{ discipline.icon }}</mat-icon>
-              <span>{{ discipline.label }}</span>
+          <!-- Ville -->
+          <div class="form-field">
+            <label class="field-label">Ville <span class="required">*</span></label>
+            <div class="select-wrapper" [class.loading]="isVillesLoading">
+              <mat-icon class="input-icon">location_city</mat-icon>
+              <select
+                [(ngModel)]="groupData.ville1"
+                name="ville1"
+                required
+                class="custom-select"
+                [disabled]="isVillesLoading"
+                #villeInput="ngModel">
+                <option value="" disabled>
+                  {{ isVillesLoading ? 'Chargement des villes...' : 'Sélectionnez une ville' }}
+                </option>
+                <option *ngFor="let ville of villesList" [value]="ville.id">
+                  {{ ville.nom }}
+                </option>
+              </select>
+              <mat-icon class="select-arrow">expand_more</mat-icon>
+              <mat-spinner *ngIf="isVillesLoading" diameter="20" class="select-spinner"></mat-spinner>
+            </div>
+            <span class="field-error" *ngIf="villeInput.touched && villeInput.errors?.['required']">
+              La ville est obligatoire
+            </span>
+          </div>
+        </div>
+
+        <!-- Section: Sport -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>sports</mat-icon>
+            Discipline sportive
+          </h3>
+
+          <!-- Discipline -->
+          <div class="form-field">
+            <label class="field-label">Discipline</label>
+            <div class="discipline-grid">
+              <div
+                *ngFor="let discipline of disciplines"
+                class="discipline-option"
+                [class.selected]="groupData.discipline === discipline.value"
+                (click)="groupData.discipline = discipline.value">
+                <mat-icon>{{ discipline.icon }}</mat-icon>
+                <span>{{ discipline.label }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Description -->
-        <div class="form-field">
-          <label class="field-label">Description</label>
-          <div class="textarea-wrapper">
-            <textarea 
-              [(ngModel)]="groupData.description" 
-              name="description"
-              rows="3"
-              maxlength="500"
-              placeholder="Décrivez votre groupe en quelques mots..."
-              class="custom-textarea"></textarea>
+          <!-- Description -->
+          <div class="form-field">
+            <label class="field-label">Description</label>
+            <div class="textarea-wrapper">
+              <textarea
+                [(ngModel)]="groupData.description"
+                name="description"
+                rows="3"
+                maxlength="500"
+                placeholder="Décrivez votre groupe en quelques mots..."
+                class="custom-textarea"></textarea>
+            </div>
+            <span class="field-hint">
+              {{ groupData.description?.length || 0 }} / 500 caractères
+            </span>
           </div>
-          <span class="field-hint">
-            {{ groupData.description?.length || 0 }} / 500 caractères
-          </span>
         </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button
+            type="button"
+            mat-stroked-button
+            class="btn-cancel"
+            (click)="onCancel()"
+            [disabled]="isLoading">
+            <mat-icon>close</mat-icon>
+            Annuler
+          </button>
+
+          <button
+            type="submit"
+            mat-raised-button
+            class="btn-submit"
+            [disabled]="registerForm.invalid || isLoading">
+            <mat-icon>check_circle</mat-icon>
+            Créer le groupe
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Info card -->
+    <div class="info-card">
+      <mat-icon>lightbulb</mat-icon>
+      <div class="info-content">
+        <h4>Bon à savoir</h4>
+        <p>Une fois le groupe créé, vous pourrez inviter des membres, planifier des matchs et gérer les présences.</p>
       </div>
+    </div>
 
-      <!-- Actions -->
-      <div class="form-actions">
-        <button 
-          type="button" 
-          mat-stroked-button 
-          class="btn-cancel"
-          (click)="onCancel()"
-          [disabled]="isLoading">
-          <mat-icon>close</mat-icon>
-          Annuler
-        </button>
-        
-        <button 
-          type="submit" 
-          mat-raised-button 
-          class="btn-submit"
-          [disabled]="registerForm.invalid || isLoading">
-          <mat-icon>check_circle</mat-icon>
-          Créer le groupe
-        </button>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════
+       ÉTAT SUCCÈS — affiché après création, avant redirection
+  ══════════════════════════════════════════════════════ -->
+  <div class="success-state" *ngIf="!showForm">
+    <div class="success-card">
+      <div class="success-icon-wrap">
+        <mat-icon class="success-icon">check_circle</mat-icon>
       </div>
-
-    </form>
-  </div>
-
-  <!-- Info card -->
-  <div class="info-card">
-    <mat-icon>lightbulb</mat-icon>
-    <div class="info-content">
-      <h4>Bon à savoir</h4>
-      <p>Une fois le groupe créé, vous pourrez inviter des membres, planifier des matchs et gérer les présences.</p>
+      <h2 class="success-title">Groupe créé !</h2>
+      <p class="success-message">"{{ groupeCreeNom }}" a été créé avec succès.</p>
+      <div class="redirect-row">
+        <mat-spinner diameter="22"></mat-spinner>
+        <span>Redirection vers la configuration...</span>
+      </div>
     </div>
   </div>
 

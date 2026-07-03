@@ -100,20 +100,23 @@ export class GroupesExploreComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {}
 
-  ngOnInit(): void {
-
-    this.isCandidat=this.authService.isCandidat()
-    this.hasGroup=!this.authService.isAuthenticated()
-    this.totalDisciplines = this.disciplines.length;
-    this.loadGroupes();
-    this.loadVilles();
-  }
+ngOnInit(): void {
+  this.isCandidat = this.authService.isCandidat();
+ 
+  // FIX : hasGroup doit refléter si l'user a au moins UN groupe,
+  // utile pour adapter le wording UI (ex: "rejoindre" vs "rejoindre un AUTRE 2-0")
+  this.hasGroup = this.authService.isLoggedIn() && !!this.authService.getGroupe();
+ 
+  this.totalDisciplines = this.disciplines.length;
+  this.loadGroupes();
+  this.loadVilles();
+}
 
   loadGroupes(): void {
     this.isLoading = true;
     this.groupesService.getAllGroupes().subscribe({
       next: (groupes) => {
-        console.log(groupes)
+
         this.groupes = groupes.filter(g => g.isActive && g.isPublic);
         this.applyFilters();
         this.isLoading = false;
@@ -154,10 +157,14 @@ export class GroupesExploreComponent implements OnInit {
 
     if (this.filters.searchText.trim()) {
       const search = this.filters.searchText.toLowerCase();
-      filtered = filtered.filter(g => 
-        g.nom.toLowerCase().includes(search) ||
-        g.description?.toLowerCase().includes(search) ||
-        g.stade.nom.toLowerCase().includes(search)
+      filtered = filtered.filter(g =>
+        g.nom?.toLowerCase().includes(search)                 ||  // nom du groupe
+        g.description?.toLowerCase().includes(search)        ||  // description
+        g.stade?.nom?.toLowerCase().includes(search)         ||  // FIX : stade peut être null
+        g.ville?.nom?.toLowerCase().includes(search)         ||  // FIX : chercher dans ville
+        g.discipline?.toLowerCase().includes(search)         ||  // FIX : chercher dans discipline
+        g.quartier?.toLowerCase().includes(search)           ||  // FIX : chercher dans quartier
+        g.jourMatch?.toLowerCase().includes(search)               // FIX : chercher dans jour
       );
     }
 
@@ -244,33 +251,62 @@ export class GroupesExploreComponent implements OnInit {
   }
 
   demanderAdhesion(groupe: GroupePublic): void {
-    if (!this.authService.isLoggedIn()) {
-      this.openLoginPrompt(groupe);
-      return;
-    }
-
-    const userId = this.authService.getUserId();
-      
-    if (userId) {
+  if (!this.authService.isLoggedIn()) {
+    this.openLoginPrompt(groupe);
+    return;
+  }
+ 
+  const userId = this.authService.getUserId();
+  if (!userId) return;
+ 
+  // FIX 1 : vérifier d'abord que l'user n'est pas DÉJÀ membre
+  // de ce groupe (cas multi-groupe — il peut être membre d'autres
+  // groupes et cliquer par erreur sur un groupe qu'il a déjà rejoint)
+  this.groupesService.verifierDejaMembre(groupe.id).subscribe({
+    next: (dejaMembre) => {
+      if (dejaMembre) {
+        this.snackBar.open(
+          `Vous êtes déjà membre de "${groupe.nom}"`,
+          'Voir mon groupe',
+          { duration: 5000 }
+        ).onAction().subscribe(() => {
+          // Switcher directement vers ce groupe si l'user clique l'action
+          this.authService.switchGroupe(groupe.id).subscribe(() => {
+            this.router.navigate(['/membre']);
+          });
+        });
+        return;
+      }
+ 
+      // FIX 2 : ensuite vérifier s'il y a déjà une demande en attente
       this.groupesService.verifierDemandeExistante(groupe.id, userId).subscribe({
         next: (demandeExiste) => {
           if (demandeExiste) {
-            this.snackBar.open('Vous avez déjà une demande en attente pour ce groupe', 'Fermer', {
-              duration: 4000
-            });
+            this.snackBar.open(
+              'Vous avez déjà une demande en attente pour ce groupe',
+              'Fermer', { duration: 4000 }
+            );
           } else {
-            // Rediriger vers le formulaire de candidature
-            this.router.navigate(['/adhesion', groupe.id, '/candidature']);
+            this.router.navigate(['/adhesion', groupe.id, 'candidature']);
           }
         },
-        error: (err) => {
-          console.error('Erreur vérification demande:', err);
-          // En cas d'erreur, rediriger quand même
-          this.router.navigate(['/adhesion', groupe.id, '/candidature']);
+        error: () => {
+          // Si la vérification échoue, on laisse quand même tenter —
+          // le backend a maintenant son propre filet de sécurité
+          // (CandidatureService.soumettreDemande lève une exception
+          // claire si demande déjà en attente)
+          this.router.navigate(['/adhesion', groupe.id, 'candidature']);
         }
       });
+    },
+    error: () => {
+      // Si la vérification d'appartenance échoue (réseau...),
+      // on laisse continuer — le backend bloquera proprement
+      // via soumettreDemande() si jamais déjà membre
+      this.router.navigate(['/adhesion', groupe.id, 'candidature']);
     }
-  }
+  });
+}
 
   openLoginPrompt(groupe: GroupePublic): void {
     const dialogRef = this.dialog.open(LoginPromptDialogComponent, {
@@ -604,6 +640,7 @@ getCapacityColor(groupe: any): 'primary' | 'accent' | 'warn' {
 }
 
 getCapacityPercentage(groupe: any): number {
+
   if (!groupe.capaciteMax || !groupe.nombreMembres) return 0;
   return Math.round((groupe.nombreMembres / groupe.capaciteMax) * 100);
 }
