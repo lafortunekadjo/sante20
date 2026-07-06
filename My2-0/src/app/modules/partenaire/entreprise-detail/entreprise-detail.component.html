@@ -1,0 +1,261 @@
+<!-- Détail Entreprise -->
+<div class="detail-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && entreprise">
+
+    <!-- Header avec bannière -->
+    <header class="page-header" [class.has-banner]="entreprise.bannerUrl">
+      <div class="header-banner" *ngIf="entreprise.bannerUrl">
+        <img [src]="entreprise.bannerUrl" [alt]="entreprise.nom">
+        <div class="banner-overlay"></div>
+      </div>
+
+      <div class="header-content">
+        <button mat-icon-button (click)="goBack()" class="back-btn">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+
+        <div class="entreprise-logo">
+          <img *ngIf="entreprise.logoUrl" [src]="entreprise.logoUrl" [alt]="entreprise.nom">
+          <mat-icon *ngIf="!entreprise.logoUrl">business</mat-icon>
+        </div>
+
+        <div class="header-info">
+          <div class="header-title">
+            <h1>{{ entreprise.nom }}</h1>
+            <span class="status-chip" [class.active]="entreprise.actif" [class.inactive]="!entreprise.actif">
+              {{ entreprise.actif ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <p class="header-meta" *ngIf="entreprise.slogan">{{ entreprise.slogan }}</p>
+          <div class="header-tags">
+            <span class="category-tag">
+              <mat-icon>{{ getCategorieIcon(entreprise.categorie) }}</mat-icon>
+              {{ getCategorieLabel(entreprise.categorie) }}
+            </span>
+            <span class="location-tag" *ngIf="entreprise.ville">
+              <mat-icon>location_on</mat-icon>
+              {{ entreprise.ville }}
+            </span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button mat-raised-button color="primary" (click)="createPublicite()">
+            <mat-icon>add</mat-icon>
+            Nouvelle publicité
+          </button>
+          <button mat-stroked-button [routerLink]="['/partenaire/entreprises', entreprise.id, 'edit']">
+            <mat-icon>edit</mat-icon>
+            Modifier
+          </button>
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="toggleActif()">
+              <mat-icon>{{ entreprise.actif ? 'pause_circle' : 'play_circle' }}</mat-icon>
+              <span>{{ entreprise.actif ? 'Désactiver' : 'Activer' }}</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="delete()" class="delete-item">
+              <mat-icon>delete</mat-icon>
+              <span>Supprimer</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats KPIs -->
+    <div class="kpi-cards">
+      <div class="kpi-card">
+        <mat-icon>campaign</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ publicites.length }}</span>
+          <span class="kpi-label">Publicités</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <mat-icon>visibility</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(entreprise.totalImpressions) }}</span>
+          <span class="kpi-label">Impressions</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <mat-icon>touch_app</mat-icon>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(entreprise.totalClics) }}</span>
+          <span class="kpi-label">Clics</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="activeTab" animationDuration="200ms">
+
+      <!-- Tab Informations -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>info</mat-icon>
+          <span>Informations</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="info-grid">
+            <!-- Description -->
+            <div class="info-card full-width" *ngIf="entreprise.description">
+              <div class="card-header">
+                <mat-icon>description</mat-icon>
+                <h3>Description</h3>
+              </div>
+              <div class="card-body">
+                <p class="description-text">{{ entreprise.description }}</p>
+              </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="info-card">
+              <div class="card-header">
+                <mat-icon>contact_phone</mat-icon>
+                <h3>Contact</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-row" *ngIf="entreprise.telephone">
+                  <mat-icon>phone</mat-icon>
+                  <a [href]="'tel:' + entreprise.telephone">{{ entreprise.telephone }}</a>
+                </div>
+                <div class="info-row" *ngIf="entreprise.email">
+                  <mat-icon>email</mat-icon>
+                  <a [href]="'mailto:' + entreprise.email">{{ entreprise.email }}</a>
+                </div>
+                <div class="info-row" *ngIf="entreprise.whatsapp">
+                  <mat-icon>chat</mat-icon>
+                  <a [href]="'https://wa.me/' + entreprise.whatsapp" target="_blank">WhatsApp</a>
+                </div>
+                <div class="info-row" *ngIf="entreprise.siteWeb">
+                  <mat-icon>language</mat-icon>
+                  <a [href]="entreprise.siteWeb" target="_blank">{{ entreprise.siteWeb }}</a>
+                </div>
+                <p class="no-data" *ngIf="!entreprise.telephone && !entreprise.email">
+                  Aucune information de contact
+                </p>
+              </div>
+            </div>
+
+            <!-- Localisation -->
+            <div class="info-card">
+              <div class="card-header">
+                <mat-icon>location_on</mat-icon>
+                <h3>Localisation</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-row" *ngIf="entreprise.adresse">
+                  <mat-icon>home</mat-icon>
+                  <span>{{ entreprise.adresse }}</span>
+                </div>
+                <div class="info-row" *ngIf="entreprise.quartier">
+                  <mat-icon>place</mat-icon>
+                  <span>{{ entreprise.quartier }}</span>
+                </div>
+                <div class="info-row" *ngIf="entreprise.ville">
+                  <mat-icon>location_city</mat-icon>
+                  <span>{{ entreprise.ville }}</span>
+                </div>
+                <p class="no-data" *ngIf="!entreprise.adresse && !entreprise.ville">
+                  Aucune adresse renseignée
+                </p>
+              </div>
+            </div>
+
+            <!-- Réseaux sociaux -->
+            <div class="info-card" *ngIf="entreprise.facebookUrl || entreprise.instagramUrl">
+              <div class="card-header">
+                <mat-icon>share</mat-icon>
+                <h3>Réseaux sociaux</h3>
+              </div>
+              <div class="card-body">
+                <div class="social-links">
+                  <a *ngIf="entreprise.facebookUrl" [href]="entreprise.facebookUrl" target="_blank" class="social-link facebook">
+                    <mat-icon>facebook</mat-icon>
+                    Facebook
+                  </a>
+                  <a *ngIf="entreprise.instagramUrl" [href]="entreprise.instagramUrl" target="_blank" class="social-link instagram">
+                    <mat-icon>photo_camera</mat-icon>
+                    Instagram
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Publicités -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>campaign</mat-icon>
+          <span>Publicités</span>
+          <span class="tab-badge" *ngIf="publicites.length">{{ publicites.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h3>Publicités de {{ entreprise.nom }}</h3>
+            <button mat-raised-button color="primary" (click)="createPublicite()">
+              <mat-icon>add</mat-icon>
+              Nouvelle publicité
+            </button>
+          </div>
+
+          <div class="loading-inline" *ngIf="isLoadingPubs">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+
+          <div class="publicites-grid" *ngIf="!isLoadingPubs && publicites.length > 0">
+            <div 
+              class="publicite-card"
+              *ngFor="let pub of publicites; trackBy: trackByPublicite"
+              [routerLink]="['/partenaire/publicites', pub.id]">
+              <div class="pub-image">
+                <img *ngIf="pub.imageUrl" [src]="pub.imageUrl" [alt]="pub.titre">
+                <mat-icon *ngIf="!pub.imageUrl">image</mat-icon>
+              </div>
+              <div class="pub-info">
+                <span class="pub-title">{{ pub.titre }}</span>
+                <span class="pub-status" [ngClass]="getStatutPubliciteClass(pub.statut)">
+                  {{ getStatutPubliciteLabel(pub.statut) }}
+                </span>
+              </div>
+              <div class="pub-stats">
+                <span><mat-icon>visibility</mat-icon> {{ formatNumber(pub.totalImpressions) }}</span>
+                <span><mat-icon>touch_app</mat-icon> {{ formatNumber(pub.totalClics) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="!isLoadingPubs && publicites.length === 0">
+            <mat-icon>campaign</mat-icon>
+            <p>Aucune publicité pour cette entreprise</p>
+            <button mat-raised-button color="primary" (click)="createPublicite()">
+              <mat-icon>add</mat-icon>
+              Créer une publicité
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </ng-container>
+</div>

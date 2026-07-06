@@ -51,6 +51,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 // Components
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { SanctionPaymentDialogComponent, PaymentDialogData } from '../sanction-payment-dialog/sanction-payment-dialog.component';
+import { Groupe } from '../../../../core/models/groupe.model';
+import { GroupeService } from '../../../../core/services/groupe.service';
 
 
 applyPlugin(jsPDF);
@@ -180,6 +182,9 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   // États
   isLoading = true;
   showCreateForm = false;
+
+  // ── Navigation tabs ──
+  activeTab: 'list' | 'create' | 'types' = 'list';
   showAdvancedFilters = false;
   showExportDialog = false;
   viewMode: 'cards' | 'table' | 'grouped' = 'cards';
@@ -192,6 +197,7 @@ export class SanctionFormComponent implements OnInit, AfterViewInit, OnDestroy {
   typeSanctions: any[] = [];
   matches: Match[] = [];
   caisses: Caisse[] = []; // Nouveau: caisses disponibles
+  groupeActif: Groupe | undefined;
   
   // Table
   dataSource = new MatTableDataSource<Sanction>([]);
@@ -258,7 +264,7 @@ getMaterielPlaceholder(sanction: any): string {
     private sanctionService: SanctionService,
     private sanctionFinanceService: SanctionFinanceService,
     private financesService: FinancesService,
-    private presenceService: PresenceService,
+    private groupeService: GroupeService,
     private membreService: MembreService,
     private authService: AuthService,
     private dialog: MatDialog,
@@ -315,7 +321,13 @@ getMaterielPlaceholder(sanction: any): string {
   loadData(): void {
     this.isLoading = true;
     const groupeId = this.authService.getGroupe();
-    
+    this.groupeService.getGroupeConn().subscribe({
+      next: (groupe) => {
+        this.groupeActif = groupe;
+      },
+      error: (err) => console.error('Erreur lors de la récupération du groupe', err)
+    });
+        
     forkJoin({
       sanctions: this.sanctionService.getSanctionsAll(),
       membres: this.membreService.getGroupMembers(),
@@ -427,6 +439,7 @@ isMaterielSanction(sanction: any): boolean {
 
     this.filteredSanctions = filtered;
     this.dataSource.data = filtered;
+    this.calculateStats()
     this.updateGroupedSanctions();
 
     if (this.paginator) {
@@ -546,8 +559,8 @@ isMaterielSanction(sanction: any): boolean {
 
   calculateStatsByType(): { type: string; count: number; montant: number }[] {
     const typeMap = new Map<number, { type: string; count: number; montant: number }>();
-    
-    this.allSanctions.forEach(s => {
+    // ── utilise filteredSanctions pour refléter les filtres actifs ──
+    this.filteredSanctions.forEach(s => {
       const typeId = typeof s.typeSanction === 'number' ? s.typeSanction : (s.typeSanction as TypeSanction)?.id;
       const typeName = this.getTypeSanctionName(s.typeSanction);
       
@@ -565,8 +578,8 @@ isMaterielSanction(sanction: any): boolean {
 
   calculateStatsByMembre(): { membre: Membre; count: number; montant: number; paye: number; restant: number }[] {
     const membreMap = new Map<number, { membre: Membre; count: number; montant: number; paye: number; restant: number }>();
-    
-    this.allSanctions.forEach(s => {
+    // ── utilise filteredSanctions pour refléter les filtres actifs ──
+    this.filteredSanctions.forEach(s => {
       const membreId = typeof s.membre === 'number' ? s.membre : (s.membre as Membre)?.id;
       
       if (!membreId) return;
@@ -713,6 +726,20 @@ isMaterielSanction(sanction: any): boolean {
     };
   }
 
+  openCreateTab(): void {
+    this.newSanction = { membre: null, typeSanction: null, dateSanction: new Date(), montant: 0, commentaire: '' } as any;
+    this.showCreateForm = true;
+  }
+
+  setViewMode(mode: 'cards' | 'table' | 'grouped'): void {
+    this.viewMode = mode;
+    this.onViewModeChange();
+  }
+
+  getSanctionCountByType(typeId: number): number {
+    return this.filteredSanctions.filter(s => s.typeSanction === typeId).length;
+  }
+
   toggleCreateForm(): void {
     this.showCreateForm = !this.showCreateForm;
     if (!this.showCreateForm) {
@@ -785,6 +812,33 @@ onTypeSanctionChange(sanction: any): void {
       }
     });
   }
+
+  // ════════════ KPIs DYNAMIQUES FILTRÉS ════════════
+  get kpiTotalSanctions(): number {
+    return this.filteredSanctions.length;
+  }
+
+  get kpiMontantTotal(): number {
+    return this.filteredSanctions.reduce((sum, s) => sum + (s.montant || 0), 0);
+  }
+
+  get kpiMontantRestant(): number {
+    return this.filteredSanctions.reduce((sum, s) => {
+      const restant = (s.montant || 0) - (s.montantPaye || 0);
+      return sum + (restant > 0 ? restant : 0);
+    }, 0);
+  }
+
+  get kpiMontantPaye(): number {
+    return this.filteredSanctions.reduce((sum, s) => sum + (s.montantPaye || 0), 0);
+  }
+
+  get kpiTauxRecouvrement(): number {
+    const total = this.kpiMontantTotal;
+    if (total === 0) return 0;
+    return Math.round((this.kpiMontantPaye / total) * 100);
+  }
+  // ═════════════════════════════════════════════════
 
   cancelCreate(): void {
     this.toggleCreateForm();
@@ -1060,29 +1114,84 @@ formatMontant(montant: number | undefined | null): string {
     this.showExportDialog = !this.showExportDialog;
   }
 
+  /** Résumé textuel des filtres actifs pour le PDF */
+  private buildFilterSummary(): string {
+    const parts: string[] = [];
+    const f = this.filterForm.value;
+    if (f.search)   parts.push(`Recherche: "${f.search}"`);
+    if (f.typeId)   parts.push(`Type: ${this.typeSanctions.find(t => t.id === f.typeId)?.nom || f.typeId}`);
+    if (f.status && f.status !== 'ALL') parts.push(`Statut: ${f.status}`);
+    if (f.dateDebut) parts.push(`Du: ${new Date(f.dateDebut).toLocaleDateString('fr-FR')}`);
+    if (f.dateFin)   parts.push(`Au: ${new Date(f.dateFin).toLocaleDateString('fr-FR')}`);
+    if (f.membreId)  parts.push(`Membre: ${this.membres.find(m => m.id === f.membreId)?.nom || ''}`);
+    return parts.join(' · ');
+  }
+
   exportToPDF(): void {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageWidth  = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPos = 20;
+    let yPos = 0;
 
-    // En-tête
-    doc.setFillColor(102, 126, 234);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    
+    // ── Gradient header rouge ──────────────────────────────
+    doc.setFillColor(153, 27, 27);   // rouge foncé #991b1b
+    doc.rect(0, 0, pageWidth, 48, 'F');
+    doc.setFillColor(185, 28, 28);   // rouge #b91c1c — bande claire
+    doc.rect(0, 30, pageWidth, 18, 'F');
+
+    // Logo groupe (si disponible)
+    const logoUrl = this.groupeActif?.profilePhotoUrl;
+    let logoX = 10;
+    if (logoUrl) {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = logoUrl;
+        doc.addImage(img, 'JPEG', logoX, 6, 20, 20);
+        logoX += 26;
+      } catch { /* logo non dispo, skip */ }
+    }
+
+    // Nom du groupe + titre
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RAPPORT DES SANCTIONS', pageWidth / 2, 18, { align: 'center' });
-    
-    doc.setFontSize(11);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    const today = new Date().toLocaleDateString('fr-FR', { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-    });
-    doc.text(`Généré le ${today}`, pageWidth / 2, 30, { align: 'center' });
+    const groupeNom = this.groupeActif?.nom || 'Mon Groupe';
+    doc.text(groupeNom.toUpperCase(), logoX, 13);
 
-    yPos = 50;
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RAPPORT DES SANCTIONS', logoX, 24);
+
+    // Date + filtre actif à droite
+    const today = new Date().toLocaleDateString('fr-FR', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(today, pageWidth - 10, 12, { align: 'right' });
+
+    // Filtre actif résumé
+    const filterSummary = this.buildFilterSummary();
+    if (filterSummary) {
+      doc.setFontSize(7.5);
+      doc.setTextColor(255, 220, 200);
+      doc.text(`Filtre : ${filterSummary}`, pageWidth - 10, 20, { align: 'right' });
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.text(
+      `${this.filteredSanctions.length} sanction(s) · ${this.formatMontant(this.stats.montantTotal)} total`,
+      pageWidth - 10, 29, { align: 'right' }
+    );
+
+    // Ligne séparatrice or
+    doc.setDrawColor(240, 180, 41);
+    doc.setLineWidth(1.5);
+    doc.line(0, 48, pageWidth, 48);
+
+    yPos = 58;
 
     // Stats
     if (this.exportOptions.includeStats) {
@@ -1130,13 +1239,31 @@ formatMontant(montant: number | undefined | null): string {
       this.exportFlatPDF(doc, yPos);
     }
 
-    // Footer
+    // ── Footer sur chaque page ──────────────────────────
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
+
+      // Ligne séparatrice
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.5);
+      doc.line(14, pageHeight - 16, pageWidth - 14, pageHeight - 16);
+
+      // Gauche : nom groupe
+      doc.setFontSize(7);
       doc.setTextColor(150);
-      doc.text(`Page ${i} sur ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.text(this.groupeActif?.nom || '', 14, pageHeight - 9);
+
+      // Centre : pagination
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 9, { align: 'center' });
+
+      // Droite : généré par My2-0
+      doc.setFontSize(7);
+      doc.setTextColor(150);
+      doc.text('Généré par My2-0 · my2-0.cloud', pageWidth - 14, pageHeight - 9, { align: 'right' });
     }
 
     const filename = `sanctions_${new Date().toISOString().split('T')[0]}.pdf`;

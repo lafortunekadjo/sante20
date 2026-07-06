@@ -5,7 +5,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRippleModule } from '@angular/material/core';
@@ -46,7 +45,6 @@ interface FAQ {
     MatButtonModule,
     MatIconModule,
     MatExpansionModule,
-    MatTabsModule,
     MatChipsModule,
     MatDividerModule,
     MatRippleModule,
@@ -233,6 +231,7 @@ export class HomeComponent implements OnInit {
   // Catégories de tutoriels
   tutorialCategories = ['Tous', 'Démarrage', 'Membres', 'Matchs', 'Présences', 'Finances', 'Documentation'];
   selectedTutorialCategory = 'Tous';
+  tutoTab: 'video' | 'pdf' = 'video';
 
   // Catégories FAQ
   faqCategories = ['Tous', 'Groupe', 'Membres', 'Matchs', 'Présences', 'Finances', 'Statistiques', 'Général'];
@@ -306,9 +305,24 @@ export class HomeComponent implements OnInit {
     this.selectedFaqCategory = category;
   }
 
+  // Tutoriels — helpers
+  getThumbnail(tutorial: Tutorial): string {
+    if (tutorial.thumbnail) return tutorial.thumbnail;
+    // Si c'est une URL YouTube, extraire la miniature automatiquement
+    const ytMatch = tutorial.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    if (ytMatch) {
+      return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+    }
+    return 'assets/images/video-placeholder.jpg';
+  }
+
+  onThumbError(event: any): void {
+    event.target.src = 'assets/images/video-placeholder.jpg';
+  }
+
   // Contact
   contactSupport(): void {
-    window.location.href = 'mailto:support@sante2.cm?subject=Support Santé 2.0';
+    window.location.href = 'mailto:support@my2-0.cloud?subject=Support My2-0';
   }
 
   openWhatsApp(): void {

@@ -75,6 +75,7 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
   exercices: Exercice[] = [];
   caisses: Caisse[] = [];
   mouvements: MouvementCaisse[] = [];
+  activeTab: 'list'|'filter' = 'list';
 
   // Table
   displayedColumns = ['date', 'type', 'libelle', 'caisse', 'membre', 'montant', 'statut', 'actions'];
@@ -291,6 +292,11 @@ annulerMouvement(mouvement: MouvementCaisse): void {
     this.stats.nbSorties = sorties.length;
     this.stats.nbAnnules = sorties.length;
     this.stats.balance = this.stats.totalEntrees - this.stats.totalSorties;
+  }
+
+  hasActiveFilters(): boolean {
+    const f = this.filterForm.value;
+    return !!(f.search || f.type !== 'ALL' || f.caisseId || f.dateDebut || f.dateFin || f.statut !== 'ALL');
   }
 
   resetFilters(): void {

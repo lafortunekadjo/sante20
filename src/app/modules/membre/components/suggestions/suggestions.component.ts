@@ -54,6 +54,8 @@ import { TranslateModule } from '@ngx-translate/core';
   styleUrl: './suggestions.component.scss'
 })
 export class SuggestionsComponent implements OnInit {
+  tipsExpanded = false;
+  examplesExpanded = false;
   suggestionForm: FormGroup;
   membreId!: number;
   userId: number | null = null;

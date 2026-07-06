@@ -143,6 +143,11 @@ export class MDashboardComponent implements OnInit, OnDestroy {
 
   // Mode de filtrage
   filterMode: FilterMode = 'season';
+  showFilters = false;
+
+  toggleFilters(): void {
+    this.showFilters = !this.showFilters;
+  }
 
   // Exercices (Saisons)
   exercices: Exercice[] = [];
@@ -406,6 +411,14 @@ getMontantVerse(typeContributionId: number): number {
 /**
  * Détermine si une contribution est en retard ou proche de l'échéance
  */
+/**
+ * Calcule le pourcentage de progression d'une cotisation (0-100)
+ */
+getContribProgress(contrib: any): number {
+  if (!contrib.montantObjectif || contrib.montantObjectif <= 0) return 0;
+  return Math.min((contrib.montantVerse / contrib.montantObjectif) * 100, 100);
+}
+
 isEnAlerte(contrib: any): boolean {
   const montantVerse = this.getMontantVerse(contrib.id);
   const montantTotal = contrib.montantStandard || 0;

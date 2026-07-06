@@ -1,0 +1,371 @@
+<!-- Détails Partenaire - Admin -->
+<div class="detail-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && partenaire">
+
+    <!-- Header -->
+    <header class="page-header">
+      <button mat-icon-button (click)="goBack()" class="back-btn">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+
+      <div class="header-info">
+        <div class="partenaire-avatar">
+          {{ partenaire.nom?.charAt(0)?.toUpperCase() }}
+        </div>
+        <div class="header-text">
+          <div class="header-title">
+            <h1>{{ partenaire.nom }}</h1>
+            <span class="status-badge" [ngClass]="getStatutClass(partenaire.statut)">
+              <mat-icon>{{ getStatutIcon(partenaire.statut) }}</mat-icon>
+              {{ getStatutLabel(partenaire.statut) }}
+            </span>
+          </div>
+          <p class="header-meta">
+            <span class="type-badge" [ngClass]="getTypeContratClass(partenaire.typeContrat)">
+              {{ partenaire.typeContrat }}
+            </span>
+            <span class="separator">•</span>
+            <span>{{ partenaire.ville }}</span>
+            <span class="separator">•</span>
+            <span>Depuis {{ formatDate(partenaire.dateDebutContrat) }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button mat-stroked-button [routerLink]="['/admin/partenaires', partenaire.id, 'edit']">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="actionsMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #actionsMenu="matMenu">
+          <button mat-menu-item (click)="renouvelerContrat()">
+            <mat-icon>autorenew</mat-icon>
+            <span>Renouveler le contrat</span>
+          </button>
+          <button mat-menu-item (click)="modifierLimites()">
+            <mat-icon>tune</mat-icon>
+            <span>Modifier les limites</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item 
+            *ngIf="partenaire.statut === 'SUSPENDU' || partenaire.statut === 'EN_ATTENTE'"
+            (click)="activerPartenaire()">
+            <mat-icon>check_circle</mat-icon>
+            <span>Activer</span>
+          </button>
+          <button mat-menu-item 
+            *ngIf="partenaire.statut === 'ACTIF'"
+            (click)="suspendrePartenaire()">
+            <mat-icon>pause_circle</mat-icon>
+            <span>Suspendre</span>
+          </button>
+          <button mat-menu-item 
+            *ngIf="partenaire.statut !== 'RESILIE'"
+            (click)="resilierPartenaire()" class="warn-item">
+            <mat-icon>gavel</mat-icon>
+            <span>Résilier le contrat</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="deletePartenaire()" class="danger-item">
+            <mat-icon>delete_forever</mat-icon>
+            <span>Supprimer définitivement</span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
+
+    <!-- Alerte expiration -->
+    <div class="alert-banner warning" *ngIf="isExpiringSoon()">
+      <mat-icon>warning</mat-icon>
+      <span>Le contrat expire dans <strong>{{ getDaysUntilExpiration() }} jours</strong></span>
+      <button mat-stroked-button (click)="renouvelerContrat()">Renouveler</button>
+    </div>
+
+    <div class="alert-banner error" *ngIf="isExpired()">
+      <mat-icon>error</mat-icon>
+      <span>Le contrat est <strong>expiré</strong></span>
+      <button mat-stroked-button (click)="renouvelerContrat()">Renouveler</button>
+    </div>
+
+    <!-- Stats rapides -->
+    <div class="quick-stats">
+      <div class="stat-card">
+        <mat-icon>business</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ partenaire.nombreEntreprises || 0 }}</span>
+          <span class="stat-label">Entreprises</span>
+        </div>
+        <div class="stat-progress">
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="getUsagePercent(partenaire.nombreEntreprises || 0, partenaire.maxEntreprises)"
+            [ngClass]="getUsageClass(partenaire.nombreEntreprises || 0, partenaire.maxEntreprises)">
+          </mat-progress-bar>
+          <span class="stat-limit">/ {{ partenaire.maxEntreprises }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <mat-icon>campaign</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ partenaire.nombrePublicitesActives || 0 }}</span>
+          <span class="stat-label">Publicités actives</span>
+        </div>
+        <div class="stat-progress">
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="getUsagePercent(partenaire.nombrePublicitesActives || 0, partenaire.maxPublicitesActives)"
+            [ngClass]="getUsageClass(partenaire.nombrePublicitesActives || 0, partenaire.maxPublicitesActives)">
+          </mat-progress-bar>
+          <span class="stat-limit">/ {{ partenaire.maxPublicitesActives }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card" *ngIf="!isLoadingStats && stats">
+        <mat-icon>visibility</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatNumber(stats.totalImpressions) }}</span>
+          <span class="stat-label">Impressions ce mois</span>
+        </div>
+      </div>
+
+      <div class="stat-card" *ngIf="!isLoadingStats && stats">
+        <mat-icon>touch_app</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatNumber(stats.totalClics) }}</span>
+          <span class="stat-label">Clics ce mois</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="activeTab" animationDuration="200ms">
+
+      <!-- Tab Informations -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>info</mat-icon>
+          <span>Informations</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="info-grid">
+            <!-- Contact -->
+            <div class="info-card">
+              <div class="card-header">
+                <mat-icon>person</mat-icon>
+                <h3>Contact</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">Personne de contact</span>
+                  <span class="value">{{ partenaire.personneContact }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Email</span>
+                  <a class="value link" [href]="'mailto:' + partenaire.email">{{ partenaire.email }}</a>
+                </div>
+                <div class="info-row">
+                  <span class="label">Téléphone</span>
+                  <a class="value link" [href]="'tel:' + partenaire.telephone">{{ partenaire.telephone }}</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Adresse -->
+            <div class="info-card">
+              <div class="card-header">
+                <mat-icon>location_on</mat-icon>
+                <h3>Adresse</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-row" *ngIf="partenaire.adresse">
+                  <span class="label">Adresse</span>
+                  <span class="value">{{ partenaire.adresse }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Ville</span>
+                  <span class="value">{{ partenaire.ville }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contrat -->
+            <div class="info-card full-width">
+              <div class="card-header">
+                <mat-icon>description</mat-icon>
+                <h3>Contrat</h3>
+                <button mat-icon-button (click)="renouvelerContrat()" matTooltip="Renouveler">
+                  <mat-icon>autorenew</mat-icon>
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="contract-details">
+                  <div class="info-row">
+                    <span class="label">Type de contrat</span>
+                    <span class="value">
+                      <span class="type-badge" [ngClass]="getTypeContratClass(partenaire.typeContrat)">
+                        {{ partenaire.typeContrat }}
+                      </span>
+                    </span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Début</span>
+                    <span class="value">{{ formatDate(partenaire.dateDebutContrat) }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Fin</span>
+                    <span class="value" [class.expiring]="isExpiringSoon()" [class.expired]="isExpired()">
+                      {{ partenaire.dateFinContrat ? formatDate(partenaire.dateFinContrat) : 'Illimité' }}
+                      <span *ngIf="isExpiringSoon()">({{ getDaysUntilExpiration() }}j)</span>
+                    </span>
+                  </div>
+                  <div class="info-row" *ngIf="partenaire.montantContrat">
+                    <span class="label">Montant</span>
+                    <span class="value">{{ partenaire.montantContrat | number }} FCFA / {{ partenaire.frequenceFacturation }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Emplacements autorisés -->
+            <div class="info-card full-width">
+              <div class="card-header">
+                <mat-icon>grid_view</mat-icon>
+                <h3>Emplacements autorisés</h3>
+              </div>
+              <div class="card-body">
+                <div class="emplacements-list">
+                  <span 
+                    class="emplacement-chip"
+                    *ngFor="let emp of partenaire.emplacementsAutorises">
+                    {{ getEmplacementLabel(emp) }}
+                  </span>
+                  <span class="no-data" *ngIf="!partenaire.emplacementsAutorises?.length">
+                    Aucun emplacement configuré
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Utilisateurs -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>people</mat-icon>
+          <span>Utilisateurs</span>
+          <span class="tab-badge" *ngIf="utilisateurs.length">{{ utilisateurs.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h3>Utilisateurs du partenaire</h3>
+            <button mat-raised-button color="primary" (click)="ajouterUtilisateur()">
+              <mat-icon>person_add</mat-icon>
+              Ajouter un utilisateur
+            </button>
+          </div>
+
+          <div class="loading-inline" *ngIf="isLoadingUsers">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+
+          <div class="users-list" *ngIf="!isLoadingUsers">
+            <div class="user-card" *ngFor="let user of utilisateurs">
+              <div class="user-avatar">
+                {{ user.prenom?.charAt(0) }}{{ user.nom?.charAt(0) }}
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+                <span class="user-email">{{ user.email }}</span>
+              </div>
+              <span class="user-role" [ngClass]="'role-' + user.role?.toLowerCase()">
+                {{ getRoleLabel(user.role) }}
+              </span>
+              <span class="user-status" [class.active]="user.actif" [class.inactive]="!user.actif">
+                {{ user.actif ? 'Actif' : 'Inactif' }}
+              </span>
+              <div class="user-actions">
+                <button mat-icon-button (click)="resetPasswordUtilisateur(user)" matTooltip="Réinitialiser mot de passe">
+                  <mat-icon>lock_reset</mat-icon>
+                </button>
+                <button mat-icon-button (click)="supprimerUtilisateur(user)" matTooltip="Supprimer" class="delete-btn">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="empty-state" *ngIf="utilisateurs.length === 0">
+              <mat-icon>people_outline</mat-icon>
+              <p>Aucun utilisateur configuré</p>
+              <button mat-stroked-button (click)="ajouterUtilisateur()">
+                <mat-icon>person_add</mat-icon>
+                Ajouter un utilisateur
+              </button>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Statistiques -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>bar_chart</mat-icon>
+          <span>Statistiques</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="loading-inline" *ngIf="isLoadingStats">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+
+          <div class="stats-content" *ngIf="!isLoadingStats && stats">
+            <div class="stats-grid">
+              <div class="stat-box">
+                <mat-icon>visibility</mat-icon>
+                <span class="stat-number">{{ formatNumber(stats.totalImpressions) }}</span>
+                <span class="stat-title">Impressions totales</span>
+              </div>
+              <div class="stat-box">
+                <mat-icon>touch_app</mat-icon>
+                <span class="stat-number">{{ formatNumber(stats.totalClics) }}</span>
+                <span class="stat-title">Clics totaux</span>
+              </div>
+              <div class="stat-box">
+                <mat-icon>trending_up</mat-icon>
+                <span class="stat-number">{{ stats.tauxClicsMoyen | number:'1.2-2' }}%</span>
+                <span class="stat-title">CTR moyen</span>
+              </div>
+              <div class="stat-box">
+                <mat-icon>campaign</mat-icon>
+                <span class="stat-number">{{ stats.nombrePublicitesActives }}</span>
+                <span class="stat-title">Publicités actives</span>
+              </div>
+            </div>
+
+            <!-- Placeholder pour graphiques -->
+            <div class="charts-placeholder">
+              <mat-icon>insert_chart</mat-icon>
+              <p>Graphiques d'évolution à venir</p>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </ng-container>
+</div>

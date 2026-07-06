@@ -36,6 +36,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
 import { TranslateModule } from '@ngx-translate/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-presence-form',
@@ -58,7 +59,8 @@ import { TranslateModule } from '@ngx-translate/core';
     MatMenuTrigger,
     MatMenuModule,
     MatDividerModule,
-    TranslateModule
+    TranslateModule,
+    MatTooltipModule
   ],
   templateUrl: './presence-form.component.html',
   styleUrls: ['./presence-form.component.scss']
@@ -75,6 +77,12 @@ export class PresenceFormComponent implements OnInit {
   // Ajouter cette propriété
 isGeneratingImage = false;
 selectedImageFormat: 'full' | 'story' | 'square' = 'full';
+
+  // ── Navigation tabs ──
+  activeTab: 'equipe1' | 'equipe2' | 'add' = 'equipe1';
+
+  // ── Cards joueurs expandées ──
+  private expandedPlayers = new Set<string>();
   
   // Membres des deux groupes
   membres: Membre[] = [];
@@ -111,6 +119,27 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
     private cdr: ChangeDetectorRef,
     private matchImageService: MatchImageService
   ) {}
+
+  // ── Méthodes navigation ──────────────────────────────────
+  setTab(tab: 'equipe1' | 'equipe2' | 'add'): void {
+    this.activeTab = tab;
+  }
+
+  togglePlayerCard(presence: any): void {
+    const key = this.getPresenceKey(presence);
+    if (this.expandedPlayers.has(key)) this.expandedPlayers.delete(key);
+    else                               this.expandedPlayers.add(key);
+  }
+
+  isPlayerExpanded(presence: any): boolean {
+    return this.expandedPlayers.has(this.getPresenceKey(presence));
+  }
+
+  private getPresenceKey(presence: any): string {
+    return presence?.membre?.id
+      ? `m_${presence.membre.id}`
+      : `o_${presence.nomOccasionnel || Math.random()}`;
+  }
 
   ngOnInit(): void {
     const matchId = Number(this.route.snapshot.paramMap.get('matchId'));

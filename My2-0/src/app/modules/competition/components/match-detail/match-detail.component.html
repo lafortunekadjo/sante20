@@ -1,0 +1,548 @@
+ <div class="match-detail" *ngIf="match(); else loadingTpl">
+
+      <!-- ── HERO (inchangé) ──────────────────── -->
+      <div class="match-detail__hero">
+        <button class="btn-back" (click)="goBack()">
+          <i class="material-icons">arrow_back</i>
+        </button>
+        <div class="match-hero">
+          <div class="team-display team-display--home"
+               [class.winner]="isWinner('home')">
+            <div class="team-display__logo">
+              <img *ngIf="match()!.domicile?.logoUrl"
+                   [src]="match()!.domicile.logoUrl"/>
+              <span *ngIf="!match()!.domicile?.logoUrl">
+                {{ getInitials(match()!.domicile?.nomEquipe) }}
+              </span>
+            </div>
+            <span class="team-display__name">{{ match()!.domicile?.nomEquipe }}</span>
+            <span class="team-display__label">Domicile</span>
+          </div>
+
+          <div class="score-display">
+            <div class="score-display__context">
+              <span *ngIf="match()!.journeeNumero > 0">J{{ match()!.journeeNumero }}</span>
+              <span *ngIf="match()!.tourNom">{{ match()!.tourNom }}</span>
+            </div>
+            <div class="score-display__main">
+              <span class="score-num" [class.winner-score]="isWinner('home')">
+                {{ isTermine() ? (match()!.butsDomicile ?? 0) : '–' }}
+              </span>
+              <span class="score-sep">:</span>
+              <span class="score-num" [class.winner-score]="isWinner('away')">
+                {{ isTermine() ? (match()!.butsExterieur ?? 0) : '–' }}
+              </span>
+            </div>
+            <div class="score-display__statut"
+                 [class]="'statut-' + match()!.statut.toLowerCase()">
+              {{ statutLabel() }}
+            </div>
+            <div class="score-display__infos">
+              <span *ngIf="match()!.dateHeure">
+                <i class="material-icons">schedule</i>
+                {{ match()!.dateHeure | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+              <span *ngIf="match()!.lieu">
+                <i class="material-icons">location_on</i>{{ match()!.lieu }}
+              </span>
+            </div>
+          </div>
+
+          <div class="team-display team-display--away"
+               [class.winner]="isWinner('away')">
+            <div class="team-display__logo">
+              <img *ngIf="match()!.exterieur?.logoUrl"
+                   [src]="match()!.exterieur.logoUrl"/>
+              <span *ngIf="!match()!.exterieur?.logoUrl">
+                {{ getInitials(match()!.exterieur?.nomEquipe) }}
+              </span>
+            </div>
+            <span class="team-display__name">{{ match()!.exterieur?.nomEquipe }}</span>
+            <span class="team-display__label">Extérieur</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TABS ─────────────────────────────── -->
+      <div class="match-detail__tabs">
+        <div class="tabs-nav">
+          <button class="tab-btn"
+                  *ngFor="let t of tabs"
+                  [class.active]="activeTab() === t.key"
+                  (click)="setTab(t.key)">
+            <i class="material-icons">{{ t.icon }}</i>
+            {{ t.label }}
+          </button>
+        </div>
+
+        <div class="tabs-content">
+
+          <!-- ── APERÇU ──────────── -->
+          <div *ngIf="activeTab() === 'apercu'" class="apercu-tab">
+            <div class="timeline" *ngIf="sortedEvents().length">
+              <h3 class="section-title">Résumé du match</h3>
+              <div class="timeline__content">
+                <div class="timeline__event"
+                     *ngFor="let e of sortedEvents()"
+                     [class]="'event-type-' + e.type.toLowerCase()">
+                  <div class="timeline__side timeline__side--home"
+                       *ngIf="!isExterieurEvent(e)">
+                    <span class="tl-player">{{ e.joueurNom }}</span>
+                    <span class="tl-assist"
+                          *ngIf="e.passeurNom">
+                      ↳ {{ e.passeurNom }}
+                    </span>
+                  </div>
+                  <div class="timeline__center">
+                    <span class="tl-icon">{{ eventIcon(e.type) }}</span>
+                    <span class="tl-minute">
+                      {{ e.minute }}'
+                      <span *ngIf="e.minuteAdditionnel"
+                            class="tl-add">+{{ e.minuteAdditionnel }}</span>
+                    </span>
+                  </div>
+                  <div class="timeline__side timeline__side--away"
+                       *ngIf="isExterieurEvent(e)">
+                    <span class="tl-player">{{ e.joueurNom }}</span>
+                    <span class="tl-assist"
+                          *ngIf="e.passeurNom">
+                      ↳ {{ e.passeurNom }}
+                    </span>
+                  </div>
+                  <div class="timeline__side"
+                       *ngIf="!isExterieurEvent(e)"></div>
+                </div>
+              </div>
+            </div>
+            <div class="not-played" *ngIf="!sortedEvents().length">
+              <i class="material-icons">sports_soccer</i>
+              <p>{{ isTermine() ? 'Aucun événement' : statutLabel() }}</p>
+            </div>
+          </div>
+
+          <!-- ── COMPOSITION ────────── -->
+          <div *ngIf="activeTab() === 'composition'" class="composition-tab">
+            <div class="compo-grid">
+              <div class="compo-team" *ngFor="let side of ['domicile', 'exterieur']">
+                <div class="compo-team__header">
+                  <span>
+                    {{ side === 'domicile'
+                      ? match()!.domicile?.nomEquipe
+                      : match()!.exterieur?.nomEquipe }}
+                  </span>
+                </div>
+                <ng-container *ngFor="let poste of postes">
+                  <div class="compo-poste-header"
+                       *ngIf="getByPoste(getCompo(side), poste.value).length">
+                    {{ poste.label }}
+                  </div>
+                  <div class="compo-player"
+                       *ngFor="let p of getByPoste(getCompo(side), poste.value)"
+                       [class.remplacant]="p.statut === 'REMPLACANT'">
+                    <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
+                    <span class="player-name">
+                      {{ p.joueurPrenom }} {{ p.joueurNom }}
+                      <i class="material-icons captain"
+                         *ngIf="p.capitaine">star</i>
+                    </span>
+                  </div>
+                </ng-container>
+                <div class="compo-empty"
+                     *ngIf="!getCompo(side)?.length">
+                  Composition non saisie
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ÉVÉNEMENTS ─────────── -->
+          <div *ngIf="activeTab() === 'evenements'" class="evenements-tab">
+
+            <div class="section-header">
+              <h3 class="section-title">
+                <i class="material-icons">sports_soccer</i>
+                Événements
+              </h3>
+              <button class="btn-primary btn-sm"
+                      *ngIf="canEdit()"
+                      (click)="toggleEventForm()">
+                <i class="material-icons">
+                  {{ showEventForm() ? 'close' : 'add' }}
+                </i>
+                {{ showEventForm() ? 'Fermer' : 'Ajouter' }}
+              </button>
+            </div>
+
+            <!-- ── FORMULAIRE ÉVÉNEMENT ── -->
+            <div class="event-form" *ngIf="showEventForm() && canEdit()">
+
+              <!-- Step 1 : Type + Équipe + Minute -->
+              <div class="event-form__step">
+                <div class="form-grid form-grid--3">
+
+                  <!-- Type -->
+                  <div class="form-field">
+                    <label class="form-label">Type *</label>
+                    <div class="type-selector">
+                      <button class="type-btn"
+                              *ngFor="let e of eventTypes"
+                              [class.active]="eventTypeSelect() === e.value"
+                              (click)="onTypeChange(e.value)">
+                        <span class="type-btn__icon">{{ e.emoji }}</span>
+                        <span>{{ e.label }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Équipe -->
+                  <div class="form-field">
+                    <label class="form-label">Équipe *</label>
+                    <div class="equipe-selector">
+                      <button class="equipe-btn"
+                              [class.active]="eventEquipe() === 'domicile'"
+                              (click)="onEquipeChange('domicile')">
+                        <div class="mini-logo">
+                          <img *ngIf="match()!.domicile?.logoUrl"
+                               [src]="match()!.domicile.logoUrl"/>
+                          <span *ngIf="!match()!.domicile?.logoUrl">
+                            {{ getInitials(match()!.domicile?.nomEquipe) }}
+                          </span>
+                        </div>
+                        {{ match()!.domicile?.nomEquipe }}
+                      </button>
+                      <button class="equipe-btn"
+                              [class.active]="eventEquipe() === 'exterieur'"
+                              (click)="onEquipeChange('exterieur')">
+                        <div class="mini-logo">
+                          <img *ngIf="match()!.exterieur?.logoUrl"
+                               [src]="match()!.exterieur.logoUrl"/>
+                          <span *ngIf="!match()!.exterieur?.logoUrl">
+                            {{ getInitials(match()!.exterieur?.nomEquipe) }}
+                          </span>
+                        </div>
+                        {{ match()!.exterieur?.nomEquipe }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Minute -->
+                  <div class="form-field">
+                    <label class="form-label">Minute *</label>
+                    <div class="minute-input-group">
+                      <input [(ngModel)]="eventMinute"
+                             type="number" min="1" max="120"
+                             class="form-input minute-input"
+                             placeholder="Ex: 45"/>
+                      <span class="minute-sep">+</span>
+                      <input [(ngModel)]="eventMinuteAdd"
+                             type="number" min="1" max="15"
+                             class="form-input minute-input minute-input--add"
+                             placeholder="0"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 2 : Joueur principal -->
+              <div class="event-form__step"
+                   *ngIf="eventEquipe() && eventTypeSelect()">
+                <div class="form-field">
+                  <label class="form-label">
+                    {{ joueurLabel() }} *
+                  </label>
+
+                  <!-- Picker joueurs (depuis composition) -->
+                  <div class="joueur-picker"
+                       *ngIf="joueursDisponibles().length">
+                    <div class="joueur-picker__search">
+                      <i class="material-icons">search</i>
+                      <input [(ngModel)]="joueurSearch"
+                             placeholder="Filtrer par nom..."
+                             class="joueur-picker__input"/>
+                    </div>
+                    <div class="joueur-picker__list">
+                      <button class="joueur-picker__item"
+                              *ngFor="let j of joueursFiltres()"
+                              [class.active]="joueurSelectionne()?.membreId === j.membreId"
+                              (click)="selectionnerJoueur(j)">
+                        <span class="jp-num">{{ j.numeroDos ?? '–' }}</span>
+                        <span class="jp-nom">
+                          {{ j.prenom }} {{ j.nom }}
+                        </span>
+                        <span class="jp-equipe">{{ j.equipeNom }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Fallback saisie manuelle si pas de composition -->
+                  <div class="no-compo-fallback"
+                       *ngIf="!joueursDisponibles().length">
+                    <div class="fallback-warning">
+                      <i class="material-icons">info</i>
+                      Composition non saisie — saisie manuelle
+                    </div>
+                    <input [(ngModel)]="joueurManuelNom"
+                           class="form-input"
+                           placeholder="Nom du joueur"/>
+                  </div>
+
+                  <!-- Joueur sélectionné -->
+                  <div class="joueur-selected"
+                       *ngIf="joueurSelectionne()">
+                    <span class="js-num">{{ joueurSelectionne()!.numeroDos ?? '–' }}</span>
+                    <span class="js-nom">
+                      {{ joueurSelectionne()!.prenom }}
+                      {{ joueurSelectionne()!.nom }}
+                    </span>
+                    <button class="js-clear"
+                            (click)="joueurSelectionne.set(null)">
+                      <i class="material-icons">close</i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Passeur (pour les buts) -->
+                <div class="form-field"
+                     *ngIf="isTypeBut() && joueurSelectionne()">
+                  <label class="form-label">Passeur décisif (optionnel)</label>
+
+                  <div class="joueur-picker joueur-picker--sm"
+                       *ngIf="passeursDisponibles().length">
+                    <div class="joueur-picker__search">
+                      <i class="material-icons">search</i>
+                      <input [(ngModel)]="passeurSearch"
+                             placeholder="Filtrer..."
+                             class="joueur-picker__input"/>
+                    </div>
+                    <div class="joueur-picker__list">
+                      <button class="joueur-picker__item"
+                              *ngFor="let j of passeursFiltres()"
+                              [class.active]="passeurSelectionne()?.membreId === j.membreId"
+                              (click)="selectionnerPasseur(j)">
+                        <span class="jp-num">{{ j.numeroDos ?? '–' }}</span>
+                        <span class="jp-nom">{{ j.prenom }} {{ j.nom }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Passeur sélectionné -->
+                  <div class="joueur-selected"
+                       *ngIf="passeurSelectionne()">
+                    <span class="js-num">{{ passeurSelectionne()!.numeroDos ?? '–' }}</span>
+                    <span class="js-nom">
+                      {{ passeurSelectionne()!.prenom }}
+                      {{ passeurSelectionne()!.nom }}
+                    </span>
+                    <button class="js-clear"
+                            (click)="passeurSelectionne.set(null)">
+                      <i class="material-icons">close</i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Joueur sortant (remplacement) -->
+                <div class="form-field"
+                     *ngIf="isTypeRemplacement() && joueurSelectionne()">
+                  <label class="form-label">Joueur sortant *</label>
+
+                  <div class="joueur-picker joueur-picker--sm"
+                       *ngIf="joueursSortants().length">
+                    <div class="joueur-picker__list">
+                      <button class="joueur-picker__item"
+                              *ngFor="let j of joueursSortants()"
+                              [class.active]="joueurSortantSelectionne()?.membreId === j.membreId"
+                              (click)="joueurSortantSelectionne.set(j)">
+                        <span class="jp-num">{{ j.numeroDos ?? '–' }}</span>
+                        <span class="jp-nom">{{ j.prenom }} {{ j.nom }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions formulaire -->
+              <div class="event-form__actions">
+                <button class="btn-ghost btn-sm"
+                        (click)="resetEventForm()">
+                  Annuler
+                </button>
+               <button class="btn-primary btn-sm"
+                      [disabled]="!canSubmitEvent() || savingEvent()"
+                      (click)="ajouterEvenement()">
+                <i class="material-icons">add</i>
+                <!-- Utilisation correcte du signal avec des parenthèses -->
+                {{ savingEvent() ? '...' : 'Ajouter l\'événement' }}
+              </button>
+              </div>
+            </div>
+
+            <!-- ── LISTE ÉVÉNEMENTS ── -->
+            <div class="events-list">
+              <div class="event-row"
+                   *ngFor="let e of sortedEvents()">
+                <span class="event-row__minute">
+                  {{ e.minute }}'
+                  <span class="additional"
+                        *ngIf="e.minuteAdditionnel">
+                    +{{ e.minuteAdditionnel }}
+                  </span>
+                </span>
+                <span class="event-row__icon">{{ eventIcon(e.type) }}</span>
+                <div class="event-row__info">
+                  <span class="event-row__player">{{ e.joueurNom }}</span>
+                  <span class="event-row__team">{{ e.equipeNom }}</span>
+                  <span class="event-row__assist"
+                        *ngIf="e.passeurNom">
+                    ↳ {{ e.passeurNom }}
+                  </span>
+                  <span class="event-row__sortant"
+                        *ngIf="e.joueurSortantNom">
+                    ↓ {{ e.joueurSortantNom }}
+                  </span>
+                </div>
+                <button class="btn-icon--danger"
+                        *ngIf="canEdit()"
+                        (click)="supprimerEvenement(e.id!)"
+                        title="Supprimer">
+                  <i class="material-icons">delete_outline</i>
+                </button>
+              </div>
+
+              <div class="no-events-list"
+                   *ngIf="!sortedEvents().length">
+                <i class="material-icons">sports</i>
+                Aucun événement
+              </div>
+            </div>
+          </div>
+
+          <!-- ── SAISIE ──────────────── -->
+          <!-- (inchangé — score, temps, forfait, report) -->
+           <div *ngIf="activeTab() === 'saisie'" class="saisie-tab">
+
+            <!-- Résultat -->
+            <div class="saisie-section">
+              <h3 class="section-title">
+                <i class="material-icons">scoreboard</i>
+                Saisir le score
+              </h3>
+
+              <form [formGroup]="scoreForm" (ngSubmit)="saisirScore()">
+                <div class="score-inputs">
+                  <div class="score-input-group">
+                    <label>{{ match()!.domicile?.nomEquipe }}</label>
+                    <input formControlName="butsDomicile"
+                           type="number" min="0" class="score-big-input"/>
+                  </div>
+                  <span class="score-vs">–</span>
+                  <div class="score-input-group">
+                    <label>{{ match()!.exterieur?.nomEquipe }}</label>
+                    <input formControlName="butsExterieur"
+                           type="number" min="0" class="score-big-input"/>
+                  </div>
+                </div>
+
+                <!-- Prolongations -->
+                <div class="prolong-section"
+                     *ngIf="scoreForm.get('avecProlong')?.value">
+                  <h4>Prolongations</h4>
+                  <div class="score-inputs score-inputs--sm">
+                    <input formControlName="butsDomicileProlong"
+                           type="number" min="0" class="score-big-input score-big-input--sm"/>
+                    <span class="score-vs">–</span>
+                    <input formControlName="butsExterieurProlong"
+                           type="number" min="0" class="score-big-input score-big-input--sm"/>
+                  </div>
+                </div>
+
+                <!-- TAB -->
+                <div class="prolong-section"
+                     *ngIf="scoreForm.get('avecTab')?.value">
+                  <h4>Tirs au but</h4>
+                  <div class="score-inputs score-inputs--sm">
+                    <input formControlName="tabDomicile"
+                           type="number" min="0" class="score-big-input score-big-input--sm"/>
+                    <span class="score-vs">–</span>
+                    <input formControlName="tabExterieur"
+                           type="number" min="0" class="score-big-input score-big-input--sm"/>
+                  </div>
+                </div>
+
+                <div class="saisie-options">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="avecProlong"/>
+                    Avec prolongations
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="avecTab"/>
+                    Avec tirs au but
+                  </label>
+                </div>
+
+                <div class="saisie-actions">
+                  <button type="submit"
+                          class="btn-success"
+                          [disabled]="scoreForm.invalid || savingScore()">
+                    <i class="material-icons">check</i>
+                    {{ savingScore() ? 'Enregistrement...' : 'Valider le score' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Forfait -->
+            <div class="saisie-section saisie-section--danger">
+              <h3 class="section-title">
+                <i class="material-icons">warning</i>
+                Déclarer un forfait
+              </h3>
+              <div class="forfait-actions">
+                <button class="btn-danger btn-sm"
+                        (click)="declarerForfait(Cote.DOMICILE)">
+                  Forfait {{ match()!.domicile?.nomEquipe }}
+                </button>
+                <button class="btn-danger btn-sm"
+                        (click)="declarerForfait(Cote.EXTERIEUR)">
+                  Forfait {{ match()!.exterieur?.nomEquipe }}
+                </button>
+                <button class="btn-danger btn-sm"
+                        (click)="declarerForfait(Cote.LES_DEUX)">
+                  Double forfait
+                </button>
+              </div>
+            </div>
+
+            <!-- Reporter -->
+            <div class="saisie-section">
+              <h3 class="section-title">
+                <i class="material-icons">event_busy</i>
+                Reporter le match
+              </h3>
+              <div class="reporter-form">
+                <input type="datetime-local"
+                       [(ngModel)]="nouvelleDateHeure"
+                       class="form-input"/>
+                <button class="btn-warning btn-sm"
+                        [disabled]="!nouvelleDateHeure"
+                        (click)="reporter()">
+                  <i class="material-icons">event</i>
+                  Reporter
+                </button>
+              </div>
+            </div>
+          </div>
+
+  
+   
+
+
+        </div>
+      </div>
+    </div>
+
+    <ng-template #loadingTpl>
+      <div class="match-detail__loading">
+        <div class="spinner"></div>
+        <span>Chargement...</span>
+      </div>
+    </ng-template>

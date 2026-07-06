@@ -1,0 +1,101 @@
+import { Component, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { Equipe } from '../../../core/models/groupe.model copy';
+import { Membre } from '../../../core/models/membre.model';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+
+export interface CheckInResult {
+  equipe: Equipe | null;
+  hasPlayed: boolean;
+}
+
+@Component({
+  selector: 'app-equipe-selection-dialog',
+  imports: [CommonModule,
+      MatCardModule,
+      MatButtonModule,
+      MatIconModule,
+      MatTableModule,
+      MatInputModule,
+      MatFormFieldModule,
+      MatSelectModule,
+      MatCheckboxModule,
+      MatPaginatorModule,
+      MatSortModule,
+      MatProgressSpinnerModule,
+      MatDialogModule,
+      MatDividerModule,
+      MatRadioModule,
+      FormsModule, 
+      ReactiveFormsModule],
+  templateUrl: './equipe-selection-dialog.component.html',
+  styleUrl: './equipe-selection-dialog.component.scss'
+})
+export class EquipeSelectionDialogComponent {
+  selectedEquipeId: number | null;
+  hasPlayed: boolean = true;
+  playerStatus: 'played' | 'notPlayed' = 'played';
+
+  constructor(
+    public dialogRef: MatDialogRef<EquipeSelectionDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: {
+      equipes: Equipe[],
+      defaultEquipeId?: number,
+      joueur?: Membre
+    }
+  ) {
+    this.selectedEquipeId = data.defaultEquipeId ?? null;
+  }
+
+  // Méthode pour obtenir le nom de l'équipe sélectionnée
+  getSelectedEquipeName(): string {
+    if (!this.selectedEquipeId) return '';
+    const equipe = this.data.equipes.find(e => e.id === this.selectedEquipeId);
+    return equipe ? equipe.nom : '';
+  }
+
+  onPlayerStatusChange() {
+    if (this.playerStatus === 'notPlayed') {
+      this.selectedEquipeId = null;
+      this.hasPlayed = false;
+    } else {
+      this.hasPlayed = true;
+    }
+  }
+
+  confirmSelection() {
+    const selectedEquipe = this.selectedEquipeId ? 
+      this.data.equipes.find(e => e.id === this.selectedEquipeId) : null;
+    
+    const result: CheckInResult = {
+      equipe: selectedEquipe || null,
+      hasPlayed: this.hasPlayed
+    };
+    
+    this.dialogRef.close(result);
+  }
+
+  cancel() {
+    this.dialogRef.close(null);
+  }
+
+  isValidSelection(): boolean {
+    // Valide si le joueur n'a pas joué OU s'il a joué et a sélectionné une équipe
+    return this.playerStatus === 'notPlayed' || 
+           (this.playerStatus === 'played' && this.selectedEquipeId !== null);
+  }
+}

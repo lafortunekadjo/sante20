@@ -1,138 +1,134 @@
 <div class="analytics-dashboard">
-  <!-- ============ HEADER ============ -->
-  <div class="dashboard-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">
-            <mat-icon>analytics</mat-icon>
-            Tableau de bord Analytics
-          </h1>
-          <p class="page-subtitle">Suivez la croissance et l'engagement de votre plateforme My2-0</p>
-        </div>
-        <div class="header-actions">
-          <button mat-icon-button matTooltip="Actualiser" (click)="refreshData()">
-            <mat-icon>refresh</mat-icon>
-          </button>
-          <button mat-icon-button [matMenuTriggerFor]="exportMenu" matTooltip="Exporter le rapport">
-            <mat-icon>download</mat-icon>
-          </button>
-          <mat-menu #exportMenu="matMenu">
-            <button mat-menu-item (click)="exportReport()">
-              <mat-icon>picture_as_pdf</mat-icon>
-              <span>Rapport PDF</span>
-            </button>
-            <button mat-menu-item (click)="exportReport()">
-              <mat-icon>table_chart</mat-icon>
-              <span>Export Excel</span>
-            </button>
-          </mat-menu>
+
+  <!-- ══ HEADER GRADIENT ══════════════════════════════ -->
+  <div class="ad-header">
+    <div class="ad-header-top">
+      <div class="ad-title-group">
+        <div class="ad-icon"><mat-icon>analytics</mat-icon></div>
+        <div>
+          <h1>Tableau de bord Analytics</h1>
+          <p>Croissance et engagement de la plateforme My2-0</p>
         </div>
       </div>
-      
-      <!-- Sélecteur de période -->
-      <div class="period-selector">
-        <span class="period-label">Période :</span>
-        <mat-chip-listbox [value]="selectedPeriod" (change)="onPeriodChange($event.value)">
-          <mat-chip-option *ngFor="let period of periods" [value]="period.value">
-            {{ period.label }}
-          </mat-chip-option>
-        </mat-chip-listbox>
+      <div class="ad-actions">
+        <button mat-icon-button class="ad-icon-btn" matTooltip="Actualiser" (click)="refreshData()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <button mat-icon-button class="ad-icon-btn" [matMenuTriggerFor]="exportMenu" matTooltip="Exporter">
+          <mat-icon>download</mat-icon>
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="exportReport()">
+            <mat-icon>picture_as_pdf</mat-icon><span>Rapport PDF</span>
+          </button>
+          <button mat-menu-item (click)="exportReport()">
+            <mat-icon>table_chart</mat-icon><span>Export Excel</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+
+    <!-- Sélecteur de période -->
+    <div class="ad-period-bar">
+      <span class="ad-period-label">Période :</span>
+      <div class="ad-period-chips">
+        <button class="ad-period-chip" *ngFor="let period of periods"
+                [class.active]="selectedPeriod === period.value"
+                (click)="onPeriodChange(period.value)">
+          {{ period.label }}
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ============ LOADING ============ -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
+  <!-- ══ LOADING ══════════════════════════════════════ -->
+  <div *ngIf="isLoading" class="ad-loading">
+    <mat-spinner diameter="44"></mat-spinner>
     <p>Analyse des données en cours...</p>
   </div>
 
-  <!-- ============ CONTENT ============ -->
-  <div *ngIf="!isLoading" class="dashboard-content" [@fadeSlideIn]>
-    
-    <!-- ===== SECTION 1: ACQUISITION ===== -->
-    <section class="analytics-section">
-      <div class="section-header">
-        <div class="section-title">
-          <mat-icon>people</mat-icon>
-          <h2>Acquisition</h2>
+  <!-- ══ TABS STICKY ══════════════════════════════════ -->
+  <div class="ad-tabs-wrapper" *ngIf="!isLoading">
+
+    <div class="ad-tabs-bar">
+      <button class="ad-tab" [class.active]="activeTab === 'acquisition'" (click)="activeTab = 'acquisition'">
+        <mat-icon>people</mat-icon><span>Acquisition</span>
+      </button>
+      <button class="ad-tab" [class.active]="activeTab === 'engagement'" (click)="activeTab = 'engagement'">
+        <mat-icon>bolt</mat-icon><span>Engagement</span>
+      </button>
+      <button class="ad-tab" [class.active]="activeTab === 'retention'" (click)="activeTab = 'retention'">
+        <mat-icon>repeat</mat-icon><span>Rétention</span>
+      </button>
+      <button class="ad-tab" [class.active]="activeTab === 'charts'" (click)="activeTab = 'charts'">
+        <mat-icon>bar_chart</mat-icon><span>Graphiques</span>
+      </button>
+      <button class="ad-tab" [class.active]="activeTab === 'funnel'" (click)="activeTab = 'funnel'">
+        <mat-icon>filter_alt</mat-icon><span>Funnel</span>
+      </button>
+      <button class="ad-tab" [class.active]="activeTab === 'groupes'" (click)="activeTab = 'groupes'">
+        <mat-icon>leaderboard</mat-icon><span>Groupes</span>
+      </button>
+    </div>
+
+    <!-- ── TAB ACQUISITION ───────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'acquisition'">
+      <div class="ad-content">
+        <p class="ad-section-subtitle">Croissance de votre base d'utilisateurs et groupes</p>
+
+        <div class="kpi-grid four-columns">
+          <div class="kpi-card">
+            <div class="kpi-icon groups"><mat-icon>groups</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ kpis.totalGroupes }}</span>
+              <span class="kpi-label">Groupes inscrits</span>
+              <div class="kpi-trend" [ngClass]="getVariationClass(kpis.totalGroupes, previousKpis.totalGroupes)">
+                <mat-icon>{{ kpis.newGroupesThisMonth > 0 ? 'trending_up' : 'trending_flat' }}</mat-icon>
+                <span>+{{ kpis.newGroupesThisMonth }} ce mois</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon growth"><mat-icon>show_chart</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.groupesGrowthRate) }}</span>
+              <span class="kpi-label">Croissance groupes</span>
+              <div class="kpi-trend" [ngClass]="getVariationClass(kpis.groupesGrowthRate, 0)">
+                <mat-icon>{{ kpis.groupesGrowthRate > 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+                <span>vs mois précédent</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon users"><mat-icon>person</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatNumber(kpis.totalUsers) }}</span>
+              <span class="kpi-label">Utilisateurs totaux</span>
+              <div class="kpi-trend positive">
+                <mat-icon>trending_up</mat-icon><span>+{{ kpis.newUsersThisMonth }} ce mois</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card highlight">
+            <div class="kpi-icon conversion"><mat-icon>sync_alt</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.conversionRate!) }}</span>
+              <span class="kpi-label">Taux de conversion</span>
+              <div class="kpi-secondary">{{ kpis.totalSignups }} inscrits / {{ kpis.totalVisitors }} visiteurs</div>
+            </div>
+          </div>
         </div>
-        <p class="section-subtitle">Croissance de votre base d'utilisateurs et groupes</p>
       </div>
-      
-      <div class="kpi-grid four-columns">
-        <!-- Total Groupes -->
-        <div class="kpi-card">
-          <div class="kpi-icon groups">
-            <mat-icon>groups</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value" [@countUp]="kpis.totalGroupes">{{ kpis.totalGroupes }}</span>
-            <span class="kpi-label">Groupes inscrits</span>
-            <div class="kpi-trend" [ngClass]="getVariationClass(kpis.totalGroupes, previousKpis.totalGroupes)">
-              <mat-icon>{{ kpis.newGroupesThisMonth > 0 ? 'trending_up' : 'trending_flat' }}</mat-icon>
-              <span>+{{ kpis.newGroupesThisMonth }} ce mois</span>
-            </div>
-          </div>
-        </div>
+    </div>
 
-        <!-- Croissance Groupes -->
-        <div class="kpi-card">
-          <div class="kpi-icon growth">
-            <mat-icon>show_chart</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.groupesGrowthRate) }}</span>
-            <span class="kpi-label">Croissance groupes</span>
-            <div class="kpi-trend" [ngClass]="getVariationClass(kpis.groupesGrowthRate, 0)">
-              <mat-icon>{{ kpis.groupesGrowthRate > 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
-              <span>vs mois précédent</span>
-            </div>
-          </div>
-        </div>
+    <!-- ── TAB ENGAGEMENT ────────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'engagement'">
+      <div class="ad-content">
+        <p class="ad-section-subtitle">Mesure de l'activité réelle des utilisateurs et groupes</p>
 
-        <!-- Total Utilisateurs -->
-        <div class="kpi-card">
-          <div class="kpi-icon users">
-            <mat-icon>person</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatNumber(kpis.totalUsers) }}</span>
-            <span class="kpi-label">Utilisateurs totaux</span>
-            <div class="kpi-trend positive">
-              <mat-icon>trending_up</mat-icon>
-              <span>+{{ kpis.newUsersThisMonth }} ce mois</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Taux de conversion -->
-        <div class="kpi-card highlight">
-          <div class="kpi-icon conversion">
-            <mat-icon>sync_alt</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.conversionRate) }}</span>
-            <span class="kpi-label">Taux de conversion</span>
-            <div class="kpi-secondary">
-              {{ kpis.totalSignups }} inscrits / {{ kpis.totalVisitors }} visiteurs
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION 2: ACTIVATION & ENGAGEMENT ===== -->
-    <section class="analytics-section">
-      <div class="section-header">
-        <div class="section-title">
-          <mat-icon>bolt</mat-icon>
-          <h2>Activation & Engagement</h2>
-        </div>
-        <p class="section-subtitle">Mesure de l'activité réelle des utilisateurs et groupes</p>
-        
         <!-- Critères configurables -->
         <div class="criteria-config">
           <mat-form-field appearance="outline" class="criteria-field">
@@ -154,346 +150,233 @@
             </mat-select>
           </mat-form-field>
         </div>
-      </div>
-      
-      <div class="kpi-grid four-columns">
-        <!-- Utilisateurs actifs -->
-        <div class="kpi-card">
-          <div class="kpi-icon active-users">
-            <mat-icon>verified_user</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ kpis.activeUsers }}</span>
-            <span class="kpi-label">Utilisateurs actifs</span>
-            <div class="kpi-badge" [class.good]="kpis.activeUsersRate >= 50" [class.warning]="kpis.activeUsersRate < 50">
-              {{ formatPercent(kpis.activeUsersRate) }} du total
-            </div>
-          </div>
-        </div>
 
-        <!-- Taux d'engagement groupes -->
-        <div class="kpi-card highlight">
-          <div class="kpi-icon engagement">
-            <mat-icon>sports_soccer</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.engagementRate) }}</span>
-            <span class="kpi-label">Taux d'engagement</span>
-            <div class="kpi-secondary">
-              {{ kpis.engagedGroupes }}/{{ kpis.totalGroupes }} groupes avec ≥{{ engagementCriteria.minMatchesPerMonth }} matchs/mois
-            </div>
-          </div>
-        </div>
-
-        <!-- Moyenne matchs/groupe -->
-        <div class="kpi-card">
-          <div class="kpi-icon matches">
-            <mat-icon>event</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ kpis.avgMatchesPerGroup | number:'1.1-1' }}</span>
-            <span class="kpi-label">Matchs/groupe (moy.)</span>
-            <div class="kpi-secondary">
-              {{ kpis.matchesThisMonth }} matchs ce mois
-            </div>
-          </div>
-        </div>
-
-        <!-- Moyenne membres/groupe -->
-        <div class="kpi-card">
-          <div class="kpi-icon members">
-            <mat-icon>group</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ kpis.avgMembersPerGroup | number:'1.1-1' }}</span>
-            <span class="kpi-label">Membres/groupe (moy.)</span>
-            <div class="kpi-secondary">
-              {{ formatPercent(kpis.profileCompletionRate) }} profils complets
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Distribution de l'engagement -->
-      <div class="engagement-distribution">
-        <h3>Distribution de l'engagement des groupes</h3>
-        <div class="distribution-bars">
-          <div class="distribution-item" *ngFor="let item of engagementDistribution">
-            <div class="item-header">
-              <span class="item-label">{{ item.label }}</span>
-              <span class="item-count">{{ item.count }} groupes</span>
-            </div>
-            <div class="item-bar">
-              <div class="bar-fill" 
-                   [style.width.%]="(item.count / kpis.totalGroupes) * 100"
-                   [style.background-color]="item.color">
+        <div class="kpi-grid four-columns">
+          <div class="kpi-card">
+            <div class="kpi-icon active-users"><mat-icon>verified_user</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ kpis.activeUsers }}</span>
+              <span class="kpi-label">Utilisateurs actifs</span>
+              <div class="kpi-badge" [class.good]="kpis.activeUsersRate >= 50" [class.warning]="kpis.activeUsersRate < 50">
+                {{ formatPercent(kpis.activeUsersRate) }} du total
               </div>
             </div>
-            <span class="item-percent">{{ ((item.count / kpis.totalGroupes) * 100) | number:'1.0-0' }}%</span>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- ===== SECTION 3: RÉTENTION ===== -->
-    <section class="analytics-section">
-      <div class="section-header">
-        <div class="section-title">
-          <mat-icon>repeat</mat-icon>
-          <h2>Rétention</h2>
-        </div>
-        <p class="section-subtitle">Fidélisation des utilisateurs et groupes sur la durée</p>
-      </div>
-      
-      <div class="kpi-grid four-columns">
-        <!-- Rétention J+7 -->
-        <div class="kpi-card">
-          <div class="kpi-icon retention-7">
-            <mat-icon>calendar_today</mat-icon>
+          <div class="kpi-card highlight">
+            <div class="kpi-icon engagement"><mat-icon>sports_soccer</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.engagementRate) }}</span>
+              <span class="kpi-label">Taux d'engagement</span>
+              <div class="kpi-secondary">{{ kpis.engagedGroupes }}/{{ kpis.totalGroupes }} groupes ≥{{ engagementCriteria.minMatchesPerMonth }} matchs/mois</div>
+            </div>
           </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.retentionRate7Days) }}</span>
-            <span class="kpi-label">Rétention J+7</span>
-            <div class="kpi-badge" [class.good]="kpis.retentionRate7Days >= 60" [class.warning]="kpis.retentionRate7Days < 60">
-              {{ kpis.retentionRate7Days >= 60 ? 'Bon' : 'À améliorer' }}
+
+          <div class="kpi-card">
+            <div class="kpi-icon matches"><mat-icon>event</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ kpis.avgMatchesPerGroup | number:'1.1-1' }}</span>
+              <span class="kpi-label">Matchs/groupe (moy.)</span>
+              <div class="kpi-secondary">{{ kpis.matchesThisMonth }} matchs ce mois</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon members"><mat-icon>group</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ kpis.avgMembersPerGroup | number:'1.1-1' }}</span>
+              <span class="kpi-label">Membres/groupe (moy.)</span>
+              <div class="kpi-secondary">{{ formatPercent(kpis.profileCompletionRate) }} profils complets</div>
             </div>
           </div>
         </div>
 
-        <!-- Rétention J+30 -->
-        <div class="kpi-card">
-          <div class="kpi-icon retention-30">
-            <mat-icon>date_range</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.retentionRate30Days) }}</span>
-            <span class="kpi-label">Rétention J+30</span>
-            <div class="kpi-badge" [class.good]="kpis.retentionRate30Days >= 40" [class.warning]="kpis.retentionRate30Days < 40">
-              {{ kpis.retentionRate30Days >= 40 ? 'Bon' : 'À améliorer' }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Groupes inactifs (churn) -->
-        <div class="kpi-card warning-card">
-          <div class="kpi-icon churn">
-            <mat-icon>trending_down</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ kpis.churnedGroupes }}</span>
-            <span class="kpi-label">Groupes inactifs (30j+)</span>
-            <div class="kpi-badge warning">
-              {{ formatPercent(kpis.churnRate) }} taux de churn
-            </div>
-          </div>
-        </div>
-
-        <!-- Taux de churn -->
-        <div class="kpi-card" [class.danger-card]="kpis.churnRate > 10">
-          <div class="kpi-icon churn-rate">
-            <mat-icon>person_off</mat-icon>
-          </div>
-          <div class="kpi-content">
-            <span class="kpi-value">{{ formatPercent(kpis.churnRate) }}</span>
-            <span class="kpi-label">Taux de churn</span>
-            <div class="kpi-secondary">
-              Groupes perdus ce mois
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION 4: GRAPHIQUES ===== -->
-    <section class="analytics-section charts-section">
-      <div class="charts-grid">
-        <!-- Graphique de croissance -->
-        <div class="chart-card wide">
-          <div class="chart-header">
-            <h3>
-              <mat-icon>show_chart</mat-icon>
-              Évolution de la croissance (12 mois)
-            </h3>
-          </div>
-          <div class="chart-body">
-            <canvas baseChart
-                    [data]="growthChartData"
-                    [type]="growthChartType"
-                    [options]="growthChartOptions">
-            </canvas>
-          </div>
-        </div>
-
-        <!-- Répartition engagement -->
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>
-              <mat-icon>pie_chart</mat-icon>
-              Engagement des groupes
-            </h3>
-          </div>
-          <div class="chart-body">
-            <canvas baseChart
-                    [data]="engagementChartData"
-                    [type]="'doughnut'"
-                    [options]="engagementChartOptions">
-            </canvas>
-          </div>
-        </div>
-
-        <!-- Métriques de rétention -->
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>
-              <mat-icon>bar_chart</mat-icon>
-              Métriques clés
-            </h3>
-          </div>
-          <div class="chart-body">
-            <canvas baseChart
-                    [data]="retentionChartData"
-                    [type]="retentionChartType"
-                    [options]="retentionChartOptions">
-            </canvas>
-          </div>
-        </div>
-
-        <!-- Activité par jour -->
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>
-              <mat-icon>calendar_view_week</mat-icon>
-              Activité par jour de la semaine
-            </h3>
-          </div>
-          <div class="chart-body">
-            <canvas baseChart
-                    [data]="activityByDayChartData"
-                    [type]="'bar'" 
-                    [options]="activityByDayChartOptions">
-            </canvas>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION 5: FUNNEL DE CONVERSION ===== -->
-    <section class="analytics-section">
-      <div class="section-header">
-        <div class="section-title">
-          <mat-icon>filter_alt</mat-icon>
-          <h2>Funnel de conversion</h2>
-        </div>
-        <p class="section-subtitle">Parcours utilisateur de la visite à l'engagement</p>
-      </div>
-      
-      <div class="conversion-funnel">
-        <div class="funnel-step" *ngFor="let step of conversionFunnel; let i = index; let last = last">
-          <div class="step-content">
-            <div class="step-number">{{ i + 1 }}</div>
-            <div class="step-info">
-              <span class="step-name">{{ step.step }}</span>
-              <span class="step-count">{{ formatNumber(step.count) }}</span>
-            </div>
-            <div class="step-rate" *ngIf="i > 0">
-              <mat-icon [class.good]="step.rate >= 50" [class.warning]="step.rate < 50">
-                {{ step.rate >= 50 ? 'check_circle' : 'warning' }}
-              </mat-icon>
-              <span>{{ formatPercent(step.rate) }}</span>
-            </div>
-          </div>
-          <div class="funnel-arrow" *ngIf="!last">
-            <mat-icon>arrow_downward</mat-icon>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION 6: TOP/BOTTOM GROUPES ===== -->
-    <section class="analytics-section">
-      <div class="section-header">
-        <div class="section-title">
-          <mat-icon>leaderboard</mat-icon>
-          <h2>Analyse des groupes</h2>
-        </div>
-        <p class="section-subtitle">Détail de l'engagement par groupe</p>
-      </div>
-      
-      <div class="groupes-table-container">
-        <table mat-table [dataSource]="groupesDataSource" matSort>
-          
-          <!-- Nom -->
-          <ng-container matColumnDef="nom">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Groupe</th>
-            <td mat-cell *matCellDef="let groupe">
-              <span class="groupe-name">{{ groupe.nom }}</span>
-            </td>
-          </ng-container>
-
-          <!-- Membres -->
-          <ng-container matColumnDef="membresCount">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Membres</th>
-            <td mat-cell *matCellDef="let groupe">{{ groupe.membresCount }}</td>
-          </ng-container>
-
-          <!-- Membres actifs -->
-          <ng-container matColumnDef="activeMembers">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Actifs</th>
-            <td mat-cell *matCellDef="let groupe">
-              <span class="active-ratio">
-                {{ groupe.activeMembers }}/{{ groupe.membresCount }}
-                <small>({{ ((groupe.activeMembers / groupe.membresCount) * 100) | number:'1.0-0' }}%)</small>
-              </span>
-            </td>
-          </ng-container>
-
-          <!-- Matchs ce mois -->
-          <ng-container matColumnDef="matchesThisMonth">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Matchs/mois</th>
-            <td mat-cell *matCellDef="let groupe">
-              <span [class.good-value]="groupe.matchesThisMonth >= engagementCriteria.minMatchesPerMonth"
-                    [class.warning-value]="groupe.matchesThisMonth < engagementCriteria.minMatchesPerMonth && groupe.matchesThisMonth > 0"
-                    [class.bad-value]="groupe.matchesThisMonth === 0">
-                {{ groupe.matchesThisMonth }}
-              </span>
-            </td>
-          </ng-container>
-
-          <!-- Score engagement -->
-          <ng-container matColumnDef="engagementScore">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Score</th>
-            <td mat-cell *matCellDef="let groupe">
-              <div class="score-bar">
-                <div class="score-fill" 
-                     [style.width.%]="groupe.engagementScore"
-                     [class.excellent]="groupe.engagementScore >= 75"
-                     [class.good]="groupe.engagementScore >= 50 && groupe.engagementScore < 75"
-                     [class.warning]="groupe.engagementScore >= 25 && groupe.engagementScore < 50"
-                     [class.critical]="groupe.engagementScore < 25">
-                </div>
+        <!-- Distribution de l'engagement -->
+        <div class="engagement-distribution">
+          <h3>Distribution de l'engagement des groupes</h3>
+          <div class="distribution-bars">
+            <div class="distribution-item" *ngFor="let item of engagementDistribution">
+              <div class="item-header">
+                <span class="item-label">{{ item.label }}</span>
+                <span class="item-count">{{ item.count }} groupes</span>
               </div>
-              <span class="score-value">{{ groupe.engagementScore }}%</span>
-            </td>
-          </ng-container>
+              <div class="item-bar">
+                <div class="bar-fill" [style.width.%]="(item.count / kpis.totalGroupes) * 100" [style.background-color]="item.color"></div>
+              </div>
+              <span class="item-percent">{{ ((item.count / kpis.totalGroupes) * 100) | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- Statut -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
-            <td mat-cell *matCellDef="let groupe">
+    <!-- ── TAB RÉTENTION ─────────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'retention'">
+      <div class="ad-content">
+        <p class="ad-section-subtitle">Fidélisation des utilisateurs et groupes sur la durée</p>
+
+        <div class="kpi-grid four-columns">
+          <div class="kpi-card">
+            <div class="kpi-icon retention-7"><mat-icon>calendar_today</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.retentionRate7Days) }}</span>
+              <span class="kpi-label">Rétention J+7</span>
+              <div class="kpi-badge" [class.good]="kpis.retentionRate7Days >= 60" [class.warning]="kpis.retentionRate7Days < 60">
+                {{ kpis.retentionRate7Days >= 60 ? 'Bon' : 'À améliorer' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon retention-30"><mat-icon>date_range</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.retentionRate30Days) }}</span>
+              <span class="kpi-label">Rétention J+30</span>
+              <div class="kpi-badge" [class.good]="kpis.retentionRate30Days >= 40" [class.warning]="kpis.retentionRate30Days < 40">
+                {{ kpis.retentionRate30Days >= 40 ? 'Bon' : 'À améliorer' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card warning-card">
+            <div class="kpi-icon churn"><mat-icon>trending_down</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ kpis.churnedGroupes }}</span>
+              <span class="kpi-label">Groupes inactifs (30j+)</span>
+              <div class="kpi-badge warning">{{ formatPercent(kpis.churnRate) }} taux de churn</div>
+            </div>
+          </div>
+
+          <div class="kpi-card" [class.danger-card]="kpis.churnRate > 10">
+            <div class="kpi-icon churn-rate"><mat-icon>person_off</mat-icon></div>
+            <div class="kpi-content">
+              <span class="kpi-value">{{ formatPercent(kpis.churnRate) }}</span>
+              <span class="kpi-label">Taux de churn</span>
+              <div class="kpi-secondary">Groupes perdus ce mois</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB GRAPHIQUES ────────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'charts'">
+      <div class="ad-content">
+        <div class="charts-grid">
+          <div class="chart-card wide">
+            <div class="chart-header"><h3><mat-icon>show_chart</mat-icon>Évolution de la croissance (12 mois)</h3></div>
+            <div class="chart-body">
+              <canvas baseChart [data]="growthChartData" [type]="growthChartType" [options]="growthChartOptions"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header"><h3><mat-icon>pie_chart</mat-icon>Engagement des groupes</h3></div>
+            <div class="chart-body">
+              <canvas baseChart [data]="engagementChartData" [type]="'doughnut'" [options]="engagementChartOptions"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header"><h3><mat-icon>bar_chart</mat-icon>Métriques clés</h3></div>
+            <div class="chart-body">
+              <canvas baseChart [data]="retentionChartData" [type]="retentionChartType" [options]="retentionChartOptions"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header"><h3><mat-icon>calendar_view_week</mat-icon>Activité par jour de la semaine</h3></div>
+            <div class="chart-body">
+              <canvas baseChart [data]="activityByDayChartData" [type]="'bar'" [options]="activityByDayChartOptions"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB FUNNEL ────────────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'funnel'">
+      <div class="ad-content">
+        <p class="ad-section-subtitle">Parcours utilisateur de la visite à l'engagement</p>
+
+        <div class="conversion-funnel">
+          <div class="funnel-step" *ngFor="let step of conversionFunnel; let i = index; let last = last">
+            <div class="step-content">
+              <div class="step-number">{{ i + 1 }}</div>
+              <div class="step-info">
+                <span class="step-name">{{ step.step }}</span>
+                <span class="step-count">{{ formatNumber(step.count) }}</span>
+              </div>
+              <div class="step-rate" *ngIf="i > 0">
+                <mat-icon [class.good]="step.rate >= 50" [class.warning]="step.rate < 50">
+                  {{ step.rate >= 50 ? 'check_circle' : 'warning' }}
+                </mat-icon>
+                <span>{{ formatPercent(step.rate) }}</span>
+              </div>
+            </div>
+            <div class="funnel-arrow" *ngIf="!last"><mat-icon>arrow_downward</mat-icon></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB GROUPES ───────────────────────────────── -->
+    <div class="ad-tab-content" *ngIf="activeTab === 'groupes'">
+      <div class="ad-content">
+        <p class="ad-section-subtitle">Détail de l'engagement par groupe</p>
+
+        <!-- Liste cards (remplace le tableau sur mobile) -->
+        <div class="groupes-list">
+          <div class="groupe-item" *ngFor="let groupe of groupesDataSource.data">
+            <div class="gi-header">
+              <span class="gi-name">{{ groupe.nom }}</span>
               <span class="status-badge" [class]="groupe.status">
                 <mat-icon>{{ getStatusIcon(groupe.status) }}</mat-icon>
                 {{ getStatusLabel(groupe.status) }}
               </span>
-            </td>
-          </ng-container>
+            </div>
 
-          <tr mat-header-row *matHeaderRowDef="groupesColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: groupesColumns;"></tr>
-        </table>
-        
-        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+            <div class="gi-metrics">
+              <div class="gi-metric">
+                <span class="gi-metric-label">Membres</span>
+                <span class="gi-metric-value">{{ groupe.membresCount }}</span>
+              </div>
+              <div class="gi-metric">
+                <span class="gi-metric-label">Actifs</span>
+                <span class="gi-metric-value">
+                  {{ groupe.activeMembers }}/{{ groupe.membresCount }}
+                  <small>({{ ((groupe.activeMembers / groupe.membresCount) * 100) | number:'1.0-0' }}%)</small>
+                </span>
+              </div>
+              <div class="gi-metric">
+                <span class="gi-metric-label">Matchs/mois</span>
+                <span class="gi-metric-value"
+                      [class.good-value]="groupe.matchesThisMonth >= engagementCriteria.minMatchesPerMonth"
+                      [class.warning-value]="groupe.matchesThisMonth < engagementCriteria.minMatchesPerMonth && groupe.matchesThisMonth > 0"
+                      [class.bad-value]="groupe.matchesThisMonth === 0">
+                  {{ groupe.matchesThisMonth }}
+                </span>
+              </div>
+            </div>
+
+            <div class="gi-score">
+              <span class="gi-score-label">Score d'engagement</span>
+              <div class="score-bar">
+                <div class="score-fill"
+                     [style.width.%]="groupe.engagementScore"
+                     [class.excellent]="groupe.engagementScore >= 75"
+                     [class.good]="groupe.engagementScore >= 50 && groupe.engagementScore < 75"
+                     [class.warning]="groupe.engagementScore >= 25 && groupe.engagementScore < 50"
+                     [class.critical]="groupe.engagementScore < 25"></div>
+              </div>
+              <span class="score-value">{{ groupe.engagementScore }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons class="ad-paginator"></mat-paginator>
       </div>
-    </section>
+    </div>
 
   </div>
 </div>

@@ -73,6 +73,7 @@ export class EntreeCaisseComponent implements OnInit {
   isLoading = true;
   isSaving = false;
   showForm = false;
+  activeTab: 'form'|'history' = 'form';
 
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
@@ -113,6 +114,8 @@ export class EntreeCaisseComponent implements OnInit {
       this.isLoading = false;
     }
   }
+
+
 
   initForm(): void {
     this.entreeForm = this.fb.group({
@@ -186,16 +189,18 @@ export class EntreeCaisseComponent implements OnInit {
     ).slice(0, 10);
   }
 
-  displayMembre(membre: Membre): string {
-    return membre ? `${membre.prenom} ${membre.nom}` : '';
-  }
+displayMembre = (membre: Membre): string => {
+  return membre ? `${membre.prenom} ${membre.nom}` : '';
+};
 
-  onMembreSelected(membre: Membre): void {
-    this.entreeForm.patchValue({
-      membreId: membre.id,
-      membreSearch: `${membre.prenom} ${membre.nom}`
-    });
-  }
+onMembreSelected(membre: Membre): void {
+  this.entreeForm.patchValue({
+    membreId: membre.id,
+    // 💡 Laisse l'objet 'membre' entier dans le champ de recherche.
+    // mat-autocomplete s'occupera d'afficher le texte grâce à displayWith.
+    membreSearch: membre 
+  });
+}
 
   onTypeContributionChange(): void {
     const typeId = this.entreeForm.get('typeContributionId')?.value;

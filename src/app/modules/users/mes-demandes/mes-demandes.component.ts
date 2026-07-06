@@ -11,6 +11,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { QuestionCandidatureService } from '../../../core/services/question-candidature.service';
 import { DemandeAdhesion } from '../../../core/models/groupe-explorer.model';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../../core/services/auth.service';
+import { GroupeContextService } from '../../../core/services/groupe-context.service';
 
 
 interface DemandeAvecGroupe extends DemandeAdhesion {
@@ -49,13 +51,17 @@ export class MesDemandesComponent implements OnInit {
   constructor(
     private questionnaireService: QuestionCandidatureService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private authService: AuthService,
+    private groupeContext: GroupeContextService
   ) {}
 
   ngOnInit(): void {
     this.loadDemandes();
   }
-
+trackById(index: number, demande: any): any {
+  return demande?.id ?? index;
+}
   loadDemandes(): void {
     this.isLoading = true;
 
@@ -360,14 +366,24 @@ viewDetails(demande: any): void {
  * Naviguer vers le groupe avec paramètres
  */
 goToGroupe(groupeId: number): void {
-  if (groupeId) {
-    this.router.navigate(['/groupes', groupeId], {
-      queryParams: { 
-        from: 'requests' 
-      }
-    });
-  }
+  if (!groupeId) return;
+ 
+  // FIX multi-groupe : switcher vers le groupe de la demande,
+  // pas juste naviguer — sinon l'user voit le groupe actif
+  // au lieu de celui de la demande acceptée
+  this.authService.switchGroupe(groupeId).subscribe({
+    next: () => {
+      this.groupeContext.notifyGroupeChanged(groupeId);
+      this.router.navigate(['/membre']);
+    },
+    error: () => {
+      // Le groupe n'est peut-être pas encore rejoint (demande en attente) —
+      // naviguer quand même vers l'explorateur pour voir la fiche publique
+      this.router.navigate(['/explorer2']);
+    }
+  });
 }
+ 
 
 /**
  * Confirmation avant annulation

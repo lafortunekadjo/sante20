@@ -10,6 +10,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface Presence {
   id: number;
@@ -58,7 +59,8 @@ export interface PresenceDialogData {
     MatMenuModule,
     MatDividerModule,
     MatSnackBarModule,
-    TranslateModule
+    TranslateModule,
+    MatTooltipModule
   ],
   templateUrl: './match-presence-dialog.component.html',
   styleUrls: ['./match-presence-dialog.component.scss'],

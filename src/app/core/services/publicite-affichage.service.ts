@@ -223,17 +223,15 @@ export class PubliciteAffichageService implements OnDestroy {
     }
   }
 
-  private hasSeenSplashToday(): boolean {
-    const lastSeen = localStorage.getItem('my20_splash_seen');
-    if (!lastSeen) return false;
-    
-    const today = new Date().toDateString();
-    return lastSeen === today;
-  }
-
-  private setSplashSeenToday(): void {
-    localStorage.setItem('my20_splash_seen', new Date().toDateString());
-  }
+// 1 fois toutes les 3 heures
+private hasSeenSplashToday(): boolean {
+  const lastSeen = localStorage.getItem('my20_splash_seen');
+  if (!lastSeen) return false;
+  return Date.now() - parseInt(lastSeen) < 3 * 60 * 60 * 1000;
+}
+private setSplashSeenToday(): void {
+  localStorage.setItem('my20_splash_seen', Date.now().toString());
+}
 
   // ============================================================
   // HELPERS

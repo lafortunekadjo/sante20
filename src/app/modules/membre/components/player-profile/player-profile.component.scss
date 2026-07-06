@@ -1,0 +1,1962 @@
+@import '../../../../../variables';
+
+// ==========================================================================
+// MIXINS ET VARIABLES THÈME LOCAL
+// ==========================================================================
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.15);
+$radius-main: 20px;
+$radius-sub: 12px;
+$transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$radius-main: 20px;
+$radius-sub: 12px;
+$transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+.profile-page-wrapper {
+  padding: $spacing-xl;
+  margin-top: calc(#{$navbar-height} + 10px);
+  
+  // CORRECTION CLAIR/SOMBRE : On utilise uniquement la variable dynamique globale 
+  // et on applique une transition pour que le basculement soit fluide au clic.
+  background-color: var(--background-secondary, #f8fafc);
+  color: var(--text-primary, #0f172a);
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  
+
+}
+
+// ==========================================================================
+// CARD ET ÉLÉMENTS DU PROFIL
+// ==========================================================================
+.profile-card-header {
+  // CORRECTION : Suppression du "white" en dur qui bloquait le mode sombre
+  background: var(--background-surface, #ffffff);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.avatar-wrapper {
+  background: var(--background-surface, #ffffff);
+  border: 4px solid var(--background-surface, #ffffff);
+  
+  .avatar-initials {
+    // S'assurer que le cercle sans photo s'adapte aussi
+    background: var(--primary-color, #1976d2);
+    color: #ffffff; 
+  }
+}
+
+// ==========================================================================
+// ONGLETS (MAT-TAB OVERRIDES POUR MODE SOMBRE)
+// ==========================================================================
+::ng-deep {
+  .mat-mdc-tab-group {
+    background: var(--background-surface, #ffffff) !important;
+    border-radius: $radius-main;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+    transition: background-color 0.3s ease;
+  }
+  
+  .mat-mdc-tab-label-container {
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08)) !important;
+  }
+
+  .mat-mdc-tab .mdc-tab-text-label {
+    color: var(--text-secondary, #64748b) !important;
+  }
+
+  .mat-mdc-tab.mdc-tab--active .mdc-tab-text-label {
+    color: var(--primary-color, #1976d2) !important;
+    font-weight: 700 !important;
+  }
+}
+
+// ==========================================================================
+// PARCOURS / TIMELINE (MODES SOMBRE CONFORME)
+// ==========================================================================
+.timeline-item {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: 12px;
+  
+  // Utilisation exclusive des variables d'environnement Sante-2-0
+  background: var(--background-secondary, #f8fafc);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+  transition: all 0.3s ease;
+
+  &.active-club {
+    border-left: 4px solid var(--primary-color, #1976d2);
+    // Un fond subtil transparent adapté à la couleur primaire
+    background: rgba(25, 118, 210, 0.03); 
+    
+    .status-tag { 
+      background: rgba(46, 125, 50, 0.15); 
+      color: #4caf50; 
+    }
+  }
+}
+
+// ==========================================================================
+// STATES ET ÉCRANS CENTRÉS
+// ==========================================================================
+.center-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-secondary, #64748b);
+  gap: $spacing-md;
+  animation: fadeIn 0.3s ease-out;
+
+  &.error-box {
+    background: var(--background-surface, white);
+    border-radius: $radius-main;
+    padding: $spacing-2xl;
+    box-shadow: $shadow-sm;
+    border: 1px solid rgba(244, 67, 54, 0.1);
+
+    .error-icon {
+      font-size: 56px;
+      width: 56px;
+      height: 56px;
+      color: var(--warn-color, #f44336);
+    }
+    h2 { color: var(--text-primary, #0f172a); font-weight: 700; margin: 0; }
+  }
+}
+
+.profile-container {
+  max-width: 850px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+  @include mobile  { padding: 0 $spacing-md; }
+
+  .status-message { margin: $spacing-lg 0 0; }
+
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+
+  @include mobile {
+    padding: $spacing-lg;
+    margin-top: calc(#{$navbar-height-mobile} + 5px);
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-lg});
+  }
+
+  @include desktop {
+    padding-bottom: $spacing-2xl;
+  }
+}
+
+// ==========================================================================
+// HEADER CARD (AVATAR, BIO, BANNIÈRE)
+// ==========================================================================
+.profile-card-header {
+  background: var(--background-surface, white);
+  border-radius: $radius-main;
+  overflow: hidden;
+  box-shadow: $shadow-md;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-cover {
+  height: 140px;
+  background: linear-gradient(135deg, var(--primary-color, #1976d2) 0%, #0d47a1 100%);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+  }
+  
+  @include mobile {
+    height: 100px;
+  }
+}
+
+.profile-avatar-row {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 $spacing-2xl;
+  margin-top: -60px;
+  gap: $spacing-xl;
+  position: relative;
+  z-index: 2;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: -50px;
+    padding: 0 $spacing-md;
+    gap: $spacing-sm;
+  }
+}
+
+.avatar-wrapper {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 5px solid var(--background-surface, white);
+  background: #f1f5f9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @include mobile {
+    width: 100px;
+    height: 100px;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-initials {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--primary-color, #1976d2);
+    letter-spacing: -1px;
+  }
+}
+
+.player-main-info {
+  flex: 1;
+  padding-bottom: $spacing-sm;
+
+  @include mobile {
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .name-badge-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: 4px;
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary, #0f172a);
+      letter-spacing: -0.5px;
+    }
+
+    .own-profile-badge {
+      background: rgba(25, 118, 210, 0.08);
+      color: var(--primary-color, #1976d2);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .player-meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary, #64748b);
+    font-size: 14px;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #94a3b8;
+    }
+  }
+}
+
+// ==========================================================================
+// STATS RIBBON (LES COMPTEURS EN GRILLE)
+// ==========================================================================
+.stats-ribbon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--background-secondary, #f8fafc);
+  margin-top: $spacing-xl;
+
+  @include mobile {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border-color, #e2e8f0);
+  }
+}
+
+.ribbon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md $spacing-sm;
+  background: var(--background-surface, white);
+  border-right: 1px solid var(--border-color, #e2e8f0);
+  transition: $transition-smooth;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover {
+    background: rgba(25, 118, 210, 0.01);
+  }
+
+  @include mobile {
+    border-right: none;
+    padding: $spacing-sm;
+
+    &:nth-child(4), &:nth-child(5) {
+      grid-column: span 1;
+    }
+  }
+
+  .ribbon-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary, #0f172a);
+    line-height: 1;
+    margin-bottom: 6px;
+
+    &.primary-stat {
+      color: var(--primary-color, #1976d2);
+    }
+  }
+
+  .ribbon-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+// ==========================================================================
+// TABS & CONTENT CARDS
+// ==========================================================================
+.profile-tabs-card {
+  background: var(--background-surface, white);
+  border-radius: $radius-main;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+  ::ng-deep .mat-mdc-tab-group {
+    --mdc-tab-indicator-active-indicator-color: var(--primary-color, #1976d2);
+    --mdc-tab-indicator-active-indicator-height: 3px;
+  }
+
+  ::ng-deep .mat-mdc-tab {
+    height: 54px;
+    font-family: inherit;
+    
+    .mdc-tab__text-label {
+      font-weight: 700 !important;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      color: var(--text-secondary, #64748b);
+      transition: color 0.2s ease;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &.mdc-tab--active .mdc-tab__text-label {
+      color: var(--primary-color, #1976d2) !important;
+    }
+  }
+}
+
+.tab-content {
+  padding: $spacing-xl;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
+
+  // Onglet Fiche vide
+  &.empty-videos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: $spacing-3xl $spacing-xl;
+    color: var(--text-secondary, #64748b);
+
+    .placeholder-icon {
+      font-size: 52px;
+      width: 52px;
+      height: 52px;
+      color: #cbd5e1;
+      margin-bottom: $spacing-md;
+    }
+
+    h3 {
+      margin: 0 0 $spacing-xs 0;
+      color: var(--text-primary, #0f172a);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+  }
+}
+
+// ==========================================================================
+// DETAILS GRID (TAB 1)
+// ==========================================================================
+.info-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
+  }
+}
+
+.detail-box {
+  background: var(--background-secondary, #f8fafc);
+  padding: $spacing-md $spacing-lg;
+  border-radius: $radius-sub;
+  border: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+
+  .box-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .box-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+
+    &.accent-text {
+      color: var(--primary-color, #1976d2);
+    }
+    &.email-text {
+      font-weight: 500;
+      color: #475569;
+    }
+  }
+}
+
+// ==========================================================================
+// PARCOURS CLUBS / TIMELINE (TAB 2)
+// ==========================================================================
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.timeline-item {
+  display: flex;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  border-radius: $radius-sub;
+  background: var(--background-surface, white);
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: $transition-smooth;
+
+  &:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  }
+
+  &.active-club {
+    border-left: 4px solid var(--primary-color, #1976d2);
+    background: rgba(25, 118, 210, 0.005);
+    border-color: var(--border-color, #e2e8f0) var(--border-color, #e2e8f0) var(--border-color, #e2e8f0) var(--primary-color, #1976d2);
+    
+    .status-tag {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+  }
+
+  .club-marker {
+    color: var(--primary-color, #1976d2);
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .club-details {
+    flex: 1;
+
+    .club-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-xs;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary, #0f172a);
+      }
+
+      .status-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .post-info {
+      margin: 0 0 $spacing-md 0;
+      font-size: 13px;
+      color: var(--text-secondary, #64748b);
+      
+      strong { color: #334155; }
+    }
+
+    .club-stats-row {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      font-size: 13px;
+      color: #475569;
+      background: var(--background-secondary, #f8fafc);
+      padding: $spacing-sm $spacing-md;
+      border-radius: 8px;
+      width: fit-content;
+
+      @include mobile {
+        width: 100%;
+        justify-content: space-between;
+        gap: $spacing-xs;
+      }
+
+      strong {
+        color: var(--text-primary, #0f172a);
+        font-weight: 700;
+      }
+
+      .dot-separator {
+        color: #cbd5e1;
+      }
+    }
+  }
+}
+
+// ==========================================================================
+// MULTIMEDIA GALLERY GRID (TAB 3)
+// ==========================================================================
+.media-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: $spacing-lg;
+  padding: $spacing-sm 0;
+
+  @include mobile {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: $spacing-sm;
+  }
+}
+
+.media-card {
+  background: var(--background-surface, #ffffff);
+  border-radius: $radius-sub;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e2e8f0);
+  cursor: pointer;
+  box-shadow: $shadow-sm;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+
+    .play-overlay {
+      transform: translate(-50%, -50%) scale(1.1);
+      background: var(--primary-color, #1976d2);
+    }
+    
+    .media-preview img, .media-preview video {
+      transform: scale(1.04);
+    }
+  }
+}
+
+.media-preview {
+  position: relative;
+  width: 100%;
+  height: 145px;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  @include mobile {
+    height: 110px;
+  }
+
+  img, video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+}
+
+.play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  width: 46px;
+  height: 46px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition-smooth;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 2;
+
+  mat-icon {
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+    margin-left: 2px; // Centrage optique du triangle "play"
+  }
+}
+
+.media-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffffff;
+  z-index: 2;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  backdrop-filter: blur(4px);
+
+  &.type-video { background: rgba(239, 68, 68, 0.85); }
+  &.type-image { background: rgba(59, 130, 246, 0.85); }
+}
+
+.media-footer {
+  padding: $spacing-sm $spacing-md;
+  border-top: 1px solid rgba(0,0,0,0.02);
+  background: var(--background-surface, #ffffff);
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// ==========================================================================
+// PREMIUM VISIONNEUSE CINÉMA (LIGHTBOX MODALE)
+// ==========================================================================
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.94);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.close-lightbox-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition-smooth;
+  z-index: 10000;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: rotate(90deg);
+  }
+  
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  @include mobile {
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.lightbox-content {
+  max-width: 92%;
+  max-height: 82%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: zoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-element {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  box-shadow: $shadow-lg;
+  outline: none;
+  background: #000;
+}
+
+// ==========================================================================
+// KEYFRAMES ANIMATIONS
+// ==========================================================================
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(15px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+// Styles additionnels pour la grille des VideoHighlights
+.video-wrapper {
+  position: relative;
+  background: #000;
+  
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .play-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: rgba(255, 255, 255, 0.85);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+  }
+
+  &:hover .play-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    mat-icon { transform: scale(1.15); color: #ffffff; }
+  }
+}
+
+.media-footer {
+  padding: $spacing-sm $spacing-md !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .video-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .video-adversaire {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-transform: uppercase;
+  }
+
+  .video-desc {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// ==========================================================================
+// ZONE DU BOUTON RETOUR
+// ==========================================================================
+.back-actions-zone {
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+
+  .back-btn {
+    color: var(--text-secondary, #64748b);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 6px 14px !important;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    background: transparent;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 4px;
+    }
+
+    &:hover {
+      color: var(--primary-color, #1976d2);
+      background: rgba(25, 118, 210, 0.05);
+    }
+  }
+}
+
+// ==========================================================================
+// DESIGN DE LA GRILLE DES MOMENTS FORTS (VIDEOS)
+// ==========================================================================
+.videos-loading-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl 0;
+  gap: $spacing-sm;
+  color: var(--text-secondary);
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: $spacing-md;
+  padding: $spacing-md 0;
+}
+
+.highlight-card {
+  background: var(--background-surface, #ffffff);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+
+    .play-action-overlay {
+      background: rgba(0, 0, 0, 0.45);
+      .play-btn-circle {
+        transform: scale(1.1);
+        background: var(--primary-color, #1976d2);
+      }
+    }
+  }
+}
+
+.video-preview-box {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #090d16;
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .play-action-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+
+    .play-btn-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease, background 0.2s ease;
+
+      mat-icon {
+        font-size: 26px;
+        width: 26px;
+        height: 26px;
+        color: #000000;
+        margin-left: 2px; // Centre l'icône triangle de lecture
+      }
+    }
+  }
+
+  .highlight-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.video-metadata-box {
+  padding: $spacing-sm $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .video-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vs-adversaire-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--primary-color, #1976d2);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .video-description-text {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// Fallback état vide
+.empty-videos-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: $spacing-xl $spacing-md;
+  color: var(--text-secondary, #64748b);
+
+  .fallback-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #cbd5e1;
+    margin-bottom: $spacing-sm;
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--text-primary, #0f172a);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    max-width: 340px;
+  }
+}
+
+// Lightbox Vidéo Rafraîchie
+.lightbox-player {
+  width: 100%;
+  max-height: 78vh;
+  border-radius: 8px;
+  background: #000000;
+  box-shadow: $shadow-lg;
+}
+
+
+
+.profile-page-wrapper {
+  padding: $spacing-xl;
+  margin-top: calc(#{$navbar-height} + 10px);
+  
+  // Changement dynamique basé sur l'écosystème Global Sante-2-0
+  background-color: var(--background-secondary, #f8fafc);
+  color: var(--text-primary, #0f172a);
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  
+  @include mobile {
+    padding: $spacing-sm;
+    margin-top: calc(#{$navbar-height-mobile} + 5px);
+  }
+}
+
+.profile-container {
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+// ==========================================================================
+// ZONE DU BOUTON RETOUR
+// ==========================================================================
+.back-actions-zone {
+  margin-bottom: $spacing-md;
+  display: flex;
+  align-items: center;
+
+  .back-btn {
+    color: var(--text-secondary, #64748b);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 6px 14px !important;
+    border-radius: 8px;
+    transition: $transition-smooth;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 4px;
+    }
+
+    &:hover {
+      color: var(--primary-color, #1976d2);
+      background: rgba(25, 118, 210, 0.08);
+    }
+  }
+}
+
+// ==========================================================================
+// CARD EN-TÊTE DU PROFIL
+// ==========================================================================
+.profile-card-header {
+  background: var(--background-surface, #ffffff);
+  border-radius: $radius-main;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+  transition: $transition-smooth;
+  margin-bottom: $spacing-lg;
+}
+
+.profile-cover {
+  height: 140px;
+  background: linear-gradient(135deg, var(--primary-color, #1976d2), #0d47a1);
+}
+
+.profile-avatar-row {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 $spacing-xl $spacing-md $spacing-xl;
+  margin-top: -60px;
+  gap: $spacing-lg;
+  
+  @include mobile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: -50px;
+    padding: 0 $spacing-md $spacing-md $spacing-md;
+  }
+}
+
+.avatar-wrapper {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--background-surface, #ffffff);
+  border: 4px solid var(--background-surface, #ffffff);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition-smooth;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-initials {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-color, #1976d2);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+  }
+}
+
+.player-main-info {
+  flex: 1;
+  padding-bottom: 8px;
+
+  .name-badge-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    
+    @include mobile { justify-content: center; flex-wrap: wrap; }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary, #0f172a);
+    }
+
+    .own-profile-badge {
+      background: rgba(25, 118, 210, 0.1);
+      color: var(--primary-color, #1976d2);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+  }
+
+  .player-meta {
+    margin: 4px 0 0 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary, #64748b);
+    font-size: 14px;
+    
+    @include mobile { justify-content: center; }
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}
+
+// ==========================================================================
+// FORCE LA TRANSFORMATION DES ONGLETS (ENCAPSULATION MATERIAL COMPILATION)
+// ==========================================================================
+::ng-deep {
+  .mat-mdc-tab-group, .mat-mdc-tab-header {
+    background-color: var(--background-surface, #ffffff) !important;
+    border-radius: $radius-main !important;
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05)) !important;
+    overflow: hidden;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .mat-mdc-tab-label-container {
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08)) !important;
+    background-color: var(--background-surface, #ffffff) !important;
+  }
+
+  .mat-mdc-tab .mdc-tab-text-label {
+    color: var(--text-secondary, #64748b) !important;
+    font-weight: 600;
+  }
+
+  .mat-mdc-tab.mdc-tab--active .mdc-tab-text-label {
+    color: var(--primary-color, #1976d2) !important;
+    font-weight: 700 !important;
+  }
+  
+  .mat-mdc-tab-body-content {
+    padding: $spacing-lg;
+    background-color: var(--background-surface, #ffffff) !important;
+    @include mobile { padding: $spacing-sm; }
+  }
+}
+
+// ==========================================================================
+// CONTENU DES ONGLETS & LISTE PARCOURS (TIMELINE)
+// ==========================================================================
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.timeline-item {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $radius-sub;
+  background: var(--background-secondary, #f8fafc);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.04));
+  transition: $transition-smooth;
+
+  .club-marker {
+    color: var(--primary-color, #1976d2);
+    margin-top: 2px;
+  }
+
+  .club-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .club-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary, #0f172a); 
+      }
+
+      .status-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-secondary);
+      }
+    }
+
+    .post-info {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary, #64748b);
+      
+      strong { color: var(--text-primary, #0f172a); }
+    }
+
+    .club-stats-row {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: 13px;
+      color: var(--text-secondary, #64748b);
+      margin-top: 4px;
+
+      strong { color: var(--primary-color, #1976d2); }
+      .dot-separator { color: #cbd5e1; }
+    }
+  }
+
+  &.active-club {
+    border-left: 4px solid var(--primary-color, #1976d2);
+    background: rgba(25, 118, 210, 0.03);
+    
+    .status-tag {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+    }
+  }
+}
+
+// ==========================================================================
+// GRILLE DES MOMENTS FORTS (VIDEOS HIGHLIGHTS)
+// ==========================================================================
+.videos-loading-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl 0;
+  gap: $spacing-sm;
+  color: var(--text-secondary);
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: $spacing-md;
+}
+
+.highlight-card {
+  background: var(--background-secondary, #f8fafc);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.04));
+  cursor: pointer;
+  transition: $transition-smooth;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+
+    .play-action-overlay {
+      background: rgba(0, 0, 0, 0.5);
+      .play-btn-circle {
+        transform: scale(1.1);
+        background: var(--primary-color, #1976d2);
+        mat-icon { color: #ffffff; }
+      }
+    }
+  }
+}
+
+.video-preview-box {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #000000;
+
+  video { width: 100%; height: 100%; object-fit: cover; }
+
+  .play-action-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+
+    .play-btn-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: $transition-smooth;
+
+      mat-icon {
+        font-size: 26px;
+        width: 26px;
+        height: 26px;
+        color: #000000;
+        margin-left: 2px;
+      }
+    }
+  }
+
+  .highlight-tag {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+}
+
+.video-metadata-box {
+  padding: $spacing-sm $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .video-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vs-adversaire-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--primary-color, #1976d2);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  }
+
+  .video-description-text {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// ==========================================================================
+// DOUBLE SÉCURITÉ DE FORÇAGE POUR LE MODE SOMBRE INTÉGRAL
+// ==========================================================================
+// Si l'application ajoute la classe .dark-theme ou .dark au body ou parents
+:host-context(.dark-theme), :host-context(.dark), 
+body.dark-theme, body.dark, 
+.dark-theme, .dark {
+
+  .profile-card-header {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+  }
+
+  // Force le re-wrapping de la couleur de fond interne des onglets Material
+  ::ng-deep {
+    .mat-mdc-tab-group, 
+    .mat-mdc-tab-header,
+    .mat-mdc-tab-body-content,
+    .mat-mdc-tab-label-container {
+      background-color: #1e293b !important; 
+      border-color: #334155 !important;
+    }
+
+    .mat-mdc-tab .mdc-tab-text-label {
+      color: #94a3b8 !important;
+    }
+    
+    .mat-mdc-tab.mdc-tab--active .mdc-tab-text-label {
+      color: var(--primary-color, #3b82f6) !important;
+    }
+  }
+
+  // Assombrissement des cartes d'historique de club et vidéos
+  .timeline-item, .highlight-card {
+    background: #0f172a !important;
+    border-color: #1e293b !important;
+  }
+
+  // Conversion propre des textes clairs
+  .club-header h3, 
+  .video-title, 
+  .post-info strong,
+  .player-main-info .name-badge-row h1 {
+    color: #f8fafc !important; 
+  }
+
+  .video-description-text, .post-info {
+    color: #94a3b8 !important;
+  }
+
+  .dot-separator {
+    color: #334155 !important;
+  }
+}
+
+// ==========================================================================
+// FALLBACKS ÉTATS VIDES & LIGHTBOX
+// ==========================================================================
+.center-container, .empty-history, .empty-videos-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: $spacing-xl $spacing-md;
+  color: var(--text-secondary);
+
+  .fallback-icon, .error-icon {
+    font-size: 48px; width: 48px; height: 48px;
+    color: #cbd5e1; margin-bottom: $spacing-sm;
+  }
+  
+  h2, h3 { margin: 0; color: var(--text-primary); }
+  p { margin: 4px 0 0 0; font-size: 13px; max-width: 360px; }
+}
+
+.lightbox-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.close-lightbox-btn {
+  position: absolute;
+  top: 24px; right: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none; color: #ffffff;
+  width: 44px; height: 44px; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  
+  &:hover { background: rgba(255, 255, 255, 0.2); }
+}
+
+.lightbox-content {
+  max-width: 90%;
+  max-height: 80vh;
+  
+  .lightbox-player {
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 8px;
+    background: #000000;
+  }
+}
+
+// ==========================================================================\n// ACCORDÉON DES STATS PAR SAISON\n// ==========================================================================\n
+.saisons-accordion {
+  display: block;
+  margin-top: $spacing-md;
+
+  mat-expansion-panel {
+    background: var(--background-primary, #ffffff) !important;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: $radius-sub !important;
+    margin-bottom: $spacing-sm !important;
+    box-shadow: $shadow-sm !important;
+    overflow: hidden;
+
+    &.mat-expanded {
+      border-color: var(--primary-color, #1e3a8a);
+    }
+  }
+
+  mat-expansion-panel-header {
+    padding: $spacing-md !important;
+    font-family: inherit;
+
+    .season-icon {
+      margin-right: $spacing-sm;
+      color: var(--primary-color, #3b82f6);
+      vertical-align: middle;
+    }
+
+    .club-name-tag {
+      font-weight: 500;
+      color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+
+      .status-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: #e2e8f0;
+        color: #64748b;
+
+        &.active {
+          background: #d1fae5;
+          color: #065f46;
+        }
+      }
+    }
+    
+    .no-club-tag {
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+  }
+
+  // Grille interne des boites de statistiques
+  .season-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: $spacing-sm;
+    padding: $spacing-sm 0 $spacing-md 0;
+  }
+
+  .stat-card-box {
+    background: var(--background-secondary, #f8fafc);
+    border: 1px solid var(--border-color, #f1f5f9);
+    border-radius: 8px;
+    padding: $spacing-sm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+
+      small {
+        font-size: 11px;
+        font-weight: normal;
+        color: #64748b;
+      }
+    }
+
+    &.goalie {
+      background: #f0fdf4; // Teinte verte légère pour mettre en avant les exploits gardiens
+      border-color: #bbf7d0;
+    }
+  }
+}
+.private-profile-box {
+  background: var(--background-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 20px;
+  padding: $spacing-xl * 2 $spacing-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+
+  .fallback-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #94a3b8;
+    margin-bottom: $spacing-md;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    max-width: 400px;
+    margin-top: 6px;
+  }
+}
+
+.private-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+// ==========================================================================
+// STYLE POUR L'ÉCRAN DE BLOCAGE DE PROFIL PRIVÉ (STYLE CYBER-SPORT / GAMING)
+// ==========================================================================
+
+.private-profile-fallback {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 480px;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1e38 100%);
+  border-radius: 24px;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6), 0 20px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Montserrat', 'Segoe UI', sans-serif;
+
+  // Cercles lumineux diffus (Glow effets néon)
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  // La Carte de restriction centrale
+  .fallback-card {
+    text-align: center;
+    max-width: 480px;
+    padding: 45px 35px;
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+
+    // Conteneur d'icône avec halo orange
+    .icon-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .pulse-glow {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(249, 115, 22, 0.1);
+        border-radius: 50%;
+        filter: blur(8px);
+        border: 1px dashed rgba(249, 115, 22, 0.35);
+      }
+
+      .lock-icon {
+        font-size: 54px;
+        width: 54px;
+        height: 54px;
+        color: #f97316; // Orange Énergie
+        filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.5));
+        z-index: 1;
+      }
+    }
+
+    // Titre avec dégradé métallique
+    h2 {
+      font-family: 'Rajdhani', 'Montserrat', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin: 0 0 14px;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    // Séparateur bicolore (Orange vers Bleu My2-0)
+    .divider-line {
+      width: 65px;
+      height: 3px;
+      background: linear-gradient(90deg, #f97316, #2563eb);
+      margin: 0 auto 22px;
+      border-radius: 2px;
+    }
+
+    // Description textuelle
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin: 0;
+      font-weight: 400;
+      letter-spacing: 0.3px;
+    }
+
+    // Filigrane de marque discret
+    .brand-watermark {
+      margin-top: 35px;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.15);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+  }
+}
+.name-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  h1 {
+    margin: 0;
+  }
+
+  .own-profile-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    
+    // Thème Vert Émeraude Premium (Très visible sur fond bleu/sombre)
+    color: #10b981; 
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 20px;
+    
+    // Petit point lumineux style "online/actif"
+    &::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background-color: #10b981;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+  }
+}
+// ── Bouton Contacter (remplace l'email) ───────────────────────
+.contact-box {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  align-items: flex-start;
+}
+
+.contact-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: $spacing-sm !important;
+  min-height: 44px !important;
+  border-radius: $border-radius-lg !important;
+  font-weight: $font-weight-semibold !important;
+  width: 100%;
+  justify-content: center !important;
+
+  mat-icon    { font-size: 18px; width: 18px; height: 18px; }
+  mat-spinner { flex-shrink: 0; }
+
+  ::ng-deep circle { stroke: white !important; }
+}

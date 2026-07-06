@@ -1,0 +1,365 @@
+<div class="equipe-container">
+  <!-- Header avec design moderne -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-icon-wrapper">
+          <mat-icon class="header-icon">shield</mat-icon>
+          <div class="icon-glow"></div>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">{{ 'equipe.management' | translate }}</h1>
+          <p class="page-subtitle">{{ 'equipe.managementSubtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <div class="stat-icon">
+            <mat-icon>groups</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ dataSource.data.length }}</span>
+            <span class="stat-label">{{ 'equipe.totalTeams' | translate }}</span>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-icon">
+            <mat-icon>person</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ allMembres.length }}</span>
+            <span class="stat-label">{{ 'equipe.totalMembers' | translate }}</span>
+          </div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <div class="stat-icon unassigned">
+            <mat-icon>person_add</mat-icon>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">{{ getMembresNonAssignes().length }}</span>
+            <span class="stat-label">{{ 'equipe.unassigned' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner-wrapper">
+      <mat-spinner diameter="56"></mat-spinner>
+      <div class="spinner-glow"></div>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'common.loading' | translate }}...</h3>
+      <p>{{ 'equipe.loadingTeams' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content Principal -->
+  <div *ngIf="!isLoading" class="content" @fadeIn>
+    
+    <!-- Toolbar Actions -->
+    <div class="toolbar">
+      <div class="search-box" *ngIf="dataSource.data.length > 0">
+        <mat-icon>search</mat-icon>
+        <input 
+          type="text" 
+          placeholder="{{ 'equipe.searchTeam' | translate }}"
+          [(ngModel)]="searchQuery"
+          (input)="filterTeams()">
+        <button *ngIf="searchQuery" class="clear-search" (click)="clearSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      
+      <div class="toolbar-actions">
+        <button 
+          mat-raised-button 
+          class="btn-create"
+          (click)="toggleCreateRow()"
+          [class.active]="showCreateRow">
+          <mat-icon>{{ showCreateRow ? 'close' : 'add' }}</mat-icon>
+          <span>{{ showCreateRow ? ('common.cancel' | translate) : ('equipe.newTeam' | translate) }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulaire de création -->
+    <div *ngIf="showCreateRow" class="create-form-card" @slideDown>
+      <div class="create-form-header">
+        <div class="form-icon">
+          <mat-icon>add_circle</mat-icon>
+        </div>
+        <div class="form-title">
+          <h3>{{ 'equipe.createNewTeam' | translate }}</h3>
+          <p>{{ 'equipe.createNewTeamSubtitle' | translate }}</p>
+        </div>
+      </div>
+      
+      <div class="create-form-content">
+        <mat-form-field appearance="outline" class="team-name-field">
+          <mat-label>{{ 'equipe.teamName' | translate }}</mat-label>
+          <input matInput [(ngModel)]="newEquipe.nom" required placeholder="Ex: Équipe A, Les Lions...">
+          <mat-icon matPrefix>badge</mat-icon>
+          <mat-hint>{{ 'equipe.teamNameHint' | translate }}</mat-hint>
+        </mat-form-field>
+
+        <!-- Couleur d'équipe optionnelle -->
+        <div class="color-picker-section">
+          <label class="color-label">{{ 'equipe.teamColor' | translate }}</label>
+          <div class="color-options">
+            <button 
+              *ngFor="let color of teamColors" 
+              class="color-option"
+              [style.background]="color.gradient"
+              [class.selected]="newEquipe.couleur === color.value"
+              (click)="newEquipe.couleur = color.value"
+              [matTooltip]="color.name">
+              <mat-icon *ngIf="newEquipe.couleur === color.value">check</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="create-form-actions">
+        <button mat-stroked-button (click)="cancelCreate()">
+          <mat-icon>close</mat-icon>
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button 
+          mat-raised-button 
+          class="btn-save"
+          (click)="saveEquipe()" 
+          [disabled]="!isCreateFormValid()">
+          <mat-icon>check</mat-icon>
+          {{ 'equipe.createTeam' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Grille des équipes -->
+    <div class="teams-grid" *ngIf="filteredTeams.length > 0">
+      <div 
+        class="team-card" 
+        *ngFor="let equipe of filteredTeams; let i = index"
+        [class.expanded]="expandedEquipeId === equipe.id"
+        [style.--team-color]="getTeamColor(equipe)"
+        @cardAnimation>
+        
+        <!-- Header de la carte équipe -->
+        <div class="team-card-header" (click)="toggleEquipeRow(equipe.id)">
+          <div class="team-identity">
+            <div class="team-avatar" [style.background]="getTeamGradient(equipe)">
+              <span class="team-initial">{{ getTeamInitial(equipe) }}</span>
+            </div>
+            <div class="team-info">
+              <!-- Mode lecture -->
+              <ng-container *ngIf="!editingRows[i]">
+                <h3 class="team-name">{{ equipe.nom }}</h3>
+                <div class="team-meta">
+                  <span class="member-count">
+                    <mat-icon>people</mat-icon>
+                    {{ getFullMembersByEquipeId(equipe.id).length }} {{ 'equipe.members' | translate }}
+                  </span>
+                  <!-- Afficher la couleur actuelle -->
+                  <span class="team-color-badge" *ngIf="equipe.couleur" [style.background]="equipe.couleur">
+                  </span>
+                </div>
+              </ng-container>
+              
+              <!-- Mode édition -->
+              <ng-container *ngIf="editingRows[i]">
+                <mat-form-field appearance="outline" class="edit-name-field">
+                  <mat-label>{{ 'equipe.teamName' | translate }}</mat-label>
+                  <input matInput [(ngModel)]="editEquipe.nom" required (click)="$event.stopPropagation()">
+                </mat-form-field>
+                
+                <!-- Color picker en mode édition -->
+                <div class="color-picker-section edit-mode" (click)="$event.stopPropagation()">
+                  <label class="color-label">{{ 'equipe.teamColor' | translate }}</label>
+                  <div class="color-options">
+                    <button 
+                      *ngFor="let color of teamColors" 
+                      type="button"
+                      class="color-option"
+                      [style.background]="color.gradient"
+                      [class.selected]="editEquipe.couleur === color.value"
+                      (click)="selectEditColor(color.value); $event.stopPropagation()"
+                      [matTooltip]="color.name">
+                      <mat-icon *ngIf="editEquipe.couleur === color.value">check</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+          
+          <div class="team-actions-header">
+            <button 
+              mat-icon-button 
+              class="expand-btn"
+              [class.rotated]="expandedEquipeId === equipe.id">
+              <mat-icon>expand_more</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenu expandable -->
+        <div class="team-card-content" *ngIf="expandedEquipeId === equipe.id" @expandCollapse>
+          
+          <!-- Section Membres -->
+          <div class="members-section">
+            <div class="section-header">
+              <h4>
+                <mat-icon>group</mat-icon>
+                {{ 'equipe.teamMembers' | translate }}
+              </h4>
+              <button 
+                mat-stroked-button 
+                class="btn-add-member"
+                (click)="openAddMemberDialog(equipe); $event.stopPropagation()">
+                <mat-icon>person_add</mat-icon>
+                {{ 'equipe.addMember' | translate }}
+              </button>
+            </div>
+
+            <!-- Liste des membres -->
+            <div class="members-list" *ngIf="getFullMembersByEquipeId(equipe.id).length > 0">
+              <div 
+                class="member-item" 
+                *ngFor="let membre of getFullMembersByEquipeId(equipe.id); let idx = index"
+                @listItem>
+                <div class="member-avatar" [style.background]="getAvatarGradient(membre)">
+                  {{ getInitials(membre) }}
+                </div>
+                <div class="member-info">
+                  <span class="member-name">{{ membre.prenom }} {{ membre.nom }}</span>
+                  <span class="member-role">{{ membre.tel|| 'Joueur' }}</span>
+                </div>
+                <button 
+                  mat-icon-button 
+                  class="btn-remove-member"
+                  (click)="removeMemberFromTeam(membre, equipe); $event.stopPropagation()"
+                  matTooltip="{{ 'equipe.removeMember' | translate }}">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- État vide membres -->
+            <div class="empty-members" *ngIf="getFullMembersByEquipeId(equipe.id).length === 0">
+              <mat-icon>group_off</mat-icon>
+              <p>{{ 'equipe.noMembersInTeam' | translate }}</p>
+              <button mat-stroked-button (click)="openAddMemberDialog(equipe); $event.stopPropagation()">
+                <mat-icon>person_add</mat-icon>
+                {{ 'equipe.addFirstMember' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Actions de l'équipe -->
+          <div class="team-card-actions">
+            <ng-container *ngIf="!editingRows[i]">
+              <button mat-stroked-button class="btn-edit" (click)="editRow(i, equipe); $event.stopPropagation()">
+                <mat-icon>edit</mat-icon>
+                {{ 'common.edit' | translate }}
+              </button>
+              <button mat-stroked-button class="btn-delete" (click)="openDeleteDialog(equipe); $event.stopPropagation()">
+                <mat-icon>delete</mat-icon>
+                {{ 'common.delete' | translate }}
+              </button>
+            </ng-container>
+            <ng-container *ngIf="editingRows[i]">
+              <button mat-raised-button class="btn-save" (click)="saveEdit(i); $event.stopPropagation()" [disabled]="!isEditFormValid()">
+                <mat-icon>check</mat-icon>
+                {{ 'common.save' | translate }}
+              </button>
+              <button mat-stroked-button (click)="cancelEdit(i); $event.stopPropagation()">
+                <mat-icon>close</mat-icon>
+                {{ 'common.cancel' | translate }}
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="dataSource.data.length === 0" @fadeIn>
+      <div class="empty-illustration">
+        <div class="empty-icon-wrapper">
+          <mat-icon class="empty-icon">shield</mat-icon>
+          <div class="empty-decoration"></div>
+        </div>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'equipe.noTeams' | translate }}</h3>
+        <p class="empty-text">{{ 'equipe.createFirstTeam' | translate }}</p>
+        <button mat-raised-button class="btn-create-first" (click)="toggleCreateRow()">
+          <mat-icon>add</mat-icon>
+          {{ 'equipe.createTeam' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Résultat recherche vide -->
+    <div class="no-results" *ngIf="filteredTeams.length === 0 && dataSource.data.length > 0">
+      <mat-icon>search_off</mat-icon>
+      <p>{{ 'equipe.noSearchResults' | translate }}</p>
+      <button mat-stroked-button (click)="clearSearch()">
+        {{ 'common.clearSearch' | translate }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog Ajout Membre -->
+<ng-template #addMemberDialog>
+  <div class="add-member-dialog">
+    <div class="dialog-header">
+      <mat-icon>person_add</mat-icon>
+      <h2>{{ 'equipe.addMemberToTeam' | translate }}</h2>
+    </div>
+    
+    <div class="dialog-content">
+      <p class="dialog-subtitle">{{ 'equipe.selectMembersToAdd' | translate }} <strong>{{ selectedEquipeForAdd?.nom }}</strong></p>
+      
+      <div class="available-members-list">
+        <div 
+          class="available-member" 
+          *ngFor="let membre of getMembresNonAssignes()"
+          [class.selected]="selectedMembersToAdd.includes(membre.id)"
+          (click)="toggleMemberSelection(membre)">
+          <div class="member-avatar" [style.background]="getAvatarGradient(membre)">
+            {{ getInitials(membre) }}
+          </div>
+          <div class="member-info">
+            <span class="member-name">{{ membre.prenom }} {{ membre.nom }}</span>
+          </div>
+          <mat-icon class="check-icon">{{ selectedMembersToAdd.includes(membre.id) ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+        </div>
+        
+        <div class="no-available-members" *ngIf="getMembresNonAssignes().length === 0">
+          <mat-icon>person_off</mat-icon>
+          <p>{{ 'equipe.allMembersAssigned' | translate }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="dialog-actions">
+      <button mat-stroked-button mat-dialog-close>{{ 'common.cancel' | translate }}</button>
+      <button 
+        mat-raised-button 
+        class="btn-confirm"
+        [disabled]="selectedMembersToAdd.length === 0"
+        (click)="confirmAddMembers()">
+        <mat-icon>check</mat-icon>
+        {{ 'equipe.addSelected' | translate }} ({{ selectedMembersToAdd.length }})
+      </button>
+    </div>
+  </div>
+</ng-template>

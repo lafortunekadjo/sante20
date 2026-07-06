@@ -36,14 +36,14 @@
         <div class="trends-container animate-in">
           <div class="trends-header">
             <mat-icon class="status-icon">{{ hasVoted() ? 'check_circle' : 'visibility' }}</mat-icon>
-            <h3>{{ 'mvpVote.trendsTitle' | translate }} - Mars 2026</h3>
+            <h3>{{ 'mvpVote.trendsTitle' | translate }} - {{ currentMonthLabel() }}</h3>
             <p class="status-subtitle">
               {{ hasVoted() ? ('mvpVote.votedMsg' | translate) : ('mvpVote.notEligibleMsg' | translate) }}
             </p>
           </div>
 
           <div class="trends-list">
-            @for (player of nomines(); track player.id; let i = $index) {
+            @for (player of nominesTries(); track player.id; let i = $index) {
               <div class="trend-item">
                 <div class="player-info">
                   <span class="rank-badge">#{{ i + 1 }}</span>
@@ -59,7 +59,7 @@
                   <span class="vote-count-label">{{ player.votesCount || 0 }} {{ 'mvpVote.votes' | translate }}</span>
                 </div>
                 <div class="progress-bar-container">
-                  <div class="progress-fill" [style.width.%]="calculatePercentage(player.votesCount)"></div>
+                  <div class="progress-fill" [style.width.%]="calculatePercentage(player)"></div>
                 </div>
               </div>
             }
@@ -73,7 +73,7 @@
 
       @else {
         <div class="candidates-grid">
-          @for (player of nomines(); track player.id; let i = $index) {
+          @for (player of nominesTries(); track player.id; let i = $index) {
             <div class="fifa-card animate-in" [style.animation-delay]="i * 0.1 + 's'" (click)="openVoteSheet(player)">
               <div class="card-inner">
                 <div class="player-rank">#{{ i + 1 }}</div>
@@ -93,22 +93,27 @@
                 </div>
 
                 <div class="player-stats-row">
-                  <div class="stat-item">
+                  <div class="stat-item" title="Buts">
                     <span class="icon">⚽</span>
                     <span class="val">{{ player.buts }}</span>
                   </div>
-                  <div class="stat-item">
+                  <div class="stat-item" title="Passes">
                     <span class="icon">👟</span>
                     <span class="val">{{ player.passes }}</span>
                   </div>
-                  <div class="stat-item">
+                  <div class="stat-item mvp-equipe" title="MVP Équipe">
+                    <span class="icon">🛡️</span>
+                    <span class="val">{{ player.mvpEquipe }}</span>
+                  </div>
+                  <div class="stat-item" title="HDM">
                     <span class="icon">⭐</span>
                     <span class="val">{{ player.motm }}</span>
                   </div>
-                  <div class="stat-item vote-count">
+                  <div class="stat-item vote-count" title="Votes">
                     <span class="icon">🗳️</span>
                     <span class="val">{{ player.votesCount || 0 }}</span>
                   </div>
+                
                 </div>
 
                 <button class="vote-btn-overlay">

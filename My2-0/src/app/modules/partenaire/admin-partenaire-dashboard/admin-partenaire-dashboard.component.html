@@ -1,0 +1,297 @@
+<!-- Dashboard Admin Partenaires -->
+<div class="dashboard-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <mat-icon class="header-icon">dashboard</mat-icon>
+        <div class="header-text">
+          <h1>Gestion des Partenariats</h1>
+          <p>Vue d'ensemble de la monétisation et des partenaires</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button mat-stroked-button routerLink="/admin/partenaires/publicites" *ngIf="stats?.publicitesEnAttente">
+          <mat-icon [matBadge]="stats?.publicitesEnAttente" matBadgeColor="warn">pending_actions</mat-icon>
+          Publicités en attente
+        </button>
+        <button mat-raised-button color="primary" routerLink="/admin/partenaires/new">
+          <mat-icon>add</mat-icon>
+          Nouveau partenaire
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement du dashboard...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && stats">
+
+    <!-- KPIs Principaux -->
+    <section class="kpi-section">
+      <h2 class="section-title">
+        <mat-icon>analytics</mat-icon>
+        Vue d'ensemble
+      </h2>
+
+      <div class="kpi-grid">
+        <!-- Revenus du mois -->
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
+            <mat-icon>payments</mat-icon>
+            <span class="kpi-trend" [ngClass]="getEvolutionClass()">
+              <mat-icon>{{ getEvolutionIcon() }}</mat-icon>
+              {{ stats.evolutionRevenus > 0 ? '+' : '' }}{{ stats.evolutionRevenus | number:'1.1-1' }}%
+            </span>
+          </div>
+          <div class="kpi-value">{{ formatCurrency(stats.revenusMois) }}</div>
+          <div class="kpi-label">Revenus ce mois</div>
+          <div class="kpi-sub">Total: {{ formatCurrency(stats.revenusTotal) }}</div>
+        </div>
+
+        <!-- Partenaires -->
+        <div class="kpi-card" routerLink="/admin/partenaires">
+          <div class="kpi-header">
+            <mat-icon>handshake</mat-icon>
+          </div>
+          <div class="kpi-value">{{ stats.totalPartenaires }}</div>
+          <div class="kpi-label">Partenaires</div>
+          <div class="kpi-details">
+            <span class="detail-item active">
+              <span class="dot"></span>{{ stats.partenairesActifs }} actifs
+            </span>
+            <span class="detail-item warning" *ngIf="stats.contratsExpirantBientot > 0">
+              <span class="dot"></span>{{ stats.contratsExpirantBientot }} expirent bientôt
+            </span>
+          </div>
+        </div>
+
+        <!-- Publicités -->
+        <div class="kpi-card" routerLink="/admin/partenaires/publicites">
+          <div class="kpi-header">
+            <mat-icon>campaign</mat-icon>
+            <span class="kpi-badge pending" *ngIf="stats.publicitesEnAttente > 0">
+              {{ stats.publicitesEnAttente }} en attente
+            </span>
+          </div>
+          <div class="kpi-value">{{ stats.totalPublicites }}</div>
+          <div class="kpi-label">Publicités</div>
+          <div class="kpi-details">
+            <span class="detail-item active">
+              <span class="dot"></span>{{ stats.publicitesActives }} actives
+            </span>
+          </div>
+        </div>
+
+        <!-- Impressions -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <mat-icon>visibility</mat-icon>
+          </div>
+          <div class="kpi-value">{{ formatNumber(stats.totalImpressionsMois) }}</div>
+          <div class="kpi-label">Impressions ce mois</div>
+        </div>
+
+        <!-- Clics -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <mat-icon>touch_app</mat-icon>
+          </div>
+          <div class="kpi-value">{{ formatNumber(stats.totalClicsMois) }}</div>
+          <div class="kpi-label">Clics ce mois</div>
+        </div>
+
+        <!-- CTR -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="kpi-value">{{ stats.tauxClicMoyen | number:'1.2-2' }}%</div>
+          <div class="kpi-label">CTR moyen</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sections en colonnes -->
+    <div class="content-grid">
+
+      <!-- Publicités en attente -->
+      <section class="content-card pending-section">
+        <div class="card-header">
+          <h3>
+            <mat-icon>pending_actions</mat-icon>
+            Publicités en attente de validation
+          </h3>
+          <button mat-button routerLink="/admin/partenaires/publicites" [queryParams]="{statut: 'EN_ATTENTE'}">
+            Voir tout
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="card-body">
+          <div class="loading-inline" *ngIf="isLoadingPubs">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+
+          <div class="pending-list" *ngIf="!isLoadingPubs">
+            <div 
+              class="pending-item"
+              *ngFor="let pub of publicitesEnAttente; trackBy: trackByPublicite">
+              <div class="pending-image">
+                <img *ngIf="pub.imageUrl" [src]="pub.imageUrl" [alt]="pub.titre">
+                <mat-icon *ngIf="!pub.imageUrl">image</mat-icon>
+              </div>
+              <div class="pending-info">
+                <span class="pending-title">{{ pub.titre }}</span>
+                <span class="pending-meta">
+                  {{ pub.entrepriseNom }} • {{ pub.emplacement }}
+                </span>
+              </div>
+              <div class="pending-actions">
+                <button mat-icon-button color="primary" (click)="approuverPublicite(pub)" matTooltip="Approuver">
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="rejeterPublicite(pub)" matTooltip="Rejeter">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+                <button mat-icon-button [routerLink]="['/admin/partenaires/publicites', pub.id]" matTooltip="Voir détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="empty-state" *ngIf="publicitesEnAttente.length === 0">
+              <mat-icon>check_circle</mat-icon>
+              <p>Aucune publicité en attente</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Derniers partenaires -->
+      <section class="content-card">
+        <div class="card-header">
+          <h3>
+            <mat-icon>group_add</mat-icon>
+            Derniers partenaires
+          </h3>
+          <button mat-button routerLink="/admin/partenaires">
+            Voir tout
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="card-body">
+          <div class="partenaires-list">
+            <div 
+              class="partenaire-item"
+              *ngFor="let p of derniersPartenaires; trackBy: trackByPartenaire"
+              [routerLink]="['/admin/partenaires', p.id]">
+              <div class="partenaire-avatar">
+                {{ p.nom?.charAt(0)?.toUpperCase() }}
+              </div>
+              <div class="partenaire-info">
+                <span class="partenaire-name">{{ p.nom }}</span>
+                <span class="partenaire-meta">{{ p.ville }} • {{ p.personneContact }}</span>
+              </div>
+              <div class="partenaire-badges">
+                <span class="type-badge" [ngClass]="getTypeContratClass(p.typeContrat)">
+                  {{ p.typeContrat }}
+                </span>
+                <span class="status-dot" [ngClass]="getStatutClass(p.statut)"></span>
+              </div>
+            </div>
+
+            <div class="empty-state" *ngIf="derniersPartenaires.length === 0">
+              <mat-icon>group</mat-icon>
+              <p>Aucun partenaire</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Top publicités -->
+      <section class="content-card">
+        <div class="card-header">
+          <h3>
+            <mat-icon>star</mat-icon>
+            Meilleures performances
+          </h3>
+          <button mat-button routerLink="/admin/partenaires/publicites">
+            Voir tout
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <div class="card-body">
+          <div class="top-list">
+            <div 
+              class="top-item"
+              *ngFor="let pub of topPublicites; let i = index; trackBy: trackByPublicite">
+              <span class="top-rank">{{ i + 1 }}</span>
+              <div class="top-image">
+                <img *ngIf="pub.imageUrl" [src]="pub.imageUrl" [alt]="pub.titre">
+                <mat-icon *ngIf="!pub.imageUrl">campaign</mat-icon>
+              </div>
+              <div class="top-info">
+                <span class="top-title">{{ pub.titre }}</span>
+                <span class="top-meta">{{ pub.entrepriseNom }}</span>
+              </div>
+              <div class="top-stats">
+                <span class="stat">
+                  <mat-icon>visibility</mat-icon>
+                  {{ formatNumber(pub.totalImpressions) }}
+                </span>
+                <span class="stat">
+                  <mat-icon>touch_app</mat-icon>
+                  {{ formatNumber(pub.totalClics) }}
+                </span>
+              </div>
+            </div>
+
+            <div class="empty-state" *ngIf="topPublicites.length === 0">
+              <mat-icon>campaign</mat-icon>
+              <p>Aucune donnée</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Actions rapides -->
+    <section class="quick-actions">
+      <h2 class="section-title">
+        <mat-icon>bolt</mat-icon>
+        Actions rapides
+      </h2>
+
+      <div class="actions-grid">
+        <button mat-stroked-button routerLink="/admin/partenaires/new" class="action-btn">
+          <mat-icon>person_add</mat-icon>
+          <span>Nouveau partenaire</span>
+        </button>
+        <button mat-stroked-button routerLink="/admin/partenaires/publicites" [queryParams]="{statut: 'EN_ATTENTE'}" class="action-btn">
+          <mat-icon>pending_actions</mat-icon>
+          <span>Valider publicités</span>
+        </button>
+        <button mat-stroked-button routerLink="/admin/partenaires/stats" class="action-btn">
+          <mat-icon>bar_chart</mat-icon>
+          <span>Statistiques</span>
+        </button>
+        <button mat-stroked-button routerLink="/admin/partenaires" [queryParams]="{expiring: true}" class="action-btn">
+          <mat-icon>schedule</mat-icon>
+          <span>Contrats expirants</span>
+        </button>
+      </div>
+    </section>
+
+  </ng-container>
+</div>

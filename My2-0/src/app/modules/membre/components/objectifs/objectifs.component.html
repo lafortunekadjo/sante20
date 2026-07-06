@@ -1,0 +1,200 @@
+<div class="objectifs-container">
+  <!-- En-tête -->
+  <div class="page-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">flag</mat-icon>
+      <div>
+        <h1 class="page-title">{{ 'objectives.title' | translate }}</h1>
+        <p class="page-subtitle">{{ 'objectives.subtitle' | translate }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton pour afficher/masquer le formulaire -->
+  <div class="action-bar" *ngIf="!showForm">
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="toggleForm()"
+      class="create-btn">
+      <mat-icon>add</mat-icon>
+      {{ 'objectives.createNew' | translate }}
+    </button>
+  </div>
+
+  <!-- Formulaire de création/modification -->
+  <mat-card class="create-card" *ngIf="showForm" [@slideDown]>
+    <mat-card-header>
+      <mat-card-title class="card-title">
+        <mat-icon>{{ editingObjectif ? 'edit' : 'add_circle' }}</mat-icon>
+        {{ editingObjectif ? ('objectives.edit' | translate) : ('objectives.createNew' | translate) }}
+      </mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <form [formGroup]="objectifForm" (ngSubmit)="onSubmit()" class="objectif-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'objectives.type' | translate }}</mat-label>
+            <mat-select formControlName="type">
+              <mat-option value="BUTS">
+                <mat-icon class="option-icon">sports_soccer</mat-icon>
+                {{ 'objectives.types.goals' | translate }}
+              </mat-option>
+              <mat-option value="PASSES">
+                <mat-icon class="option-icon">arrow_forward</mat-icon>
+                {{ 'objectives.types.assists' | translate }}
+              </mat-option>
+              <mat-option value="PRESENCE">
+                <mat-icon class="option-icon">check_circle</mat-icon>
+                {{ 'objectives.types.attendance' | translate }}
+              </mat-option>
+              <mat-option value="CARTON">
+                <mat-icon class="option-icon">warning</mat-icon>
+                {{ 'objectives.types.cards' | translate }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+            <mat-error>{{ 'objectives.errors.typeRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'objectives.targetValue' | translate }}</mat-label>
+            <input matInput type="number" formControlName="valeurCible" min="0">
+            <mat-icon matPrefix>trending_up</mat-icon>
+            <mat-hint>{{ 'objectives.targetHint' | translate }}</mat-hint>
+            <mat-error>{{ 'objectives.errors.valueRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field-full">
+            <mat-label>{{ 'objectives.period' | translate }}</mat-label>
+            <mat-date-range-input [rangePicker]="picker">
+              <input matStartDate formControlName="dateDebut" [placeholder]="'objectives.startDate' | translate">
+              <input matEndDate formControlName="dateFin" [placeholder]="'objectives.endDate' | translate">
+            </mat-date-range-input>
+            <mat-icon matPrefix>event</mat-icon>
+            <mat-hint>{{ 'objectives.dateFormat' | translate }}</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
+            <mat-error>{{ 'objectives.errors.datesRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-actions">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            type="submit" 
+            [disabled]="!objectifForm.valid"
+            class="submit-btn">
+            <mat-icon>{{ editingObjectif ? 'save' : 'add' }}</mat-icon>
+            {{ editingObjectif ? ('common.save' | translate) : ('objectives.create' | translate) }}
+          </button>
+          <button 
+            mat-stroked-button 
+            type="button" 
+            (click)="cancelEdit()"
+            class="cancel-btn">
+            <mat-icon>close</mat-icon>
+            {{ 'common.cancel' | translate }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Liste des objectifs -->
+  <div class="objectifs-section">
+    <h2 class="section-title">
+      <mat-icon>list</mat-icon>
+      {{ 'objectives.myObjectives' | translate }}
+      <span class="objectifs-count" *ngIf="objectifs.length > 0">({{ objectifs.length }})</span>
+    </h2>
+
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p class="loading-text">{{ 'objectives.loading' | translate }}</p>
+    </div>
+
+    <!-- Liste des objectifs -->
+    <div *ngIf="!isLoading && objectifs.length > 0" class="objectifs-grid">
+      <mat-card *ngFor="let objectif of objectifs" class="objectif-card" [ngClass]="'status-' + getObjectifStatus(objectif)">
+        <mat-card-header>
+          <div mat-card-avatar class="objectif-avatar" [ngClass]="'type-' + objectif.type.toLowerCase()">
+            <mat-icon>{{ getObjectifTypeIcon(objectif.type) }}</mat-icon>
+          </div>
+          <mat-card-title class="objectif-title">
+            {{ getObjectifTypeLabel(objectif.type) }}
+          </mat-card-title>
+          <mat-card-subtitle class="objectif-period">
+            <mat-icon class="subtitle-icon">event</mat-icon>
+            {{ objectif.dateDebut | date:'dd/MM/yyyy' }} - {{ objectif.dateFin | date:'dd/MM/yyyy' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="objectif-content">
+          <div class="progress-info">
+            <div class="progress-values">
+              <span class="current-value">{{ objectif.valeurActuelle || 0 }}</span>
+              <span class="separator">/</span>
+              <span class="target-value">{{ objectif.valeurCible }}</span>
+            </div>
+            <div class="progress-percentage">
+              {{ getProgressBarValue(objectif) | number:'1.0-0' }}%
+            </div>
+          </div>
+
+          <mat-progress-bar 
+            [mode]="getProgressBarMode(objectif)" 
+            [value]="getProgressBarValue(objectif)"
+            [color]="getProgressBarColor(objectif)"
+            class="progress-bar">
+          </mat-progress-bar>
+
+          <div class="objectif-status" [ngClass]="getObjectifStatus(objectif)">
+            <mat-icon>{{ getObjectifStatusIcon(objectif) }}</mat-icon>
+            <span>{{ getObjectifStatusLabel(objectif) }}</span>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="objectif-actions">
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.share' | translate" 
+            (click)="shareObjectif(objectif)">
+            <mat-icon>share</mat-icon>
+          </button>
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.edit' | translate" 
+            (click)="editObjectif(objectif)"
+            [disabled]="isObjectifExpired(objectif) && !isObjectifCompleted(objectif)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button 
+            mat-icon-button 
+            [matTooltip]="'common.delete' | translate" 
+            color="warn" 
+            (click)="deleteObjectif(objectif)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <!-- Message si aucun objectif -->
+    <div *ngIf="!isLoading && objectifs.length === 0" class="empty-state">
+      <mat-icon class="empty-icon">flag</mat-icon>
+      <h3 class="empty-title">{{ 'objectives.noObjectives' | translate }}</h3>
+      <p class="empty-text">{{ 'objectives.noObjectivesText' | translate }}</p>
+      <button mat-raised-button color="primary" (click)="scrollToForm()">
+        <mat-icon>add</mat-icon>
+        {{ 'objectives.createObjective' | translate }}
+      </button>
+    </div>
+  </div>
+  <app-publicite-banner position="FOOTER" [ville]="userVille" ></app-publicite-banner>
+</div>

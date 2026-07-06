@@ -1,33 +1,72 @@
-<div class="splash-container">
-  <div class="progress-bar" [style.width.%]="(countdown / 3) * 100" *ngIf="!canSkip"></div>
+<div class="splash-wrap">
 
+  <!-- Barre de progression -->
+  <div class="splash-progress" *ngIf="!canSkip">
+    <div class="splash-progress-fill" [style.width.%]="((3 - countdown) / 3) * 100"></div>
+  </div>
+
+  <!-- Header -->
   <div class="splash-header">
-    <div class="ad-label">Publicité</div>
-    <button class="close-btn" [class.active]="canSkip" (click)="close()" [disabled]="!canSkip">
-      <span *ngIf="!canSkip">Fermeture dans {{ countdown }}s</span>
-      <span *ngIf="canSkip">✕ Fermer</span>
+    <span class="splash-ad-label">Publicité</span>
+    <button class="splash-skip"
+            [class.ready]="canSkip"
+            (click)="close()"
+            [disabled]="!canSkip">
+      <ng-container *ngIf="!canSkip">
+        <span class="countdown-num">{{ countdown }}</span>
+        <span class="countdown-lbl">s</span>
+      </ng-container>
+      <ng-container *ngIf="canSkip">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        Fermer
+      </ng-container>
     </button>
   </div>
 
-  <a class="splash-body" [href]="publicite?.lienCible" target="_blank" (click)="onAdClick($event)">
-    <div class="img-wrapper">
-      <img [src]="publicite?.imageUrl" [class.loaded]="imageLoaded" (load)="onImageLoad()">
-      <div class="loader" *ngIf="!imageLoaded">
-        <mat-spinner diameter="40"></mat-spinner>
+  <!-- Image principale (cliquable) -->
+  <a class="splash-body"
+     [attr.href]="publicite?.lienCible"
+     target="_blank"
+     (click)="onAdClick($event)">
+    <div class="splash-img-wrap">
+      <video *ngIf="isVideo(publicite?.imageUrl)"
+       [src]="publicite?.imageUrl"
+       autoplay muted playsinline loop
+       class="splash-video"
+       (canplay)="onImageLoad()"
+       (error)="onImageError()">
+    </video>
+    <img *ngIf="!isVideo(publicite?.imageUrl)"
+        [src]="publicite?.imageUrl"
+        [class.loaded]="imageLoaded"
+        (load)="onImageLoad()"
+        (error)="onImageError()">
+      <div class="splash-loader" *ngIf="!imageLoaded">
+        <mat-spinner diameter="36"></mat-spinner>
       </div>
     </div>
   </a>
 
+  <!-- Footer marque + CTA -->
   <div class="splash-footer" *ngIf="publicite">
-    <div class="brand-info">
-      <img *ngIf="publicite.entrepriseLogoUrl" [src]="publicite.entrepriseLogoUrl" class="brand-logo">
+    <div class="splash-brand">
+      <img *ngIf="publicite.entrepriseLogoUrl"
+           [src]="publicite.entrepriseLogoUrl"
+           class="brand-logo"
+           [alt]="publicite.entrepriseNom">
       <div class="brand-text">
         <span class="brand-name">{{ publicite.entrepriseNom }}</span>
-        <span class="ad-title">{{ publicite.titre }}</span>
+        <span class="brand-title">{{ publicite.titre }}</span>
       </div>
     </div>
 
-    <a [href]="publicite?.lienCible" target="_blank" class="cta-button" (click)="onAdClick($event)">
+    <a [attr.href]="publicite?.lienCible"
+       target="_blank"
+       class="splash-cta"
+       (click)="onAdClick($event)">
       En savoir plus
       <mat-icon>open_in_new</mat-icon>
     </a>

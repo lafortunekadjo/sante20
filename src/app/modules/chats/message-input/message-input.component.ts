@@ -6,6 +6,7 @@ import { Subject, debounceTime, takeUntil } from 'rxjs';
 import { Message } from '../../../core/models/message.model';
 import { ChatService } from '../../../core/services/chat.service';
 import { WebSocketService } from '../../../core/services/websocket.service';
+import { CryptoService } from '../../../core/services/crypto.service';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
@@ -63,7 +64,8 @@ export class MessageInputComponent implements OnDestroy {
 
   constructor(
     private chatService: ChatService,
-    private websocketService: WebSocketService
+    private websocketService: WebSocketService,
+    private cryptoService: CryptoService
   ) {
     // Indicateur de frappe
     this.messageControl.valueChanges
@@ -112,9 +114,18 @@ export class MessageInputComponent implements OnDestroy {
         }
       });
     } else if (content) {
-      console.log("ici")
-      this.websocketService.sendMessage(this.conversationId, content);
+      // Sauvegarder le texte clair avant reset
+      const cleartextContent = content;
       this.resetInput();
+
+      // Chiffrer puis envoyer via WebSocket
+      this.cryptoService.encrypt(cleartextContent, this.conversationId).then(encrypted => {
+        this.websocketService.sendMessage(this.conversationId, encrypted);
+      });
+
+      // Émettre un message local optimiste en clair (affichage immédiat sans attendre WS)
+      // Le message WS en retour sera ignoré grâce au check id dans addNewMessage
+      // Note : on laisse le WebSocket retourner le vrai message avec son ID
     }
   }
 

@@ -1,0 +1,114 @@
+<!-- src/app/shared/components/match-request-dialog/match-request-dialog.component.html -->
+
+<div class="match-request-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>sports_soccer</mat-icon>
+    {{ 'matchRequest.title' | translate }}
+  </h2>
+
+  <mat-dialog-content>
+    <div class="target-group-info">
+      <mat-icon>group</mat-icon>
+      <div>
+        <p class="label">{{ 'matchRequest.targetGroup' | translate }}</p>
+        <p class="value">{{ data.groupeNom }}</p>
+      </div>
+    </div>
+
+    <form [formGroup]="matchRequestForm" class="match-request-form">
+      
+      <!-- Date proposée -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'matchRequest.proposedDate' | translate }}</mat-label>
+        <input 
+          matInput 
+          [matDatepicker]="picker"
+          formControlName="dateProposee"
+          [min]="minDate"
+          [placeholder]="'matchRequest.chooseDatePlaceholder' | translate">
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        <mat-icon matPrefix>event</mat-icon>
+        <mat-error *ngIf="dateProposee?.hasError('required')">
+          {{ 'matchRequest.dateRequired' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Heure proposée -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'matchRequest.proposedTime' | translate }}</mat-label>
+        <input 
+          matInput 
+          type="time"
+          formControlName="heureProposee"
+          placeholder="15:00">
+        <mat-icon matPrefix>schedule</mat-icon>
+        <mat-error *ngIf="heureProposee?.hasError('required')">
+          {{ 'matchRequest.timeRequired' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Lieu proposé -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'matchRequest.proposedPlace' | translate }}</mat-label>
+        <input 
+          matInput 
+          formControlName="lieuPropose"
+          [placeholder]="'matchRequest.placePlaceholder' | translate"
+          maxlength="100">
+        <mat-icon matPrefix>place</mat-icon>
+        <mat-hint align="end">
+          {{ lieuPropose?.value?.length || 0 }} / 100
+        </mat-hint>
+        <mat-error *ngIf="lieuPropose?.hasError('required')">
+          {{ 'matchRequest.placeRequired' | translate }}
+        </mat-error>
+        <mat-error *ngIf="lieuPropose?.hasError('minlength')">
+          {{ 'matchRequest.placeMinLength' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Message/Description -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'matchRequest.message' | translate }}</mat-label>
+        <textarea 
+          matInput 
+          formControlName="descriptionMessage"
+          rows="4"
+          maxlength="500"
+          [placeholder]="'matchRequest.messagePlaceholder' | translate"></textarea>
+        <mat-icon matPrefix>message</mat-icon>
+        <mat-hint align="end">
+          {{ descriptionMessage?.value?.length || 0 }} / 500
+        </mat-hint>
+        <mat-error *ngIf="descriptionMessage?.hasError('maxlength')">
+          {{ 'matchRequest.messageMaxLength' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Informations complémentaires -->
+      <div class="info-box">
+        <mat-icon>info</mat-icon>
+        <p>{{ 'matchRequest.info' | translate }}</p>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button 
+      mat-button 
+      (click)="cancel()"
+      [disabled]="loading">
+      <mat-icon>close</mat-icon>
+      {{ 'common.cancel' | translate }}
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary"
+      (click)="onSubmit()"
+      [disabled]="matchRequestForm.invalid || loading">
+      <mat-icon>send</mat-icon>
+      {{ loading ? ('matchRequest.sending' | translate) : ('matchRequest.send' | translate) }}
+    </button>
+  </mat-dialog-actions>
+</div>

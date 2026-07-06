@@ -1,84 +1,123 @@
-<div class="winner-page-container">
-  
-  <header class="celebration-header">
-    <div class="confetti-icon">🎉</div>
-    <h1>{{ 'mvpVote.winner' | translate }}</h1>
-    <p class="period-label">Mars 2026</p>
-  </header>
+<div class="mw-page">
 
-  <div class="winner-podium animate-pop">
-    <div class="trophy-wrap">
-      <mat-icon class="gold-trophy">emoji_events</mat-icon>
-    </div>
-    
-    <div class="winner-card gold-border">
-    <div class="winner-avatar-ring">
-      <div class="crown">👑</div>
-      
-      <img *ngIf="winner()?.photoUrl" [src]="winner()?.photoUrl" class="winner-img">
-      
-      <div *ngIf="!winner()?.photoUrl" 
-           class="initials-avatar-decorated" 
-           [style.background-image]="getAvatarGradient(winner()?.id)">
-        <span class="initials-text">
+  <!-- Sélecteur période -->
+  <div class="mw-period-bar">
+    <mat-form-field appearance="outline" class="mw-period-field">
+      <mat-icon matPrefix>calendar_month</mat-icon>
+      <mat-select [value]="selectedPeriod()" (valueChange)="onPeriodChange($event)">
+        @for (p of periods(); track p.value) {
+          <mat-option [value]="p.value">
+            {{ p.label }}<span *ngIf="p.isCurrent" class="curr-tag"> · Actuel</span>
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading()" class="mw-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Chargement…</span>
+  </div>
+
+  <!-- Vide -->
+  <div *ngIf="!isLoading() && !winner()" class="mw-state mw-empty">
+    <mat-icon>sports_soccer</mat-icon>
+    <h3>Aucun MVP pour {{ selectedLabel() }}</h3>
+    <p>Aucun vote enregistré pour cette période.</p>
+  </div>
+
+  <!-- Winner -->
+  <ng-container *ngIf="!isLoading() && winner()">
+
+    <!-- Badge hero -->
+    <div class="mw-badge">
+
+      <!-- Halo décoratif -->
+      <div class="mw-halo"></div>
+
+      <!-- Couronne -->
+      <div class="mw-crown">👑</div>
+
+      <!-- Avatar -->
+      <div class="mw-avatar-ring">
+        <img *ngIf="winner()?.photoUrl" [src]="winner()?.photoUrl" class="mw-avatar-img">
+        <div *ngIf="!winner()?.photoUrl"
+             class="mw-avatar-initials"
+             [style.background]="getAvatarGradient(winner()?.id)">
           {{ getInitials(winner()?.prenom, winner()?.nom) }}
-        </span>
-        <div class="light-effect"></div>
+          <div class="mw-glint"></div>
+        </div>
+      </div>
+
+      <!-- Trophée -->
+      <mat-icon class="mw-trophy">emoji_events</mat-icon>
+
+      <!-- Nom -->
+      <h2 class="mw-name">{{ winner()?.prenom }} {{ winner()?.nom }}</h2>
+      <p class="mw-period-lbl">MVP · {{ selectedLabel() }}</p>
+
+      <!-- Ruban votes -->
+      <div class="mw-votes-ribbon">
+        <span class="mw-votes-num">{{ winner()?.votesCount }}</span>
+        <span class="mw-votes-lbl">{{ 'mvpVote.votes' | translate }}</span>
       </div>
     </div>
-    
-    <h2 class="winner-name">{{ winner()?.prenom }} {{ winner()?.nom }}</h2>
-    
 
-      
-      <div class="winner-stats-summary">
-  <div class="stat primary-stat">
-    <span class="val">{{ winner()?.votesCount }}</span>
-    <span class="lbl">{{ 'mvpVote.votes' | translate }}</span>
-  </div>
-
-  <div class="stats-divider"></div>
-
-  <div class="technical-stats">
-    <div class="stat">
-      <span class="val">{{ winner()?.buts }}</span>
-      <span class="lbl">{{ 'mvpVote.buts' | translate }}</span>
-    </div>
-    
-    <div class="stat">
-      <span class="val">{{ winner()?.passes }}</span>
-      <span class="lbl">{{ 'mvpVote.passes' | translate }}</span>
-    </div>
-    
-    <div class="stat">
-      <span class="val">{{ winner()?.motm }}</span>
-      <span class="lbl">{{ 'mvpVote.HDM' | translate }}</span>
-    </div>
-  </div>
-</div>
-    </div>
-  </div>
-
-  <section class="funny-comments-section">
-    <div class="section-title">
-      <mat-icon>forum</mat-icon>
-      <h3>{{ 'mvpVote.paroles' | translate }} 🗣️</h3>
+    <!-- Stats -->
+    <div class="mw-stats">
+      <div class="mw-stat">
+        <span class="mw-stat-val">{{ winner()?.buts }}</span>
+        <span class="mw-stat-lbl">{{ 'mvpVote.buts' | translate }}</span>
+      </div>
+      <div class="mw-stat-sep"></div>
+      <div class="mw-stat">
+        <span class="mw-stat-val">{{ winner()?.passes }}</span>
+        <span class="mw-stat-lbl">{{ 'mvpVote.passes' | translate }}</span>
+      </div>
+      <div class="mw-stat-sep"></div>
+      <div class="mw-stat">
+        <span class="mw-stat-val">{{ winner()?.motm }}</span>
+        <span class="mw-stat-lbl">{{ 'mvpVote.HDM' | translate }}</span>
+      </div>
     </div>
 
-    <div class="comments-grid">
-      @for (comment of funnyComments(); track $index) {
-        <div class="comment-bubble animate-in" [style.animation-delay]="$index * 0.15 + 's'">
-          <mat-icon class="quote-icon">format_quote</mat-icon>
-          <p>"{{ comment }}"</p>
-          
+    <!-- Commentaires -->
+    <section class="mw-comments" *ngIf="funnyComments().length">
+      <h4 class="mw-comments-title">
+        <mat-icon>forum</mat-icon>
+        {{ 'mvpVote.paroles' | translate }} 🗣️
+      </h4>
+      <div class="mw-comments-list">
+        @for (c of funnyComments(); track $index) {
+          <div class="mw-comment" [style.animation-delay]="$index * 0.1 + 's'">
+            <mat-icon class="mw-quote">format_quote</mat-icon>
+            <p>"{{ c }}"</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <div class="mw-actions">
+
+      <!-- Vote en cours → badge non disponible -->
+      <div *ngIf="isVoteInProgress()" class="mw-vote-in-progress">
+        <mat-icon>how_to_vote</mat-icon>
+        <div>
+          <strong>Vote en cours</strong>
+          <p>Le badge sera disponible à la fin de la période de vote.</p>
         </div>
-      }
-    </div>
-  </section>
+      </div>
 
-  <div class="actions">
-    <button mat-flat-button color="primary" (click)="downloadMvpCard()">
-      <mat-icon>share</mat-icon> {{ 'common.download' | translate }}
-    </button>
-  </div>
+      <button mat-flat-button color="primary" class="mw-dl-btn"
+              (click)="downloadMvpCard()"
+              [disabled]="isDownloading() || isVoteInProgress()">
+        <mat-spinner *ngIf="isDownloading()" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isDownloading()">download</mat-icon>
+        {{ isDownloading() ? 'Téléchargement…' : ('common.download' | translate) }}
+      </button>
+    </div>
+
+  </ng-container>
 </div>

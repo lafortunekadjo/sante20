@@ -1,930 +1,485 @@
-@import '../../../../variables';
+@use '../../../../variables' as *;
 
-// ===== NAVBAR CONTAINER =====
+// ============================================================
+// NAVBAR — My2-0 — Option 4 : Gradient profond + or
+// Desktop uniquement — mobile = mobile-header dans layout
+// ============================================================
+
+:host {
+  display: block;
+  flex-shrink: 0;
+  @media (max-width: 767px) { display: none !important; }
+}
+
+// ── Barre principale ─────────────────────────────────────────
 .navbar-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: $z-fixed;
   height: $navbar-height;
-  padding: 0 $spacing-xl;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  box-shadow: $shadow-lg;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0;
+  background: linear-gradient(90deg, #0a1628 0%, #0f2355 35%, #1a3a8a 60%, #0f2355 80%, #0a1628 100%);
+  position: relative;
+  z-index: $z-sticky;
+  flex-shrink: 0;
+  overflow: hidden;
 
-  @include mobile {
-    height: $navbar-height-mobile;
-    padding: 0 $spacing-sm; // Padding réduit sur mobile
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #F0B429 20%, #ffd96a 50%, #F0B429 80%, transparent 100%);
   }
 
-  @media (max-width: 360px) {
-    padding: 0 $spacing-xs; // Encore plus réduit sur très petits écrans
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
   }
 }
 
-// ===== CONTENU PRINCIPAL =====
+// ── Contenu ──────────────────────────────────────────────────
 .navbar-content {
-  @include flex-between;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   height: 100%;
+  padding: 0 $spacing-3xl;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
   gap: $spacing-lg;
 
-  @include mobile {
-    gap: $spacing-xs; // Gap réduit pour gagner de l'espace
-  }
-
-  @media (max-width: 480px) {
-    gap: 4px; // Gap minimal sur très petits écrans
-  }
+  @media (max-width: 1200px) { padding: 0 $spacing-2xl; }
 }
 
-// ===== SECTION LOGO/BRAND =====
+// ── Gauche : hamburger + logo ────────────────────────────────
 .navbar-brand {
   display: flex;
   align-items: center;
   gap: $spacing-md;
   flex-shrink: 0;
+}
 
-  @include mobile {
-    gap: $spacing-xs; // Gap réduit sur mobile
-  }
+.menu-toggle-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: $border-radius-md !important;
+  color: rgba(255,255,255,.65) !important;
+  transition: all $transition-fast !important;
 
-  .menu-toggle-btn {
-    color: white;
-    transition: $transition-base;
-    border-radius: $border-radius-md;
+  mat-icon { font-size: 22px; }
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-      transform: scale(1.05);
-    }
-
-    mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-
-      @include mobile {
-        font-size: 22px; // Légèrement plus petit sur mobile
-        width: 22px;
-        height: 22px;
-      }
-    }
-
-    @include mobile {
-      padding: 6px; // Padding réduit pour bouton plus compact
-    }
-  }
-
-  .app-logo {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    cursor: pointer;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $border-radius-lg;
-    transition: $transition-base;
-
-    @include mobile {
-      padding: $spacing-xs; // Padding réduit sur mobile
-      gap: 4px;
-    }
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      transform: translateY(-1px);
-    }
-
-    .logo-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: var(--accent-color);
-      transition: $transition-base;
-
-      @include mobile {
-        font-size: 26px; // Plus petit sur mobile
-        width: 26px;
-        height: 26px;
-      }
-
-      @media (max-width: 360px) {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-      }
-    }
-
-    .app-title {
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: white;
-      letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-      @include mobile {
-        font-size: $font-size-md; // Taille réduite sur mobile
-      }
-
-      @media (max-width: 480px) {
-        display: none; // Caché sur très petits écrans
-      }
-    }
-
-    &:hover .logo-icon {
-      transform: rotate(5deg) scale(1.1);
-      color: var(--accent-light);
-    }
+  &:hover {
+    background: rgba(255,255,255,.08) !important;
+    color: white !important;
   }
 }
 
-// ===== SECTION CENTRE (Sélecteur de rôle) - OPTIMISÉE =====
-.navbar-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  max-width: 320px;
-
-  @include mobile {
-    max-width: 100px; // Fortement réduit sur mobile
-    flex: 0 0 auto; // Ne prend que l'espace nécessaire
-  }
-
-  @media (max-width: 480px) {
-    max-width: 80px; // Encore plus petit
-  }
-
-  @media (max-width: 360px) {
-    max-width: 70px; // Minimum sur très petits écrans
-  }
-
-  .role-select {
-    width: 100%;
-
-    ::ng-deep {
-      .mat-mdc-form-field-wrapper {
-        padding-bottom: 0;
-        margin: 0;
-        
-        @include mobile {
-          height: 32px; // Hauteur réduite
-        }
-      }
-
-      .mat-mdc-form-field-infix {
-        padding: $spacing-sm 0;
-        border-top: 0;
-        
-        @include mobile {
-          padding: 4px 0; // Padding minimal
-          min-height: 28px;
-        }
-      }
-
-      .mdc-notched-outline {
-        border-color: rgba(255, 255, 255, 0.3);
-        border-width: 1px;
-      }
-
-      .mdc-notched-outline__leading,
-      .mdc-notched-outline__notch,
-      .mdc-notched-outline__trailing {
-        border-color: inherit;
-        background-color: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-      }
-
-      .mdc-notched-outline--notched .mdc-notched-outline__notch {
-        border-top: none;
-      }
-
-      &.mdc-text-field--focused .mdc-notched-outline {
-        border-color: var(--accent-color);
-        border-width: 2px;
-        box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
-        
-        @include mobile {
-          border-width: 1px; // Plus fin sur mobile
-          box-shadow: none;
-        }
-      }
-
-      .mdc-floating-label {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
-        
-        @include mobile {
-          display: none; // Cache le label sur mobile pour gagner de l'espace
-        }
-      }
-
-      .mdc-floating-label--float-above {
-        color: var(--accent-color);
-        
-        @include mobile {
-          display: none;
-        }
-      }
-
-      .mat-mdc-select-value,
-      .mat-mdc-select-arrow {
-        color: white;
-      }
-
-      .mat-mdc-select-value-text {
-        font-weight: $font-weight-medium;
-        font-size: $font-size-sm;
-        
-        @include mobile {
-          font-size: $font-size-xs; // Plus petit sur mobile
-          max-width: 60px; // Limite la largeur
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        @media (max-width: 360px) {
-          font-size: 10px; // Très petit sur très petits écrans
-          max-width: 40px;
-        }
-      }
-
-      .mat-mdc-select-arrow {
-        @include mobile {
-          font-size: 16px; // Flèche plus petite
-          margin-left: 2px;
-        }
-      }
-    }
-  }
-}
-
-// ===== SECTION ACTIONS (droite) - OPTIMISÉE =====
-.navbar-actions {
+.app-logo {
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
 
-  @include mobile {
-    gap: $spacing-xs; // Gap minimal entre les boutons
+  .logo-image {
+    height: 34px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(1.2) drop-shadow(0 0 6px rgba(240,180,41,.3));
   }
 
-  @media (max-width: 480px) {
-    gap: 4px; // Gap très réduit
-  }
+  .app-text-container { display: flex; align-items: center; }
 
-  @media (max-width: 360px) {
-    gap: 2px; // Gap minimal
-  }
-}
-
-// ===== BOUTONS PARAMÈTRES - OPTIMISÉS =====
-.settings-btn {
-  color: white;
-  transition: $transition-base;
-  border-radius: $border-radius-md;
-  
-  @include mobile {
-    padding: 6px; // Padding réduit pour boutons plus compacts
-    min-width: 36px;
-    width: 36px;
-    height: 36px;
-  }
-
-  @media (max-width: 360px) {
-    min-width: 32px;
-    width: 32px;
-    height: 32px;
-    padding: 4px;
-  }
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-  }
-
-  &.language-btn .flag-icon {
-    font-size: $font-size-lg;
+  .app-title {
+    font-size: 19px;
     font-weight: $font-weight-bold;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-
-    @include mobile {
-      font-size: $font-size-md; // Plus petit sur mobile
-    }
-
-    @media (max-width: 360px) {
-      font-size: $font-size-sm;
-    }
-  }
-
-  &.theme-btn mat-icon {
-    font-size: 22px;
-    width: 22px;
-    height: 22px;
-
-    @include mobile {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-
-    @media (max-width: 360px) {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-  }
-}
-
-// ===== BOUTON CHECK-IN - OPTIMISÉ =====
-.check-in-btn {
-  @include button-states(var(--accent-color), white);
-  position: relative;
-  overflow: hidden;
-
-  &.checked-in {
-    background-color: var(--success-color) !important;
-    cursor: default;
-    
-    &:hover {
-      transform: none !important;
-      box-shadow: $shadow-md !important;
-    }
-  }
-
-  mat-icon {
     color: white;
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-  }
-
-  ::ng-deep mat-spinner circle {
-    stroke: white !important;
-  }
-
-  @include mobile {
-    width: 36px; // Taille réduite sur mobile
-    height: 36px;
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  @media (max-width: 360px) {
-    width: 32px;
-    height: 32px;
-
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
+    letter-spacing: 2.5px;
+    text-shadow: 0 0 24px rgba(240,180,41,.25);
   }
 }
 
-// ===== BOUTON PROFIL - OPTIMISÉ =====
-.profile-btn {
+// ── Séparateur ───────────────────────────────────────────────
+.nav-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255,255,255,.15);
+  flex-shrink: 0;
+  margin: 0 $spacing-sm;
+}
+
+// ── Droite : actions ─────────────────────────────────────────
+.navbar-actions {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-xs $spacing-md;
-  border-radius: $border-radius-xl;
-  transition: $transition-base;
-  min-width: 48px;
-  height: 48px;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+// ── Boutons icônes (langue, thème, notifs) ───────────────────
+.settings-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: $border-radius-md !important;
+  color: rgba(255,255,255,.65) !important;
+  transition: all $transition-fast !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
-    box-shadow: $shadow-lg;
+    background: rgba(255,255,255,.08) !important;
+    color: rgba(255,255,255,.9) !important;
   }
 
-  @include mobile {
-    padding: 4px; // Padding minimal
-    gap: 0; // Pas de gap sur mobile
-    height: 36px; // Hauteur réduite
-    min-width: 36px;
+  .flag-icon {
+    font-size: 15px;
+    line-height: 1;
+    font-weight: $font-weight-semibold;
+    color: rgba(255,255,255,.75);
+    letter-spacing: 0.5px;
   }
 
-  @media (max-width: 360px) {
-    height: 32px;
-    min-width: 32px;
-    padding: 2px;
+  mat-icon { font-size: 19px !important; }
+}
+
+// ── Cloche notifs ────────────────────────────────────────────
+::ng-deep app-notification-bell {
+  button {
+    color: rgba(255,255,255,.65) !important;
+    transition: all $transition-fast !important;
+    border-radius: $border-radius-md !important;
+
+    &:hover {
+      background: rgba(255,255,255,.08) !important;
+      color: rgba(255,255,255,.9) !important;
+    }
   }
+}
+
+// ── Check-in ─────────────────────────────────────────────────
+.check-in-btn {
+  width: 38px !important;
+  height: 38px !important;
+  background: rgba(240,180,41,.15) !important;
+  border: 1px solid rgba(240,180,41,.35) !important;
+  box-shadow: none !important;
+  transition: all $transition-fast !important;
+
+  mat-icon { color: #F0B429 !important; font-size: 19px; }
+
+  &:hover {
+    background: rgba(240,180,41,.25) !important;
+    border-color: rgba(240,180,41,.5) !important;
+    box-shadow: 0 0 12px rgba(240,180,41,.2) !important;
+  }
+}
+
+// ── Boutons auth (non connecté) ──────────────────────────────
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  height: 36px;
+  padding: 0 $spacing-lg !important;
+  border-radius: $border-radius-full !important;
+  font-weight: $font-weight-semibold !important;
+  font-size: $font-size-sm !important;
+  white-space: nowrap;
+  transition: all $transition-fast !important;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+  @media (max-width: 1024px) {
+    span { display: none; }
+    padding: 0 $spacing-sm !important;
+    border-radius: $border-radius-md !important;
+    width: 38px; height: 38px;
+    justify-content: center;
+  }
+
+  &.login-btn {
+    color: rgba(255,255,255,.8) !important;
+    border: 1px solid rgba(255,255,255,.2) !important;
+    background: rgba(255,255,255,.05) !important;
+
+    &:hover {
+      background: rgba(255,255,255,.1) !important;
+      border-color: rgba(255,255,255,.35) !important;
+      color: white !important;
+    }
+  }
+
+  &.register-btn {
+    background: #F0B429 !important;
+    color: #0a1628 !important;
+    border: none !important;
+    font-weight: $font-weight-bold !important;
+    box-shadow: 0 2px 10px rgba(240,180,41,.35) !important;
+
+    &:hover {
+      background: #ffd96a !important;
+      box-shadow: 0 4px 16px rgba(240,180,41,.5) !important;
+      transform: translateY(-1px) !important;
+    }
+  }
+}
+
+// ── Bouton profil ────────────────────────────────────────────
+.profile-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: $spacing-sm !important;
+  padding: $spacing-xs $spacing-md $spacing-xs $spacing-xs !important;
+  border-radius: $border-radius-full !important;
+  color: white !important;
+  min-height: 42px;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  transition: all $transition-fast !important;
+  margin-left: $spacing-xs;
+
+  &:hover {
+    background: rgba(255,255,255,.12) !important;
+    border-color: rgba(240,180,41,.4) !important;
+  }
+
+  &:disabled { opacity: .7; }
 
   .profile-avatar-container {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 30px; height: 30px;
     flex-shrink: 0;
-
-    @include mobile {
-      width: 28px; // Plus petit sur mobile
-      height: 28px;
-    }
-
-    @media (max-width: 360px) {
-      width: 24px;
-      height: 24px;
-    }
-
-    .status-indicator {
-      position: absolute;
-      bottom: -2px;
-      right: -2px;
-      width: 12px;
-      height: 12px;
-      border-radius: $border-radius-full;
-      border: 2px solid white;
-
-      @include mobile {
-        width: 10px; // Plus petit sur mobile
-        height: 10px;
-        border-width: 1px;
-      }
-
-      @media (max-width: 360px) {
-        width: 8px;
-        height: 8px;
-      }
-      
-      &.online {
-        background-color: var(--success-color);
-        box-shadow: 0 0 0 1px var(--success-color);
-      }
-      
-      &.away {
-        background-color: var(--warning-color);
-      }
-      
-      &.offline {
-        background-color: var(--text-tertiary);
-      }
-    }
-  }
-
-  .profile-avatar {
-    width: 100%;
-    height: 100%;
+    border: 1.5px solid #F0B429;
     border-radius: $border-radius-full;
-    object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    transition: $transition-base;
-
-    @include mobile {
-      border-width: 1px; // Bordure plus fine sur mobile
-    }
+    padding: 1.5px;
   }
 
-  .profile-avatar-icon {
-    width: 100%;
-    height: 100%;
-    @include flex-center;
+  .profile-avatar,
+  .profile-avatar-initials {
+    width: 100%; height: 100%;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    transition: $transition-base;
-
-    @include mobile {
-      border-width: 1px;
-    }
-
-    mat-icon {
-      color: white;
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-
-      @include mobile {
-        font-size: 22px; // Plus petit sur mobile
-        width: 22px;
-        height: 22px;
-      }
-
-      @media (max-width: 360px) {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-    }
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  &:hover {
-    .profile-avatar,
-    .profile-avatar-icon {
-      transform: scale(1.1);
-      border-color: var(--accent-color);
-    }
+  .profile-avatar { object-fit: cover; }
+
+  .profile-avatar-initials {
+    background: linear-gradient(135deg, #1a3a8a, #0f2355);
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    color: #F0B429;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-indicator {
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 9px; height: 9px;
+    border-radius: $border-radius-full;
+    border: 2px solid #0a1628;
+    &.online { background: #10b981; }
   }
 
   .profile-name {
-    color: white;
-    font-weight: $font-weight-medium;
     font-size: $font-size-sm;
-    max-width: 120px;
+    font-weight: $font-weight-medium;
+    color: rgba(255,255,255,.85);
+    max-width: 100px;
+    letter-spacing: 0.3px;
     @include text-truncate;
-
-    @media (max-width: 768px) {
-      display: none; // Caché plus tôt sur tablette
-    }
+    @media (max-width: 1100px) { display: none; }
   }
 
   .dropdown-arrow {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    transition: $transition-base;
-
-    @media (max-width: 768px) {
-      display: none; // Caché plus tôt
-    }
-  }
-
-  &:hover .dropdown-arrow {
-    transform: rotate(180deg);
-    color: var(--accent-color);
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    color: rgba(255,255,255,.4) !important;
   }
 }
 
-// ===== BOUTONS D'AUTHENTIFICATION - OPTIMISÉS =====
-.auth-btn {
-  @include flex-center;
-  gap: $spacing-sm;
-  height: 40px;
-  padding: 0 $spacing-xl;
-  border-radius: $border-radius-xl;
-  font-weight: $font-weight-medium;
-  font-size: $font-size-sm;
-  transition: $transition-base;
-  text-transform: none;
+// ── Menu profil dropdown ─────────────────────────────────────
+.profile-menu-custom {
+  min-width: 290px;
+  border-radius: $border-radius-xl !important;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25) !important;
+}
+
+.profile-menu-header-custom {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-xl;
+  background: linear-gradient(135deg, #0f2355 0%, #1a3a8a 100%);
+  border-bottom: 2px solid #F0B429;
+
+  .menu-header-avatar-zone {
+    .profile-menu-avatar-container {
+      position: relative;
+      width: 52px; height: 52px;
+      border: 2px solid #F0B429;
+      border-radius: $border-radius-full;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+
+    .profile-menu-avatar,
+    .profile-menu-avatar-initials {
+      width: 100%; height: 100%;
+      border-radius: $border-radius-full;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .profile-menu-avatar { object-fit: cover; }
+
+    .profile-menu-avatar-initials {
+      background: linear-gradient(135deg, #0a1628, #1a3a8a);
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: #F0B429;
+    }
+
+    .status-indicator.online {
+      position: absolute;
+      bottom: 2px; right: 2px;
+      width: 13px; height: 13px;
+      background: #10b981;
+      border-radius: $border-radius-full;
+      border: 2px solid #0f2355;
+    }
+  }
+}
+
+.profile-menu-info-custom {
+  flex: 1;
+  min-width: 0;
+
+  .profile-menu-name {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: white;
+    margin: 0 0 3px;
+    @include text-truncate;
+  }
+
+  .profile-menu-email {
+    font-size: $font-size-xs;
+    color: rgba(255,255,255,.55);
+    margin: 0 0 $spacing-sm;
+    @include text-truncate;
+  }
+
+  .profile-menu-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: rgba(240,180,41,.15);
+    color: #F0B429;
+    border: 1px solid rgba(240,180,41,.3);
+    border-radius: $border-radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.3px;
+  }
+}
+
+.menu-actions-list {
+  padding: $spacing-sm 0;
+  background: var(--background-primary);
+}
+
+.menu-divider { margin: $spacing-xs 0; }
+
+.menu-item-custom {
+  min-height: 44px !important;
+  font-size: $font-size-sm !important;
+  padding: $spacing-sm $spacing-xl !important;
+  gap: $spacing-md;
+  color: var(--text-primary) !important;
 
   mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-
-    @include mobile {
-      font-size: 18px; // Plus petit sur mobile
-      width: 18px;
-      height: 18px;
-    }
+    font-size: 20px; width: 20px; height: 20px;
+    color: var(--text-tertiary);
   }
-
-  span {
-    @media (max-width: 600px) {
-      display: none; // Cache le texte plus tôt
-    }
-  }
-
-  @include mobile {
-    padding: 0 $spacing-sm; // Padding réduit
-    height: 36px;
-    min-width: 36px;
-    border-radius: $border-radius-lg;
-  }
-
-  @media (max-width: 360px) {
-    padding: 0 $spacing-xs;
-    height: 32px;
-    min-width: 32px;
-  }
-}
-
-.login-btn {
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: white;
-    transform: translateY(-2px);
-    box-shadow: $shadow-lg;
+    background: var(--background-secondary) !important;
+    mat-icon { color: #1a3a8a; }
   }
 }
 
-.register-btn {
-  background-color: var(--accent-color);
-  color: white;
-  border: 1px solid var(--accent-color);
-
-  &:hover {
-    background-color: var(--accent-light);
-    border-color: var(--accent-light);
-    transform: translateY(-2px);
-    box-shadow: $shadow-lg;
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: $shadow-md;
-  }
+.logout-btn-custom {
+  color: #ef4444 !important;
+  mat-icon { color: #ef4444 !important; }
+  &:hover { background: rgba(239,68,68,.06) !important; }
 }
 
-// ===== RESPONSIVE DESIGN AMÉLIORÉ =====
-@media (max-width: 360px) {
-  .navbar-container {
-    padding: 0 $spacing-xs;
-  }
-
-  .navbar-content {
-    gap: 2px; // Gap minimal
-  }
-
-  // Masquer certains éléments si nécessaire
-  .settings-btn.theme-btn {
-    display: none; // Cache le bouton thème sur très petits écrans si nécessaire
-  }
-
-  // Ou réduire encore plus les tailles
-  .profile-btn {
-    .profile-avatar-container {
-      width: 20px;
-      height: 20px;
-
-      .status-indicator {
-        width: 6px;
-        height: 6px;
-        bottom: -1px;
-        right: -1px;
-      }
-    }
-
-    .profile-avatar-icon mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-  }
-}
-
-// ===== VERSION ALTERNATIVE: LAYOUT HORIZONTAL COMPACT =====
-@media (max-width: 480px) {
-  // Si vraiment nécessaire, on peut forcer un layout plus compact
-  .navbar-center {
-    // Option: cacher complètement le sélecteur de rôle sur très petits écrans
-    // display: none;
-    
-    // Ou le garder mais encore plus petit
-    .role-select ::ng-deep .mat-mdc-select-value-text {
-      font-size: 9px;
-      max-width: 35px;
-    }
-  }
-
-  // Réorganiser les boutons en mode ultra compact
-  .navbar-actions {
-    flex-wrap: nowrap;
-    
-    // Option: grouper certains boutons dans un menu déroulant si nécessaire
-    .settings-btn:not(.language-btn) {
-      // display: none; // Cache certains boutons si vraiment nécessaire
-    }
-  }
-}
-
-// Ajouter à la fin du fichier SCSS existant
-
-// ===== SNACKBAR STYLES =====
-::ng-deep {
-  .snackbar-success {
-    --mdc-snackbar-container-color: #4caf50 !important;
-    --mdc-snackbar-supporting-text-color: white !important;
-    
-    .mdc-snackbar__surface {
-      background-color: #4caf50 !important;
-    }
-    
-    .mdc-snackbar__label {
-      color: white !important;
-    }
-    
-    .mat-mdc-button {
-      color: white !important;
-    }
-  }
-
-  .snackbar-error {
-    --mdc-snackbar-container-color: #f44336 !important;
-    --mdc-snackbar-supporting-text-color: white !important;
-    
-    .mdc-snackbar__surface {
-      background-color: #f44336 !important;
-    }
-    
-    .mdc-snackbar__label {
-      color: white !important;
-    }
-    
-    .mat-mdc-button {
-      color: white !important;
-    }
-  }
-}
-
-// ===== LOADING STATE POUR LA PHOTO =====
-.profile-btn {
-  .profile-avatar-container {
-    position: relative;
-
-    &.uploading {
-      .profile-avatar,
-      .profile-avatar-icon {
-        filter: blur(2px) brightness(0.7);
-      }
-
-      &::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 20px;
-        height: 20px;
-        border: 2px solid transparent;
-        border-top-color: var(--accent-color);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-    }
-  }
-}
-
-@keyframes spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* Styles pour le conteneur du logo */
-/* 1. Conteneur principal (app-logo) : Active l'alignement horizontal */
-.app-logo {
-    display: flex;             /* Alignement horizontal des enfants directs (img et div.app-text-container) */
-    align-items: center;       /* Alignement vertical au centre */
-    cursor: pointer;
-    padding: 0 16px;           /* Ajouter un peu de marge si nécessaire */
-}
-
-/* 2. Style de l'image (logo) */
-.logo-image {
-    height: 40px;              /* Définir une hauteur et largeur fixe */
-    width: 40px;
-    border-radius: 50%;        /* Si vous voulez que le logo soit rond */
-    margin-right: 10px;        /* Espace entre l'image et le texte */
-}
-
-/* 3. Conteneur de texte : Gère l'empilement vertical du nom et du sous-titre */
-.app-text-container {
-    display: flex;
-    flex-direction: column;    /* Force les enfants (span) à s'empiler verticalement */
-    line-height: 1.2;          /* Réduire l'interligne pour rapprocher les deux textes */
-}
-
-/* 4. Styles des textes */
-.app-title {
-    font-size: 1.1em;
-    font-weight: bold;
-    color: #ffffff; /* Exemple de couleur */
-    /* Réduction de la taille sur les mobiles (similaire à votre @include mobile) */
-    @include mobile {
-        font-size: 1em; 
-    }
-
-    /* Réduction de la taille sur les petits mobiles */
-    @media (max-width: 480px) {
-        font-size: 0.9em; 
-    }
-}
-
-.app-subtitle {
-    font-size: 0.8em;
-    color: #cccccc; /* Un gris plus clair pour le sous-titre */
-    /* Réduction de la taille sur les mobiles */
-    @include mobile {
-        font-size: 0.7em; 
-    }
-    
-    /* Réduction de la taille sur les très petits écrans */
-    @media (max-width: 360px) {
-        font-size: 0.6em; 
-    }
-}
-
-/* Halo lumineux autour du bouton */
-.onboarding-highlight {
-  z-index: 10001 !important;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 15px 5px white !important;
-  position: relative;
-}
-
+// ── Onboarding tooltips ──────────────────────────────────────
 .onboarding-tooltip {
   position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
   background: white;
-  color: #1a3c6d;
-  padding: 15px;
-  border-radius: 12px;
-  width: 220px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  pointer-events: auto;
-  cursor: default;
-  z-index: 10002;
+  color: #0f2355;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $border-radius-lg;
+  width: 210px;
+  font-size: $font-size-sm;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  z-index: $z-tooltip;
+  border-top: 3px solid #F0B429;
+  white-space: normal;
 
-  /* Positionnement sous le bouton (pour le menu) */
-  &.bottom {
-    top: 60px;
-    left: 0;
-  }
-
-  /* Positionnement sous le bouton à gauche (pour le bouton register) */
   &.bottom-left {
-    top: 50px;
-    right: 0;
+    left: auto; right: 0;
+    transform: none;
   }
+
+  p { margin: 0 0 4px; font-weight: $font-weight-normal; color: #334155; }
 
   .btn-skip {
     display: block;
-    margin-top: 10px;
-    font-size: 11px;
-    color: #ef4444;
-    text-decoration: underline;
-    cursor: pointer;
+    margin-top: $spacing-sm;
+    font-size: $font-size-xs;
+    color: #94a3b8;
     text-align: right;
-  }
-
-  /* Petite flèche vers le haut */
-  &::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 20px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid white;
+    cursor: pointer;
+    &:hover { color: #64748b; }
   }
 }
 
-/* Style de base de la bulle */
-.onboarding-tooltip {
-  position: absolute;
-  background: white;
-  color: #1a3c6d;
-  padding: 12px;
-  border-radius: 8px;
-  width: 250px;
-  z-index: 2000;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  font-size: 13px;
-  pointer-events: auto;
+// ── Menu profil — positionnement correct ─────────────────────
+// Le menu s'ouvre à gauche du bouton (xPosition="before").
+// Sur les écrans intermédiaires (768-1100px), le bouton est à droite
+// de la navbar mais le panel de 290px peut être calculé à gauche
+// du viewport par Material. On force l'alignement à droite via
+// l'overlay pane pour qu'il reste toujours ancré au bord droit.
+::ng-deep .cdk-overlay-pane:has(.profile-menu-custom) {
+  right: $spacing-lg !important;
+  left: auto !important;
+}
 
-  /* SUR PC (Menu à gauche, bulle à droite) */
-  &.right-side {
-    left: 105%; /* Juste à côté de l'item du menu */
-    top: 50%;
-    transform: translateY(-50%);
-    
-    &::before {
-      content: '';
-      position: absolute;
-      left: -10px;
-      top: 50%;
-      margin-top: -10px;
-      border-right: 10px solid white;
-      border-top: 10px solid transparent;
-      border-bottom: 10px solid transparent;
-    }
-  }
+::ng-deep .mat-mdc-menu-panel.profile-menu-custom {
+  max-width: 310px !important;
+  min-width: 270px !important;
+  border-radius: $border-radius-xl !important;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25) !important;
+  border: 1px solid rgba(0,0,0,.06);
+  margin-top: $spacing-sm;
 
-  /* SUR MOBILE (Bulle en dessous de l'élément) */
-  @media (max-width: 992px) {
-    &.right-side, &.bottom {
-      left: 50% !important;
-      top: 120% !important;
-      transform: translateX(-50%) !important;
-      width: 90vw;
-      max-width: 300px;
-      
-      &::before, &::after {
-        left: 50% !important;
-        top: -10px !important;
-        margin-left: -10px;
-        border-bottom: 10px solid white !important;
-        border-left: 10px solid transparent !important;
-        border-right: 10px solid transparent !important;
-        border-top: none !important;
-      }
-    }
-  }
+  .mat-mdc-menu-content { padding: 0 !important; }
 }

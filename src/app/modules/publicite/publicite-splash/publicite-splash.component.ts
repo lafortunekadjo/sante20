@@ -33,6 +33,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     this.startTimer();
   }
 
+  isVideo(url?: string): boolean {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+}
 startTimer(): void {
   // On force une détection immédiate au lancement
   this.cdr.detectChanges(); 

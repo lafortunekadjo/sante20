@@ -28,6 +28,7 @@ import { LoginPromptDialogComponent } from '../../../membre/components/login-pro
 import { TranslateModule } from '@ngx-translate/core';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-groupes-explore',
@@ -53,7 +54,8 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
     MatButtonToggleModule,
     TranslateModule,
     MatProgressBarModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatMenuModule
 ],
   templateUrl: './groupes-explore.component.html',
   styleUrl: './groupes-explore.component.scss'
@@ -87,6 +89,7 @@ export class GroupesExploreComponent implements OnInit {
   joursSemaine = JOURS_SEMAINE;
   niveaux = NIVEAUX;
   isCandidat : boolean = false
+  hasGroup : boolean = false
   // imageUrl = `${environment.imageUrl}`;
 
   constructor(
@@ -97,19 +100,23 @@ export class GroupesExploreComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {}
 
-  ngOnInit(): void {
-
-    this.isCandidat=this.authService.isCandidat()
-    this.totalDisciplines = this.disciplines.length;
-    this.loadGroupes();
-    this.loadVilles();
-  }
+ngOnInit(): void {
+  this.isCandidat = this.authService.isCandidat();
+ 
+  // FIX : hasGroup doit refléter si l'user a au moins UN groupe,
+  // utile pour adapter le wording UI (ex: "rejoindre" vs "rejoindre un AUTRE 2-0")
+  this.hasGroup = this.authService.isLoggedIn() && !!this.authService.getGroupe();
+ 
+  this.totalDisciplines = this.disciplines.length;
+  this.loadGroupes();
+  this.loadVilles();
+}
 
   loadGroupes(): void {
     this.isLoading = true;
     this.groupesService.getAllGroupes().subscribe({
       next: (groupes) => {
-        console.log(groupes)
+
         this.groupes = groupes.filter(g => g.isActive && g.isPublic);
         this.applyFilters();
         this.isLoading = false;
@@ -150,10 +157,14 @@ export class GroupesExploreComponent implements OnInit {
 
     if (this.filters.searchText.trim()) {
       const search = this.filters.searchText.toLowerCase();
-      filtered = filtered.filter(g => 
-        g.nom.toLowerCase().includes(search) ||
-        g.description?.toLowerCase().includes(search) ||
-        g.stade.nom.toLowerCase().includes(search)
+      filtered = filtered.filter(g =>
+        g.nom?.toLowerCase().includes(search)                 ||  // nom du groupe
+        g.description?.toLowerCase().includes(search)        ||  // description
+        g.stade?.nom?.toLowerCase().includes(search)         ||  // FIX : stade peut être null
+        g.ville?.nom?.toLowerCase().includes(search)         ||  // FIX : chercher dans ville
+        g.discipline?.toLowerCase().includes(search)         ||  // FIX : chercher dans discipline
+        g.quartier?.toLowerCase().includes(search)           ||  // FIX : chercher dans quartier
+        g.jourMatch?.toLowerCase().includes(search)               // FIX : chercher dans jour
       );
     }
 
@@ -240,33 +251,62 @@ export class GroupesExploreComponent implements OnInit {
   }
 
   demanderAdhesion(groupe: GroupePublic): void {
-    if (!this.authService.isLoggedIn()) {
-      this.openLoginPrompt(groupe);
-      return;
-    }
-
-    const userId = this.authService.getUserId();
-      
-    if (userId) {
+  if (!this.authService.isLoggedIn()) {
+    this.openLoginPrompt(groupe);
+    return;
+  }
+ 
+  const userId = this.authService.getUserId();
+  if (!userId) return;
+ 
+  // FIX 1 : vérifier d'abord que l'user n'est pas DÉJÀ membre
+  // de ce groupe (cas multi-groupe — il peut être membre d'autres
+  // groupes et cliquer par erreur sur un groupe qu'il a déjà rejoint)
+  this.groupesService.verifierDejaMembre(groupe.id).subscribe({
+    next: (dejaMembre) => {
+      if (dejaMembre) {
+        this.snackBar.open(
+          `Vous êtes déjà membre de "${groupe.nom}"`,
+          'Voir mon groupe',
+          { duration: 5000 }
+        ).onAction().subscribe(() => {
+          // Switcher directement vers ce groupe si l'user clique l'action
+          this.authService.switchGroupe(groupe.id).subscribe(() => {
+            this.router.navigate(['/membre']);
+          });
+        });
+        return;
+      }
+ 
+      // FIX 2 : ensuite vérifier s'il y a déjà une demande en attente
       this.groupesService.verifierDemandeExistante(groupe.id, userId).subscribe({
         next: (demandeExiste) => {
           if (demandeExiste) {
-            this.snackBar.open('Vous avez déjà une demande en attente pour ce groupe', 'Fermer', {
-              duration: 4000
-            });
+            this.snackBar.open(
+              'Vous avez déjà une demande en attente pour ce groupe',
+              'Fermer', { duration: 4000 }
+            );
           } else {
-            // Rediriger vers le formulaire de candidature
-            this.router.navigate(['/adhesion', groupe.id, '/candidature']);
+            this.router.navigate(['/adhesion', groupe.id, 'candidature']);
           }
         },
-        error: (err) => {
-          console.error('Erreur vérification demande:', err);
-          // En cas d'erreur, rediriger quand même
-          this.router.navigate(['/adhesion', groupe.id, '/candidature']);
+        error: () => {
+          // Si la vérification échoue, on laisse quand même tenter —
+          // le backend a maintenant son propre filet de sécurité
+          // (CandidatureService.soumettreDemande lève une exception
+          // claire si demande déjà en attente)
+          this.router.navigate(['/adhesion', groupe.id, 'candidature']);
         }
       });
+    },
+    error: () => {
+      // Si la vérification d'appartenance échoue (réseau...),
+      // on laisse continuer — le backend bloquera proprement
+      // via soumettreDemande() si jamais déjà membre
+      this.router.navigate(['/adhesion', groupe.id, 'candidature']);
     }
-  }
+  });
+}
 
   openLoginPrompt(groupe: GroupePublic): void {
     const dialogRef = this.dialog.open(LoginPromptDialogComponent, {
@@ -360,6 +400,8 @@ selectedGroups: any[] = [];
 favoriteGroups: Set<number> = new Set();
 totalDisciplines: number = 0;
 sortBy: string = 'nom';
+activeTab: 'grid' | 'list' | 'filter' = 'grid';
+showCompareModal = false;
 
 // Filtres rapides (optionnel, tu peux les ignorer pour l'instant)
 quickFilterTags: any[] = [];
@@ -395,8 +437,66 @@ selectAll(): void {
 
 compareSelected(): void {
   if (this.selectedGroups.length < 2) return;
-  console.log('Comparing groups:', this.selectedGroups);
-  // Tu peux ajouter ta logique de comparaison plus tard
+  this.showCompareModal = true;
+}
+
+closeCompareModal(): void {
+  this.showCompareModal = false;
+}
+
+clearSelection(): void {
+  this.selectedGroups = [];
+  this.showCompareModal = false;
+}
+
+removeFromCompare(index: number): void {
+  this.selectedGroups.splice(index, 1);
+  if (this.selectedGroups.length < 2) {
+    this.closeCompareModal();
+  }
+}
+
+// Retourne la "meilleure" valeur parmi les groupes comparés pour une métrique donnée
+getBestGroup(field: string): number {
+  if (this.selectedGroups.length === 0) return -1;
+  let bestIdx = 0;
+  let bestVal = this.getFieldValue(this.selectedGroups[0], field);
+  this.selectedGroups.forEach((g, i) => {
+    const val = this.getFieldValue(g, field);
+    // Pour fraisAdhesion : le plus bas est le meilleur
+    if (field === 'fraisAdhesion') {
+      if (val < bestVal) { bestVal = val; bestIdx = i; }
+    } else {
+      if (val > bestVal) { bestVal = val; bestIdx = i; }
+    }
+  });
+  return bestIdx;
+}
+
+getFieldValue(groupe: any, field: string): number {
+  switch(field) {
+    case 'nombreMembres':   return groupe.nombreMembres  ?? 0;
+    case 'capaciteMax':     return groupe.capaciteMax    ?? 0;
+    case 'fraisAdhesion':   return groupe.fraisAdhesion  ?? 0;
+    case 'tauxRemplissage': return this.getCapacityPercentage(groupe);
+    default: return 0;
+  }
+}
+
+getCompareMetrics(): { label: string; field: string; format: (g: any) => string }[] {
+  return [
+    { label: 'Discipline',    field: 'discipline',     format: g => g.discipline || '—' },
+    { label: 'Ville',         field: 'ville',          format: g => g.ville || '—' },
+    { label: 'Stade',         field: 'stade',          format: g => g.stade?.nom || '—' },
+    { label: 'Jour de match', field: 'jourMatch',      format: g => g.jourMatch || '—' },
+    { label: 'Heure',         field: 'heureMatch',     format: g => g.heureMatch || '—' },
+    { label: 'Type équipe', field: 'typeEquipe',    format: g => g.typeEquipe || '—' },
+    { label: 'Niveau requis', field: 'niveauRequis',   format: g => g.niveauRequis || 'Tous niveaux' },
+    { label: 'Membres',       field: 'nombreMembres',  format: g => g.nombreMembres != null ? `${g.nombreMembres}${g.capaciteMax ? ' / ' + g.capaciteMax : ''}` : '—' },
+    { label: 'Remplissage',   field: 'tauxRemplissage',format: g => g.capaciteMax ? this.getCapacityPercentage(g) + '%' : '—' },
+    { label: 'Frais adhésion','field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' FCFA' },
+    { label: 'Recrutement',   field: 'accepte',        format: g => g.accepteNouveauxMembres ? '✅ Ouvert' : '🔒 Fermé' },
+  ];
 }
 
 // Gestion des favoris
@@ -540,6 +640,7 @@ getCapacityColor(groupe: any): 'primary' | 'accent' | 'warn' {
 }
 
 getCapacityPercentage(groupe: any): number {
+
   if (!groupe.capaciteMax || !groupe.nombreMembres) return 0;
   return Math.round((groupe.nombreMembres / groupe.capaciteMax) * 100);
 }

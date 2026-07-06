@@ -1,18 +1,46 @@
 <div class="adhesion-container">
+
   <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p class="loading-text">Chargement du formulaire...</p>
+  <div *ngIf="isLoading || isCheckingMembership" class="loading-container">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p class="loading-text">{{ isCheckingMembership ? 'Vérification...' : 'Chargement du formulaire...' }}</p>
   </div>
 
-  <!-- Content -->
-  <div *ngIf="!isLoading && groupe" class="adhesion-content">
-    
+  <!-- ══════════════════════════════════════════════════════
+       ÉTAT "DÉJÀ MEMBRE" — bloque le formulaire
+  ══════════════════════════════════════════════════════ -->
+  <div *ngIf="!isLoading && !isCheckingMembership && dejaMembre" class="already-member-state">
+    <div class="already-member-card">
+      <div class="already-member-icon-wrap">
+        <mat-icon class="already-member-icon">info</mat-icon>
+      </div>
+      <h2 class="already-member-title">Déjà membre</h2>
+      <p class="already-member-message">
+        Vous êtes déjà membre de <strong>{{ groupe?.nom || 'ce groupe' }}</strong>.
+      </p>
+      <div class="already-member-actions">
+        <button mat-raised-button color="primary" (click)="switchVersGroupe()">
+          <mat-icon>swap_horiz</mat-icon>
+          Aller sur ce groupe
+        </button>
+        <button mat-stroked-button (click)="router.navigate(['/explorer2'])">
+          <mat-icon>arrow_back</mat-icon>
+          Retour à l'explorateur
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       CONTENU NORMAL
+  ══════════════════════════════════════════════════════ -->
+  <div *ngIf="!isLoading && !isCheckingMembership && !dejaMembre && groupe" class="adhesion-content">
+
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
         <mat-icon class="header-icon">{{ getDisciplineIcon(groupe.discipline) }}</mat-icon>
-        <div>
+        <div class="header-text">
           <h1 class="page-title">Demande d'adhésion</h1>
           <p class="page-subtitle">{{ groupe.nom }}</p>
         </div>
@@ -34,10 +62,10 @@
             <mat-icon>place</mat-icon>
             <div>
               <span class="info-label">Localisation</span>
-              <span class="info-value">{{ groupe.ville.nom }}{{ groupe.quartier ? ' - ' + groupe.quartier : '' }}</span>
+              <span class="info-value">{{ groupe.ville?.nom }}{{ groupe.quartier ? ' - ' + groupe.quartier : '' }}</span>
             </div>
           </div>
-          <div class="info-item">
+          <div class="info-item" *ngIf="groupe.stade">
             <mat-icon>stadium</mat-icon>
             <div>
               <span class="info-label">Stade</span>
@@ -78,7 +106,7 @@
         </div>
 
         <form [formGroup]="demandeForm" (ngSubmit)="onSubmit()" *ngIf="questions.length > 0">
-          
+
           <div *ngFor="let question of questions; let i = index" class="question-container">
             <label class="question-label">
               <span class="question-number">{{ i + 1 }}.</span>
@@ -86,13 +114,12 @@
               <span *ngIf="question.obligatoire" class="required-mark">*</span>
             </label>
 
-            <!-- Type de champ selon question.typeChamp -->
             <div [ngSwitch]="question.typeChamp" class="question-input">
-              
+
               <!-- Texte court -->
               <mat-form-field *ngSwitchCase="TypeChamp.TEXTE_COURT" appearance="outline" class="full-width">
-                <input 
-                  matInput 
+                <input
+                  matInput
                   [formControlName]="'question_' + question.id"
                   placeholder="Votre réponse">
                 <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
@@ -102,8 +129,8 @@
 
               <!-- Texte long -->
               <mat-form-field *ngSwitchCase="TypeChamp.TEXTE_LONG" appearance="outline" class="full-width">
-                <textarea 
-                  matInput 
+                <textarea
+                  matInput
                   [formControlName]="'question_' + question.id"
                   rows="4"
                   placeholder="Votre réponse détaillée"></textarea>
@@ -114,9 +141,10 @@
 
               <!-- Nombre -->
               <mat-form-field *ngSwitchCase="TypeChamp.NOMBRE" appearance="outline" class="full-width">
-                <input 
-                  matInput 
+                <input
+                  matInput
                   type="number"
+                  inputmode="numeric"
                   [formControlName]="'question_' + question.id"
                   placeholder="Votre réponse">
                 <mat-error *ngIf="demandeForm.get('question_' + question.id)?.hasError('required')">
@@ -126,8 +154,8 @@
 
               <!-- Date -->
               <mat-form-field *ngSwitchCase="TypeChamp.DATE" appearance="outline" class="full-width">
-                <input 
-                  matInput 
+                <input
+                  matInput
                   [matDatepicker]="picker"
                   [formControlName]="'question_' + question.id"
                   placeholder="Sélectionnez une date">
@@ -140,9 +168,10 @@
 
               <!-- Email -->
               <mat-form-field *ngSwitchCase="TypeChamp.EMAIL" appearance="outline" class="full-width">
-                <input 
-                  matInput 
+                <input
+                  matInput
                   type="email"
+                  inputmode="email"
                   [formControlName]="'question_' + question.id"
                   placeholder="exemple@email.com">
                 <mat-icon matPrefix>email</mat-icon>
@@ -156,9 +185,10 @@
 
               <!-- Téléphone -->
               <mat-form-field *ngSwitchCase="TypeChamp.TELEPHONE" appearance="outline" class="full-width">
-                <input 
-                  matInput 
+                <input
+                  matInput
                   type="tel"
+                  inputmode="tel"
                   [formControlName]="'question_' + question.id"
                   placeholder="6XX XX XX XX">
                 <mat-icon matPrefix>phone</mat-icon>
@@ -171,12 +201,12 @@
               </mat-form-field>
 
               <!-- Choix unique (Radio) -->
-              <mat-radio-group 
+              <mat-radio-group
                 *ngSwitchCase="TypeChamp.CHOIX_UNIQUE"
                 [formControlName]="'question_' + question.id"
                 class="radio-group">
-                <mat-radio-button 
-                  *ngFor="let option of getOptionsArray(question.optionsChoix)" 
+                <mat-radio-button
+                  *ngFor="let option of getOptionsArray(question.optionsChoix)"
                   [value]="option"
                   class="radio-button">
                   {{ option }}
@@ -186,48 +216,47 @@
                 </mat-error>
               </mat-radio-group>
 
-             <!-- Choix multiple (Checkbox) avec FormArray -->
-<div *ngSwitchCase="TypeChamp.CHOIX_MULTIPLE" class="checkbox-group">
-  <div [formArrayName]="'question_' + question.id">
-    <mat-checkbox 
-      *ngFor="let option of getOptionsArray(question.optionsChoix); let idx = index"
-      [formControlName]="idx"
-      class="checkbox-item">
-      {{ option }}
-    </mat-checkbox>
-  </div>
-  <mat-error 
-    *ngIf="demandeForm.get('question_' + question.id)?.hasError('minSelected') && 
-           demandeForm.get('question_' + question.id)?.touched"
-    class="error-message">
-    {{ getErrorMessage(question.id, question) }}
-  </mat-error>
-</div>
+              <!-- Choix multiple (Checkbox) avec FormArray -->
+              <div *ngSwitchCase="TypeChamp.CHOIX_MULTIPLE" class="checkbox-group">
+                <div [formArrayName]="'question_' + question.id">
+                  <mat-checkbox
+                    *ngFor="let option of getOptionsArray(question.optionsChoix); let idx = index"
+                    [formControlName]="idx"
+                    class="checkbox-item">
+                    {{ option }}
+                  </mat-checkbox>
+                </div>
+                <mat-error
+                  *ngIf="demandeForm.get('question_' + question.id)?.hasError('minSelected') &&
+                         demandeForm.get('question_' + question.id)?.touched"
+                  class="error-message">
+                  {{ getErrorMessage(question.id, question) }}
+                </mat-error>
+              </div>
 
-<!-- Oui/Non avec boolean au lieu de string -->
-<div *ngSwitchCase="TypeChamp.OUI_NON" class="oui-non-container">
-  <mat-slide-toggle
-    [formControlName]="'question_' + question.id"
-    color="primary"
-    class="toggle-option">
-    <span class="toggle-label">
-      {{ demandeForm.get('question_' + question.id)?.value ? 'Oui' : 'Non' }}
-    </span>
-  </mat-slide-toggle>
-  <mat-error 
-    *ngIf="demandeForm.get('question_' + question.id)?.hasError('required') && 
-           demandeForm.get('question_' + question.id)?.touched"
-    class="error-message">
-    {{ getErrorMessage(question.id, question) }}
-  </mat-error>
-</div>
+              <!-- Oui/Non -->
+              <div *ngSwitchCase="TypeChamp.OUI_NON" class="oui-non-container">
+                <mat-slide-toggle
+                  [formControlName]="'question_' + question.id"
+                  color="primary"
+                  class="toggle-option">
+                  <span class="toggle-label">
+                    {{ demandeForm.get('question_' + question.id)?.value ? 'Oui' : 'Non' }}
+                  </span>
+                </mat-slide-toggle>
+                <mat-error
+                  *ngIf="demandeForm.get('question_' + question.id)?.hasError('required') &&
+                         demandeForm.get('question_' + question.id)?.touched"
+                  class="error-message">
+                  {{ getErrorMessage(question.id, question) }}
+                </mat-error>
+              </div>
 
             </div>
           </div>
 
         </form>
 
-        <!-- Message si pas de questions mais bouton submit quand même -->
         <div *ngIf="questions.length === 0" class="submit-without-questions">
           <p class="info-text">
             <mat-icon>info</mat-icon>
@@ -237,21 +266,24 @@
 
       </mat-card-content>
 
+      <!-- ── Actions — sticky en bas sur mobile ─────────────── -->
       <mat-card-actions class="form-actions">
-        <button 
-          mat-stroked-button 
+        <button
+          mat-stroked-button
           type="button"
           (click)="cancel()"
-          [disabled]="isSubmitting">
+          [disabled]="isSubmitting"
+          class="btn-cancel">
           <mat-icon>close</mat-icon>
           Annuler
         </button>
-        <button 
-          mat-raised-button 
+        <button
+          mat-raised-button
           color="primary"
           type="button"
           (click)="onSubmit()"
-          [disabled]="isSubmitting || (questions.length > 0 && demandeForm.invalid)">
+          [disabled]="isSubmitting || (questions.length > 0 && demandeForm.invalid)"
+          class="btn-submit">
           <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
           <mat-icon *ngIf="!isSubmitting">send</mat-icon>
           <span>{{ isSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande' }}</span>

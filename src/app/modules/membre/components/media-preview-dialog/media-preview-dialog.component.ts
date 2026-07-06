@@ -27,6 +27,30 @@ export interface MediaPreviewData {
   styleUrls: ['./media-preview-dialog.component.scss']
 })
 export class MediaPreviewDialogComponent {
+
+  // ── Swipe tactile (mobile) ───────────────────────────────────
+  private touchStartX = 0;
+  private touchStartY = 0;
+
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    if (!this.canNavigate) return;
+    const dx = event.changedTouches[0].clientX - this.touchStartX;
+    const dy = event.changedTouches[0].clientY - this.touchStartY;
+
+    // Swipe horizontal suffisamment net (et pas un scroll vertical)
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) {
+        this.previousMedia();
+      } else {
+        this.nextMedia();
+      }
+    }
+  }
   currentIndex: number = 0;
   currentUrl: string;
   

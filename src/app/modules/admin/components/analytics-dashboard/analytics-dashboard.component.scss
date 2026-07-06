@@ -1,6 +1,7 @@
 // ============================================================
 // ANALYTICS DASHBOARD - STYLES
 // ============================================================
+@use '../../../../../variables' as *;
 
 :host {
   display: block;
@@ -81,195 +82,93 @@ $shadow-xl: 0 20px 25px -5px var(--shadow-color);
 }
 
 // ============================================================
-// HEADER
+// HEADER GRADIENT + TABS
 // ============================================================
 
-.dashboard-header {
-  position: relative;
-  padding: $spacing-3xl $spacing-2xl $spacing-2xl;
-  background: var(--header-bg);
-  color: white;
-  overflow: hidden;
-
-  .header-background {
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+.ad-header {
+  background: linear-gradient(135deg, var(--primary-color, #2563eb) 0%, var(--primary-dark-color, #1e3a8a) 100%);
+  color: white; padding: $spacing-xl $spacing-2xl $spacing-lg;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  &::before { content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  @media (max-width: 768px) { padding: $spacing-lg $spacing-lg $spacing-md; }
+}
+.ad-header-top {
+  position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start;
+  gap: $spacing-md; margin-bottom: $spacing-lg;
+  @media (max-width: 768px) { margin-bottom: $spacing-md; }
+}
+.ad-title-group {
+  display: flex; align-items: center; gap: $spacing-md; flex: 1; min-width: 0;
+  .ad-icon {
+    width: 44px; height: 44px; border-radius: $border-radius-xl; background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+    @media (max-width: 768px) { width: 36px; height: 36px; mat-icon { font-size: 20px; width: 20px; height: 20px; } }
   }
+  h1 { margin: 0; font-size: 1.5rem; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.2);
+    @media (max-width: 768px) { font-size: 1.2rem; } }
+  p  { margin: 3px 0 0; font-size: .875rem; opacity: .85;
+    @media (max-width: 768px) { font-size: .75rem; } }
+}
+.ad-actions {
+  position: relative; z-index: 1; display: flex; gap: $spacing-sm; flex-shrink: 0;
+}
+.ad-icon-btn {
+  color: white !important; background: rgba(255,255,255,.15) !important; border-radius: $border-radius-md !important;
+  &:hover { background: rgba(255,255,255,.25) !important; }
+}
 
-  .header-content {
-    position: relative;
-    z-index: 1;
-    max-width: 1600px;
-    margin: 0 auto;
-  }
-
-  .header-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      gap: $spacing-lg;
-    }
-  }
-
-  .page-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    margin: 0 0 $spacing-sm;
-    font-size: 2rem;
-    font-weight: 700;
-
-    mat-icon {
-      font-size: 2.5rem;
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-  }
-
-  .page-subtitle {
-    margin: 0;
-    opacity: 0.9;
-    font-size: 1rem;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: $spacing-sm;
-
-    button {
-      color: white;
-      background: rgba(255, 255, 255, 0.1);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-    }
-  }
+// Sélecteur de période en chips
+.ad-period-bar {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: $spacing-md; flex-wrap: wrap;
+}
+.ad-period-label { font-size: .8125rem; opacity: .85; flex-shrink: 0; }
+.ad-period-chips {
+  display: flex; gap: $spacing-sm; overflow-x: auto; flex: 1;
+  scrollbar-width: none; &::-webkit-scrollbar { display: none; }
+}
+.ad-period-chip {
+  border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  padding: 4px 14px; border-radius: $border-radius-full; font-size: .8125rem; font-weight: 500;
+  background: rgba(255,255,255,.12); color: white; transition: background .15s ease;
+  &:hover { background: rgba(255,255,255,.22); }
+  &.active { background: white; color: var(--primary-color, #2563eb); font-weight: 700; }
 }
 
 // ============================================================
-// FILTRES
+// TABS STICKY
 // ============================================================
-
-.filters-section {
-  background: var(--card-bg);
-  margin: -$spacing-xl $spacing-2xl $spacing-2xl;
-  border-radius: $border-radius-xl;
-  box-shadow: $shadow-lg;
-  overflow: hidden;
-  position: relative;
-  z-index: 10;
-
-  @media (max-width: 768px) {
-    margin: -$spacing-lg $spacing-lg $spacing-lg;
-  }
-
-  .filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: $spacing-lg $spacing-xl;
-    background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-color);
-    flex-wrap: wrap;
-    gap: $spacing-md;
-
-    .filters-title {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      font-weight: 600;
-      color: var(--text-primary);
-
-      mat-icon {
-        color: $primary-color;
-      }
-    }
-
-    .filter-mode-toggle {
-      mat-button-toggle-group {
-        border-radius: $border-radius-md;
-        
-        mat-button-toggle {
-          font-size: 0.875rem;
-          
-          mat-icon {
-            margin-right: $spacing-xs;
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-          }
-        }
-      }
-    }
-  }
-
-  .filters-body {
-    padding: $spacing-xl;
-  }
-
-  .period-selector {
-    mat-chip-listbox {
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-sm;
-    }
-
-    mat-chip-option {
-      font-size: 0.875rem;
-    }
-  }
-
-  .date-range-form {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-lg;
-    flex-wrap: wrap;
-
-    mat-form-field {
-      min-width: 180px;
-    }
-
-    .date-actions {
-      display: flex;
-      gap: $spacing-md;
-      padding-top: $spacing-sm;
-
-      button {
-        display: flex;
-        align-items: center;
-        gap: $spacing-xs;
-      }
-    }
-  }
-
-  .active-period {
-    padding: $spacing-md $spacing-xl $spacing-lg;
-    border-top: 1px solid var(--border-color);
-
-    .period-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: $spacing-sm;
-      padding: $spacing-sm $spacing-lg;
-      background: rgba($primary-color, 0.1);
-      color: $primary-color;
-      border-radius: $border-radius-md;
-      font-size: 0.875rem;
-      font-weight: 600;
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-    }
-  }
+.ad-tabs-wrapper { display: flex; flex-direction: column; }
+.ad-tabs-bar {
+  position: sticky; top: 0; z-index: 10; display: flex;
+  background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow-x: auto; flex-shrink: 0;
+  scrollbar-width: none; &::-webkit-scrollbar { display: none; }
 }
+.ad-tab {
+  display: flex; align-items: center; gap: $spacing-sm; padding: $spacing-md $spacing-xl;
+  font-size: .875rem; font-weight: 500; color: var(--text-secondary);
+  background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: color .15s, background .15s;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { color: var(--primary-color, #2563eb); background: rgba(37,99,235,.04); }
+  &.active {
+    color: var(--primary-color, #2563eb); border-bottom-color: var(--primary-color, #2563eb);
+    font-weight: 600; background: rgba(37,99,235,.04);
+    mat-icon { color: var(--primary-color, #2563eb); }
+  }
+  @media (max-width: 768px) { padding: $spacing-md $spacing-lg; font-size: .75rem;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; } }
+}
+.ad-tab-content { flex: 1; animation: adFadeIn .2s ease forwards; }
+@keyframes adFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.ad-content {
+  padding: $spacing-2xl; max-width: 1600px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: $spacing-xl;
+  @media (max-width: 768px) { padding: $spacing-lg; gap: $spacing-lg; }
+}
+.ad-section-subtitle { margin: 0; color: var(--text-secondary); font-size: .9375rem; }
 
 // ============================================================
 // LOADING
@@ -294,13 +193,7 @@ $shadow-xl: 0 20px 25px -5px var(--shadow-color);
 // ============================================================
 
 .dashboard-content {
-  padding: $spacing-2xl;
-  max-width: 1600px;
-  margin: 0 auto;
-
-  @media (max-width: 768px) {
-    padding: $spacing-lg;
-  }
+  // Remplacé par .ad-content
 }
 
 // ============================================================
@@ -308,7 +201,7 @@ $shadow-xl: 0 20px 25px -5px var(--shadow-color);
 // ============================================================
 
 .analytics-section {
-  margin-bottom: $spacing-3xl;
+  margin-bottom: 0;
 
   .section-header {
     margin-bottom: $spacing-xl;
@@ -759,123 +652,67 @@ $shadow-xl: 0 20px 25px -5px var(--shadow-color);
 }
 
 // ============================================================
-// GROUPES TABLE
+// GROUPES — Liste de cards (remplace le tableau sur mobile)
 // ============================================================
 
-.groupes-table-container {
-  background: var(--card-bg);
-  border-radius: $border-radius-xl;
-  box-shadow: $shadow-md;
-  overflow: hidden;
+.groupes-list { display: flex; flex-direction: column; gap: $spacing-md; }
 
-  table {
-    width: 100%;
+.groupe-item {
+  background: var(--card-bg); border-radius: $border-radius-xl; box-shadow: $shadow-md;
+  padding: $spacing-lg $spacing-xl; display: flex; flex-direction: column; gap: $spacing-md;
+  @media (max-width: 768px) { padding: $spacing-md $spacing-lg; }
+}
 
-    th {
-      font-weight: 600;
-      color: $primary-color;
-      background: var(--bg-tertiary);
-      padding: $spacing-lg $spacing-xl;
-    }
+.gi-header {
+  display: flex; justify-content: space-between; align-items: center; gap: $spacing-md; flex-wrap: wrap;
+  .gi-name { font-weight: 600; color: var(--text-primary); font-size: 1rem; }
+}
 
-    td {
-      padding: $spacing-lg $spacing-xl;
-      vertical-align: middle;
-      color: var(--text-primary);
-    }
+.gi-metrics {
+  display: flex; gap: $spacing-xl; flex-wrap: wrap;
+  @media (max-width: 768px) { gap: $spacing-lg; }
+}
+.gi-metric {
+  display: flex; flex-direction: column; gap: 2px;
+  .gi-metric-label { font-size: .6875rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
+  .gi-metric-value {
+    font-size: .9375rem; font-weight: 600; color: var(--text-primary);
+    small { color: var(--text-secondary); font-weight: 400; margin-left: 2px; }
+    &.good-value    { color: $success-color; }
+    &.warning-value { color: $warning-color; }
+    &.bad-value     { color: $error-color; }
+  }
+}
 
-    .groupe-name {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .active-ratio {
-      small {
-        color: var(--text-secondary);
-        margin-left: $spacing-xs;
-      }
-    }
-
-    .good-value {
-      color: $success-color;
-      font-weight: 600;
-    }
-
-    .warning-value {
-      color: $warning-color;
-      font-weight: 600;
-    }
-
-    .bad-value {
-      color: $error-color;
-      font-weight: 600;
-    }
-
-    .score-bar {
-      width: 100px;
-      height: 8px;
-      background: var(--bg-tertiary);
-      border-radius: 4px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: $spacing-sm;
-
-      .score-fill {
-        height: 100%;
-        border-radius: 4px;
-
-        &.excellent { background: $success-color; }
-        &.good { background: $info-color; }
-        &.warning { background: $warning-color; }
-        &.critical { background: $error-color; }
-      }
-    }
-
-    .score-value {
-      font-weight: 600;
-      font-size: 0.875rem;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: $spacing-xs;
-      padding: $spacing-xs $spacing-sm;
-      border-radius: $border-radius-sm;
-      font-size: 0.75rem;
-      font-weight: 600;
-
-      mat-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
-
-      &.excellent {
-        background: rgba($success-color, 0.1);
-        color: $success-color;
-      }
-
-      &.good {
-        background: rgba($info-color, 0.1);
-        color: $info-color;
-      }
-
-      &.warning {
-        background: rgba($warning-color, 0.1);
-        color: $warning-color;
-      }
-
-      &.critical {
-        background: rgba($error-color, 0.1);
-        color: $error-color;
-      }
+.gi-score {
+  display: flex; align-items: center; gap: $spacing-md;
+  padding-top: $spacing-sm; border-top: 1px solid var(--border-color);
+  .gi-score-label { font-size: .75rem; color: var(--text-secondary); flex-shrink: 0; }
+  .score-bar {
+    flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;
+    .score-fill {
+      height: 100%; border-radius: 4px;
+      &.excellent { background: $success-color; }
+      &.good      { background: $info-color; }
+      &.warning   { background: $warning-color; }
+      &.critical  { background: $error-color; }
     }
   }
+  .score-value { font-weight: 600; font-size: .875rem; flex-shrink: 0; }
+}
 
-  mat-paginator {
-    border-top: 1px solid var(--border-color);
-    background: var(--bg-tertiary);
-  }
+.status-badge {
+  display: inline-flex; align-items: center; gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm; border-radius: $border-radius-sm;
+  font-size: .75rem; font-weight: 600; flex-shrink: 0;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  &.excellent { background: rgba($success-color, 0.1); color: $success-color; }
+  &.good      { background: rgba($info-color, 0.1); color: $info-color; }
+  &.warning   { background: rgba($warning-color, 0.1); color: $warning-color; }
+  &.critical  { background: rgba($error-color, 0.1); color: $error-color; }
+}
+
+.ad-paginator {
+  background: var(--card-bg); border-radius: $border-radius-xl; box-shadow: $shadow-md;
+  border-top: 1px solid var(--border-color);
 }

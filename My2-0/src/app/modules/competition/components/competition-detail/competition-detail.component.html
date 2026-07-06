@@ -1,0 +1,376 @@
+ <div class="comp-detail" *ngIf="competition(); else loadingTpl">
+
+      <!-- ── HERO ───────────────────────────────── -->
+      <div class="comp-detail__hero">
+        <div class="comp-detail__hero-bg"></div>
+        <div class="comp-detail__hero-content">
+
+          <div class="hero-top-bar">
+            <button class="btn-back" routerLink="/competitions">
+              <i class="material-icons">arrow_back</i>
+              Retour
+            </button>
+            <!-- Bouton modifier -->
+            <button class="btn-edit"
+                    *ngIf="canModifier()"
+                    (click)="openDrawer()">
+              <i class="material-icons">edit</i>
+              Modifier
+            </button>
+          </div>
+
+          <div class="comp-detail__identity">
+            <div class="comp-detail__logo">
+              <img *ngIf="competition()!.logoUrl"
+                   [src]="competition()!.logoUrl"
+                   [alt]="competition()!.nom"/>
+              <i *ngIf="!competition()!.logoUrl"
+                 class="material-icons">emoji_events</i>
+            </div>
+            <div class="comp-detail__info">
+              <div class="comp-detail__badges">
+                <span class="badge-type">
+                  {{ typeLabel(competition()!.type) }}
+                </span>
+                <!-- Statut cliquable -->
+              <!-- Dans competition-detail.component.html -->
+<div class="statut-selector" *ngIf="canChangerStatut()">
+    <!-- Ajoutez un z-index élevé ou vérifiez que le clic n'est pas bloqué -->
+    <span class="badge-statut"
+          [class]="'statut-' + competition()!.statut.toLowerCase()"
+          (click)="toggleStatutMenu($event)"> <!-- Passez l'évenement ici -->
+        {{ statutLabel(competition()!.statut) }}
+        <i class="material-icons">expand_more</i>
+    </span>
+
+    <!-- Menu transitions -->
+    <div class="statut-menu" *ngIf="showStatutMenu()">
+        <button type="button" 
+                class="statut-menu__item"
+                *ngFor="let t of transitionsDisponibles()"
+                (click)="changerStatut(t.statut, $event)"> <!-- Passez l'évenement ici aussi -->
+            <span class="statut-dot" [class]="'dot-' + t.statut.toLowerCase()"></span>
+            {{ t.label }}
+        </button>
+    </div>
+</div>
+                <!-- Statut non cliquable -->
+                <!-- <span class="badge-statut"
+                      [class]="'statut-' + competition()!.statut.toLowerCase()"
+                      *ngIf="!canChangerStatut()">
+                  {{ statutLabel(competition()!.statut) }}
+                </span> -->
+              </div>
+
+              <h1 class="comp-detail__nom">{{ competition()!.nom }}</h1>
+              <p class="comp-detail__desc"
+                 *ngIf="competition()!.description">
+                {{ competition()!.description }}
+              </p>
+
+              <div class="comp-detail__meta">
+                <span *ngIf="competition()!.organisateurNom">
+                  <i class="material-icons">person</i>
+                  {{ competition()!.organisateurNom }}
+                </span>
+                <span *ngIf="competition()!.dateDebut">
+                  <i class="material-icons">calendar_today</i>
+                  {{ competition()!.dateDebut | date:'dd/MM/yyyy' }}
+                  <span *ngIf="competition()!.dateFin">
+                    → {{ competition()!.dateFin | date:'dd/MM/yyyy' }}
+                  </span>
+                </span>
+                <span *ngIf="competition()!.dateLimiteInscription"
+                      [class.date-limit-warning]="isDateLimiteProche()">
+                  <i class="material-icons">event_busy</i>
+                  Inscriptions jusqu'au
+                  {{ competition()!.dateLimiteInscription | date:'dd/MM/yyyy' }}
+                </span>
+                <span>
+                  <i class="material-icons">groups</i>
+                  {{ competition()!.nombreParticipants }} équipes
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions principales -->
+          <div class="comp-detail__actions">
+            <button class="btn-action btn-action--success"
+                    *ngIf="canLancer()"
+                    (click)="lancer()">
+              <i class="material-icons">play_arrow</i>
+              Lancer la compétition
+            </button>
+            <button class="btn-action btn-action--warning"
+                    *ngIf="canPhaseSuivante()"
+                    (click)="phaseSuivante()">
+              <i class="material-icons">skip_next</i>
+              Phase suivante
+            </button>
+            <button class="btn-action btn-action--ghost"
+                    *ngIf="canTerminer()"
+                    (click)="confirmerTerminer()">
+              <i class="material-icons">flag</i>
+              Terminer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TABS ───────────────────────────────── -->
+      <div class="comp-detail__tabs">
+        <div class="tabs-nav">
+          <button class="tab-btn"
+                  *ngFor="let tab of tabs"
+                  [class.active]="activeTab() === tab.key"
+                  (click)="setTab(tab.key)">
+            <i class="material-icons">{{ tab.icon }}</i>
+            {{ tab.label }}
+          </button>
+        </div>
+        <div class="tabs-content">
+          <app-tab-resume
+            *ngIf="activeTab() === 'resume'"
+            [competitionId]="competition()!.id"
+            [competition]="competition()!"/>
+          <app-tab-participants
+            *ngIf="activeTab() === 'participants'"
+            [competition]="competition()!"
+            (updated)="reload()"/>
+          <app-tab-phases
+            *ngIf="activeTab() === 'phases'"
+            [competition]="competition()!"/>
+          <app-tab-statistiques
+            *ngIf="activeTab() === 'statistiques'"
+            [competitionId]="competition()!.id"/>
+        </div>
+      </div>
+
+      <!-- ── DRAWER MODIFICATION ────────────────── -->
+      <div class="drawer-overlay"
+           [class.open]="drawerOpen()"
+           (click)="closeDrawer()">
+      </div>
+
+      <div class="drawer" [class.open]="drawerOpen()">
+        <div class="drawer__header">
+          <h2>
+            <i class="material-icons">edit</i>
+            Modifier la compétition
+          </h2>
+          <button class="drawer__close" (click)="closeDrawer()">
+            <i class="material-icons">close</i>
+          </button>
+        </div>
+
+        <div class="drawer__body" *ngIf="editForm">
+          <form [formGroup]="editForm" (ngSubmit)="sauvegarder()">
+
+            <!-- Infos générales -->
+            <div class="drawer-section">
+              <h3 class="drawer-section__title">
+                <i class="material-icons">info</i>
+                Informations générales
+              </h3>
+
+              <div class="form-field">
+                <label class="form-label">Nom</label>
+                <input formControlName="nom"
+                       class="form-input"
+                       placeholder="Nom de la compétition"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">Description</label>
+                <textarea formControlName="description"
+                          class="form-textarea"
+                          rows="3"
+                          placeholder="Description..."></textarea>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">Organisateur</label>
+                <input formControlName="organisateurNom"
+                       class="form-input"
+                       placeholder="Nom de l'organisateur"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">Logo (URL)</label>
+                <input formControlName="logoUrl"
+                       class="form-input"
+                       placeholder="https://..."/>
+              </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="drawer-section">
+              <h3 class="drawer-section__title">
+                <i class="material-icons">calendar_today</i>
+                Dates
+              </h3>
+
+              <div class="form-field">
+                <label class="form-label">Date de début</label>
+                <input formControlName="dateDebut"
+                       type="date" class="form-input"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">Date de fin</label>
+                <input formControlName="dateFin"
+                       type="date" class="form-input"/>
+                <span class="form-hint">
+                  Optionnel — laissez vide si non définie
+                </span>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">
+                  Date limite d'inscription
+                  <span class="badge-warning"
+                        *ngIf="isDateLimiteProche()">
+                    Proche !
+                  </span>
+                </label>
+                <input formControlName="dateLimiteInscription"
+                       type="date" class="form-input"/>
+                <span class="form-hint">
+                  Après cette date, les inscriptions seront fermées
+                </span>
+              </div>
+            </div>
+
+            <!-- Config (uniquement si BROUILLON) -->
+            <div class="drawer-section"
+                 *ngIf="isBrouillon()"
+                 formGroupName="config">
+              <h3 class="drawer-section__title">
+                <i class="material-icons">settings</i>
+                Configuration
+                <span class="brouillon-only">Brouillon uniquement</span>
+              </h3>
+
+              <div class="form-field">
+                <label class="form-label">
+                  Nombre minimum d'équipes
+                </label>
+                <input formControlName="nombreEquipesMin"
+                       type="number" min="2" class="form-input"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">
+                  Nombre maximum d'équipes
+                </label>
+                <input formControlName="nombreEquipesMax"
+                       type="number" min="2" class="form-input"/>
+              </div>
+
+              <div class="form-field"
+                   *ngIf="isInscriptionOuverte() || isBrouillon()">
+                <label class="form-label">Droits d'engagement (FCFA)</label>
+                <input formControlName="montantEngagement"
+                       type="number" min="0" class="form-input"
+                       placeholder="0 = gratuit"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">
+                  Seuil CJ avant suspension
+                </label>
+                <input formControlName="seuilCartonsJaunesSuspension"
+                       type="number" min="1" class="form-input"/>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">
+                  Matchs suspension carton rouge
+                </label>
+                <input formControlName="matchsSuspensionCartonRouge"
+                       type="number" min="1" class="form-input"/>
+              </div>
+            </div>
+
+            <!-- Avertissement si EN_COURS -->
+            <div class="drawer-alert drawer-alert--warning"
+                 *ngIf="isEnCours()">
+              <i class="material-icons">warning</i>
+              <div>
+                <strong>Compétition en cours</strong>
+                <p>
+                  Seules les informations générales et les dates
+                  peuvent être modifiées.
+                  La configuration est verrouillée.
+                </p>
+              </div>
+            </div>
+
+            <!-- Avertissement si TERMINE/ANNULE -->
+            <div class="drawer-alert drawer-alert--info"
+                 *ngIf="isTermine() || isAnnule()">
+              <i class="material-icons">info</i>
+              <div>
+                <strong>Compétition clôturée</strong>
+                <p>Les modifications sont limitées.</p>
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="drawer__footer">
+          <button class="btn-ghost"
+                  (click)="closeDrawer()">
+            Annuler
+          </button>
+          <button class="btn-danger-outline"
+                  *ngIf="canAnnuler()"
+                  (click)="confirmerAnnuler()">
+            <i class="material-icons">cancel</i>
+            Annuler la compétition
+          </button>
+          <button class="btn-primary"
+                  (click)="sauvegarder()"
+                  [disabled]="saving()">
+            <i class="material-icons">save</i>
+            {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ── MODAL CONFIRMATION ──────────────────── -->
+      <div class="modal-overlay"
+           *ngIf="confirmModal()"
+           (click)="confirmModal.set(null)">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal__header">
+            <i class="material-icons"
+               [class]="confirmModal()!.icon">
+              {{ confirmModal()!.iconName }}
+            </i>
+            <h3>{{ confirmModal()!.titre }}</h3>
+          </div>
+          <p class="modal__body">{{ confirmModal()!.message }}</p>
+          <div class="modal__footer">
+            <button class="btn-ghost"
+                    (click)="confirmModal.set(null)">
+              Annuler
+            </button>
+            <button class="btn-danger"
+                    (click)="confirmModal()!.action()">
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <ng-template #loadingTpl>
+      <div class="comp-detail__loading">
+        <div class="spinner"></div>
+        <span>Chargement...</span>
+      </div>
+    </ng-template>

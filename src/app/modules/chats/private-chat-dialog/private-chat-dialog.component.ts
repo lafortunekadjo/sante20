@@ -1,24 +1,23 @@
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { Observable, startWith, map } from 'rxjs';
-import { User } from '../../../core/models/user';
-import { MatDivider, MatDividerModule } from "@angular/material/divider";
-import { MatIconModule } from "@angular/material/icon";
-import { MatCardModule } from "@angular/material/card";
-import { MatInputModule } from "@angular/material/input";
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatBadgeModule } from '@angular/material/badge';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatListModule } from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-
+import { Observable, startWith, map } from 'rxjs';
+import { User } from '../../../core/models/user';
 
 export interface PrivateChatDialogData {
   groupMembers: User[];
@@ -26,27 +25,29 @@ export interface PrivateChatDialogData {
 
 @Component({
   selector: 'app-private-chat-dialog',
-  
   templateUrl: './private-chat-dialog.component.html',
   styleUrls: ['./private-chat-dialog.component.scss'],
-  imports: [CommonModule,
+  standalone: true,
+  imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    // Material
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
     MatInputModule,
+    MatFormFieldModule,
     MatListModule,
+    MatCardModule,
+    MatDividerModule,
+    MatChipsModule,
     MatBadgeModule,
     MatMenuModule,
-    MatTooltipModule,
     MatProgressSpinnerModule,
-    MatChipsModule,
-    TranslateModule,
-    MatDividerModule, MatCardModule],
+    MatTooltipModule,
+    TranslateModule
+  ]
 })
 export class PrivateChatDialogComponent implements OnInit {
   searchControl = new FormControl('');
@@ -59,10 +60,11 @@ export class PrivateChatDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: PrivateChatDialogData
   ) {
     this.allMembers = data.groupMembers || [];
+        console.log(data)
   }
 
   ngOnInit(): void {
-    // Filtrer les utilisateurs en temps réel
+
     this.filteredUsers$ = this.searchControl.valueChanges.pipe(
       startWith(''),
       map(searchTerm => this.filterUsers(searchTerm || ''))
@@ -94,15 +96,19 @@ export class PrivateChatDialogComponent implements OnInit {
     }
   }
 
+  /**
+   * Ferme la boîte de dialogue sans renvoyer de données.
+   * Résout l'erreur du compilateur : Property 'cancel' does not exist on type 'PrivateChatDialogComponent'
+   */
   cancel(): void {
     this.dialogRef.close();
   }
 
-  getUserDisplayName(user: User): string {
-    return `${user.username}`;
+  getUserAvatar(user: User): string {
+    return 'assets/images/avatars/default.png';
   }
 
-  getUserAvatar(user: User): string {
-    return user.profilePhotoUrl || 'assets/default-avatar.png';
+  getUserDisplayName(user: User): string {
+    return user.username;
   }
 }

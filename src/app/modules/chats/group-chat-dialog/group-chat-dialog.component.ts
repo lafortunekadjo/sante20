@@ -1,5 +1,3 @@
-// src/app/modules/chat/components/group-chat-dialog/group-chat-dialog.component.ts
-
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -13,13 +11,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-import { ConversationListComponent } from '../conversation-list/conversation-list.component';
-
 
 export interface GroupChatDialogData {
   groupMembers: User[];
@@ -27,12 +20,11 @@ export interface GroupChatDialogData {
 
 @Component({
   selector: 'app-group-chat-dialog',
-  imports: [CommonModule,
+  standalone: true,
+  imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    RouterModule,
-    
-    // Material
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
@@ -40,13 +32,11 @@ export interface GroupChatDialogData {
     MatInputModule,
     MatListModule,
     MatBadgeModule,
-    MatMenuModule,
     MatTooltipModule,
-    MatProgressSpinnerModule,
     MatChipsModule,
-    TranslateModule,
-    ConversationListComponent,
-    MatDividerModule],
+    MatDividerModule,
+    TranslateModule
+  ],
   templateUrl: './group-chat-dialog.component.html',
   styleUrls: ['./group-chat-dialog.component.scss']
 })
@@ -68,39 +58,35 @@ export class GroupChatDialogComponent implements OnInit {
 
     this.chatForm = this.fb.group({
       titre: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['']
     });
   }
 
   ngOnInit(): void {
-    // Filtrer les membres en fonction de la recherche
-    this.searchControl.valueChanges.subscribe(searchTerm => {
-      this.filterMembers(searchTerm || '');
+    this.searchControl.valueChanges.subscribe(term => {
+      this.filterMembers(term || '');
     });
   }
 
-  private filterMembers(searchTerm: string): void {
-    if (!searchTerm || searchTerm.length < 2) {
-      this.filteredMembers = this.allMembers.filter(
-        member => !this.selectedMembers.find(m => m.id === member.id)
-      );
+  private filterMembers(term: string): void {
+    const available = this.allMembers.filter(
+      m => !this.selectedMembers.find(s => s.id === m.id)
+    );
+
+    if (!term || term.length < 2) {
+      this.filteredMembers = available;
       return;
     }
 
-    const search = searchTerm.toLowerCase().trim();
-    
-    this.filteredMembers = this.allMembers.filter(member => {
-      const fullName = `${member.username}`.toLowerCase();
-      const email = member.email.toLowerCase();
-      const isNotSelected = !this.selectedMembers.find(m => m.id === member.id);
-      
-      return isNotSelected && (fullName.includes(search) || email.includes(search));
-    });
+    const q = term.toLowerCase().trim();
+    this.filteredMembers = available.filter(m =>
+      m.username?.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q)
+    );
   }
 
   selectMember(member: User): void {
     if (!this.selectedMembers.find(m => m.id === member.id)) {
-      this.selectedMembers.push(member);
+      this.selectedMembers = [...this.selectedMembers, member];
       this.filterMembers(this.searchControl.value || '');
       this.searchControl.setValue('');
     }
@@ -113,11 +99,11 @@ export class GroupChatDialogComponent implements OnInit {
   }
 
   toggleAdmin(member: User): void {
-    const index = this.selectedAdmins.findIndex(a => a.id === member.id);
-    if (index === -1) {
-      this.selectedAdmins.push(member);
+    const idx = this.selectedAdmins.findIndex(a => a.id === member.id);
+    if (idx === -1) {
+      this.selectedAdmins = [...this.selectedAdmins, member];
     } else {
-      this.selectedAdmins.splice(index, 1);
+      this.selectedAdmins = this.selectedAdmins.filter(a => a.id !== member.id);
     }
   }
 
@@ -126,18 +112,16 @@ export class GroupChatDialogComponent implements OnInit {
   }
 
   getUserDisplayName(user: User): string {
-    return `${user.username}`;
+    return user.username || `${user.username || ''}`.trim() || 'Membre';
   }
 
   createChat(): void {
-    if (this.chatForm.valid && this.selectedMembers.length >= 2) {
-      const result = {
-        titre: this.chatForm.value.titre,
-        participantIds: this.selectedMembers.map(m => m.id),
-        adminIds: this.selectedAdmins.map(a => a.id)
-      };
-      this.dialogRef.close(result);
-    }
+    if (!this.canCreate) return;
+    this.dialogRef.close({
+      titre: this.chatForm.value.titre,
+      participantIds: this.selectedMembers.map(m => m.id),
+      adminIds: this.selectedAdmins.map(a => a.id)
+    });
   }
 
   cancel(): void {

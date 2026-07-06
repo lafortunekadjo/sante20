@@ -1,136 +1,105 @@
-<!-- src/app/modules/chat/components/group-chat-dialog/group-chat-dialog.component.html -->
+<div class="gcd">
 
-<h2 mat-dialog-title>Créer un groupe de discussion</h2>
+  <!-- Header -->
+  <div class="gcd-header">
+    <div class="gcd-header-icon"><mat-icon>group_add</mat-icon></div>
+    <div class="gcd-header-text">
+      <h2>Créer un groupe</h2>
+      <p>{{ selectedMembers.length }} membre(s) sélectionné(s)</p>
+    </div>
+    <button mat-icon-button class="gcd-close" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<mat-dialog-content>
-  <form [formGroup]="chatForm">
-    <!-- Titre du groupe -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Nom du groupe</mat-label>
-      <input 
-        matInput 
-        formControlName="titre"
-        placeholder="Ex: Équipe de foot du samedi">
-      <mat-icon matPrefix>group</mat-icon>
-      <mat-error *ngIf="chatForm.get('titre')?.hasError('required')">
-        Le nom du groupe est obligatoire
-      </mat-error>
-      <mat-error *ngIf="chatForm.get('titre')?.hasError('minlength')">
-        Le nom doit contenir au moins 3 caractères
-      </mat-error>
-    </mat-form-field>
+  <!-- Body scrollable -->
+  <div class="gcd-body">
+    <form [formGroup]="chatForm">
 
-    <!-- Membres sélectionnés -->
-    <div class="selected-members-section" *ngIf="selectedMembers.length > 0">
-      <h4>Membres sélectionnés ({{ selectedMembers.length }})</h4>
-      <div class="selected-members-list">
-        <mat-chip-set>
-          <mat-chip 
-            *ngFor="let member of selectedMembers"
-            [class.admin-chip]="isAdmin(member)"
-            (removed)="removeMember(member)">
-            <img 
-              *ngIf="member.id"
-              [src]="'userProfileImage'" 
-              [alt]="getUserDisplayName(member)"
-              class="chip-avatar">
-            {{ getUserDisplayName(member) }}
-            <mat-icon 
-              *ngIf="isAdmin(member)" 
-              matChipTrailingIcon
-              matTooltip="Administrateur">
-              shield
-            </mat-icon>
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
+      <!-- Nom du groupe -->
+      <mat-form-field appearance="outline" class="gcd-full">
+        <mat-label>Nom du groupe</mat-label>
+        <input matInput formControlName="titre" placeholder="Ex: Équipe du samedi">
+        <mat-icon matPrefix>group</mat-icon>
+        <mat-error *ngIf="chatForm.get('titre')?.hasError('required')">Nom obligatoire</mat-error>
+        <mat-error *ngIf="chatForm.get('titre')?.hasError('minlength')">Minimum 3 caractères</mat-error>
+      </mat-form-field>
+
+      <!-- Chips membres sélectionnés -->
+      <div class="gcd-chips-section" *ngIf="selectedMembers.length > 0">
+        <span class="gcd-chips-label">Membres ajoutés</span>
+        <div class="gcd-chips">
+          <div class="gcd-chip" *ngFor="let m of selectedMembers"
+               [class.is-admin]="isAdmin(m)"
+               (click)="toggleAdmin(m)"
+               [matTooltip]="isAdmin(m) ? 'Admin — cliquer pour retirer' : 'Cliquer pour définir admin'">
+            <div class="gcd-chip-avatar">{{ getUserDisplayName(m).charAt(0) }}</div>
+            <span class="gcd-chip-name">{{ getUserDisplayName(m) }}</span>
+            <mat-icon *ngIf="isAdmin(m)" class="gcd-chip-admin">shield</mat-icon>
+            <button class="gcd-chip-remove" (click)="$event.stopPropagation(); removeMember(m)">
+              <mat-icon>close</mat-icon>
             </button>
-          </mat-chip>
-        </mat-chip-set>
-      </div>
-
-      <!-- Actions sur les membres sélectionnés -->
-      <div class="member-actions" *ngIf="selectedMembers.length > 0">
-        <p class="hint-text">
-          Cliquez sur un membre ci-dessous pour le définir comme administrateur
+          </div>
+        </div>
+        <p class="gcd-hint">
+          <mat-icon>touch_app</mat-icon>
+          Appuyez sur un membre pour le définir administrateur
         </p>
       </div>
+
+      <mat-divider *ngIf="selectedMembers.length > 0"></mat-divider>
+
+      <!-- Recherche -->
+      <mat-form-field appearance="outline" class="gcd-full gcd-search">
+        <mat-label>Rechercher un membre</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Nom ou email...">
+        <mat-icon matPrefix>search</mat-icon>
+        <button mat-icon-button matSuffix *ngIf="searchControl.value" (click)="searchControl.setValue('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+    </form>
+
+    <!-- Liste membres disponibles -->
+    <div class="gcd-list">
+      <div class="gcd-list-item"
+           *ngFor="let m of filteredMembers"
+           (click)="selectMember(m)">
+        <div class="gcd-member-avatar">{{ getUserDisplayName(m).charAt(0) }}</div>
+        <div class="gcd-member-info">
+          <span class="gcd-member-name">{{ getUserDisplayName(m) }}</span>
+          <span class="gcd-member-email">{{ m.email }}</span>
+        </div>
+        <mat-icon class="gcd-add-icon">add_circle_outline</mat-icon>
+      </div>
+
+      <!-- Empty states -->
+      <div class="gcd-empty" *ngIf="filteredMembers.length === 0 && searchControl.value">
+        <mat-icon>person_search</mat-icon>
+        <p>Aucun membre trouvé</p>
+      </div>
+      <div class="gcd-empty" *ngIf="filteredMembers.length === 0 && !searchControl.value && allMembers.length > 0">
+        <mat-icon>check_circle</mat-icon>
+        <p>Tous les membres ont été ajoutés</p>
+      </div>
     </div>
 
-    <mat-divider></mat-divider>
-
-    <!-- Recherche de membres -->
-    <mat-form-field appearance="outline" class="full-width search-field">
-      <mat-label>Ajouter des membres</mat-label>
-      <input 
-        matInput 
-        [formControl]="searchControl"
-        placeholder="Rechercher...">
-      <mat-icon matPrefix>person_add</mat-icon>
-    </mat-form-field>
-
-    <!-- Liste des membres -->
-    <div class="members-list">
-      <mat-selection-list [multiple]="false">
-        <mat-list-option 
-          *ngFor="let member of filteredMembers"
-          (click)="selectMember(member)">
-          <img 
-            matListItemAvatar
-            [src]="'assets/default-avatar.png'" 
-            [alt]="getUserDisplayName(member)">
-          <div matListItemTitle>{{ getUserDisplayName(member) }}</div>
-          <div matListItemLine>{{ member.email }}</div>
-        </mat-list-option>
-
-        <div *ngIf="filteredMembers.length === 0 && searchControl.value" class="no-results">
-          <mat-icon>person_search</mat-icon>
-          <p>Aucun membre trouvé</p>
-        </div>
-
-        <div *ngIf="filteredMembers.length === 0 && !searchControl.value && selectedMembers.length > 0" class="all-selected">
-          <mat-icon>check_circle</mat-icon>
-          <p>Tous les membres disponibles ont été ajoutés</p>
-        </div>
-      </mat-selection-list>
-    </div>
-
-    <!-- Message d'erreur si pas assez de membres -->
-    <mat-error *ngIf="selectedMembers.length < 2" class="min-members-error">
+    <!-- Warning min membres -->
+    <div class="gcd-warning" *ngIf="selectedMembers.length > 0 && selectedMembers.length < 2">
       <mat-icon>info</mat-icon>
-      Vous devez sélectionner au moins 2 membres pour créer un groupe
-    </mat-error>
-  </form>
+      <span>Sélectionnez au moins 2 membres pour créer un groupe</span>
+    </div>
 
-  <!-- Administrateurs sélectionnés -->
-  <div class="admin-section" *ngIf="selectedMembers.length > 0">
-    <h4>Définir les administrateurs</h4>
-    <p class="hint-text">Les administrateurs peuvent gérer le groupe et ses membres</p>
-    
-    <mat-selection-list>
-      <mat-list-option 
-        *ngFor="let member of selectedMembers"
-        [selected]="isAdmin(member)"
-        (click)="toggleAdmin(member)">
-        <img 
-          matListItemAvatar
-          [src]="'assets/default-avatar.png'" 
-          [alt]="getUserDisplayName(member)">
-        <div matListItemTitle>{{ getUserDisplayName(member) }}</div>
-        <mat-icon matListItemMeta *ngIf="isAdmin(member)" color="primary">
-          check_circle
-        </mat-icon>
-      </mat-list-option>
-    </mat-selection-list>
   </div>
-</mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Annuler</button>
-  <button 
-    mat-raised-button 
-    color="primary"
-    (click)="createChat()"
-    [disabled]="!canCreate">
-    Créer le groupe
-  </button>
-</mat-dialog-actions>
+  <!-- Footer -->
+  <div class="gcd-footer">
+    <button mat-stroked-button (click)="cancel()">Annuler</button>
+    <button mat-raised-button color="primary" (click)="createChat()" [disabled]="!canCreate">
+      <mat-icon>check</mat-icon>
+      Créer le groupe
+    </button>
+  </div>
+
+</div>

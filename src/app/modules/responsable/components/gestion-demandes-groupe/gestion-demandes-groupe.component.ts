@@ -1,7 +1,7 @@
 // src/app/modules/responsable/components/gestion-demandes-groupe/gestion-demandes-groupe.component.ts
 
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +25,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { GroupeDetailsDialogComponent } from '../../../membre/components/groupe-details-dialog/groupe-details-dialog.component';
 import { DiscussionMatchDialogComponent } from '../discussion-match-dialog/discussion-match-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ValidationMatchDialogComponent } from '../../dialog/validation-match-dialog/validation-match-dialog.component';
 
 interface DemandeAvecCandidat extends DemandeAdhesion {
   candidat?: {
@@ -325,31 +326,35 @@ export class GestionDemandesGroupeComponent implements OnInit {
     return this.demandesMatchRecues.filter(d => d.statut === this.filtreMatchRecus);
   }
 
-  accepterDemandeMatch(demande: MatchRequestResponse): void {
-    const groupeNom = demande.groupeDemandeur?.nom || 'ce groupe';
+accepterDemandeMatch(demande: any): void {
+  const dialogRef = this.dialog.open(ValidationMatchDialogComponent, {
+    width: '95vw',
+    maxWidth: '550px',
+    data: { demande: demande },
+    panelClass: 'modern-dialog'
+  });
+
+dialogRef.afterClosed().subscribe(infosFinales => {
+  if (infosFinales) {
     
-    if (confirm(`Êtes-vous sûr de vouloir accepter la demande de match avec ${groupeNom} ?`)) {
-      this.processingDemandeId = demande.id;
+    // 🔥 Extraction stricte du format yyyy-MM-dd pour le LocalDate de Spring
+    const datePipe = new DatePipe('en-US');
+    const dateFormatee = datePipe.transform(infosFinales.dateMatch, 'yyyy-MM-dd') || '';
 
-      this.matchRequestService.acceptRequest(demande.id).subscribe({
-        next: () => {
-          this.snackBar.open('Demande de match acceptée avec succès', 'Fermer', {
-            duration: 4000
-          });
-          this.loadDemandesMatchRecues().subscribe();
-          this.processingDemandeId = null;
-        },
-        error: (err) => {
-          console.error('Erreur acceptation demande:', err);
-          this.snackBar.open('Erreur lors de l\'acceptation', 'Fermer', {
-            duration: 3000
-          });
-          this.processingDemandeId = null;
-        }
-      });
-    }
+    const validationDto = {
+      demandeId: demande.id,
+      dateMatch: dateFormatee, // Enverra "2026-06-25" au lieu de "2026-06-25T13:00:00.000Z"
+      heureMatch: infosFinales.heureMatch,
+      lieu: infosFinales.lieu,
+      commentaire: infosFinales.commentaire
+    };
+
+    this.matchRequestService.accepterEtCreerMatchAmical(validationDto).subscribe({
+      next: (res) => { /* ... */ }
+    });
   }
-
+});
+}
   refuserDemandeMatch(demande: MatchRequestResponse): void {
     const groupeNom = demande.groupeDemandeur?.nom || 'ce groupe';
     

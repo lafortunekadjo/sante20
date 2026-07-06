@@ -1,0 +1,299 @@
+<!-- Formulaire Publicité -->
+<div class="form-container">
+  
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>{{ 'partenaire.common.loading' | translate }}</p>
+  </div>
+
+  <!-- Formulaire -->
+  <ng-container *ngIf="!isLoading">
+    
+    <!-- Header -->
+    <header class="form-header">
+      <button mat-icon-button (click)="cancel()" class="back-btn">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="header-text">
+        <h1>{{ getTitle() }}</h1>
+        <p *ngIf="!isEditMode">Créez une nouvelle publicité pour promouvoir votre entreprise</p>
+        <p *ngIf="isEditMode">Modifiez les informations de votre publicité</p>
+      </div>
+    </header>
+
+    <!-- Alerte pas d'entreprise -->
+    <div class="alert-card" *ngIf="entreprises.length === 0">
+      <mat-icon>warning</mat-icon>
+      <div class="alert-content">
+        <strong>Aucune entreprise</strong>
+        <p>Vous devez d'abord créer une entreprise avant de pouvoir créer une publicité.</p>
+      </div>
+      <button mat-raised-button color="primary" routerLink="/partenaire/entreprises/new">
+        Créer une entreprise
+      </button>
+    </div>
+
+    <!-- Card formulaire -->
+    <mat-card class="form-card" *ngIf="entreprises.length > 0">
+      <form [formGroup]="form" (ngSubmit)="onSubmit(false)">
+        
+        <mat-tab-group animationDuration="200ms">
+          
+          <!-- Onglet Contenu -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>edit</mat-icon>
+              <span>{{ 'partenaire.publicites.form.tabs.content' | translate }}</span>
+            </ng-template>
+            
+            <div class="tab-content">
+              <div class="form-section">
+                <h3 class="section-title">Contenu de la publicité</h3>
+                
+                <!-- Entreprise -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ 'partenaire.publicites.form.enterprise' | translate }} *</mat-label>
+                  <mat-select formControlName="entrepriseId">
+                    <mat-option *ngFor="let ent of entreprises" [value]="ent.id">
+                      <div class="entreprise-option">
+                        <img *ngIf="ent.logoUrl" [src]="ent.logoUrl" class="option-logo">
+                        <mat-icon *ngIf="!ent.logoUrl">business</mat-icon>
+                        <span>{{ ent.nom }}</span>
+                      </div>
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>business</mat-icon>
+                  <mat-error *ngIf="form.get('entrepriseId')?.hasError('required')">
+                    {{ 'partenaire.publicites.form.enterpriseRequired' | translate }}
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Titre -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ 'partenaire.publicites.form.title' | translate }} *</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="titre"
+                    [placeholder]="'partenaire.publicites.form.titlePlaceholder' | translate">
+                  <mat-icon matPrefix>title</mat-icon>
+                  <mat-hint>{{ form.get('titre')?.value?.length || 0 }} / 100</mat-hint>
+                  <mat-error *ngIf="form.get('titre')?.hasError('required')">
+                    {{ 'partenaire.publicites.form.titleRequired' | translate }}
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ 'partenaire.publicites.form.description' | translate }}</mat-label>
+                  <textarea 
+                    matInput 
+                    formControlName="description"
+                    rows="3"
+                    [placeholder]="'partenaire.publicites.form.descriptionPlaceholder' | translate">
+                  </textarea>
+                  <mat-hint>{{ form.get('description')?.value?.length || 0 }} / 200</mat-hint>
+                </mat-form-field>
+
+                <!-- Lien cible -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ 'partenaire.publicites.form.targetLink' | translate }}</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="lienCible"
+                    [placeholder]="'partenaire.publicites.form.targetLinkPlaceholder' | translate">
+                  <mat-icon matPrefix>link</mat-icon>
+                  <mat-hint>{{ 'partenaire.publicites.form.targetLinkHint' | translate }}</mat-hint>
+                </mat-form-field>
+
+                <!-- Image -->
+                <div class="upload-section">
+                  <h3 class="section-title">{{ 'partenaire.publicites.form.image' | translate }} *</h3>
+                  <p class="section-hint">
+                    {{ 'partenaire.publicites.form.imageHint' | translate }}
+                    <span *ngIf="getSelectedEmplacementDimensions()" class="dimensions">
+                      Dimensions recommandées: {{ getSelectedEmplacementDimensions() }}px
+                    </span>
+                  </p>
+                  
+                  <div class="upload-zone" [class.has-image]="imagePreview">
+                    <div class="preview" *ngIf="imagePreview">
+                      <img [src]="imagePreview" alt="Preview">
+                      <button mat-icon-button class="remove-btn" type="button" (click)="removeImage()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                    <div class="upload-placeholder" *ngIf="!imagePreview">
+                      <mat-icon>add_photo_alternate</mat-icon>
+                      <span>{{ 'partenaire.publicites.form.uploadImage' | translate }}</span>
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      (change)="onImageSelected($event)"
+                      #imageInput>
+                    <button 
+                      mat-stroked-button 
+                      type="button" 
+                      (click)="imageInput.click()">
+                      {{ imagePreview ? ('partenaire.publicites.form.changeImage' | translate) : ('partenaire.publicites.form.uploadImage' | translate) }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Onglet Emplacement & Ciblage -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>place</mat-icon>
+              <span>{{ 'partenaire.publicites.form.tabs.targeting' | translate }}</span>
+            </ng-template>
+            
+            <div class="tab-content">
+              <div class="form-section">
+                <h3 class="section-title">Emplacement</h3>
+                <p class="section-hint">{{ 'partenaire.publicites.form.emplacementHint' | translate }}</p>
+                
+                <!-- Emplacement -->
+                <div class="emplacements-grid">
+                  <div 
+                    *ngFor="let emp of emplacements"
+                    class="emplacement-card"
+                    [class.selected]="form.get('emplacement')?.value === emp.value"
+                    [class.disabled]="!isEmplacementAvailable(emp.value)"
+                    (click)="isEmplacementAvailable(emp.value) && form.patchValue({ emplacement: emp.value })">
+                    
+                    <mat-icon>{{ emp.value === 'HEADER' ? 'web' : emp.value === 'SIDEBAR' ? 'view_sidebar' : emp.value === 'FEED' ? 'dynamic_feed' : 'campaign' }}</mat-icon>
+                    <span class="emplacement-name">{{ emp.labelKey | translate }}</span>
+                    <span class="emplacement-dimensions">{{ emp.dimensions }}px</span>
+                    
+                    <div class="selected-indicator" *ngIf="form.get('emplacement')?.value === emp.value">
+                      <mat-icon>check_circle</mat-icon>
+                    </div>
+                    
+                    <div class="disabled-overlay" *ngIf="!isEmplacementAvailable(emp.value)">
+                      <mat-icon>lock</mat-icon>
+                      <span>Non disponible</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <mat-error *ngIf="form.get('emplacement')?.touched && form.get('emplacement')?.hasError('required')">
+                  {{ 'partenaire.publicites.form.emplacementRequired' | translate }}
+                </mat-error>
+
+                <h3 class="section-title" style="margin-top: 32px;">Ciblage géographique</h3>
+                
+                <!-- Villes cibles -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>{{ 'partenaire.publicites.form.targetCities' | translate }}</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="villesCibles"
+                    placeholder="Douala, Yaoundé, Bafoussam...">
+                  <mat-icon matPrefix>location_city</mat-icon>
+                  <mat-hint>{{ 'partenaire.publicites.form.targetCitiesHint' | translate }}</mat-hint>
+                </mat-form-field>
+
+                <h3 class="section-title" style="margin-top: 32px;">Priorité</h3>
+                
+                <!-- Priorité -->
+                <div class="priority-section">
+                  <p class="section-hint">{{ 'partenaire.publicites.form.priorityHint' | translate }}</p>
+                  <div class="priority-slider">
+                    <span class="priority-label">Basse</span>
+                    <mat-slider min="1" max="10" step="1" showTickMarks discrete>
+                      <input matSliderThumb formControlName="priorite">
+                    </mat-slider>
+                    <span class="priority-label">Haute</span>
+                  </div>
+                  <div class="priority-value">
+                    Priorité actuelle: <strong>{{ form.get('priorite')?.value }}</strong> / 10
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Onglet Période -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>schedule</mat-icon>
+              <span>{{ 'partenaire.publicites.form.tabs.schedule' | translate }}</span>
+            </ng-template>
+            
+            <div class="tab-content">
+              <div class="form-section">
+                <h3 class="section-title">Période de diffusion</h3>
+                
+                <div class="form-row">
+                  <!-- Date début -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'partenaire.publicites.form.startDate' | translate }}</mat-label>
+                    <input matInput [matDatepicker]="startPicker" formControlName="dateDebut">
+                    <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #startPicker></mat-datepicker>
+                  </mat-form-field>
+
+                  <!-- Date fin -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'partenaire.publicites.form.endDate' | translate }}</mat-label>
+                    <input matInput [matDatepicker]="endPicker" formControlName="dateFin">
+                    <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #endPicker></mat-datepicker>
+                    <mat-hint>{{ 'partenaire.publicites.form.endDateHint' | translate }}</mat-hint>
+                  </mat-form-field>
+                </div>
+
+                <!-- Info durée -->
+                <div class="duration-info" *ngIf="form.get('dateDebut')?.value">
+                  <mat-icon>info</mat-icon>
+                  <span *ngIf="!form.get('dateFin')?.value">
+                    La publicité sera diffusée sans limite de temps à partir du {{ form.get('dateDebut')?.value | date:'dd/MM/yyyy' }}
+                  </span>
+                  <span *ngIf="form.get('dateFin')?.value">
+                    La publicité sera diffusée du {{ form.get('dateDebut')?.value | date:'dd/MM/yyyy' }} au {{ form.get('dateFin')?.value | date:'dd/MM/yyyy' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button 
+            mat-button 
+            type="button" 
+            (click)="cancel()">
+            {{ 'partenaire.publicites.form.cancel' | translate }}
+          </button>
+          
+          <div class="action-buttons">
+            <button 
+              mat-stroked-button 
+              type="button"
+              (click)="onSubmit(true)"
+              [disabled]="isSaving">
+              <mat-icon>save</mat-icon>
+              {{ 'partenaire.publicites.form.saveDraft' | translate }}
+            </button>
+            
+            <button 
+              mat-raised-button 
+              color="primary" 
+              type="submit"
+              [disabled]="isSaving || form.invalid">
+              <mat-spinner diameter="20" *ngIf="isSaving"></mat-spinner>
+              <mat-icon *ngIf="!isSaving">send</mat-icon>
+              <span *ngIf="!isSaving">{{ 'partenaire.publicites.form.submit' | translate }}</span>
+              <span *ngIf="isSaving">{{ 'partenaire.publicites.form.submitting' | translate }}</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </mat-card>
+  </ng-container>
+</div>

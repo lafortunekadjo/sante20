@@ -1,0 +1,205 @@
+<!-- invitation-list.component.html -->
+<div class="invitation-list-container">
+  <!-- Header harmonisé -->
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'invitation.management' | translate }}</h1>
+          <p class="page-subtitle">{{ 'invitation.managementSubtitle' | translate }}</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{ invitations.length }}</span>
+          <span class="stat-label">{{ 'invitation.total' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ getCountByStatus('EN_ATTENTE') }}</span>
+          <span class="stat-label">{{ 'invitation.pending' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ getCountByStatus('SOUMIS') }}</span>
+          <span class="stat-label">{{ 'invitation.submitted' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <div class="loading-content">
+      <h3>{{ 'invitation.loading' | translate }}...</h3>
+      <p>{{ 'invitation.loadingMessage' | translate }}</p>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading" class="content">
+    <!-- Filtres -->
+    <div class="filters-container">
+      <div class="filters-header">
+        <div class="filters-title">
+          <mat-icon>filter_list</mat-icon>
+          <h3>{{ 'common.filterBy' | translate }}</h3>
+        </div>
+      </div>
+      
+      <div class="filter-chips">
+        <mat-form-field appearance="outline" class="status-filter">
+          <mat-label>{{ 'invitation.status' | translate }}</mat-label>
+          <mat-select [(ngModel)]="statusFilter" (selectionChange)="applyFilters()">
+            <mat-option value="ALL">{{ 'common.all' | translate }}</mat-option>
+            <mat-option value="EN_ATTENTE">{{ 'invitation.pending' | translate }}</mat-option>
+            <mat-option value="SOUMIS">{{ 'invitation.submitted' | translate }}</mat-option>
+            <mat-option value="VALIDE">{{ 'invitation.validated' | translate }}</mat-option>
+            <mat-option value="EXPIRE">{{ 'invitation.expired' | translate }}</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>hourglass_empty</mat-icon>
+        </mat-form-field>
+
+        <button mat-icon-button *ngIf="statusFilter !== 'ALL'" (click)="resetFilters()" 
+                class="clear-all-filters" matTooltip="{{ 'common.resetFilters' | translate }}">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Liste des invitations -->
+    <div class="invitations-grid" *ngIf="filteredInvitations.length > 0">
+      <div 
+        class="invitation-card" 
+        *ngFor="let invitation of filteredInvitations"
+        [class.pending]="invitation.statut === 'EN_ATTENTE'"
+        [class.submitted]="invitation.statut === 'SOUMIS'"
+        [class.validated]="invitation.statut === 'VALIDE'"
+        [class.expired]="invitation.statut === 'EXPIRE'"
+        [class.cancelled]="invitation.statut === 'ANNULE'"
+        [class.rejected]="invitation.statut === 'REFUSE'">
+
+        <div class="card-header">
+          <div class="match-info">
+            <div class="match-avatar">
+              <mat-icon>sports_soccer</mat-icon>
+            </div>
+            <div class="match-details">
+              <h3 class="match-date">{{ invitation.dateMatch | date:'EEEE d MMMM yyyy':'':'fr' }}</h3>
+              <p class="adversaire">
+                <mat-icon>groups</mat-icon>
+                {{ invitation.nomEquipeAdverse || invitation.adversairePrevu || 'Équipe à définir' }}
+              </p>
+            </div>
+          </div>
+          <div class="status-badge" [class]="getStatusClass(invitation.statut)">
+            <mat-icon>{{ getStatusIcon(invitation.statut) }}</mat-icon>
+            <span>{{ getStatusLabel(invitation.statut) }}</span>
+          </div>
+        </div>
+
+        <div class="card-content">
+          <!-- Stats -->
+          <div class="invitation-stats">
+            <div class="stat" *ngIf="invitation.statut === 'SOUMIS' || invitation.statut === 'VALIDE'">
+              <mat-icon>people</mat-icon>
+              <div class="stat-info">
+                <span class="stat-value">{{ invitation.nombreJoueurs }}</span>
+                <span class="stat-label">{{ 'invitation.players' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat" *ngIf="invitation.statut === 'EN_ATTENTE'">
+              <mat-icon>visibility</mat-icon>
+              <div class="stat-info">
+                <span class="stat-value">{{ invitation.nombreVues }}</span>
+                <span class="stat-label">{{ 'invitation.views' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat expiration" *ngIf="invitation.statut === 'EN_ATTENTE'">
+              <mat-icon>timer</mat-icon>
+              <div class="stat-info">
+                <span class="stat-value">{{ getExpirationText(invitation.dateExpiration) }}</span>
+                <span class="stat-label">{{ 'invitation.expiresIn' | translate }}</span>
+              </div>
+            </div>
+            <div class="stat" *ngIf="invitation.statut === 'SOUMIS'">
+              <mat-icon>event</mat-icon>
+              <div class="stat-info">
+                <span class="stat-value">{{ invitation.dateSoumission | date:'dd/MM' }}</span>
+                <span class="stat-label">{{ 'invitation.submittedOn' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <!-- En attente -->
+          <ng-container *ngIf="invitation.statut === 'EN_ATTENTE'">
+            <button mat-stroked-button (click)="copyLink(invitation)" class="action-btn">
+              <mat-icon>content_copy</mat-icon>
+              <span>{{ 'invitation.copyLink' | translate }}</span>
+            </button>
+            <button mat-icon-button (click)="showQRCode(invitation)" matTooltip="QR Code">
+              <mat-icon>qr_code</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="cancelInvitation(invitation)" matTooltip="Annuler">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </ng-container>
+
+          <!-- Soumis -->
+          <ng-container *ngIf="invitation.statut === 'SOUMIS'">
+            <button mat-stroked-button (click)="viewPlayersList(invitation)" class="action-btn">
+              <mat-icon>list</mat-icon>
+              <span>{{ 'invitation.viewList' | translate }}</span>
+            </button>
+            <button mat-flat-button color="primary" (click)="validateInvitation(invitation)">
+              <mat-icon>check</mat-icon>
+              <span>{{ 'invitation.validate' | translate }}</span>
+            </button>
+            <button mat-icon-button color="warn" (click)="rejectInvitation(invitation)" matTooltip="Refuser">
+              <mat-icon>close</mat-icon>
+            </button>
+          </ng-container>
+
+          <!-- Validé -->
+          <ng-container *ngIf="invitation.statut === 'VALIDE'">
+            <button mat-stroked-button (click)="viewPlayersList(invitation)" class="action-btn">
+              <mat-icon>list</mat-icon>
+              <span>{{ 'invitation.viewList' | translate }}</span>
+            </button>
+          </ng-container>
+
+          <!-- Expiré / Annulé / Refusé -->
+          <ng-container *ngIf="invitation.statut === 'EXPIRE' || invitation.statut === 'ANNULE' || invitation.statut === 'REFUSE'">
+            <span class="status-message">
+              {{ invitation.statut === 'EXPIRE' ? 'Invitation expirée' : 
+                 invitation.statut === 'ANNULE' ? 'Invitation annulée' : 'Liste refusée' }}
+            </span>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="filteredInvitations.length === 0">
+      <div class="empty-illustration">
+        <mat-icon class="empty-icon">mail_outline</mat-icon>
+      </div>
+      <div class="empty-content">
+        <h3 class="empty-title">{{ 'invitation.noInvitations' | translate }}</h3>
+        <p class="empty-text">{{ 'invitation.createFirst' | translate }}</p>
+        <div class="empty-actions">
+          <button mat-stroked-button (click)="resetFilters()" *ngIf="statusFilter !== 'ALL'">
+            <mat-icon>refresh</mat-icon>
+            <span>{{ 'common.resetFilters' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

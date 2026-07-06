@@ -1,13 +1,8 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, inject } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { catchError, of, forkJoin } from 'rxjs';
-import { Presence } from '../../../../core/models/presence.model';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ObjectifsService } from '../../../../core/services/objectifs.service';
-import { PresenceService } from '../../../../core/services/presence.service';
-import { Objectif } from '../../../../core/models/objectifs.model';
-import { MembreService } from '../../../../core/services/membre.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -25,44 +20,34 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { trigger, transition, style, animate } from '@angular/animations';
 import { MatBottomSheet, MatBottomSheetModule, MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { TranslateModule } from '@ngx-translate/core';
-import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
-import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
-import { GroupeService } from '../../../../core/services/groupe.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ObjectifsService } from '../../../../core/services/objectifs.service';
+import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+import { ObjectifDTO } from '../../../../core/models/objectifs.model';
+
+
+// ── Interfaces alignées sur ObjectifDTO backend ──────────────
+
+export interface MonGroupe { groupeId: number; nom: string; }
 
 @Component({
   selector: 'app-objectifs',
   standalone: true,
   imports: [
-    FormsModule,
-    CommonModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTableModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatProgressSpinnerModule,
-    MatDialogModule,
-    MatDatepickerModule,
-    MatExpansionModule,
-    MatProgressBarModule,
-    MatListModule,
-    MatBottomSheetModule,
-    MatTooltipModule,
-    TranslateModule,
-        PubliciteBannerComponent,
-        PubliciteAffichageComponent,
-        PubliciteFeedComponent
+    FormsModule, CommonModule, ReactiveFormsModule,
+    MatCardModule, MatButtonModule, MatIconModule, MatTableModule,
+    MatInputModule, MatFormFieldModule, MatSelectModule, MatCheckboxModule,
+    MatPaginatorModule, MatSortModule, MatProgressSpinnerModule, MatDialogModule,
+    MatDatepickerModule, MatExpansionModule, MatProgressBarModule, MatListModule,
+    MatBottomSheetModule, MatTooltipModule, MatChipsModule, MatSlideToggleModule,
+    TranslateModule, PubliciteBannerComponent,
   ],
   animations: [
     trigger('slideDown', [
@@ -78,474 +63,318 @@ import { GroupeService } from '../../../../core/services/groupe.service';
   templateUrl: './objectifs.component.html',
   styleUrl: './objectifs.component.scss'
 })
-export class ObjectifsComponent implements OnInit {
-  objectifForm: FormGroup;
-  objectifs: Objectif[] = [];
-  membreId!: number;
-  userId: number | null = null;
-  isLoading = true;
-  showForm = false;
-  editingObjectif: Objectif | null = null;
-   userVille: string | undefined;
+export class ObjectifsComponent implements OnInit, OnDestroy {
 
-  constructor(
-    private fb: FormBuilder,
-    private objectifsService: ObjectifsService,
-    private presenceService: PresenceService,
-    private membreService: MembreService,
-    private authService: AuthService,
-    private snackBar: MatSnackBar,
-    private dialog: MatDialog,
-    private bottomSheet: MatBottomSheet,
-    private groupeService: GroupeService,
-  ) {
+  private destroy$      = new Subject<void>();
+  private authService   = inject(AuthService);
+  private objectifsSvc  = inject(ObjectifsService);
+  private groupeContext = inject(GroupeContextService);
+  private fb            = inject(FormBuilder);
+  private snackBar      = inject(MatSnackBar);
+  private bottomSheet   = inject(MatBottomSheet);
+
+  // ── State ─────────────────────────────────────────────────
+  objectifs: ObjectifDTO[]     = [];
+  mesGroupes: MonGroupe[]      = [];
+  isLoading                    = true;
+  isSaving                     = false;
+  activeTab: 'list' | 'form'   = 'list';
+  activeListFilter: 'tous' | 'personnel' | 'groupe' = 'tous';
+  editingObjectif: ObjectifDTO | null = null;
+  isResponsable                = false;
+  userVille: string | undefined;
+
+  // ── Formulaire ────────────────────────────────────────────
+  objectifForm: FormGroup;
+
+  // Types disponibles
+  readonly types = [
+    { value: 'BUTS',      label: 'Buts marqués',      icon: 'sports_soccer' },
+    { value: 'PASSES',    label: 'Passes décisives',   icon: 'arrow_forward' },
+    { value: 'PRESENCE',  label: 'Matchs joués',       icon: 'check_circle'  },
+    { value: 'CARTON',    label: 'Cartons',            icon: 'warning'       },
+    { value: 'MOTM',      label: 'Homme du match',     icon: 'star'          },
+    { value: 'MVP_EQUIPE',label: 'MVP Équipe',         icon: 'emoji_events'  },
+  ];
+
+  constructor() {
     this.objectifForm = this.fb.group({
-      type: ['', Validators.required],
-      valeurCible: [null, [Validators.required, Validators.min(0)]],
-      dateDebut: [null, Validators.required],
-      dateFin: [null, Validators.required]
+      type:         ['',   Validators.required],
+      valeurCible:  [null, [Validators.required, Validators.min(1)]],
+      dateDebut:    [null, Validators.required],
+      dateFin:      [null, Validators.required],
+      titre:        [''],
+      description:  [''],
+      // Scope
+      scopeGlobal:  [false],    // toggle : false = groupe spécifique, true = tous groupes
+      groupeId:     [null],     // null si global
+      // Pour responsable
+      pourTousMembres: [true],  // toggle : tous les membres ou membres spécifiques
+    });
+
+    // Quand scopeGlobal change → vider groupeId si global
+    this.objectifForm.get('scopeGlobal')?.valueChanges.subscribe(global => {
+      if (global) {
+        this.objectifForm.patchValue({ groupeId: null });
+        this.objectifForm.get('groupeId')?.clearValidators();
+      } else {
+        this.objectifForm.get('groupeId')?.setValidators(Validators.required);
+      }
+      this.objectifForm.get('groupeId')?.updateValueAndValidity();
     });
   }
 
   ngOnInit(): void {
-    this.userId = this.authService.getUserId();
-    if (!this.userId) {
-      console.error('Utilisateur non connecté.');
-      this.snackBar.open('Erreur: Vous devez être connecté pour voir vos objectifs.', 'Fermer', {
-        duration: 3000,
-      });
-      return;
+    this.isResponsable = this.authService.isResponsable();
+    this.mesGroupes    = this.authService.getMesGroupesCache()
+      .map(g => ({ groupeId: g.groupeId, nom: g.nom }));
+
+    // Pré-remplir le groupeId avec le groupe actif
+    const groupeActif = this.authService.getGroupe();
+    if (groupeActif) {
+      this.objectifForm.patchValue({ groupeId: groupeActif });
     }
-    
-    this.membreService.getMembreByUserId(this.userId).subscribe(
-      membre => {
-        if (membre) {
-          this.membreId = membre.id;
-          this.loadObjectifs();
-        } else {
-          console.error('Aucun membre trouvé pour cet utilisateur.');
-          this.snackBar.open('Erreur: Aucun membre trouvé pour cet utilisateur.', 'Fermer', {
-            duration: 3000,
-          });
+
+    this.loadObjectifs();
+
+    // Recharger au switch de groupe
+    this.groupeContext.groupeChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadObjectifs());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // ── Chargement ────────────────────────────────────────────
+
+  loadObjectifs(): void {
+    this.isLoading = true;
+    this.objectifsSvc.getMesObjectifs()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.objectifs = data || [];
+          this.isLoading = false;
+        },
+        error: () => {
+          this.snackBar.open('Erreur lors du chargement des objectifs', 'Fermer', { duration: 3000 });
+          this.isLoading = false;
         }
-      },
-      error => {
-        console.error('Erreur lors de la récupération du membre:', error);
-        this.snackBar.open('Erreur lors du chargement des objectifs.', 'Fermer', {
-          duration: 3000,
-        });
-      }
-    );
+      });
   }
 
- loadObjectifs(): void {
-  const userId = this.authService.getUserId();
-  this.isLoading = true;
+  // ── Filtres de la liste ───────────────────────────────────
 
-  // On lance les deux appels en parallèle
-  forkJoin({
-    objectifs: this.objectifsService.getObjectifsByMembre(this.membreId),
-    groupe: this.groupeService.getGroupe(userId)
-  }).subscribe({
-    next: ({ objectifs, groupe }) => {
-      // 1. Mise à jour des objectifs
-      this.objectifs = objectifs || [];
-      this.calculateProgress();
-
-      // 2. Mise à jour de la ville depuis le groupe
-      if (groupe && groupe.ville) {
-        this.userVille = groupe.ville.nom;
-      }
-
-      this.isLoading = false;
-    },
-    error: (error) => {
-      console.error('Erreur lors du chargement des objectifs ou du groupe', error);
-      this.isLoading = false;
-    }
-  });
-}
-  calculateProgress(): void {
-    const presenceObservables = this.objectifs.map(o =>
-      this.presenceService.getPresencesByMembreId(this.membreId)
-        .pipe(catchError(err => {
-          console.error(`Erreur lors du calcul de la progression pour l'objectif de type ${o.type}:`, err);
-          return of([]);
-        }))
-    );
-
-    forkJoin(presenceObservables).subscribe(
-      (results: Presence[][]) => {
-        this.objectifs.forEach((o, index) => {
-          const presences = results[index];
-          
-          // Filtrer les présences selon la période de l'objectif
-          const presencesFiltrees = presences.filter(p => {
-            const matchDate = new Date(p.match.dateMatch);
-            const dateDebut = new Date(o.dateDebut);
-            const dateFin = new Date(o.dateFin);
-            return matchDate >= dateDebut && matchDate <= dateFin;
-          });
-
-          let valeurActuelle = 0;
-          switch (o.type) {
-            case 'BUTS':
-              valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.buts || 0) + (p.penalti || 0), 0);
-              break;
-            case 'PASSES':
-              valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.passes || 0), 0);
-              break;
-            case 'PRESENCE':
-              valeurActuelle = presencesFiltrees.filter(p => p.aJoue).length;
-              break;
-            case 'CARTON':
-              valeurActuelle = presencesFiltrees.reduce((sum, p) => sum + (p.cartonsJaunes || 0) + (p.cartonsRouges || 0), 0);
-              break;
-          }
-          (o as any).valeurActuelle = valeurActuelle;
-        });
-        this.isLoading = false;
-      }
-    );
-  }
-
-  toggleForm(): void {
-    this.showForm = !this.showForm;
-    if (!this.showForm) {
-      this.objectifForm.reset();
-      this.editingObjectif = null;
+  get objectifsFiltres(): ObjectifDTO[] {
+    switch (this.activeListFilter) {
+      case 'personnel':
+        return this.objectifs.filter(o =>
+          o.scope === 'PERSONNEL_GLOBAL' || o.scope === 'PERSONNEL_GROUPE');
+      case 'groupe':
+        return this.objectifs.filter(o =>
+          o.scope === 'GROUPE_GLOBAL' || o.scope === 'GROUPE_SPECIFIQUE');
+      default:
+        return this.objectifs;
     }
   }
 
-  editObjectif(objectif: Objectif): void {
-    this.editingObjectif = objectif;
-    this.showForm = true;
-    
-    this.objectifForm.patchValue({
-      type: objectif.type,
-      valeurCible: objectif.valeurCible,
-      dateDebut: new Date(objectif.dateDebut),
-      dateFin: new Date(objectif.dateFin)
+  // ── Formulaire ────────────────────────────────────────────
+
+  openCreateForm(): void {
+    this.editingObjectif = null;
+    this.objectifForm.reset({
+      scopeGlobal: false,
+      pourTousMembres: true,
+      groupeId: this.authService.getGroupe()
     });
+    this.activeTab = 'form';
+  }
 
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+  editObjectif(objectif: ObjectifDTO): void {
+    this.editingObjectif = objectif;
+    this.objectifForm.patchValue({
+      type:         objectif.type,
+      valeurCible:  objectif.valeurCible,
+      dateDebut:    new Date(objectif.dateDebut),
+      dateFin:      new Date(objectif.dateFin),
+      titre:        objectif.titre,
+      description:  objectif.description,
+      scopeGlobal:  !objectif.groupeId,
+      groupeId:     objectif.groupeId ?? null,
+    });
+    this.activeTab = 'form';
   }
 
   onSubmit(): void {
-    if (this.objectifForm.valid) {
-      const objectifData = {
-        ...this.objectifForm.value,
-        membre: { id: this.membreId }
-      };
+    if (!this.objectifForm.valid) return;
 
-      if (this.editingObjectif) {
-        this.objectifsService.updateObjectif(this.editingObjectif.id, objectifData).subscribe(
-          () => {
-            this.snackBar.open('Objectif modifié avec succès !', 'Fermer', { duration: 3000 });
-            this.objectifForm.reset();
-            this.editingObjectif = null;
-            this.showForm = false;
-            this.loadObjectifs();
-          },
-          error => {
-            this.snackBar.open('Erreur lors de la modification de l\'objectif.', 'Fermer', { duration: 3000 });
-            console.error(error);
-          }
+    this.isSaving = true;
+    const f = this.objectifForm.value;
+
+    const isPersonnel = !this.isResponsable ||
+      (f.scopeGlobal && !f.groupeId) ||
+      (f.groupeId && !f.pourTousMembres === false);
+
+    const payload = {
+      type:        f.type,
+      valeurCible: f.valeurCible,
+      dateDebut:   f.dateDebut,
+      dateFin:     f.dateFin,
+      titre:       f.titre,
+      description: f.description,
+      groupeId:    f.scopeGlobal ? null : f.groupeId,
+    };
+
+    const call$ = this.editingObjectif
+      ? this.objectifsSvc.updateObjectif(this.editingObjectif.id, payload)
+      : this.isResponsable && !f.scopeGlobal
+        ? this.objectifsSvc.creerObjectifGroupe({
+            ...payload,
+            membreIds: f.pourTousMembres ? [] : [],  // [] = tous les membres
+          })
+        : this.objectifsSvc.creerObjectifPersonnel(payload);
+
+    call$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.editingObjectif ? 'Objectif modifié !' : 'Objectif créé !',
+          'Fermer', { duration: 3000 }
         );
-      } else {
-        this.objectifsService.createObjectif(objectifData).subscribe(
-          () => {
-            this.snackBar.open('Objectif créé avec succès !', 'Fermer', { duration: 3000 });
-            this.objectifForm.reset();
-            this.showForm = false;
-            this.loadObjectifs();
-          },
-          error => {
-            this.snackBar.open('Erreur lors de la création de l\'objectif.', 'Fermer', { duration: 3000 });
-            console.error(error);
-          }
-        );
+        this.editingObjectif = null;
+        this.objectifForm.reset();
+        this.activeTab = 'list';
+        this.loadObjectifs();
+        this.isSaving = false;
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de l\'enregistrement', 'Fermer', { duration: 3000 });
+        this.isSaving = false;
       }
-    }
-  }
-
-  deleteObjectif(objectif: Objectif): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer cet objectif ?`)) {
-      this.objectifsService.deleteObjectif(objectif.id).subscribe(
-        () => {
-          this.snackBar.open('Objectif supprimé avec succès !', 'Fermer', { duration: 3000 });
-          this.loadObjectifs();
-        },
-        error => {
-          this.snackBar.open('Erreur lors de la suppression de l\'objectif.', 'Fermer', { duration: 3000 });
-          console.error(error);
-        }
-      );
-    }
+    });
   }
 
   cancelEdit(): void {
-    this.objectifForm.reset();
     this.editingObjectif = null;
-    this.showForm = false;
+    this.objectifForm.reset();
+    this.activeTab = 'list';
   }
 
-  isObjectifExpired(objectif: Objectif): boolean {
-    const dateFin = new Date(objectif.dateFin);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    dateFin.setHours(0, 0, 0, 0);
-    return dateFin < today;
+  deleteObjectif(objectif: ObjectifDTO): void {
+    if (!confirm('Supprimer cet objectif ?')) return;
+    this.objectifsSvc.deleteObjectif(objectif.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Objectif supprimé', 'Fermer', { duration: 3000 });
+          this.loadObjectifs();
+        },
+        error: () => this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 })
+      });
   }
 
-  isObjectifCompleted(objectif: any): boolean {
-    return (objectif?.valeurActuelle ?? 0) >= (objectif?.valeurCible ?? 0);
+  // ── Helpers ───────────────────────────────────────────────
+
+  getScopeLabel(scope: string): string {
+    const map: Record<string, string> = {
+      PERSONNEL_GLOBAL:   'Personnel · Tous groupes',
+      PERSONNEL_GROUPE:   'Personnel · 1 groupe',
+      GROUPE_GLOBAL:      'Groupe · Tous membres',
+      GROUPE_SPECIFIQUE:  'Groupe · Pour moi',
+    };
+    return map[scope] ?? scope;
   }
 
-  getObjectifStatus(objectif: any): 'completed' | 'expired' | 'in-progress' {
-    if (this.isObjectifCompleted(objectif)) {
-      return 'completed';
-    }
-    if (this.isObjectifExpired(objectif)) {
-      return 'expired';
-    }
+  getScopeColor(scope: string): string {
+    const map: Record<string, string> = {
+      PERSONNEL_GLOBAL:  '#6366f1',
+      PERSONNEL_GROUPE:  '#2563eb',
+      GROUPE_GLOBAL:     '#059669',
+      GROUPE_SPECIFIQUE: '#d97706',
+    };
+    return map[scope] ?? '#64748b';
+  }
+
+  getScopeIcon(scope: string): string {
+    const map: Record<string, string> = {
+      PERSONNEL_GLOBAL:  'public',
+      PERSONNEL_GROUPE:  'person',
+      GROUPE_GLOBAL:     'groups',
+      GROUPE_SPECIFIQUE: 'assignment_ind',
+    };
+    return map[scope] ?? 'flag';
+  }
+
+  getObjectifStatus(objectif: ObjectifDTO): 'completed' | 'expired' | 'in-progress' {
+    if (objectif.atteint)  return 'completed';
+    if (objectif.expire)   return 'expired';
     return 'in-progress';
   }
 
-  getObjectifStatusLabel(objectif: any): string {
-    const status = this.getObjectifStatus(objectif);
-    switch (status) {
-      case 'completed':
-        return 'Objectif atteint !';
-      case 'expired':
-        return 'Expiré';
-      case 'in-progress':
-        return 'En cours...';
-    }
+  getObjectifStatusLabel(objectif: ObjectifDTO): string {
+    const s = this.getObjectifStatus(objectif);
+    return s === 'completed' ? 'Objectif atteint !' : s === 'expired' ? 'Expiré' : 'En cours…';
   }
 
-  getObjectifStatusIcon(objectif: any): string {
-    const status = this.getObjectifStatus(objectif);
-    switch (status) {
-      case 'completed':
-        return 'check_circle';
-      case 'expired':
-        return 'schedule';
-      case 'in-progress':
-        return 'timer';
-    }
+  getObjectifStatusIcon(objectif: ObjectifDTO): string {
+    const s = this.getObjectifStatus(objectif);
+    return s === 'completed' ? 'check_circle' : s === 'expired' ? 'schedule' : 'timer';
   }
 
-  scrollToForm(): void {
-    this.showForm = true;
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+  getProgressBarValue(objectif: ObjectifDTO): number {
+    return objectif.pourcentage ?? 0;
   }
 
-  getProgressBarMode(objectif: any): 'determinate' | 'indeterminate' {
-    return 'determinate';
+  getProgressBarColor(objectif: ObjectifDTO): 'primary' | 'accent' | 'warn' {
+    const s = this.getObjectifStatus(objectif);
+    return s === 'completed' ? 'primary' : s === 'expired' ? 'warn' : 'accent';
   }
 
-  getProgressBarValue(objectif: any): number {
-    if (!objectif || !objectif.valeurCible || objectif.valeurCible === 0) {
-      return 0;
-    }
-    const valeurActuelle = objectif.valeurActuelle ?? 0;
-    return Math.min(100, (valeurActuelle / objectif.valeurCible) * 100);
+  getTypeIcon(type: string): string {
+    return this.types.find(t => t.value === type)?.icon ?? 'flag';
   }
 
-  getProgressBarColor(objectif: any): string {
-    if (!objectif) {
-      return 'warn';
-    }
-    
-    const status = this.getObjectifStatus(objectif);
-    switch (status) {
-      case 'completed':
-        return 'primary';
-      case 'expired':
-        return 'accent';
-      case 'in-progress':
-        return 'warn';
-    }
+  getTypeLabel(type: string): string {
+    return this.types.find(t => t.value === type)?.label ?? type;
   }
 
-  getObjectifTypeLabel(type: string): string {
-    switch (type) {
-      case 'BUTS':
-        return 'Buts marqués';
-      case 'PASSES':
-        return 'Passes décisives';
-      case 'PRESENCE':
-        return 'Match joué';
-      case 'CARTON':
-        return 'Cartons';
-      default:
-        return type;
-    }
-  }
-
-  getObjectifTypeIcon(type: string): string {
-    switch (type) {
-      case 'BUTS':
-        return 'sports_soccer';
-      case 'PASSES':
-        return 'arrow_forward';
-      case 'PRESENCE':
-        return 'check_circle';
-      case 'CARTON':
-        return 'warning';
-      default:
-        return 'flag';
-    }
-  }
-
-  // Fonction principale de partage
-  shareObjectif(objectif: any): void {
-    const shareData = this.generateShareData(objectif);
-    
-    // Vérifier si l'API Web Share est disponible
+  // Partage
+  shareObjectif(objectif: ObjectifDTO): void {
+    const text = `🎯 ${this.getTypeLabel(objectif.type)}\n📊 ${objectif.valeurActuelle}/${objectif.valeurCible} (${objectif.pourcentage}%)\n${objectif.groupeNom}`;
     if (navigator.share) {
-      navigator.share({
-        title: shareData.title,
-        text: shareData.text,
-        url: window.location.href
-      }).then(() => {
-        this.snackBar.open('Objectif partagé avec succès !', 'Fermer', { duration: 3000 });
-      }).catch((error) => {
-        console.log('Erreur lors du partage:', error);
-        // Fallback vers le bottom sheet si le partage échoue
-        this.openShareBottomSheet(shareData);
-      });
+      navigator.share({ title: 'Mon objectif My2-0', text, url: window.location.href });
     } else {
-      // Si Web Share API non disponible, ouvrir le bottom sheet
-      this.openShareBottomSheet(shareData);
+      this.bottomSheet.open(ShareBottomSheetComponent, { data: { title: 'Mon objectif', text } });
     }
-  }
-
-  private generateShareData(objectif: any): { title: string; text: string; imageUrl: string } {
-    const typeLabel = this.getObjectifTypeLabel(objectif.type);
-    const progress = this.getProgressBarValue(objectif);
-    const status = this.getObjectifStatusLabel(objectif);
-    
-    const title = `Mon objectif: ${typeLabel}`;
-    const text = `🎯 ${typeLabel}\n📊 Progression: ${objectif.valeurActuelle || 0}/${objectif.valeurCible} (${progress.toFixed(0)}%)\n📅 ${new Date(objectif.dateDebut).toLocaleDateString('fr-FR')} - ${new Date(objectif.dateFin).toLocaleDateString('fr-FR')}\n✨ Statut: ${status}`;
-    
-    return { title, text, imageUrl: '' };
-  }
-
-  private openShareBottomSheet(shareData: { title: string; text: string; imageUrl: string }): void {
-    const bottomSheetRef = this.bottomSheet.open(ShareBottomSheetComponent, {
-      data: shareData
-    });
-
-    bottomSheetRef.afterDismissed().subscribe((action: string) => {
-      if (action) {
-        this.snackBar.open(`Copié dans le presse-papier !`, 'Fermer', { duration: 3000 });
-      }
-    });
   }
 }
 
-// Composant Bottom Sheet pour le partage
+// ── Share bottom sheet ────────────────────────────────────────
 @Component({
   selector: 'app-share-bottom-sheet',
   standalone: true,
   imports: [CommonModule, MatListModule, MatIconModule, MatButtonModule],
   template: `
-    <div class="share-sheet">
-      <h3 class="share-title">Partager cet objectif</h3>
-      
+    <div style="padding:16px 0">
+      <h3 style="margin:0 0 8px;padding:0 16px 16px;font-size:18px;font-weight:600;border-bottom:1px solid #e0e0e0">
+        Partager cet objectif
+      </h3>
       <mat-nav-list>
-        <a mat-list-item (click)="copyToClipboard()">
-          <mat-icon matListItemIcon>content_copy</mat-icon>
-          <span matListItemTitle>Copier le texte</span>
-        </a>
-
-        <a mat-list-item (click)="shareOnWhatsApp()">
-          <mat-icon matListItemIcon>chat</mat-icon>
-          <span matListItemTitle>Partager sur WhatsApp</span>
-        </a>
-
-        <a mat-list-item (click)="shareOnFacebook()">
-          <mat-icon matListItemIcon>thumb_up</mat-icon>
-          <span matListItemTitle>Partager sur Facebook</span>
-        </a>
-
-        <a mat-list-item (click)="shareOnTwitter()">
-          <mat-icon matListItemIcon>trending_up</mat-icon>
-          <span matListItemTitle>Partager sur Twitter</span>
-        </a>
+        <a mat-list-item (click)="copy()"><mat-icon matListItemIcon>content_copy</mat-icon><span matListItemTitle>Copier</span></a>
+        <a mat-list-item (click)="whatsapp()"><mat-icon matListItemIcon>chat</mat-icon><span matListItemTitle>WhatsApp</span></a>
       </mat-nav-list>
-
-      <button mat-button (click)="close()" class="close-btn">
-        Annuler
-      </button>
+      <button mat-button (click)="close()" style="width:100%;margin-top:8px">Annuler</button>
     </div>
-  `,
-  styles: [`
-    .share-sheet {
-      padding: 16px 0;
-    }
-
-    .share-title {
-      margin: 0 0 8px 0;
-      padding: 0 16px 16px;
-      font-size: 18px;
-      font-weight: 600;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    mat-nav-list {
-      padding-top: 8px;
-    }
-
-    .close-btn {
-      width: 100%;
-      margin-top: 8px;
-    }
-
-    mat-icon {
-      color: #1976d2;
-    }
-  `]
+  `
 })
 export class ShareBottomSheetComponent {
   constructor(
-    private bottomSheet: MatBottomSheet,
-    @Inject(MAT_BOTTOM_SHEET_DATA) public data: { title: string; text: string; imageUrl: string }
+    private bs: MatBottomSheet,
+    @Inject(MAT_BOTTOM_SHEET_DATA) public data: { title: string; text: string }
   ) {}
-
-  copyToClipboard(): void {
-    const textToCopy = `${this.data.title}\n\n${this.data.text}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      this.bottomSheet.dismiss('copied');
-    });
-  }
-
-  shareOnWhatsApp(): void {
-    const text = encodeURIComponent(`${this.data.title}\n\n${this.data.text}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-    this.close();
-  }
-
-  shareOnFacebook(): void {
-    const url = encodeURIComponent(window.location.href);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=400');
-    this.close();
-  }
-
-  shareOnTwitter(): void {
-    const text = encodeURIComponent(`${this.data.title}\n${this.data.text}`);
-    const url = encodeURIComponent(window.location.href);
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
-    this.close();
-  }
-
-  close(): void {
-    this.bottomSheet.dismiss();
-  }
+  copy()     { navigator.clipboard.writeText(this.data.text).then(() => this.bs.dismiss('copied')); }
+  whatsapp() { window.open(`https://wa.me/?text=${encodeURIComponent(this.data.text)}`, '_blank'); this.close(); }
+  close()    { this.bs.dismiss(); }
 }

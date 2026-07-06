@@ -9,11 +9,20 @@
     </button>
   </div>
 
+  <!-- Tabs custom légers -->
+  <div class="dialog-tabs">
+    <button class="dialog-tab-btn" [class.active]="activeTab === 0" (click)="activeTab = 0">
+      <mat-icon>info</mat-icon> Infos
+    </button>
+    <button class="dialog-tab-btn" [class.active]="activeTab === 1" (click)="activeTab = 1">
+      <mat-icon>place</mat-icon> Localisation
+    </button>
+  </div>
+
   <div class="dialog-content">
-    <mat-tab-group>
-      <!-- Informations -->
-      <mat-tab [label]="'common.details' | translate">
-        <div class="tab-content">
+    <!-- Tab Infos -->
+    <div *ngIf="activeTab === 0">
+      <div class="tab-content">
           <div class="info-section">
             <h3 class="section-title">
               <mat-icon>info</mat-icon>
@@ -32,7 +41,7 @@
                 <div>
                   <span class="info-label">{{ 'groups.city' | translate }}</span>
                   <span class="info-value">
-                    {{ data.groupe.ville }}{{ data.groupe.quartier ? ' - ' + data.groupe.quartier : '' }}
+                    {{ data.groupe.ville.nom }}{{ data.groupe.quartier ? ' - ' + data.groupe.quartier : '' }}
                   </span>
                 </div>
               </div>
@@ -40,7 +49,7 @@
                 <mat-icon>stadium</mat-icon>
                 <div>
                   <span class="info-label">Stade</span>
-                  <span class="info-value">{{ data.groupe.stade }}</span>
+                  <span class="info-value">{{ data.groupe.stade.nom }}</span>
                 </div>
               </div>
               <div class="info-item">
@@ -80,13 +89,13 @@
                   <span class="info-value">{{ data.groupe.niveauRequis }}</span>
                 </div>
               </div>
-              <div class="info-item" *ngIf="data.groupe.capaciteMax">
+              <!-- <div class="info-item" *ngIf="data.groupe.capaciteMax">
                 <mat-icon>group</mat-icon>
                 <div>
                   <span class="info-label">{{ 'groups.members' | translate }}</span>
                   <span class="info-value">{{ data.groupe.nombreMembres || 0 }} / {{ data.groupe.capaciteMax }}</span>
                 </div>
-              </div>
+              </div> -->
             </div>
           </div>
 
@@ -114,12 +123,12 @@
             </mat-chip-set>
           </div>
         </div>
-      </mat-tab>
+      </div>
+    </div>
 
-      <!-- Localisation -->
-<!-- Localisation -->
-<mat-tab label="Localisation">
-  <div class="tab-content">
+    <!-- Tab Localisation -->
+    <div *ngIf="activeTab === 1">
+      <div class="tab-content">
     <div class="location-info">
       <mat-icon class="large-icon">place</mat-icon>
       <h3>{{ data.groupe.stade?.nom }}</h3>
@@ -155,9 +164,7 @@
         <p>Coordonnées GPS non disponibles</p>
       </div>
     </div>
-  </div>
-</mat-tab>
-    </mat-tab-group>
+    </div>
   </div>
 
   <div class="dialog-actions">
@@ -166,7 +173,7 @@
       {{ 'common.close' | translate }}
     </button>
     <button 
-      *ngIf="isCandidat"
+      *ngIf="hasGroup"
       mat-raised-button 
       color="primary"
       (click)="demanderAdhesion()">

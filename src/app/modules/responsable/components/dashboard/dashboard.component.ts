@@ -109,6 +109,15 @@ export class RDashboardComponent implements OnInit, OnDestroy {
   // États
   isLoading = true;
   isLoadingExercices = false;
+  activeTab        = 0;
+  showAllTeams     = false;
+  showAllScorers   = false;
+  showAllAssists   = false;
+  showAllAttendance = false;
+  // showAllTeams      = false;
+  // showAllScorers    = false;
+  // showAllAssists    = false;
+  // showAllAttendance = false;
   currentDate: Date = new Date();
 
   // Mode de filtrage
@@ -123,7 +132,7 @@ export class RDashboardComponent implements OnInit, OnDestroy {
   dateRangeForm: FormGroup;
 
   // Statistiques
-  stats: Stats = {
+  stats: any = {
     memberCount: 0,
     totalContributions: 0,
     paidSanctions: { amount: 0, count: 0 },
@@ -397,7 +406,7 @@ export class RDashboardComponent implements OnInit, OnDestroy {
   /**
    * Charge les statistiques principales
    */
-  private loadStats(startDate?: Date, endDate?: Date): void {
+  public loadStats(startDate?: Date, endDate?: Date): void {
     this.isLoading = true;
 
     this.statService.getResponsableStats(startDate, endDate)
@@ -456,8 +465,8 @@ export class RDashboardComponent implements OnInit, OnDestroy {
     ];
 
     // Graphique barres pour les contributions
-    this.barChartData.labels = this.stats.contributionsByMonth.map(item => item.month);
-    this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map(item => item.amount);
+    this.barChartData.labels = this.stats.contributionsByMonth.map((item: { month: any; }) => item.month);
+    this.barChartData.datasets[0].data = this.stats.contributionsByMonth.map((item: { amount: any; }) => item.amount);
   }
 
   /**

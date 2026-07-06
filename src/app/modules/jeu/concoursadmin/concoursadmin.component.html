@@ -1,0 +1,375 @@
+<div class="ca-container">
+
+  <!-- ══════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════ -->
+  <div class="ca-header">
+    <div class="ca-header-left">
+      <div class="ca-header-icon"><mat-icon>emoji_events</mat-icon></div>
+      <div>
+        <h1>Concours</h1>
+        <p>{{ concours.length }} concours · {{ getActiveCount() }} actifs</p>
+      </div>
+    </div>
+    <button mat-raised-button class="ca-create-btn" (click)="openCreatePanel()">
+      <mat-icon>add</mat-icon>Nouveau concours
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="ca-kpis">
+    <div class="ca-kpi">
+      <span class="ca-kpi-val">{{ getTotalParticipants() }}</span>
+      <span class="ca-kpi-lbl">Participants total</span>
+    </div>
+    <div class="ca-kpi-sep"></div>
+    <div class="ca-kpi">
+      <span class="ca-kpi-val">{{ getActiveCount() }}</span>
+      <span class="ca-kpi-lbl">En cours</span>
+    </div>
+    <div class="ca-kpi-sep"></div>
+    <div class="ca-kpi">
+      <span class="ca-kpi-val">{{ getFinishedCount() }}</span>
+      <span class="ca-kpi-lbl">Terminés</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LISTE CONCOURS
+  ══════════════════════════════════════ -->
+  <div class="ca-list" *ngIf="!isLoading">
+
+    <div class="ca-empty" *ngIf="concours.length === 0">
+      <mat-icon>emoji_events</mat-icon>
+      <h3>Aucun concours</h3>
+      <p>Créez votre premier concours pour commencer.</p>
+      <button mat-raised-button color="primary" (click)="openCreatePanel()">
+        <mat-icon>add</mat-icon>Créer un concours
+      </button>
+    </div>
+
+    <div class="ca-card" *ngFor="let c of concours"
+         [class.statut-actif]="c.statut === 'ACTIF'"
+         [class.statut-brouillon]="c.statut === 'BROUILLON'"
+         [class.statut-termine]="c.statut === 'TERMINE'">
+
+      <!-- Statut badge -->
+      <div class="ca-statut-badge" [class]="'s-' + c.statut.toLowerCase()">
+        <mat-icon>{{ getStatutIcon(c.statut) }}</mat-icon>
+        {{ getStatutLabel(c.statut) }}
+      </div>
+
+      <!-- Image -->
+      <div class="ca-card-img" *ngIf="c.imageUrl"
+           [style.background-image]="'url(' + c.imageUrl + ')'">
+      </div>
+      <div class="ca-card-img placeholder" *ngIf="!c.imageUrl">
+        <mat-icon>emoji_events</mat-icon>
+      </div>
+
+      <!-- Infos -->
+      <div class="ca-card-body">
+        <h3>{{ c.titre }}</h3>
+        <div class="ca-card-meta">
+          <span *ngIf="c.partenaireNom">
+            <mat-icon>business</mat-icon>{{ c.partenaireNom }}
+          </span>
+          <span>
+            <mat-icon>event</mat-icon>Tirage : {{ c.dateTirage | date:'dd/MM/yyyy' }}
+          </span>
+          <span>
+            <mat-icon>people</mat-icon>{{ c.nombreParticipants }} participants
+          </span>
+          <span>
+            <mat-icon>quiz</mat-icon>{{ c.nombreQuestions }} question(s)
+          </span>
+        </div>
+
+        <!-- Lien partageable -->
+        <div class="ca-share-row">
+          <span class="ca-share-url">my2-0.cloud/concours/{{ c.slug }}</span>
+          <button mat-icon-button (click)="copyLink(c.slug)" matTooltip="Copier le lien">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+          <button mat-icon-button (click)="shareLink(c)" matTooltip="Partager">
+            <mat-icon>share</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ca-card-actions">
+        <!-- Publier -->
+        <button mat-stroked-button class="ca-action-publish"
+                *ngIf="c.statut === 'BROUILLON'"
+                (click)="publier(c.id)">
+          <mat-icon>rocket_launch</mat-icon>Publier
+        </button>
+
+        <!-- Tirage manuel -->
+        <button mat-raised-button class="ca-action-tirage"
+                *ngIf="c.statut === 'ACTIF' && !c.tirageEffectue"
+                (click)="confirmerTirage(c)">
+          <mat-icon>casino</mat-icon>Lancer le tirage
+        </button>
+
+        <!-- Résultats -->
+        <button mat-stroked-button
+                *ngIf="c.tirageEffectue"
+                (click)="voirResultats(c.id)">
+          <mat-icon>military_tech</mat-icon>Résultats
+        </button>
+
+        <!-- Stats -->
+        <button mat-icon-button (click)="voirStats(c.id)" matTooltip="Statistiques">
+          <mat-icon>bar_chart</mat-icon>
+        </button>
+
+        <!-- Archiver -->
+        <button mat-icon-button class="ca-action-archive"
+                *ngIf="c.statut === 'ACTIF'"
+                (click)="archiver(c.id)"
+                matTooltip="Archiver">
+          <mat-icon>archive</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ca-loading" *ngIf="isLoading">
+    <mat-spinner diameter="44"></mat-spinner>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL CRÉATION (slide depuis la droite)
+  ══════════════════════════════════════ -->
+  <div class="ca-panel-backdrop" *ngIf="showCreatePanel"
+       (click)="closeCreatePanel()"></div>
+
+  <div class="ca-panel" [class.open]="showCreatePanel">
+    <div class="ca-panel-header">
+      <h2><mat-icon>add_circle</mat-icon>Nouveau concours</h2>
+      <button mat-icon-button (click)="closeCreatePanel()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="ca-panel-body">
+      <form class="ca-form" (ngSubmit)="creerConcours()">
+
+        <!-- Section infos générales -->
+        <div class="ca-form-section">
+          <h3 class="ca-form-section-title">
+            <mat-icon>info</mat-icon>Informations générales
+          </h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Titre du concours *</mat-label>
+            <input matInput [(ngModel)]="form.titre" name="titre" required>
+            <mat-icon matPrefix>title</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Description</mat-label>
+            <textarea matInput [(ngModel)]="form.description" name="desc" rows="3"></textarea>
+            <mat-icon matPrefix>description</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>URL de l'image de couverture</mat-label>
+            <input matInput [(ngModel)]="form.imageUrl" name="img">
+            <mat-icon matPrefix>image</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Section partenaire -->
+        <div class="ca-form-section">
+          <h3 class="ca-form-section-title">
+            <mat-icon>business</mat-icon>Partenaire
+          </h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Nom du partenaire</mat-label>
+            <input matInput [(ngModel)]="form.partenaireNom" name="pNom">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>URL du logo partenaire</mat-label>
+            <input matInput [(ngModel)]="form.partenaireLogoUrl" name="pLogo">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Lien site partenaire</mat-label>
+            <input matInput [(ngModel)]="form.partenaireLien" name="pLien">
+          </mat-form-field>
+        </div>
+
+        <!-- Section dates -->
+        <div class="ca-form-section">
+          <h3 class="ca-form-section-title">
+            <mat-icon>event</mat-icon>Dates
+          </h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Fin des participations *</mat-label>
+            <input matInput type="datetime-local"
+                   [(ngModel)]="form.dateFin" name="dateFin" required>
+            <mat-icon matPrefix>event</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Date du tirage *</mat-label>
+            <input matInput type="datetime-local"
+                   [(ngModel)]="form.dateTirage" name="dateTirage" required>
+            <mat-icon matPrefix>casino</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Section lots -->
+        <div class="ca-form-section">
+          <h3 class="ca-form-section-title">
+            <mat-icon>card_giftcard</mat-icon>Lots à gagner
+            <button mat-icon-button type="button" (click)="ajouterLot()">
+              <mat-icon>add_circle</mat-icon>
+            </button>
+          </h3>
+          <div class="ca-lot-row" *ngFor="let lot of form.lots; let li = index">
+            <span class="ca-lot-rank">{{ getRankEmoji(li) }}</span>
+            <mat-form-field appearance="outline" class="ca-lot-desc">
+              <mat-label>Description *</mat-label>
+              <input matInput [(ngModel)]="lot.description" [name]="'lDesc'+li" required>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="ca-lot-val">
+              <mat-label>Valeur FCFA</mat-label>
+              <input matInput type="number" [(ngModel)]="lot.valeur" [name]="'lVal'+li">
+            </mat-form-field>
+            <button mat-icon-button type="button" class="ca-remove"
+                    (click)="retirerLot(li)" *ngIf="form.lots.length > 1">
+              <mat-icon>remove_circle</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section questions -->
+        <div class="ca-form-section">
+          <h3 class="ca-form-section-title">
+            <mat-icon>quiz</mat-icon>Questions
+            <button mat-icon-button type="button" (click)="ajouterQuestion()">
+              <mat-icon>add_circle</mat-icon>
+            </button>
+          </h3>
+
+          <div class="ca-question-block"
+               *ngFor="let q of form.questions; let qi = index">
+            <div class="ca-q-head">
+              <span class="ca-q-num">Q{{ qi + 1 }}</span>
+              <mat-form-field appearance="outline" class="ca-q-type">
+                <mat-label>Type</mat-label>
+                <mat-select [(ngModel)]="q.type" [name]="'qType'+qi"
+                            (ngModelChange)="onQuestionTypeChange(q)">
+                  <mat-option value="QCM">QCM</mat-option>
+                  <mat-option value="TEXTE">Texte libre</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-icon-button type="button" class="ca-remove"
+                      (click)="retirerQuestion(qi)" *ngIf="form.questions.length > 1">
+                <mat-icon>remove_circle</mat-icon>
+              </button>
+            </div>
+
+            <mat-form-field appearance="outline" class="ca-q-texte">
+              <mat-label>Question *</mat-label>
+              <textarea matInput [(ngModel)]="q.texte" [name]="'qTexte'+qi"
+                        rows="2" required></textarea>
+            </mat-form-field>
+
+            <!-- Options QCM -->
+            <div class="ca-options" *ngIf="q.type === 'QCM'">
+              <div class="ca-option-row"
+                   *ngFor="let opt of q.options; let oi = index">
+                <input type="radio" [name]="'bonneRep'+qi"
+                       [checked]="q.bonneReponseIndex === oi"
+                       (change)="q.bonneReponseIndex = oi"
+                       title="Bonne réponse">
+                <input class="ca-option-input" [(ngModel)]="q.options[oi]"
+                       [name]="'opt'+qi+'_'+oi"
+                       [placeholder]="'Option ' + (oi + 1)">
+                <button mat-icon-button type="button" class="ca-remove-sm"
+                        (click)="retirerOption(q, oi)"
+                        *ngIf="q.options.length > 2">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              <button mat-button type="button"
+                      class="ca-add-option" (click)="ajouterOption(q)">
+                <mat-icon>add</mat-icon>Ajouter une option
+              </button>
+              <p class="ca-hint">
+                <mat-icon>info</mat-icon>
+                Sélectionnez la bonne réponse (bouton radio à gauche)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ca-form-footer">
+          <button mat-raised-button type="submit"
+                  class="ca-save-btn"
+                  [disabled]="isSaving || !isFormValid()">
+            <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+            <mat-icon *ngIf="!isSaving">save</mat-icon>
+            {{ isSaving ? 'Enregistrement…' : 'Enregistrer en brouillon' }}
+          </button>
+          <button mat-stroked-button type="button" (click)="closeCreatePanel()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL TIRAGE CONFIRMATION
+  ══════════════════════════════════════ -->
+  <div class="ca-modal-backdrop" *ngIf="concoursATraiter"
+       (click)="concoursATraiter = null">
+    <div class="ca-modal" (click)="$event.stopPropagation()">
+      <div class="ca-modal-icon">🎲</div>
+      <h3>Lancer le tirage ?</h3>
+      <p>Cette action est <strong>irréversible</strong>. Les gagnants seront
+         tirés au sort parmi les <strong>{{ concoursATraiter.nombreParticipants }}
+         participants</strong> et notifiés in-app.</p>
+      <div class="ca-modal-actions">
+        <button mat-raised-button class="ca-tirage-confirm"
+                (click)="lancerTirage()" [disabled]="isTirage">
+          <mat-spinner *ngIf="isTirage" diameter="18"></mat-spinner>
+          <mat-icon *ngIf="!isTirage">casino</mat-icon>
+          {{ isTirage ? 'Tirage en cours…' : 'Confirmer le tirage' }}
+        </button>
+        <button mat-stroked-button (click)="concoursATraiter = null">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL RÉSULTATS
+  ══════════════════════════════════════ -->
+  <div class="ca-modal-backdrop" *ngIf="tirageResultat"
+       (click)="tirageResultat = null">
+    <div class="ca-modal ca-resultats" (click)="$event.stopPropagation()">
+      <h3><mat-icon>military_tech</mat-icon>Résultats du tirage</h3>
+      <p class="ca-resultats-sub">
+        {{ tirageResultat.nombreParticipants }} participants ·
+        {{ tirageResultat.gagnants.length }} gagnants
+      </p>
+      <div class="ca-gagnants">
+        <div class="ca-gagnant" *ngFor="let g of tirageResultat.gagnants">
+          <span class="ca-g-emoji">{{ getRankEmoji(g.rang - 1) }}</span>
+          <div class="ca-g-info">
+            <span class="ca-g-name">{{ g.username }}</span>
+            <span class="ca-g-lot">{{ g.lotDescription }}
+              <strong *ngIf="g.lotValeur"> · {{ g.lotValeur | number }} FCFA</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+      <button mat-raised-button (click)="tirageResultat = null">Fermer</button>
+    </div>
+  </div>
+
+</div>

@@ -42,6 +42,7 @@ export interface ProfileImageDialogResult {
   styleUrl: './profile-image-edit-dialog.component.scss'
 })
 export class ProfileImageEditDialogComponent {
+  showAdjustments = false;
   @ViewChild('canvas', { static: false }) canvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
 
@@ -301,25 +302,52 @@ export class ProfileImageEditDialogComponent {
    * Gestion du drag pour déplacer l'image
    */
   onMouseDown(event: MouseEvent): void {
-    this.isDragging = true;
-    this.dragStart = {
-      x: event.clientX - this.imagePosition.x,
-      y: event.clientY - this.imagePosition.y
-    };
+    this.startDrag(event.clientX, event.clientY);
   }
 
   onMouseMove(event: MouseEvent): void {
-    if (this.isDragging) {
-      this.imagePosition = {
-        x: event.clientX - this.dragStart.x,
-        y: event.clientY - this.dragStart.y
-      };
-      this.drawImage();
-    }
+    this.moveDrag(event.clientX, event.clientY);
   }
 
   onMouseUp(): void {
     this.isDragging = false;
+  }
+
+  // ── Support tactile (mobile) ──────────────────────────────────
+  onTouchStart(event: TouchEvent): void {
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.startDrag(touch.clientX, touch.clientY);
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.moveDrag(touch.clientX, touch.clientY);
+  }
+
+  onTouchEnd(): void {
+    this.isDragging = false;
+  }
+
+  private startDrag(clientX: number, clientY: number): void {
+    this.isDragging = true;
+    this.dragStart = {
+      x: clientX - this.imagePosition.x,
+      y: clientY - this.imagePosition.y
+    };
+  }
+
+  private moveDrag(clientX: number, clientY: number): void {
+    if (this.isDragging) {
+      this.imagePosition = {
+        x: clientX - this.dragStart.x,
+        y: clientY - this.dragStart.y
+      };
+      this.drawImage();
+    }
   }
 
   /**

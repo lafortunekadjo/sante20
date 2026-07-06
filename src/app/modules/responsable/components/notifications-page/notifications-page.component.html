@@ -1,65 +1,63 @@
-<!-- ============================================================
-     NOTIFICATIONS PAGE TEMPLATE
-     Fichier: notifications-page.component.html
-     ============================================================ -->
-
 <div class="notifications-page">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-text">
-        <h1>
-          <mat-icon>notifications</mat-icon>
-          Notifications
-        </h1>
+
+  <!-- ══ HEADER GRADIENT ══════════════════════════════ -->
+  <div class="np-header">
+    <div class="np-title-group">
+      <div class="np-icon"><mat-icon>notifications</mat-icon></div>
+      <div>
+        <h1>Notifications</h1>
         <p>Gérez vos notifications et paramètres</p>
       </div>
-      <div class="header-actions" *ngIf="activeTab === 0">
-        <button mat-stroked-button [matMenuTriggerFor]="actionsMenu" *ngIf="notifications.length > 0">
-          <mat-icon>more_vert</mat-icon>
-          Actions
+    </div>
+    <div class="np-actions" *ngIf="activeTab === 0 && notifications.length > 0">
+      <button mat-icon-button class="np-icon-btn" [matMenuTriggerFor]="actionsMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #actionsMenu="matMenu">
+        <button mat-menu-item (click)="markAllAsRead()" *ngIf="unreadCount > 0">
+          <mat-icon>done_all</mat-icon><span>Tout marquer comme lu</span>
         </button>
-        <mat-menu #actionsMenu="matMenu">
-          <button mat-menu-item (click)="markAllAsRead()" *ngIf="unreadCount > 0">
-            <mat-icon>done_all</mat-icon>
-            <span>Tout marquer comme lu</span>
-          </button>
-          <button mat-menu-item (click)="deleteAllRead()">
-            <mat-icon>delete_sweep</mat-icon>
-            <span>Supprimer les lues</span>
-          </button>
-        </mat-menu>
-      </div>
+        <button mat-menu-item (click)="deleteAllRead()">
+          <mat-icon>delete_sweep</mat-icon><span>Supprimer les lues</span>
+        </button>
+      </mat-menu>
     </div>
   </div>
 
-  <!-- Tabs -->
-  <mat-tab-group [(selectedIndex)]="activeTab" (selectedIndexChange)="onTabChange($event)">
-    
-    <!-- TAB 1: Liste des notifications -->
-    <mat-tab>
-      <ng-template mat-tab-label>
+  <!-- ══ TABS STICKY ══════════════════════════════════ -->
+  <div class="np-tabs-wrapper">
+    <div class="np-tabs-bar">
+      <button class="np-tab" [class.active]="activeTab === 0" (click)="onTabChange(0)">
         <mat-icon>inbox</mat-icon>
         <span>Notifications</span>
-        <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
-      </ng-template>
+        <span class="np-tab-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+      </button>
+      <button class="np-tab" [class.active]="activeTab === 1" (click)="onTabChange(1)">
+        <mat-icon>settings</mat-icon>
+        <span>Paramètres</span>
+      </button>
+    </div>
 
-      <div class="tab-content">
+    <!-- ── TAB NOTIFICATIONS ─────────────────────────── -->
+    <div class="np-tab-content" *ngIf="activeTab === 0">
+      <div class="np-content">
+
         <!-- Filtres -->
-        <div class="filters-bar">
-          <mat-chip-listbox [value]="selectedCategory" (change)="onCategoryChange($event.value)">
-            <mat-chip-option *ngFor="let cat of categories" [value]="cat.value">
+        <div class="np-filters">
+          <div class="np-chips-bar">
+            <button class="np-chip" *ngFor="let cat of categories"
+                    [class.active]="selectedCategory === cat.value"
+                    (click)="onCategoryChange(cat.value)">
               <mat-icon *ngIf="cat.icon">{{ cat.icon }}</mat-icon>
               {{ cat.label }}
-            </mat-chip-option>
-          </mat-chip-listbox>
+            </button>
+          </div>
 
           <!-- Actions sur sélection -->
-          <div class="selection-actions" *ngIf="selectedNotifications.size > 0">
-            <span class="selection-count">{{ selectedNotifications.size }} sélectionnée(s)</span>
+          <div class="np-selection-bar" *ngIf="selectedNotifications.size > 0">
+            <span class="np-selection-count">{{ selectedNotifications.size }} sélectionnée(s)</span>
             <button mat-stroked-button (click)="markSelectedAsRead()">
-              <mat-icon>done</mat-icon>
-              Marquer comme lu
+              <mat-icon>done</mat-icon>Marquer comme lu
             </button>
             <button mat-icon-button (click)="clearSelection()" matTooltip="Désélectionner">
               <mat-icon>close</mat-icon>
@@ -68,73 +66,67 @@
         </div>
 
         <!-- Loading -->
-        <div class="loading-container" *ngIf="isLoading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="np-loading" *ngIf="isLoading">
+          <mat-spinner diameter="44"></mat-spinner>
           <p>Chargement des notifications...</p>
         </div>
 
         <!-- Liste -->
-        <div class="notifications-list" *ngIf="!isLoading" [@listAnimation]="notifications.length">
+        <div class="np-list" *ngIf="!isLoading">
           <ng-container *ngIf="notifications.length > 0; else emptyState">
-            
+
             <!-- Select all -->
-            <div class="select-all-row">
+            <div class="np-select-all">
               <mat-checkbox [(ngModel)]="selectAll" (change)="toggleSelectAll()">
                 Sélectionner tout
               </mat-checkbox>
             </div>
 
             <!-- Items -->
-            <div class="notification-card"
+            <div class="np-item"
                  *ngFor="let notification of notifications"
                  [class.unread]="!notification.isRead"
                  [class.selected]="isSelected(notification)"
                  matRipple
                  (click)="onNotificationClick(notification)">
-              
-              <!-- Checkbox -->
-              <mat-checkbox 
+
+              <mat-checkbox
+                class="np-item-checkbox"
                 [checked]="isSelected(notification)"
                 (change)="toggleSelection(notification)"
                 (click)="$event.stopPropagation()">
               </mat-checkbox>
 
-              <!-- Icône -->
-              <div class="notification-icon" [style.background-color]="getTypeColor(notification.type)">
+              <div class="np-item-icon" [style.background-color]="getTypeColor(notification.type)">
                 <mat-icon>{{ notification.icon || getCategoryIcon(notification.category) }}</mat-icon>
               </div>
 
-              <!-- Contenu -->
-              <div class="notification-content">
-                <div class="notification-header">
-                  <h3 class="notification-title">{{ notification.title }}</h3>
-                  <span class="notification-category">{{ getCategoryLabel(notification.category) }}</span>
+              <div class="np-item-content">
+                <div class="np-item-header">
+                  <h3>{{ notification.title }}</h3>
+                  <span class="np-item-category">{{ getCategoryLabel(notification.category) }}</span>
                 </div>
-                <p class="notification-message">{{ notification.message }}</p>
-                <div class="notification-meta">
-                  <span class="notification-time">
-                    <mat-icon>schedule</mat-icon>
-                    {{ notification.timeAgo }}
+                <p class="np-item-message">{{ notification.message }}</p>
+                <div class="np-item-meta">
+                  <span class="np-item-time">
+                    <mat-icon>schedule</mat-icon>{{ notification.timeAgo }}
                   </span>
-                  <span class="notification-groupe" *ngIf="notification.groupeNom">
-                    <mat-icon>groups</mat-icon>
-                    {{ notification.groupeNom }}
+                  <span class="np-item-groupe" *ngIf="notification.groupeNom">
+                    <mat-icon>groups</mat-icon>{{ notification.groupeNom }}
                   </span>
                 </div>
               </div>
 
-              <!-- Actions -->
-              <div class="notification-actions" (click)="$event.stopPropagation()">
-                <button mat-icon-button 
+              <div class="np-item-actions" (click)="$event.stopPropagation()">
+                <button mat-icon-button
                         *ngIf="!notification.isRead"
                         (click)="markAsRead(notification, $event)"
                         matTooltip="Marquer comme lu">
                   <mat-icon>check_circle</mat-icon>
                 </button>
-                <button mat-icon-button 
+                <button mat-icon-button
                         (click)="deleteNotification(notification, $event)"
-                        matTooltip="Supprimer"
-                        color="warn">
+                        matTooltip="Supprimer" color="warn">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -143,7 +135,7 @@
 
           <!-- État vide -->
           <ng-template #emptyState>
-            <div class="empty-state" [@fadeIn]>
+            <div class="np-empty">
               <mat-icon>notifications_none</mat-icon>
               <h3>Aucune notification</h3>
               <p *ngIf="selectedCategory === 'ALL'">Vous n'avez pas encore de notifications.</p>
@@ -159,109 +151,104 @@
                        [pageIndex]="currentPage"
                        [pageSizeOptions]="[10, 20, 50]"
                        (page)="onPageChange($event)"
-                       showFirstLastButtons>
+                       showFirstLastButtons
+                       class="np-paginator">
         </mat-paginator>
       </div>
-    </mat-tab>
+    </div>
 
-    <!-- TAB 2: Paramètres -->
-    <mat-tab>
-      <ng-template mat-tab-label>
-        <mat-icon>settings</mat-icon>
-        <span>Paramètres</span>
-      </ng-template>
+    <!-- ── TAB PARAMÈTRES ────────────────────────────── -->
+    <div class="np-tab-content" *ngIf="activeTab === 1">
+      <div class="np-content">
 
-      <div class="tab-content settings-tab">
         <!-- Loading -->
-        <div class="loading-container" *ngIf="isSettingsLoading">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="np-loading" *ngIf="isSettingsLoading">
+          <mat-spinner diameter="44"></mat-spinner>
           <p>Chargement des paramètres...</p>
         </div>
 
-        <div class="settings-content" *ngIf="!isSettingsLoading && settings">
-          <!-- Paramètres globaux -->
-          <mat-card class="settings-card">
-            <mat-card-header>
-              <mat-icon mat-card-avatar>tune</mat-icon>
-              <mat-card-title>Paramètres généraux</mat-card-title>
-              <mat-card-subtitle>Gérez vos préférences de notifications globales</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="setting-row">
-                <div class="setting-info">
-                  <span class="setting-label">Activer les notifications</span>
-                  <span class="setting-description">Recevoir des notifications dans l'application</span>
-                </div>
-                <mat-slide-toggle [(ngModel)]="settings.notificationsEnabled" 
-                                  (change)="toggleGlobalNotifications()">
-                </mat-slide-toggle>
+        <div class="np-settings" *ngIf="!isSettingsLoading && settings">
+
+          <!-- Paramètres généraux -->
+          <div class="np-settings-card">
+            <div class="np-settings-header">
+              <mat-icon>tune</mat-icon>
+              <div>
+                <h3>Paramètres généraux</h3>
+                <p>Gérez vos préférences de notifications globales</p>
               </div>
+            </div>
 
-              <mat-divider></mat-divider>
-
-              <div class="setting-row">
-                <div class="setting-info">
-                  <span class="setting-label">Notifications par email</span>
-                  <span class="setting-description">Recevoir un email pour les notifications importantes</span>
-                </div>
-                <mat-slide-toggle [(ngModel)]="settings.emailNotificationsEnabled" 
-                                  (change)="saveSettings()">
-                </mat-slide-toggle>
+            <div class="np-setting-row">
+              <div class="np-setting-info">
+                <span class="np-setting-label">Activer les notifications</span>
+                <span class="np-setting-desc">Recevoir des notifications dans l'application</span>
               </div>
+              <mat-slide-toggle [(ngModel)]="settings.notificationsEnabled" (change)="toggleGlobalNotifications()"></mat-slide-toggle>
+            </div>
 
-              <mat-divider></mat-divider>
-
-              <div class="setting-row">
-                <div class="setting-info">
-                  <span class="setting-label">Résumé par email</span>
-                  <span class="setting-description">Recevoir un résumé des notifications</span>
-                </div>
-                <mat-form-field appearance="outline" class="digest-select">
-                  <mat-select [(ngModel)]="settings.emailDigestFrequency" (selectionChange)="saveSettings()">
-                    <mat-option value="NONE">Jamais</mat-option>
-                    <mat-option value="DAILY">Quotidien</mat-option>
-                    <mat-option value="WEEKLY">Hebdomadaire</mat-option>
-                  </mat-select>
-                </mat-form-field>
+            <div class="np-setting-row">
+              <div class="np-setting-info">
+                <span class="np-setting-label">Notifications par email</span>
+                <span class="np-setting-desc">Recevoir un email pour les notifications importantes</span>
               </div>
-            </mat-card-content>
-          </mat-card>
+              <mat-slide-toggle [(ngModel)]="settings.emailNotificationsEnabled" (change)="saveSettings()"></mat-slide-toggle>
+            </div>
+
+            <div class="np-setting-row">
+              <!-- <div class="np-setting-info">
+                <span class="np-setting-label">Résumé par email</span>
+                <span class="np-setting-desc">Recevoir un résumé des notifications</span>
+              </div> -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="np-digest-select">
+                <mat-select [(ngModel)]="settings.emailDigestFrequency" (selectionChange)="saveSettings()">
+                  <mat-option value="NONE">Jamais</mat-option>
+                  <mat-option value="DAILY">Quotidien</mat-option>
+                  <mat-option value="WEEKLY">Hebdomadaire</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
 
           <!-- Préférences par catégorie -->
-          <mat-card class="settings-card">
-            <mat-card-header>
-              <mat-icon mat-card-avatar>category</mat-icon>
-              <mat-card-title>Préférences par catégorie</mat-card-title>
-              <mat-card-subtitle>Personnalisez les notifications par type</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="preferences-table">
-                <div class="preferences-header">
-                  <span class="pref-category">Catégorie</span>
-                  <span class="pref-channel">In-App</span>
-                  <span class="pref-channel">Email</span>
-                </div>
+          <div class="np-settings-card">
+            <div class="np-settings-header">
+              <mat-icon>category</mat-icon>
+              <div>
+                <h3>Préférences par catégorie</h3>
+                <p>Personnalisez les notifications par type</p>
+              </div>
+            </div>
 
-                <div class="preference-row" *ngFor="let pref of settings.preferences">
-                  <div class="pref-info">
-                    <mat-icon>{{ getCategoryIcon(pref.category) }}</mat-icon>
-                    <div class="pref-text">
-                      <span class="pref-label">{{ pref.categoryLabel }}</span>
-                      <span class="pref-description">{{ pref.categoryDescription }}</span>
-                    </div>
+            <!-- Liste de cards par catégorie (remplace le tableau) -->
+            <div class="np-pref-list">
+              <div class="np-pref-item" *ngFor="let pref of settings.preferences">
+                <div class="np-pref-info">
+                  <mat-icon>{{ getCategoryIcon(pref.category) }}</mat-icon>
+                  <div class="np-pref-text">
+                    <span class="np-pref-label">{{ pref.categoryLabel }}</span>
+                    <span class="np-pref-desc">{{ pref.categoryDescription }}</span>
                   </div>
-                  <mat-checkbox [checked]="pref.inAppEnabled" 
-                                (change)="togglePreference(pref, 'inApp'); saveSettings()">
-                  </mat-checkbox>
-                  <mat-checkbox [checked]="pref.emailEnabled" 
-                                (change)="togglePreference(pref, 'email'); saveSettings()">
-                  </mat-checkbox>
+                </div>
+                <div class="np-pref-toggles">
+                  <label class="np-pref-toggle">
+                    <mat-checkbox [checked]="pref.inAppEnabled"
+                                  (change)="togglePreference(pref, 'inApp'); saveSettings()"></mat-checkbox>
+                    <span>In-App</span>
+                  </label>
+                  <label class="np-pref-toggle">
+                    <mat-checkbox [checked]="pref.emailEnabled"
+                                  (change)="togglePreference(pref, 'email'); saveSettings()"></mat-checkbox>
+                    <span>Email</span>
+                  </label>
                 </div>
               </div>
-            </mat-card-content>
-          </mat-card>
+            </div>
+          </div>
+
         </div>
       </div>
-    </mat-tab>
-  </mat-tab-group>
+    </div>
+
+  </div>
 </div>

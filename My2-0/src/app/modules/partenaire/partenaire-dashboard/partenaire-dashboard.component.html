@@ -1,0 +1,94 @@
+<div class="dashboard-wrapper fade-in">
+  
+  <header class="dashboard-header-minimal">
+    <div class="header-left">
+      <h1>{{ 'partenaire.dashboard.welcome' | translate }}, {{ getUserName() }}</h1>
+      <p>{{ 'partenaire.dashboard.subtitle' | translate }}</p>
+    </div>
+    <div class="header-right-stats">
+      <div class="active-badge">
+        <span class="pulse"></span>
+        <strong>{{ partenaire?.nombrePublicitesActives || 0 }}</strong> 
+        {{ 'partenaire.dashboard.stats.activeAds' | translate }}
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main" *ngIf="!isLoading && partenaire">
+    
+    <section class="kpi-container">
+      <div class="kpi-card" matRipple>
+        <div class="kpi-icon blue"><mat-icon>visibility</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ formatNumber(stats?.totalImpressions || 0) }}</span>
+          <span class="l">{{ 'partenaire.dashboard.stats.impressions' | translate }}</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card" matRipple>
+        <div class="kpi-icon emerald"><mat-icon>touch_app</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ formatNumber(stats?.totalClics || 0) }}</span>
+          <span class="l">{{ 'partenaire.dashboard.stats.clicks' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" [class]="getContractStatusClass()">
+        <div class="kpi-icon"><mat-icon>timer</mat-icon></div>
+        <div class="kpi-data">
+          <span class="v">{{ getDaysRemaining() }}j</span>
+          <span class="l">{{ 'partenaire.dashboard.contract.daysLeft' | translate }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="responsive-layout">
+      
+      <section class="main-section">
+        <div class="section-card">
+          <div class="card-title-row">
+            <h2>{{ 'partenaire.dashboard.recentAds.title' | translate }}</h2>
+            <button mat-icon-button color="primary" routerLink="/partenaire/publicites/new"><mat-icon>add</mat-icon></button>
+          </div>
+
+          <div class="list-stack">
+            <div class="list-item-card" *ngFor="let ad of recentAds" [routerLink]="['/partenaire/publicites', ad.id]">
+              <div class="item-info">
+                <img [src]="ad.imageUrl || 'assets/placeholder.png'" class="item-img">
+                <div class="item-text">
+                  <span class="t1">{{ ad.titre }}</span>
+                  <span class="t2">{{ ad.entrepriseNom }}</span>
+                </div>
+              </div>
+              <div class="item-meta">
+                <span class="status-chip" [class]="getStatutClass(ad.statut)">{{ ad.statut }}</span>
+                <mat-icon>chevron_right</mat-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-section">
+        <div class="section-card">
+          <div class="card-title-row">
+            <h2>{{ 'partenaire.dashboard.stats.enterprises' | translate }}</h2>
+          </div>
+          
+          <div class="enterprise-stack">
+            <div class="ent-card" *ngFor="let ent of entreprises.slice(0, 4)" [routerLink]="['/partenaire/entreprise', ent.id]">
+              <div class="ent-icon"><mat-icon>business</mat-icon></div>
+              <div class="ent-details">
+                <span class="ent-name">{{ ent.nom }}</span>
+                <span class="ent-sub">{{ ent.nombrePublicites || 0 }} ads</span>
+              </div>
+              <mat-icon class="arrow">arrow_forward_ios</mat-icon>
+            </div>
+          </div>
+          <button mat-button class="w-100" routerLink="/partenaire/entreprise">Voir tout</button>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>

@@ -89,6 +89,21 @@ import { JoinGroupDialogComponent } from "./modules/membre/components/join-group
 import { StadeGestionComponent } from "./modules/admin/components/stade-gestion/stade-gestion.component";
 import { AdminAnalyticsComponent } from "./modules/admin/components/admin-analytics/admin-analytics.component";
 import { AnnouncementAdminComponent } from "./modules/responsable/components/announcement-admin/announcement-admin.component";
+import { SettingsComponent } from "./shared/components/settings/settings.component";
+import { PlayerProfileComponent } from "./modules/membre/components/player-profile/player-profile.component";
+import { PlayerListComponent } from "./modules/membre/components/player-list/player-list.component";
+import { VideoManagementComponent } from "./modules/membre/components/video-management/video-management.component";
+import { ForgotPasswordComponent } from "./shared/components/forgot-password/forgot-password.component";
+import { ResetPasswordComponent } from "./shared/components/reset-password/reset-password.component";
+import { StatsDashboardComponent } from "./modules/responsable/components/stats-dashboard/stats-dashboard.component";
+import { PrivacyPolicyComponent } from "./modules/doc/privacy-policy/privacy-policy.component";
+import { SecurityPolicyComponent } from "./modules/doc/security-policy/security-policy.component";
+import { TermsOfServiceComponent } from "./modules/doc/terms-of-service/terms-of-service.component";
+import { ConcoursPublicComponent } from "./modules/jeu/concours-public/concours-public.component";
+import { ConcoursAdminComponent } from "./modules/jeu/concoursadmin/concoursadmin.component";
+import { ConcoursLiveComponent } from "./modules/jeu/concours-live/concours-live.component";
+import { responsableGuard } from "./core/guards/responsable.guard";
+import { UserMergeComponent } from "./modules/shared/components/user-merge/user-merge.component";
 
 //import { CaisseComponent } from "./modules/responsable/components/caisses/caisse.component";
 //import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
@@ -115,6 +130,19 @@ export const routes: Routes = [
         path: '',
         component: HomeComponent,
       },
+
+      {
+  path: 'privacy',
+  component: PrivacyPolicyComponent
+},
+{
+  path: 'terms',
+  component: TermsOfServiceComponent
+},
+{
+  path: 'security',
+  component: SecurityPolicyComponent
+},
 
 
   {
@@ -200,13 +228,32 @@ export const routes: Routes = [
       import('./modules/competition/components/match-detail/match-detail.component')
         .then(m => m.MatchDetailComponent)
   },
+{
+  path: 'concours/:slug',
+  component: ConcoursPublicComponent
+},
 
+{
+  path: 'concours/:slug/live',
+  component: ConcoursLiveComponent
+},
 
 
       {
         path: 'match/invite/:token',
         component: PublicMatchInviteComponent,
       },
+      { path: 'forgot-password', component: ForgotPasswordComponent },
+       { path: 'reset-password', component: ResetPasswordComponent },
+      {
+        path:'p/:username',
+        component: PlayerProfileComponent
+      },
+      {
+        path: 'joueurs',
+        component: PlayerListComponent
+      },
+            
       {
         path: 'creategroup',
         component: UserGroupRegisterComponent,
@@ -218,6 +265,10 @@ export const routes: Routes = [
       {
         path: 'apropos',
         component: HomeComponent,
+      },
+       {
+        path: 'settings',
+        component: SettingsComponent,
       },
        {
         path: 'adhesion/:id/candidature',
@@ -249,12 +300,20 @@ export const routes: Routes = [
         path: 'explorer',
         component: GroupesExploreComponent,
       },
+        {
+        path: 'memberstat',
+        component: StatsDashboardComponent,
+      },
       {
         path: 'mes-demandes',
         component: MesDemandesComponent,
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'CANDIDAT', 'ROLE_CANDIDAT'] }
       },
+       {
+            path: 'membre/videos',
+            component: VideoManagementComponent
+          },
       {
         path: 'login',
         component: LoginComponent
@@ -307,6 +366,14 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: AnalyticsDashboardComponent
+          },
+            {
+            path: 'merge',
+            component: UserMergeComponent
+          },
+           {
+            path: 'tirage',
+            component: ConcoursAdminComponent
           },
         
           { path: 'analytics', 
@@ -455,6 +522,7 @@ export const routes: Routes = [
             path: 'dashboard',
             component: MDashboardComponent
           },
+            
            {
             path: 'vote',
             component: MvpVoteComponent
@@ -474,7 +542,7 @@ export const routes: Routes = [
       // ==================== ROUTES RESPONSABLE ====================
       {
         path: 'responsable',
-        canActivate: [RoleGuard],
+        canActivate: [responsableGuard],
         data: { roles: ['RESPONSABLE', 'ROLE_RESPONSABLE'] },
         children: [
           // Dashboard - accessible à tous les responsables
@@ -503,7 +571,7 @@ export const routes: Routes = [
           {
             path: 'demandes',
             component: GestionDemandesGroupeComponent,
-            canActivate: [MenuGuard]
+            canActivate: [RoleGuard]
           },
           {
             path: 'invitation',

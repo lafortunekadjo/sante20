@@ -29,6 +29,8 @@ import { filter, finalize, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
 import { OnboardingService } from '../../../core/services/onboarding.service';
+import { GroupeSwitcherComponent } from '../../../modules/shared/components/groupe-switcher/groupe-switcher.component';
+
 
 // ✅ AJOUT : Import du composant NotificationBell
 
@@ -52,7 +54,8 @@ import { OnboardingService } from '../../../core/services/onboarding.service';
     TranslateModule,
     MatTooltipModule,
     MatSnackBarModule,
-    NotificationBellComponent  // ✅ AJOUT
+    NotificationBellComponent,  // ✅ AJOUT
+    GroupeSwitcherComponent
   ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
@@ -68,6 +71,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isUploadingPhoto = false;
   success = false;
   error = '';
+  
   isMobile = false;
    isMembre: boolean = false;
   currentTheme: Theme = 'light';
@@ -297,6 +301,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   viewSettings(): void {
     this.router.navigate(['/settings']);
+  }
+
+  openVideoEdit(): void{
+    this.router.navigate(['/membre/videos']);
   }
 
   changeRole(role: string): void {

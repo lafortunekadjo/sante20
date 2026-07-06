@@ -1,0 +1,293 @@
+<div class="profile-page-wrapper">
+  
+  <div class="center-container" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>{{ 'profile.loading' | translate }}</p>
+  </div>
+
+  <div class="center-container error-box" *ngIf="hasError && !isLoading">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h2>{{ 'profile.error.title' | translate }}</h2>
+    <p>{{ 'profile.error.subtitle' | translate }}</p>
+  </div>
+   <div class="back-actions-zone">
+      <button mat-button class="back-btn" (click)="goBackToList()">
+        <mat-icon>arrow_back</mat-icon>
+        <span>{{ 'profile.actions.back_to_list' | translate }}</span>
+      </button>
+    </div>
+    
+<div class="private-profile-fallback" *ngIf="!playerProfile.public && !isOwnProfile">
+  <div class="fallback-card">
+    
+    <div class="icon-container">
+      <div class="pulse-glow"></div>
+      <mat-icon class="lock-icon">security</mat-icon>
+    </div>
+
+    <h2>{{ 'profile.visibility.private_title' | translate }}</h2>
+    <div class="divider-line"></div>
+    <p>{{ 'profile.visibility.private_profile_message' | translate }}</p>
+
+    <div class="brand-watermark">My2-0 Secure</div>
+  </div>
+</div>
+
+  <div class="profile-container" *ngIf="(playerProfile && !isLoading && playerProfile.public) || isOwnProfile ">
+    
+    <div class="profile-card-header">
+      <div class="profile-cover"></div>
+      <div class="profile-avatar-row">
+        <div class="avatar-wrapper" style="cursor: zoom-in;">
+          <img *ngIf="playerProfile.profilePhotoUrl" 
+              [src]="playerProfile.profilePhotoUrl" 
+              alt="Avatar joueur"
+              (click)="openPhotoLightbox(playerProfile.profilePhotoUrl)">
+              
+          <div *ngIf="!playerProfile.profilePhotoUrl" 
+              class="avatar-initials">
+              {{ getInitials() }}
+          </div>
+        </div>
+        
+        <div class="player-main-info">
+         <div class="name-badge-row" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <h1 style="margin: 0;">&#64;{{ playerProfile.username }}</h1>
+          
+          <span class="own-profile-badge" *ngIf="isOwnProfile" 
+                style="display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 20px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);">
+            <span style="width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; margin-right: 6px; display: inline-block;"></span>
+            {{ 'profile.badges.own_profile' | translate }}
+          </span>
+        </div>
+          <div class="visibility-toggle-zone" *ngIf="isOwnProfile && playerProfile">
+            <span class="visibility-label">
+              <mat-icon>{{ playerProfile.public ? 'visibility' : 'visibility_off' }}</mat-icon>
+              {{ (playerProfile.public ? 'profile.visibility.public' : 'profile.visibility.private') | translate }}
+            </span>
+            
+            <!-- <mat-slide-toggle 
+              [checked]="playerProfile.isPublic" 
+              (change)="toggleProfileVisibility($event.checked)"
+              color="primary">
+            </mat-slide-toggle> -->
+        </div>
+          <p class="player-meta">
+            <mat-icon>location_on</mat-icon>
+            <span>Douala, {{ playerProfile.quartier }}</span>
+          </p>
+        </div>
+
+      </div>
+
+      <div class="stats-ribbon-grid">
+        <div class="ribbon-item">
+          <span class="ribbon-num primary-stat">{{ playerProfile.totalMatchsJoues }}</span>
+          <span class="ribbon-label">{{ 'directory.stats.matches' | translate }}</span>
+        </div>
+        <div class="ribbon-item">
+          <span class="ribbon-num primary-stat">{{ playerProfile.totalButsGlobal }}</span>
+          <span class="ribbon-label">{{ 'directory.stats.goals' | translate }}</span>
+        </div>
+        <div class="ribbon-item">
+          <span class="ribbon-num primary-stat">{{ playerProfile.totalPassesGlobal }}</span>
+          <span class="ribbon-label">{{ 'directory.stats.assists' | translate }}</span>
+        </div>
+        <div class="ribbon-item text-warn" *ngIf="playerProfile.poste === 'Gardien'">
+          <span class="ribbon-num primary-stat">{{ playerProfile.cleanSheets }}</span>
+          <span class="ribbon-label">{{ 'profile.stats.clean_sheets' | translate }}</span>
+        </div>
+        <div class="ribbon-item" *ngIf="playerProfile.poste !== 'Gardien'">
+          <span class="ribbon-num primary-stat">{{ playerProfile.totalCartonsGlobal }}</span>
+          <span class="ribbon-label">{{ 'profile.stats.cards_received' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-tabs-card">
+      <mat-tab-group animationDuration="250ms">
+        
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>sports_soccer</mat-icon>
+            <span>{{ 'profile.tabs.technical_sheet' | translate }}</span>
+          </ng-template>
+          <div class="tab-content">
+            <div class="info-details-grid">
+              <div class="detail-box">
+                <span class="box-label">{{ 'profile.specs.position' | translate }}</span>
+                <span class="box-value accent-text">🛡️ {{ playerProfile.poste }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="box-label">{{ 'profile.specs.strong_foot' | translate }}</span>
+                <span class="box-value">{{ playerProfile.piedFort }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="box-label">{{ 'profil.fields.gender' | translate }}</span>
+                <span class="box-value">{{ playerProfile.sexe === 'M' ? ('profil.gender.male' | translate) : ('profil.gender.female' | translate) }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="box-label">{{ 'profil.fields.email' | translate }}</span>
+                <span class="box-value email-text">{{ playerProfile.email }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+       <mat-tab>
+  <ng-template mat-tab-label>
+    <mat-icon>history</mat-icon>
+    <span>{{ 'profile.tabs.club_history' | translate }}</span>
+  </ng-template>
+  
+  <div class="tab-content">
+    
+    <mat-accordion class="saisons-accordion" multipanel *ngIf="playerProfile?.historiqueSaisons && playerProfile.historiqueSaisons.length > 0">
+      
+      <mat-expansion-panel *ngFor="let saison of playerProfile.historiqueSaisons; let isFirst = first" [expanded]="isFirst">
+        
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="season-icon">calendar_today</mat-icon>
+            <strong>{{ saison.exerciceLibelle }}</strong>
+          </mat-panel-title>
+          <mat-panel-description>
+            <span class="club-name-tag" *ngIf="saison.clubNom">
+              ⚽ {{ saison.clubNom }} 
+              <span class="status-badge" [class.active]="saison.statut === 'Actif'">{{ saison.statut }}</span>
+            </span>
+            <span *ngIf="!saison.clubNom" class="no-club-tag">{{ 'directory.sort.hors_club' | translate }}</span>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="season-stats-grid">
+          
+          <div class="stat-card-box">
+            <span class="stat-label">{{ 'directory.sort.matches_played' | translate }}</span>
+            <span class="stat-value">👕 {{ saison.matchsJoues }}</span>
+          </div>
+
+          <ng-container *ngIf="saison.cleanSheets > 0 || saison.butsEncaisses > 0; else joueurChampStats">
+            <div class="stat-card-box goalie">
+              <span class="stat-label">{{ 'directory.sort.clean_sheets' | translate }}</span>
+              <span class="stat-value">🧤 {{ saison.cleanSheets }}</span>
+            </div>
+            <div class="stat-card-box goalie">
+              <span class="stat-label">{{'directory.sort.but_encaisses'| translate }}</span>
+              <span class="stat-value">🥅 {{ saison.butsEncaisses }}</span>
+            </div>
+          </ng-container>
+
+          <ng-template #joueurChampStats>
+            <div class="stat-card-box">
+              <span class="stat-label">{{'directory.sort.but_marques'| translate }}</span>
+              <span class="stat-value">⚽ {{ saison.buts }} <small *ngIf="saison.penaltys > 0">({{ saison.penaltys }} pen)</small></span>
+            </div>
+            <div class="stat-card-box">
+              <span class="stat-label">{{'directory.sort.passeD'| translate }}</span>
+              <span class="stat-value">🎯 {{ saison.passes }}</span>
+            </div>
+          </ng-template>
+
+          <div class="stat-card-box">
+            <span class="stat-label">{{'directory.sort.cartons'| translate }}</span>
+            <span class="stat-value">🟨🟥 {{ saison.cartons }}</span>
+          </div>
+
+        </div>
+
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    <!-- <span class="private-status-badge" *ngIf="!playerProfile.isPublic && isOwnProfile">
+              <mat-icon>visibility_off</mat-icon>
+              {{ 'profile.visibility.private_badge' | translate }}
+    </span> -->
+
+    <div class="empty-history" *ngIf="!playerProfile?.historiqueSaisons || playerProfile.historiqueSaisons.length === 0">
+      <mat-icon class="placeholder-icon">history_toggle_off</mat-icon>
+      <h3>{{ 'profile.club.empty_title' | translate }}</h3>
+    </div>
+
+  </div>
+</mat-tab>
+
+        <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>play_circle_outline</mat-icon>
+          <span>{{ 'profile.tabs.highlights' | translate }}</span>
+        </ng-template>
+        
+        <div class="tab-content">
+          
+          <div class="center-container" *ngIf="isLoadingVideos">
+            <mat-spinner diameter="35"></mat-spinner>
+            <p>{{ 'profile.media.loading_gallery' | translate }}</p>
+          </div>
+
+          <div class="media-grid" *ngIf="!isLoadingVideos && playerVideos.length > 0">
+            <div class="media-card" *ngFor="let video of playerVideos" (click)="openLightbox(video.videoUrl)">
+              
+              <div class="media-preview video-wrapper">
+                <video [src]="video.videoUrl" preload="metadata" muted></video>
+                <div class="play-overlay">
+                  <mat-icon>play_arrow</mat-icon>
+                </div>
+                <span class="media-badge type-video">{{ 'profile.media.highlight_tag' | translate }}</span>
+              </div>
+              
+              <div class="media-footer">
+                <h4 class="video-title">{{ video.titre }}</h4>
+                <p class="video-adversaire" *ngIf="video.adversaire">VS {{ video.adversaire }}</p>
+                <p class="video-desc" *ngIf="video.description">{{ video.description }}</p>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="empty-videos" *ngIf="!isLoadingVideos && playerVideos.length === 0">
+            <mat-icon class="placeholder-icon">video_library</mat-icon>
+            <h3>{{ 'profile.media.empty_title' | translate }}</h3>
+            <p>{{ 'profile.media.empty_subtitle' | translate }}</p>
+          </div>
+
+        </div>
+      </mat-tab>
+
+      </mat-tab-group>
+    </div>
+  </div>
+
+<div class="lightbox-overlay" *ngIf="activeMediaUrl" (click)="closeLightbox()">
+  <button class="close-lightbox-btn" (click)="closeLightbox()">
+    <mat-icon>close</mat-icon>
+  </button>
+  
+  <div class="lightbox-content" (click)="$event.stopPropagation()">
+    
+    <ng-container *ngIf="!activeMediaUrl.includes('.mp4') && !activeMediaUrl.includes('.webm')">
+      <div class="lightbox-image-wrapper">
+        <img [src]="activeMediaUrl" 
+             class="lightbox-element image-mode"
+             (contextmenu)="$event.preventDefault()" 
+             (dragstart)="$event.preventDefault()"
+             alt="Pofil agrandi" />
+             
+        <div class="lightbox-watermark">
+          MY2-0 • {{ playerProfile?.username }}
+        </div>
+      </div>
+    </ng-container>
+
+    <video *ngIf="activeMediaUrl.includes('.mp4') || activeMediaUrl.includes('.webm')" 
+           [src]="activeMediaUrl" 
+           controls 
+           autoplay 
+           (contextmenu)="$event.preventDefault()"
+           class="lightbox-element">
+    </video>
+
+  </div>
+</div>
+
+</div>

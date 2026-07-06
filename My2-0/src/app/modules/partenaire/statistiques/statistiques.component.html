@@ -1,0 +1,271 @@
+<!-- Statistiques Partenaire -->
+<div class="stats-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-main">
+        <mat-icon class="header-icon">bar_chart</mat-icon>
+        <div class="header-text">
+          <h1>{{ 'partenaire.stats.title' | translate }}</h1>
+          <p>{{ 'partenaire.stats.subtitle' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button 
+          mat-stroked-button 
+          (click)="exportStats()" 
+          [disabled]="isExporting || isLoading">
+          <mat-spinner diameter="18" *ngIf="isExporting"></mat-spinner>
+          <mat-icon *ngIf="!isExporting">download</mat-icon>
+          {{ 'partenaire.stats.export' | translate }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filtres -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>{{ 'partenaire.stats.period' | translate }}</mat-label>
+      <mat-select [(ngModel)]="selectedPeriode" (selectionChange)="onPeriodeChange()">
+        <mat-option value="7j">7 derniers jours</mat-option>
+        <mat-option value="30j">30 derniers jours</mat-option>
+        <mat-option value="90j">90 derniers jours</mat-option>
+        <mat-option value="12m">12 derniers mois</mat-option>
+        <mat-option value="custom">Personnalisé</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <ng-container *ngIf="selectedPeriode === 'custom'">
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date début</mat-label>
+        <input matInput [matDatepicker]="startPicker" [(ngModel)]="dateDebut">
+        <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date fin</mat-label>
+        <input matInput [matDatepicker]="endPicker" [(ngModel)]="dateFin">
+        <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+
+      <button mat-stroked-button (click)="applyCustomDates()" [disabled]="!dateDebut || !dateFin">
+        Appliquer
+      </button>
+    </ng-container>
+
+    <mat-form-field appearance="outline" class="filter-field" *ngIf="entreprises.length > 1">
+      <mat-label>{{ 'partenaire.stats.enterprise' | translate }}</mat-label>
+      <mat-select [(ngModel)]="selectedEntreprise" (selectionChange)="onEntrepriseChange()">
+        <mat-option [value]="null">Toutes les entreprises</mat-option>
+        <mat-option *ngFor="let ent of entreprises" [value]="ent.id">
+          {{ ent.nom }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button 
+      mat-icon-button 
+      *ngIf="selectedPeriode !== '30j' || selectedEntreprise"
+      (click)="clearFilters()"
+      matTooltip="Réinitialiser">
+      <mat-icon>filter_alt_off</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <!-- Contenu -->
+  <ng-container *ngIf="!isLoading && stats">
+
+    <!-- KPIs Cards -->
+    <div class="kpi-cards">
+      <div class="kpi-card">
+        <div class="kpi-icon impressions">
+          <mat-icon>visibility</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(stats.totalImpressions) }}</span>
+          <span class="kpi-label">{{ 'partenaire.stats.impressions' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon clicks">
+          <mat-icon>touch_app</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatNumber(stats.totalClics) }}</span>
+          <span class="kpi-label">{{ 'partenaire.stats.clicks' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon ctr">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ formatPercent(stats.tauxClicsMoyen) }}%</span>
+          <span class="kpi-label">{{ 'partenaire.stats.ctr' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon pubs">
+          <mat-icon>campaign</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ stats.nombrePublicitesActives }}</span>
+          <span class="kpi-label">{{ 'partenaire.stats.activePubs' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphique évolution -->
+    <div class="chart-section" *ngIf="evolutionJournaliere.length > 0">
+      <div class="section-header">
+        <h2>
+          <mat-icon>show_chart</mat-icon>
+          {{ 'partenaire.stats.evolution' | translate }}
+        </h2>
+      </div>
+
+      <div class="chart-container">
+        <!-- Mini chart bars -->
+        <div class="mini-chart">
+          <div 
+            class="chart-bar"
+            *ngFor="let jour of evolutionJournaliere; trackBy: trackByJour"
+            [matTooltip]="jour.date + ': ' + jour.impressions + ' impressions, ' + jour.clics + ' clics'">
+            <div class="bar-fill" [style.height.%]="getBarWidth(jour.impressions || 0)"></div>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <span>{{ evolutionJournaliere[0]?.date | date:'dd/MM' }}</span>
+          <span>{{ evolutionJournaliere[evolutionJournaliere.length - 1]?.date | date:'dd/MM' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats par emplacement -->
+    <div class="stats-section" *ngIf="stats.statsParEmplacement?.length">
+      <div class="section-header">
+        <h2>
+          <mat-icon>grid_view</mat-icon>
+          {{ 'partenaire.stats.byPlacement' | translate }}
+        </h2>
+      </div>
+
+      <div class="placement-cards">
+        <div 
+          class="placement-card"
+          *ngFor="let emp of stats.statsParEmplacement">
+          <div class="placement-header">
+            <span class="placement-name">{{ getEmplacementLabel(emp.emplacement) }}</span>
+          </div>
+          <div class="placement-stats">
+            <div class="placement-stat">
+              <span class="stat-value">{{ formatNumber(emp.impressions) }}</span>
+              <span class="stat-label">Impressions</span>
+            </div>
+            <div class="placement-stat">
+              <span class="stat-value">{{ formatNumber(emp.clics) }}</span>
+              <span class="stat-label">Clics</span>
+            </div>
+            <div class="placement-stat">
+              <span class="stat-value">{{ formatPercent(emp.tauxClics) }}%</span>
+              <span class="stat-label">CTR</span>
+            </div>
+          </div>
+          <div class="placement-bar">
+            <div 
+              class="bar-fill" 
+              [style.width.%]="(emp.impressions / stats.totalImpressions) * 100">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau des publicités -->
+    <div class="stats-section">
+      <div class="section-header">
+        <h2>
+          <mat-icon>campaign</mat-icon>
+          {{ 'partenaire.stats.byAd' | translate }}
+        </h2>
+      </div>
+
+      <div class="table-container" *ngIf="statsPublicites.length > 0">
+        <table mat-table [dataSource]="statsPublicites">
+
+          <!-- Titre -->
+          <ng-container matColumnDef="titre">
+            <th mat-header-cell *matHeaderCellDef>Publicité</th>
+            <td mat-cell *matCellDef="let pub">
+              <span class="pub-title">{{ pub.publiciteTitre }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Emplacement -->
+          <ng-container matColumnDef="emplacement">
+            <th mat-header-cell *matHeaderCellDef>Emplacement</th>
+            <td mat-cell *matCellDef="let pub">
+              <span class="emplacement-badge">{{ getEmplacementLabel(pub.emplacement) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Impressions -->
+          <ng-container matColumnDef="impressions">
+            <th mat-header-cell *matHeaderCellDef>Impressions</th>
+            <td mat-cell *matCellDef="let pub">
+              <span class="stat-cell">{{ formatNumber(pub.totalImpressions) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Clics -->
+          <ng-container matColumnDef="clics">
+            <th mat-header-cell *matHeaderCellDef>Clics</th>
+            <td mat-cell *matCellDef="let pub">
+              <span class="stat-cell">{{ formatNumber(pub.totalClics) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- CTR -->
+          <ng-container matColumnDef="ctr">
+            <th mat-header-cell *matHeaderCellDef>CTR</th>
+            <td mat-cell *matCellDef="let pub">
+              <span class="ctr-value" [class.good]="pub.tauxClics >= 2" [class.average]="pub.tauxClics >= 1 && pub.tauxClics < 2">
+                {{ formatPercent(pub.tauxClics) }}%
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div class="empty-state" *ngIf="statsPublicites.length === 0">
+        <mat-icon>campaign</mat-icon>
+        <p>Aucune donnée de publicité pour cette période</p>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Empty state global -->
+  <div class="empty-state-global" *ngIf="!isLoading && !stats">
+    <mat-icon>bar_chart</mat-icon>
+    <h3>Aucune statistique disponible</h3>
+    <p>Créez des publicités pour commencer à collecter des données.</p>
+  </div>
+</div>

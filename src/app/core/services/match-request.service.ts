@@ -23,12 +23,21 @@ export interface MatchRequestResponse {
   groupeDemandeur: any;
   groupeCible: any;
   dateProposee: string;
+  dateLancement:string;
   lieuPropose: string;
   descriptionMessage: string;
   statut: 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE';
   createdAt: string;
   dateReponse: string; // ✅ Changer de Date à string pour correspondre au format ISO
   motifRefus: string; 
+}
+
+export interface ValidationMatchDto {
+  demandeId: number;
+  dateMatch: string; // Format 'yyyy-MM-dd' (géré par le formulaire ou DatePipe)
+  heureMatch: string; // Format 'HH:mm'
+  lieu: string;
+  commentaire?: string;
 }
 
 @Injectable({
@@ -79,5 +88,11 @@ export class MatchRequestService {
    */
   cancelRequest(requestId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${requestId}`);
+  }
+
+  accepterEtCreerMatchAmical(validationDto: ValidationMatchDto): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/valider`, validationDto, {
+      responseType: 'text' as 'json' // Nécessaire car le controller Java renvoie un ResponseEntity.ok("Texte...") au lieu d'un JSON
+    });
   }
 }

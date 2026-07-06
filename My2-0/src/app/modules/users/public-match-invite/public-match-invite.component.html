@@ -1,0 +1,258 @@
+<div class="invite-page" *ngIf="!isLoading">
+  
+  <div class="error-container" *ngIf="!invitation?.valide" @fadeIn>
+    <div class="error-card">
+      <div class="error-icon">
+        <mat-icon>error_outline</mat-icon>
+      </div>
+      <h2>{{ 'invite.error.title' | translate }}</h2>
+      <p>{{ invitation?.messageErreur || ('invite.error.defaultMessage' | translate) }}</p>
+      <a mat-raised-button href="https://my2-0.cloud" class="btn-home">
+        <mat-icon>home</mat-icon>
+        {{ 'invite.error.discover' | translate }}
+      </a>
+    </div>
+  </div>
+
+  <div class="invite-container" *ngIf="invitation?.valide" @fadeIn>
+    
+    <div class="invite-header">
+      <div class="header-background"></div>
+      <div class="header-content">
+        <div class="club-logo" *ngIf="invitation?.organisateur?.logoUrl">
+          <img [src]="invitation?.organisateur?.logoUrl" [alt]="invitation?.organisateur?.nom">
+        </div>
+        <div class="club-logo placeholder" *ngIf="!invitation?.organisateur?.logoUrl">
+          <mat-icon>sports_soccer</mat-icon>
+        </div>
+        
+        <h1>⚽ {{ 'invite.header.welcome' | translate }}</h1>
+        <p class="club-name">{{ invitation?.organisateur?.nom }}</p>
+        <p class="club-city" *ngIf="invitation?.organisateur?.ville">
+          <mat-icon>location_on</mat-icon>
+          {{ invitation?.organisateur?.ville }}
+        </p>
+      </div>
+    </div>
+
+    <div class="match-info-card" @slideUp>
+      <div class="match-badge">
+        <mat-icon>event</mat-icon>
+        <span>{{ 'invite.match.type' | translate }}</span>
+      </div>
+      
+      <div class="match-details">
+        <div class="detail-item">
+          <mat-icon>calendar_today</mat-icon>
+          <div class="detail-content">
+            <span class="label">{{ 'invite.match.date' | translate }}</span>
+            <span class="value">{{ invitation?.match?.dateMatch | date:'EEEE d MMMM yyyy':'':'fr' }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-item" *ngIf="invitation?.match?.heureMatch">
+          <mat-icon>schedule</mat-icon>
+          <div class="detail-content">
+            <span class="label">{{ 'invite.match.time' | translate }}</span>
+            <span class="value">{{ invitation?.match?.heureMatch }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-item" *ngIf="invitation?.match?.lieu || invitation?.match?.stade">
+          <mat-icon>stadium</mat-icon>
+          <div class="detail-content">
+            <span class="label">{{ 'invite.match.location' | translate }}</span>
+            <span class="value">{{ invitation?.match?.stade || invitation?.match?.lieu }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-message" *ngIf="invitation?.messagePersonnalise">
+        <mat-icon>format_quote</mat-icon>
+        <p>{{ invitation?.messagePersonnalise }}</p>
+      </div>
+
+      <div class="expiration-warning">
+        <mat-icon>timer</mat-icon>
+        <span>{{ 'invite.match.expires' | translate }} {{ invitation?.dateExpiration | date:'dd/MM/yyyy à HH:mm' }}</span>
+      </div>
+    </div>
+
+    <div class="already-submitted" *ngIf="invitation?.dejaSoumis" @slideUp>
+      <div class="success-icon">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <h2>{{ 'invite.submitted.title' | translate }}</h2>
+      <p [innerHTML]="'invite.submitted.details' | translate:{ team: invitation?.nom, count: invitation?.nombreJoueursSoumis }"></p>
+      <p class="info-text">
+        <mat-icon>info</mat-icon>
+        {{ 'invite.submitted.info' | translate }}
+      </p>
+    </div>
+
+    <div class="form-container" *ngIf="!invitation?.dejaSoumis && !isSubmitted" @slideUp>
+      <h2>
+        <mat-icon>groups</mat-icon>
+        {{ 'invite.form.title' | translate }}
+      </h2>
+      <p class="form-subtitle">
+        {{ 'invite.form.subtitle' | translate:{ min: invitation?.minJoueurs, max: invitation?.maxJoueurs } }}
+      </p>
+
+      <div class="team-logo-section">
+        <div class="logo-upload-container" (click)="logoInput.click()" [matTooltip]="'invite.form.uploadLogo' | translate">
+          <img *ngIf="logoPreview" [src]="logoPreview" class="logo-preview">
+          <div *ngIf="!logoPreview" class="logo-placeholder">
+            <mat-icon>add_a_photo</mat-icon>
+            <span>LOGO</span>
+          </div>
+          <div class="edit-overlay">
+            <mat-icon>edit</mat-icon>
+          </div>
+        </div>
+        <input #logoInput type="file" (change)="onLogoSelected($event)" accept="image/*" hidden>
+        <p class="logo-hint">{{ 'invite.form.logoHint' | translate }}</p>
+      </div>
+
+  
+
+      <div class="team-name-section">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ 'invite.form.teamNameLabel' | translate }}</mat-label>
+          <input matInput [(ngModel)]="formData.nomEquipe" [placeholder]="'invite.form.teamNamePlaceholder' | translate" required>
+          <mat-icon matPrefix>shield</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="contact-section">
+        <p class="section-label">{{ 'invite.form.contactLabel' | translate }}</p>
+        <div class="contact-fields">
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'invite.form.email' | translate }}</mat-label>
+            <input matInput type="email" [(ngModel)]="formData.emailContact" placeholder="contact@equipe.com">
+            <mat-icon matPrefix>email</mat-icon>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'invite.form.phone' | translate }}</mat-label>
+            <input matInput type="tel" [(ngModel)]="formData.telephoneContact" placeholder="+237 6XX XXX XXX">
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="players-section">
+        <div class="section-header">
+          <h3>
+            <mat-icon>people</mat-icon>
+            {{ 'invite.form.playersTitle' | translate }}
+          </h3>
+          <span class="player-count" [class.valid]="joueurs.length >= invitation?.minJoueurs!">
+            {{ joueurs.length }} / {{ invitation?.maxJoueurs }}
+          </span>
+        </div>
+
+        <div class="players-list" cdkDropList (cdkDropListDropped)="dropPlayer($event)">
+          <div class="player-item" *ngFor="let joueur of joueurs; let i = index" cdkDrag @listAnimation>
+            <div class="drag-handle" cdkDragHandle>
+              <mat-icon>drag_indicator</mat-icon>
+            </div>
+            <div class="player-number">{{ i + 1 }}</div>
+            <div class="player-fields">
+              <mat-form-field appearance="outline" class="field-name">
+                <input matInput [(ngModel)]="joueur.prenom" [placeholder]="'invite.form.firstName' | translate" required>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="field-name">
+                <input matInput [(ngModel)]="joueur.nom" [placeholder]="'invite.form.lastName' | translate" required>
+              </mat-form-field>
+            </div>
+            <div class="player-badges">
+              <button mat-icon-button [class.active]="joueur.estCapitaine" (click)="toggleCapitaine(i)" [matTooltip]="'invite.form.captain' | translate">
+                <mat-icon>military_tech</mat-icon>
+              </button>
+              <button mat-icon-button [class.active]="joueur.estGardien" (click)="toggleGardien(i)" [matTooltip]="'invite.form.goalkeeper' | translate">
+                <mat-icon>sports_handball</mat-icon>
+              </button>
+            </div>
+            <button mat-icon-button class="btn-remove" (click)="removePlayer(i)" [matTooltip]="'common.delete' | translate">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <button mat-stroked-button class="btn-add-player" (click)="addPlayer()" [disabled]="joueurs.length >= invitation?.maxJoueurs!">
+          <mat-icon>add</mat-icon>
+          {{ 'invite.form.addPlayer' | translate }}
+        </button>
+
+        <div class="import-section">
+          <p class="or-divider"><span>{{ 'common.or' | translate }}</span></p>
+          <button mat-stroked-button class="btn-import" (click)="openImportDialog()">
+            <mat-icon>upload_file</mat-icon>
+            {{ 'invite.form.importExcel' | translate }}
+          </button>
+          <a href="#" class="download-template" (click)="downloadTemplate($event)">
+            <mat-icon>download</mat-icon>
+            {{ 'invite.form.downloadTemplate' | translate }}
+          </a>
+        </div>
+      </div>
+
+      <div class="validation-section">
+        <div class="validation-checks">
+          <div class="check-item" [class.valid]="formData.nomEquipe">
+            <mat-icon>{{ formData.nomEquipe ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>{{ 'invite.validation.teamName' | translate }}</span>
+          </div>
+          <div class="check-item" [class.valid]="joueurs.length >= invitation?.minJoueurs!">
+            <mat-icon>{{ joueurs.length >= invitation?.minJoueurs! ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>{{ 'invite.validation.minPlayers' | translate:{ count: invitation?.minJoueurs } }}</span>
+          </div>
+          <div class="check-item" [class.valid]="hasCapitaine()">
+            <mat-icon>{{ hasCapitaine() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>{{ 'invite.validation.captain' | translate }}</span>
+          </div>
+          <div class="check-item" [class.valid]="allPlayersValid()">
+            <mat-icon>{{ allPlayersValid() ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            <span>{{ 'invite.validation.playersComplete' | translate }}</span>
+          </div>
+        </div>
+
+        <button mat-raised-button class="btn-submit" [disabled]="!canSubmit() || isSubmitting" (click)="submitPlayers()">
+          <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
+          <mat-icon *ngIf="!isSubmitting">send</mat-icon>
+          <span>{{ (isSubmitting ? 'invite.form.sending' : 'invite.form.submit') | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="submission-success" *ngIf="isSubmitted" @fadeIn>
+      <div class="success-animation">
+        <mat-icon>celebration</mat-icon>
+      </div>
+      <h2>{{ 'invite.success.title' | translate }}</h2>
+      <p [innerHTML]="'invite.success.details' | translate:{ team: formData.nomEquipe, count: joueurs.length }"></p>
+      <div class="next-steps">
+        <h3>{{ 'invite.success.nextSteps' | translate }} :</h3>
+        <ul>
+          <li><mat-icon>hourglass_top</mat-icon> {{ 'invite.success.step1' | translate:{ org: invitation?.organisateur?.nom } }}</li>
+          <li><mat-icon>notifications</mat-icon> {{ 'invite.success.step2' | translate }}</li>
+          <li><mat-icon>event_available</mat-icon> {{ 'invite.success.step3' | translate:{ date: (invitation?.match?.dateMatch | date:'d MMMM':'':'fr') } }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="invite-footer">
+      <p>
+        {{ 'invite.footer.poweredBy' | translate }}
+        <a href="https://my2-0.cloud" target="_blank"><strong>My2-0</strong></a>
+        - {{ 'invite.footer.appDescription' | translate }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="loading-container" *ngIf="isLoading">
+  <mat-spinner diameter="60"></mat-spinner>
+  <p>{{ 'invite.loading' | translate }}</p>
+</div>

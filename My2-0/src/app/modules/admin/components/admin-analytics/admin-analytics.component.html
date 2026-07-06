@@ -1,0 +1,487 @@
+<div class="analytics-page">
+ 
+  <!-- ── LOADER ─────────────────────────────────────────────────────────── -->
+  <div class="loader-overlay" *ngIf="isLoading">
+    <div class="loader-inner">
+      <div class="loader-logo"><span>2-0</span></div>
+      <div class="loader-text">Chargement des métriques…</div>
+      <div class="loader-bar"><div class="loader-fill"></div></div>
+    </div>
+  </div>
+ 
+  <!-- ── ERREUR ─────────────────────────────────────────────────────────── -->
+  <div class="error-banner" *ngIf="hasError && !isLoading">
+    <span>⚠ Impossible de joindre le serveur. Vérifiez votre connexion et rechargez la page.</span>
+  </div>
+ 
+  <ng-container *ngIf="!isLoading && kpis">
+ 
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="dash-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-left">
+        <div class="logo-mark"><span>2-0</span></div>
+        <div>
+          <h1 class="dash-title">My2-0 Analytics</h1>
+          <p class="dash-sub">Tableau de bord administrateur</p>
+        </div>
+      </div>
+      <div class="today-label">{{ today }}</div>
+    </div>
+  </header>
+ 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1 — KPIs                                                     -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <p class="section-label">Indicateurs clés — plateforme</p>
+    <div class="kpi-grid">
+ 
+      <!-- totalGroupes + newGroupesThisMonth -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">G</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.totalGroupes }}</span>
+          <span class="kpi-label">Groupes total</span>
+          <span class="kpi-trend up">+{{ kpis.newGroupesThisMonth }} ce mois</span>
+        </div>
+      </div>
+ 
+      <!-- totalSignups + newUsersThisMonth -->
+      <div class="kpi-card">
+        <div class="kpi-icon gold">U</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.totalSignups | number }}</span>
+          <span class="kpi-label">Utilisateurs inscrits</span>
+          <span class="kpi-trend up">+{{ kpis.newUsersThisMonth }} ce mois</span>
+        </div>
+      </div>
+ 
+      <!-- Sans groupe = totalSignups - funnel[3].count -->
+      <div class="kpi-card">
+        <div class="kpi-icon red">!</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ getUsersSansGroupe() }}</span>
+          <span class="kpi-label">Sans groupe</span>
+          <span class="kpi-trend down">{{ getUsersSansGroupePct() }}% du total</span>
+        </div>
+      </div>
+ 
+      <!-- totalMatches + matchesThisMonth -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">M</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.totalMatches | number }}</span>
+          <span class="kpi-label">Matchs joués</span>
+          <span class="kpi-trend up">+{{ kpis.matchesThisMonth }} ce mois</span>
+        </div>
+      </div>
+ 
+      <!-- activeUsers + activeUsersRate -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">A</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.activeUsers | number }}</span>
+          <span class="kpi-label">Utilisateurs actifs (7j)</span>
+          <span class="kpi-trend" [ngClass]="kpis.activeUsersRate >= 50 ? 'up' : 'down'">
+            {{ kpis.activeUsersRate }}% du total
+          </span>
+        </div>
+      </div>
+ 
+      <!-- retentionRate30Days -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">R</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.retentionRate30Days }}%</span>
+          <span class="kpi-label">Rétention 30 jours</span>
+          <span class="kpi-trend" [ngClass]="kpis.retentionRate30Days >= 60 ? 'up' : 'down'">
+            7j : {{ kpis.retentionRate7Days }}%
+          </span>
+        </div>
+      </div>
+ 
+      <!-- engagementRate + avgMatchesPerGroup -->
+      <div class="kpi-card">
+        <div class="kpi-icon gold">E</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.engagementRate }}%</span>
+          <span class="kpi-label">Groupes engagés</span>
+          <span class="kpi-trend neutral">moy. {{ kpis.avgMatchesPerGroup }} matchs/groupe</span>
+        </div>
+      </div>
+ 
+      <!-- churnRate + churnedGroupes -->
+      <div class="kpi-card">
+        <div class="kpi-icon red">C</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.churnRate }}%</span>
+          <span class="kpi-label">Taux de churn</span>
+          <span class="kpi-trend" [ngClass]="kpis.churnRate <= 10 ? 'up' : 'down'">
+            {{ kpis.churnedGroupes }} groupe(s) inactif(s)
+          </span>
+        </div>
+      </div>
+ 
+      <!-- conversionRate -->
+      <div class="kpi-card">
+        <div class="kpi-icon gold">T</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.conversionRate }}%</span>
+          <span class="kpi-label">Taux de conversion</span>
+          <span class="kpi-trend neutral">Visiteur → Inscrit</span>
+        </div>
+      </div>
+ 
+      <!-- profileCompletionRate -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">P</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.profileCompletionRate }}%</span>
+          <span class="kpi-label">Profils complets</span>
+          <span class="kpi-trend neutral">{{ kpis.usersWithCompleteProfile | number }} membres</span>
+        </div>
+      </div>
+ 
+      <!-- avgMembersPerGroup -->
+      <div class="kpi-card">
+        <div class="kpi-icon blue">Ø</div>
+        <div class="kpi-body">
+          <span class="kpi-val">{{ kpis.avgMembersPerGroup }}</span>
+          <span class="kpi-label">Moy. membres/groupe</span>
+          <span class="kpi-trend neutral">{{ kpis.engagedGroupes }} groupes actifs</span>
+        </div>
+      </div>
+ 
+      <!-- groupesGrowthRate -->
+      <div class="kpi-card">
+        <div class="kpi-icon gold">↗</div>
+        <div class="kpi-body">
+          <span class="kpi-val">+{{ kpis.groupesGrowthRate }}%</span>
+          <span class="kpi-label">Croissance groupes</span>
+          <span class="kpi-trend" [ngClass]="kpis.groupesGrowthRate >= 0 ? 'up' : 'down'">
+            vs mois précédent
+          </span>
+        </div>
+      </div>
+ 
+    </div>
+  </section>
+ 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2 — Croissance + Funnel                                      -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="two-col">
+ 
+      <!-- Croissance — growth: period, users, groupes -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Croissance mensuelle</h2>
+          <div class="legend-row">
+            <span class="legend-item">
+              <span class="legend-dot" style="background:#2563eb"></span>Utilisateurs
+            </span>
+            <span class="legend-item">
+              <span class="legend-dash" style="background:#f59e0b"></span>Groupes
+            </span>
+          </div>
+        </div>
+        <div class="chart-wrap h200">
+          <canvas id="growthChart"></canvas>
+        </div>
+      </div>
+ 
+      <!-- Funnel — step, count, rate -->
+      <div class="card">
+        <h2 class="card-title">Funnel de conversion</h2>
+        <div class="funnel-list">
+          <div class="funnel-row" *ngFor="let f of funnelData; let i = index">
+            <div class="funnel-label">{{ f.step }}</div>
+            <div class="funnel-bar-wrap">
+              <div class="funnel-bar"
+                [style.width.%]="getFunnelPct(f)"
+                [style.background]="getFunnelColor(i)"
+                [style.color]="getFunnelTextColor(i)">
+                {{ f.count | number }}
+              </div>
+            </div>
+            <div class="funnel-pct">{{ f.rate }}%</div>
+          </div>
+        </div>
+      </div>
+ 
+    </div>
+  </section>
+ 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3 — Activité temporelle                                      -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <p class="section-label">Activité temporelle</p>
+ 
+    <!-- Heatmap — croisement peakHours.hourlyData × activityByDay -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          Heures de pointe — connexions par heure
+          <span class="peak-badge" *ngIf="peakHours">
+            Pic : {{ peakHours.peakHourFormatted }}
+          </span>
+        </h2>
+        <div class="hm-legend">
+          <span class="hm-leg-label">Faible</span>
+          <div class="hm-leg-cells">
+            <div class="hm-leg-cell" style="background:#eff6ff"></div>
+            <div class="hm-leg-cell" style="background:#bfdbfe"></div>
+            <div class="hm-leg-cell" style="background:#93c5fd"></div>
+            <div class="hm-leg-cell" style="background:#3b82f6"></div>
+            <div class="hm-leg-cell" style="background:#2563eb"></div>
+            <div class="hm-leg-cell" style="background:#1d4ed8"></div>
+          </div>
+          <span class="hm-leg-label">Élevé</span>
+        </div>
+      </div>
+      <div id="heatmapGrid" class="heatmap-container"></div>
+    </div>
+ 
+    <div class="two-col" style="margin-top:1rem">
+      <!-- Activité par jour — day, count -->
+      <div class="card">
+        <h2 class="card-title">Activité par jour de semaine</h2>
+        <div class="chart-wrap h160"><canvas id="dayChart"></canvas></div>
+      </div>
+      <!-- Répartition rôles — dérivée de kpis -->
+      <div class="card">
+        <h2 class="card-title">Répartition des utilisateurs</h2>
+        <div class="roles-layout">
+          <div class="chart-wrap h160" style="flex:1"><canvas id="rolesChart"></canvas></div>
+          <div class="roles-legend">
+            <div class="role-item">
+              <span class="role-dot" style="background:#2563eb"></span>
+              <span>Joueurs</span>
+            </div>
+            <div class="role-item">
+              <span class="role-dot" style="background:#f59e0b"></span>
+              <span>Coaches</span>
+            </div>
+            <div class="role-item">
+              <span class="role-dot" style="background:#93c5fd"></span>
+              <span>Gérants</span>
+            </div>
+            <div class="role-item">
+              <span class="role-dot" style="background:#bfdbfe"></span>
+              <span>Sans groupe</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 4 — Groupes                                                  -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <p class="section-label">Groupes</p>
+    <div class="card">
+ 
+      <div class="tabs">
+        <button class="tab" [class.active]="activeGroupTab === 'all'"
+          (click)="switchGroupTab('all')">
+          Tous les groupes
+          <span class="tab-badge">{{ groupesAll.length }}</span>
+        </button>
+        <button class="tab" [class.active]="activeGroupTab === 'sans-groupe'"
+          (click)="switchGroupTab('sans-groupe')">
+          Sans groupe
+          <span class="tab-badge red">{{ getUsersSansGroupe() }}</span>
+        </button>
+        <button class="tab" [class.active]="activeGroupTab === 'inactifs'"
+          (click)="switchGroupTab('inactifs')">
+          Alerte / Inactifs
+          <span class="tab-badge orange">{{ groupesInactifs.length }}</span>
+        </button>
+      </div>
+ 
+      <!-- Tab : Tous les groupes — id, nom, membresCount, activeMembers,
+                                   matchesThisMonth, lastActivityDate,
+                                   engagementScore, status -->
+      <div *ngIf="activeGroupTab === 'all'">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th>
+              <th>Groupe</th>
+              <th>Membres</th>
+              <th>Actifs (7j)</th>
+              <th>Matchs ce mois</th>
+              <th>Dernière activité</th>
+              <th>Score</th>
+              <th>Statut</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let g of groupesAll; let i = index">
+                <td class="mono">{{ i + 1 }}</td>
+                <td><strong>{{ g.nom }}</strong></td>
+                <td>{{ g.membresCount }}</td>
+                <td>{{ g.activeMembers }}</td>
+                <td>{{ g.matchesThisMonth }}</td>
+                <td class="muted">{{ g.lastActivityDate ?? '—' }}</td>
+                <td>
+                  <div class="score-bar-wrap">
+                    <div class="score-bar" [style.width.%]="g.engagementScore"
+                      [style.background]="g.engagementScore >= 75 ? '#10b981' :
+                                          g.engagementScore >= 50 ? '#2563eb' :
+                                          g.engagementScore >= 25 ? '#f59e0b' : '#ef4444'">
+                    </div>
+                    <span class="score-val">{{ g.engagementScore }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusClass(g.status)">
+                    {{ getStatusLabel(g.status) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+ 
+      <!-- Tab : Sans groupe — totalSignups - funnel[3] -->
+      <div *ngIf="activeGroupTab === 'sans-groupe'">
+        <div class="info-bloc">
+          <div class="info-stat">
+            <span class="info-val">{{ getUsersSansGroupe() }}</span>
+            <span class="info-label">utilisateurs sans groupe</span>
+          </div>
+          <div class="info-stat">
+            <span class="info-val">{{ getUsersSansGroupePct() }}%</span>
+            <span class="info-label">du total des inscrits</span>
+          </div>
+          <div class="info-stat">
+            <span class="info-val">{{ kpis.totalSignups | number }}</span>
+            <span class="info-label">inscrits au total</span>
+          </div>
+          <div class="info-stat">
+            <span class="info-val">{{ funnelData[3]?.count | number }}</span>
+            <span class="info-label">ont rejoint un groupe</span>
+          </div>
+        </div>
+        <p class="info-hint">
+          Le détail individuel (nom, ville, date d'inscription) nécessite un endpoint dédié
+          <code>/api/admin/users?hasGroupe=false</code> — non inclus dans l'analytics controller actuel.
+        </p>
+      </div>
+ 
+      <!-- Tab : Inactifs — engagementScore, lastActivityDate -->
+      <div *ngIf="activeGroupTab === 'inactifs'">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>Groupe</th>
+              <th>Membres</th>
+              <th>Actifs (7j)</th>
+              <th>Matchs ce mois</th>
+              <th>Dernière activité</th>
+              <th>Score</th>
+              <th>Statut</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let g of groupesInactifs">
+                <td><strong>{{ g.nom }}</strong></td>
+                <td>{{ g.membresCount }}</td>
+                <td>{{ g.activeMembers }}</td>
+                <td>{{ g.matchesThisMonth }}</td>
+                <td class="muted">{{ g.lastActivityDate ?? '—' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusClass(g.status)">
+                    {{ g.engagementScore }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusClass(g.status)">
+                    {{ getStatusLabel(g.status) }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="groupesInactifs.length === 0">
+                <td colspan="7" class="muted" style="text-align:center;padding:2rem">
+                  Aucun groupe en alerte 🎉
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+ 
+    </div>
+ 
+    <!-- Engagement chart + Alertes -->
+    <div class="two-col" style="margin-top:1rem">
+      <!-- engagement: nom, matchesThisMonth, status -->
+      <div class="card">
+        <h2 class="card-title">Engagement — matchs ce mois par groupe</h2>
+        <div class="chart-wrap h240"><canvas id="engagementChart"></canvas></div>
+        <div class="eng-legend">
+          <span class="role-item"><span class="role-dot" style="background:#2563eb"></span>Excellent</span>
+          <span class="role-item"><span class="role-dot" style="background:#3b82f6"></span>Actif</span>
+          <span class="role-item"><span class="role-dot" style="background:#f59e0b"></span>Alerte</span>
+          <span class="role-item"><span class="role-dot" style="background:#ef4444"></span>Inactif</span>
+        </div>
+      </div>
+      <!-- Alertes dynamiques depuis données réelles -->
+      <div class="card">
+        <h2 class="card-title">Alertes &amp; signaux</h2>
+        <div class="alerts-list">
+          <div class="alert-row" *ngFor="let a of alertes" [ngClass]="getAlertClass(a.type)">
+            <div class="alert-dot"></div>
+            <div class="alert-msg">{{ a.msg }}</div>
+          </div>
+          <div class="alert-row" *ngIf="alertes.length === 0">
+            <div class="alert-msg muted">Aucune alerte active.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 5 — Géographie + Inscriptions hebdo                         -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <p class="section-label">Géographie &amp; inscriptions</p>
+    <div class="two-col">
+ 
+      <!-- cities : ville, groupesCount, membresCount, matchesCount -->
+      <div class="card">
+        <h2 class="card-title">Villes les plus actives</h2>
+        <div class="city-list">
+          <div class="city-row" *ngFor="let c of topCities">
+            <div class="city-info">
+              <span class="city-name">{{ c.ville }}</span>
+              <span class="city-meta">
+                {{ c.groupesCount }} groupes · {{ c.membresCount | number }} membres · {{ c.matchesCount | number }} matchs
+              </span>
+            </div>
+            <div class="city-bar-wrap">
+              <div class="city-bar" [style.width.%]="getCityPct(c)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- weekly : week, users, groupes -->
+      <div class="card">
+        <h2 class="card-title">Nouvelles inscriptions par semaine</h2>
+        <div class="chart-wrap h200"><canvas id="weeklyChart"></canvas></div>
+        <p class="chart-note">Barres = nouveaux utilisateurs · dernière semaine en bleu</p>
+      </div>
+ 
+    </div>
+  </section>
+ 
+  </ng-container>
+</div>

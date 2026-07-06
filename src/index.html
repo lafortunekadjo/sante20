@@ -1,31 +1,122 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <title>My2-0</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&amp;display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  
+  <meta charset="utf-8">
+
+  <!-- ── Viewport mobile-first ── -->
+  <!-- viewport-fit=cover : le contenu peut aller sous le notch / home indicator -->
+  <!-- initial-scale=1, maximum-scale=1 : empêche le double-tap zoom sur iOS -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+
+  <!-- ── PWA / App meta ── -->
+  <title>My2-0</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  <!-- ── iOS / Apple ── -->
+  <!-- Plein écran comme une vraie app native -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="My2-0">
+  <!-- Icônes iOS -->
+  <link rel="apple-touch-icon" href="/assets/icon.png">
+
+  <!-- ── Android / Chrome ── -->
+  <!-- Couleur de la barre d'adresse en mode PWA -->
+  <meta name="theme-color"
+        content="#0f172a"
+        media="(prefers-color-scheme: dark)">
+  <meta name="theme-color"
+        content="#2563eb"
+        media="(prefers-color-scheme: light)">
+  <!-- Empêche le tap delay sur Android (300ms) -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- ── Sécurité ── -->
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- ── Polices ── -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet">
+
+  <!-- ── Polyfill global pour libs Node.js (sockjs-client, stompjs) ── -->
   <script>
-    // Définit la variable 'global' pour les bibliothèques Node.js
+    // sockjs-client et stompjs utilisent 'global' (variable Node.js)
+    // Ce polyfill doit être chargé avant tous les autres scripts
     if (typeof global === 'undefined') {
       window.global = window;
     }
+    // Polyfill process pour certaines libs Node.js
+    if (typeof process === 'undefined') {
+      window.process = { env: { NODE_ENV: 'production' } };
+    }
   </script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#1976d2">
+  <!-- ── Styles critiques inline (évite le flash) ── -->
+  <style>
+    /* Chargement initial — dark par défaut pour éviter le flash blanc */
+    html { background: #0f172a; }
+    body { margin: 0; }
+
+    /* Applique la classe de thème immédiatement depuis localStorage */
+    .theme-loading { visibility: hidden; }
+  </style>
+
+  <!-- ── Script de thème — avant le rendu pour éviter le flash ── -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      var lang  = localStorage.getItem('lang') || 'fr';
+
+      // Applique sur <html> immédiatement (body pas encore disponible dans <head>
+  <base href="/">)
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.className = theme + '-theme';
+      document.documentElement.setAttribute('lang', lang);
+
+      // Applique sur <body> dès qu'il est disponible
+      function applyToBody() {
+        if (document.body) {
+          document.body.className = theme + '-theme';
+        } else {
+          document.addEventListener('DOMContentLoaded', function() {
+            document.body.className = theme + '-theme';
+          });
+        }
+      }
+      applyToBody();
+    })();
+  </script>
+
 </head>
-<body>
+
+<body class="light-theme">
+  <!-- App root -->
   <app-root></app-root>
-  <noscript>Please enable JavaScript to continue using this application.</noscript>
+
+  <!-- ── Script de détection Capacitor ── -->
+  <script>
+    // Ajoute une classe au body si on est dans Capacitor (natif)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      document.body.classList.add('capacitor-app');
+    }
+
+    // Keyboard plugin — masque la bottom nav quand le clavier est ouvert
+    if (window.Capacitor) {
+      window.addEventListener('keyboardWillShow', function() {
+        document.body.classList.add('keyboard-open');
+      });
+      window.addEventListener('keyboardWillHide', function() {
+        document.body.classList.remove('keyboard-open');
+      });
+    }
+  </script>
 </body>
 </html>

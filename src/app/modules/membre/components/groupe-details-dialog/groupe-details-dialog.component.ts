@@ -23,14 +23,15 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
-    MatTabsModule,
   TranslateModule],
   templateUrl: './groupe-details-dialog.component.html',
   styleUrl: './groupe-details-dialog.component.scss'
 })
 export class GroupeDetailsDialogComponent implements OnInit {
+  activeTab = 0;
  isResponsable: boolean = false;
  isCandidat: boolean = false;
+ hasGroup: boolean=false;
   constructor(
     public dialogRef: MatDialogRef<GroupeDetailsDialogComponent>,
     private router: Router, 
@@ -39,7 +40,7 @@ export class GroupeDetailsDialogComponent implements OnInit {
      private matchRequestService: MatchRequestService,
      private snackBar: MatSnackBar,
      private sanitizer: DomSanitizer,
-    @Inject(MAT_DIALOG_DATA) public data: { groupe: GroupePublic }
+    @Inject(MAT_DIALOG_DATA) public data: { groupe: any }
   ) {}
 
   close(): void {
@@ -54,6 +55,7 @@ export class GroupeDetailsDialogComponent implements OnInit {
    ngOnInit(): void {
     this.isResponsable = this.authService.isResponsable();
     this.isCandidat = this.authService.isCandidat();
+    this.hasGroup = !this.authService.isAuthenticated();
   }
 
    /**

@@ -2,7 +2,7 @@
   <div class="navbar-content">
     <!-- Menu toggle + Logo -->
     <div class="navbar-brand">
-      <button 
+      <!-- <button 
         mat-icon-button 
         [class.onboarding-highlight]="(onboardingService.step$ | async) === 'OPEN_MENU'"
         class="menu-toggle-btn"
@@ -16,17 +16,17 @@
           <p> et gérer votre groupe !</p>
            <span class="btn-skip" (click)="skipOnboarding($event)">Fermer</span>
         </div>
-      </button>
+      </button> -->
       
       <!-- Logo interactif -->
       <div class="app-logo" (click)="router.navigate(['/'])">
-       <img src="assets/images/LOGO.png"
+       <img src="assets/images/logo3.png"
           alt="my2-0" 
           class="logo-image">
         
-        <div class="app-text-container">
+        <!-- <div class="app-text-container">
           <span class="app-title">{{ 'app.name' | translate }}</span>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -83,7 +83,7 @@
           <span>{{ 'auth.login' | translate }}</span>
         </button>
         
-        <button 
+        <!-- <button 
           mat-flat-button 
           [class.onboarding-highlight]="(onboardingService.step$ | async) === 'CREATE_ACCOUNT'"
           color="accent"
@@ -96,7 +96,7 @@
             <p>pour commencer l'aventure My2-0 !</p>
             <span class="btn-skip" (click)="skipOnboarding($event)">Plus tard</span>
           </div>
-        </button>
+        </button> -->
       </ng-container>
 
       <!-- Boutons pour utilisateur connecté -->
@@ -119,13 +119,16 @@
           <mat-icon>{{ getThemeIcon() }}</mat-icon>
         </button>
 
+        <!-- Switcher de groupe -->
+        <app-groupe-switcher *ngIf="authService.isLoggedIn()"></app-groupe-switcher>
+
         <!-- ✅ AJOUT : Composant NotificationBell -->
         <app-notification-bell></app-notification-bell>
 
         <!-- Bouton Check-in -->
         <button 
           mat-mini-fab 
-          *ngIf="!isMembre"
+          *ngIf="isMembre"
           color="accent"
           (click)="checkIn()" 
           [disabled]="isChecking"
@@ -136,7 +139,7 @@
         </button>
 
         <!-- Menu profil -->
-        <button 
+<button 
           mat-button 
           [matMenuTriggerFor]="profileMenu"
           class="profile-btn"
@@ -146,11 +149,12 @@
               *ngIf="userProfileImage"
               [src]="userProfileImage" 
               class="profile-avatar" 
-              />
-            <div *ngIf="!userProfileImage" class="profile-avatar-icon">
-              <mat-icon>account_circle</mat-icon>
+              alt="Avatar" />
+            
+            <div *ngIf="!userProfileImage" class="profile-avatar-initials">
+              {{ (user?.username | slice:0:2) || '?' }}
             </div>
-            <!-- Indicateur de statut en ligne -->
+            
             <div class="status-indicator online" *ngIf="!isUploadingPhoto"></div>
           </div>
           <span class="profile-name">{{ user?.username || ('nav.profile' | translate) }}</span>
@@ -160,64 +164,64 @@
     </div>
   </div>
 
-  <!-- Menu déroulant profil -->
-  <mat-menu #profileMenu="matMenu" xPosition="before" class="profile-menu">
-    <div class="profile-menu-header">
-      <div class="profile-menu-avatar-container">
-        <img 
-          *ngIf="userProfileImage"
-          [src]="userProfileImage" 
-          class="profile-menu-avatar" 
-          [alt]="user?.username || 'Profile'" />
-        <div *ngIf="!userProfileImage" class="profile-menu-avatar-icon">
-          <mat-icon>account_circle</mat-icon>
+  <mat-menu #profileMenu="matMenu" xPosition="before"  class="profile-menu-custom">
+    <div class="profile-menu-header-custom" (click)="$event.stopPropagation()">
+      <div class="menu-header-avatar-zone">
+        <div class="profile-menu-avatar-container">
+          <img 
+            *ngIf="userProfileImage"
+            [src]="userProfileImage" 
+            class="profile-menu-avatar" 
+            [alt]="user?.username || 'Profile'" />
+          <div *ngIf="!userProfileImage" class="profile-menu-avatar-initials">
+            {{ (user?.username | slice:0:2) || '?' }}
+          </div>
+          <div class="status-indicator online"></div>
         </div>
-        <div class="status-indicator online"></div>
       </div>
-      <div class="profile-menu-info">
+      <div class="profile-menu-info-custom">
         <p class="profile-menu-name">{{ user?.username || 'Utilisateur' }}</p>
         <p class="profile-menu-email">{{ user?.email || '' }}</p>
-        <span class="profile-menu-role">{{ selectedRole }}</span>
+        <span class="profile-menu-role-badge" *ngIf="selectedRole">{{ getRoleDisplayName(selectedRole) }}</span>
       </div>
     </div>
 
-    <mat-divider></mat-divider>
+    <mat-divider class="menu-divider"></mat-divider>
 
-    <!-- Actions du profil -->
-    <button mat-menu-item (click)="openProfileEdit()" class="menu-item-edit">
-      <mat-icon>edit</mat-icon>
-      <span>{{ 'common.edit' | translate }} profil</span>
-    </button>
+    <div class="menu-actions-list">
+      <button mat-menu-item (click)="openProfileEdit()" class="menu-item-custom">
+        <mat-icon>account_circle</mat-icon>
+        <span>{{ 'common.edit' | translate }} profil</span>
+      </button>
 
-    <button mat-menu-item (click)="openProfileImageEdit()">
-      <mat-icon>photo_camera</mat-icon>
-      <span>Changer la photo</span>
-    </button>
+     <button mat-menu-item (click)="openVideoEdit()" class="menu-item-custom">
+        <mat-icon>photo_camera</mat-icon>
+        <span>{{ 'common.edit' | translate }} videos</span>
+      </button>
 
-    <button mat-menu-item (click)="openPasswordEdit()">
-      <mat-icon>lock</mat-icon>
-      <span>Modifier le mot de passe</span>
-    </button>
+      <!--<button mat-menu-item (click)="openPasswordEdit()" class="menu-item-custom">
+        <mat-icon>lock</mat-icon>
+        <span>Modifier le mot de passe</span>
+      </button>-->
 
-    <mat-divider></mat-divider>
+      <mat-divider class="menu-divider"></mat-divider>
 
-    <!-- Paramètres -->
-    <button mat-menu-item (click)="viewNotifications()">
-      <mat-icon>notifications</mat-icon>
-      <span>{{ 'settings.notifications' | translate }}</span>
-    </button>
+      <button mat-menu-item (click)="viewNotifications()" class="menu-item-custom">
+        <mat-icon>notifications</mat-icon>
+        <span>{{ 'settings.notifications' | translate }}</span>
+      </button>
 
-    <button mat-menu-item (click)="viewSettings()">
-      <mat-icon>settings</mat-icon>
-      <span>{{ 'nav.settings' | translate }}</span>
-    </button>
+      <button mat-menu-item (click)="viewSettings()" class="menu-item-custom">
+        <mat-icon>settings</mat-icon>
+        <span>{{ 'nav.settings' | translate }}</span>
+      </button>
 
-    <mat-divider></mat-divider>
+      <mat-divider class="menu-divider"></mat-divider>
 
-    <!-- Déconnexion -->
-    <button mat-menu-item (click)="logout()" class="logout-btn">
-      <mat-icon>exit_to_app</mat-icon>
-      <span>{{ 'nav.logout' | translate }}</span>
-    </button>
+      <button mat-menu-item (click)="logout()" class="menu-item-custom logout-btn-custom">
+        <mat-icon>exit_to_app</mat-icon>
+        <span>{{ 'nav.logout' | translate }}</span>
+      </button>
+    </div>
   </mat-menu>
 </mat-toolbar>

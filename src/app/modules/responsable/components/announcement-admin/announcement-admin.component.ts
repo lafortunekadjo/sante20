@@ -20,6 +20,7 @@ import { RoleCustomService } from '../../../../core/services/role-custom.service
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { RoleCustom } from '../../../../core/models/role-custom.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-announcement-admin',
@@ -35,7 +36,8 @@ import { AuthService } from '../../../../core/services/auth.service';
     MatOptionModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    MatTooltipModule
   ],
   templateUrl: './announcement-admin.component.html',
   styleUrls: ['./announcement-admin.component.scss']
@@ -47,9 +49,12 @@ export class AnnouncementAdminComponent implements OnInit {
   filteredAnnouncements: Announcement[] = [];
   equipes: Equipe[] = [];
   roles: RoleCustom[] = [];
+  readonly maxTextLength = 150;
+  expandedAnnouncements = new Set<number>();
 
   announcementForm!: FormGroup;
   showForm = false;
+  activeTab: 'list'|'filter'|'create' = 'list';
   isEditing = false;
   editingId: number | null = null;
 
@@ -76,6 +81,48 @@ export class AnnouncementAdminComponent implements OnInit {
     
     }
   }
+
+toggleAnnouncementStatus(actu: any): void {
+  if (!actu.id) return;
+
+  // On adapte le message de confirmation selon l'état actuel de l'annonce
+  const isCurrentlyActive = actu.active !== false;
+  const confirmMessage = isCurrentlyActive 
+    ? 'Voulez-vous vraiment désactiver cette annonce ?' 
+    : 'Voulez-vous vraiment réactiver cette annonce ?';
+
+  if (!confirm(confirmMessage)) return;
+
+  // Appel de l'unique endpoint qui gère le basculement (toggle)
+  this.announcementService.activate(actu.id).subscribe({
+    next: (response) => {
+      // Le serveur fait le toggle, on répercute simplement l'inversion côté client
+      actu.active = !isCurrentlyActive;
+      this.updateFilters();
+    },
+    error: (err) => {
+      console.error("Erreur lors du basculement de statut de l'annonce", err);
+    }
+  });
+  this.loadAnnouncements();
+}
+
+  toggleExpand(id: number | undefined): void {
+  if (!id) return;
+  if (this.expandedAnnouncements.has(id)) {
+    this.expandedAnnouncements.delete(id);
+  } else {
+    this.expandedAnnouncements.add(id);
+  }
+}
+
+isExpanded(id: number | undefined): boolean {
+  return id ? this.expandedAnnouncements.has(id) : false;
+}
+
+shouldTruncate(content: string): boolean {
+  return content ? content.length > this.maxTextLength : false;
+}
 
   initForm(): void {
     this.announcementForm = this.fb.group({

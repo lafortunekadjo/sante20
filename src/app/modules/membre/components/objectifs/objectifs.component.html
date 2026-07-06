@@ -1,200 +1,283 @@
 <div class="objectifs-container">
-  <!-- En-tête -->
-  <div class="page-header">
-    <div class="header-content">
-      <mat-icon class="header-icon">flag</mat-icon>
-      <div>
-        <h1 class="page-title">{{ 'objectives.title' | translate }}</h1>
-        <p class="page-subtitle">{{ 'objectives.subtitle' | translate }}</p>
+
+  <!-- ══ HEADER ══════════════════════════════════════════ -->
+  <div class="obj-header">
+    <div class="obj-top">
+      <div class="obj-title-group">
+        <div class="obj-icon"><mat-icon>flag</mat-icon></div>
+        <div>
+          <h1>Mes Objectifs</h1>
+          <p>Fixe tes objectifs et suis ta progression</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Bouton pour afficher/masquer le formulaire -->
-  <div class="action-bar" *ngIf="!showForm">
-    <button 
-      mat-raised-button 
-      color="primary" 
-      (click)="toggleForm()"
-      class="create-btn">
-      <mat-icon>add</mat-icon>
-      {{ 'objectives.createNew' | translate }}
-    </button>
-  </div>
-
-  <!-- Formulaire de création/modification -->
-  <mat-card class="create-card" *ngIf="showForm" [@slideDown]>
-    <mat-card-header>
-      <mat-card-title class="card-title">
+  <!-- ══ TABS ═════════════════════════════════════════════ -->
+  <div class="obj-tabs-wrapper">
+    <div class="obj-tabs-bar">
+      <button class="obj-tab" [class.active]="activeTab === 'list'" (click)="activeTab = 'list'">
+        <mat-icon>list</mat-icon>
+        <span>Mes objectifs</span>
+        <span class="obj-tab-badge" *ngIf="objectifs.length > 0">{{ objectifs.length }}</span>
+      </button>
+      <button class="obj-tab" [class.active]="activeTab === 'form'"
+              (click)="openCreateForm()">
         <mat-icon>{{ editingObjectif ? 'edit' : 'add_circle' }}</mat-icon>
-        {{ editingObjectif ? ('objectives.edit' | translate) : ('objectives.createNew' | translate) }}
-      </mat-card-title>
-    </mat-card-header>
-    
-    <mat-card-content>
-      <form [formGroup]="objectifForm" (ngSubmit)="onSubmit()" class="objectif-form">
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'objectives.type' | translate }}</mat-label>
-            <mat-select formControlName="type">
-              <mat-option value="BUTS">
-                <mat-icon class="option-icon">sports_soccer</mat-icon>
-                {{ 'objectives.types.goals' | translate }}
-              </mat-option>
-              <mat-option value="PASSES">
-                <mat-icon class="option-icon">arrow_forward</mat-icon>
-                {{ 'objectives.types.assists' | translate }}
-              </mat-option>
-              <mat-option value="PRESENCE">
-                <mat-icon class="option-icon">check_circle</mat-icon>
-                {{ 'objectives.types.attendance' | translate }}
-              </mat-option>
-              <mat-option value="CARTON">
-                <mat-icon class="option-icon">warning</mat-icon>
-                {{ 'objectives.types.cards' | translate }}
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-            <mat-error>{{ 'objectives.errors.typeRequired' | translate }}</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'objectives.targetValue' | translate }}</mat-label>
-            <input matInput type="number" formControlName="valeurCible" min="0">
-            <mat-icon matPrefix>trending_up</mat-icon>
-            <mat-hint>{{ 'objectives.targetHint' | translate }}</mat-hint>
-            <mat-error>{{ 'objectives.errors.valueRequired' | translate }}</mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="form-field-full">
-            <mat-label>{{ 'objectives.period' | translate }}</mat-label>
-            <mat-date-range-input [rangePicker]="picker">
-              <input matStartDate formControlName="dateDebut" [placeholder]="'objectives.startDate' | translate">
-              <input matEndDate formControlName="dateFin" [placeholder]="'objectives.endDate' | translate">
-            </mat-date-range-input>
-            <mat-icon matPrefix>event</mat-icon>
-            <mat-hint>{{ 'objectives.dateFormat' | translate }}</mat-hint>
-            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-date-range-picker #picker></mat-date-range-picker>
-            <mat-error>{{ 'objectives.errors.datesRequired' | translate }}</mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="form-actions">
-          <button 
-            mat-raised-button 
-            color="primary" 
-            type="submit" 
-            [disabled]="!objectifForm.valid"
-            class="submit-btn">
-            <mat-icon>{{ editingObjectif ? 'save' : 'add' }}</mat-icon>
-            {{ editingObjectif ? ('common.save' | translate) : ('objectives.create' | translate) }}
-          </button>
-          <button 
-            mat-stroked-button 
-            type="button" 
-            (click)="cancelEdit()"
-            class="cancel-btn">
-            <mat-icon>close</mat-icon>
-            {{ 'common.cancel' | translate }}
-          </button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Liste des objectifs -->
-  <div class="objectifs-section">
-    <h2 class="section-title">
-      <mat-icon>list</mat-icon>
-      {{ 'objectives.myObjectives' | translate }}
-      <span class="objectifs-count" *ngIf="objectifs.length > 0">({{ objectifs.length }})</span>
-    </h2>
-
-    <!-- État de chargement -->
-    <div *ngIf="isLoading" class="loading-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p class="loading-text">{{ 'objectives.loading' | translate }}</p>
-    </div>
-
-    <!-- Liste des objectifs -->
-    <div *ngIf="!isLoading && objectifs.length > 0" class="objectifs-grid">
-      <mat-card *ngFor="let objectif of objectifs" class="objectif-card" [ngClass]="'status-' + getObjectifStatus(objectif)">
-        <mat-card-header>
-          <div mat-card-avatar class="objectif-avatar" [ngClass]="'type-' + objectif.type.toLowerCase()">
-            <mat-icon>{{ getObjectifTypeIcon(objectif.type) }}</mat-icon>
-          </div>
-          <mat-card-title class="objectif-title">
-            {{ getObjectifTypeLabel(objectif.type) }}
-          </mat-card-title>
-          <mat-card-subtitle class="objectif-period">
-            <mat-icon class="subtitle-icon">event</mat-icon>
-            {{ objectif.dateDebut | date:'dd/MM/yyyy' }} - {{ objectif.dateFin | date:'dd/MM/yyyy' }}
-          </mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content class="objectif-content">
-          <div class="progress-info">
-            <div class="progress-values">
-              <span class="current-value">{{ objectif.valeurActuelle || 0 }}</span>
-              <span class="separator">/</span>
-              <span class="target-value">{{ objectif.valeurCible }}</span>
-            </div>
-            <div class="progress-percentage">
-              {{ getProgressBarValue(objectif) | number:'1.0-0' }}%
-            </div>
-          </div>
-
-          <mat-progress-bar 
-            [mode]="getProgressBarMode(objectif)" 
-            [value]="getProgressBarValue(objectif)"
-            [color]="getProgressBarColor(objectif)"
-            class="progress-bar">
-          </mat-progress-bar>
-
-          <div class="objectif-status" [ngClass]="getObjectifStatus(objectif)">
-            <mat-icon>{{ getObjectifStatusIcon(objectif) }}</mat-icon>
-            <span>{{ getObjectifStatusLabel(objectif) }}</span>
-          </div>
-        </mat-card-content>
-
-        <mat-card-actions class="objectif-actions">
-          <button 
-            mat-icon-button 
-            [matTooltip]="'common.share' | translate" 
-            (click)="shareObjectif(objectif)">
-            <mat-icon>share</mat-icon>
-          </button>
-          <button 
-            mat-icon-button 
-            [matTooltip]="'common.edit' | translate" 
-            (click)="editObjectif(objectif)"
-            [disabled]="isObjectifExpired(objectif) && !isObjectifCompleted(objectif)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button 
-            mat-icon-button 
-            [matTooltip]="'common.delete' | translate" 
-            color="warn" 
-            (click)="deleteObjectif(objectif)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-
-    <!-- Message si aucun objectif -->
-    <div *ngIf="!isLoading && objectifs.length === 0" class="empty-state">
-      <mat-icon class="empty-icon">flag</mat-icon>
-      <h3 class="empty-title">{{ 'objectives.noObjectives' | translate }}</h3>
-      <p class="empty-text">{{ 'objectives.noObjectivesText' | translate }}</p>
-      <button mat-raised-button color="primary" (click)="scrollToForm()">
-        <mat-icon>add</mat-icon>
-        {{ 'objectives.createObjective' | translate }}
+        <span>{{ editingObjectif ? 'Modifier' : 'Nouvel objectif' }}</span>
       </button>
     </div>
+
+    <!-- ── TAB LISTE ─────────────────────────────────────── -->
+    <div class="obj-tab-content" *ngIf="activeTab === 'list'">
+      <div class="obj-content">
+
+        <!-- Filtres rapides -->
+        <div class="list-filters" *ngIf="!isLoading && objectifs.length > 0">
+          <button class="filter-pill" [class.active]="activeListFilter === 'tous'"
+                  (click)="activeListFilter = 'tous'">
+            Tous ({{ objectifs.length }})
+          </button>
+          <button class="filter-pill" [class.active]="activeListFilter === 'personnel'"
+                  (click)="activeListFilter = 'personnel'">
+            <mat-icon>person</mat-icon> Personnels
+          </button>
+          <button class="filter-pill" [class.active]="activeListFilter === 'groupe'"
+                  (click)="activeListFilter = 'groupe'">
+            <mat-icon>groups</mat-icon> Groupe
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="obj-loading">
+          <mat-spinner diameter="44"></mat-spinner>
+          <p>Chargement…</p>
+        </div>
+
+        <!-- Grille -->
+        <div *ngIf="!isLoading && objectifsFiltres.length > 0" class="objectifs-grid">
+          <div class="objectif-card"
+               *ngFor="let o of objectifsFiltres"
+               [ngClass]="'status-' + getObjectifStatus(o)">
+
+            <!-- Scope badge -->
+            <div class="scope-badge"
+                 [style.background]="getScopeColor(o.scope) + '18'"
+                 [style.color]="getScopeColor(o.scope)">
+              <mat-icon>{{ getScopeIcon(o.scope) }}</mat-icon>
+              <span>{{ getScopeLabel(o.scope) }}</span>
+            </div>
+
+            <!-- Créé par responsable -->
+            <div class="responsable-badge" *ngIf="o.creeParResponsable">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span>Fixé par {{ o.createurNom }}</span>
+            </div>
+
+            <div class="oc-header">
+              <div class="objectif-avatar" [ngClass]="'type-' + o.type.toLowerCase()">
+                <mat-icon>{{ getTypeIcon(o.type) }}</mat-icon>
+              </div>
+              <div class="oc-title-group">
+                <h3>{{ o.titre || getTypeLabel(o.type) }}</h3>
+                <span class="oc-groupe">
+                  <mat-icon>{{ o.groupeId ? 'groups' : 'public' }}</mat-icon>
+                  {{ o.groupeNom }}
+                </span>
+                <span class="oc-period">
+                  <mat-icon>event</mat-icon>
+                  {{ o.dateDebut | date:'dd/MM/yy' }} → {{ o.dateFin | date:'dd/MM/yy' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="oc-body">
+              <div class="progress-info">
+                <div class="progress-values">
+                  <span class="current-value">{{ o.valeurActuelle }}</span>
+                  <span class="separator">/</span>
+                  <span class="target-value">{{ o.valeurCible }}</span>
+                </div>
+                <div class="progress-percentage">{{ o.pourcentage | number:'1.0-0' }}%</div>
+              </div>
+              <mat-progress-bar [value]="o.pourcentage" [color]="getProgressBarColor(o)"
+                               class="progress-bar"></mat-progress-bar>
+              <div class="objectif-status" [ngClass]="getObjectifStatus(o)">
+                <mat-icon>{{ getObjectifStatusIcon(o) }}</mat-icon>
+                <span>{{ getObjectifStatusLabel(o) }}</span>
+              </div>
+            </div>
+
+            <div class="oc-actions">
+              <button mat-icon-button matTooltip="Partager" (click)="shareObjectif(o)">
+                <mat-icon>share</mat-icon>
+              </button>
+              <!-- Ne peut modifier que ses propres objectifs -->
+              <button mat-icon-button matTooltip="Modifier"
+                      *ngIf="!o.creeParResponsable"
+                      (click)="editObjectif(o); activeTab = 'form'">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Supprimer" color="warn"
+                      *ngIf="!o.creeParResponsable"
+                      (click)="deleteObjectif(o)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vide -->
+        <div *ngIf="!isLoading && objectifsFiltres.length === 0" class="obj-empty">
+          <mat-icon>flag</mat-icon>
+          <h3>Aucun objectif</h3>
+          <p>Commence par créer ton premier objectif</p>
+          <button mat-raised-button color="primary" (click)="openCreateForm()">
+            <mat-icon>add</mat-icon>Créer un objectif
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── TAB FORMULAIRE ────────────────────────────────── -->
+    <div class="obj-tab-content" *ngIf="activeTab === 'form'">
+      <div class="obj-content">
+        <div class="obj-form-card">
+
+          <div class="obj-form-header">
+            <div class="obj-form-icon">
+              <mat-icon>{{ editingObjectif ? 'edit' : 'add_circle' }}</mat-icon>
+            </div>
+            <div>
+              <h3>{{ editingObjectif ? 'Modifier l\'objectif' : 'Nouvel objectif' }}</h3>
+              <p *ngIf="isResponsable">En tant que responsable, tu peux créer des objectifs pour tes membres</p>
+            </div>
+          </div>
+
+          <form [formGroup]="objectifForm" class="obj-form-body">
+
+            <!-- Titre (optionnel) -->
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Titre (optionnel)</mat-label>
+              <mat-icon matPrefix>title</mat-icon>
+              <input matInput formControlName="titre"
+                     placeholder="Ex: Saison 2026 — Buts">
+            </mat-form-field>
+
+            <!-- Type -->
+            <mat-form-field appearance="outline">
+              <mat-label>Type d'objectif</mat-label>
+              <mat-icon matPrefix>category</mat-icon>
+              <mat-select formControlName="type">
+                <mat-option *ngFor="let t of types" [value]="t.value">
+                  <div class="option-row">
+                    <mat-icon class="option-icon">{{ t.icon }}</mat-icon>
+                    {{ t.label }}
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-error>Requis</mat-error>
+            </mat-form-field>
+
+            <!-- Valeur cible -->
+            <mat-form-field appearance="outline">
+              <mat-label>Valeur cible</mat-label>
+              <mat-icon matPrefix>trending_up</mat-icon>
+              <input matInput type="number" formControlName="valeurCible" min="1">
+              <mat-error>Requis (min. 1)</mat-error>
+            </mat-form-field>
+
+            <!-- Période -->
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Période</mat-label>
+              <mat-icon matPrefix>event</mat-icon>
+              <mat-date-range-input [rangePicker]="picker">
+                <input matStartDate formControlName="dateDebut" placeholder="Début">
+                <input matEndDate   formControlName="dateFin"   placeholder="Fin">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-date-range-picker #picker></mat-date-range-picker>
+              <mat-error>Requis</mat-error>
+            </mat-form-field>
+
+            <!-- ── Scope : global ou par groupe ─────────────── -->
+            <div class="scope-section span-2">
+              <div class="scope-toggle-row">
+                <div class="scope-label">
+                  <mat-icon>{{ objectifForm.get('scopeGlobal')?.value ? 'public' : 'groups' }}</mat-icon>
+                  <div>
+                    <strong>{{ objectifForm.get('scopeGlobal')?.value ? 'Tous mes groupes' : 'Un groupe spécifique' }}</strong>
+                    <p>{{ objectifForm.get('scopeGlobal')?.value
+                      ? 'La progression sera calculée sur tous tes groupes'
+                      : 'La progression sera calculée uniquement sur ce groupe' }}</p>
+                  </div>
+                </div>
+                <mat-slide-toggle formControlName="scopeGlobal" color="primary">
+                  Global
+                </mat-slide-toggle>
+              </div>
+
+              <!-- Sélecteur de groupe si pas global -->
+              <mat-form-field appearance="outline"
+                              *ngIf="!objectifForm.get('scopeGlobal')?.value && mesGroupes.length > 1">
+                <mat-label>Groupe cible</mat-label>
+                <mat-icon matPrefix>groups</mat-icon>
+                <mat-select formControlName="groupeId">
+                  <mat-option *ngFor="let g of mesGroupes" [value]="g.groupeId">
+                    {{ g.nom }}
+                  </mat-option>
+                </mat-select>
+                <mat-error>Requis</mat-error>
+              </mat-form-field>
+            </div>
+
+            <!-- ── Responsable : pour tous les membres ? ─────── -->
+            <div class="scope-section span-2" *ngIf="isResponsable">
+              <div class="scope-toggle-row responsable">
+                <div class="scope-label">
+                  <mat-icon>admin_panel_settings</mat-icon>
+                  <div>
+                    <strong>Objectif pour les membres</strong>
+                    <p>{{ objectifForm.get('pourTousMembres')?.value
+                      ? 'Sera créé pour tous les membres du groupe'
+                      : 'Objectif personnel uniquement' }}</p>
+                  </div>
+                </div>
+                <mat-slide-toggle formControlName="pourTousMembres" color="accent">
+                  Tous les membres
+                </mat-slide-toggle>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Description (optionnel)</mat-label>
+              <mat-icon matPrefix>notes</mat-icon>
+              <textarea matInput formControlName="description" rows="2"
+                        placeholder="Contexte, motivation…"></textarea>
+            </mat-form-field>
+
+          </form>
+
+          <div class="obj-form-actions">
+            <button mat-raised-button color="primary"
+                    [disabled]="!objectifForm.valid || isSaving"
+                    (click)="onSubmit()">
+              <mat-spinner diameter="18" *ngIf="isSaving"></mat-spinner>
+              <mat-icon *ngIf="!isSaving">{{ editingObjectif ? 'save' : 'add' }}</mat-icon>
+              {{ editingObjectif ? 'Enregistrer' : 'Créer l\'objectif' }}
+            </button>
+            <button mat-stroked-button (click)="cancelEdit()">
+              <mat-icon>close</mat-icon>Annuler
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
-  <app-publicite-banner position="FOOTER" [ville]="userVille" ></app-publicite-banner>
+
+  <app-publicite-banner position="FOOTER" [ville]="userVille"></app-publicite-banner>
 </div>

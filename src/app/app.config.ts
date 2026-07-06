@@ -30,9 +30,9 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor])
     ),
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(), // S'active uniquement en mode production (nécessaire sur mobile)
-      registrationStrategy: 'registerWhenStable:30000' // S'enregistre dès que l'app est stable
+     provideServiceWorker('sw-push.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
     }),
     provideAnimations(),
     provideNativeDateAdapter(), 

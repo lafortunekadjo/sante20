@@ -22,7 +22,7 @@ export class MembreService {
   }
 
   // Membres du groupe
-  getGroupMembers(): Observable<Membre[]> {
+  getGroupMembers(): Observable<any[]> {
     return this.http.get<Membre[]>(`${environment.apiUrl}/groupes/membre1`).pipe(
       catchError(err => {
         console.error('Erreur lors de la récupération des membres:', err);
@@ -137,7 +137,6 @@ export class MembreService {
       equipe: membre.equipe?.id || null,
       id:id,
       // groupe: membre.groupe.id,
-      user: membre.user?.id || null,
       active: true,
       sexe:membre.sexe,
 
@@ -145,7 +144,6 @@ export class MembreService {
 
 
     };
-    console.log(payload)
     return this.http.put<Membre>(`${this.apiUrl}/${id}`, payload);
   }
 

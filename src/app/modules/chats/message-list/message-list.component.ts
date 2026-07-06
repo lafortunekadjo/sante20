@@ -21,6 +21,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { TranslateModule } from '@ngx-translate/core';
 import { MessageInputComponent } from '../message-input/message-input.component';
 import { MessageItemComponent } from '../message-item/message-item.component';
+import { AuthService } from '../../../core/services/auth.service';
+import { CryptoService } from '../../../core/services/crypto.service';
 
 
 @Component({
@@ -61,15 +63,34 @@ export class MessageListComponent implements AfterViewChecked, OnChanges {
   private shouldScrollToBottom = false;
   private lastMessageCount = 0;
 
+  constructor(
+    private authService: AuthService,
+    private cryptoService: CryptoService
+  ) {}
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['messages']) {
+    if (changes['messages'] && this.messages.length > 0) {
       const currentLength = this.messages.length;
-      // Scroll vers le bas si un nouveau message a été ajouté
       if (currentLength > this.lastMessageCount) {
         this.shouldScrollToBottom = true;
+        // Déchiffrer les nouveaux messages
+        this.decryptNewMessages(this.lastMessageCount);
       }
       this.lastMessageCount = currentLength;
     }
+  }
+
+  private decryptNewMessages(fromIndex: number): void {
+    const toDecrypt = this.messages.slice(fromIndex);
+    toDecrypt.forEach(async (msg, i) => {
+      if (msg.content && !msg.isSystemMessage) {
+        const decrypted = await this.cryptoService.decrypt(msg.content, msg.conversationId);
+        if (decrypted !== msg.content) {
+          // Mutation locale uniquement — pas de side-effect sur l'original
+          this.messages[fromIndex + i] = { ...msg, content: decrypted };
+        }
+      }
+    });
   }
 
   ngAfterViewChecked(): void {
@@ -106,8 +127,7 @@ export class MessageListComponent implements AfterViewChecked, OnChanges {
   }
 
   getCurrentUserId(): number {
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    return user.id;
+    return this.authService.getUserId() ?? 0;
   }
 
   isOwnMessage(message: Message): boolean {

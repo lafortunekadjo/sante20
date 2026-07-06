@@ -1,221 +1,142 @@
-// ============================================================
-// PUSH NOTIFICATION SERVICE - Angular Standalone Corrigé
-// Fichier: src/app/core/services/push-notification.service.ts
-// ============================================================
-
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
-import { environment } from '../../environment';
+import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import {
+  PushNotifications,
+  Token,
+  ActionPerformed,
+  PushNotificationSchema
+} from '@capacitor/push-notifications';
+import { AuthService } from './auth.service';
+import { environment } from '../../../app/environment';
 
-export interface PushSubscriptionData {
-  endpoint: string;
-  keys: {
-    p256dh: string;
-    auth: string;
-  };
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PushNotificationService {
-  private readonly API_URL = `${environment.apiUrl}/push`;
-  private readonly VAPID_PUBLIC_KEY = environment.vapidPublicKey;
 
-  private swRegistration: ServiceWorkerRegistration | null = null;
-  private isSubscribedSubject = new BehaviorSubject<boolean>(false);
-  public isSubscribed$ = this.isSubscribedSubject.asObservable();
+  private readonly apiUrl = environment.apiUrl;
 
-  // Mode Standalone : Injection moderne
-  private http = inject(HttpClient);
+  constructor(
+    private http:        HttpClient,
+    private router:      Router,
+    private authService: AuthService
+  ) {}
 
-  constructor() {
-    this.initServiceWorker();
+  // ── Appeler au login ──────────────────────────────────────
+  async init(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      console.log('[Push] Web — FCM non disponible');
+      return;
+    }
+    await this.requestPermission();
+    this.registerListeners();
   }
 
-  // ============================================================
-  // INITIALISATION
-  // ============================================================
+  // ── Demander la permission ────────────────────────────────
+  private async requestPermission(): Promise<void> {
+    let perm = await PushNotifications.checkPermissions();
 
-  /**
-   * Initialiser le Service Worker pour les pushs
-   */
-  private async initServiceWorker(): Promise<void> {
-    if (!this.isPushSupported()) {
-      console.warn('[Push] Les notifications push ne sont pas supportées par ce navigateur.');
+    if (perm.receive === 'prompt') {
+      perm = await PushNotifications.requestPermissions();
+    }
+
+    if (perm.receive !== 'granted') {
+      console.warn('[Push] Permission refusée par l\'utilisateur');
       return;
     }
 
-    try {
-      // Attente du Service Worker configuré globalement par 'provideServiceWorker'
-      this.swRegistration = await navigator.serviceWorker.ready;
-      console.log('[Push] Service Worker prêt et intercepté avec succès.');
-
-      // Vérifier si cet appareil possède déjà un abonnement actif auprès du navigateur
-      const subscription = await this.swRegistration.pushManager.getSubscription();
-      this.isSubscribedSubject.next(!!subscription);
-      
-      if (subscription) {
-        console.log('[Push] L\'utilisateur possède déjà un abonnement actif sur ce terminal.');
-      }
-    } catch (error) {
-      console.error('[Push] Erreur lors de l\'initialisation du Service Worker:', error);
-    }
+    await PushNotifications.register();
   }
 
-  // ============================================================
-  // GESTION DE L'ABONNEMENT
-  // ============================================================
+  // ── Listeners FCM ─────────────────────────────────────────
+  private registerListeners(): void {
 
-  /**
-   * Demander la permission et abonner l'appareil aux notifications push
-   */
- /**
-   * Demander la permission et abonner l'appareil aux notifications push
-   */
-  public async subscribeToNotifications(): Promise<PushSubscription | null> {
-    // CORRECTION : Si ce n'est pas encore prêt, on attend activement le Service Worker
-    if (!this.swRegistration) {
-      console.log('[Push] En attente de l\'initialisation du Service Worker...');
-      try {
-        this.swRegistration = await navigator.serviceWorker.ready;
-      } catch (err) {
-        console.error('[Push] Impossible d\'attendre le Service Worker:', err);
-        return null;
+    // 1. Token reçu → envoyer au backend
+    PushNotifications.addListener('registration', (token: Token) => {
+      console.log('[Push] Token FCM reçu');
+      this.saveTokenToBackend(token.value);
+    });
+
+    // 2. Erreur
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error('[Push] Erreur enregistrement FCM:', err);
+    });
+
+    // 3. Notification reçue — app OUVERTE (foreground)
+    // Ne pas afficher de notification système — Angular gère
+    PushNotifications.addListener(
+      'pushNotificationReceived',
+      (notification: PushNotificationSchema) => {
+        console.log('[Push] Notif foreground:', notification.title);
+        // Optionnel : mettre à jour le badge de la cloche sans recharger
+        // this.notifBadgeService.increment();
       }
-    }
+    );
 
-    try {
-      // Étape 1 : Demande de permission native sur le téléphone
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.warn('[Push] L\'utilisateur a refusé les notifications.');
-        return null;
+    // 4. Utilisateur tape la notif — app FERMÉE ou arrière-plan
+    PushNotifications.addListener(
+      'pushNotificationActionPerformed',
+      (action: ActionPerformed) => {
+        console.log('[Push] Notif tapée:', action.notification.data);
+        this.handleTap(action.notification.data);
       }
-
-      // Étape 2 : Création du Uint8Array pour la clé publique VAPID
-      const convertedKey = this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY);
-
-      // Étape 3 : Création de la souscription auprès du serveur de push
-      const options: PushSubscriptionOptionsInit = {
-        userVisibleOnly: true,
-        applicationServerKey: convertedKey.buffer as ArrayBuffer
-      };
-
-      const subscription = await this.swRegistration.pushManager.subscribe(options);
-      console.log('[Push] Nouvelle souscription générée avec succès sur l\'appareil.');
-
-      // Étape 4 : Extraction et conversion des clés de chiffrement pour ton Backend
-      const p256dhBuffer = subscription.getKey('p256dh');
-      const authBuffer = subscription.getKey('auth');
-
-      if (!p256dhBuffer || !authBuffer) {
-        throw new Error('Impossible de récupérer les clés de chiffrement de la souscription.');
-      }
-
-      const subscriptionData: PushSubscriptionData = {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: this.arrayBufferToBase64(p256dhBuffer),
-          auth: this.arrayBufferToBase64(authBuffer)
-        }
-      };
-
-      // Étape 5 : Transmission au backend
-      await this.saveSubscriptionOnBackend(subscriptionData);
-      
-      this.isSubscribedSubject.next(true);
-      return subscription;
-
-    } catch (error) {
-      console.error('[Push] Erreur lors du processus d\'abonnement:', error);
-      return null;
-    }
+    );
   }
 
-  /**
-   * Envoyer les données de l'abonnement du téléphone au backend
-   */
-  private saveSubscriptionOnBackend(subscriptionData: PushSubscriptionData): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.http.post<void>(`${this.API_URL}/subscribe`, subscriptionData).subscribe({
-        next: () => {
-          console.log('[Push] Token de l\'appareil enregistré avec succès sur le serveur.');
-          resolve();
-        },
-        error: (err) => {
-          console.error('[Push] Erreur lors de la sauvegarde du token sur le serveur:', err);
-          reject(err);
-        }
-      });
+  // ── Sauvegarder le token ──────────────────────────────────
+  private saveTokenToBackend(token: string): void {
+    const userId = this.authService.getUserId();
+    if (!userId) return;
+
+    this.http.post(`${this.apiUrl}/notifications/fcm-token`, {
+      userId,
+      token,
+      platform: 'ANDROID'
+    }).subscribe({
+      next: () => console.log('[Push] Token FCM sauvegardé'),
+      error: (e) => console.error('[Push] Erreur save token:', e)
     });
   }
 
-  // ============================================================
-  // VÉRIFICATIONS & REQUÊTES NATIVES
-  // ============================================================
+  // ── Supprimer le token au logout ─────────────────────────
+  async removeFcmToken(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
 
-  public isPushSupported(): boolean {
-    return 'serviceWorker' in navigator && 'PushManager' in window;
+    const userId = this.authService.getUserId();
+    if (!userId) return;
+
+    // Supprimer les notifs affichées
+    await PushNotifications.removeAllDeliveredNotifications();
+
+    // Supprimer le token côté backend
+    this.http.delete(`${this.apiUrl}/notifications/fcm-token/${userId}`)
+      .subscribe({ error: (e) => console.error('[Push] Erreur remove token:', e) });
   }
 
-  public isNotificationGranted(): boolean {
-    return 'Notification' in window && Notification.permission === 'granted';
-  }
+  // ── Navigation selon le type de notif ────────────────────
+  private handleTap(data: Record<string, string>): void {
+    if (!data) return;
 
-  // ============================================================
-  // CONVERSIONS BINAIRES (Clés VAPID)
-  // ============================================================
+    const routes: Record<string, string> = {
+      'GROUPE_INVITATION':      '/responsable/invitations',
+      'GROUPE_NEW_MEMBER':      '/responsable/invitations',
+      'MATCH_NEW':              '/responsable/matchs',
+      'MATCH_REMINDER':         '/responsable/matchs',
+      'MATCH_RESULT':           '/responsable/matchs',
+      'SANCTION_NEW':           '/responsable/sanctions',
+      'SANCTION_REMINDER':      '/responsable/sanctions',
+      'COTISATION_REMINDER':    '/responsable/finances/dashboard',
+      'COTISATION_OVERDUE':     '/responsable/finances/dashboard',
+      'SYSTEM_ANNOUNCEMENT':    '/actualites',
+      'SOCIAL_BIRTHDAY':        '/membre',
+    };
 
-  private urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
-  }
-
-  // ============================================================
-  // TEST LOCAL
-  // ============================================================
-
-  /**
-   * Envoyer une notification de test (interception locale par le SW)
-   */
-  async sendTestNotification(): Promise<void> {
-    if (!this.isNotificationGranted()) {
-      console.warn('[Push] Permission non accordée');
-      return;
-    }
-
-    if (this.swRegistration) {
-      // Casté en 'any' pour éviter les restrictions de l'interface NotificationOptions sur Desktop (vibrate, badge, data)
-      const notificationOptions: any = {
-        body: 'Ceci est une notification de test 🎉',
-        icon: 'assets/icons/icon-192x192.png',
-        badge: 'assets/icons/icon-72x72.png',
-        vibrate: [100, 50, 100],
-        data: { url: '/' }
-      };
-
-      await this.swRegistration.showNotification('Test My2-0', notificationOptions);
+    const route = routes[data['type']];
+    if (route) {
+      this.router.navigate([route]);
+    } else {
+      // Par défaut → page notifications
+      this.router.navigate(['/notifications']);
     }
   }
 }

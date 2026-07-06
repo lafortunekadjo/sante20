@@ -20,6 +20,7 @@ import { Equipe } from '../../../../core/models/groupe.model copy';
 import { GeneralService } from '../../../../core/services/general.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { MatMenuModule } from '@angular/material/menu';
 
 interface TeamColor {
   name: string;
@@ -45,7 +46,8 @@ interface TeamColor {
     MatDialogModule,
     MatTooltipModule,
     MatSnackBarModule,
-    TranslateModule
+    TranslateModule,
+    MatMenuModule
   ],
   animations: [
     trigger('fadeIn', [
@@ -98,6 +100,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
   
   isLoading = true;
   showCreateRow = false;
+  activeTab: 'teams'|'unassigned'|'create' = 'teams';
   searchQuery = '';
   
   newEquipe: Equipe & { couleur?: string } = { id: 0, nom: '', couleur: '' };

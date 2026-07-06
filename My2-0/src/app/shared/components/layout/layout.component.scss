@@ -1,0 +1,206 @@
+@import '../../../../variables';
+
+// ===== CONTAINER PRINCIPAL =====
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--background-secondary);
+}
+
+// ===== LAYOUT PRINCIPAL =====
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  margin-top: $navbar-height;
+
+  @include mobile {
+    margin-top: $navbar-height-mobile;
+  }
+}
+
+// ===== OVERLAY MOBILE =====
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1065;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  &.active {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+// ===== SIDEBAR (Correction du fond transparent) =====
+.sidebar {
+  width: $sidebar-width;
+  // On force l'opacité totale avec var(--surface-card) ou blanc pur
+  background-color: var(--surface-card) !important;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1070;
+  position: relative;
+
+  @include mobile {
+    position: fixed;
+    left: -$sidebar-width;
+    top: 0;
+    bottom: 0;
+    // CORRECTIF : Fond opaque garanti sur mobile pour ne pas voir le contenu derrière
+    background-color: var(--surface-card) !important; 
+    box-shadow: 10px 0 25px rgba(0,0,0,0.15);
+    
+    &.open {
+      left: 0;
+    }
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 15px 12px;
+    
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+
+    &::-webkit-scrollbar { width: 0px; background: transparent; }
+    scrollbar-width: none;
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+    background: var(--surface-hover);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+}
+
+// ===== AMÉLIORATION DES ITEMS DE NAVIGATION =====
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  margin: 4px 8px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  min-height: 48px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+
+  mat-icon {
+    margin-right: 12px;
+    font-size: 22px;
+    color: var(--primary-color); // Icônes colorées pour plus de vie
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  &:hover {
+    background-color: var(--surface-hover);
+    transform: translateX(4px);
+  }
+
+  &.active {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    
+    span, mat-icon { color: var(--primary-color); }
+
+    .nav-indicator {
+      position: absolute;
+      left: -8px; // Aligné sur le bord du nav-item
+      top: 15%;
+      height: 70%;
+      width: 4px;
+      background-color: var(--primary-color);
+      border-radius: 0 4px 4px 0;
+    }
+  }
+}
+
+// ===== SECTIONS TITRES =====
+.nav-section {
+  margin-bottom: 20px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    padding: 0 20px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+
+    mat-icon {
+      font-size: 16px;
+      margin-right: 8px;
+    }
+  }
+}
+
+// ===== CARD UTILISATEUR (Footer) =====
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--surface-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover { background: var(--surface-hover); }
+
+  .user-avatar {
+    position: relative;
+    margin-right: 12px;
+    
+    .avatar-image, .avatar-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    
+    .user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .user-role { font-size: 11px; color: var(--primary-color); }
+  }
+}
+
+// ===== CONTENU PRINCIPAL =====
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--background-primary);
+  padding: 20px;
+
+  @include mobile { padding: 15px; }
+}

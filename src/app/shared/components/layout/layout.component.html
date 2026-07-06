@@ -1,123 +1,195 @@
-<div class="app-container">
-  <app-navbar (toggleMenu)="toggleSidebar()"></app-navbar>
+<div class="app-container" [class.no-sidebar]="!isLoggedIn">
 
-  <div class="main-layout" [class.no-sidebar]="!authService.isLoggedIn()">
-    
-    <div *ngIf="authService.isLoggedIn()"
-      class="sidebar-overlay" 
-      [class.active]="sidebarOpen && isMobile"
-      (click)="closeSidebar()">
+  <!-- ══════════════════════════════════════════════════════
+       NAVBAR — Desktop full / Mobile compact
+  ══════════════════════════════════════════════════════ -->
+  <header class="app-header" [class.with-safe-area]="isCapacitor">
+
+    <!-- Mobile header -->
+    <div class="mobile-header">
+      <div class="mobile-header-left">
+        <img src="assets/images/logo3.png" alt="My2-0" class="mobile-logo"
+             (click)="router.navigate(['/'])">
+      </div>
+      <div class="mobile-header-right">
+
+        <!-- NON CONNECTÉ : boutons login + register -->
+        <ng-container *ngIf="!isLoggedIn">
+          <button mat-icon-button class="header-icon-btn"
+                  (click)="router.navigate(['/login'])"
+                  matTooltip="Connexion">
+            <mat-icon>login</mat-icon>
+          </button>
+          <button mat-flat-button class="mobile-register-btn"
+                  (click)="router.navigate(['/signup'])">
+            <mat-icon>person_add</mat-icon>
+            <span>S'inscrire</span>
+          </button>
+        </ng-container>
+
+        <!-- CONNECTÉ : notifs + check-in + avatar -->
+        <ng-container *ngIf="isLoggedIn">
+          <!-- Switcher de groupe mobile -->
+          <app-groupe-switcher></app-groupe-switcher>
+
+          <app-notification-bell></app-notification-bell>
+
+          <!-- Check-in : PAS de matMenuTriggerFor, action directe -->
+          <button
+            mat-mini-fab
+            color="accent"
+            (click)="checkIn()"
+            [disabled]="isChecking"
+            class="check-in-btn"
+            [matTooltip]="'nav.checkIn' | translate">
+            <mat-spinner *ngIf="isChecking" diameter="24"></mat-spinner>
+            <mat-icon *ngIf="!isChecking">check_circle</mat-icon>
+          </button>
+
+          <!-- Avatar → ouvre le menu profil -->
+          <button mat-button class="mobile-avatar-btn"
+                  [matMenuTriggerFor]="mobileProfileMenu">
+            <div class="mobile-avatar" [style.background]="avatarBg">
+              <img *ngIf="userProfileImage" [src]="userProfileImage" alt="avatar">
+              <span *ngIf="!userProfileImage">{{ userInitials }}</span>
+              <div class="online-dot"></div>
+            </div>
+          </button>
+        </ng-container>
+
+      </div>
     </div>
 
-    <aside *ngIf="authService.isLoggedIn()"
-      class="sidebar"
-      [class.open]="sidebarOpen"
-      [class.mobile]="isMobile">
+    <!-- Desktop navbar (composant existant) -->
+    <app-navbar class="hide-mobile"
+                (toggleMenu)="toggleSidebar()">
+    </app-navbar>
+
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+       LAYOUT PRINCIPAL
+  ══════════════════════════════════════════════════════ -->
+  <div class="main-layout" [class.no-sidebar]="!isLoggedIn">
+
+    <!-- ── Overlay sidebar mobile ───────────────────────── -->
+    <div class="sidebar-overlay"
+         [class.active]="sidebarOpen && !isMobile && isMobileSize"
+         (click)="closeSidebar()">
+    </div>
+
+    <!-- ── Sidebar desktop ──────────────────────────────── -->
+    <aside class="sidebar hide-mobile"
+           *ngIf="isLoggedIn"
+           [class.open]="sidebarOpen"
+           [class.collapsed]="sidebarCollapsed">
+
+      <!-- Toggle collapse (desktop) -->
+      <button class="sidebar-collapse-btn" (click)="toggleCollapse()"
+              [matTooltip]="sidebarCollapsed ? 'Développer' : 'Réduire'"
+              matTooltipPosition="right">
+        <mat-icon>{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
 
       <nav class="sidebar-nav" [class.loading]="isLoadingMenus">
-        
+
         <div *ngIf="isLoadingMenus" class="sidebar-loading">
-          <mat-spinner diameter="32"></mat-spinner>
-          <span>{{ 'common.loading' | translate }}...</span>
+          <mat-spinner diameter="28"></mat-spinner>
         </div>
 
         <ng-container *ngIf="!isLoadingMenus">
           <mat-accordion multi="true" displayMode="flat">
 
+            <!-- Menu principal -->
             <mat-expansion-panel class="menu-group-panel" [expanded]="true" *ngIf="!isPartenaire">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>home</mat-icon>
-                  <span>{{ 'nav.mainMenu' | translate }}</span>
+                  <span *ngIf="!sidebarCollapsed">{{ 'nav.mainMenu' | translate }}</span>
                 </mat-panel-title>
               </mat-expansion-panel-header>
-
               <div class="submenu-container">
-                <a routerLink="/home" routerLinkActive="active" class="nav-item">
+                <a routerLink="/home" routerLinkActive="active" class="nav-item" (click)="closeSidebar()"
+                   [matTooltip]="sidebarCollapsed ? ('admin.home' | translate) : ''"
+                   matTooltipPosition="right">
                   <mat-icon>home</mat-icon>
-                  <span>{{ 'admin.home' | translate }}</span>
+                  <span *ngIf="!sidebarCollapsed">{{ 'admin.home' | translate }}</span>
                 </a>
-
-                <a *ngFor="let menu of menusCommuns" [routerLink]="menu.route" routerLinkActive="active" class="nav-item">
-                  <mat-icon>{{ menu.icone }}</mat-icon>
-                  <span>{{ 'menu.items.' + menu.code | translate }}</span>
-                </a>
+                <ng-container *ngFor="let menu of menusCommuns">
+                  <a *ngIf="menu.route"
+                     [routerLink]="menu.route"
+                     routerLinkActive="active"
+                     class="nav-item"
+                     (click)="closeSidebar()"
+                     [matTooltip]="sidebarCollapsed ? ('menu.items.' + menu.code | translate) : ''"
+                     matTooltipPosition="right">
+                    <mat-icon>{{ menu.icone }}</mat-icon>
+                    <span *ngIf="!sidebarCollapsed">{{ 'menu.items.' + menu.code | translate }}</span>
+                  </a>
+                  <a *ngIf="!menu.route"
+                     (click)="handleMenuAction(menu.code); closeSidebar()"
+                     class="nav-item"
+                     style="cursor:pointer"
+                     [matTooltip]="sidebarCollapsed ? ('menu.items.' + menu.code | translate) : ''"
+                     matTooltipPosition="right">
+                    <mat-icon>{{ menu.icone }}</mat-icon>
+                    <span *ngIf="!sidebarCollapsed">{{ 'menu.items.' + menu.code | translate }}</span>
+                  </a>
+                </ng-container>
               </div>
             </mat-expansion-panel>
 
+            <!-- Admin -->
             <mat-expansion-panel class="menu-group-panel admin-panel" *ngIf="isAdmin">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>admin_panel_settings</mat-icon>
-                  <span>{{ 'nav.administration' | translate }}</span>
+                  <span *ngIf="!sidebarCollapsed">{{ 'nav.administration' | translate }}</span>
                 </mat-panel-title>
               </mat-expansion-panel-header>
-
               <div class="submenu-container">
-                <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
-                  <mat-icon>dashboard</mat-icon>
-                  <span>{{ 'admin.dashboard' | translate }}</span>
-                </a>
-                <a routerLink="/admin/groupes" routerLinkActive="active" class="nav-item">
-                  <mat-icon>group</mat-icon>
-                  <span>{{ 'admin.groups' | translate }}</span>
-                </a>
-                  <a routerLink="/admin/stades" routerLinkActive="active" class="nav-item">
-                  <mat-icon>group</mat-icon>
-                  <span>{{ 'admin.stades' | translate }}</span>
-                </a>
-                <a routerLink="/admin/utilisateurs" routerLinkActive="active" class="nav-item">
-                  <mat-icon>person</mat-icon>
-                  <span>{{ 'admin.users' | translate }}</span>
-                </a>
-                <a routerLink="/admin/partenaires" routerLinkActive="active" class="nav-item">
-                  <mat-icon>business</mat-icon>
-                  <span>{{ 'admin.partenaires' | translate }}</span>
-                </a>
-                <a routerLink="/admin/publicites" routerLinkActive="active" class="nav-item">
-                  <mat-icon>ads_click</mat-icon>
-                  <span>{{ 'admin.publicites.publicites' | translate }}</span>
-                </a>
+                <a routerLink="/admin/dashboard"    routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>dashboard</mat-icon><span *ngIf="!sidebarCollapsed">{{ 'admin.dashboard' | translate }}</span></a>
+                <a routerLink="/admin/groupes"      routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>group</mat-icon><span *ngIf="!sidebarCollapsed">{{ 'admin.groups' | translate }}</span></a>
+                <a routerLink="/admin/utilisateurs" routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>person</mat-icon><span *ngIf="!sidebarCollapsed">{{ 'admin.users' | translate }}</span></a>
+                <a routerLink="/admin/partenaires"  routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>business</mat-icon><span *ngIf="!sidebarCollapsed">{{ 'admin.partenaires' | translate }}</span></a>
+                <a routerLink="/admin/publicites"   routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>ads_click</mat-icon><span *ngIf="!sidebarCollapsed">{{ 'admin.publicites.publicites' | translate }}</span></a>
               </div>
             </mat-expansion-panel>
 
+            <!-- Partenaire -->
             <mat-expansion-panel class="menu-group-panel" *ngIf="isPartenaire">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>handshake</mat-icon>
-                  <span>Espace Partenaire</span>
+                  <span *ngIf="!sidebarCollapsed">Espace Partenaire</span>
                 </mat-panel-title>
               </mat-expansion-panel-header>
-
               <div class="submenu-container">
-                <a routerLink="/partenaire/dashboard" routerLinkActive="active" class="nav-item">
-                  <mat-icon>dashboard</mat-icon>
-                  <span>Tableau de bord</span>
-                </a>
-                <a routerLink="/partenaire/entreprise" routerLinkActive="active" class="nav-item">
-                  <mat-icon>store</mat-icon>
-                  <span>Mon Entreprise</span>
-                </a>
-                <a routerLink="/partenaire/publicite" routerLinkActive="active" class="nav-item">
-                  <mat-icon>campaign</mat-icon>
-                  <span>Mes Publicités</span>
-                </a>
+                <a routerLink="/partenaire/dashboard" routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>dashboard</mat-icon><span *ngIf="!sidebarCollapsed">Tableau de bord</span></a>
+                <a routerLink="/partenaire/entreprise" routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>store</mat-icon><span *ngIf="!sidebarCollapsed">Mon Entreprise</span></a>
+                <a routerLink="/partenaire/publicite"  routerLinkActive="active" class="nav-item" (click)="closeSidebar()"><mat-icon>campaign</mat-icon><span *ngIf="!sidebarCollapsed">Mes Publicités</span></a>
               </div>
             </mat-expansion-panel>
 
+            <!-- Responsable — catégories dynamiques -->
             <ng-container *ngIf="isResponsable && userHasGroup">
               <mat-expansion-panel class="menu-group-panel" *ngFor="let categorie of menuCategories">
                 <mat-expansion-panel-header>
                   <mat-panel-title>
                     <mat-icon>{{ categorie.icone }}</mat-icon>
-                    <span>{{ 'menu.categories.' + categorie.code | translate }}</span>
+                    <span *ngIf="!sidebarCollapsed">{{ 'menu.categories.' + categorie.code | translate }}</span>
                   </mat-panel-title>
                 </mat-expansion-panel-header>
-
                 <div class="submenu-container">
-                  <a *ngFor="let menu of categorie.menus" [routerLink]="menu.route" routerLinkActive="active" class="nav-item">
+                  <a *ngFor="let menu of categorie.menus"
+                     [routerLink]="menu.route"
+                     routerLinkActive="active"
+                     class="nav-item"
+                     (click)="closeSidebar()"
+                     [matTooltip]="sidebarCollapsed ? ('menu.items.' + menu.code | translate) : ''"
+                     matTooltipPosition="right">
                     <mat-icon>{{ menu.icone }}</mat-icon>
-                    <span>{{ 'menu.items.' + menu.code | translate }}</span>
+                    <span *ngIf="!sidebarCollapsed">{{ 'menu.items.' + menu.code | translate }}</span>
                   </a>
                 </div>
               </mat-expansion-panel>
@@ -127,23 +199,89 @@
 
           <div *ngIf="!userHasGroup && !isAdmin && !isPartenaire" class="no-groupe-message info-box">
             <mat-icon>info_outline</mat-icon>
-            <div class="message-content">
+            <div class="message-content" *ngIf="!sidebarCollapsed">
               <h4>{{ 'menu.messages.no_group' | translate }}</h4>
               <p>{{ 'menu.messages.no_group_text' | translate }}</p>
             </div>
           </div>
-
         </ng-container>
       </nav>
 
       <div class="sidebar-footer">
+        <div class="sidebar-user" *ngIf="!sidebarCollapsed && user">
+          <div class="sidebar-avatar" [style.background]="avatarBg">
+            <img *ngIf="userProfileImage" [src]="userProfileImage" alt="avatar">
+            <span *ngIf="!userProfileImage">{{ userInitials }}</span>
+          </div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-username">{{ user?.username }}</span>
+          </div>
         </div>
+      </div>
     </aside>
 
-    <main class="main-content" [class.full-width]="!authService.isLoggedIn()">
+    <!-- ── Contenu principal ─────────────────────────────── -->
+    <main class="main-content"
+          [class.full-width]="!isLoggedIn"
+          [class.with-bottom-nav]="isMobile && isLoggedIn"
+          [class.sidebar-collapsed]="sidebarCollapsed && !isMobile">
       <div class="page-content">
         <router-outlet></router-outlet>
       </div>
     </main>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       BOTTOM NAVIGATION (mobile seulement)
+  ══════════════════════════════════════════════════════ -->
+  <app-bottom-nav
+    *ngIf="isMobile && isLoggedIn"
+    [unreadCount]="unreadChatCount"
+    [upcomingMatchCount]="upcomingMatchCount"
+    [moreDrawerOpen]="moreDrawerOpen"
+    [menusCommuns]="menusCommuns"
+    [menuCategories]="menuCategories"
+    (moreClick)="toggleMoreDrawer()">
+  </app-bottom-nav>
+
+  <!-- ══════════════════════════════════════════════════════
+       MORE DRAWER (mobile seulement)
+  ══════════════════════════════════════════════════════ -->
+  <app-more-drawer
+    *ngIf="isMobile && isLoggedIn"
+    [isOpen]="moreDrawerOpen"
+    [notifCount]="notifCount"
+    [menuCategories]="menuCategories"
+    [menusCommuns]="menusCommuns"
+    (closeDrawer)="closeMoreDrawer()"
+    (logout$)="logout()"
+    (profileOpen)="openProfileEdit()"
+    (videoOpen)="openVideo()"
+    (videoEdit)="openVideoEdit()"
+    (joinGroup)="openJoinGroupDialog()">
+  </app-more-drawer>
+
+  <!-- ══════════════════════════════════════════════════════
+       PROFILE MENU MOBILE — ancré à droite du viewport
+  ══════════════════════════════════════════════════════ -->
+  <mat-menu #mobileProfileMenu="matMenu"
+            xPosition="before"
+            yPosition="below"
+            [overlapTrigger]="false"
+            class="mobile-profile-menu">
+    <button mat-menu-item (click)="openProfileEdit()">
+      <mat-icon>account_circle</mat-icon><span>Mon profil</span>
+    </button>
+    <button mat-menu-item (click)="openVideoEdit()">
+      <mat-icon>photo_camera</mat-icon><span>Modifier vidéos</span>
+    </button>
+    <button mat-menu-item (click)="router.navigate(['/settings'])">
+      <mat-icon>settings</mat-icon><span>Paramètres</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="logout()" class="logout-menu-item">
+      <mat-icon>exit_to_app</mat-icon><span>Déconnexion</span>
+    </button>
+  </mat-menu>
+
 </div>

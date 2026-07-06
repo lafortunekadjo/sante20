@@ -1,0 +1,36 @@
+<!-- src/app/modules/chat/components/conversation-list/conversation-list.component.html -->
+
+<div class="conversation-list">
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <mat-nav-list *ngIf="!loading">
+    <mat-list-item
+      *ngFor="let conversation of conversations"
+      [class.selected]="selectedConversation?.id === conversation.id"
+      (click)="selectConversation(conversation)">
+      
+      <img matListItemAvatar [src]="getConversationImage(conversation)" [alt]="getConversationTitle(conversation)">
+      
+      <div matListItemTitle class="conversation-info">
+        <div class="conversation-header">
+          <span class="conversation-title">{{ getConversationTitle(conversation) }}</span>
+          <span class="conversation-time">{{ getLastMessageTime(conversation) }}</span>
+        </div>
+        
+        <div class="conversation-preview">
+          <span class="last-message">{{ getLastMessagePreview(conversation) }}</span>
+          <span *ngIf="conversation.unreadCount > 0" class="unread-badge">
+            {{ conversation.unreadCount }}
+          </span>
+        </div>
+      </div>
+    </mat-list-item>
+
+    <div *ngIf="conversations.length === 0" class="no-conversations">
+      <mat-icon>chat_bubble_outline</mat-icon>
+      <p>{{ 'chat.noConversations' | translate }}</p>
+    </div>
+  </mat-nav-list>
+</div>

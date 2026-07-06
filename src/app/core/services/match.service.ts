@@ -23,6 +23,8 @@ export class MatchService {
   const params = new HttpParams()
     .set('startDate', startDate)
     .set('endDate', endDate);
+
+    console.log("les dates " + startDate, endDate)
     
   return this.http.get<Match[]>(`${environment.apiUrl}/matchs/by-date-range`, { params });
 }
@@ -39,7 +41,7 @@ export class MatchService {
  * @returns Observable<Match[]>
  */
 getMatchesByExercice(exerciceId: number): Observable<Match[]> {
-  return this.http.get<Match[]>(`${environment.apiUrl}/match/exercice/${exerciceId}`);
+  return this.http.get<Match[]>(`${environment.apiUrl}/matchs/exercice/${exerciceId}`);
 }
 
 /**

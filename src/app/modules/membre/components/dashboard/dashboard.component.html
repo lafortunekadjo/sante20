@@ -1,30 +1,42 @@
 <div class="dashboard-container">
 
-  <!-- ============ HEADER ============ -->
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">
-            <mat-icon class="header-icon">dashboard</mat-icon>
-            {{ 'dashboard.member.title' | translate }}
-          </h1>
-          <p class="page-subtitle">{{ 'dashboard.member.subtitle' | translate }}</p>
-        </div>
+  <!-- ============ HEADER COMPACT ============ -->
+  <div class="dash-header">
+    <div class="dash-header-top">
+      <div class="dash-header-title">
+        <h1>{{ 'dashboard.member.title' | translate }}</h1>
+        <span class="season-pill" *ngIf="getSelectedExercice() as ex">
+          <mat-icon>sports_soccer</mat-icon>{{ ex.libelle }}
+        </span>
       </div>
-      
-      <!-- Stats dans le header -->
-      <div class="header-stats">
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.matchesPlayed || 0 }}</span>
-          <span class="stat-label">{{ 'dashboard.member.matches' | translate }}</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.goalsScored || 0 }}</span>
-          <span class="stat-label">{{ 'dashboard.member.goals' | translate }}</span>
-        </div>
+      <button class="filter-toggle-btn" (click)="toggleFilters()"
+              [class.active]="showFilters"
+              [matTooltip]="'dashboard.filters.title' | translate">
+        <mat-icon>tune</mat-icon>
+        <span class="filter-period-label hide-mobile">{{ getCurrentPeriodLabel() }}</span>
+      </button>
+    </div>
+
+    <!-- KPIs toujours visibles -->
+    <div class="dash-kpis">
+      <div class="kpi">
+        <span class="kpi-val">{{ stats.matchesPlayed || 0 }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.matches' | translate }}</span>
+      </div>
+      <div class="kpi-sep"></div>
+      <div class="kpi">
+        <span class="kpi-val">{{ stats.goalsScored || 0 }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.goals' | translate }}</span>
+      </div>
+      <div class="kpi-sep"></div>
+      <div class="kpi">
+        <span class="kpi-val">{{ stats.totalPasses || 0 }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.passes' | translate }}</span>
+      </div>
+      <div class="kpi-sep" *ngIf="stats.sanctions"></div>
+      <div class="kpi" *ngIf="stats.sanctions">
+        <span class="kpi-val">{{ getTotalSanctions() }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.sanctions' | translate }}</span>
       </div>
     </div>
   </div>
@@ -42,25 +54,10 @@
 
   <!-- ============ CONTENT ============ -->
   <div *ngIf="!isLoading" class="content">
-    
-    <!-- ===== SECTION FILTRES AMÉLIORÉE ===== -->
-    <div class="filters-container">
-      <div class="filters-header">
-        <div class="filters-title">
-          <mat-icon>tune</mat-icon>
-          <h3>{{ 'dashboard.filters.title' | translate }}</h3>
-        </div>
-        
-        <!-- Indicateur de période actuelle -->
-        <div class="current-period-badge" *ngIf="!isLoadingExercices">
-          <mat-icon>calendar_today</mat-icon>
-          <span>{{ getCurrentPeriodLabel() }}</span>
-          <span class="period-type-chip" [class.season]="filterMode === 'season'" [class.custom]="filterMode === 'dateRange'">
-            {{ filterMode === 'season' ? ('dashboard.filters.season' | translate) : ('dashboard.filters.custom' | translate) }}
-          </span>
-        </div>
-      </div>
 
+    
+    <!-- ===== PANNEAU FILTRES (collapsable) ===== -->
+    <div class="filters-panel" [class.open]="showFilters">
       <div class="filters-body">
         <!-- Toggle Mode de filtrage -->
         <div class="filter-mode-toggle">
@@ -193,7 +190,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div><!-- /filters-panel -->
 
     <!-- ✅ PUB 1: Après les filtres, avant les métriques (compact, discret) -->
     <div class="dashboard-ad-section">
@@ -435,61 +432,26 @@
         </div>
       </div>
       
-      <div class="metrics-grid">
-        <div class="metric-card primary-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">event</mat-icon>
-            </div>
-            <div class="metric-trend">
-              <mat-icon class="trend-icon up">trending_up</mat-icon>
-            </div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ stats.matchesPlayed || 0 }}</div>
-            <div class="metric-label">{{ 'dashboard.member.matches' | translate }}</div>
-            <div class="metric-sublabel">{{ 'dashboard.member.played' | translate }}</div>
-          </div>
-          <div class="metric-footer">
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="getMatchesProgress()"></div>
-            </div>
+      <div class="mini-stats-row">
+        <div class="mini-stat primary">
+          <mat-icon>event</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">{{ stats.matchesPlayed || 0 }}</span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.matches' | translate }}</span>
           </div>
         </div>
-
-        <div class="metric-card success-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">sports_soccer</mat-icon>
-            </div>
-            <div class="metric-badge">{{ stats.goalsScored || 0 }}</div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ stats.goalsScored || 0 }}</div>
-            <div class="metric-label">{{ 'dashboard.member.goals' | translate }}</div>
-            <div class="metric-sublabel">{{ 'dashboard.member.scored' | translate }}</div>
-          </div>
-          <div class="metric-footer">
-            <mat-icon class="status-icon">sports_soccer</mat-icon>
-            <span class="footer-text">{{ 'dashboard.member.attack' | translate }}</span>
+        <div class="mini-stat success">
+          <mat-icon>sports_soccer</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">{{ stats.goalsScored || 0 }}</span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.goals' | translate }}</span>
           </div>
         </div>
-
-        <div class="metric-card warning-gradient">
-          <div class="metric-header">
-            <div class="metric-icon-container">
-              <mat-icon class="metric-icon">swap_horiz</mat-icon>
-            </div>
-            <div class="metric-badge">{{ stats.totalPasses || 0 }}</div>
-          </div>
-          <div class="metric-content">
-            <div class="metric-value">{{ stats.totalPasses || 0 }}</div>
-            <div class="metric-label">{{ 'dashboard.member.passes' | translate }}</div>
-            <div class="metric-sublabel">{{ 'dashboard.member.successful' | translate }}</div>
-          </div>
-          <div class="metric-footer">
-            <mat-icon class="status-icon">done_all</mat-icon>
-            <span class="footer-text">{{ 'dashboard.member.precision' | translate }}</span>
+        <div class="mini-stat warning">
+          <mat-icon>swap_horiz</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">{{ stats.totalPasses || 0 }}</span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.passes' | translate }}</span>
           </div>
         </div>
       </div>
@@ -504,149 +466,92 @@
         </div>
       </div>
 
-      <div class="sanctions-grid">
-        <!-- Sanctions payées -->
-        <div class="sanction-card paid-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>check_circle</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>{{ 'dashboard.member.paidSanctions' | translate }}</h3>
-              <p>{{ stats.sanctions.paid.count }} {{ 'dashboard.member.sanctions' | translate }}</p>
-            </div>
-            <div class="amount-badge success">
-              {{ stats.sanctions.paid.amount }} FCFA
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="status-indicator positive">
-              <mat-icon>done</mat-icon>
-              <span>{{ 'dashboard.member.allPaid' | translate }}</span>
-            </div>
+      <div class="mini-stats-row sanctions-row">
+        <div class="mini-stat success" [matTooltip]="stats.sanctions.paid.count + ' ' + ('dashboard.member.sanctions' | translate)">
+          <mat-icon>check_circle</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">{{ stats.sanctions.paid.amount }}</span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.paidSanctions' | translate }}</span>
           </div>
         </div>
-
-        <!-- Sanctions non payées -->
-        <div class="sanction-card unpaid-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>error</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>{{ 'dashboard.member.unpaidSanctions' | translate }}</h3>
-              <p>{{ stats.sanctions.unpaid.count }} {{ 'dashboard.member.pending' | translate }}</p>
-            </div>
-            <div class="amount-badge alert">
-              {{ stats.sanctions.unpaid.amount }} FCFA
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="status-indicator" [class]="stats.sanctions.unpaid.count > 0 ? 'negative' : 'positive'">
-              <mat-icon>{{ stats.sanctions.unpaid.count > 0 ? 'warning' : 'done' }}</mat-icon>
-              <span>{{ stats.sanctions.unpaid.count > 0 ? ('dashboard.member.paymentRequired' | translate) : ('dashboard.member.noPending' | translate) }}</span>
-            </div>
+        <div class="mini-stat" [class.danger]="stats.sanctions.unpaid.count > 0" [class.success]="stats.sanctions.unpaid.count === 0">
+          <mat-icon>{{ stats.sanctions.unpaid.count > 0 ? 'error' : 'done' }}</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">{{ stats.sanctions.unpaid.amount }}</span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.unpaidSanctions' | translate }}</span>
           </div>
         </div>
-
-        <!-- Cartons -->
-        <div class="sanction-card cards-theme">
-          <div class="card-header-modern">
-            <div class="header-icon">
-              <mat-icon>style</mat-icon>
-            </div>
-            <div class="header-content">
-              <h3>{{ 'dashboard.member.cards' | translate }}</h3>
-              <p>{{ 'dashboard.member.discipline' | translate }}</p>
-            </div>
+        <div class="mini-stat cards-mini">
+          <mat-icon>style</mat-icon>
+          <div class="mini-stat-text">
+            <span class="mini-stat-val">
+              <span class="card-pill yellow">{{ stats.sanctions.yellowCards }}</span>
+              <span class="card-pill red">{{ stats.sanctions.redCards }}</span>
+            </span>
+            <span class="mini-stat-lbl">{{ 'dashboard.member.cards' | translate }}</span>
           </div>
-          <div class="card-body">
-            <div class="cards-summary">
-              <div class="card-stat yellow">
-                <div class="card-icon">
-                  <mat-icon>crop_portrait</mat-icon>
-                </div>
-                <div class="card-info">
-                  <span class="card-count">{{ stats.sanctions.yellowCards }}</span>
-                  <span class="card-label">{{ 'dashboard.member.yellow' | translate }}</span>
-                </div>
-              </div>
-              <div class="card-stat red">
-                <div class="card-icon">
-                  <mat-icon>crop_portrait</mat-icon>
-                </div>
-                <div class="card-info">
-                  <span class="card-count">{{ stats.sanctions.redCards }}</span>
-                  <span class="card-label">{{ 'dashboard.member.red' | translate }}</span>
-                </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- ===== SECTION: Cotisations en cours ===== -->
+    <div class="contributions-section" *ngIf="contributionsEnCours && contributionsEnCours.length > 0">
+      <div class="section-header">
+        <div class="header-icon-wrapper">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="header-text">
+          <h2>{{ 'dashboard.member.ongoingContributions' | translate }}</h2>
+          <span class="badge">{{ contributionsEnCours.length }}</span>
+        </div>
+      </div>
+
+      <div class="contributions-list">
+        <div class="contribution-card"
+             *ngFor="let contrib of contributionsEnCours"
+             [class.alert]="contrib.enAlerte"
+             [class.complete]="contrib.montantVerse >= contrib.montantObjectif">
+
+          <div class="contribution-top">
+            <div class="contribution-icon">
+              <mat-icon>{{ contrib.montantVerse >= contrib.montantObjectif ? 'check_circle' : (contrib.enAlerte ? 'warning' : 'payments') }}</mat-icon>
+            </div>
+            <div class="contribution-info">
+              <span class="contribution-name">{{ contrib.libelle }}</span>
+              <span class="contribution-deadline" *ngIf="contrib.delaiContribution">
+                <mat-icon>schedule</mat-icon>
+                {{ 'dashboard.member.dueDate' | translate }} {{ contrib.delaiContribution | date:'dd MMM yyyy' }}
+              </span>
+            </div>
+            <span class="contribution-status-pill" *ngIf="contrib.montantVerse >= contrib.montantObjectif">
+              {{ 'dashboard.member.paid' | translate }}
+            </span>
+            <span class="contribution-status-pill alert" *ngIf="contrib.enAlerte && contrib.montantVerse < contrib.montantObjectif">
+              {{ 'dashboard.member.dueSoon' | translate }}
+            </span>
+          </div>
+
+          <div class="contribution-progress">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill"
+                   [class.complete]="contrib.montantVerse >= contrib.montantObjectif"
+                   [class.alert]="contrib.enAlerte"
+                   [style.width.%]="getContribProgress(contrib)">
               </div>
             </div>
+            <div class="progress-amounts">
+              <span class="amount-paid">{{ contrib.montantVerse | number }} FCFA</span>
+              <span class="amount-sep">/</span>
+              <span class="amount-total">{{ contrib.montantObjectif | number }} FCFA</span>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
-    </div>
-
 
   </div>
-<div class="contributions-grid">
-  <div class="contribution-item" *ngFor="let contrib of contributionsEnCours">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <div class="title-group">
-        <h6 class="mb-0 text-truncate" [matTooltip]="contrib.libelle">
-          {{ contrib.libelle }}
-          <mat-icon *ngIf="contrib.enAlerte" class="alerte-icon">warning</mat-icon>
-        </h6>
-      </div>
-      <span class="badge" [ngClass]="getStatusClass(contrib)">
-        {{ getStatusLabel(contrib) }}
-      </span>
-    </div>
 
-    <div class="amount-row d-flex justify-content-between align-items-baseline mb-2">
-      <div class="amount-detail">
-        <span class="amount-value text-success">{{ contrib.montantVerse | number }}</span>
-        <span class="amount-separator">/</span>
-        <span class="amount-total">{{ contrib.montantObjectif | number }}</span>
-        <span class="amount-currency">FCFA</span>
-      </div>
-      <div class="amount-percentage">
-        {{ (contrib.montantVerse / contrib.montantObjectif) | percent:'1.0-0' }}
-      </div>
-    </div>
-
-    <div class="progress" style="height: 6px;">
-      <div class="progress-bar" 
-           [ngClass]="{'bg-success': getStatusLabel(contrib) === 'Payé', 'bg-warning': getStatusLabel(contrib) === 'Partiel'}"
-           [style.width.%]="(contrib.montantVerse / contrib.montantObjectif) * 100">
-      </div>
-    </div>
-    
-    <div class="d-flex justify-content-between mt-2">
-      <small class="text-muted text-xs">{{ contrib.delaiContribution | date:'dd/MM' }}</small>
-      <small class="text-danger Reste-text" *ngIf="contrib.montantVerse < contrib.montantObjectif">
-        -{{ (contrib.montantObjectif - contrib.montantVerse) | number }}
-      </small>
-    </div>
-  </div>
-</div>
-
-  <!-- ============ FOOTER ============ -->
-  <div class="dashboard-footer">
-    <div class="footer-stats">
-      <div class="footer-item">
-        <mat-icon>update</mat-icon>
-        <span>{{ 'dashboard.member.lastUpdate' | translate }}: {{ currentDate | date:'dd/MM/yyyy HH:mm' }}</span>
-      </div>
-      <div class="footer-item" *ngIf="getSelectedExercice() as exercice">
-        <mat-icon>sports_soccer</mat-icon>
-        <span>{{ exercice.libelle }}</span>
-      </div>
-      <div class="footer-item">
-        <mat-icon>person</mat-icon>
-        <span>{{ 'dashboard.member.personalDashboard' | translate }}</span>
-      </div>
-    </div>
-  </div>
-  <app-publicite-banner position="FOOTER" [ville]="userVille"></app-publicite-banner>
+  
 </div>

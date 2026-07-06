@@ -1,0 +1,218 @@
+<!-- Overlay -->
+<div class="drawer-overlay"
+     [class.visible]="isOpen"
+     (click)="close()"
+     aria-hidden="true">
+</div>
+
+<!-- Bottom sheet -->
+<div class="more-drawer"
+     [class.open]="isOpen"
+     [style.transform]="isOpen ? 'translateY(' + drawerTranslateY + 'px)' : ''"
+     [style.transition]="drawerTranslateY > 0 ? 'none' : ''"
+     role="dialog"
+     aria-label="Menu principal"
+     aria-modal="true"
+     (touchstart)="onDrawerTouchStart($event)"
+     (touchmove)="onDrawerTouchMove($event)"
+     (touchend)="onDrawerTouchEnd()">
+
+  <!-- Handle drag — indique le swipe-to-dismiss -->
+  <div class="drawer-handle-zone">
+    <div class="drawer-handle"></div>
+    <span class="drawer-handle-hint">Glissez pour fermer</span>
+  </div>
+
+  <!-- ── HEADER PROFIL ─────────────────────────────────── -->
+  <div class="drawer-header">
+    <div class="drawer-user" (click)="openProfile()">
+      <div class="user-avatar" [style.background]="avatarBg">
+        <img *ngIf="userImage" [src]="userImage" alt="avatar">
+        <span *ngIf="!userImage">{{ userInitials }}</span>
+        <div class="online-dot"></div>
+      </div>
+      <div class="user-info">
+        <span class="user-name">{{ user?.username || 'Utilisateur' }}</span>
+        <span class="user-meta">
+          <span class="role-badge">{{ roleLabel }}</span>
+          <span class="groupe-name" *ngIf="groupeNom"> · {{ groupeNom }}</span>
+        </span>
+      </div>
+      <mat-icon class="user-chevron">chevron_right</mat-icon>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+      <button class="qa-btn" (click)="toggleTheme()"
+              [attr.aria-label]="isDark ? 'Mode clair' : 'Mode sombre'">
+        <mat-icon>{{ isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      <button class="qa-btn" (click)="toggleLanguage()"
+              aria-label="Changer de langue">
+        <span class="lang-flag">{{ currentLang === 'fr' ? '🇫🇷' : '🇬🇧' }}</span>
+      </button>
+      <button class="qa-btn notif-btn" (click)="goToNotifs()"
+              aria-label="Notifications">
+        <mat-icon>notifications_outlined</mat-icon>
+        <span class="qa-badge" *ngIf="notifCount > 0">
+          {{ notifCount > 9 ? '9+' : notifCount }}
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── CORPS SCROLLABLE ──────────────────────────────── -->
+  <div class="drawer-body">
+
+    <!-- ── MENUS COMMUNS ─────────────────────────────── -->
+    <div class="section section--commun" *ngIf="menusCommuns.length">
+      <div class="section-label">
+        <mat-icon>apps</mat-icon>
+        Menu principal
+      </div>
+      <div class="nav-grid-commun">
+        <ng-container *ngFor="let menu of menusCommuns">
+          <a *ngIf="menu.route"
+             class="grid-commun-item"
+             [routerLink]="menu.route"
+             (click)="close()"
+             routerLinkActive="active">
+            <div class="grid-commun-icon">
+              <mat-icon>{{ getMenuIcon(menu) }}</mat-icon>
+            </div>
+            <span>{{ 'menu.items.' + menu.code | translate }}</span>
+          </a>
+          <button *ngIf="!menu.route"
+                  class="grid-commun-item"
+                  (click)="handleMenuClick(menu)">
+            <div class="grid-commun-icon">
+              <mat-icon>{{ getMenuIcon(menu) }}</mat-icon>
+            </div>
+            <span>{{ 'menu.items.' + menu.code | translate }}</span>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="drawer-divider" *ngIf="menusCommuns.length"></div>
+
+    <!-- ── MENUS RESPONSABLE ── -->
+    <ng-container *ngIf="isResponsable && userHasGroup && sortedCategories.length">
+      <div class="acc-group"
+           *ngFor="let cat of sortedCategories"
+           [class.open]="isGroupOpen(cat.code)">
+
+        <button class="acc-header"
+                (click)="toggleGroup(cat.code)"
+                [attr.aria-expanded]="isGroupOpen(cat.code)">
+          <div class="acc-header-left">
+            <div class="acc-icon" [ngClass]="'acc-icon--' + getCategorieColor(cat.code)">
+              <mat-icon>{{ getCategorieIcon(cat.code) }}</mat-icon>
+            </div>
+            <div class="acc-titles">
+              <span class="acc-title">{{ 'menu.categories.' + cat.code | translate }}</span>
+              <span class="acc-count">{{ cat.menus.length }} menus</span>
+            </div>
+          </div>
+          <mat-icon class="acc-chevron">
+            {{ isGroupOpen(cat.code) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
+          </mat-icon>
+        </button>
+
+        <div class="acc-items" *ngIf="isGroupOpen(cat.code)">
+          <a *ngFor="let menu of cat.menus"
+             class="acc-item"
+             [routerLink]="menu.route"
+             routerLinkActive="active"
+             (click)="handleMenuClick(menu)">
+            <mat-icon class="item-icon">{{ getMenuIcon(menu) }}</mat-icon>
+            <span class="item-label">{{ 'menu.items.' + menu.code | translate }}</span>
+            <mat-icon class="item-arrow">chevron_right</mat-icon>
+          </a>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── ADMIN ── -->
+    <ng-container *ngIf="isAdmin">
+      <div class="acc-group open">
+        <button class="acc-header" (click)="toggleGroup('ADMIN')">
+          <div class="acc-header-left">
+            <div class="acc-icon acc-icon--red">
+              <mat-icon>admin_panel_settings</mat-icon>
+            </div>
+            <div class="acc-titles">
+              <span class="acc-title">Administration</span>
+            </div>
+          </div>
+          <mat-icon class="acc-chevron">
+            {{ isGroupOpen('ADMIN') ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
+          </mat-icon>
+        </button>
+        <div class="acc-items" *ngIf="isGroupOpen('ADMIN')">
+          <a class="acc-item" routerLink="/admin/dashboard"    (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">dashboard</mat-icon><span class="item-label">Dashboard</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+          <a class="acc-item" routerLink="/admin/groupes"      (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">group</mat-icon><span class="item-label">Groupes</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+          <a class="acc-item" routerLink="/admin/utilisateurs" (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">person</mat-icon><span class="item-label">Utilisateurs</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+          <a class="acc-item" routerLink="/admin/partenaires"  (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">business</mat-icon><span class="item-label">Partenaires</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── PARTENAIRE ── -->
+    <ng-container *ngIf="isPartenaire">
+      <div class="acc-group open">
+        <button class="acc-header">
+          <div class="acc-header-left">
+            <div class="acc-icon acc-icon--teal">
+              <mat-icon>handshake</mat-icon>
+            </div>
+            <div class="acc-titles">
+              <span class="acc-title">Espace Partenaire</span>
+            </div>
+          </div>
+        </button>
+        <div class="acc-items">
+          <a class="acc-item" routerLink="/partenaire/dashboard"  (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">dashboard</mat-icon><span class="item-label">Tableau de bord</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+          <a class="acc-item" routerLink="/partenaire/entreprise" (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">store</mat-icon><span class="item-label">Mon Entreprise</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+          <a class="acc-item" routerLink="/partenaire/publicite"  (click)="close()" routerLinkActive="active"><mat-icon class="item-icon">campaign</mat-icon><span class="item-label">Mes Publicités</span><mat-icon class="item-arrow">chevron_right</mat-icon></a>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="drawer-divider"></div>
+
+    <!-- ── PARAMÈTRES & COMPTE ── -->
+    <div class="section">
+      <div class="nav-list">
+        <a class="nav-list-item" routerLink="/settings" (click)="close()" routerLinkActive="active">
+          <mat-icon>settings</mat-icon>
+          <span>Paramètres</span>
+          <mat-icon class="item-arrow">chevron_right</mat-icon>
+        </a>
+        <button class="nav-list-item" (click)="openProfile()">
+          <mat-icon>account_circle</mat-icon>
+          <span>Mon profil</span>
+          <mat-icon class="item-arrow">chevron_right</mat-icon>
+        </button>
+        <button class="nav-list-item" (click)="openVideos()">
+          <mat-icon>photo_camera</mat-icon>
+          <span>{{ 'common.edit' | translate }} videos</span>
+          <mat-icon class="item-arrow">chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <!-- ── DÉCONNEXION ── -->
+    <div class="section">
+      <button class="logout-btn" (click)="logout()">
+        <mat-icon>exit_to_app</mat-icon>
+        <span>Déconnexion</span>
+      </button>
+    </div>
+
+    <div class="bottom-spacer"></div>
+  </div>
+
+</div>

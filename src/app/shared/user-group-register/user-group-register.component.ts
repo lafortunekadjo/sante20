@@ -1,6 +1,7 @@
 // ============================================================
-// USER-GROUP-REGISTER COMPONENT - VERSION FINALE
-// Rafraîchit les rôles après création du groupe
+// USER-GROUP-REGISTER COMPONENT — VERSION MULTI-GROUPE v2
+// Après création : ferme le formulaire + page actualisée sur
+// le nouveau groupe + redirection vers la config du groupe
 // ============================================================
 
 import { Component, OnInit } from '@angular/core';
@@ -18,10 +19,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GroupeService } from '../../core/services/groupe.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Router } from '@angular/router';
-import { finalize, catchError, of, switchMap, tap, delay } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { finalize, catchError, of, switchMap, tap } from 'rxjs';
 import { Ville } from '../../core/models/ville';
 import { OnboardingService } from '../../core/services/onboarding.service';
+import { GroupeContextService } from '../../core/services/groupe-context.service';
+ 
 
 interface GroupeRequest {
   nom: string;
@@ -64,6 +67,12 @@ export class UserGroupRegisterComponent implements OnInit {
   isLoading = false;
   isVillesLoading = false;
   villesList: Ville[] = [];
+  isModeAjout = false;
+
+  // FIX : contrôle l'affichage du formulaire
+  // Permet au template de masquer le form une fois soumis avec succès
+  showForm = true;
+  groupeCreeNom: string | null = null;
 
   disciplines = [
     { value: 'FOOTBALL', label: 'Football', icon: 'sports_soccer' },
@@ -76,9 +85,12 @@ export class UserGroupRegisterComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private onboardingService: OnboardingService,
+    private route: ActivatedRoute,
+    private groupeContext: GroupeContextService
   ) {}
 
   ngOnInit(): void {
+    this.isModeAjout = this.route.snapshot.queryParams['mode'] === 'add';
     this.loadVilles();
   }
 
@@ -96,9 +108,6 @@ export class UserGroupRegisterComponent implements OnInit {
     });
   }
 
-  /**
-   * ✅ VERSION FINALE - Rafraîchit les rôles après création
-   */
   onSubmit(isValid: boolean | null): void {
     if (!isValid || this.isLoading) return;
 
@@ -106,23 +115,26 @@ export class UserGroupRegisterComponent implements OnInit {
 
     this.groupeService.addGroupe(this.groupData).pipe(
       switchMap(response => {
-        if (response && response.id) {
-          console.log('[UserGroupRegister] Groupe créé avec ID:', response.id);
-          
-          // 1. Mettre à jour le groupeId localement
-          this.authService.updateGroupeId(response.id);
-          
-          // 2. ✅ CRUCIAL: Rafraîchir les infos utilisateur depuis le serveur
-          // Le backend a changé le rôle de CANDIDAT à RESPONSABLE
-          return this.authService.refreshUserInfo().pipe(
+        if (!response || !response.id) {
+          return of(null);
+        }
+
+        console.log('[UserGroupRegister] Groupe créé avec ID:', response.id);
+
+        if (this.isModeAjout) {
+          // MODE AJOUT : switcher vers le nouveau groupe
+          return this.authService.switchGroupe(response.id).pipe(
             tap(() => {
-              console.log('[UserGroupRegister] Infos utilisateur rafraîchies');
+              this.groupeContext.notifyGroupeChanged(response.id);
             }),
-            // Retourner la réponse originale pour la suite
+            switchMap(() => of(response))
+          );
+        } else {
+          // MODE PREMIER GROUPE : rafraîchir les rôles globaux
+          return this.authService.refreshUserInfo().pipe(
             switchMap(() => of(response))
           );
         }
-        return of(null);
       }),
       catchError(err => {
         console.error('[UserGroupRegister] Erreur:', err);
@@ -131,28 +143,25 @@ export class UserGroupRegisterComponent implements OnInit {
       }),
       finalize(() => this.isLoading = false)
     ).subscribe(response => {
-      if (response) {
-        this.showSuccess('Groupe créé avec succès !');
-        
-        // 3. Terminer l'onboarding
-        this.onboardingService.complete();
+      if (!response) return;
 
-        // 4. Naviguer après un court délai
-        setTimeout(() => {
-          // Vérifier si on est bien RESPONSABLE maintenant
-          const roles = this.authService.getRoles();
-          console.log('[UserGroupRegister] Rôles après refresh:', roles);
-          
-          if (roles.includes('RESPONSABLE') || roles.includes('ROLE_RESPONSABLE')) {
-            this.router.navigate(['/responsable/configuration']);
-          } else {
-            // Fallback si le rôle n'est pas encore mis à jour
-            // Dans ce cas, forcer un rechargement complet
-            console.warn('[UserGroupRegister] Rôle RESPONSABLE non trouvé, rechargement...');
-            window.location.href = '/responsable/configuration';
-          }
-        }, 1000);
+      // FIX : masquer le formulaire immédiatement après succès
+      this.showForm = false;
+      this.groupeCreeNom = response.nom;
+
+      this.showSuccess(`Groupe "${response.nom}" créé avec succès !`);
+
+      if (!this.isModeAjout) {
+        this.onboardingService.complete();
       }
+
+      // FIX : laisser le temps au message de succès + à l'UI
+      // de refléter "formulaire fermé" avant de naviguer,
+      // puis rediriger vers la CONFIG du groupe fraîchement créé
+      // (paramètres / groupe-config) — pas vers /membre ou /home
+      setTimeout(() => {
+        this.router.navigate(['/responsable/configuration']);
+      }, 1200);
     });
   }
 
@@ -171,7 +180,7 @@ export class UserGroupRegisterComponent implements OnInit {
   }
 
   onCancel(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate([this.isModeAjout ? '/membre' : '/home']);
   }
 
   private showSuccess(message: string): void {

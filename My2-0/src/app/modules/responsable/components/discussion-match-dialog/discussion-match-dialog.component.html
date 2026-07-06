@@ -1,0 +1,124 @@
+<!-- src/app/shared/components/discussion-match-dialog/discussion-match-dialog.component.html -->
+
+<div class="discussion-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <div class="groupes-info">
+        <mat-icon>groups</mat-icon>
+        <div class="groupes-names">
+          <h2>Discussion Match Amical</h2>
+          <p class="subtitle" *ngIf="discussion">
+            {{ discussion.groupeEmetteur.nom }} 
+            <mat-icon class="vs-icon">arrow_forward</mat-icon>
+            {{ discussion.groupeCible.nom }}
+          </p>
+        </div>
+      </div>
+      <button mat-icon-button (click)="fermer()" class="close-button">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement de la discussion...</p>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="!isLoading && discussion" class="dialog-content">
+    <div class="messages-container" #messagesContainer>
+      <div class="welcome-message">
+        <mat-icon>chat_bubble_outline</mat-icon>
+        <p>
+          Bienvenue dans la discussion entre <strong>{{ discussion.groupeEmetteur.nom }}</strong> 
+          et <strong>{{ discussion.groupeCible.nom }}</strong>
+        </p>
+        <p class="subtitle">
+          Tous les responsables des deux groupes peuvent participer à cette conversation.
+        </p>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Liste des messages -->
+      <div class="messages-list" *ngIf="discussion.messages.length > 0">
+        <div 
+          *ngFor="let message of discussion.messages" 
+          class="message-wrapper"
+          [class.own-message]="estMonMessage(message)">
+          
+          <div class="message-bubble">
+            <div class="message-header">
+              <div class="author-info">
+                <div class="author-avatar">
+                  <img 
+                    *ngIf="message.auteurPhotoUrl" 
+                    [src]="message.auteurPhotoUrl"
+                    [alt]="message.auteurPrenom">
+                  <mat-icon *ngIf="!message.auteurPhotoUrl">account_circle</mat-icon>
+                </div>
+                <div class="author-details">
+                  <span class="author-name">
+                    {{ message.auteurPrenom }} {{ message.auteurNom }}
+                  </span>
+                  <span class="groupe-badge">{{ message.groupeAuteurNom }}</span>
+                </div>
+              </div>
+              <span class="message-time">
+                {{ message.dateEnvoi | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+            
+            <div class="message-content">
+              {{ message.contenu }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message vide -->
+      <div class="empty-messages" *ngIf="discussion.messages.length === 0">
+        <mat-icon>chat</mat-icon>
+        <p>Aucun message pour le moment</p>
+        <p class="subtitle">Soyez le premier à envoyer un message !</p>
+      </div>
+    </div>
+
+    <!-- Input message -->
+    <div class="message-input-container">
+      <mat-divider></mat-divider>
+      
+      <div class="input-wrapper">
+        <mat-form-field appearance="outline" class="message-field">
+          <mat-label>Votre message...</mat-label>
+       <textarea 
+            matInput 
+            [(ngModel)]="nouveauMessage"
+            (keydown.control.enter)="envoyerMessage()"
+            [disabled]="isSending"
+            rows="3"
+            placeholder="Tapez votre message (Ctrl+Enter pour envoyer)">
+            </textarea>
+        </mat-form-field>
+
+        <button 
+          mat-fab 
+          color="primary"
+          (click)="envoyerMessage()"
+          [disabled]="!nouveauMessage.trim() || isSending"
+          class="send-button">
+          <mat-spinner diameter="24" *ngIf="isSending"></mat-spinner>
+          <mat-icon *ngIf="!isSending">send</mat-icon>
+        </button>
+      </div>
+
+      <div class="input-hint">
+        <mat-icon>info</mat-icon>
+        <span>Appuyez sur Ctrl+Enter pour envoyer rapidement</span>
+      </div>
+    </div>
+  </div>
+</div>

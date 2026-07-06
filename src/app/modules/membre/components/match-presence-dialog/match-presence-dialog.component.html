@@ -1,258 +1,200 @@
-<!-- match-presence-dialog.component.html -->
-<div class="presence-dialog">
-  <!-- Header -->
-  <div class="dialog-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-icon-wrapper">
-        <mat-icon class="header-icon">people</mat-icon>
-      </div>
-      <div class="header-text">
+<div class="pd">
+
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <div class="pd-header">
+    <div class="pd-header-bg"></div>
+    <div class="pd-header-content">
+      <div class="pd-header-icon"><mat-icon>people</mat-icon></div>
+      <div class="pd-header-text">
         <h2>{{ 'presence.title' | translate }}</h2>
-        <p>{{ 'presence.subtitle' | translate }} {{ data.match.dateMatch | date:'dd/MM/yyyy' }} - {{ data.match.adversaire }}</p>
+        <p>{{ data.match.dateMatch | date:'dd/MM/yyyy' }}
+          <span *ngIf="data.match.adversaire"> · {{ data.match.adversaire }}</span>
+        </p>
       </div>
     </div>
-    <button mat-icon-button (click)="close()" class="close-button">
+    <button mat-icon-button class="pd-close" (click)="close()">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
-  <div class="dialog-body">
-    <!-- Filtres par équipe -->
-    <div class="filter-section">
-      <div class="filter-chips">
-        <button 
-          class="filter-chip"
-          [class.active]="selectedTeam === 'all'"
-          (click)="selectedTeam = 'all'; filterByTeam()">
-          <mat-icon>groups</mat-icon>
-          <span>{{ 'presence.all' | translate }}</span>
-          <span class="chip-count">{{ getTotalCount() }}</span>
-        </button>
-        <button 
-          *ngFor="let team of teams"
-          class="filter-chip"
-          [class.active]="selectedTeam === team"
-          (click)="selectedTeam = team; filterByTeam()">
-          <mat-icon>shield</mat-icon>
-          <span>{{ team }}</span>
-          <span class="chip-count">{{ getTeamCount(team) }}</span>
-        </button>
+  <!-- ── KPIs fixes (hors scroll) ────────────────────────── -->
+  <div class="pd-kpis">
+      <div class="pd-kpi">
+        <span class="pd-kpi-val">{{ getTotalCount() }}</span>
+        <span class="pd-kpi-lbl">{{ 'presence.totalPresent' | translate }}</span>
       </div>
-    </div>
-
-    <!-- Statistiques rapides -->
-    <div class="stats-cards">
-      <div class="stat-card total">
-        <div class="stat-icon">
-          <mat-icon>groups</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ getTotalCount() }}</span>
-          <span class="stat-label">{{ 'presence.totalPresent' | translate }}</span>
-        </div>
+      <div class="pd-kpi-sep"></div>
+      <div class="pd-kpi pd-kpi--green">
+        <span class="pd-kpi-val">{{ getPlayedCount() }}</span>
+        <span class="pd-kpi-lbl">{{ 'presence.played' | translate }}</span>
       </div>
-      <div class="stat-card played">
-        <div class="stat-icon">
-          <mat-icon>sports_soccer</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ getPlayedCount() }}</span>
-          <span class="stat-label">{{ 'presence.played' | translate }}</span>
-        </div>
+      <div class="pd-kpi-sep"></div>
+      <div class="pd-kpi pd-kpi--amber">
+        <span class="pd-kpi-val">{{ getBenchCount() }}</span>
+        <span class="pd-kpi-lbl">{{ 'presence.spectators' | translate }}</span>
       </div>
-      <div class="stat-card bench">
-        <div class="stat-icon">
-          <mat-icon>event_seat</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ getBenchCount() }}</span>
-          <span class="stat-label">{{ 'presence.spectators' | translate }}</span>
-        </div>
+      <div class="pd-kpi-sep" *ngIf="getMotmCount() > 0"></div>
+      <div class="pd-kpi pd-kpi--gold" *ngIf="getMotmCount() > 0">
+        <span class="pd-kpi-val">⭐</span>
+        <span class="pd-kpi-lbl">HDM</span>
       </div>
-      <div class="stat-card motm" *ngIf="getMotmCount() > 0">
-        <div class="stat-icon">
-          <mat-icon>star</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ getMotmCount() }}</span>
-          <span class="stat-label">{{ 'presence.manOfTheMatch' | translate }}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="officials-section" *ngIf="hasSpecificOfficials()">
-  <div class="official-card" *ngIf="data.match.arbitrePrincipal">
-    <div class="official-icon arbitre">
-      <mat-icon>sports</mat-icon>
-    </div>
-    <div class="official-info">
-      <span class="official-label">{{ 'presence.referee' | translate }}</span>
-      <span class="official-name">{{ data.match.arbitrePrincipal.nom }}</span>
-    </div>
   </div>
 
-  <div class="official-card" *ngIf="data.match.rapporteur">
-    <div class="official-icon rapporteur">
-      <mat-icon>assignment</mat-icon>
-    </div>
-    <div class="official-info">
-      <span class="official-label">{{ 'presence.reporter' | translate }}</span>
-      <span class="official-name">{{ data.match.rapporteur.nom }}</span>
-    </div>
-  </div>
-</div>
+  <!-- ── Body scrollable ──────────────────────────────────── -->
+  <div class="pd-body">
 
-    <!-- Barre de recherche -->
-    <div class="search-section">
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input 
-          type="text"
-          [(ngModel)]="searchTerm" 
-          (input)="filterPresences()" 
-          [placeholder]="'presence.searchPlayer' | translate">
-        <button *ngIf="searchTerm" class="clear-search" (click)="clearSearch()">
-          <mat-icon>close</mat-icon>
-        </button>
+    <!-- Officiels -->
+    <div class="pd-officials" *ngIf="hasSpecificOfficials()">
+      <div class="pd-official" *ngIf="data.match.arbitrePrincipal">
+        <div class="pd-official-icon arbitre"><mat-icon>sports</mat-icon></div>
+        <div>
+          <span class="pd-official-lbl">{{ 'presence.referee' | translate }}</span>
+          <span class="pd-official-name">{{ data.match.arbitrePrincipal.nom }}</span>
+        </div>
+      </div>
+      <div class="pd-official" *ngIf="data.match.rapporteur">
+        <div class="pd-official-icon rapporteur"><mat-icon>assignment</mat-icon></div>
+        <div>
+          <span class="pd-official-lbl">{{ 'presence.reporter' | translate }}</span>
+          <span class="pd-official-name">{{ data.match.rapporteur.nom }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Liste des présences -->
-    <div class="presences-list">
-      <div 
-        class="presence-card" 
-        *ngFor="let presence of filteredPresences; let i = index"
-        [class.played]="presence.aJoue"
-        [class.captain]="presence.estCapitaine"
-        [class.motm]="presence.estHommeDuMatch"
-        @cardAnimation>
-        
-        <!-- Badge homme du match -->
-        <div class="motm-badge" *ngIf="presence.estHommeDuMatch">
-          <mat-icon>star</mat-icon>
-        </div>
+    <!-- Filtres équipes -->
+    <div class="pd-filters">
+      <button class="pd-chip" [class.active]="selectedTeam === 'all'"
+              (click)="selectedTeam = 'all'; filterByTeam()">
+        <mat-icon>groups</mat-icon>
+        <span>{{ 'presence.all' | translate }}</span>
+        <span class="pd-chip-count">{{ getTotalCount() }}</span>
+      </button>
+      <button class="pd-chip" *ngFor="let team of teams"
+              [class.active]="selectedTeam === team"
+              (click)="selectedTeam = team; filterByTeam()">
+        <mat-icon>shield</mat-icon>
+        <span>{{ team }}</span>
+        <span class="pd-chip-count">{{ getTeamCount(team) }}</span>
+      </button>
+    </div>
 
-        <!-- Info joueur -->
-        <div class="player-section">
-          <div class="player-avatar" [style.background]="getAvatarGradient(presence)">
-            <img 
-              *ngIf="getPlayerPhoto(presence)" 
-              [src]="getPlayerPhoto(presence)" 
-              [alt]="getPlayerName(presence)"
-              class="avatar-image"
-              (error)="onImageError($event)">
-            <span *ngIf="!getPlayerPhoto(presence)" class="avatar-initials">
-              {{ getPlayerInitials(presence) }}
-            </span>
-            <div class="captain-badge" *ngIf="presence.estCapitaine">
+    <!-- Recherche -->
+    <div class="pd-search">
+      <mat-icon>search</mat-icon>
+      <input type="text" [(ngModel)]="searchTerm"
+             (input)="filterPresences()"
+             [placeholder]="'presence.searchPlayer' | translate">
+      <button class="pd-search-clear" *ngIf="searchTerm" (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Liste -->
+    <div class="pd-list">
+      <div class="pd-card"
+           *ngFor="let p of filteredPresences"
+           [class.pd-card--played]="p.aJoue"
+           [class.pd-card--motm]="p.estHommeDuMatch"
+           [class.pd-card--captain]="p.estCapitaine">
+
+        <!-- Badge HDM -->
+        <div class="pd-motm-badge" *ngIf="p.estHommeDuMatch">⭐</div>
+
+        <!-- Ligne principale : avatar + infos + badge participation -->
+        <div class="pd-card-main">
+
+          <!-- Avatar -->
+          <div class="pd-avatar" [style.background]="getAvatarGradient(p)">
+            <img *ngIf="getPlayerPhoto(p)" [src]="getPlayerPhoto(p)"
+                 [alt]="getPlayerName(p)" class="pd-avatar-img"
+                 (error)="onImageError($event)">
+            <span *ngIf="!getPlayerPhoto(p)">{{ getPlayerInitials(p) }}</span>
+            <div class="pd-captain-badge" *ngIf="p.estCapitaine">
               <mat-icon>military_tech</mat-icon>
             </div>
           </div>
 
-          <div class="player-details">
-            <div class="player-name">
-              <span>{{ getPlayerName(presence) }}</span>
-              <mat-chip *ngIf="presence.nomOccasionnel" class="chip-occasional">
-                {{ 'presence.occasional' | translate }}
-              </mat-chip>
-              <mat-chip *ngIf="presence.estCapitaine" class="chip-captain">
-                <mat-icon>shield</mat-icon>
-                {{ 'presence.captain' | translate }}
-              </mat-chip>
+          <!-- Infos joueur -->
+          <div class="pd-player-info">
+            <div class="pd-player-name">
+              {{ getPlayerName(p) }}
+              <span class="pd-tag pd-tag--occ" *ngIf="p.nomOccasionnel">Occ.</span>
+              <span class="pd-tag pd-tag--cap" *ngIf="p.estCapitaine">C</span>
             </div>
-            <div class="player-team">
-              <mat-icon>shield</mat-icon>
-              <span>{{ presence.equipeMatch }}</span>
+            <div class="pd-player-team">
+              <mat-icon>shield</mat-icon>{{ p.equipeMatch }}
             </div>
+          </div>
+
+          <!-- Badge participation -->
+          <div class="pd-participation" [class.active]="p.aJoue">
+            <mat-icon>{{ p.aJoue ? 'sports_soccer' : 'event_seat' }}</mat-icon>
           </div>
         </div>
 
-        <!-- Statistiques du joueur -->
-        <div class="stats-section" *ngIf="hasStats(presence)">
-          <div class="stat-badge goals" *ngIf="presence.buts > 0">
-            <mat-icon>sports_soccer</mat-icon>
-            <span>{{ presence.buts }}</span>
-          </div>
-          <div class="stat-badge assists" *ngIf="presence.passes > 0">
-            <mat-icon>swap_horiz</mat-icon>
-            <span>{{ presence.passes }}</span>
-          </div>
-          <div class="stat-badge penalties" *ngIf="presence.penalti > 0">
-            <mat-icon>album</mat-icon>
-            <span>{{ presence.penalti }}</span>
-          </div>
-          <div class="stat-badge csc" *ngIf="presence.butsContreSonCamp > 0">
-            <mat-icon>warning</mat-icon>
-            <span>{{ presence.butsContreSonCamp }}</span>
-          </div>
-          <div class="stat-badge yellow-card" *ngIf="presence.cartonsJaunes > 0">
-            <div class="card-icon yellow"></div>
-            <span>{{ presence.cartonsJaunes }}</span>
-          </div>
-          <div class="stat-badge red-card" *ngIf="presence.cartonsRouges > 0">
-            <div class="card-icon red"></div>
-            <span>{{ presence.cartonsRouges }}</span>
-          </div>
+        <!-- Stats si présentes -->
+        <div class="pd-stats" *ngIf="hasStats(p)">
+          <span class="pd-stat pd-stat--goals"     *ngIf="p.buts > 0">
+            ⚽ {{ p.buts }}</span>
+          <span class="pd-stat pd-stat--assists"   *ngIf="p.passes > 0">
+            🎯 {{ p.passes }}</span>
+          <span class="pd-stat pd-stat--penalties" *ngIf="p.penalti > 0">
+            📌 {{ p.penalti }}p</span>
+          <span class="pd-stat pd-stat--csc"       *ngIf="p.butsContreSonCamp > 0">
+            ⚠️ {{ p.butsContreSonCamp }}</span>
+          <span class="pd-stat pd-stat--yellow"    *ngIf="p.cartonsJaunes > 0">
+            🟨 {{ p.cartonsJaunes }}</span>
+          <span class="pd-stat pd-stat--red"       *ngIf="p.cartonsRouges > 0">
+            🟥 {{ p.cartonsRouges }}</span>
         </div>
 
-        <!-- Badge de participation -->
-        <div class="participation-section">
-          <div class="participation-badge" [class.active]="presence.aJoue">
-            <mat-icon>{{ presence.aJoue ? 'sports_soccer' : 'event_seat' }}</mat-icon>
-            <span>{{ presence.aJoue ? ('presence.played' | translate) : ('presence.bench' | translate) }}</span>
-          </div>
-        </div>
       </div>
 
-      <!-- État vide -->
-      <div class="empty-state" *ngIf="filteredPresences.length === 0">
-        <div class="empty-icon-wrapper">
-          <mat-icon>search_off</mat-icon>
-        </div>
+      <!-- Vide -->
+      <div class="pd-empty" *ngIf="filteredPresences.length === 0">
+        <mat-icon>search_off</mat-icon>
         <p>{{ 'presence.noResults' | translate }}</p>
         <button mat-stroked-button (click)="clearSearch()" *ngIf="searchTerm">
           {{ 'common.clearSearch' | translate }}
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="dialog-footer">
-    <div class="footer-stats">
-      <mat-icon>info</mat-icon>
-      <span>{{ filteredPresences.length }} {{ 'presence.playersShown' | translate }} {{ getTotalCount() }}</span>
-    </div>
-    <div class="footer-actions">
-      <button mat-stroked-button [matMenuTriggerFor]="shareMenu" class="btn-share">
+  </div><!-- /pd-body -->
+
+  <!-- ── Footer ───────────────────────────────────────────── -->
+  <div class="pd-footer">
+    <span class="pd-footer-count">
+      {{ filteredPresences.length }} / {{ getTotalCount() }} joueurs
+    </span>
+    <div class="pd-footer-actions">
+      <button mat-icon-button [matMenuTriggerFor]="shareMenu" matTooltip="{{ 'presence.share' | translate }}">
         <mat-icon>share</mat-icon>
-        <span class="btn-text">{{ 'presence.share' | translate }}</span>
       </button>
-      <button mat-stroked-button (click)="exportToExcel()" class="btn-export">
+      <button mat-icon-button (click)="exportToExcel()" matTooltip="{{ 'presence.exportCSV' | translate }}">
         <mat-icon>download</mat-icon>
-        <span class="btn-text">{{ 'presence.exportCSV' | translate }}</span>
       </button>
-      <button mat-raised-button class="btn-close" (click)="close()">
+      <button mat-flat-button color="primary" (click)="close()" class="pd-close-btn">
         {{ 'common.close' | translate }}
       </button>
     </div>
   </div>
+
 </div>
 
-<!-- Menu de partage -->
-<mat-menu #shareMenu="matMenu" class="share-menu">
+<!-- Menu partage -->
+<mat-menu #shareMenu="matMenu">
   <button mat-menu-item (click)="shareOnWhatsApp()">
-    <mat-icon class="whatsapp-icon">chat</mat-icon>
-    <span>{{ 'presence.shareWhatsApp' | translate }}</span>
+    <mat-icon style="color:#25d366">chat</mat-icon>
+    {{ 'presence.shareWhatsApp' | translate }}
   </button>
   <button mat-menu-item (click)="shareOnFacebook()">
-    <mat-icon class="facebook-icon">public</mat-icon>
-    <span>{{ 'presence.shareFacebook' | translate }}</span>
+    <mat-icon style="color:#1877f2">public</mat-icon>
+    {{ 'presence.shareFacebook' | translate }}
   </button>
   <mat-divider></mat-divider>
   <button mat-menu-item (click)="copyShareText()">
     <mat-icon>content_copy</mat-icon>
-    <span>{{ 'presence.copyText' | translate }}</span>
+    {{ 'presence.copyText' | translate }}
   </button>
 </mat-menu>

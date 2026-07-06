@@ -1,5 +1,4 @@
 <div class="chat-main-container">
-  <!-- Header harmonisé -->
   <div class="page-header">
     <div class="header-background"></div>
     <div class="header-content">
@@ -18,7 +17,6 @@
     </div>
   </div>
 
-  <!-- Loading -->
   <div *ngIf="loading" class="loading-container">
     <div class="loading-spinner">
       <mat-spinner diameter="50"></mat-spinner>
@@ -29,10 +27,10 @@
     </div>
   </div>
 
-  <!-- Content -->
   <div *ngIf="!loading" class="content">
     <div class="chat-layout">
-      <div class="chat-sidebar">
+      <!-- Sur mobile : sidebar visible si pas de conv sélectionnée -->
+      <div class="chat-sidebar" [class.mobile-hidden]="selectedConversation">
         <div class="sidebar-header">
           <button mat-icon-button [matMenuTriggerFor]="menu">
             <mat-icon>more_vert</mat-icon>
@@ -57,9 +55,17 @@
         </app-conversation-list>
       </div>
 
-      <div class="chat-main" *ngIf="selectedConversation; else noConversation">
+      <div class="chat-main" [class.mobile-show]="selectedConversation" *ngIf="selectedConversation; else noConversation">
+        <!-- Bouton retour — visible uniquement sur mobile -->
+        <div class="mobile-back-bar">
+          <button mat-icon-button class="back-btn" (click)="goBackToList()">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+          <span class="back-title">{{ getSelectedTitle() }}</span>
+        </div>
         <app-conversation-detail
-          [conversation]="selectedConversation">
+          [conversation]="selectedConversation"
+          (lastMessageUpdated)="onLastMessageUpdated($event)">
         </app-conversation-detail>
       </div>
 

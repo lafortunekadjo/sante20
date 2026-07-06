@@ -1,0 +1,61 @@
+<div class="audit-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <mat-icon>history</mat-icon>
+      {{ 'audit.title' | translate }}
+    </h1>
+  </div>
+
+  <mat-card class="table-card shadow-sm">
+    <table mat-table [dataSource]="dataSource" matSort>
+
+      <ng-container matColumnDef="date">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> {{ 'audit.col_date' | translate }} </th>
+        <td mat-cell *matCellDef="let log"> {{ log.date | date:'dd/MM/yyyy HH:mm' }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="utilisateur">
+        <th mat-header-cell *matHeaderCellDef> {{ 'audit.col_user' | translate }} </th>
+        <td mat-cell *matCellDef="let log">
+          <div class="user-info">
+            <mat-icon class="mini-icon">person</mat-icon>
+            {{ log.utilisateur }}
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="action">
+        <th mat-header-cell *matHeaderCellDef> {{ 'audit.col_action' | translate }} </th>
+        <td mat-cell *matCellDef="let log">
+          <span class="action-badge" [class]="log.action.toLowerCase()">
+            {{ log.action }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef> {{ 'audit.col_details' | translate }} </th>
+        <td mat-cell *matCellDef="let log">
+          {{ log.entite }} #{{ log.entiteId }} - {{ log.details.libelle || 'N/A' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="compare">
+        <th mat-header-cell *matHeaderCellDef> </th>
+        <td mat-cell *matCellDef="let log">
+          <button mat-icon-button color="primary" 
+                  *ngIf="log.action === 'UPDATE'"
+                  (click)="compareChanges(log)"
+                  [matTooltip]="'audit.tooltip_compare' | translate">
+            <mat-icon>unfold_more</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+    
+    <mat-paginator [pageSizeOptions]="[10, 20, 50]" showFirstLastButtons></mat-paginator>
+  </mat-card>
+</div>

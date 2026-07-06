@@ -1,0 +1,101 @@
+<!-- src/app/modules/chat/components/private-chat-dialog/private-chat-dialog.component.html -->
+
+<h2 mat-dialog-title>{{ 'chat.privateChat.title' | translate }}</h2>
+
+<mat-dialog-content>
+  <!-- Champ de recherche -->
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>{{ 'chat.privateChat.searchUser' | translate }}</mat-label>
+    <input 
+      matInput 
+      [formControl]="searchControl"
+      [placeholder]="'chat.privateChat.searchPlaceholder' | translate">
+    <mat-icon matPrefix>search</mat-icon>
+  </mat-form-field>
+
+  <!-- Utilisateur sélectionné -->
+  <div *ngIf="selectedUser" class="selected-user-card">
+    <mat-card>
+      <mat-card-content>
+        <div class="selected-user-info">
+          <img 
+            [src]="getUserAvatar(selectedUser)" 
+            [alt]="getUserDisplayName(selectedUser)"
+            class="selected-avatar">
+          <div class="user-details">
+            <h4>{{ getUserDisplayName(selectedUser) }}</h4>
+            <p>{{ selectedUser.email }}</p>
+          </div>
+          <button mat-icon-button (click)="selectedUser = null" class="remove-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Liste des utilisateurs -->
+  <div class="users-list-container">
+    <h3 class="list-title">{{ 'chat.privateChat.selectUser' | translate }}</h3>
+    
+    <mat-nav-list class="user-list">
+      <mat-list-item 
+        *ngFor="let user of filteredUsers$ | async"
+        (click)="selectUser(user)"
+        [class.selected]="selectedUser?.id === user.id"
+        class="user-item">
+        
+        <img 
+          matListItemAvatar
+          [src]="getUserAvatar(user)" 
+          [alt]="getUserDisplayName(user)">
+        
+        <div matListItemTitle class="user-name">
+          {{ getUserDisplayName(user) }}
+        </div>
+        
+        <div matListItemLine class="user-email">
+          {{ user.email }}
+        </div>
+
+        <mat-icon 
+          *ngIf="selectedUser?.id === user.id" 
+          matListItemMeta 
+          color="primary">
+          check_circle
+        </mat-icon>
+      </mat-list-item>
+    </mat-nav-list>
+
+    <!-- Message si aucun résultat -->
+    <div 
+      *ngIf="(filteredUsers$ | async)?.length === 0 && searchControl.value" 
+      class="no-results">
+      <mat-icon>person_search</mat-icon>
+      <p>{{ 'chat.privateChat.noUserFound' | translate }}</p>
+    </div>
+
+    <!-- Message si liste vide -->
+    <div 
+      *ngIf="allMembers.length === 0" 
+      class="no-results">
+      <mat-icon>group_off</mat-icon>
+      <p>Aucun membre disponible</p>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">
+    {{ 'chat.privateChat.cancel' | translate }}
+  </button>
+  <button 
+    mat-raised-button 
+    color="primary"
+    (click)="createChat()"
+    [disabled]="!selectedUser">
+    {{ 'chat.privateChat.create' | translate }}
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,570 @@
+@use '../../../../variables' as *;
+
+// ── Overlay ──────────────────────────────────────────────────
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: $z-bottom-sheet - 1;
+  pointer-events: none;
+  transition: background $transition-base;
+  backdrop-filter: blur(0px);
+
+  &.visible {
+    background: rgba(0,0,0,.5);
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+  }
+}
+
+// ── Drawer principal ─────────────────────────────────────────
+.more-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-bottom-sheet;
+  background: var(--background-primary);
+  border-radius: $border-radius-3xl $border-radius-3xl 0 0;
+  box-shadow: $shadow-bottom-sheet;
+  transform: translateY(100%);
+  transition: transform $transition-base;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &.open { transform: translateY(0); }
+
+  @media (min-width: 1024px) { display: none !important; }
+}
+
+// ── Handle ───────────────────────────────────────────────────
+.drawer-handle-zone {
+  padding: $spacing-md 0 $spacing-xs;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: $border-radius-full;
+  transition: background $transition-fast;
+
+  .drawer-handle-zone:hover & { background: var(--text-tertiary); }
+}
+
+// ── Header profil ─────────────────────────────────────────────
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm $spacing-xl $spacing-md;
+  flex-shrink: 0;
+  gap: $spacing-md;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-user {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xs;
+  margin: -$spacing-xs;
+  transition: background $transition-fast;
+
+  &:hover { background: var(--background-secondary); }
+  &:active { background: var(--background-tertiary); }
+
+  .user-chevron {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: $border-radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid #F0B429;
+  overflow: hidden;
+
+  img  { width: 100%; height: 100%; object-fit: cover; }
+  span { font-size: $font-size-sm; font-weight: $font-weight-bold; color: white; }
+
+  .online-dot {
+    position: absolute;
+    bottom: 1px; right: 1px;
+    width: 10px; height: 10px;
+    background: $success-color;
+    border-radius: $border-radius-full;
+    border: 2px solid var(--background-primary);
+  }
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  .user-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+    @include text-truncate;
+  }
+
+  .user-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .role-badge {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: var(--primary-color);
+    background: rgba(37,99,235,.1);
+    padding: 1px 7px;
+    border-radius: $border-radius-full;
+  }
+
+  .groupe-name {
+    font-size: $font-size-xs;
+    color: var(--text-tertiary);
+  }
+}
+
+// ── Actions rapides ───────────────────────────────────────────
+.quick-actions {
+  display: flex;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
+.qa-btn {
+  @include button-reset;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  position: relative;
+  transition: $transition-fast;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  .lang-flag { font-size: 17px; line-height: 1; }
+
+  &:active { background: var(--background-tertiary); transform: scale(.94); }
+}
+
+.notif-btn .qa-badge {
+  position: absolute;
+  top: 3px; right: 3px;
+  min-width: 14px; height: 14px;
+  background: $error-color;
+  color: white;
+  font-size: 9px;
+  font-weight: $font-weight-bold;
+  border-radius: $border-radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 1.5px solid var(--background-primary);
+  line-height: 1;
+}
+
+// ── Corps scrollable ──────────────────────────────────────────
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: $spacing-sm 0 0;
+}
+
+// ── Groupe accordéon ──────────────────────────────────────────
+.acc-group {
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; }
+}
+
+.acc-header {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: $spacing-md $spacing-xl;
+  min-height: 52px;
+  transition: background $transition-fast;
+  text-align: left;
+
+  &:hover  { background: var(--background-secondary); }
+  &:active { background: var(--background-tertiary); }
+}
+
+.acc-header-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+// Icône colorée de catégorie
+.acc-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &--blue   { background: rgba(26,58,138,.1);  color: #1a3a8a; }
+  &--green  { background: rgba(15,110,86,.1);  color: #0f6e56; }
+  &--amber  { background: rgba(180,117,23,.12); color: #854f0b; }
+  &--purple { background: rgba(83,74,183,.1);  color: #534ab7; }
+  &--red    { background: rgba(239,68,68,.1);  color: #b91c1c; }
+  &--teal   { background: rgba(16,185,129,.1); color: #059669; }
+  &--gray   { background: var(--background-tertiary); color: var(--text-secondary); }
+}
+
+.acc-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.acc-title {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: var(--text-primary);
+}
+
+.acc-count {
+  font-size: $font-size-xs;
+  color: var(--text-tertiary);
+}
+
+.acc-chevron {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  transition: transform $transition-fast;
+  flex-shrink: 0;
+
+  .acc-group.open & { transform: rotate(0deg); }
+}
+
+// ── Items accordéon ───────────────────────────────────────────
+.acc-items {
+  padding: $spacing-xs $spacing-xl $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  // Animation ouverture
+  animation: slideDown .2s ease forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.acc-item {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-sm;
+  border-radius: $border-radius-lg;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: $font-size-sm;
+  min-height: 44px;
+  width: 100%;
+  text-align: left;
+  transition: background $transition-fast;
+
+  .item-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .item-label {
+    flex: 1;
+    font-size: $font-size-sm;
+  }
+
+  .item-arrow {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  &:hover, &:active {
+    background: var(--background-primary);
+    .item-icon { color: var(--primary-color); }
+  }
+
+  &.active {
+    background: rgba(37,99,235,.08);
+    color: var(--primary-color);
+    font-weight: $font-weight-semibold;
+    .item-icon { color: var(--primary-color); }
+  }
+}
+
+// ── Section menus communs / paramètres ────────────────────────
+.section {
+  padding: $spacing-xs $spacing-xl;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: $spacing-sm 0 $spacing-xs;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; opacity: .6; }
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-list-item {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-sm;
+  border-radius: $border-radius-lg;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: $font-size-sm;
+  min-height: 48px;
+  width: 100%;
+  text-align: left;
+  transition: background $transition-fast;
+
+  > mat-icon:first-child {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  > span { flex: 1; }
+
+  .item-arrow {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+  }
+
+  &.active {
+    background: rgba(37,99,235,.08);
+    color: var(--primary-color);
+    > mat-icon:first-child { color: var(--primary-color); }
+  }
+
+  &:hover, &:active { background: var(--background-secondary); }
+}
+
+// ── Divider ───────────────────────────────────────────────────
+.drawer-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: $spacing-xs $spacing-xl;
+}
+
+// ── Déconnexion ───────────────────────────────────────────────
+.logout-btn {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-sm;
+  border-radius: $border-radius-lg;
+  color: $error-color;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  width: 100%;
+  min-height: 48px;
+  transition: background $transition-fast;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
+  &:active { background: rgba(239,68,68,.06); }
+}
+
+// ── Safe area bottom ──────────────────────────────────────────
+.bottom-spacer {
+  height: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + #{$spacing-xl});
+}
+
+// ── Grille menus communs (en haut) ───────────────────────────
+.section--commun {
+  padding: $spacing-md $spacing-xl $spacing-sm;
+}
+
+.nav-grid-commun {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-sm;
+  margin-top: $spacing-xs;
+}
+
+.grid-commun-item {
+  @include button-reset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: $spacing-md $spacing-xs;
+  border-radius: $border-radius-lg;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  text-align: center;
+  min-height: 68px;
+  transition: $transition-fast;
+  cursor: pointer;
+
+  .grid-commun-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-md;
+    background: var(--background-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--primary-color);
+    }
+  }
+
+  &.active {
+    background: rgba(37,99,235,.08);
+    border-color: rgba(37,99,235,.2);
+    color: var(--primary-color);
+
+    .grid-commun-icon {
+      background: rgba(37,99,235,.1);
+      border-color: rgba(37,99,235,.2);
+    }
+  }
+
+  &:active {
+    transform: scale(.96);
+    background: var(--background-tertiary);
+  }
+}
+
+// ── Swipe-to-dismiss ─────────────────────────────────────────
+// La transition est désactivée pendant le drag (style inline "none")
+// et réactivée quand on relâche pour un rembobinage fluide.
+.more-drawer {
+  will-change: transform; // optimisation GPU pour l'animation de drag
+}
+
+// Handle amélioré avec hint textuel
+.drawer-handle-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: $spacing-sm $spacing-md $spacing-xs;
+  cursor: grab;
+  user-select: none;
+  touch-action: none; // empêche le scroll de la page pendant le drag du handle
+
+  &:active { cursor: grabbing; }
+}
+
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: $border-radius-full;
+  transition: background $transition-fast, width $transition-fast;
+
+  .more-drawer.open &:hover {
+    background: var(--text-tertiary);
+    width: 50px;
+  }
+}
+
+.drawer-handle-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.3px;
+  opacity: 0;
+  transition: opacity $transition-base;
+
+  // Apparaît brièvement à l'ouverture du drawer
+  .more-drawer.open & {
+    animation: hintFadeInOut 2s ease 0.5s forwards;
+  }
+}
+
+@keyframes hintFadeInOut {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}

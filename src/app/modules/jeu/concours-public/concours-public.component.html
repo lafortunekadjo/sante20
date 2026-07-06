@@ -1,0 +1,236 @@
+<div class="cp-wrap" *ngIf="!isLoading && concours">
+
+  <!-- ══════════════════════════════
+       HERO
+  ══════════════════════════════ -->
+  <div class="cp-hero" [style.background-image]="getBgStyle()">
+    <div class="cp-hero-overlay"></div>
+    <div class="cp-hero-inner">
+
+      <!-- Badge partenaire -->
+      <div class="cp-sponsor-pill" *ngIf="concours.sponsorLogoUrl || concours.sponsorNom">
+        <img *ngIf="concours.sponsorLogoUrl" [src]="concours.sponsorLogoUrl" [alt]="concours.sponsorNom">
+        <span>{{ concours.sponsorNom }}</span>
+      </div>
+
+      <h1 class="cp-title">{{ concours.titre }}</h1>
+      <p class="cp-desc" *ngIf="concours.description">{{ concours.description }}</p>
+
+      <!-- Lots -->
+      <div class="cp-lots">
+        <div class="cp-lot" *ngFor="let lot of concours.lots">
+          <span class="lot-emoji">🏆</span>
+          <span class="lot-label">{{ lot.label }}</span>
+          <span class="lot-val">{{ lot.valeur }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       COMPTE À REBOURS + DATE
+  ══════════════════════════════ -->
+  <div class="cp-timer-bar">
+    <div class="cp-timer-label">
+      <mat-icon>timer</mat-icon>
+      <span *ngIf="!isExpired">{{ 'concours.timerLabel' | translate }}</span>
+      <span *ngIf="isExpired" class="expired-lbl">{{ 'concours.timerExpired' | translate }}</span>
+    </div>
+
+    <!-- Compte à rebours -->
+    <div class="cp-countdown" *ngIf="!isExpired">
+      <div class="cdown-unit">
+        <span class="cdown-num">{{ timeLeft.days }}</span>
+        <span class="cdown-lbl">{{ 'concours.days' | translate }}</span>
+      </div>
+      <span class="cdown-sep">:</span>
+      <div class="cdown-unit">
+        <span class="cdown-num">{{ timeLeft.hours }}</span>
+        <span class="cdown-lbl">{{ 'concours.hours' | translate }}</span>
+      </div>
+      <span class="cdown-sep">:</span>
+      <div class="cdown-unit">
+        <span class="cdown-num">{{ timeLeft.minutes }}</span>
+        <span class="cdown-lbl">{{ 'concours.minutes' | translate }}</span>
+      </div>
+      <span class="cdown-sep">:</span>
+      <div class="cdown-unit">
+        <span class="cdown-num">{{ timeLeft.seconds }}</span>
+        <span class="cdown-lbl">{{ 'concours.seconds' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Date lisible -->
+    <div class="cp-date-pill">
+      <mat-icon>event</mat-icon>
+      {{ 'concours.drawDate' | translate }} {{ concours.dateTirage | date:'dd MMM yyyy · HH:mm':'':'fr' }}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       STATS PARTICIPATIONS
+  ══════════════════════════════ -->
+  <div class="cp-stats">
+    <div class="cp-stat">
+      <span class="cp-stat-num">{{ concours.nbParticipants | number }}</span>
+      <span class="cp-stat-lbl">{{ 'concours.participants' | translate }}</span>
+    </div>
+    <div class="cp-stat-sep"></div>
+    <div class="cp-stat">
+      <span class="cp-stat-num">{{ concours.lots.length }}</span>
+      <span class="cp-stat-lbl">{{ 'concours.prizes' | translate }}</span>
+    </div>
+    <div class="cp-stat-sep"></div>
+    <div class="cp-stat">
+      <span class="cp-stat-num">{{ concours.questions.length }}</span>
+      <span class="cp-stat-lbl">{{ 'concours.questions' | translate }}</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       FORMULAIRE
+  ══════════════════════════════ -->
+  <div class="cp-form-section">
+
+    <!-- Déjà participé -->
+    <div class="cp-already" *ngIf="alreadyParticipated">
+      <div class="cp-already-icon">✅</div>
+      <h3>{{ 'concours.alreadyIn.title' | translate }}</h3>
+      <p>{{ 'concours.alreadyIn.subtitle' | translate }}</p>
+      <button mat-stroked-button class="cp-share-btn" (click)="share()">
+        <mat-icon>share</mat-icon>
+        {{ 'concours.shareBtn' | translate }}
+      </button>
+    </div>
+
+    <!-- Concours terminé -->
+    <div class="cp-expired" *ngIf="isExpired && !alreadyParticipated">
+      <div class="cp-expired-icon">🔒</div>
+      <h3>{{ 'concours.expired.title' | translate }}</h3>
+      <p>{{ 'concours.expired.subtitle' | translate }}</p>
+    </div>
+
+    <!-- Formulaire actif -->
+    <ng-container *ngIf="!isExpired && !alreadyParticipated">
+
+      <!-- Étape questions -->
+      <div class="cp-form" *ngIf="step === 'questions'">
+        <h2 class="cp-form-title">
+          <mat-icon>quiz</mat-icon>
+          {{ 'concours.formTitle' | translate }}
+        </h2>
+
+        <div class="cp-question"
+             *ngFor="let q of concours.questions; let i = index">
+
+          <div class="q-num">{{ i + 1 }}</div>
+          <div class="q-body">
+            <p class="q-text">{{ q.texte }}</p>
+
+            <!-- QCM -->
+            <div class="q-options" *ngIf="q.type === 'QCM'">
+              <label class="q-option"
+                     *ngFor="let opt of q.options"
+                     [class.selected]="reponses[i] === opt"
+                     (click)="selectOption(i, opt)">
+                <span class="q-radio">
+                  <span class="q-radio-dot" *ngIf="reponses[i] === opt"></span>
+                </span>
+                {{ opt }}
+              </label>
+            </div>
+
+            <!-- Texte libre -->
+            <div class="q-text-wrap" *ngIf="q.type === 'TEXTE'">
+              <textarea class="q-textarea"
+                        [(ngModel)]="reponses[i]"
+                        [placeholder]="'concours.textPlaceholder' | translate"
+                        rows="3"
+                        maxlength="300">
+              </textarea>
+              <span class="q-char-count">{{ (reponses[i]?.length || 0) }}/300</span>
+            </div>
+          </div>
+        </div>
+
+        <button mat-raised-button class="cp-next-btn"
+                [disabled]="!allAnswered()"
+                (click)="goToAuth()">
+          {{ 'concours.nextBtn' | translate }}
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </div>
+
+      <!-- Étape auth (non connecté) -->
+      <div class="cp-auth-step" *ngIf="step === 'auth' && !isLoggedIn">
+        <div class="cp-auth-icon">🔐</div>
+        <h3>{{ 'concours.auth.title' | translate }}</h3>
+        <p>{{ 'concours.auth.subtitle' | translate }}</p>
+
+        <div class="cp-auth-btns">
+          <button mat-raised-button color="primary" class="cp-auth-btn" (click)="goLogin()">
+            <mat-icon>login</mat-icon>
+            <div class="btn-content">
+              <span>{{ 'concours.auth.loginBtn' | translate }}</span>
+              <small>{{ 'concours.auth.loginHint' | translate }}</small>
+            </div>
+          </button>
+          <button mat-stroked-button class="cp-auth-btn" (click)="goSignup()">
+            <mat-icon>person_add</mat-icon>
+            <div class="btn-content">
+              <span>{{ 'concours.auth.signupBtn' | translate }}</span>
+              <small>{{ 'concours.auth.signupHint' | translate }}</small>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirmation (connecté) -->
+      <div class="cp-confirm" *ngIf="step === 'auth' && isLoggedIn">
+        <h3>{{ 'concours.confirm.title' | translate }}</h3>
+        <p>{{ 'concours.confirm.subtitle' | translate }}</p>
+        <button mat-raised-button color="primary" class="cp-submit-btn"
+                [disabled]="isSubmitting"
+                (click)="submit()">
+          <mat-spinner *ngIf="isSubmitting" diameter="18"></mat-spinner>
+          <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+          {{ isSubmitting ? ('concours.submitting' | translate) : ('concours.submitBtn' | translate) }}
+        </button>
+
+        <!-- Message d'erreur backend inline -->
+        <div class="cp-error-msg" *ngIf="errorMessage && !isSubmitting">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
+          <button class="cp-error-close" (click)="errorMessage = null">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Succès -->
+      <div class="cp-success" *ngIf="step === 'success'">
+        <div class="cp-success-anim">🎉</div>
+        <h3>{{ 'concours.success.title' | translate }}</h3>
+        <p>{{ 'concours.success.subtitle' | translate : { date: concours.dateTirage | date:'dd MMM yyyy':'':'fr' } }}</p>
+        <button mat-stroked-button class="cp-share-btn" (click)="share()">
+          <mat-icon>share</mat-icon>
+          {{ 'concours.shareBtn' | translate }}
+        </button>
+      </div>
+
+    </ng-container>
+  </div>
+
+</div>
+
+<!-- Loading -->
+<div class="cp-loading" *ngIf="isLoading">
+  <mat-spinner diameter="44"></mat-spinner>
+</div>
+
+<!-- Erreur -->
+<div class="cp-error" *ngIf="!isLoading && !concours">
+  <mat-icon>error_outline</mat-icon>
+  <h3>{{ 'concours.error.title' | translate }}</h3>
+  <p>{{ 'concours.error.subtitle' | translate }}</p>
+</div>

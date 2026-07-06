@@ -39,6 +39,68 @@ export interface SignupResponse {
   success: boolean;
 }
 
+
+// ════════════════════════════════════════════════════════════
+// PATCH auth.service.ts — méthodes à ajouter
+// Ajouter à la fin de la classe AuthService
+// ════════════════════════════════════════════════════════════
+
+// ── Interface à ajouter en haut du fichier ───────────────────
+export interface MonGroupeDTO {
+  groupeId: number;
+  nom: string;
+  abreviation?: string;
+  discipline?: string;
+  profilePhotoUrl?: string;
+  membreId: number;
+  roleInGroupe: string;          // roleCO texte libre (Président, etc.)
+  actif: boolean;
+  // FIX : niveau d'accès réel pour ce groupe
+  estResponsableGroupe: boolean; // accès total au groupe (sauf si roleCustom)
+  roleCustom: RoleCustomDTO | null;
+  isAdminGlobal: boolean;        // ROLE_ADMIN reste global plateforme
+}
+
+// ✅ APRÈS — alignée sur dto/RoleCustomDTO.java réel :
+export interface RoleCustomDTO {
+  id: number;
+  groupeId: number;
+  nom: string;
+  description?: string;
+  couleur: string;
+  icone: string;
+  actif: boolean;
+  systeme: boolean;
+  niveau: number;
+  dateCreation?: string;
+  dateModification?: string;
+  menus: MenuDTO[];          // liste complète de menus, pas juste des IDs
+  nombreMembres?: number;
+}
+
+export interface MenuDTO {
+  id: number;
+  code: string;
+  libelle: string;
+  icone: string;
+  route?: string;
+  categorie: string;
+  ordre: number;
+  actif: boolean;
+}
+
+export interface SwitchGroupeResponse {
+  groupeId: number;
+  groupeNom: string;
+  membreId: number | null;
+  roleInGroupe: string;
+  success: boolean;
+  message: string;
+  // FIX : champs manquants ajoutés
+  estResponsableGroupe: boolean;
+  roleCustom: RoleCustomDTO | null;
+  isAdminGlobal: boolean;
+}
 export interface AvailabilityResponse {
   available: boolean;
 }
@@ -69,11 +131,14 @@ export class AuthService {
   private apiGroupesConnect= `${environment.apiUrl}/groupes/connect`;
   
   username: any;
+  email: any;
   private passwordResetRequired: boolean = false;
   private currentRole: string | null = null;
 
   private forceMenuRefreshSubject = new BehaviorSubject<number>(0);
 public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
+private groupeActifAccessSubject = new BehaviorSubject<MonGroupeDTO | null>(null);
+public groupeActifAccess$ = this.groupeActifAccessSubject.asObservable();
 
   // BehaviorSubject pour la gestion d'état réactif
   private currentGroupeIdSubject = new BehaviorSubject<number | null>(null);
@@ -167,6 +232,7 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
         this.roles = userInfo.roles || [];
         this.username = userInfo.username || null;
         this.currentRole = userInfo.currentRole || null;
+        this.email = userInfo.email || null;
         
       } catch (e) {
         console.error("Erreur lors du parsing de userInfo depuis localStorage:", e);
@@ -174,45 +240,59 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     }
   }
 
+  // À ajouter dans ton auth.service.ts
+setCurrentUser(user: any): void {
+  const currentInfo = this.getUser();
+  const updatedInfo = {
+    ...currentInfo,
+    ...user
+  };
+  localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(updatedInfo));
+}
+
   /**
    * Logique pour récupérer les informations utilisateur après l'authentification.
    */
-  private fetchUserInfoFromToken(): Observable<any> {
-    const token = this.getToken();
-    if (!token) {
-        return throwError(() => new Error('Token manquant.'));
-    }
-
-    const authHeaders = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    });
-
-    return this.http.get<any>(this.userInfoUrl, {
-        headers: authHeaders,
-        withCredentials: true
-    }).pipe(
-        tap(userInfo => {
-            this.userId = userInfo.id || null;
-            this.passwordResetRequired = userInfo.passwordResetRequired || false;
-            this.roles = userInfo.roles || [];
-            this.username = userInfo.username || null;
-            
-            if (!this.currentRole || !this.roles.includes(this.currentRole)) {
-              this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
-            }
-            
-            localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl); 
-
-            localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
-                userId: this.userId,
-                roles: this.roles, 
-                username: this.username,
-                currentRole: this.currentRole
-            }));
-        })
-    );
+ private fetchUserInfoFromToken(): Observable<any> {
+  const token = this.getToken();
+  if (!token) {
+      return throwError(() => new Error('Token manquant.'));
   }
+
+  const authHeaders = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+  });
+
+  return this.http.get<any>(this.userInfoUrl, {
+      headers: authHeaders,
+      withCredentials: true
+  }).pipe(
+      tap(userInfo => {
+          this.userId = userInfo.id || null;
+          this.passwordResetRequired = userInfo.passwordResetRequired || false;
+          this.roles = userInfo.roles || [];
+          this.username = userInfo.username || null;
+          this.email = userInfo.email || null
+          
+          if (!this.currentRole || !this.roles.includes(this.currentRole)) {
+            this.currentRole = this.roles.length > 0 ? this.roles[0] : null;
+          }
+          
+          localStorage.setItem(this.PROFIL_URL_KEY, userInfo.profilePhotoUrl); 
+
+          // 🌟 SOLUTION : On sauvegarde l'intégralité de userInfo reçu du serveur,
+          // et on y injecte simplement le currentRole pour l'état de l'application.
+          const completeUserSession = {
+              ...userInfo,
+              userId: this.userId, // Pour garder la compatibilité avec ton code existant
+              currentRole: this.currentRole
+          };
+
+          localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(completeUserSession));
+      })
+  );
+}
 
   /**
    * Gère le processus de connexion
@@ -465,8 +545,11 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     localStorage.removeItem(this.USER_INFO_KEY);
     localStorage.removeItem(this.PROFIL_URL_KEY);
     localStorage.removeItem('redirectAfterLogin');
+    localStorage.removeItem('userProfile');
     
     this.isUserReadySubject.next(true); 
+    localStorage.removeItem('groupeActifAccess'); 
+       this.groupeActifAccessSubject.next(null);
 
     if (navigate) {
       this.router.navigate(['/home']);
@@ -485,30 +568,39 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     return this.getRoles().includes('ADMIN');
   }
 
-  updateUserProfile(userData: User): Observable<User> {
-    const token = this.getToken();
-    if (!token) {
-      return throwError(() => new Error('Aucun token disponible pour la mise à jour du profil.'));
-    }
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.http.put<User>(this.userUpdateUrl, userData, { headers }).pipe(
-      tap(updatedUser => {
-        this.userId = updatedUser.id || this.userId;
-        this.username = updatedUser.username || this.username;
-        localStorage.setItem(this.USER_INFO_KEY, JSON.stringify({
-          userId: this.userId,
-          roles: this.roles,
-          username: this.username,
-          currentRole: this.currentRole
-        }));
-      })
-    );
+updateUserProfile(userData: Record<string, any>): Observable<any> {
+  const token = this.getToken();
+  if (!token) {
+    return throwError(() => new Error('Aucun token disponible pour la mise à jour du profil.'));
   }
+  const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+ 
+  return this.http.put<any>(this.userUpdateUrl, userData, { headers }).pipe(
+    tap(updatedUser => {
+      // FIX : mettre à jour seulement les champs reçus,
+      // sans écraser tout le cache localStorage
+      this.userId   = updatedUser.id       || this.userId;
+      this.username = updatedUser.username || this.username;
+ 
+      // Lire le cache existant COMPLET
+      const existing = this.getUser() || {};
+ 
+      // Merger les nouvelles valeurs par-dessus l'existant
+      const updated = {
+        ...existing,                          // ← garder tout ce qui était là
+        ...updatedUser,                       // ← écraser avec les nouvelles valeurs
+        userId:      this.userId,             // normaliser la clé userId
+        currentRole: this.currentRole,        // garder le rôle actif
+        roles:       existing.roles || this.roles, // ne pas perdre les rôles
+      };
+ 
+      localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(updated));
+    })
+  );
+}
 
   updateUserProfileAndMember(userData: User, memberData: Membre): Observable<{ userUpdated: boolean; memberUpdated: boolean }> {
-    console.log(memberData)
+    console.log(userData)
     const token = this.getToken();
     if (!token) {
       return throwError(() => new Error('Aucun token disponible pour la mise à jour.'));
@@ -574,7 +666,8 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
       userId: this.userId,
       roles: this.roles,
       username: this.username,
-      currentRole: this.currentRole
+      currentRole: this.currentRole,
+      email:this.email
     };
   }
 
@@ -625,12 +718,35 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
   /**
    * Vérifie si l'utilisateur connecté a un rôle de responsable
    */
-  isResponsable(): boolean {
-    const roles = this.getRoles();
-    const rolesResponsable = ['RESPONSABLE', 'ADMIN', 'MEMBRE'];
-    return roles.some(role => rolesResponsable.includes(role));
-  }
+isResponsable(): boolean {
+  const access = this.groupeActifAccessSubject.value
+    ?? this.getGroupeActifAccessFromStorage();
+ 
+  if (!access) return false;
+ 
+  // Admin global de la plateforme = toujours responsable partout
+  if (access.isAdminGlobal) return true;
+ 
+  // Responsable du groupe actif = accès total à ce groupe
+  return access.estResponsableGroupe;
+}
 
+// ── NOUVEAU : accès au rôle custom du groupe actif ─────────────
+getRoleCustomActif(): RoleCustomDTO | null {
+  const access = this.groupeActifAccessSubject.value
+    ?? this.getGroupeActifAccessFromStorage();
+  return access?.roleCustom ?? null;
+}
+ 
+// ── NOUVEAU : un membre a-t-il un rôle custom restreignant ses menus ? ──
+hasRoleCustomRestriction(): boolean {
+  return this.getRoleCustomActif() !== null;
+}
+ 
+private getGroupeActifAccessFromStorage(): MonGroupeDTO | null {
+  const raw = localStorage.getItem('groupeActifAccess');
+  return raw ? JSON.parse(raw) : null;
+}
      
   isPartenaire(): boolean {
     const roles = this.getRoles();
@@ -703,6 +819,27 @@ public forceMenuRefresh$ = this.forceMenuRefreshSubject.asObservable();
     );
   }
 
+  checkUsernameAvailability2(username: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { username };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-username2`, { params });
+}
+
+checkEmailAvailability2(email: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { email };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-email2`, { params });
+}
+
+checkTelAvailability2(tel: string, userId?: number): Observable<AvailabilityResponse> {
+  const params: any = { tel };
+  if (userId) params.userId = userId.toString();
+  
+  return this.http.get<AvailabilityResponse>(`${this.apiAAuth}/check-tel2`, { params });
+}
+
 
   /**
  * ✅ Rafraîchit les informations utilisateur depuis le serveur.
@@ -733,6 +870,7 @@ refreshUserInfo(): Observable<any> {
       this.passwordResetRequired = userInfo.passwordResetRequired || false;
       this.roles = userInfo.roles || [];
       this.username = userInfo.username || null;
+      this.email = userInfo.email || null;
       
       // Mettre à jour le rôle courant
       // Si on était CANDIDAT et qu'on est maintenant RESPONSABLE, changer
@@ -749,7 +887,9 @@ refreshUserInfo(): Observable<any> {
         userId: this.userId,
         roles: this.roles,
         username: this.username,
-        currentRole: this.currentRole
+        currentRole: this.currentRole,
+        email: this.email,
+        
       }));
       
       console.log('[AuthService] refreshUserInfo - Rôles mis à jour:', this.roles);
@@ -797,4 +937,120 @@ updateGroupeId(newId: number): void {
   // 4. Émettre le signal de refresh
   this.forceMenuRefreshSubject.next(this.forceMenuRefreshSubject.value + 1);
 }
+
+
+
+
+// ── Clé localStorage à ajouter dans les constantes ──────────
+// private readonly MEMBRE_ID_KEY = 'currentMembreId';
+// private readonly MES_GROUPES_KEY = 'mesGroupes';
+
+// ════════════════════════════════════════════════════════════
+// MÉTHODES À AJOUTER dans la classe AuthService
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Récupère tous les groupes de l'utilisateur connecté.
+ * Appelé une fois au login et mis en cache dans localStorage.
+ */
+getMesGroupes(): Observable<MonGroupeDTO[]> {
+  return this.http.get<MonGroupeDTO[]>(
+    `${environment.apiUrl}/groupes/mes-groupes`
+  ).pipe(
+    tap(groupes => {
+      localStorage.setItem('mesGroupes', JSON.stringify(groupes));
+ 
+      // FIX : peupler groupeActifAccessSubject avec le groupe actif
+      const groupeActifId = this.getGroupe();
+      const groupeActif = groupes.find(g => g.groupeId === groupeActifId) ?? groupes[0] ?? null;
+ 
+      this.groupeActifAccessSubject.next(groupeActif);
+      if (groupeActif) {
+        localStorage.setItem('groupeActifAccess', JSON.stringify(groupeActif));
+ 
+        // Si aucun groupe actif n'était défini, fixer le premier comme actif
+        if (!groupeActifId && groupeActif.groupeId) {
+          this.currentGroupeIdSubject.next(groupeActif.groupeId);
+          localStorage.setItem(this.GROUPE_ID_KEY, groupeActif.groupeId.toString());
+        }
+      }
+    }),
+    catchError(() => of([]))
+  );
+}
+
+/**
+ * Retourne les groupes en cache (sans appel API).
+ */
+getMesGroupesCache(): MonGroupeDTO[] {
+  const cached = localStorage.getItem('mesGroupes');
+  return cached ? JSON.parse(cached) : [];
+}
+
+/**
+ * Switche vers un autre groupe.
+ * Met à jour currentGroupeIdSubject + membreId actif.
+ * Déclenche forceMenuRefresh pour que les menus se rechargent.
+ */
+switchGroupe(groupeId: number): Observable<SwitchGroupeResponse> {
+  return this.http.post<SwitchGroupeResponse>(
+    `${environment.apiUrl}/groupes/switch/${groupeId}`, {}
+  ).pipe(
+    tap(response => {
+      if (response.success) {
+        this.currentGroupeIdSubject.next(response.groupeId);
+        localStorage.setItem('currentGroupeId', response.groupeId.toString());
+ 
+        if (response.membreId) {
+          localStorage.setItem('currentMembreId', response.membreId.toString());
+        }
+ 
+        // FIX : mettre à jour groupeActifAccessSubject avec les infos du switch
+        const groupeAccess: MonGroupeDTO = {
+          groupeId: response.groupeId,
+          nom: response.groupeNom,
+          membreId: response.membreId ?? 0,
+          roleInGroupe: response.roleInGroupe,
+          actif: true,
+          estResponsableGroupe: response.estResponsableGroupe,
+          roleCustom: response.roleCustom,
+          isAdminGlobal: response.isAdminGlobal,
+        };
+        this.groupeActifAccessSubject.next(groupeAccess);
+        localStorage.setItem('groupeActifAccess', JSON.stringify(groupeAccess));
+ 
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+          const parsed = JSON.parse(userInfo);
+          parsed.currentRole = response.roleInGroupe;
+          parsed.groupeId = response.groupeId;
+          localStorage.setItem('userInfo', JSON.stringify(parsed));
+        }
+ 
+        this.forceMenuRefreshSubject.next(this.forceMenuRefreshSubject.value + 1);
+      }
+    }),
+    catchError(err => {
+      console.error('[AuthService] switchGroupe error:', err);
+      return throwError(() => err);
+    })
+  );
+}
+
+/**
+ * Retourne le membreId actif (groupe courant).
+ * Utilisé partout où on avait user.getMembre().getId() côté back.
+ */
+getMembreId(): number | null {
+  const stored = localStorage.getItem('currentMembreId');
+  return stored ? parseInt(stored, 10) : null;
+}
+
+/**
+ * Override de logout — nettoyer aussi les nouvelles clés.
+ * Ajouter ces lignes dans le logout() existant :
+ *
+ * localStorage.removeItem('currentMembreId');
+ * localStorage.removeItem('mesGroupes');
+ */
 }

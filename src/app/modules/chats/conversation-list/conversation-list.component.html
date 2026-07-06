@@ -1,36 +1,47 @@
-<!-- src/app/modules/chat/components/conversation-list/conversation-list.component.html -->
-
 <div class="conversation-list">
+
   <div *ngIf="loading" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
   </div>
 
-  <mat-nav-list *ngIf="!loading">
-    <mat-list-item
-      *ngFor="let conversation of conversations"
-      [class.selected]="selectedConversation?.id === conversation.id"
-      (click)="selectConversation(conversation)">
-      
-      <img matListItemAvatar [src]="getConversationImage(conversation)" [alt]="getConversationTitle(conversation)">
-      
-      <div matListItemTitle class="conversation-info">
-        <div class="conversation-header">
-          <span class="conversation-title">{{ getConversationTitle(conversation) }}</span>
-          <span class="conversation-time">{{ getLastMessageTime(conversation) }}</span>
+  <!-- div custom — évite le double clic de mat-nav-list/mat-list-item -->
+  <div class="conv-list" *ngIf="!loading">
+
+    <div class="conv-item"
+         *ngFor="let conversation of conversations"
+         [class.selected]="selectedConversation?.id === conversation.id"
+         (click)="selectConversation(conversation)"
+         role="button"
+         tabindex="0"
+         (keydown.enter)="selectConversation(conversation)">
+
+      <div class="conv-avatar">
+        <img *ngIf="getConversationImage(conversation)"
+             [src]="getConversationImage(conversation)"
+             [alt]="getConversationTitle(conversation)">
+        <div *ngIf="!getConversationImage(conversation)" class="conv-avatar-placeholder">
+          <mat-icon>{{ conversation.type === 'PRIVATE' ? 'person' : 'group' }}</mat-icon>
         </div>
-        
-        <div class="conversation-preview">
-          <span class="last-message">{{ getLastMessagePreview(conversation) }}</span>
-          <span *ngIf="conversation.unreadCount > 0" class="unread-badge">
+      </div>
+
+      <div class="conv-info">
+        <div class="conv-header">
+          <span class="conv-title">{{ getConversationTitle(conversation) }}</span>
+          <span class="conv-time">{{ getLastMessageTime(conversation) }}</span>
+        </div>
+        <div class="conv-preview">
+          <span class="conv-last">{{ getLastMessagePreview(conversation) }}</span>
+          <span *ngIf="conversation.unreadCount > 0" class="conv-badge">
             {{ conversation.unreadCount }}
           </span>
         </div>
       </div>
-    </mat-list-item>
+    </div>
 
     <div *ngIf="conversations.length === 0" class="no-conversations">
       <mat-icon>chat_bubble_outline</mat-icon>
       <p>{{ 'chat.noConversations' | translate }}</p>
     </div>
-  </mat-nav-list>
+  </div>
+
 </div>

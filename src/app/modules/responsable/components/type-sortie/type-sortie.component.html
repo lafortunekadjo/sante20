@@ -1,557 +1,229 @@
 <div class="type-sortie-container">
-  <!-- Header harmonisé -->
-  <div class="page-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-main">
-        <div class="header-text">
-          <h1 class="page-title">{{ 'sortie.managementTitle' | translate }}</h1>
-          <p class="page-subtitle">{{ 'sortie.managementSubtitle' | translate }}</p>
+
+  <div class="fin-page-header">
+    <div class="fph-top">
+      <div class="fph-title-group">
+        <div class="fph-icon sortie"><mat-icon>arrow_outward</mat-icon></div>
+        <div>
+          <h1>{{ 'sortie.managementTitle' | translate }}</h1>
+          <p>{{ 'sortie.managementSubtitle' | translate }}</p>
         </div>
       </div>
-      <div class="header-stats">
-        <div class="stat-item">
-          <span class="stat-number">{{ sortiesDataSource.data.length }}</span>
-          <span class="stat-label">{{ 'sortie.totalOutflows' | translate }}</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number">{{ typesDataSource.data.length }}</span>
-          <span class="stat-label">{{ 'sortie.totalTypes' | translate }}</span>
-        </div>
+      <div class="fph-kpis-inline">
+        <span>{{ sortiesDataSource.data.length }} sorties · {{ typesDataSource.data.length }} types</span>
       </div>
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="isLoadingSorties || isLoadingTypes" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="50"></mat-spinner>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'common.loading' | translate }}...</h3>
-      <p>{{ 'sortie.loadingData' | translate }}</p>
-    </div>
+  <div *ngIf="isLoadingSorties || isLoadingTypes" class="fin-loading">
+    <mat-spinner diameter="44"></mat-spinner>
   </div>
 
-  <!-- Content -->
-  <div *ngIf="!isLoadingSorties && !isLoadingTypes" class="content">
-    <!-- Section Sorties de Caisse -->
-    <div class="feed-section sorties-section full-width">
-      <div class="section-header">
-        <div class="header-icon-wrapper">
-          <mat-icon>arrow_outward</mat-icon>
-        </div>
-        <div class="header-text">
-          <h2>{{ 'sortie.outflowsManagement' | translate }}</h2>
-          <span class="badge">{{ sortiesDataSource.data.length || 0 }}</span>
-        </div>
-      </div>
-      <div class="section-content">
-        <!-- Bouton Créer -->
-        <div class="action-buttons">
-          <button mat-raised-button color="primary" (click)="toggleCreateSortieRow()" class="add-button">
-            <mat-icon>add</mat-icon>
-            <span class="button-text">{{ 'sortie.createOutflow' | translate }}</span>
-          </button>
-        </div>
+  <div class="fin-tabs-wrapper" *ngIf="!isLoadingSorties && !isLoadingTypes">
+    <div class="fin-tabs-bar">
+      <button class="fin-tab" [class.active]="activeTab === 'sorties'" (click)="activeTab = 'sorties'">
+        <mat-icon>arrow_outward</mat-icon>
+        <span>{{ 'sortie.outflowsManagement' | translate }}</span>
+        <span class="fin-tab-badge">{{ sortiesDataSource.data.length }}</span>
+      </button>
+      <button class="fin-tab" [class.active]="activeTab === 'types'" (click)="activeTab = 'types'">
+        <mat-icon>category</mat-icon>
+        <span>{{ 'sortie.expenseTypesManagement' | translate }}</span>
+        <span class="fin-tab-badge">{{ typesDataSource.data.length }}</span>
+      </button>
+    </div>
 
-        <!-- Formulaire de création -->
-        <div *ngIf="showCreateSortieRow" class="demande-card create-card">
-          <div class="demande-header">
-            <div class="groupe-info">
-              <div class="groupe-avatar">
-                <mat-icon class="discipline-icon">add_circle</mat-icon>
-              </div>
-              <div class="groupe-details">
-                <h3 class="groupe-nom">{{ 'sortie.newOutflow' | translate }}</h3>
-              </div>
-            </div>
-          </div>
-          <div class="demande-content">
-            <div class="form-grid">
-              <mat-form-field appearance="outline" class="form-field">
+    <!-- Tab Sorties -->
+    <div class="fin-tab-content" *ngIf="activeTab === 'sorties'">
+      <div class="fin-content">
+        <button mat-raised-button color="primary" (click)="toggleCreateSortieRow()">
+          <mat-icon>{{ showCreateSortieRow ? 'close' : 'add' }}</mat-icon>
+          {{ (showCreateSortieRow ? 'common.cancel' : 'sortie.createOutflow') | translate }}
+        </button>
+
+        <!-- Formulaire création sortie -->
+        <div class="fin-form-card" *ngIf="showCreateSortieRow" style="margin-top:16px">
+          <div class="fin-form-body">
+            <div class="fin-form-grid">
+              <mat-form-field appearance="outline" class="span-2">
                 <mat-label>{{ 'sortie.description' | translate }}</mat-label>
+                <mat-icon matPrefix>description</mat-icon>
                 <input matInput [(ngModel)]="newSortie.description" required>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.amount' | translate }}</mat-label>
+                <mat-icon matPrefix>payments</mat-icon>
                 <input matInput type="number" [(ngModel)]="newSortie.montant" required>
+                <span matSuffix>FCFA</span>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.expenseType' | translate }}</mat-label>
+                <mat-icon matPrefix>category</mat-icon>
                 <mat-select [(ngModel)]="newSortie.typeDepense" required>
-                  <mat-option *ngFor="let type of typesDepenses" [value]="type">{{ type.nom }}</mat-option>
+                  <mat-option *ngFor="let t of typesDepenses" [value]="t">{{ t.nom }}</mat-option>
                 </mat-select>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.user' | translate }}</mat-label>
+                <mat-icon matPrefix>person</mat-icon>
                 <mat-select [(ngModel)]="newSortie.utilisateur" required>
-                  <mat-option *ngFor="let utilisateur of utilisateurs" [value]="utilisateur">{{ utilisateur.nom + ' ' + utilisateur.prenom | titlecase }}</mat-option>
+                  <mat-option *ngFor="let u of utilisateurs" [value]="u">{{ u.nom + ' ' + u.prenom | titlecase }}</mat-option>
                 </mat-select>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.dateOutflow' | translate }}</mat-label>
+                <mat-icon matPrefix>event</mat-icon>
                 <input matInput [matDatepicker]="picker" [(ngModel)]="newSortie.dateSortie" required>
                 <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                 <mat-datepicker #picker></mat-datepicker>
               </mat-form-field>
             </div>
           </div>
-          <div class="demande-actions">
-            <div class="primary-actions">
-              <button mat-raised-button color="primary" (click)="saveNewSortie()" [disabled]="!isCreateSortieFormValid()" class="action-button">
-                <mat-icon>save</mat-icon>
-                <span class="button-text">{{ 'common.save' | translate }}</span>
-              </button>
-              <button mat-stroked-button color="warn" (click)="cancelCreateSortie()" class="action-button">
-                <mat-icon>cancel</mat-icon>
-                <span class="button-text">{{ 'common.cancel' | translate }}</span>
-              </button>
-            </div>
+          <div class="fin-form-actions">
+            <button mat-raised-button color="primary"
+                    (click)="saveNewSortie()" [disabled]="!isCreateSortieFormValid()">
+              <mat-icon>save</mat-icon>{{ 'common.save' | translate }}
+            </button>
+            <button mat-stroked-button (click)="cancelCreateSortie()">
+              <mat-icon>cancel</mat-icon>{{ 'common.cancel' | translate }}
+            </button>
           </div>
         </div>
 
-        <!-- Vue mobile en cartes pour les sorties -->
-        <div class="mobile-cards-view" *ngIf="sortiesDataSource.data.length > 0">
-          <div class="sortie-card" *ngFor="let sortie of sortiesDataSource.data; let i = index">
-            <div class="card-header">
-              <div class="card-title">
-                <mat-icon class="card-icon">arrow_outward</mat-icon>
-                <div class="title-content">
-                  <h4 class="sortie-description">
-                    <ng-container *ngIf="!editingSortieRows[i]; else editDescMobile">
-                      {{ sortie.description }}
-                    </ng-container>
-                    <ng-template #editDescMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <input matInput [(ngModel)]="editSortie.description" required>
-                      </mat-form-field>
-                    </ng-template>
-                  </h4>
-                  <span class="sortie-date">{{ sortie.dateSortie | date:'dd/MM/yyyy' }}</span>
+        <div class="fin-empty" *ngIf="sortiesDataSource.data.length === 0">
+          <mat-icon>arrow_outward</mat-icon>
+          <p>Aucune sortie enregistrée</p>
+        </div>
+
+        <div class="fin-list" *ngIf="sortiesDataSource.data.length > 0">
+          <div class="fin-item sortie" *ngFor="let s of sortiesDataSource.data; let i = index">
+            <div class="fi-icon sortie"><mat-icon>arrow_outward</mat-icon></div>
+            <div class="fi-info">
+              <ng-container *ngIf="!editingSortieRows[i]">
+                <span class="fi-label">{{ s.description }}</span>
+                <span class="fi-sub">{{ s.dateSortie | date:'dd/MM/yyyy' }} · {{ s.utilisateur.nom | titlecase }}</span>
+                <div class="fi-tags">
+                  <span class="fin-type-badge">{{ getTypeDepenseName(s.typeDepense) }}</span>
                 </div>
-              </div>
-              <div class="card-actions">
-                <ng-container *ngIf="!editingSortieRows[i]; else editActionsSortieMobile">
-                  <button mat-icon-button color="primary" (click)="editSortieRow(i, sortie)" class="action-btn">
+              </ng-container>
+              <ng-container *ngIf="editingSortieRows[i]">
+                <mat-form-field appearance="outline" class="inline-edit-field">
+                  <input matInput [(ngModel)]="editSortie.description">
+                </mat-form-field>
+              </ng-container>
+            </div>
+            <div class="fi-right">
+              <span class="fi-montant sortie">{{ s.montant | number }} FCFA</span>
+              <div class="fi-actions">
+                <ng-container *ngIf="!editingSortieRows[i]">
+                  <button mat-icon-button color="primary" (click)="editSortieRow(i, s)">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="openDeleteSortieDialog(sortie)" class="action-btn">
+                  <button mat-icon-button color="warn" (click)="openDeleteSortieDialog(s)">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </ng-container>
-                <ng-template #editActionsSortieMobile>
-                  <button mat-icon-button color="primary" (click)="saveEditSortie(i)" [disabled]="!isEditSortieFormValid()" class="action-btn">
+                <ng-container *ngIf="editingSortieRows[i]">
+                  <button mat-icon-button color="primary" (click)="saveEditSortie(i)"
+                          [disabled]="!isEditSortieFormValid()">
                     <mat-icon>save</mat-icon>
                   </button>
-                  <button mat-icon-button color="warn" (click)="cancelEditSortie(i)" class="action-btn">
+                  <button mat-icon-button color="warn" (click)="cancelEditSortie(i)">
                     <mat-icon>cancel</mat-icon>
                   </button>
-                </ng-template>
+                </ng-container>
               </div>
             </div>
-
-            <div class="card-content">
-              <div class="info-grid">
-                <!-- Montant en évidence -->
-                <div class="info-item highlight">
-                  <label class="info-label">{{ 'sortie.amount' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingSortieRows[i]; else editMontantMobile">
-                      <span class="amount-value">{{ sortie.montant | number }} FCFA</span>
-                    </ng-container>
-                    <ng-template #editMontantMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <input matInput type="number" [(ngModel)]="editSortie.montant" required>
-                      </mat-form-field>
-                    </ng-template>
-                  </div>
-                </div>
-
-                <!-- Type de dépense -->
-                <div class="info-item">
-                  <label class="info-label">{{ 'sortie.expenseType' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingSortieRows[i]; else editTypeDepenseMobile">
-                      <span class="type-badge">{{ getTypeDepenseName(sortie.typeDepense) }}</span>
-                    </ng-container>
-                    <ng-template #editTypeDepenseMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <mat-select [(ngModel)]="editSortie.typeDepense" required>
-                          <mat-option *ngFor="let type of typesDepenses" [value]="type">{{ type.nom }}</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </ng-template>
-                  </div>
-                </div>
-
-                <!-- Utilisateur -->
-                <div class="info-item full-width">
-                  <label class="info-label">{{ 'sortie.user' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingSortieRows[i]; else editUtilisateurMobile">
-                      <span class="user-name">{{ sortie.utilisateur.nom + ' ' + sortie.utilisateur.prenom | titlecase }}</span>
-                    </ng-container>
-                    <ng-template #editUtilisateurMobile>
-                      <mat-form-field appearance="outline" class="mobile-field full-width">
-                        <mat-select [(ngModel)]="editSortie.utilisateur" required>
-                          <mat-option *ngFor="let utilisateur of utilisateurs" [value]="utilisateur">{{ utilisateur.nom + ' ' + utilisateur.prenom | titlecase }}</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </ng-template>
-                  </div>
-                </div>
-
-                <!-- Date -->
-                <div class="info-item">
-                  <label class="info-label">{{ 'sortie.dateOutflow' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingSortieRows[i]; else editDateSortieMobile">
-                      <span class="date-value">{{ sortie.dateSortie | date:'dd/MM/yyyy' }}</span>
-                    </ng-container>
-                    <ng-template #editDateSortieMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <input matInput [matDatepicker]="editPickerMobile" [(ngModel)]="editSortie.dateSortie" required>
-                        <mat-datepicker-toggle matSuffix [for]="editPickerMobile"></mat-datepicker-toggle>
-                        <mat-datepicker #editPickerMobile></mat-datepicker>
-                      </mat-form-field>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vue desktop - Tableau des sorties -->
-        <div class="desktop-table-view">
-          <div class="table-wrapper" *ngIf="sortiesDataSource.data.length > 0">
-            <table mat-table [dataSource]="sortiesDataSource" matSort class="mat-elevation-z2">
-              <ng-container matColumnDef="description">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.description' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'sortie.description' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editDesc">
-                    {{ sortie.description }}
-                  </ng-container>
-                  <ng-template #editDesc>
-                    <mat-form-field appearance="outline">
-                      <input matInput [(ngModel)]="editSortie.description" required>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="montant">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.amount' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'sortie.amount' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editMontant">
-                    {{ sortie.montant | number }} FCFA
-                  </ng-container>
-                  <ng-template #editMontant>
-                    <mat-form-field appearance="outline">
-                      <input matInput type="number" [(ngModel)]="editSortie.montant" required>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="typeDepense">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.expenseType' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'sortie.expenseType' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editTypeDepense">
-                    {{ getTypeDepenseName(sortie.typeDepense) }}
-                  </ng-container>
-                  <ng-template #editTypeDepense>
-                    <mat-form-field appearance="outline">
-                      <mat-select [(ngModel)]="editSortie.typeDepense" required>
-                        <mat-option *ngFor="let type of typesDepenses" [value]="type">{{ type.nom }}</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="utilisateur">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.user' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'sortie.user' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editUtilisateur">
-                    {{ sortie.utilisateur.nom + ' ' + sortie.utilisateur.prenom | titlecase }}
-                  </ng-container>
-                  <ng-template #editUtilisateur>
-                    <mat-form-field appearance="outline">
-                      <mat-select [(ngModel)]="editSortie.utilisateur" required>
-                        <mat-option *ngFor="let utilisateur of utilisateurs" [value]="utilisateur">{{ utilisateur.nom + ' ' + utilisateur.prenom | titlecase }}</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="dateSortie">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.dateOutflow' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'sortie.dateOutflow' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editDateSortie">
-                    {{ sortie.dateSortie | date:'shortDate' }}
-                  </ng-container>
-                  <ng-template #editDateSortie>
-                    <mat-form-field appearance="outline">
-                      <input matInput [matDatepicker]="editPicker" [(ngModel)]="editSortie.dateSortie" required>
-                      <mat-datepicker-toggle matSuffix [for]="editPicker"></mat-datepicker-toggle>
-                      <mat-datepicker #editPicker></mat-datepicker>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
-                <td mat-cell *matCellDef="let sortie; let i = index" [attr.data-label]="'common.actions' | translate">
-                  <ng-container *ngIf="!editingSortieRows[i]; else editActionsSortie">
-                    <div class="action-buttons-horizontal">
-                      <button mat-icon-button color="primary" (click)="editSortieRow(i, sortie)">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="openDeleteSortieDialog(sortie)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-                  </ng-container>
-                  <ng-template #editActionsSortie>
-                    <div class="action-buttons-horizontal">
-                      <button mat-icon-button color="primary" (click)="saveEditSortie(i)" [disabled]="!isEditSortieFormValid()">
-                        <mat-icon>save</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="cancelEditSortie(i)">
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    </div>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="sortiesDisplayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: sortiesDisplayedColumns;"></tr>
-            </table>
-            <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Section Types de Sorties -->
-    <div class="feed-section types-section full-width">
-      <div class="section-header">
-        <div class="header-icon-wrapper">
-          <mat-icon>category</mat-icon>
-        </div>
-        <div class="header-text">
-          <h2>{{ 'sortie.expenseTypesManagement' | translate }}</h2>
-          <span class="badge">{{ typesDataSource.data.length || 0 }}</span>
-        </div>
-      </div>
-      <div class="section-content">
-        <!-- Bouton Créer Type -->
-        <div class="action-buttons">
-          <button mat-raised-button color="primary" (click)="toggleCreateTypeRow()" class="add-button">
-            <mat-icon>add</mat-icon>
-            <span class="button-text">{{ 'sortie.createType' | translate }}</span>
-          </button>
-        </div>
+    <!-- Tab Types -->
+    <div class="fin-tab-content" *ngIf="activeTab === 'types'">
+      <div class="fin-content">
+        <button mat-raised-button color="primary" (click)="toggleCreateTypeRow()">
+          <mat-icon>{{ showCreateTypeRow ? 'close' : 'add' }}</mat-icon>
+          {{ (showCreateTypeRow ? 'common.cancel' : 'sortie.createType') | translate }}
+        </button>
 
-        <!-- Formulaire de création Type -->
-        <div *ngIf="showCreateTypeRow" class="demande-card create-card">
-          <div class="demande-header">
-            <div class="groupe-info">
-              <div class="groupe-avatar">
-                <mat-icon class="discipline-icon">add_circle</mat-icon>
-              </div>
-              <div class="groupe-details">
-                <h3 class="groupe-nom">{{ 'sortie.newType' | translate }}</h3>
-              </div>
-            </div>
-          </div>
-          <div class="demande-content">
-            <div class="form-grid">
-              <mat-form-field appearance="outline" class="form-field">
+        <!-- Formulaire création type -->
+        <div class="fin-form-card" *ngIf="showCreateTypeRow" style="margin-top:16px">
+          <div class="fin-form-body">
+            <div class="fin-form-grid">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.name' | translate }}</mat-label>
+                <mat-icon matPrefix>label</mat-icon>
                 <input matInput [(ngModel)]="newType.nom" required>
               </mat-form-field>
-              <div class="form-field checkbox-field">
-                <mat-checkbox [(ngModel)]="newType.isGenerique">{{ 'sortie.generic' | translate }}</mat-checkbox>
-              </div>
-              <mat-form-field appearance="outline" class="form-field">
+              <mat-form-field appearance="outline">
                 <mat-label>{{ 'sortie.group' | translate }}</mat-label>
+                <mat-icon matPrefix>group</mat-icon>
                 <mat-select [(ngModel)]="newType.groupe">
                   <mat-option [value]="null">{{ 'common.na' | translate }}</mat-option>
-                  <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
+                  <mat-option *ngFor="let g of groupes" [value]="g">{{ g.nom }}</mat-option>
                 </mat-select>
               </mat-form-field>
+              <div class="fin-check-field">
+                <mat-checkbox [(ngModel)]="newType.isGenerique">{{ 'sortie.generic' | translate }}</mat-checkbox>
+              </div>
             </div>
           </div>
-          <div class="demande-actions">
-            <div class="primary-actions">
-              <button mat-raised-button color="primary" (click)="saveNewType()" [disabled]="!isCreateTypeFormValid()" class="action-button">
-                <mat-icon>save</mat-icon>
-                <span class="button-text">{{ 'common.save' | translate }}</span>
-              </button>
-              <button mat-stroked-button color="warn" (click)="cancelCreateType()" class="action-button">
-                <mat-icon>cancel</mat-icon>
-                <span class="button-text">{{ 'common.cancel' | translate }}</span>
-              </button>
-            </div>
+          <div class="fin-form-actions">
+            <button mat-raised-button color="primary"
+                    (click)="saveNewType()" [disabled]="!isCreateTypeFormValid()">
+              <mat-icon>save</mat-icon>{{ 'common.save' | translate }}
+            </button>
+            <button mat-stroked-button (click)="cancelCreateType()">
+              <mat-icon>cancel</mat-icon>{{ 'common.cancel' | translate }}
+            </button>
           </div>
         </div>
 
-        <!-- Vue mobile en cartes pour les types -->
-        <div class="mobile-cards-view" *ngIf="typesDataSource.data.length > 0">
-          <div class="type-card" *ngFor="let type of typesDataSource.data; let i = index">
-            <div class="card-header">
-              <div class="card-title">
-                <mat-icon class="card-icon">category</mat-icon>
-                <div class="title-content">
-                  <h4 class="type-name">
-                    <ng-container *ngIf="!editingTypeRows[i]; else editNomMobile">
-                      {{ type.nom }}
-                    </ng-container>
-                    <ng-template #editNomMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <input matInput [(ngModel)]="editType.nom" required>
-                      </mat-form-field>
-                    </ng-template>
-                  </h4>
-                  <span class="type-status">
-                    <span class="generic-badge" [class]="type.isGenerique ? 'generic' : 'specific'">
-                      <mat-icon>{{ type.isGenerique ? 'public' : 'lock' }}</mat-icon>
-                      {{ type.isGenerique ? ('common.yes' | translate) : ('common.no' | translate) }}
-                    </span>
+        <div class="fin-empty" *ngIf="typesDataSource.data.length === 0">
+          <mat-icon>category</mat-icon>
+          <p>Aucun type de sortie</p>
+        </div>
+
+        <div class="fin-list" *ngIf="typesDataSource.data.length > 0">
+          <div class="fin-item" *ngFor="let t of typesDataSource.data; let i = index">
+            <div class="fi-icon"><mat-icon>category</mat-icon></div>
+            <div class="fi-info">
+              <ng-container *ngIf="!editingTypeRows[i]">
+                <span class="fi-label">{{ t.nom }}</span>
+                <div class="fi-tags">
+                  <span class="fin-type-badge" [class]="t.isGenerique ? 'generic' : 'specific'">
+                    <mat-icon>{{ t.isGenerique ? 'public' : 'lock' }}</mat-icon>
+                    {{ t.isGenerique ? ('common.yes' | translate) : ('common.no' | translate) }}
                   </span>
+                  <span *ngIf="t.groupe" class="fin-type-badge">{{ t.groupe.nom }}</span>
                 </div>
-              </div>
-              <div class="card-actions">
-                <ng-container *ngIf="!editingTypeRows[i]; else editActionsTypeMobile">
-                  <button mat-icon-button color="primary" (click)="editTypeRow(i, type)" class="action-btn">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button mat-icon-button color="warn" (click)="openDeleteTypeDialog(type)" class="action-btn">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </ng-container>
-                <ng-template #editActionsTypeMobile>
-                  <button mat-icon-button color="primary" (click)="saveEditType(i)" [disabled]="!isEditTypeFormValid()" class="action-btn">
-                    <mat-icon>save</mat-icon>
-                  </button>
-                  <button mat-icon-button color="warn" (click)="cancelEditType(i)" class="action-btn">
-                    <mat-icon>cancel</mat-icon>
-                  </button>
-                </ng-template>
-              </div>
+              </ng-container>
+              <ng-container *ngIf="editingTypeRows[i]">
+                <mat-form-field appearance="outline" class="inline-edit-field">
+                  <input matInput [(ngModel)]="editType.nom">
+                </mat-form-field>
+              </ng-container>
             </div>
-
-            <div class="card-content">
-              <div class="info-grid">
-                <div class="info-item">
-                  <label class="info-label">{{ 'sortie.generic' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingTypeRows[i]; else editGenMobile">
-                      <span class="generic-text" [class]="type.isGenerique ? 'yes' : 'no'">
-                        {{ type.isGenerique ? ('common.yes' | translate) : ('common.no' | translate) }}
-                      </span>
-                    </ng-container>
-                    <ng-template #editGenMobile>
-                      <mat-checkbox [(ngModel)]="editType.isGenerique"></mat-checkbox>
-                    </ng-template>
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <label class="info-label">{{ 'sortie.group' | translate }}</label>
-                  <div class="info-value">
-                    <ng-container *ngIf="!editingTypeRows[i]; else editGroupeMobile">
-                      <span class="group-name">{{ type.groupe?.nom || ('common.na' | translate) }}</span>
-                    </ng-container>
-                    <ng-template #editGroupeMobile>
-                      <mat-form-field appearance="outline" class="mobile-field">
-                        <mat-select [(ngModel)]="editType.groupe">
-                          <mat-option [value]="null">{{ 'common.na' | translate }}</mat-option>
-                          <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
+            <div class="fi-actions">
+              <ng-container *ngIf="!editingTypeRows[i]">
+                <button mat-icon-button color="primary" (click)="editTypeRow(i, t)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="openDeleteTypeDialog(t)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </ng-container>
+              <ng-container *ngIf="editingTypeRows[i]">
+                <button mat-icon-button color="primary" (click)="saveEditType(i)"
+                        [disabled]="!isEditTypeFormValid()">
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="cancelEditType(i)">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </ng-container>
             </div>
-          </div>
-        </div>
-
-        <!-- Vue desktop - Tableau des types -->
-        <div class="desktop-table-view">
-          <div class="table-wrapper" *ngIf="typesDataSource.data.length > 0">
-            <table mat-table [dataSource]="typesDataSource" matSort class="mat-elevation-z2">
-              <ng-container matColumnDef="nom">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.name' | translate }}</th>
-                <td mat-cell *matCellDef="let type; let i = index" [attr.data-label]="'sortie.name' | translate">
-                  <ng-container *ngIf="!editingTypeRows[i]; else editNom">
-                    {{ type.nom }}
-                  </ng-container>
-                  <ng-template #editNom>
-                    <mat-form-field appearance="outline">
-                      <input matInput [(ngModel)]="editType.nom" required>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="isGenerique">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.generic' | translate }}</th>
-                <td mat-cell *matCellDef="let type; let i = index" [attr.data-label]="'sortie.generic' | translate">
-                  <ng-container *ngIf="!editingTypeRows[i]; else editGen">
-                    {{ type.isGenerique ? 'common.yes' : 'common.no' | translate }}
-                  </ng-container>
-                  <ng-template #editGen>
-                    <mat-checkbox [(ngModel)]="editType.isGenerique"></mat-checkbox>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="groupe">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'sortie.group' | translate }}</th>
-                <td mat-cell *matCellDef="let type; let i = index" [attr.data-label]="'sortie.group' | translate">
-                  <ng-container *ngIf="!editingTypeRows[i]; else editGroupe">
-                    {{ type.groupe?.nom || 'common.na' | translate }}
-                  </ng-container>
-                  <ng-template #editGroupe>
-                    <mat-form-field appearance="outline">
-                      <mat-select [(ngModel)]="editType.groupe">
-                        <mat-option [value]="null">{{ 'common.na' | translate }}</mat-option>
-                        <mat-option *ngFor="let groupe of groupes" [value]="groupe">{{ groupe.nom }}</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
-                <td mat-cell *matCellDef="let type; let i = index" [attr.data-label]="'common.actions' | translate">
-                  <ng-container *ngIf="!editingTypeRows[i]; else editActions">
-                    <div class="action-buttons-horizontal">
-                      <button mat-icon-button color="primary" (click)="editTypeRow(i, type)">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="openDeleteTypeDialog(type)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-                  </ng-container>
-                  <ng-template #editActions>
-                    <div class="action-buttons-horizontal">
-                      <button mat-icon-button color="primary" (click)="saveEditType(i)" [disabled]="!isEditTypeFormValid()">
-                        <mat-icon>save</mat-icon>
-                      </button>
-                      <button mat-icon-button color="warn" (click)="cancelEditType(i)">
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    </div>
-                  </ng-template>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="typesDisplayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: typesDisplayedColumns;"></tr>
-            </table>
-            <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
           </div>
         </div>
       </div>
