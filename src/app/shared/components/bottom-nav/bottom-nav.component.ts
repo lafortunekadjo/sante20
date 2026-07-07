@@ -11,7 +11,6 @@ import { takeUntil, filter } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 
-// ── Interface tab dynamique ──
 interface NavTab {
   id:     string;
   label:  string;
@@ -29,22 +28,19 @@ interface NavTab {
 })
 export class BottomNavComponent implements OnInit, OnDestroy {
 
-  // ── Inputs depuis le layout ──
-  @Input() unreadCount       = 0;
+  @Input() unreadCount        = 0;
   @Input() upcomingMatchCount = 0;
-  @Input() moreDrawerOpen    = false;
-  // Menus chargés par le layout (proviennent du backend via RoleCustomService)
-  @Input() set menusCommuns(v: Menu[])          { this._menusCommuns = v;    this.buildTabs(); }
-  @Input() set menuCategories(v: MenuCategorie[]){ this._menuCategories = v; this.buildTabs(); }
+  @Input() moreDrawerOpen     = false;
+  @Input() set menusCommuns(v: Menu[])           { this._menusCommuns   = v; this.buildTabs(); }
+  @Input() set menuCategories(v: MenuCategorie[]) { this._menuCategories = v; this.buildTabs(); }
 
   @Output() moreClick = new EventEmitter<void>();
 
-  // ── State ──
   tabs:     NavTab[] = [];
   isHidden = false;
 
-  private _menusCommuns:    Menu[]          = [];
-  private _menuCategories:  MenuCategorie[] = [];
+  private _menusCommuns:   Menu[]          = [];
+  private _menuCategories: MenuCategorie[] = [];
   private destroy$ = new Subject<void>();
 
   private readonly HIDDEN_ROUTES = [
@@ -59,7 +55,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Rebuild tabs quand l'auth change
     this.authService.isUserReady$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(ready => {
@@ -67,11 +62,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     });
 
-    // Rebuild tabs quand le groupe réel arrive (peut être émis après
-    // isUserReady$ lors de la toute première connexion — sans cette
-    // souscription, hasGroup peut rester figé à false sur mobile et les
-    // tabs/menus du "Plus" ne sont jamais recalculés tant qu'aucun refresh
-    // n'a lieu).
     this.authService.currentGroupeId$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
@@ -79,7 +69,16 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     });
 
-    // Masque selon la route
+    // FIX : reconstruire les tabs quand groupeActifAccess change
+    // (switch de groupe ou chargement initial des groupes)
+    // Permet de refléter estResponsableGroupe/roleCustom sur mobile
+    this.authService.groupeActifAccess$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.buildTabs();
+      this.cdr.markForCheck();
+    });
+
     this.router.events.pipe(
       filter(e => e instanceof NavigationEnd),
       takeUntil(this.destroy$)
@@ -97,9 +96,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ──────────────────────────────────────────────────────────
-  // Construction dynamique des tabs selon le rôle et les menus
-  // ──────────────────────────────────────────────────────────
   private buildTabs(): void {
     if (!this.authService.isLoggedIn()) {
       this.tabs = [];
@@ -111,56 +107,56 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const groupe  = this.authService.getGroupe();
     const hasGroup = !!groupe && groupe > 0;
 
-    const isAdmin       = roles.some(r => r === 'ADMIN'       || r === 'ROLE_ADMIN');
-    const isResponsable = roles.some(r => r === 'RESPONSABLE' || r === 'ROLE_RESPONSABLE');
-    const isMembre      = roles.some(r => r === 'MEMBRE'      || r === 'ROLE_MEMBRE');
-    const isPartenaire  = roles.some(r => r === 'PARTENAIRE'  || r === 'ROLE_PARTENAIRE');
+    const isAdmin      = roles.some(r => r === 'ADMIN'      || r === 'ROLE_ADMIN');
+    const isPartenaire = roles.some(r => r === 'PARTENAIRE' || r === 'ROLE_PARTENAIRE');
+
+    // FIX : utiliser authService.isResponsable() qui lit groupeActifAccess
+    // plutôt que les rôles JWT — couvre :
+    // - users avec ROLE_RESPONSABLE (grand écran, déjà marchait)
+    // - users avec ROLE_MEMBRE mais estResponsableGroupe=true (mobile, fusionnés)
+    // - users avec ROLE_MEMBRE mais roleCustom assigné
+    const isResponsable = !isAdmin && !isPartenaire && this.authService.isResponsable();
+    const isMembre      = !isAdmin && !isPartenaire && !isResponsable
+                          && roles.some(r => r === 'MEMBRE' || r === 'ROLE_MEMBRE');
 
     const tabs: NavTab[] = [];
 
-    // ── Tab 1 : Accueil — toujours présent ──
+    // Tab 1 : Accueil — toujours présent
     tabs.push({ id: 'home', label: 'Accueil', icon: 'home', route: '/home' });
 
-    // ── Tabs selon rôle ──
     if (isAdmin) {
-      tabs.push({ id: 'groups',  label: 'Groupes',  icon: 'group',     route: '/admin/groupes'      });
-      tabs.push({ id: 'users',   label: 'Utilisateurs', icon: 'person', route: '/admin/utilisateurs' });
+      tabs.push({ id: 'groups', label: 'Groupes',       icon: 'group',  route: '/admin/groupes'       });
+      tabs.push({ id: 'users',  label: 'Utilisateurs',  icon: 'person', route: '/admin/utilisateurs'  });
 
     } else if (isResponsable && hasGroup) {
-      // Vérifier quels menus sont disponibles via les catégories chargées
-      const hasMatchMenu    = this.hasMenuInCategories('MATCHS')    || this.hasMenuInCategories('SPORT');
-      const hasMembresMenu  = this.hasMenuInCategories('MEMBRES')   || this.hasMenuInCategories('GESTION');
-      const hasFinanceMenu  = this.hasMenuInCategories('FINANCES');
-      const hasChatMenu     = this.hasMenuCommun('CHAT') || true; // chat toujours si connecté
+      const hasMatchMenu   = this.hasMenuInCategories('MATCHS')  || this.hasMenuInCategories('SPORT');
+      const hasMembresMenu = this.hasMenuInCategories('MEMBRES') || this.hasMenuInCategories('GESTION');
+      const hasFinanceMenu = this.hasMenuInCategories('FINANCES');
 
       if (hasMembresMenu) {
-        tabs.push({ id: 'membres', label: 'Membres', icon: 'group', route: '/responsable/membres' });
+        tabs.push({ id: 'membres',  label: 'Membres',  icon: 'group',            route: '/responsable/membres'             });
       }
       if (hasMatchMenu) {
-        tabs.push({
-          id: 'matchs', label: 'Matchs', icon: 'sports_soccer',
-          route: '/responsable/matchs',
-          badge: this.upcomingMatchCount > 0 ? this.upcomingMatchCount : undefined
-        });
+        tabs.push({ id: 'matchs',   label: 'Matchs',   icon: 'sports_soccer',    route: '/responsable/matchs',
+                    badge: this.upcomingMatchCount > 0 ? this.upcomingMatchCount : undefined });
       }
       if (hasFinanceMenu) {
-        tabs.push({ id: 'finances', label: 'Finances', icon: 'account_balance', route: '/responsable/finances/dashboard' });
+        tabs.push({ id: 'finances', label: 'Finances', icon: 'account_balance',  route: '/responsable/finances/dashboard'  });
       }
 
     } else if (isMembre && hasGroup) {
-      tabs.push({ id: 'actus',   label: 'Actus',   icon: 'newspaper',     route: '/actualites'    });
-      tabs.push({ id: 'tableau', label: 'Tableau',  icon: 'dashboard',     route: '/membre/dashboard' });
+      tabs.push({ id: 'actus',   label: 'Actus',   icon: 'newspaper',  route: '/actualites'       });
+      tabs.push({ id: 'tableau', label: 'Tableau',  icon: 'dashboard',  route: '/membre/dashboard' });
 
     } else if (isPartenaire) {
-      tabs.push({ id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/partenaire/dashboard' });
-      tabs.push({ id: 'pubs',      label: 'Publicités', icon: 'campaign', route: '/partenaire/publicite' });
+      tabs.push({ id: 'dashboard', label: 'Dashboard',  icon: 'dashboard', route: '/partenaire/dashboard' });
+      tabs.push({ id: 'pubs',      label: 'Publicités', icon: 'campaign',  route: '/partenaire/publicite' });
 
     } else {
-      // Pas de groupe — tab explorer
       tabs.push({ id: 'explorer', label: 'Explorer', icon: 'explore', route: '/explorer' });
     }
 
-    // ── Tab Chat — si connecté avec groupe (sauf admin) ──
+    // Tab Chat
     if ((isResponsable || isMembre) && hasGroup) {
       tabs.push({
         id: 'chat', label: 'Chat', icon: 'chat_bubble_outline',
@@ -169,15 +165,13 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       });
     }
 
-    // ── Tab Plus — TOUJOURS présent, TOUJOURS en 5ème position ──
-    // Les autres tabs se limitent à 4 pour lui laisser la place
+    // Tab Plus — toujours en 5ème position
     const contentTabs = tabs.slice(0, 4);
     contentTabs.push({ id: 'more', label: 'Plus', icon: 'more_horiz', route: '' });
     this.tabs = contentTabs;
     this.cdr.markForCheck();
   }
 
-  // Vérifie si une catégorie de menu existe dans les menus chargés
   private hasMenuInCategories(keyword: string): boolean {
     return this._menuCategories.some(c =>
       c.code.toUpperCase().includes(keyword) ||
@@ -185,7 +179,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Vérifie si un menu commun existe
   private hasMenuCommun(code: string): boolean {
     return this._menusCommuns.some(m => m.code.toUpperCase() === code.toUpperCase());
   }
@@ -208,7 +201,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     if (tab.route) {
       this.router.navigate([tab.route]);
     }
-    // Haptic feedback Capacitor
     try {
       const cap = (window as any).Capacitor;
       if (cap?.isPluginAvailable?.('Haptics')) {

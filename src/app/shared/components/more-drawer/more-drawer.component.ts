@@ -13,7 +13,6 @@ import { takeUntil } from 'rxjs/operators';
 import { AuthService }        from '../../../core/services/auth.service';
 import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 
-// ── Icônes et labels par catégorie de menu ──────────────────
 const CATEGORIE_CONFIG: Record<string, { icone: string; couleur: string; ordre: number }> = {
   GESTION:       { icone: 'settings',        couleur: 'blue',   ordre: 1 },
   SPORT:         { icone: 'sports_soccer',   couleur: 'green',  ordre: 2 },
@@ -21,7 +20,6 @@ const CATEGORIE_CONFIG: Record<string, { icone: string; couleur: string; ordre: 
   COMMUNICATION: { icone: 'campaign',        couleur: 'purple', ordre: 4 },
 };
 
-// ── Menus communs avec icônes natives ───────────────────────
 const COMMUN_ICONS: Record<string, string> = {
   EXPLORER:    'explore',
   SUGGESTIONS: 'lightbulb',
@@ -52,30 +50,25 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
   @Output() profileOpen  = new EventEmitter<void>();
   @Output() videoEdit    = new EventEmitter<void>();
   @Output() videoOpen    = new EventEmitter<void>();
-  @Output() joinGroup    = new EventEmitter<void>(); // action JOIN (pas de route)
+  @Output() joinGroup    = new EventEmitter<void>();
 
-  // ── User ──
   user:         any    = null;
   userImage:    string | null = null;
   userInitials  = '??';
   avatarBg      = '#1a3a8a';
   groupeNom     = '';
 
-  // ── Rôles ──
   isResponsable = false;
   isMembre      = false;
   isAdmin       = false;
   isPartenaire  = false;
   userHasGroup  = false;
 
-  // ── Thème / langue ──
-  isDark     = false;
+  isDark      = false;
   currentLang = 'fr';
 
-  // ── Accordéon : quels groupes sont ouverts ──
-  openGroups = new Set<string>(['GESTION']); // Gestion ouvert par défaut
+  openGroups = new Set<string>(['GESTION']);
 
-  // ── Config catégories exposée au template ──
   readonly categorieConfig = CATEGORIE_CONFIG;
 
   get roleLabel(): string {
@@ -86,7 +79,6 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     return 'Utilisateur';
   }
 
-  // Catégories triées par ordre
   get sortedCategories(): MenuCategorie[] {
     return [...this.menuCategories].sort((a, b) => {
       const oa = CATEGORIE_CONFIG[a.code]?.ordre ?? 99;
@@ -97,11 +89,10 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  // ── Swipe to dismiss ────────────────────────────────────────
   private swipeTouchStartY = 0;
   private swipeCurrentY    = 0;
-  drawerTranslateY         = 0; // bindé dans le template via [style.transform]
-  private swipeThreshold   = 80; // px vers le bas pour fermer
+  drawerTranslateY         = 0;
+  private swipeThreshold   = 80;
 
   constructor(
     private authService: AuthService,
@@ -116,30 +107,23 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     this.isDark      = document.body.classList.contains('dark-theme');
     this.currentLang = this.translate.currentLang || 'fr';
 
-    // ── Re-synchronisation user/rôles ─────────────────────────
-    // À la toute première connexion (surtout sur mobile), ce composant
-    // peut être initialisé avant que AuthService n'ait fini de résoudre
-    // l'utilisateur et le groupe réels (isUserReady$ / currentGroupeId$
-    // émettent en arrière-plan après le premier rendu). Sans cette
-    // re-synchronisation, "user", "userInitials", "roleLabel",
-    // "isResponsable" et "userHasGroup" restent figés sur leurs valeurs
-    // par défaut ('??', 'Utilisateur', false, false...) et la section
-    // "Menus Responsable" (qui dépend de isResponsable && userHasGroup)
-    // ne s'affiche jamais tant que le drawer n'est pas recréé.
     this.authService.isUserReady$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(ready => {
-      if (ready) {
-        this.loadUser();
-        this.setupRoles();
-        this.cdr.markForCheck();
-      }
+      if (ready) { this.loadUser(); this.setupRoles(); this.cdr.markForCheck(); }
     });
 
     this.authService.currentGroupeId$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
-      this.loadUser();
+      this.loadUser(); this.setupRoles(); this.cdr.markForCheck();
+    });
+
+    // FIX : s'abonner à groupeActifAccess$ pour détecter
+    // estResponsableGroupe et roleCustom sur mobile
+    this.authService.groupeActifAccess$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
       this.setupRoles();
       this.cdr.markForCheck();
     });
@@ -149,8 +133,6 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
-  // ──────────────────────────────────────────────────────────
 
   private loadUser(): void {
     this.user      = this.authService.getUser();
@@ -167,21 +149,25 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     const colors = ['#1a3a8a','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
     this.avatarBg = colors[hash];
 
-    // Nom du groupe
     this.groupeNom = this.user?.groupe?.nom || this.user?.groupeNom || '';
   }
 
   private setupRoles(): void {
     const roles = this.authService.getRoles() || [];
-    this.isAdmin       = roles.some(r => r === 'ADMIN'       || r === 'ROLE_ADMIN');
-    this.isResponsable = roles.some(r => r === 'RESPONSABLE' || r === 'ROLE_RESPONSABLE');
-    this.isMembre      = roles.some(r => r === 'MEMBRE'      || r === 'ROLE_MEMBRE');
-    this.isPartenaire  = roles.some(r => r === 'PARTENAIRE'  || r === 'ROLE_PARTENAIRE');
-    const groupe       = this.authService.getGroupe();
+    const groupe = this.authService.getGroupe();
     this.userHasGroup  = !!groupe && groupe > 0;
-  }
 
-  // ── Accordéon ──────────────────────────────────────────────
+    this.isAdmin       = roles.some(r => r === 'ADMIN'      || r === 'ROLE_ADMIN');
+    this.isPartenaire  = roles.some(r => r === 'PARTENAIRE' || r === 'ROLE_PARTENAIRE');
+
+    // FIX : utiliser authService.isResponsable() qui lit groupeActifAccess
+    // couvre les users ROLE_MEMBRE avec estResponsableGroupe=true ou roleCustom
+    this.isResponsable = !this.isAdmin && !this.isPartenaire
+                         && this.authService.isResponsable();
+
+    this.isMembre      = !this.isAdmin && !this.isPartenaire && !this.isResponsable
+                         && roles.some(r => r === 'MEMBRE' || r === 'ROLE_MEMBRE');
+  }
 
   toggleGroup(code: string): void {
     if (this.openGroups.has(code)) this.openGroups.delete(code);
@@ -189,23 +175,11 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  isGroupOpen(code: string): boolean {
-    return this.openGroups.has(code);
-  }
+  isGroupOpen(code: string): boolean { return this.openGroups.has(code); }
 
-  getCategorieIcon(code: string): string {
-    return CATEGORIE_CONFIG[code]?.icone || 'folder';
-  }
-
-  getCategorieColor(code: string): string {
-    return CATEGORIE_CONFIG[code]?.couleur || 'gray';
-  }
-
-  getMenuIcon(menu: Menu): string {
-    return menu.icone || COMMUN_ICONS[menu.code] || 'chevron_right';
-  }
-
-  // ── Actions ────────────────────────────────────────────────
+  getCategorieIcon(code: string):  string { return CATEGORIE_CONFIG[code]?.icone  || 'folder'; }
+  getCategorieColor(code: string): string { return CATEGORIE_CONFIG[code]?.couleur || 'gray';   }
+  getMenuIcon(menu: Menu):         string { return menu.icone || COMMUN_ICONS[menu.code] || 'chevron_right'; }
 
   close(): void { this.closeDrawer.emit(); }
 
@@ -218,11 +192,8 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     if (menu.route) {
       this.navigate(menu.route);
     } else {
-      // Actions sans route — déléguer au layout via Output
       this.close();
-      if (menu.code === 'JOIN') {
-        this.joinGroup.emit();
-      }
+      if (menu.code === 'JOIN') this.joinGroup.emit();
     }
   }
 
@@ -242,24 +213,15 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  openEditVideos(): void {
-    this.close();
-    this.videoEdit.emit();
-  }
-
-
-
-    openVideoEdit(): void{
-    this.router.navigate(['/membre/videos']);
-  }
+  openEditVideos(): void { this.close(); this.videoEdit.emit(); }
+  openVideoEdit():  void { this.router.navigate(['/membre/videos']); }
 
   goToNotifs():   void { this.navigate('/notifications'); }
   goToSettings(): void { this.navigate('/settings'); }
   openProfile():  void { this.close(); this.profileOpen.emit(); }
-  openVideos():  void { this.close(); this.videoOpen.emit(); }
+  openVideos():   void { this.close(); this.videoOpen.emit(); }
   logout():       void { this.close(); this.logout$.emit(); }
 
-  // ── Swipe to dismiss ────────────────────────────────────────
   onDrawerTouchStart(event: TouchEvent): void {
     this.swipeTouchStartY = event.touches[0].clientY;
     this.swipeCurrentY    = 0;
@@ -268,7 +230,7 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
 
   onDrawerTouchMove(event: TouchEvent): void {
     const dy = event.touches[0].clientY - this.swipeTouchStartY;
-    if (dy > 0) { // seulement vers le bas
+    if (dy > 0) {
       this.swipeCurrentY    = dy;
       this.drawerTranslateY = dy;
       this.cdr.markForCheck();
@@ -280,7 +242,6 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
       this.drawerTranslateY = 0;
       this.close();
     } else {
-      // Rembobiner le drawer à sa position initiale
       this.drawerTranslateY = 0;
       this.cdr.markForCheck();
     }

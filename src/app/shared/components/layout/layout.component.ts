@@ -507,6 +507,7 @@ setupRoles(): void {
       this.menuCategories = []; return;
     }
     this.isLoadingMenus = true;
+    console.log(this.isResponsable)
     this.roleCustomService.getUserMenus().subscribe({
       next:  (um) => { this.organiserMenusParCategorie(um.menus); this.isLoadingMenus = false; this.cdr.detectChanges(); },
       error: ()   => { this.menuCategories = []; this.isLoadingMenus = false; this.cdr.detectChanges(); }
