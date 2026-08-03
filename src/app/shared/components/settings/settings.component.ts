@@ -13,7 +13,8 @@ import { SettingsService, Theme } from '../../../core/services/settings.service'
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -38,28 +39,37 @@ import { RouterModule } from '@angular/router';
 export class SettingsComponent implements OnInit, OnDestroy {
   currentTheme: Theme = 'light';
   currentLanguage: string = 'fr';
-  
-  // Options de simulation pour les notifications
+
   emailNotifications = true;
   pushNotifications = false;
   matchReminders = true;
+
+  // FIX : profil public — chargé depuis l'user connecté
+  isPublic = true;
 
   private destroy$ = new Subject<void>();
 
   constructor(
     private settingsService: SettingsService,
     private snackBar: MatSnackBar,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private router: Router,
+    private authService: AuthService,
   ) {}
 
   ngOnInit(): void {
-    // Écouter les changements globaux de configuration (Thème & Langue)
     this.settingsService.settings$
       .pipe(takeUntil(this.destroy$))
       .subscribe(settings => {
-        this.currentTheme = settings.theme;
+        this.currentTheme    = settings.theme;
         this.currentLanguage = settings.language;
       });
+
+    // Charger l'état isPublic depuis le cache user
+    const user = this.authService.getUser();
+    if (user) {
+      this.isPublic = user.public ?? user.isPublic ?? true;
+    }
   }
 
   ngOnDestroy(): void {
@@ -67,22 +77,49 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // ── Thème / Langue (existant) ─────────────────────────────────
   onThemeChange(theme: Theme): void {
     if (this.currentTheme !== theme) {
-      this.settingsService.toggleTheme(); // Ou une méthode spécifique setSelection(theme) si disponible
+      this.settingsService.toggleTheme();
       this.showSaveFeedback();
     }
   }
 
   onLanguageChange(lang: string): void {
     if (this.currentLanguage !== lang) {
-      this.settingsService.toggleLanguage(); // Aligne le changement avec votre service existant
+      this.settingsService.toggleLanguage();
       this.showSaveFeedback();
     }
   }
 
   toggleNotification(setting: string): void {
     this.showSaveFeedback();
+  }
+
+  // ── Compte ────────────────────────────────────────────────────
+
+  toggleProfilPublic(event: any): void {
+    const isPublic = event.checked;
+    this.authService.updateUserProfile({ isPublic }).subscribe({
+      next: () => this.snackBar.open(
+        isPublic ? 'Profil rendu public ✓' : 'Profil masqué ✓',
+        'OK', { duration: 2500 }
+      ),
+      error: () => {
+        // Rollback si erreur
+        this.isPublic = !isPublic;
+        this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  onLogout(): void {
+    this.authService.logout();
+  }
+
+  // ── Suppression — navigue vers la page dédiée ─────────────────
+  onDeleteAccount(): void {
+    this.router.navigate(['/settings/delete-account']);
   }
 
   private showSaveFeedback(): void {

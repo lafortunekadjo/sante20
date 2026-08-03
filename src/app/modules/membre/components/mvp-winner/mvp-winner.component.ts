@@ -12,6 +12,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { FileOpener } from '@capacitor-community/file-opener';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface PeriodOption {
   value: string;        // "03-2026"
@@ -39,6 +41,7 @@ export class MvpWinnerComponent implements OnInit {
   private voteService  = inject(InvitationService);
   private authService  = inject(AuthService);
   private translate    = inject(TranslateService);
+  private snackBar = inject(MatSnackBar);
 
   // ── State ─────────────────────────────────────────────────
   winner          = signal<any>(null);
@@ -61,6 +64,7 @@ export class MvpWinnerComponent implements OnInit {
     const activePeriod = this.toApiFormat(target);
     return this.selectedPeriod() === activePeriod;
   });
+ 
 
   ngOnInit(): void {
     this.buildPeriods();
@@ -124,103 +128,145 @@ export class MvpWinnerComponent implements OnInit {
   }
 
   // ── Télécharger le badge ──────────────────────────────────
-  downloadMvpCard(): void {
-    const gId = this.authService.getGroupe();
-    if (!gId || !this.winner()) return;
-
-    this.isDownloading.set(true);
-    const filename = `MVP_${this.selectedPeriod()}_My20.jpg`;
-
-    this.voteService.getMvpWinnerImage(gId, this.selectedPeriod()).subscribe({
-      next: async (blob: Blob) => {
-        try {
-          await this.saveBlob(blob, filename);
-        } catch (e) {
-          console.error('Erreur sauvegarde MVP:', e);
+downloadMvpCard(): void {
+  const gId = this.authService.getGroupe();
+  if (!gId || !this.winner()) return;
+ 
+  this.isDownloading.set(true);
+  this.snackBar.open('Génération de la carte MVP...', '', { duration: 2000 });
+ 
+  const filename = `MVP_${this.selectedPeriod()}_My20.jpg`;
+ 
+  this.voteService.getMvpWinnerImage(gId, this.selectedPeriod()).subscribe({
+    next: async (blob: Blob) => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          // ── MOBILE (Android/APK) ─────────────────────────────
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            const base64data = reader.result as string;
+            try {
+              const savedFile = await Filesystem.writeFile({
+                path: filename,
+                data: base64data,
+                directory: Directory.Documents,
+                recursive: true
+              });
+ 
+              await FileOpener.open({
+                filePath: savedFile.uri,
+                contentType: 'image/jpeg'
+              });
+ 
+              this.snackBar.open('Carte MVP enregistrée dans Documents', '✓', {
+                duration: 3000
+              });
+            } catch (error) {
+              console.error('Erreur stockage mobile MVP:', error);
+              this.snackBar.open('Erreur d\'enregistrement', '✕', { duration: 3000 });
+            }
+          };
+          reader.onerror = () => {
+            this.snackBar.open('Erreur lecture fichier', '✕', { duration: 3000 });
+          };
+ 
+        } else {
+          // ── WEB (navigateur) ─────────────────────────────────
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          window.URL.revokeObjectURL(url);
+ 
+          this.snackBar.open('Carte MVP téléchargée !', '✓', {
+            duration: 3000,
+            panelClass: 'snackbar-success'
+          });
         }
-        this.isDownloading.set(false);
-      },
-      error: (err) => {
-        console.error('Erreur API MVP image:', err);
-        this.isDownloading.set(false);
+      } catch (e) {
+        console.error('Erreur sauvegarde MVP:', e);
+        this.snackBar.open('Erreur lors du téléchargement', '✕', { duration: 3000 });
       }
-    });
-  }
-
-  // ── Sauvegarde multi-plateforme ───────────────────────────
-  private async saveBlob(blob: Blob, filename: string): Promise<void> {
-
-    if (Capacitor.isNativePlatform()) {
-      // ─── Android / iOS (APK) ──────────────────────────────
-
-      // 1. Convertir blob → base64 pur (sans préfixe data:...)
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload  = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
+      this.isDownloading.set(false);
+    },
+    error: (err) => {
+      console.error('Erreur API MVP image:', err);
+      this.snackBar.open('Erreur lors de la génération', '✕', {
+        duration: 3000,
+        panelClass: 'snackbar-error'
       });
-
-      // 2. Écrire dans External (Documents publics) — accessible par Share
-      //    Directory.Cache est privé à l'app sur Android → "impossible de charger le media"
-      const saved = await Filesystem.writeFile({
-        path:      filename,
-        data:      base64,
-        directory: Directory.Documents,
-        recursive: true
-      });
-
-      // 3. Obtenir l'URI public lisible par le système Android
-      //    getUri() retourne un chemin content:// ou file:// selon l'OS
-      const { uri } = await Filesystem.getUri({
-        path:      filename,
-        directory: Directory.Documents
-      });
-
-      // 4. Partager via Share (déclenche la feuille de partage Android/iOS)
-      await Share.share({
-        title:       'Badge MVP My2-0',
-        text:        '🏆 Badge MVP du mois — My2-0',
-        files:       [uri],
-        dialogTitle: 'Enregistrer ou partager le badge'
-      });
-
-    } else {
-      // ─── Navigateur web ───────────────────────────────────
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isIos    = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const url      = window.URL.createObjectURL(blob);
-
-      if (isSafari || isIos) {
-        // Safari / iOS web : l'attribut download est ignoré
-        // → ouvrir dans un nouvel onglet, appui long pour enregistrer
-        const win = window.open(url, '_blank');
-        if (!win) window.location.href = url; // fallback popup bloqué
-        setTimeout(() => window.URL.revokeObjectURL(url), 30_000);
-      } else {
-        // Chrome / Firefox / Edge
-        const link = document.createElement('a');
-        link.href  = url;
-        link.download = filename;
-        document.body.appendChild(link);  // requis sur mobile Chrome
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }
+      this.isDownloading.set(false);
     }
-  }
-
-  private blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1]); // enlève le préfixe data:...;base64,
-    };
-    reader.readAsDataURL(blob);
   });
 }
+  
+
+  // ── Sauvegarde multi-plateforme ───────────────────────────
+  // private async saveBlob(blob: Blob, filename: string): Promise<void> {
+
+  //   if (Capacitor.isNativePlatform()) {
+  //     // ─── Android / iOS (APK) ──────────────────────────────
+
+  //     // 1. Convertir blob → base64 pur (sans préfixe data:...)
+  //     const base64 = await new Promise<string>((resolve, reject) => {
+  //       const reader = new FileReader();
+  //       reader.onload  = () => resolve((reader.result as string).split(',')[1]);
+  //       reader.onerror = reject;
+  //       reader.readAsDataURL(blob);
+  //     });
+
+  //     // 2. Écrire dans External (Documents publics) — accessible par Share
+  //     //    Directory.Cache est privé à l'app sur Android → "impossible de charger le media"
+  //     const saved = await Filesystem.writeFile({
+  //       path:      filename,
+  //       data:      base64,
+  //       directory: Directory.Documents,
+  //       recursive: true
+  //     });
+
+  //     // 3. Obtenir l'URI public lisible par le système Android
+  //     //    getUri() retourne un chemin content:// ou file:// selon l'OS
+  //     const { uri } = await Filesystem.getUri({
+  //       path:      filename,
+  //       directory: Directory.Documents
+  //     });
+
+  //     // 4. Partager via Share (déclenche la feuille de partage Android/iOS)
+  //     await Share.share({
+  //       title:       'Badge MVP My2-0',
+  //       text:        '🏆 Badge MVP du mois — My2-0',
+  //       files:       [uri],
+  //       dialogTitle: 'Enregistrer ou partager le badge'
+  //     });
+
+  //   } else {
+  //     // ─── Navigateur web ───────────────────────────────────
+  //     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  //     const isIos    = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  //     const url      = window.URL.createObjectURL(blob);
+
+  //     if (isSafari || isIos) {
+  //       // Safari / iOS web : l'attribut download est ignoré
+  //       // → ouvrir dans un nouvel onglet, appui long pour enregistrer
+  //       const win = window.open(url, '_blank');
+  //       if (!win) window.location.href = url; // fallback popup bloqué
+  //       setTimeout(() => window.URL.revokeObjectURL(url), 30_000);
+  //     } else {
+  //       // Chrome / Firefox / Edge
+  //       const link = document.createElement('a');
+  //       link.href  = url;
+  //       link.download = filename;
+  //       document.body.appendChild(link);  // requis sur mobile Chrome
+  //       link.click();
+  //       document.body.removeChild(link);
+  //       window.URL.revokeObjectURL(url);
+  //     }
+  //   }
+  // }
+
+
 
   // ── Helpers ───────────────────────────────────────────────
   toApiFormat(d: Date): string {

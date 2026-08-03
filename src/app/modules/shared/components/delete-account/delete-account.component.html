@@ -1,0 +1,119 @@
+<div class="delete-container">
+
+  <!-- ══ ÉTAPE 1 : Information ════════════════════════════════ -->
+  <div class="delete-card" *ngIf="step === 'info'">
+    <div class="warning-icon">
+      <mat-icon>warning</mat-icon>
+    </div>
+    <h2>Supprimer mon compte</h2>
+    <p class="subtitle">Cette action est <strong>irréversible</strong>.</p>
+
+    <div class="consequences">
+      <h4>Ce qui sera supprimé :</h4>
+      <div class="consequence-item deleted">
+        <mat-icon>delete</mat-icon>
+        <span>Tes informations personnelles (nom, téléphone, CNI...)</span>
+      </div>
+      <div class="consequence-item deleted">
+        <mat-icon>delete</mat-icon>
+        <span>Tes photos et vidéos</span>
+      </div>
+      <div class="consequence-item deleted">
+        <mat-icon>delete</mat-icon>
+        <span>Tes notifications et préférences</span>
+      </div>
+      <div class="consequence-item deleted">
+        <mat-icon>delete</mat-icon>
+        <span>Tes objectifs personnels</span>
+      </div>
+
+      <h4 style="margin-top: 16px">Ce qui sera conservé :</h4>
+      <div class="consequence-item kept">
+        <mat-icon>check</mat-icon>
+        <span>L'historique des matchs joués (anonymisé)</span>
+      </div>
+      <div class="consequence-item kept">
+        <mat-icon>check</mat-icon>
+        <span>Les stats de présence (anonymisées)</span>
+      </div>
+      <div class="consequence-item kept">
+        <mat-icon>check</mat-icon>
+        <span>Les données financières du groupe (anonymisées)</span>
+      </div>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width" style="margin-top: 20px">
+      <mat-label>Raison (optionnel)</mat-label>
+      <mat-icon matPrefix>feedback</mat-icon>
+      <mat-select [(ngModel)]="motif">
+        <mat-option value="">Préfère ne pas dire</mat-option>
+        <mat-option *ngFor="let m of motifs" [value]="m">{{ m }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-stroked-button (click)="router.navigate(['/settings'])">
+        <mat-icon>arrow_back</mat-icon>
+        Annuler
+      </button>
+      <button mat-raised-button color="warn" (click)="goToConfirm()">
+        <mat-icon>delete_forever</mat-icon>
+        Continuer
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ ÉTAPE 2 : Confirmation ════════════════════════════════ -->
+  <div class="delete-card" *ngIf="step === 'confirm'">
+    <div class="warning-icon danger">
+      <mat-icon>dangerous</mat-icon>
+    </div>
+    <h2>Confirmer la suppression</h2>
+    <p>
+      Pour confirmer, tape <strong>supprimer</strong> dans le champ ci-dessous
+      et coche la case.
+    </p>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Tape "supprimer"</mat-label>
+      <input matInput
+             [(ngModel)]="confirmText"
+             placeholder="supprimer"
+             autocomplete="off">
+    </mat-form-field>
+
+    <mat-checkbox [(ngModel)]="hasConfirmed" color="warn">
+      Je comprends que cette action est <strong>irréversible</strong> et que
+      mes données personnelles seront définitivement effacées.
+    </mat-checkbox>
+
+    <div class="actions" style="margin-top: 24px">
+      <button mat-stroked-button (click)="step = 'info'">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+      <button mat-raised-button color="warn"
+              [disabled]="!canConfirm() || isDeleting"
+              (click)="deleteAccount()">
+        <mat-spinner diameter="18" *ngIf="isDeleting"></mat-spinner>
+        <mat-icon *ngIf="!isDeleting">delete_forever</mat-icon>
+        {{ isDeleting ? 'Suppression...' : 'Supprimer définitivement' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ ÉTAPE 3 : Succès ══════════════════════════════════════ -->
+  <div class="delete-card done" *ngIf="step === 'done'">
+    <div class="done-icon">
+      <mat-icon>check_circle</mat-icon>
+    </div>
+    <h2>Compte supprimé</h2>
+    <p>
+      Tes données personnelles ont été effacées.<br>
+      Tu vas être déconnecté dans quelques secondes...
+    </p>
+    <mat-progress-spinner mode="indeterminate" diameter="32"
+                         style="margin: 16px auto"></mat-progress-spinner>
+  </div>
+
+</div>
