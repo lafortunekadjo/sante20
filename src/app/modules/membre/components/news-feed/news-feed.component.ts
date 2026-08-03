@@ -243,12 +243,12 @@ shouldTruncate(content: string): boolean {
           return;
         }
 
-        console.log(currentMembre)
+    
 
         // 2. Extraction des facteurs de ciblage (Équipe et Rôle)
         const userEquipeId = currentMembre.equipe?.id || (currentMembre as any).equipeId;
         const userRoleId = currentMembre.roleCustom?.id || currentMembre.roleCustom?.id || (currentMembre as any).roleId;
-          console.log(userRoleId)
+     
         // 3. Application du filtre à double facteur
         this.groupAnnouncements = announcements.filter(announcement => {
           

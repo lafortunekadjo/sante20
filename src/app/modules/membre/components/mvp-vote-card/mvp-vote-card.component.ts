@@ -63,13 +63,26 @@ toggleHelpFormula() {
 }
 loadTendances(): void {
     const gId = this.authService.getGroupe();
-    if (!gId) return;
-    this.isLoadingTendances.set(true);
-    this.voteService.getTendances(gId).subscribe({
-      next: (data) => { this.tendances.set(data || []); this.isLoadingTendances.set(false); },
-      error: ()    => { this.isLoadingTendances.set(false); }
-    });
-    console.log(this.tendances)
+  if (!gId) {
+  console.warn("Aucun groupeId fourni pour récupérer les tendances.");
+  return;
+}
+
+this.isLoadingTendances.set(true);
+
+this.voteService.getTendances(gId).subscribe({
+  next: (data) => {
+    console.log("Tendances reçues :", data);
+    this.tendances.set(data || []);
+    this.isLoadingTendances.set(false);
+    console.log("Tendances reçues2 :", this.tendances());
+  },
+  error: (err) => {
+    this.isLoadingTendances.set(false);
+    console.error(`[VoteService] Échec de récupération des tendances pour le groupe ${gId} :`, err);
+  }
+});
+    
   }
 
   onViewResults() { 

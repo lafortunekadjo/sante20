@@ -1,5 +1,6 @@
 <div class="mvp-vote-card-container news-feed-card animate-in">
 
+  <!-- HEADER DE LA CARTE -->
   <div class="card-header">
     <div class="header-main">
       <div class="icon-wrap">
@@ -17,6 +18,7 @@
     </button>
   </div>
 
+  <!-- CONTENU DE LA CARTE -->
   <div class="card-content">
 
     @if (isLoading()) {
@@ -37,6 +39,7 @@
 
       @else {
 
+        <!-- CAS 1 : L'UTILISATEUR A DÉJÀ VOTÉ (TENDANCES) -->
         @if (hasVoted()) {
           <div class="voted-state animate-in">
 
@@ -91,8 +94,11 @@
                       </div>
 
                       <div class="t-avatar">
-                        <img *ngIf="t.photoUrl" [src]="t.photoUrl">
-                        <span *ngIf="!t.photoUrl">{{ t.prenom[0] }}{{ t.nom[0] }}</span>
+                        @if (t.photoUrl) {
+                          <img [src]="t.photoUrl" [alt]="t.nom">
+                        } @else {
+                          <span>{{ (t.prenom?.[0] || '') + (t.nom?.[0] || '') }}</span>
+                        }
                       </div>
 
                       <div class="t-info">
@@ -109,37 +115,73 @@
                         </div>
                         <div class="t-bar-bg">
                           <div class="t-bar-fill"
-                              [class.t-bar--gold]="i === 0"
-                              [style.width.%]="t.pourcentage > 100 ? 100 : t.pourcentage">
+                               [class.t-bar--gold]="i === 0"
+                               [style.width.%]="t.pourcentage > 100 ? 100 : t.pourcentage">
                           </div>
                         </div>
                       </div>
                     </div>
                   }
                 </div>
-
-             
               }
-                
+
             </div>
-            
 
           </div>
         }
 
+        <!-- CAS 2 : L'UTILISATEUR N'A PAS ENCORE VOTÉ (LISTE DES CANDIDATS) -->
         @else {
           <p class="instruction-text">{{ 'mvpVote.instruction' | translate }}</p>
-          }
 
-          
+          <div class="candidates-list">
+            @for (player of nomines(); track player.id; let i = $index) {
+              <div class="candidate-item animate-in"
+                   [style.animation-delay]="i * 0.1 + 's'"
+                   (click)="isEligible() ? openVoteSheet(player) : null">
+
+                <div class="player-rank">#{{ i + 1 }}</div>
+
+                <div class="player-avatar">
+                  @if (player.photoUrl) {
+                    <img [src]="player.photoUrl" [alt]="player.nom">
+                  } @else {
+                    <div class="initials-placeholder">
+                      {{ (player.prenom?.[0] || '') + (player.nom?.[0] || '') }}
+                    </div>
+                  }
+                </div>
+
+                <div class="player-info">
+                  <span class="player-name">{{ player.prenom }} {{ player.nom }}</span>
+                  <div class="player-stats">
+                    <span title="Buts">⚽ <strong>{{ player.buts }}</strong></span>
+                    <span title="Passes">👟 <strong>{{ player.passes }}</strong></span>
+                    <span title="MVP Équipe">🛡️ <strong>{{ player.mvpEquipe }}</strong></span>
+                    <span title="MDM">⭐ <strong>{{ player.motm }}</strong></span>
+                  </div>
+                </div>
+
+                @if (isEligible()) {
+                  <div class="vote-action">
+                    <mat-icon>how_to_vote</mat-icon>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
 
       }
     }
-     <div class="actions-row-tendances" style="margin-top: 16px; text-align: center;">
-                  <button mat-stroked-button color="primary" (click)="onViewResults()">
-                    <mat-icon>history</mat-icon>
-                    Historique des MVP
-                  </button>
-                </div>
+
+    <!-- BOUTON HISTORIQUE (TOUJOURS VISIBLE) -->
+    <div class="actions-row-tendances" style="margin-top: 16px; text-align: center;">
+      <button mat-stroked-button color="primary" (click)="onViewResults()">
+        <mat-icon>history</mat-icon>
+        Historique des MVP
+      </button>
+    </div>
+
   </div>
 </div>
