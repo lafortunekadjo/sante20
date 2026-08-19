@@ -1,205 +1,186 @@
-// components/bracket-view/bracket-view.component.ts
-import { Component, Input, OnChanges } from '@angular/core';
+import {
+  Component, Input, Output, EventEmitter,
+  inject, signal, computed, OnChanges
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BracketDTO, NomTour, BracketNoeudDTO } from '../../../../core/models/competition.models';
+import { FormsModule }  from '@angular/forms';
+import { Router }       from '@angular/router';
+import {
+  BracketDTO, BracketNoeudDTO, MatchDTO, NomTour
+} from '../../../../core/models/competition.models';
+import { MatchApiService } from '../../../../core/services/competition/match-api.service';
 
-interface BracketRound {
-  nom: string;
-  noeuds: BracketNoeudDTO[];
+interface Tour {
+  nom:     NomTour | string;
+  label:   string;
+  noeuds:  BracketNoeudDTO[];
 }
 
-
 @Component({
-  selector: 'app-bracket-view',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="bracket" *ngIf="bracket">
-
-      <div class="bracket__rounds">
-        <div class="bracket__round" *ngFor="let round of rounds">
-          <div class="bracket__round-header">
-            <span>{{ round.nom }}</span>
-          </div>
-          <div class="bracket__round-matches">
-            <div class="bracket__match"
-                 *ngFor="let noeud of round.noeuds"
-                 [class.bye]="noeud.bye">
-
-              <!-- Équipe 1 -->
-              <div class="bracket__team"
-                   [class.winner]="isWinner(noeud, 1)"
-                   [class.loser]="isLoser(noeud, 1)">
-                <ng-container *ngIf="noeud.bye && !noeud.participant1">
-                  <span class="bracket__team-name bracket__team--tbd">–</span>
-                </ng-container>
-                <ng-container *ngIf="noeud.participant1">
-                  <div class="bracket__team-logo">
-                    <img *ngIf="noeud.participant1.logoUrl"
-                         [src]="noeud.participant1.logoUrl"
-                         [alt]="noeud.participant1.nomEquipe"/>
-                    <span *ngIf="!noeud.participant1.logoUrl">
-                      {{ getInitials(noeud.participant1.nomEquipe) }}
-                    </span>
-                  </div>
-                  <span class="bracket__team-name">
-                    {{ noeud.participant1.nomEquipe }}
-                  </span>
-                  <span class="bracket__team-score"
-                        *ngIf="noeud.matchAller && hasScore(noeud)">
-                    {{ getScore(noeud, 1) }}
-                  </span>
-                </ng-container>
-                <ng-container *ngIf="!noeud.participant1 && !noeud.bye">
-                  <span class="bracket__team-name bracket__team--tbd">À déterminer</span>
-                </ng-container>
-              </div>
-
-              <!-- Séparateur -->
-              <div class="bracket__divider"></div>
-
-              <!-- Équipe 2 -->
-              <div class="bracket__team"
-                   [class.winner]="isWinner(noeud, 2)"
-                   [class.loser]="isLoser(noeud, 2)">
-                <ng-container *ngIf="noeud.participant2">
-                  <div class="bracket__team-logo">
-                    <img *ngIf="noeud.participant2.logoUrl"
-                         [src]="noeud.participant2.logoUrl"
-                         [alt]="noeud.participant2.nomEquipe"/>
-                    <span *ngIf="!noeud.participant2.logoUrl">
-                      {{ getInitials(noeud.participant2.nomEquipe) }}
-                    </span>
-                  </div>
-                  <span class="bracket__team-name">
-                    {{ noeud.participant2.nomEquipe }}
-                  </span>
-                  <span class="bracket__team-score"
-                        *ngIf="noeud.matchAller && hasScore(noeud)">
-                    {{ getScore(noeud, 2) }}
-                  </span>
-                </ng-container>
-                <ng-container *ngIf="!noeud.participant2">
-                  <span class="bracket__team-name bracket__team--tbd">
-                    {{ noeud.bye ? '–' : 'À déterminer' }}
-                  </span>
-                </ng-container>
-              </div>
-
-              <!-- Badge bye -->
-              <div class="bracket__bye-badge" *ngIf="noeud.bye">
-                Qualifié direct
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vainqueur final -->
-      <div class="bracket__winner" *ngIf="vainqueurFinal">
-        <div class="bracket__winner-crown">🏆</div>
-        <div class="bracket__winner-logo">
-          <img *ngIf="vainqueurFinal.logoUrl"
-               [src]="vainqueurFinal.logoUrl"
-               [alt]="vainqueurFinal.nomEquipe"/>
-          <span *ngIf="!vainqueurFinal.logoUrl">
-            {{ getInitials(vainqueurFinal.nomEquipe) }}
-          </span>
-        </div>
-        <span class="bracket__winner-name">{{ vainqueurFinal.nomEquipe }}</span>
-      </div>
-    </div>
-
-    <div class="bracket__empty" *ngIf="!bracket">
-      <i class="material-icons">account_tree</i>
-      <p>Le tableau n'est pas encore disponible</p>
-    </div>
-  `,
-  styleUrls: ['./bracket-view.component.scss']
+  selector:    'app-bracket-view',
+  standalone:  true,
+  imports:     [CommonModule, FormsModule],
+  templateUrl: './bracket-view.component.html',
+  styleUrls:   ['./bracket-view.component.scss']
 })
 export class BracketViewComponent implements OnChanges {
-  @Input() bracket?: BracketDTO;
+  @Input() bracket?:       BracketDTO;
+  @Input() competitionId!: number;
+  @Input() canEdit =       false;
+  @Output() matchClicked = new EventEmitter<MatchDTO>();
 
-  rounds: BracketRound[] = [];
-  vainqueurFinal: any = null;
+  private matchApi = inject(MatchApiService);
+  private router   = inject(Router);
 
-  ngOnChanges(): void {
-    if (this.bracket) {
-      this.buildRounds();
-      this.findVainqueur();
+  // Edition d'un noeud
+  editNoeud      = signal<BracketNoeudDTO | null>(null);
+  savingNoeud    = signal(false);
+  editParticipant1Nom = '';
+  editParticipant2Nom = '';
+
+  // Ordre correct : du premier tour → finale
+  // Les noeuds sont stockés racine=finale, feuilles=premiers matchs
+  // On inverse pour afficher premier tour en premier
+  tours = computed<Tour[]>(() => {
+    if (!this.bracket?.noeuds?.length) return [];
+
+    // Grouper par tour — fallback si n.tour null
+    const total = this.bracket!.noeuds.length;
+    const map = new Map<string, BracketNoeudDTO[]>();
+    for (const n of this.bracket!.noeuds) {
+      // Utiliser n.tour s'il existe, sinon calculer depuis la position
+      const key = n.tour ?? this.calculerTourDepuisPosition(n.position, total);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(n);
     }
-  }
 
-  private buildRounds(): void {
-    if (!this.bracket?.noeuds?.length) return;
+    // Ordre des tours du plus tôt au plus tard
+    const ordre: string[] = [
+      'TOUR_PRELIMINAIRE', 'SEIZIEME', 'HUITIEME',
+      'QUART_DE_FINALE', 'DEMI_FINALE', 'FINALE'
+    ];
 
-    const noeuds = this.bracket.noeuds;
-    const total  = noeuds.length;
-    // Arbre binaire : feuilles = taille/2, niveaux = log2(taille+1)
-    const niveaux = Math.ceil(Math.log2(total + 1));
-    const rounds: BracketRound[] = [];
-
-    const tourLabels: Record<NomTour, string> = {
-      [NomTour.TOUR_PRELIMINAIRE]: 'Préliminaires',
-      [NomTour.SEIZIEME]:          '16es de finale',
-      [NomTour.HUITIEME]:          '8es de finale',
-      [NomTour.QUART_DE_FINALE]:   'Quarts',
-      [NomTour.DEMI_FINALE]:       'Demis',
-      [NomTour.FINALE]:            'Finale'
-    };
-
-    // Grouper par niveau dans l'arbre (les feuilles sont au niveau niveaux-1)
-    for (let level = niveaux - 1; level >= 0; level--) {
-      const startPos = Math.pow(2, level);
-      const endPos   = Math.pow(2, level + 1) - 1;
-      const noeudsDuNiveau = noeuds.filter(
-        n => n.position >= startPos && n.position <= endPos);
-
-      if (noeudsDuNiveau.length > 0) {
-        const tourIndex = niveaux - 1 - level;
-        const nomTours = Object.values(NomTour);
-        const tourKey  = nomTours[Math.max(0, nomTours.length - 1 - tourIndex)];
-        rounds.push({
-          nom: tourLabels[tourKey as NomTour] ?? `Tour ${tourIndex + 1}`,
-          noeuds: noeudsDuNiveau.sort((a, b) => a.position - b.position)
+    const tours: Tour[] = [];
+    for (const key of ordre) {
+      if (map.has(key)) {
+        tours.push({
+          nom:    key as NomTour,
+          label:  this.tourLabel(key),
+          noeuds: map.get(key)!.sort((a, b) => a.position - b.position)
         });
       }
     }
 
-    this.rounds = rounds;
+    // Ajouter les tours non reconnus
+    for (const [key, noeuds] of map) {
+      if (!ordre.includes(key)) {
+        tours.push({ nom: key, label: key, noeuds });
+      }
+    }
+
+    return tours;
+  });
+
+  ngOnChanges(): void {}
+
+  calculerTourDepuisPosition(position: number, _total: number): string {
+    // Position 1 = FINALE (racine), positions hautes = premiers tours (feuilles)
+    // niveau = floor(log2(position)) : 0→FINALE, 1→DEMI, 2→QF, 3→HUI, 4→16e...
+    const niveau = Math.floor(Math.log2(Math.max(position, 1)));
+    const tours: Record<number, string> = {
+      0: 'FINALE',
+      1: 'DEMI_FINALE',
+      2: 'QUART_DE_FINALE',
+      3: 'HUITIEME',
+      4: 'SEIZIEME',
+      5: 'TOUR_PRELIMINAIRE',
+    };
+    return tours[niveau] ?? 'TOUR_PRELIMINAIRE';
   }
 
-  private findVainqueur(): void {
-    if (!this.bracket?.noeuds) return;
-    const finale = this.bracket.noeuds.find(n => n.noeudSuivantId == null);
-    this.vainqueurFinal = finale?.vainqueur ?? null;
+  tourLabel(tour: string): string {
+    const m: Record<string, string> = {
+      TOUR_PRELIMINAIRE: 'Tours préliminaires',
+      SEIZIEME:          '32es de finale',
+      HUITIEME:          '16es de finale',
+      QUART_DE_FINALE:   'Quarts de finale',
+      DEMI_FINALE:       'Demi-finales',
+      FINALE:            'Finale'
+    };
+    return m[tour] ?? tour;
   }
 
-  isWinner(noeud: BracketNoeudDTO, num: 1 | 2): boolean {
-    if (!noeud.vainqueur) return false;
-    const p = num === 1 ? noeud.participant1 : noeud.participant2;
-    return p?.id === noeud.vainqueur.id;
+  // ── Clic sur un match du bracket ─────────────────────────
+  ouvrirMatch(noeud: BracketNoeudDTO): void {
+    const match = noeud.matchAller;
+    if (!match) return;
+    this.router.navigate([
+      '/competitions', this.competitionId, 'matchs', match.id
+    ]);
   }
 
-  isLoser(noeud: BracketNoeudDTO, num: 1 | 2): boolean {
-    if (!noeud.vainqueur) return false;
-    return !this.isWinner(noeud, num);
+  // ── Edition du noeud (modifier les équipes) ───────────────
+  ouvrirEditNoeud(noeud: BracketNoeudDTO): void {
+    this.editNoeud.set(noeud);
+    this.editParticipant1Nom = noeud.participant1?.nomEquipe ?? '';
+    this.editParticipant2Nom = noeud.participant2?.nomEquipe ?? '';
   }
 
-  hasScore(noeud: BracketNoeudDTO): boolean {
-    return noeud.matchAller?.butsDomicile != null;
+  fermerEdit(): void {
+    this.editNoeud.set(null);
   }
 
-  getScore(noeud: BracketNoeudDTO, num: 1 | 2): string {
+  sauvegarderNoeud(): void {
+    // Le tirage manuel modifie les équipes d'un noeud
+    // → PATCH /competitions/{id}/bracket/noeuds/{noeudId}
+    const n = this.editNoeud();
+    if (!n) return;
+    this.savingNoeud.set(true);
+
+    this.matchApi.modifierNoeudBracket(
+      this.competitionId, n.id, {
+        participant1Nom: this.editParticipant1Nom,
+        participant2Nom: this.editParticipant2Nom
+      }
+    ).subscribe({
+      next: () => {
+        this.savingNoeud.set(false);
+        this.fermerEdit();
+        // Signaler au parent de recharger
+        this.matchClicked.emit(undefined as any);
+      },
+      error: () => this.savingNoeud.set(false)
+    });
+  }
+
+  // ── Helpers affichage ─────────────────────────────────────
+  getScore(noeud: BracketNoeudDTO): string {
     const m = noeud.matchAller;
     if (!m) return '–';
-    return num === 1
-      ? String(m.butsDomicile ?? '–')
-      : String(m.butsExterieur ?? '–');
+    if (m.statut === 'TERMINE' || m.statut === 'FORFAIT_DOMICILE'
+        || m.statut === 'FORFAIT_EXTERIEUR') {
+      return `${m.butsDomicile ?? 0} – ${m.butsExterieur ?? 0}`;
+    }
+    if (m.statut === 'EN_COURS') return 'En cours';
+    if (m.dateHeure) return new Date(m.dateHeure).toLocaleDateString('fr-FR');
+    return 'À planifier';
   }
 
-  getInitials(name?: string): string {
-    if (!name) return '?';
-    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  statutClass(noeud: BracketNoeudDTO): string {
+    const s = noeud.matchAller?.statut;
+    if (!s) return '';
+    if (s === 'TERMINE') return 'noeud--termine';
+    if (s === 'EN_COURS') return 'noeud--en-cours';
+    return 'noeud--planifie';
+  }
+
+  estVainqueur(noeud: BracketNoeudDTO, side: 1 | 2): boolean {
+    if (!noeud.vainqueur) return false;
+    const p = side === 1 ? noeud.participant1 : noeud.participant2;
+    return noeud.vainqueur.id === p?.id;
+  }
+
+  isBye(noeud: BracketNoeudDTO): boolean {
+    return noeud.bye === true;
   }
 }

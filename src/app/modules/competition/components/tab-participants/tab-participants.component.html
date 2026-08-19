@@ -1,1 +1,239 @@
-<p>tab-participants works!</p>
+<div class="tab-participants">
+
+  <!-- ══ HEADER ═══════════════════════════════════════════════ -->
+  <div class="tab-participants__header">
+    <h3>Équipes inscrites ({{ participants().length }})</h3>
+    <button class="btn-primary btn-sm"
+            *ngIf="canInscrire()"
+            (click)="showForm.set(!showForm())">
+      <i class="material-icons">{{ showForm() ? 'close' : 'add' }}</i>
+      {{ showForm() ? 'Annuler' : 'Inscrire une équipe' }}
+    </button>
+  </div>
+
+  <!-- ══ FORMULAIRE D'INSCRIPTION ══════════════════════════════ -->
+  <div class="inscription-form" *ngIf="showForm()">
+    <form [formGroup]="form" (ngSubmit)="inscrire()">
+
+      <!-- Choix du type -->
+      <div class="type-selector">
+        <button type="button"
+                class="type-btn"
+                [class.active]="form.get('type')!.value === 'EXTERNE'"
+                (click)="form.patchValue({ type: 'EXTERNE', groupeId: null })">
+          <i class="material-icons">public</i>
+          Équipe externe
+        </button>
+        <button type="button"
+                class="type-btn"
+                [class.active]="form.get('type')!.value === 'GROUPE_MY20'"
+                (click)="form.patchValue({ type: 'GROUPE_MY20', nomEquipe: '' })">
+          <i class="material-icons">sports_soccer</i>
+          Club My2-0
+        </button>
+      </div>
+
+      <div class="form-grid">
+
+        <!-- ── Type GROUPE_MY20 → liste déroulante ────────────── -->
+        <ng-container *ngIf="form.get('type')!.value === 'GROUPE_MY20'">
+          <div class="form-field form-field--full">
+            <label>Sélectionner un club My2-0 *</label>
+
+            <div class="loading-groupes" *ngIf="loadingGroupes()">
+              <i class="material-icons rotating">refresh</i>
+              Chargement des clubs...
+            </div>
+
+            <select *ngIf="!loadingGroupes()"
+                    formControlName="groupeId"
+                    class="form-select"
+                    (change)="onGroupeChange(+$any($event.target).value)">
+              <option value="">-- Choisir un club --</option>
+              <option *ngFor="let g of groupesDisponibles()"
+                      [value]="g.id"
+                      [disabled]="isGroupeDejaInscrit(g.id)">
+                {{ g.nom }}{{ isGroupeDejaInscrit(g.id) ? ' (déjà inscrit)' : '' }}
+              </option>
+            </select>
+
+            <div class="hint" *ngIf="groupesDisponibles().length === 0 && !loadingGroupes()">
+              <i class="material-icons">info</i>
+              Vous n'êtes responsable d'aucun groupe My2-0.
+              Choisissez "Équipe externe" ou
+              <a routerLink="/groupes/new">créez un groupe</a>.
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- ── Type EXTERNE → saisie libre ────────────────────── -->
+        <ng-container *ngIf="form.get('type')!.value === 'EXTERNE'">
+          <div class="form-field">
+            <label>Nom de l'équipe *</label>
+            <input formControlName="nomEquipe"
+                   class="form-input"
+                   placeholder="Ex: AS Douala FC"/>
+          </div>
+          <div class="form-field">
+            <label>Contact responsable</label>
+            <input formControlName="contactResponsable"
+                   class="form-input"
+                   placeholder="Téléphone ou email"/>
+          </div>
+        </ng-container>
+
+        <!-- Tête de série — commun aux deux types -->
+        <div class="form-field">
+          <label>Tête de série (optionnel)</label>
+          <input formControlName="seed"
+                 type="number"
+                 class="form-input"
+                 min="1" placeholder="1, 2, 3..."/>
+          <span class="field-hint">
+            Utilisé pour éviter que les têtes de série se rencontrent en phase de groupes
+          </span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost btn-sm"
+                (click)="showForm.set(false)">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary btn-sm"
+                [disabled]="form.invalid || saving()">
+          <i class="material-icons">check</i>
+          {{ saving() ? 'Enregistrement...' : 'Inscrire' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ══ FILTRES ════════════════════════════════════════════════ -->
+  <div class="statut-filters">
+    <button class="filter-btn"
+            [class.active]="filtreStatut() === null"
+            (click)="filtreStatut.set(null)">
+      Toutes ({{ participants().length }})
+    </button>
+    <button class="filter-btn"
+            *ngFor="let s of statutOptions"
+            [class.active]="filtreStatut() === s.value"
+            (click)="filtreStatut.set(s.value)">
+      {{ s.label }} ({{ countByStatut(s.value) }})
+    </button>
+  </div>
+
+  <!-- ══ LISTE DES PARTICIPANTS ══════════════════════════════════ -->
+  <div class="participants-list">
+    <div class="participant-card"
+         *ngFor="let p of filteredParticipants()">
+
+      <!-- Logo / initiales -->
+      <div class="participant-card__logo">
+        <img *ngIf="p.logoUrl" [src]="p.logoUrl" [alt]="p.nomEquipe"/>
+        <span *ngIf="!p.logoUrl">{{ getInitials(p.nomEquipe) }}</span>
+      </div>
+
+      <!-- Infos -->
+      <div class="participant-card__info">
+        <div class="participant-card__name">
+          {{ p.nomEquipe }}
+          <span class="seed-badge" *ngIf="p.seed">#{{ p.seed }}</span>
+        </div>
+        <div class="participant-card__meta">
+          <span class="type-badge"
+                [class]="p.type === 'GROUPE_MY20' ? 'type-my20' : 'type-ext'">
+            <i class="material-icons">
+              {{ p.type === 'GROUPE_MY20' ? 'sports_soccer' : 'public' }}
+            </i>
+            {{ p.type === 'GROUPE_MY20' ? 'Club My2-0' : 'Externe' }}
+          </span>
+          <span *ngIf="p.contactResponsable" class="contact">
+            <i class="material-icons">phone</i>
+            {{ p.contactResponsable }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Statut -->
+      <div class="participant-card__statut">
+        <span class="statut-badge"
+              [class]="'statut-' + p.statutInscription.toLowerCase()">
+          {{ statutLabel(p.statutInscription) }}
+        </span>
+      </div>
+
+      <!-- Actions -->
+      <div class="participant-card__actions">
+        <button class="btn-icon btn-icon--success"
+                *ngIf="p.statutInscription === 'EN_ATTENTE'"
+                (click)="valider(p)"
+                title="Valider l'inscription">
+          <i class="material-icons">check_circle</i>
+        </button>
+        <button class="btn-icon btn-icon--danger"
+                *ngIf="p.statutInscription === 'EN_ATTENTE'"
+                (click)="rejeter(p)"
+                title="Rejeter l'inscription">
+          <i class="material-icons">cancel</i>
+        </button>
+        <button class="btn-icon btn-icon--ghost"
+                *ngIf="canRetirer(p)"
+                (click)="retirer(p)"
+                title="Retirer de la compétition">
+          <i class="material-icons">remove_circle_outline</i>
+        </button>
+        <button class="btn-icon btn-icon--info"
+                (click)="participantSelectionne.set(participantSelectionne()?.id === p.id ? null : p)"
+                title="Voir les joueurs">
+          <i class="material-icons">groups</i>
+        </button>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="filteredParticipants().length === 0">
+      <i class="material-icons">groups</i>
+      <p>Aucune équipe dans cette catégorie</p>
+      <button class="btn-primary btn-sm"
+              *ngIf="canInscrire() && filtreStatut() === null"
+              (click)="showForm.set(true)">
+        Inscrire la première équipe
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PANEL ROSTER ════════════════════════════════════════════ -->
+  <!--
+    RosterComponent s'ouvre ici quand on clique sur le bouton "Joueurs"
+    d'un participant. C'est juste un panel dans tab-participants,
+    pas un composant séparé.
+  -->
+  <div class="membres-panel" *ngIf="participantSelectionne()">
+    <div class="membres-panel__header">
+      <div class="membres-panel__title">
+        <div class="membres-panel__logo"
+             *ngIf="participantSelectionne()!.logoUrl">
+          <img [src]="participantSelectionne()!.logoUrl"/>
+        </div>
+        <h3>{{ participantSelectionne()!.nomEquipe }}</h3>
+        <span class="type-badge"
+              [class]="participantSelectionne()!.type === 'GROUPE_MY20' ? 'type-my20' : 'type-ext'">
+          {{ participantSelectionne()!.type === 'GROUPE_MY20' ? 'My2-0' : 'Externe' }}
+        </span>
+      </div>
+      <button class="btn-close" (click)="participantSelectionne.set(null)">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <!-- app-roster remplace app-equipe-membres ici -->
+    <!-- canEdit=true tant que la compétition n'est pas TERMINEE/ANNULE -->
+    <app-roster
+      [competitionId]="competition.id"
+      [participantId]="participantSelectionne()!.id"
+      [canEdit]="peutGererRoster()"/>
+  </div>
+
+</div>

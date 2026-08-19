@@ -1,1 +1,285 @@
-<p>tab-phases works!</p>
+<div class="tab-phases">
+
+  <!-- ══ SÉLECTEUR DE PHASE ══════════════════════════════════ -->
+  <div class="phase-selector" *ngIf="phases().length > 1">
+    <button class="phase-btn"
+            *ngFor="let p of phases()"
+            [class.active]="activePhaseId() === p.id"
+            (click)="selectPhase(p)">
+      <span class="phase-dot" [class]="'dot-' + p.statut.toLowerCase()"></span>
+      {{ p.nom }}
+    </button>
+  </div>
+
+  <!-- ══ CHARGEMENT ══════════════════════════════════════════ -->
+  <div class="phases-loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    <span>Chargement du calendrier...</span>
+  </div>
+
+  <!-- ══ PHASE GROUPE / CHAMPIONNAT ══════════════════════════ -->
+  <ng-container *ngIf="!loading() && activePhase()?.type === 'GROUPE'">
+    <div class="poules-container">
+      <div class="poule-section" *ngFor="let poule of poules()">
+
+        <!-- Header poule -->
+        <div class="poule-header">
+          <h3 class="poule-nom">{{ poule.nom }}</h3>
+          <div class="poule-tabs">
+            <button class="poule-tab"
+                    [class.active]="getActivePouleTab(poule.id) === 'classement'"
+                    (click)="setPouleTab(poule.id, 'classement')">
+              <i class="material-icons">table_chart</i>
+              Classement
+            </button>
+            <button class="poule-tab"
+                    [class.active]="getActivePouleTab(poule.id) === 'journees'"
+                    (click)="setPouleTab(poule.id, 'journees')">
+              <i class="material-icons">calendar_month</i>
+              Calendrier
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Classement ─────────────────────────────────── -->
+        <div class="poule-content"
+             *ngIf="getActivePouleTab(poule.id) === 'classement'">
+          <app-classement-table
+            [classement]="poule.classement"
+            [nombreQualifies]="competition.config?.qualifiesParGroupe ?? 0"/>
+        </div>
+
+        <!-- ── Calendrier journées ───────────────────────── -->
+        <div class="poule-content"
+             *ngIf="getActivePouleTab(poule.id) === 'journees'">
+
+          <!-- Indicateur aller/retour -->
+          <div class="aller-retour-info"
+               *ngIf="competition.config?.allerRetour">
+            <i class="material-icons">swap_horiz</i>
+            <span>
+              Championnat aller-retour —
+              chaque équipe affronte toutes les autres 2 fois
+            </span>
+          </div>
+
+          <div class="journees-container">
+            <div class="journee-accordion"
+                 *ngFor="let j of getJournees(poule.id)">
+
+              <!-- Header journée -->
+              <button class="journee-header"
+                      (click)="toggleJournee(j.id)">
+                <div class="journee-header__left">
+                  <span class="journee-nom">
+                    {{ j.nom }}
+                    <span class="retour-badge"
+                          *ngIf="j.estRetour">↩ Retour</span>
+                  </span>
+                  <span class="journee-date" *ngIf="j.datePrevue">
+                    <i class="material-icons">event</i>
+                    {{ j.datePrevue | date:'dd/MM/yyyy' }}
+                  </span>
+                </div>
+                <div class="journee-header__right">
+                  <span class="journee-statut"
+                        [class]="'statut-' + j.statut.toLowerCase()">
+                    {{ statutJourneeLabel(j.statut) }}
+                  </span>
+                  <i class="material-icons chevron">
+                    {{ openJournee() === j.id ? 'expand_less' : 'expand_more' }}
+                  </i>
+                </div>
+              </button>
+
+              <!-- Contenu journée -->
+              <div class="journee-content"
+                   *ngIf="openJournee() === j.id">
+
+                <div class="journee-loading" *ngIf="loadingJournee()">
+                  <div class="spinner-sm"></div>
+                  Chargement...
+                </div>
+
+                <ng-container *ngIf="!loadingJournee() && journeeDetail()">
+
+                  <!-- Actions journée (admin/responsable) -->
+                  <div class="journee-actions" *ngIf="canEdit()">
+                    <button class="btn-outline btn-sm"
+                            (click)="ouvrirPlanificationMasse(j.id)">
+                      <i class="material-icons">date_range</i>
+                      Planifier les matchs
+                    </button>
+                  </div>
+
+                  <!-- Liste des matchs -->
+                  <div class="matchs-grid">
+                    <div class="match-row"
+                         *ngFor="let m of journeeDetail()!.matchs">
+                      <app-match-card
+                        [match]="m"
+                        [showActions]="true"
+                        [canEdit]="canEdit()"
+                        (onEdit)="ouvrirMatchEdit($event)"
+                        (onDetail)="ouvrirMatchDetail($event)"/>
+                    </div>
+
+                    <div class="no-matchs"
+                         *ngIf="!journeeDetail()!.matchs?.length">
+                      <i class="material-icons">sports_soccer</i>
+                      <span>Aucun match dans cette journée</span>
+                    </div>
+                  </div>
+
+                </ng-container>
+              </div>
+            </div>
+
+            <!-- État vide journées -->
+            <div class="empty-journees"
+                 *ngIf="!getJournees(poule.id).length">
+              <i class="material-icons">calendar_today</i>
+              <p>Le calendrier n'a pas encore été généré</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══ PHASE ÉLIMINATOIRE ══════════════════════════════════ -->
+  <ng-container *ngIf="!loading() && activePhase()?.type === 'ELIMINATOIRE'">
+    <div class="bracket-section">
+
+      <div class="bracket-matchs" *ngIf="bracketMatchs().length">
+        <h3 class="section-title">
+          <i class="material-icons">sports_soccer</i>
+          Matchs
+        </h3>
+        <div class="matchs-grid">
+          <div class="match-row" *ngFor="let m of bracketMatchs()">
+            <app-match-card
+              [match]="m"
+              [showActions]="true"
+              [canEdit]="canEdit()"
+              (onEdit)="ouvrirMatchEdit($event)"
+              (onDetail)="ouvrirMatchDetail($event)"/>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title" style="margin-top: 24px">
+        <i class="material-icons">account_tree</i>
+        Tableau
+      </h3>
+      <app-bracket-view
+        [bracket]="bracket() ?? undefined"
+        [competitionId]="competition.id"
+        [canEdit]="canEdit()"
+        (matchClicked)="onMatchClicked($event)"/>
+    </div>
+  </ng-container>
+
+  <!-- ══ DRAWER MATCH EDIT ════════════════════════════════════ -->
+  <div class="drawer-overlay"
+       [class.open]="matchEditOpen()"
+       (click)="fermerMatchEdit()">
+  </div>
+
+  <div class="drawer drawer--right" [class.open]="matchEditOpen()">
+    <app-match-edit
+      *ngIf="matchSelectionne() && matchEditOpen()"
+      [match]="matchSelectionne()!"
+      [competitionId]="competition.id"
+      (onClose)="fermerMatchEdit()"
+      (onSaved)="onMatchSaved($event)"/>
+  </div>
+
+  <!-- ══ MODAL PLANIFICATION EN MASSE ════════════════════════ -->
+  <div class="modal-overlay"
+       *ngIf="planifMasseOpen()"
+       (click)="planifMasseOpen.set(false)">
+    <div class="modal modal--large"
+         (click)="$event.stopPropagation()">
+
+      <div class="modal__header">
+        <h3>
+          <i class="material-icons">date_range</i>
+          Planifier — {{ journeeDetail()?.nom }}
+        </h3>
+        <button class="btn-close" (click)="planifMasseOpen.set(false)">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+
+      <div class="modal__body modal__body--scroll">
+
+        <p class="planif-hint">
+          <i class="material-icons">info_outline</i>
+          Les dates sont pré-remplies automatiquement.
+          Modifiez match par match si nécessaire.
+        </p>
+
+        <div class="planif-match"
+             *ngFor="let m of journeeDetail()?.matchs; let i = index">
+          <div class="planif-match__teams">
+            <div class="planif-team">
+              <span class="planif-team__logo" *ngIf="m.domicile?.logoUrl">
+                <img [src]="m.domicile!.logoUrl"/>
+              </span>
+              <span>{{ m.domicile?.nomEquipe }}</span>
+            </div>
+            <span class="planif-vs">vs</span>
+            <div class="planif-team planif-team--right">
+              <span>{{ m.exterieur?.nomEquipe }}</span>
+              <span class="planif-team__logo" *ngIf="m.exterieur?.logoUrl">
+                <img [src]="m.exterieur!.logoUrl"/>
+              </span>
+            </div>
+          </div>
+
+          <div class="planif-match__inputs">
+            <div class="planif-field">
+              <label>Date & heure</label>
+              <input type="datetime-local"
+                     [(ngModel)]="planifDates[m.id]"
+                     class="form-input planif-input"/>
+            </div>
+            <div class="planif-field">
+              <label>Stade</label>
+              <select [(ngModel)]="planifStades[m.id]"
+                      class="form-select planif-input">
+                <option [ngValue]="null">Stade...</option>
+                <option *ngFor="let s of tousStades()"
+                        [ngValue]="s.id">
+                  {{ s.nom }}{{ s.ville ? ' (' + s.ville + ')' : '' }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Statut du match -->
+          <div class="planif-match__statut"
+               [class]="'statut-' + m.statut.toLowerCase()">
+            {{ m.statut }}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn-ghost"
+                (click)="planifMasseOpen.set(false)">
+          Annuler
+        </button>
+        <button class="btn-primary"
+                [disabled]="savingPlanif()"
+                (click)="sauvegarderPlanifMasse()">
+          <i class="material-icons">save</i>
+          {{ savingPlanif() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

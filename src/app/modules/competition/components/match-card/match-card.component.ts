@@ -71,7 +71,7 @@ import { MatchDTO, StatutMatch } from '../../../../core/models/competition.model
           </ng-template>
         </div>
 
-        <!-- Équipe extérieur -->
+       
         <div class="match-card__team match-card__team--away"
              [class.winner]="isWinner('away')">
           <span class="match-card__team-name">

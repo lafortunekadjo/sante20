@@ -1,1 +1,245 @@
-<p>bracket-view works!</p>
+<div class="bracket" *ngIf="bracket && tours().length; else emptyBracket">
+
+  <!-- ══ VUE BRACKET (desktop) ════════════════════════════════ -->
+  <div class="bracket__scroll-wrapper">
+    <div class="bracket__grid">
+
+      <div class="bracket__col"
+           *ngFor="let tour of tours(); let ti = index">
+
+        <!-- Label du tour -->
+        <div class="bracket__col-header">
+          {{ tour.label }}
+          <span class="bracket__col-count">({{ tour.noeuds.length }})</span>
+        </div>
+
+        <!-- Noeuds du tour -->
+        <div class="bracket__noeuds-wrap">
+          <div class="bracket__noeud-cell"
+               *ngFor="let n of tour.noeuds">
+
+            <div class="bracket__noeud"
+                 [class.noeud--termine]="n.matchAller?.statut === 'TERMINE'"
+                 [class.noeud--en-cours]="n.matchAller?.statut === 'EN_COURS'"
+                 [class.noeud--bye]="isBye(n)">
+
+              <!-- BYE -->
+              <ng-container *ngIf="isBye(n)">
+                <div class="noeud__row noeud__row--bye">
+                  <span class="noeud__nom">{{ n.vainqueur?.nomEquipe ?? 'BYE' }}</span>
+                  <span class="noeud__badge noeud__badge--bye">BYE</span>
+                </div>
+              </ng-container>
+
+              <!-- Match normal -->
+              <ng-container *ngIf="!isBye(n)">
+
+                <!-- Équipe 1 -->
+                <div class="noeud__row"
+                     [class.noeud__row--win]="estVainqueur(n, 1)"
+                     [class.noeud__row--lose]="!estVainqueur(n, 1) && !!n.vainqueur">
+                  <span class="noeud__seed" *ngIf="n.participant1?.seed">
+                    {{ n.participant1?.seed }}
+                  </span>
+                  <span class="noeud__nom">
+                    {{ n.participant1?.nomEquipe ?? 'À déterminer' }}
+                  </span>
+                  <span class="noeud__score"
+                        *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                    {{ n.matchAller!.butsDomicile ?? 0 }}
+                  </span>
+                </div>
+
+                <!-- Séparateur -->
+                <div class="noeud__divider">
+                  <span class="noeud__info">{{ getScore(n) }}</span>
+                </div>
+
+                <!-- Équipe 2 -->
+                <div class="noeud__row"
+                     [class.noeud__row--win]="estVainqueur(n, 2)"
+                     [class.noeud__row--lose]="!estVainqueur(n, 2) && !!n.vainqueur">
+                  <span class="noeud__seed" *ngIf="n.participant2?.seed">
+                    {{ n.participant2?.seed }}
+                  </span>
+                  <span class="noeud__nom">
+                    {{ n.participant2?.nomEquipe ?? 'À déterminer' }}
+                  </span>
+                  <span class="noeud__score"
+                        *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                    {{ n.matchAller!.butsExterieur ?? 0 }}
+                  </span>
+                </div>
+
+                <!-- Actions -->
+                <div class="noeud__actions">
+                  <button class="noeud__btn noeud__btn--match"
+                          *ngIf="n.matchAller"
+                          (click)="ouvrirMatch(n)"
+                          title="Voir le match">
+                    <i class="material-icons">sports_soccer</i>
+                  </button>
+                  <button class="noeud__btn noeud__btn--edit"
+                          *ngIf="canEdit"
+                          (click)="ouvrirEditNoeud(n)"
+                          title="Modifier les équipes / tirage manuel">
+                    <i class="material-icons">edit</i>
+                  </button>
+                </div>
+
+              </ng-container>
+            </div>
+
+            <!-- Connecteur vers tour suivant -->
+            <div class="bracket__connector"
+                 *ngIf="ti < tours().length - 1">
+              <div class="connector__line connector__line--top"></div>
+              <div class="connector__line connector__line--bottom"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ LISTE DES MATCHS ══════════════════════════════════════ -->
+  <div class="bracket__list">
+    <h3 class="bracket__list-title">
+      <i class="material-icons">list</i>
+      Matchs
+    </h3>
+
+    <ng-container *ngFor="let tour of tours()">
+      <div class="bracket__list-tour">
+        <div class="bracket__list-tour-label">{{ tour.label }}</div>
+
+        <div class="bracket__list-row"
+             *ngFor="let n of tour.noeuds"
+             [class.list-row--bye]="isBye(n)"
+             [class.list-row--termine]="n.matchAller?.statut === 'TERMINE'"
+             [class.list-row--en-cours]="n.matchAller?.statut === 'EN_COURS'"
+             (click)="n.matchAller && ouvrirMatch(n)">
+
+          <!-- Statut badge -->
+          <span class="list-row__badge"
+                *ngIf="n.matchAller?.statut === 'EN_COURS'">
+            LIVE
+          </span>
+
+          <!-- Équipes + score -->
+          <div class="list-row__teams">
+            <div class="list-row__team"
+                 [class.list-row__team--win]="estVainqueur(n, 1)"
+                 [class.list-row__team--lose]="!estVainqueur(n, 1) && !!n.vainqueur">
+              <span class="list-row__seed" *ngIf="n.participant1?.seed">
+                {{ n.participant1?.seed }}
+              </span>
+              <span class="list-row__name">
+                {{ n.participant1?.nomEquipe ?? '?' }}
+              </span>
+              <span class="list-row__score"
+                    *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                {{ n.matchAller!.butsDomicile ?? 0 }}
+              </span>
+            </div>
+
+            <span class="list-row__vs">vs</span>
+
+            <div class="list-row__team list-row__team--away"
+                 [class.list-row__team--win]="estVainqueur(n, 2)"
+                 [class.list-row__team--lose]="!estVainqueur(n, 2) && !!n.vainqueur">
+              <span class="list-row__score"
+                    *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                {{ n.matchAller!.butsExterieur ?? 0 }}
+              </span>
+              <span class="list-row__name">
+                {{ n.participant2?.nomEquipe ?? '?' }}
+              </span>
+              <span class="list-row__seed" *ngIf="n.participant2?.seed">
+                {{ n.participant2?.seed }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Date si planifié -->
+          <span class="list-row__date"
+                *ngIf="n.matchAller?.dateHeure && n.matchAller?.statut === 'PLANIFIE'">
+            {{ n.matchAller!.dateHeure | date:'dd/MM HH:mm' }}
+          </span>
+
+          <!-- Actions -->
+          <div class="list-row__actions" (click)="$event.stopPropagation()">
+            <button class="noeud__btn noeud__btn--edit"
+                    *ngIf="canEdit"
+                    (click)="ouvrirEditNoeud(n)"
+                    title="Modifier les équipes">
+              <i class="material-icons">edit</i>
+            </button>
+            <i class="material-icons list-row__arrow"
+               *ngIf="n.matchAller">chevron_right</i>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+</div>
+
+<!-- ══ ÉTAT VIDE ════════════════════════════════════════════════ -->
+<ng-template #emptyBracket>
+  <div class="bracket__empty">
+    <i class="material-icons">account_tree</i>
+    <p>Bracket non généré</p>
+  </div>
+</ng-template>
+
+<!-- ══ MODAL ÉDITION NOEUD ══════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="editNoeud()" (click)="fermerEdit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <div class="modal__header">
+      <h3>
+        <i class="material-icons">edit</i>
+        Tirage manuel — Modifier les équipes
+      </h3>
+      <button class="btn-close" (click)="fermerEdit()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <div class="modal__body">
+      <p class="modal__hint">
+        <i class="material-icons">info_outline</i>
+        Corriger le tirage ou entrer un tirage effectué physiquement
+      </p>
+
+      <div class="form-field">
+        <label class="form-label">Équipe 1 (Domicile)</label>
+        <input class="form-input"
+               [(ngModel)]="editParticipant1Nom"
+               placeholder="Nom de l'équipe"/>
+      </div>
+
+      <div class="form-field" style="margin-top:12px">
+        <label class="form-label">Équipe 2 (Extérieur)</label>
+        <input class="form-input"
+               [(ngModel)]="editParticipant2Nom"
+               placeholder="Nom de l'équipe"/>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn-ghost" (click)="fermerEdit()">Annuler</button>
+      <button class="btn-primary"
+              [disabled]="savingNoeud()"
+              (click)="sauvegarderNoeud()">
+        <i class="material-icons">save</i>
+        {{ savingNoeud() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+
+  </div>
+</div>

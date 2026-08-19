@@ -1,4 +1,4 @@
- <div class="match-detail" *ngIf="match(); else loadingTpl">
+<div class="match-detail" *ngIf="match(); else loadingTpl">
 
       <!-- ── HERO (inchangé) ──────────────────── -->
       <div class="match-detail__hero">
@@ -25,17 +25,33 @@
               <span *ngIf="match()!.tourNom">{{ match()!.tourNom }}</span>
             </div>
             <div class="score-display__main">
-              <span class="score-num" [class.winner-score]="isWinner('home')">
-                {{ isTermine() ? (match()!.butsDomicile ?? 0) : '–' }}
+              <span class="score-num" [class.winner-score]="isWinner('home')"
+                    [class.score-live]="isEnCours()">
+                {{ showScore() ? totalDom() : '–' }}
               </span>
-              <span class="score-sep">:</span>
-              <span class="score-num" [class.winner-score]="isWinner('away')">
-                {{ isTermine() ? (match()!.butsExterieur ?? 0) : '–' }}
+              <span class="score-sep">{{ isEnCours() ? '·' : ':' }}</span>
+              <span class="score-num" [class.winner-score]="isWinner('away')"
+                    [class.score-live]="isEnCours()">
+                {{ showScore() ? totalExt() : '–' }}
               </span>
             </div>
             <div class="score-display__statut"
                  [class]="'statut-' + match()!.statut.toLowerCase()">
               {{ statutLabel() }}
+            </div>
+
+            <!-- Bouton Démarrer — visible uniquement si PLANIFIE -->
+            <button class="btn-demarrer"
+                    *ngIf="isPlanifie()"
+                    (click)="demarrerMatch()">
+              <i class="material-icons">play_circle</i>
+              Démarrer le match
+            </button>
+
+            <!-- Indicateur live -->
+            <div class="live-badge" *ngIf="isEnCours()">
+              <span class="live-dot"></span>
+              LIVE
             </div>
             <div class="score-display__infos">
               <span *ngIf="match()!.dateHeure">
@@ -66,9 +82,10 @@
       <!-- ── TABS ─────────────────────────────── -->
       <div class="match-detail__tabs">
         <div class="tabs-nav">
-          <button class="tab-btn"
+           <button class="tab-btn"
                   *ngFor="let t of tabs"
                   [class.active]="activeTab() === t.key"
+                  [style.display]=" isTermine() ? 'none' : ''"
                   (click)="setTab(t.key)">
             <i class="material-icons">{{ t.icon }}</i>
             {{ t.label }}
@@ -82,37 +99,68 @@
             <div class="timeline" *ngIf="sortedEvents().length">
               <h3 class="section-title">Résumé du match</h3>
               <div class="timeline__content">
-                <div class="timeline__event"
-                     *ngFor="let e of sortedEvents()"
-                     [class]="'event-type-' + e.type.toLowerCase()">
-                  <div class="timeline__side timeline__side--home"
-                       *ngIf="!isExterieurEvent(e)">
-                    <span class="tl-player">{{ e.joueurNom }}</span>
-                    <span class="tl-assist"
-                          *ngIf="e.passeurNom">
-                      ↳ {{ e.passeurNom }}
-                    </span>
-                  </div>
-                  <div class="timeline__center">
-                    <span class="tl-icon">{{ eventIcon(e.type) }}</span>
-                    <span class="tl-minute">
-                      {{ e.minute }}'
-                      <span *ngIf="e.minuteAdditionnel"
-                            class="tl-add">+{{ e.minuteAdditionnel }}</span>
-                    </span>
-                  </div>
-                  <div class="timeline__side timeline__side--away"
-                       *ngIf="isExterieurEvent(e)">
-                    <span class="tl-player">{{ e.joueurNom }}</span>
-                    <span class="tl-assist"
-                          *ngIf="e.passeurNom">
-                      ↳ {{ e.passeurNom }}
-                    </span>
-                  </div>
-                  <div class="timeline__side"
-                       *ngIf="!isExterieurEvent(e)"></div>
-                </div>
-              </div>
+  <div class="tl-row"
+       *ngFor="let e of sortedEvents()">
+ 
+    <!-- Côté domicile -->
+    <div class="tl-side tl-side--home">
+      <ng-container *ngIf="!isExterieurEvent(e)">
+        <div class="tl-player-info">
+          <span class="tl-player">
+            {{ e.joueurNom }}
+            <span *ngIf="e.type === 'CONTRE_SON_CAMP'"
+                  class="tl-csc-badge">CSC</span>
+          </span>
+          <span class="tl-assist" *ngIf="e.passeurNom">
+            ↳ {{ e.passeurNom }}
+          </span>
+          <span class="tl-sortant" *ngIf="e.joueurSortantNom">
+            ↓ {{ e.joueurSortantNom }}
+          </span>
+        </div>
+        <span class="tl-icon">{{ eventIcon(e.type) }}</span>
+      </ng-container>
+    </div>
+ 
+    <!-- Minute centrale -->
+    <div class="tl-center">
+      <span class="tl-minute">
+        {{ e.minute }}'
+        <span *ngIf="e.minuteAdditionnel" class="tl-add">
+          +{{ e.minuteAdditionnel }}
+        </span>
+      </span>
+    </div>
+ 
+    <!-- Côté extérieur -->
+    <div class="tl-side tl-side--away">
+      <ng-container *ngIf="isExterieurEvent(e)">
+        <span class="tl-icon">{{ eventIcon(e.type) }}</span>
+        <div class="tl-player-info">
+          <span class="tl-player">
+            {{ e.joueurNom }}
+            <span *ngIf="e.type === 'CONTRE_SON_CAMP'"
+                  class="tl-csc-badge">CSC</span>
+          </span>
+          <span class="tl-assist" *ngIf="e.passeurNom">
+            ↳ {{ e.passeurNom }}
+          </span>
+          <span class="tl-sortant" *ngIf="e.joueurSortantNom">
+            ↓ {{ e.joueurSortantNom }}
+          </span>
+        </div>
+      </ng-container>
+    </div>
+ 
+    <!-- Bouton supprimer -->
+    <button class="tl-delete"
+            *ngIf="canEdit()"
+            (click)="supprimerEvenement(e.id!)"
+            title="Supprimer">
+      <i class="material-icons">close</i>
+    </button>
+  </div>
+</div>
             </div>
             <div class="not-played" *ngIf="!sortedEvents().length">
               <i class="material-icons">sports_soccer</i>
@@ -122,37 +170,133 @@
 
           <!-- ── COMPOSITION ────────── -->
           <div *ngIf="activeTab() === 'composition'" class="composition-tab">
-            <div class="compo-grid">
-              <div class="compo-team" *ngFor="let side of ['domicile', 'exterieur']">
-                <div class="compo-team__header">
-                  <span>
-                    {{ side === 'domicile'
-                      ? match()!.domicile?.nomEquipe
-                      : match()!.exterieur?.nomEquipe }}
-                  </span>
-                </div>
-                <ng-container *ngFor="let poste of postes">
-                  <div class="compo-poste-header"
-                       *ngIf="getByPoste(getCompo(side), poste.value).length">
-                    {{ poste.label }}
-                  </div>
-                  <div class="compo-player"
-                       *ngFor="let p of getByPoste(getCompo(side), poste.value)"
-                       [class.remplacant]="p.statut === 'REMPLACANT'">
-                    <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
-                    <span class="player-name">
-                      {{ p.joueurPrenom }} {{ p.joueurNom }}
-                      <i class="material-icons captain"
-                         *ngIf="p.capitaine">star</i>
+
+            <!-- Header avec bouton édition -->
+            <div class="compo-header">
+              <span class="compo-title">Compositions</span>
+              <button class="btn-edit-compo"
+                      *ngIf="!isTermine()"
+                      (click)="toggleCompoEdit()">
+                <i class="material-icons">{{ compoEditMode() ? 'close' : 'edit' }}</i>
+                {{ compoEditMode() ? 'Annuler' : 'Modifier' }}
+              </button>
+            </div>
+
+            <!-- MODE LECTURE -->
+            <ng-container *ngIf="!compoEditMode()">
+              <div class="compo-grid">
+                <div class="compo-team" *ngFor="let side of ['domicile', 'exterieur']">
+                  <div class="compo-team__header">
+                    <span>
+                      {{ side === 'domicile'
+                        ? match()!.domicile?.nomEquipe
+                        : match()!.exterieur?.nomEquipe }}
                     </span>
                   </div>
-                </ng-container>
-                <div class="compo-empty"
-                     *ngIf="!getCompo(side)?.length">
-                  Composition non saisie
+
+                  <!-- Titulaires -->
+                  <div class="compo-section-label">Titulaires</div>
+                  <ng-container *ngFor="let p of getCompo(side)">
+                    <div class="compo-player" *ngIf="p.statut !== 'REMPLACANT'">
+                      <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
+                      <span class="player-name">
+                        {{ p.joueurPrenom }} {{ p.joueurNom }}
+                        <i class="material-icons captain" *ngIf="p.capitaine">star</i>
+                      </span>
+                    </div>
+                  </ng-container>
+
+                  <!-- Remplaçants -->
+                  <ng-container *ngIf="getRemplacants(side).length">
+                    <div class="compo-section-label">Remplaçants</div>
+                    <div class="compo-player remplacant"
+                         *ngFor="let p of getRemplacants(side)">
+                      <span class="player-num">{{ p.numeroDos ?? '–' }}</span>
+                      <span class="player-name">
+                        {{ p.joueurPrenom }} {{ p.joueurNom }}
+                      </span>
+                    </div>
+                  </ng-container>
+
+                  <div class="compo-empty" *ngIf="!getCompo(side)?.length">
+                    <i class="material-icons">group_off</i>
+                    Composition non saisie
+                  </div>
                 </div>
               </div>
-            </div>
+            </ng-container>
+
+            <!-- MODE SAISIE -->
+            <ng-container *ngIf="compoEditMode()">
+              <div class="compo-edit-grid">
+
+                <!-- Domicile -->
+                <div class="compo-edit-team">
+                  <div class="compo-team__header">
+                    {{ match()!.domicile?.nomEquipe }}
+                  </div>
+                  <div class="compo-edit-list">
+                    <div class="compo-edit-row"
+                         *ngFor="let j of compoSaisie().domicile">
+                      <span class="player-name-edit">
+                        {{ j.prenom }} {{ j.nom }}
+                      </span>
+                      <input class="num-dos-input"
+                             type="number" min="1" max="99"
+                             [(ngModel)]="j.numeroDos"
+                             placeholder="N°"/>
+                      <button class="btn-titulaire"
+                              [class.active]="j.titulaire"
+                              (click)="toggleTitulaire('domicile', j.membreId)">
+                        {{ j.titulaire ? 'Tit.' : 'Rem.' }}
+                      </button>
+                    </div>
+                    <div class="compo-edit-empty" *ngIf="!compoSaisie().domicile.length">
+                      Aucun joueur inscrit
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Extérieur -->
+                <div class="compo-edit-team">
+                  <div class="compo-team__header">
+                    {{ match()!.exterieur?.nomEquipe }}
+                  </div>
+                  <div class="compo-edit-list">
+                    <div class="compo-edit-row"
+                         *ngFor="let j of compoSaisie().exterieur">
+                      <span class="player-name-edit">
+                        {{ j.prenom }} {{ j.nom }}
+                      </span>
+                      <input class="num-dos-input"
+                             type="number" min="1" max="99"
+                             [(ngModel)]="j.numeroDos"
+                             placeholder="N°"/>
+                      <button class="btn-titulaire"
+                              [class.active]="j.titulaire"
+                              (click)="toggleTitulaire('exterieur', j.membreId)">
+                        {{ j.titulaire ? 'Tit.' : 'Rem.' }}
+                      </button>
+                    </div>
+                    <div class="compo-edit-empty" *ngIf="!compoSaisie().exterieur.length">
+                      Aucun joueur inscrit
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Actions saisie -->
+              <div class="compo-edit-actions">
+                <button class="btn-success"
+                        (click)="enregistrerComposition()"
+                        [disabled]="savingCompo()">
+                  <i class="material-icons">save</i>
+                  {{ savingCompo() ? 'Enregistrement...' : 'Enregistrer les compositions' }}
+                </button>
+              </div>
+            </ng-container>
+
           </div>
 
           <!-- ── ÉVÉNEMENTS ─────────── -->
@@ -480,11 +624,12 @@
                 </div>
 
                 <div class="saisie-actions">
-                  <button type="submit"
+                 <button type="submit"
                           class="btn-success"
-                          [disabled]="scoreForm.invalid || savingScore()">
+                          [disabled]="scoreForm.invalid || savingScore() || isTermine()"
+                          (click)="saisirScore()">
                     <i class="material-icons">check</i>
-                    {{ savingScore() ? 'Enregistrement...' : 'Valider le score' }}
+                    {{ isTermine() ? 'Score validé ✓' : savingScore() ? 'Enregistrement...' : 'Valider le score' }}
                   </button>
                 </div>
               </form>

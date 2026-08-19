@@ -1,1 +1,242 @@
-<p>equipe-membres works!</p>
+<div class="em">
+
+  <!-- ══ LOADING COMPOSITION ══════════════════════════════════ -->
+  <div class="em__loading" *ngIf="loadingCompo()">
+    <div class="spinner-sm"></div> Chargement...
+  </div>
+
+  <ng-container *ngIf="!loadingCompo()">
+
+    <!-- ══ HEADER ════════════════════════════════════════════ -->
+    <div class="em__header">
+      <span class="em__count"
+            [class.em__count--warn]="nbTitulaires() > 11">
+        {{ nbTitulaires() }}/11
+        <span *ngIf="nbTitulaires() > 11">⚠️ max 11</span>
+      </span>
+
+      <div class="em__actions" *ngIf="canEdit">
+        <button class="btn-ghost btn-xs" *ngIf="editMode()"
+                (click)="annulerEdit()">Annuler</button>
+        <button class="btn-primary btn-xs" *ngIf="editMode()"
+                [disabled]="saving()"
+                (click)="enregistrer()">
+          {{ saving() ? '...' : 'Enregistrer' }}
+        </button>
+        <button class="btn-outline btn-xs" *ngIf="!editMode()"
+                (click)="editMode.set(true)">
+          <i class="material-icons">edit</i> Modifier
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ LISTE TITULAIRES ═══════════════════════════════════ -->
+    <div class="em__section">
+      <div class="em__section-label">Titulaires ({{ nbTitulaires() }})</div>
+
+      <div class="em__player"
+           *ngFor="let j of titulaires()"
+           [class.em__player--suspendu]="j.suspendu">
+        <span class="em__num">{{ j.numeroDos ?? '–' }}</span>
+        <span class="em__name">
+          {{ j.joueurPrenom ? j.joueurPrenom + ' ' : '' }}{{ j.joueurNom }}
+          <span class="em__cap" *ngIf="j.capitaine" title="Capitaine">©</span>
+          <span class="em__tag em__tag--my20" *ngIf="j.source === 'membre'">My2-0</span>
+          <span class="em__tag em__tag--ext"  *ngIf="j.source === 'manuel'">Ext.</span>
+          <span class="em__tag em__tag--susp" *ngIf="j.suspendu">Suspendu</span>
+        </span>
+        <span class="em__poste" *ngIf="j.poste">{{ j.poste }}</span>
+
+        <div class="em__row-actions" *ngIf="editMode()">
+          <input class="em__num-input" type="number" min="1" max="99"
+                 [(ngModel)]="j.numeroDos" placeholder="N°"/>
+          <button class="em__btn-cap"
+                  [class.active]="j.capitaine"
+                  (click)="toggleCapitaine(j)"
+                  title="Capitaine">©</button>
+          <button class="em__btn em__btn--down"
+                  (click)="toggleStatut(j)"
+                  title="Passer remplaçant">
+            <i class="material-icons">south</i>
+          </button>
+          <button class="em__btn em__btn--del"
+                  (click)="retirer(j)">
+            <i class="material-icons">remove_circle</i>
+          </button>
+        </div>
+      </div>
+
+      <div class="em__empty" *ngIf="!titulaires().length">Aucun titulaire</div>
+    </div>
+
+    <!-- ══ LISTE REMPLAÇANTS ══════════════════════════════════ -->
+    <div class="em__section" *ngIf="remplacants().length || editMode()">
+      <div class="em__section-label">Remplaçants ({{ remplacants().length }})</div>
+
+      <div class="em__player em__player--rem"
+           *ngFor="let j of remplacants()">
+        <span class="em__num">{{ j.numeroDos ?? '–' }}</span>
+        <span class="em__name">
+          {{ j.joueurPrenom ? j.joueurPrenom + ' ' : '' }}{{ j.joueurNom }}
+          <span class="em__tag em__tag--my20" *ngIf="j.source === 'membre'">My2-0</span>
+          <span class="em__tag em__tag--ext"  *ngIf="j.source === 'manuel'">Ext.</span>
+        </span>
+
+        <div class="em__row-actions" *ngIf="editMode()">
+          <input class="em__num-input" type="number" min="1" max="99"
+                 [(ngModel)]="j.numeroDos" placeholder="N°"/>
+          <button class="em__btn em__btn--up"
+                  (click)="toggleStatut(j)"
+                  title="Passer titulaire">
+            <i class="material-icons">north</i>
+          </button>
+          <button class="em__btn em__btn--del" (click)="retirer(j)">
+            <i class="material-icons">remove_circle</i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ZONE AJOUT (uniquement en editMode) ════════════════ -->
+    <div class="em__add-zone" *ngIf="editMode()">
+
+      <!-- Sélecteur de mode -->
+      <div class="em__add-tabs" *ngIf="ajoutMode() === 'aucun'">
+        <button class="em__add-tab"
+                *ngIf="isGroupe20"
+                (click)="ajoutMode.set('liste')">
+          <i class="material-icons">sports_soccer</i>
+          Membres My2-0
+        </button>
+        <button class="em__add-tab"
+                (click)="ajoutMode.set('manuel')">
+          <i class="material-icons">person_add</i>
+          Saisie manuelle
+        </button>
+      </div>
+
+      <!-- ── MODE LISTE : membres My2-0 ─────────────────────── -->
+      <div class="em__add-panel" *ngIf="ajoutMode() === 'liste'">
+        <div class="em__add-panel-header">
+          <span>
+            <i class="material-icons">sports_soccer</i>
+            Membres My2-0
+          </span>
+          <button class="btn-ghost btn-xs"
+                  (click)="ajoutMode.set('aucun')">
+            <i class="material-icons">close</i>
+          </button>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="em__search-wrap">
+          <i class="material-icons em__search-icon">search</i>
+          <input class="em__search"
+                 type="text"
+                 [ngModel]="searchQuery()"
+                 (ngModelChange)="searchQuery.set($event)"
+                 placeholder="Rechercher un membre..."/>
+        </div>
+
+        <!-- Loading membres -->
+        <div class="em__loading-sm" *ngIf="loadingMembres()">
+          <div class="spinner-sm"></div> Chargement des membres...
+        </div>
+
+        <!-- Liste des membres disponibles -->
+        <div class="em__membre-list" *ngIf="!loadingMembres()">
+          <div class="em__membre-item"
+               *ngFor="let m of membresFiltres()"
+               [class.em__membre-item--susp]="m.suspendu"
+               (click)="!m.suspendu && ajouterMembre(m)">
+            <div class="em__membre-avatar"
+                 [style.background-image]="m.photoUrl ? 'url(' + m.photoUrl + ')' : null">
+              <span *ngIf="!m.photoUrl">
+                {{ m.nom?.[0] }}{{ m.prenom?.[0] }}
+              </span>
+            </div>
+            <div class="em__membre-info">
+              <span class="em__membre-nom">
+                {{ m.nom }} {{ m.prenom }}
+              </span>
+              <span class="em__membre-meta">
+                <span *ngIf="m.numeroDos">N°{{ m.numeroDos }}</span>
+                <span *ngIf="m.poste"> · {{ m.poste }}</span>
+              </span>
+              <span class="em__membre-susp" *ngIf="m.suspendu">
+                🚫 Suspendu dans cette compétition
+              </span>
+            </div>
+            <i class="material-icons em__membre-add" *ngIf="!m.suspendu">
+              add_circle
+            </i>
+          </div>
+
+          <div class="em__empty" *ngIf="!membresFiltres().length">
+            <ng-container *ngIf="searchQuery()">
+              Aucun résultat pour "{{ searchQuery() }}"
+            </ng-container>
+            <ng-container *ngIf="!searchQuery()">
+              Tous les membres sont déjà ajoutés
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MODE MANUEL ─────────────────────────────────────── -->
+      <div class="em__add-panel" *ngIf="ajoutMode() === 'manuel'">
+        <div class="em__add-panel-header">
+          <span>
+            <i class="material-icons">edit</i>
+            Saisie manuelle
+          </span>
+          <button class="btn-ghost btn-xs"
+                  (click)="ajoutMode.set('aucun')">
+            <i class="material-icons">close</i>
+          </button>
+        </div>
+
+        <div class="em__manuel-grid">
+          <input class="form-input"
+                 [(ngModel)]="nouveau.joueurNom"
+                 placeholder="Nom *" required/>
+          <input class="form-input"
+                 [(ngModel)]="nouveau.joueurPrenom"
+                 placeholder="Prénom"/>
+          <input class="form-input em__num-input"
+                 type="number" min="1" max="99"
+                 [(ngModel)]="nouveau.numeroDos"
+                 placeholder="N° dos"/>
+          <select class="form-select" [(ngModel)]="nouveau.poste">
+            <option value="">Poste...</option>
+            <option *ngFor="let p of postes" [value]="p">{{ p }}</option>
+          </select>
+          <select class="form-select" [(ngModel)]="nouveau.statut">
+            <option value="TITULAIRE">Titulaire</option>
+            <option value="REMPLACANT">Remplaçant</option>
+          </select>
+        </div>
+
+        <div class="em__add-actions">
+          <button class="btn-ghost btn-sm"
+                  (click)="ajoutMode.set('aucun')">Annuler</button>
+          <button class="btn-primary btn-sm"
+                  [disabled]="!nouveau.joueurNom?.trim()"
+                  (click)="ajouterManuel()">
+            <i class="material-icons">add</i>
+            Ajouter
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ VIDE ══════════════════════════════════════════════ -->
+    <div class="em__empty em__empty--main"
+         *ngIf="!joueurs().length && !editMode()">
+      <i class="material-icons">group_off</i>
+      Composition non saisie
+    </div>
+
+  </ng-container>
+</div>

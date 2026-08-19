@@ -359,6 +359,7 @@ export interface MatchCompositionDTO {
   id?: number;
   membreId?: number;
   joueurId?: number;
+  membreEquipeId?: number;  
   joueurNom: string;
   joueurPrenom?: string;
   numeroDos?: number;
@@ -390,6 +391,7 @@ export interface BracketNoeudDTO {
   matchRetour?: MatchDTO;
   noeudSuivantId?: number;
   bye: boolean;
+  tour: NomTour;
 }
 
 // ── Statistiques

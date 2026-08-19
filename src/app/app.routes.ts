@@ -144,90 +144,131 @@ export const routes: Routes = [
   component: SecurityPolicyComponent
 },
 
+// ════════════════════════════════════════════════════════════
+// PATCH app.routes.ts — routes compétition
+// ════════════════════════════════════════════════════════════
 
-  {
-    path: 'competitions',
-    loadComponent: () =>
-      import('./modules/competition/components/competition-list/competition-list.component')
+{
+  path: 'competitions',
+  children: [
+    {
+      path: '',
+      loadComponent: () => import('./modules/competition/components/competition-list/competition-list.component')
         .then(m => m.CompetitionListComponent)
-  },
-
-   {
-    path: 'competitions/new',
-    loadComponent: () =>
-      import('./modules/competition/components/competition-create/competition-create.component')
+    },
+    {
+      path: 'new',
+      loadComponent: () => import('./modules/competition/components/competition-create/competition-create.component')
         .then(m => m.CompetitionCreateComponent)
-  },
- {
-    path: 'competitions/:id',
-    loadComponent: () =>
-      import('./modules/competition/components/competition-detail/competition-detail.component')
+    },
+    {
+      path: ':id',
+      loadComponent: () => import('./modules/competition/components/competition-detail/competition-detail.component')
         .then(m => m.CompetitionDetailComponent)
-  },
-  {
-    path: ':competitionId/matchs/card',
+    },
+    {
+      path: ':id/matchs/:matchId',
+      loadComponent: () => import('./modules/competition/components/match-detail/match-detail.component')
+        .then(m => m.MatchDetailComponent)
+    },
+      {
+      path: ':id/officiels',
+      loadComponent: () => import('./modules/competition/components/officiels/officiels.component')
+        .then(m => m.OfficielsComponent)
+    },
+    {
+    path: 'match',
     loadComponent: () =>
       import('./modules/competition/components/match-card/match-card.component')
         .then(m => m.MatchCardComponent)
   },
-  {
-    path: ':competitionId/matchs/:matchId',
-    loadComponent: () =>
-      import('./modules/competition/components/match-detail/match-detail.component')
-        .then(m => m.MatchDetailComponent)
-  },
-  {
-    path: 'competition/participants',
-    loadComponent: () =>
-      import('./modules/competition/components/tab-participants/tab-participants.component')
-        .then(m => m.TabParticipantsComponent)
-  },
-    {
-    path: 'competition/phases',
-    loadComponent: () =>
-      import('./modules/competition/components/tab-phases/tab-phases.component')
-        .then(m => m.TabPhasesComponent)
-  },
+  ]
+},
+
+
+//   {
+//     path: 'competitions',
+//     loadComponent: () =>
+//       import('./modules/competition/components/competition-list/competition-list.component')
+//         .then(m => m.CompetitionListComponent)
+//   },
+
+//    {
+//     path: 'competitions/new',
+//     loadComponent: () =>
+//       import('./modules/competition/components/competition-create/competition-create.component')
+//         .then(m => m.CompetitionCreateComponent)
+//   },
+//  {
+//     path: 'competitions/:id',
+//     loadComponent: () =>
+//       import('./modules/competition/components/competition-detail/competition-detail.component')
+//         .then(m => m.CompetitionDetailComponent)
+//   },
+//   {
+//     path: ':competitionId/matchs/card',
+//     loadComponent: () =>
+//       import('./modules/competition/components/match-card/match-card.component')
+//         .then(m => m.MatchCardComponent)
+//   },
+//   {
+//     path: ':competitionId/matchs/:matchId',
+//     loadComponent: () =>
+//       import('./modules/competition/components/match-detail/match-detail.component')
+//         .then(m => m.MatchDetailComponent)
+//   },
+//   {
+//     path: 'competition/participants',
+//     loadComponent: () =>
+//       import('./modules/competition/components/tab-participants/tab-participants.component')
+//         .then(m => m.TabParticipantsComponent)
+//   },
+//     {
+//     path: 'competition/phases',
+//     loadComponent: () =>
+//       import('./modules/competition/components/tab-phases/tab-phases.component')
+//         .then(m => m.TabPhasesComponent)
+//   },
   
-    {
-    path: 'competition/resume',
-    loadComponent: () =>
-      import('./modules/competition/components/tab-resume/tab-resume.component')
-        .then(m => m.TabResumeComponent)
-  },
+//     {
+//     path: 'competition/resume',
+//     loadComponent: () =>
+//       import('./modules/competition/components/tab-resume/tab-resume.component')
+//         .then(m => m.TabResumeComponent)
+//   },
 
-    {
-    path: 'competition/classement',
-    loadComponent: () =>
-      import('./modules/competition/components/tab-phases/tab-phases.component')
-        .then(m => m.TabPhasesComponent)
-  },
-   {
-    path: 'officiels',
-    loadComponent: () =>
-      import('./modules/competition/components/officiels/officiels.component')
-        .then(m => m.OfficielsComponent)
-  },
-  // {
-  //   path: 'competition/match',
-  //   loadComponent: () =>
-  //     import('./modules/competition/components/match-card/match-card.component')
-  //       .then(m => m.MatchCardComponent)
-  // },
+//     {
+//     path: 'competition/classement',
+//     loadComponent: () =>
+//       import('./modules/competition/components/tab-phases/tab-phases.component')
+//         .then(m => m.TabPhasesComponent)
+//   },
+//    {
+//     path: 'officiels',
+//     loadComponent: () =>
+//       import('./modules/competition/components/officiels/officiels.component')
+//         .then(m => m.OfficielsComponent)
+//   },
+//   // {
+//   //   path: 'competition/match',
+//   //   loadComponent: () =>
+//   //     import('./modules/competition/components/match-card/match-card.component')
+//   //       .then(m => m.MatchCardComponent)
+//   // },
 
-  //  {
-  //   path: 'competition/match-details',
-  //   loadComponent: () =>
-  //     import('./modules/competition/components/match-detail/match-detail.component')
-  //       .then(m => m.MatchDetailComponent)
-  // },
+//   //  {
+//   //   path: 'competition/match-details',
+//   //   loadComponent: () =>
+//   //     import('./modules/competition/components/match-detail/match-detail.component')
+//   //       .then(m => m.MatchDetailComponent)
+//   // },
 
-   {
-    path: 'competitions/:competitionId/matchs/:matchId',
-    loadComponent: () =>
-      import('./modules/competition/components/match-detail/match-detail.component')
-        .then(m => m.MatchDetailComponent)
-  },
+//    {
+//     path: 'competitions/:competitionId/matchs/:matchId',
+//     loadComponent: () =>
+//       import('./modules/competition/components/match-detail/match-detail.component')
+//         .then(m => m.MatchDetailComponent)
+//   },
 {
   path: 'concours/:slug',
   component: ConcoursPublicComponent

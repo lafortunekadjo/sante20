@@ -227,6 +227,7 @@ export class TabStatistiquesComponent implements OnInit {
         if (!this.cartons())
           this.api.getCartons(this.competitionId)
             .subscribe(c => this.cartons.set(c));
+            console.log(this.cartons())
         break;
       case 'suspensions':
         this.api.getSuspensions(this.competitionId)

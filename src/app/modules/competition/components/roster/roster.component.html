@@ -1,0 +1,184 @@
+<div class="roster">
+
+  <!-- ══ HEADER ═══════════════════════════════════════════════ -->
+  <div class="roster__header">
+    <span class="roster__count">
+      {{ joueurs().length }} joueurs · {{ staff().length }} staff
+    </span>
+    <div class="roster__actions" *ngIf="canEdit">
+      <button class="btn-outline btn-sm"
+              *ngIf="isGroupe20() && !showForm()"
+              (click)="showForm.set(true); mode.set('my20')">
+        <i class="material-icons">sports_soccer</i>
+        Membres My2-0
+      </button>
+      <!-- Toujours visible — équipe externe ou My2-0 -->
+      <button class="btn-outline btn-sm"
+              *ngIf="!showForm()"
+              (click)="showForm.set(true); mode.set('manuel')">
+        <i class="material-icons">person_add</i>
+        Ajouter manuellement
+      </button>
+      <button class="btn-ghost btn-sm"
+              *ngIf="showForm()"
+              (click)="showForm.set(false)">
+        <i class="material-icons">close</i>
+        Fermer
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PANEL AJOUT ══════════════════════════════════════════ -->
+  <div class="roster__panel" *ngIf="showForm()">
+
+    <!-- Onglets My2-0 / Manuel -->
+    <div class="roster__panel-tabs" *ngIf="isGroupe20()">
+      <button class="panel-tab" [class.active]="mode() === 'my20'"
+              (click)="mode.set('my20')">
+        <i class="material-icons">sports_soccer</i> Membres My2-0
+      </button>
+      <button class="panel-tab" [class.active]="mode() === 'manuel'"
+              (click)="mode.set('manuel')">
+        <i class="material-icons">edit</i> Manuel
+      </button>
+    </div>
+
+    <!-- ── Mode My2-0 ──────────────────────────────────────── -->
+    <div *ngIf="mode() === 'my20'">
+      <div class="roster__search">
+        <i class="material-icons">search</i>
+        <input [ngModel]="searchQuery()"
+               (ngModelChange)="searchQuery.set($event)"
+               placeholder="Rechercher un membre..."/>
+      </div>
+
+      <div class="roster__membres-list">
+        <div class="roster__membre-item"
+             *ngFor="let m of membresFiltres()"
+             (click)="ajouterMy20(m)">
+          <div class="roster__avatar"
+               [style.background-image]="m.photoUrl ? 'url('+m.photoUrl+')' : null">
+            <span *ngIf="!m.photoUrl">{{ m.nom[0] }}{{ m.prenom?.[0] ?? '' }}</span>
+          </div>
+          <div class="roster__membre-info">
+            <span class="roster__membre-nom">{{ m.nom }} {{ m.prenom }}</span>
+            <span class="roster__membre-meta">
+              <span *ngIf="m.numeroDos">N°{{ m.numeroDos }}</span>
+              <span *ngIf="m.poste"> · {{ m.poste }}</span>
+            </span>
+          </div>
+          <i class="material-icons roster__add-icon">add_circle</i>
+        </div>
+
+        <div class="roster__empty" *ngIf="!membresFiltres().length">
+          <i class="material-icons">check_circle</i>
+          Tous les membres sont déjà dans le roster
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Mode Manuel ─────────────────────────────────────── -->
+    <div class="roster__manuel" *ngIf="mode() === 'manuel'">
+      <div class="roster__form-grid">
+        <input class="form-input" [(ngModel)]="nouveau.nom"
+               placeholder="Nom *"/>
+        <input class="form-input" [(ngModel)]="nouveau.prenom"
+               placeholder="Prénom"/>
+        <input class="form-input" type="number" min="1" max="99"
+               [(ngModel)]="nouveau.numeroDos"
+               placeholder="N° dos"/>
+        <select class="form-select" [(ngModel)]="nouveau.poste">
+          <option value="">Poste...</option>
+          <option *ngFor="let p of postes" [value]="p">{{ p }}</option>
+        </select>
+        <select class="form-select" [(ngModel)]="nouveau.role">
+          <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+        </select>
+        <input class="form-input" [(ngModel)]="nouveau.telephone"
+               placeholder="Téléphone"/>
+      </div>
+      <div class="roster__form-actions">
+        <button class="btn-primary btn-sm"
+                [disabled]="!nouveau.nom.trim() || saving()"
+                (click)="ajouterManuel()">
+          <i class="material-icons">add</i>
+          {{ saving() ? '...' : 'Ajouter' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LISTE ROSTER ══════════════════════════════════════════ -->
+  <div class="roster__loading" *ngIf="loading()">
+    <div class="spinner-sm"></div> Chargement...
+  </div>
+
+  <ng-container *ngIf="!loading()">
+
+    <!-- Joueurs -->
+    <div class="roster__section" *ngIf="joueurs().length">
+      <div class="roster__section-label">Joueurs ({{ joueurs().length }})</div>
+      <div class="roster__row" *ngFor="let m of joueurs()">
+        <span class="roster__num">{{ m.numeroDos ?? '–' }}</span>
+        <div class="roster__row-avatar"
+             [style.background-image]="m.photoUrl ? 'url('+m.photoUrl+')' : null">
+          <span *ngIf="!m.photoUrl">{{ m.nom[0] }}</span>
+        </div>
+        <div class="roster__row-info">
+          <span class="roster__row-nom">{{ m.nom }} {{ m.prenom }}</span>
+          <span class="roster__row-meta">
+            {{ m.poste ?? '–' }}
+            <span class="roster__source"
+                  *ngIf="m.joueurId">My2-0</span>
+          </span>
+        </div>
+        <span class="roster__statut-badge" [class]="statutClass(m.statut)">
+          {{ statutLabel(m.statut) }}
+        </span>
+        <div class="roster__row-actions" *ngIf="canEdit">
+          <select class="roster__statut-select"
+                  [ngModel]="m.statut"
+                  (ngModelChange)="changerStatut(m, $event)">
+            <option value="ACTIF">Actif</option>
+            <option value="SUSPENDU">Suspendu</option>
+            <option value="BLESSE">Blessé</option>
+            <option value="NON_CONVOQUE">Non convoqué</option>
+          </select>
+          <button class="btn-icon btn-icon--danger"
+                  (click)="retirer(m)">
+            <i class="material-icons">remove_circle</i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff -->
+    <div class="roster__section" *ngIf="staff().length">
+      <div class="roster__section-label">Staff ({{ staff().length }})</div>
+      <div class="roster__row" *ngFor="let m of staff()">
+        <span class="roster__num">–</span>
+        <div class="roster__row-info">
+          <span class="roster__row-nom">{{ m.nom }} {{ m.prenom }}</span>
+          <span class="roster__row-meta">{{ m.role }}</span>
+        </div>
+        <div class="roster__row-actions" *ngIf="canEdit">
+          <button class="btn-icon btn-icon--danger" (click)="retirer(m)">
+            <i class="material-icons">remove_circle</i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vide -->
+    <div class="roster__empty roster__empty--main"
+         *ngIf="!roster().length">
+      <i class="material-icons">group_off</i>
+      <span>Aucun membre dans le roster</span>
+      <button class="btn-primary btn-sm" *ngIf="canEdit"
+              (click)="showForm.set(true)">
+        Ajouter le premier joueur
+      </button>
+    </div>
+
+  </ng-container>
+</div>

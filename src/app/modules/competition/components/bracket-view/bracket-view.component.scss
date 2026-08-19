@@ -1,197 +1,521 @@
-// components/bracket-view/bracket-view.component.scss
-@use '../../../../../variables' as *;
+@import '../../../../../variables';
 
-:host { display: block; }
+// ════════════════════════════════════════════════════════════
+// BRACKET VIEW
+// Affichage en colonnes gauche→droite : QF → SF → F
+// ════════════════════════════════════════════════════════════
 
 .bracket {
+  padding: $spacing-lg;
+  @include mobile { padding: $spacing-md; }
+}
+
+// ── Scroll horizontal (desktop) ──────────────────────────────
+.bracket__scroll-wrapper {
   overflow-x: auto;
-  padding: $spacing-lg 0;
+  padding-bottom: $spacing-md;
 
-  &__rounds {
-    display: flex;
-    gap: $spacing-3xl;
-    min-width: max-content;
-    align-items: center;
+  // Cacher sur mobile — on utilise la liste
+  @include mobile { display: none; }
+}
+
+.bracket__grid {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: max-content;
+}
+
+// ── Colonne = un tour ─────────────────────────────────────────
+.bracket__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: 260px;
+}
+
+.bracket__col-header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border-bottom: 2px solid var(--primary-color);
+  margin-bottom: 16px;
+  border-radius: $border-radius-md $border-radius-md 0 0;
+}
+
+.bracket__col-count {
+  font-weight: 400;
+  opacity: .7;
+  margin-left: 4px;
+}
+
+// ── Noeuds dans la colonne ────────────────────────────────────
+.bracket__noeuds-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+  justify-content: space-around;  // espacement égal entre les noeuds
+  padding: 0 8px;
+}
+
+.bracket__noeud-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+// ── Noeud ─────────────────────────────────────────────────────
+.bracket__noeud {
+  flex: 1;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-lg;
+  background: var(--background-primary);
+  overflow: hidden;
+  transition: box-shadow .15s, border-color .15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+
+  &:hover { box-shadow: 0 2px 12px rgba(0,0,0,.1); }
+
+  &.noeud--termine {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px rgba(37,99,235,.2);
   }
 
-  &__round {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    min-width: 200px;
-
-    &-header {
-      text-align: center;
-      font-size: $font-size-sm;
-      font-weight: $font-weight-semibold;
-      color: $primary-blue;
-      background: rgba($primary-blue, 0.06);
-      padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-md;
-      margin-bottom: $spacing-sm;
-    }
-
-    &-matches {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      gap: $spacing-2xl;
-      flex: 1;
-    }
+  &.noeud--en-cours {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16,185,129,.2);
+    animation: pulse-border .8s ease infinite;
   }
 
-  &__match {
-    @include card-base;
-    padding: 0;
-    overflow: hidden;
-    position: relative;
-    min-width: 200px;
-
-    &.bye {
-      opacity: 0.7;
-      border-style: dashed;
-    }
-  }
-
-  &__team {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
-    transition: $transition-fast;
-
-    &.winner {
-      background: rgba($secondary-emerald, 0.08);
-      font-weight: $font-weight-semibold;
-
-      .bracket__team-name { color: $secondary-emerald-dark; }
-      .bracket__team-score {
-        background: $secondary-emerald;
-        color: white;
-      }
-    }
-
-    &.loser {
-      opacity: 0.55;
-    }
-
-    &-logo {
-      width: 24px;
-      height: 24px;
-      border-radius: $border-radius-full;
-      overflow: hidden;
-      flex-shrink: 0;
-      background: var(--background-tertiary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: $font-weight-bold;
-      color: $primary-blue;
-
-      img { width: 100%; height: 100%; object-fit: cover; }
-    }
-
-    &-name {
-      font-size: $font-size-xs;
-      color: var(--text-primary);
-      flex: 1;
-      @include text-truncate;
-
-      &.bracket__team--tbd {
-        color: var(--text-tertiary);
-        font-style: italic;
-      }
-    }
-
-    &-score {
-      font-size: $font-size-xs;
-      font-weight: $font-weight-bold;
-      background: var(--background-tertiary);
-      color: var(--text-primary);
-      padding: 2px 6px;
-      border-radius: $border-radius-sm;
-      min-width: 20px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-  }
-
-  &__divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: 0;
-  }
-
-  &__bye-badge {
-    position: absolute;
-    top: 50%;
-    right: $spacing-sm;
-    transform: translateY(-50%);
-    font-size: 10px;
-    background: rgba($accent-orange, 0.1);
-    color: $accent-orange-dark;
-    padding: 2px $spacing-sm;
-    border-radius: $border-radius-sm;
-    font-weight: $font-weight-medium;
-  }
-
-  &__winner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-2xl;
-    background: linear-gradient(135deg,
-      rgba($accent-orange, 0.08) 0%,
-      rgba($accent-orange, 0.02) 100%);
-    border: 2px solid rgba($accent-orange, 0.3);
-    border-radius: $border-radius-xl;
-    min-width: 140px;
-
-    &-crown { font-size: 32px; }
-
-    &-logo {
-      width: 56px;
-      height: 56px;
-      border-radius: $border-radius-full;
-      overflow: hidden;
-      background: var(--background-tertiary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: $accent-orange;
-      border: 3px solid $accent-orange;
-
-      img { width: 100%; height: 100%; object-fit: cover; }
-    }
-
-    &-name {
-      font-size: $font-size-sm;
-      font-weight: $font-weight-bold;
-      color: var(--text-primary);
-      text-align: center;
-    }
-  }
-
-  &__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-3xl;
-    color: var(--text-tertiary);
-
-    i { font-size: 48px; }
-    p { font-size: $font-size-sm; margin: 0; }
+  &.noeud--bye {
+    opacity: .55;
+    border-style: dashed;
   }
 }
 
-:host-context(.dark-theme) {
-  .bracket__team.winner {
-    background: rgba($secondary-emerald, 0.12);
-    .bracket__team-name { color: $secondary-emerald-light; }
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(16,185,129,.2); }
+  50%       { box-shadow: 0 0 0 4px rgba(16,185,129,.1); }
+}
+
+// ── Ligne d'équipe ────────────────────────────────────────────
+.noeud__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  min-height: 34px;
+  transition: background .1s;
+
+  &--win {
+    background: rgba(37,99,235,.06);
+    .noeud__nom { font-weight: 700; color: var(--primary-color); }
   }
+
+  &--lose {
+    opacity: .45;
+  }
+
+  &--bye {
+    padding: 10px;
+    color: var(--text-secondary);
+  }
+}
+
+.noeud__seed {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.noeud__nom {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.noeud__score {
+  font-size: 15px;
+  font-weight: 800;
+  min-width: 22px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.noeud__badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+
+  &--bye {
+    background: rgba(107,114,128,.12);
+    color: #6b7280;
+  }
+}
+
+// ── Séparateur entre les équipes ──────────────────────────────
+.noeud__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.noeud__info {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+// ── Actions ───────────────────────────────────────────────────
+.noeud__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.noeud__btn {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s;
+  .material-icons { font-size: 15px; }
+
+  &--match {
+    background: rgba(37,99,235,.1);
+    color: var(--primary-color);
+    &:hover { background: rgba(37,99,235,.2); }
+  }
+  &--edit {
+    background: rgba(107,114,128,.1);
+    color: var(--text-secondary);
+    &:hover { background: rgba(107,114,128,.2); }
+  }
+}
+
+// ── Connecteur entre tours ────────────────────────────────────
+.bracket__connector {
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.connector__line {
+  width: 20px;
+  height: 50%;
+  border-right: 2px solid var(--border-color);
+
+  &--top    { border-top: 2px solid var(--border-color); }
+  &--bottom { border-bottom: 2px solid var(--border-color); }
+}
+
+// ════════════════════════════════════════════════════════════
+// LISTE DES MATCHS (visible partout, surtout mobile)
+// ════════════════════════════════════════════════════════════
+
+.bracket__list {
+  margin-top: $spacing-xl;
+  border-top: 1px solid var(--border-color);
+  padding-top: $spacing-lg;
+}
+
+.bracket__list-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  margin: 0 0 $spacing-md;
+  color: var(--text-primary);
+  .material-icons { color: var(--primary-color); font-size: 20px; }
+}
+
+.bracket__list-tour {
+  margin-bottom: $spacing-lg;
+}
+
+.bracket__list-tour-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  padding: 5px 12px;
+  background: var(--background-secondary);
+  border-radius: $border-radius-sm;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+// ── Row match dans la liste ───────────────────────────────────
+.bracket__list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-lg;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--background-primary);
+
+  &:hover { background: var(--background-secondary); border-color: var(--primary-color); }
+  &.list-row--termine   { border-color: var(--primary-color); }
+  &.list-row--en-cours  { border-color: #10b981; }
+  &.list-row--bye       { opacity: .6; cursor: default; }
+}
+
+.list-row__badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: $border-radius-sm;
+  background: #10b981;
+  color: white;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+  animation: pulse-score 1s ease infinite;
+}
+
+.list-row__teams {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.list-row__team {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+
+  &--away { justify-content: flex-end; flex-direction: row-reverse; }
+  &--win .list-row__name { font-weight: 700; color: var(--primary-color); }
+  &--lose { opacity: .45; }
+}
+
+.list-row__seed {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.list-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.list-row__score {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  min-width: 18px;
+  text-align: center;
+}
+
+.list-row__vs {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.list-row__date {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.list-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.list-row__arrow {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+// ── État vide ─────────────────────────────────────────────────
+.bracket__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: $spacing-3xl;
+  color: var(--text-secondary);
+  .material-icons { font-size: 48px; opacity: .2; }
+  p { margin: 0; font-size: $font-size-sm; }
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL ÉDITION
+// ════════════════════════════════════════════════════════════
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  @include desktop {
+    align-items: center;
+  }
+}
+
+.modal {
+  background: var(--background-primary);
+  width: 100%;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+
+  @include desktop {
+    width: min(440px, 95vw);
+    border-radius: $border-radius-xl;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+
+    h3 {
+      display: flex; align-items: center; gap: 8px;
+      margin: 0; font-size: $font-size-md;
+      .material-icons { color: var(--primary-color); }
+    }
+  }
+
+  &__body { padding: 20px; }
+
+  &__hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: rgba(37,99,235,.06);
+    border-radius: $border-radius-sm;
+    .material-icons { font-size: 16px; color: var(--primary-color); }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+.btn-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .15s;
+  .material-icons { font-size: 18px; }
+  &:hover { background: var(--background-secondary); }
+}
+
+// ── Buttons ───────────────────────────────────────────────────
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  border: none; border-radius: $border-radius-full;
+  background: var(--primary-color); color: white;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+  .material-icons { font-size: 16px; }
+  &:hover { background: var(--primary-dark, #1d4ed8); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border-color); border-radius: $border-radius-full;
+  background: transparent; color: var(--text-secondary);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+  &:hover { background: var(--background-secondary); }
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-md;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s;
+  &:focus { border-color: var(--primary-color); }
+}
+
+// ── Animation live ────────────────────────────────────────────
+@keyframes pulse-score {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .6; }
 }

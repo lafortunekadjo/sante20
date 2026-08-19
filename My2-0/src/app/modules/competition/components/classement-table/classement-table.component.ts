@@ -47,8 +47,8 @@ import { ClassementDTO, StatutClassement } from '../../../../core/models/competi
                     <img *ngIf="ligne.logoUrl"
                          [src]="ligne.logoUrl"
                          [alt]="ligne.nomEquipe"/>
-                    <span *ngIf="!ligne.logoUrl" class="team-initials">
-                      {{ getInitials(ligne.nomEquipe) }}
+                   <span *ngIf="!ligne.logoUrl" class="team-initials">
+                      {{ getInitials(ligne.nomEquipe ?? '') }}
                     </span>
                   </div>
                   <span class="team-name">{{ ligne.nomEquipe }}</span>
@@ -135,10 +135,10 @@ export class ClassementTableComponent implements OnChanges {
     return '';
   }
 
-  getInitials(name: string): string {
-    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-  }
-
+getInitials(name: string): string {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+}
   statutLabel(statut?: StatutClassement): string {
     const labels: Partial<Record<StatutClassement, string>> = {
       [StatutClassement.QUALIFIE]: 'Q',

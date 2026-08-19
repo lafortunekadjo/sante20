@@ -1,106 +1,134 @@
-// services/match-api.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environment';
-import { StatutMatch, MatchDTO, MatchDetailDTO, ResultatDTO, ForfaitDTO, ReportDTO, PlanificationMatchDTO, MatchEventDTO, MatchCompositionDTO, TempsMatchDTO } from '../../models/competition.models';
 
+import {
+  MatchDTO, MatchDetailDTO, ResultatDTO, ForfaitDTO,
+  MatchEventDTO, PlanificationMatchDTO,
+  TempsMatchDTO, MatchCompositionDTO, MembreEquipeDTO
+} from '../../models/competition.models';
+import { environment } from '../../../environment';
 
 @Injectable({ providedIn: 'root' })
 export class MatchApiService {
-
   private http = inject(HttpClient);
-  private base(competitionId: number) {
-    return `${environment.apiUrl}/competitions/${competitionId}/matchs`;
-  }
+  private base = `${environment.apiUrl}/competitions`;
 
+  // ── Lister les matchs d'une compétition ──────────────────
   getMatchs(competitionId: number, params?: {
     journeeId?: number;
     participantId?: number;
-    statut?: StatutMatch;
+    statut?: string;
   }): Observable<MatchDTO[]> {
     let p = new HttpParams();
-    if (params?.journeeId)    p = p.set('journeeId', params.journeeId);
+    if (params?.journeeId)    p = p.set('journeeId',    params.journeeId);
     if (params?.participantId) p = p.set('participantId', params.participantId);
-    if (params?.statut)        p = p.set('statut', params.statut);
-    return this.http.get<MatchDTO[]>(this.base(competitionId), { params: p });
+    if (params?.statut)       p = p.set('statut',       params.statut);
+    return this.http.get<MatchDTO[]>(
+      `${this.base}/${competitionId}/matchs`, { params: p });
   }
 
-  // Dans match-api.service.ts — ajouter
-saisirTemps(competitionId: number,
-            matchId: number,
-            dto: TempsMatchDTO): Observable<MatchDetailDTO> {
-  return this.http.post<MatchDetailDTO>(
-    `${this.base(competitionId)}/${matchId}/temps`, dto);
+   // ── Bracket — modifier les équipes d'un noeud ───────────
+  modifierNoeudBracket(
+    competitionId: number,
+    noeudId: number,
+    dto: { participant1Nom?: string; participant2Nom?: string }
+  ): Observable<void> {
+    return this.http.patch<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/bracket/noeuds/${noeudId}`,
+      dto
+    );
+  }
+
+  // ── Détail d'un match ─────────────────────────────────────
+  getById(competitionId: number, matchId: number): Observable<MatchDetailDTO> {
+    return this.http.get<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}`);
+  }
+
+  // ── Saisie du résultat ───────────────────────────────────
+  saisirResultat(competitionId: number, matchId: number,
+                  dto: ResultatDTO): Observable<MatchDetailDTO> {
+    return this.http.post<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/resultat`, dto);
+  }
+
+  // ── Forfait ───────────────────────────────────────────────
+  declarerForfait(competitionId: number, matchId: number,
+                   dto: ForfaitDTO): Observable<MatchDetailDTO> {
+    return this.http.post<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/forfait`, dto);
+  }
+
+  // ── Démarrer un match (PLANIFIE → EN_COURS) ─────────────────
+  demarrerMatch(competitionId: number, matchId: number): Observable<MatchDetailDTO> {
+    return this.http.post<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/demarrer`, {});
+  }
+
+  // ── Corriger résultat (admin) ─────────────────────────────
+  corrigerResultat(competitionId: number, matchId: number,
+                    dto: ResultatDTO): Observable<MatchDetailDTO> {
+    return this.http.patch<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/corriger`, dto);
+  }
+
+  // ── Reporter ──────────────────────────────────────────────
+  reporter(competitionId: number, matchId: number,
+            dto: { nouvelleDate: string }): Observable<MatchDetailDTO> {
+    return this.http.post<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/reporter`, dto);
+  }
+
+  // ── Planifier (date, stade, officiels) ───────────────────
+  planifier(competitionId: number, matchId: number,
+             dto: PlanificationMatchDTO): Observable<MatchDetailDTO> {
+    return this.http.put<MatchDetailDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/planifier`, dto);
+  }
+
+  // ── Événements (buts, cartons, remplacements) ────────────
+  getEvenements(competitionId: number, matchId: number): Observable<MatchEventDTO[]> {
+    return this.http.get<MatchEventDTO[]>(
+      `${this.base}/${competitionId}/matchs/${matchId}/evenements`);
+  }
+
+  ajouterEvenement(competitionId: number, matchId: number,
+                    dto: MatchEventDTO): Observable<MatchEventDTO> {
+    return this.http.post<MatchEventDTO>(
+      `${this.base}/${competitionId}/matchs/${matchId}/evenements`, dto);
+  }
+
+  supprimerEvenement(competitionId: number, matchId: number,
+                      eventId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.base}/${competitionId}/matchs/${matchId}/evenements/${eventId}`);
+  }
+
+  // ── Composition ───────────────────────────────────────────
+  getComposition(competitionId: number, matchId: number): Observable<{
+    domicile: MatchCompositionDTO[];
+    exterieur: MatchCompositionDTO[];
+  }> {
+    return this.http.get<any>(
+      `${this.base}/${competitionId}/matchs/${matchId}/composition`);
+  }
+saisirComposition(
+  competitionId: number, 
+  matchId: number, 
+  equipeId: number, 
+  joueurs: any[]
+): Observable<any> {
+  return this.http.post<any>(
+    `${this.base}/${competitionId}/matchs/${matchId}/composition/${equipeId}`, 
+    joueurs // Envoie directement le tableau d'objets [ ... ]
+  );
 }
 
-  getById(competitionId: number,
-          matchId: number): Observable<MatchDetailDTO> {
-    return this.http.get<MatchDetailDTO>(
-      `${this.base(competitionId)}/${matchId}`);
-  }
-
-  saisirResultat(competitionId: number,
-                 matchId: number,
-                 dto: ResultatDTO): Observable<MatchDetailDTO> {
+  // ── Temps de jeu ─────────────────────────────────────────
+  saisirTemps(competitionId: number, matchId: number,
+               dto: TempsMatchDTO): Observable<MatchDetailDTO> {
     return this.http.post<MatchDetailDTO>(
-      `${this.base(competitionId)}/${matchId}/resultat`, dto);
-  }
-
-  declarerForfait(competitionId: number,
-                  matchId: number,
-                  dto: ForfaitDTO): Observable<MatchDetailDTO> {
-    return this.http.post<MatchDetailDTO>(
-      `${this.base(competitionId)}/${matchId}/forfait`, dto);
-  }
-
-  reporter(competitionId: number,
-           matchId: number,
-           dto: ReportDTO): Observable<MatchDetailDTO> {
-    return this.http.post<MatchDetailDTO>(
-      `${this.base(competitionId)}/${matchId}/reporter`, dto);
-  }
-
-  planifier(competitionId: number,
-            matchId: number,
-            dto: PlanificationMatchDTO): Observable<MatchDetailDTO> {
-    return this.http.patch<MatchDetailDTO>(
-      `${this.base(competitionId)}/${matchId}/planifier`, dto);
-  }
-
-  // ── Événements
-  getEvenements(competitionId: number,
-                matchId: number): Observable<MatchEventDTO[]> {
-    return this.http.get<MatchEventDTO[]>(
-      `${this.base(competitionId)}/${matchId}/evenements`);
-  }
-
-  ajouterEvenement(competitionId: number,
-                   matchId: number,
-                   dto: MatchEventDTO): Observable<MatchEventDTO> {
-    return this.http.post<MatchEventDTO>(
-      `${this.base(competitionId)}/${matchId}/evenements`, dto);
-  }
-
-  supprimerEvenement(competitionId: number,
-                     matchId: number,
-                     eventId: number): Observable<void> {
-    return this.http.delete<void>(
-      `${this.base(competitionId)}/${matchId}/evenements/${eventId}`);
-  }
-
-  // ── Composition
-  getComposition(competitionId: number,
-                 matchId: number): Observable<Record<string, MatchCompositionDTO[]>> {
-    return this.http.get<Record<string, MatchCompositionDTO[]>>(
-      `${this.base(competitionId)}/${matchId}/composition`);
-  }
-
-  saisirComposition(competitionId: number,
-                    matchId: number,
-                    equipeId: number,
-                    dtos: MatchCompositionDTO[]): Observable<MatchCompositionDTO[]> {
-    return this.http.post<MatchCompositionDTO[]>(
-      `${this.base(competitionId)}/${matchId}/composition/${equipeId}`, dtos);
+      `${this.base}/${competitionId}/matchs/${matchId}/temps`, dto);
   }
 }

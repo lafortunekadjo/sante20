@@ -27,6 +27,12 @@ export class CompetitionApiService {
     return this.http.get<Page<CompetitionDTO>>(this.base, { params: p });
   }
 
+  // ── Admin — tous les groupes My2-0 ──────────────────────
+  getTousLesGroupes(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/groupes`);
+  }
+ 
+
   // services/competition-api.service.ts — ajouts
 ouvrirInscriptions(id: number): Observable<void> {
   return this.http.post<void>(
@@ -117,13 +123,11 @@ fermerInscriptions(id: number): Observable<void> {
       `${this.base}/${competitionId}/phases/${phaseId}/groupes`);
   }
 
-  getClassement(competitionId: number,
-                phaseId: number,
-                pouleId: number): Observable<ClassementDTO[]> {
-    return this.http.get<ClassementDTO[]>(
-      `${this.base}/${competitionId}/phases/${phaseId}/groupes/${pouleId}/classement`);
+   getClassement(competitionId: number, phaseId: number, groupeId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/competitions/${competitionId}/phases/${phaseId}/groupes/${groupeId}/classement`
+    );
   }
-
   recalculerClassement(competitionId: number,
                        phaseId: number,
                        pouleId: number): Observable<ClassementDTO[]> {
