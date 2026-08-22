@@ -45,12 +45,12 @@ export class TabPhasesComponent implements OnInit {
   poules           = signal<PouleDTO[]>([]);
   private classementMap = new Map<number, any[]>();  // groupeId → classement
   bracket          = signal<BracketDTO | null>(null);
-  bracketMatchs    = signal<MatchDTO[]>([]);
+  bracketMatchs    = signal<any[]>([]);
   loading          = signal(false);
   openJournee      = signal<number | null>(null);
   journeeDetail    = signal<JourneeDetailDTO | null>(null);
   loadingJournee   = signal(false);
-  matchSelectionne = signal<MatchDTO | null>(null);
+  matchSelectionne = signal<any | null>(null);
   matchEditOpen    = signal(false);
   planifMasseOpen  = signal(false);
   savingPlanif     = signal(false);
@@ -243,6 +243,34 @@ export class TabPhasesComponent implements OnInit {
   // ── Helpers ───────────────────────────────────────────────
   canEdit(): boolean {
     return ['BROUILLON', 'EN_COURS'].includes(this.competition.statut as string);
+  }
+
+  // Vérifier si on peut passer à la phase suivante
+  canPasserPhase(): boolean {
+    if ((this.competition.config as any)?.format !== 'MIXTE') return false;
+    const phaseActuelle = this.activePhase();
+    if (!phaseActuelle || phaseActuelle.type !== 'GROUPE') return false;
+    const journees = [...this.journeesMap.values()].flat() as any[];
+    return journees.every((j: any) => j.statut === 'TERMINEE');
+  }
+
+  // Alias plus explicite utilisé dans le HTML
+  peutPasserPhaseActuelle(): boolean {
+    return this.canPasserPhase();
+  }
+
+  passerPhaseSuivante(): void {
+    this.api.phaseSuivante(this.competition.id).subscribe({
+      next: () => {
+        // Recharger les phases
+        this.api.getPhases(this.competition.id).subscribe(phases => {
+          this.phases.set(phases);
+          // Aller sur la phase finale
+          const phaseFinale = phases.find(p => p.type === 'ELIMINATOIRE');
+          if (phaseFinale) this.selectPhase(phaseFinale);
+        });
+      }
+    });
   }
 
   statutJourneeLabel(statut: string): string {

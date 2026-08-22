@@ -1,1 +1,130 @@
-<p>match-poster works!</p>
+<div class="poster-container">
+  <!-- FORMULAIRE DE CONFIGURATION -->
+  <div class="form-card">
+    <h2>Configuration de l'Affiche</h2>
+
+    <form (ngSubmit)="onSubmit()" #posterForm="ngForm">
+      <!-- TYPE DE MATCH -->
+      <div class="form-group">
+        <label>Type d'affiche</label>
+        <div class="radio-group">
+          <label [class.active]="matchType === 'BEFORE'">
+            <input type="radio" name="matchType" value="BEFORE" [(ngModel)]="matchType"> Avant-Match
+          </label>
+          <label [class.active]="matchType === 'AFTER'">
+            <input type="radio" name="matchType" value="AFTER" [(ngModel)]="matchType"> Après-Match (Résultat)
+          </label>
+        </div>
+      </div>
+
+      <!-- ÉQUIPES -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Équipe Domicile *</label>
+          <input type="text" [(ngModel)]="homeTeamName" name="homeTeamName" placeholder="Ex: PSG" required>
+          <div class="file-input-wrapper">
+            <input type="file" (change)="onFileSelected($event, 'homeLogo')" accept="image/*" id="homeLogo">
+            <label for="homeLogo" class="btn-file">Logo Domicile</label>
+            <span *if="homeTeamLogoFile" class="file-name">{{ homeTeamLogoFile.name }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Équipe Extérieur *</label>
+          <input type="text" [(ngModel)]="awayTeamName" name="awayTeamName" placeholder="Ex: Arsenal" required>
+          <div class="file-input-wrapper">
+            <input type="file" (change)="onFileSelected($event, 'awayLogo')" accept="image/*" id="awayLogo">
+            <label for="awayLogo" class="btn-file">Logo Extérieur</label>
+            <span *if="awayTeamLogoFile" class="file-name">{{ awayTeamLogoFile.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCORE / DATE & LIEU -->
+      <div class="grid-2">
+        <div class="form-group" *ngIf="matchType === 'AFTER'">
+          <label>Score Final</label>
+          <input type="text" [(ngModel)]="score" name="score" placeholder="Ex: 2 - 1">
+        </div>
+        <div class="form-group" [class.full-width]="matchType === 'BEFORE'">
+          <label>Date, Heure ou Lieu</label>
+          <input type="text" [(ngModel)]="matchDateOrVenue" name="matchDateOrVenue" placeholder="Ex: Samedi à 16H00 - Stade Japoma">
+        </div>
+      </div>
+
+      <!-- IMAGES DES JOUEURS / VISUELS -->
+      <div class="form-group">
+        <label>Visuel Principal (Joueur 1)</label>
+        <div class="file-input-wrapper">
+          <input type="file" (change)="onFileSelected($event, 'mainImage')" accept="image/*" id="mainImage">
+          <label for="mainImage" class="btn-file">Choisir l'image principale</label>
+          <span *ngIf="mainImageFile" class="file-name">{{ mainImageFile.name }}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Visuel Secondaire (Joueur 2 - Optionnel pour Duel)</label>
+        <div class="file-input-wrapper">
+          <input type="file" (change)="onFileSelected($event, 'secondaryImage')" accept="image/*" id="secondaryImage">
+          <label for="secondaryImage" class="btn-file">Choisir la 2ème image</label>
+          <span *ngIf="secondaryImageFile" class="file-name">{{ secondaryImageFile.name }}</span>
+          <button type="button" *ngIf="secondaryImageFile" class="btn-remove" (click)="removeSecondaryImage()">✕</button>
+        </div>
+      </div>
+
+      <!-- TEXTE PERSONNALISÉ -->
+      <div class="form-group">
+        <label>Texte / Phrase d'accroche (Optionnel)</label>
+        <input type="text" [(ngModel)]="customCaption" name="customCaption" placeholder="Laissez vide pour générer via IA (Gemini)">
+        <small class="hint">Si vous laissez ce champ vide, Gemini génèrera automatiquement un titre percutant.</small>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Générer l'affiche</span>
+        <span *ngIf="isLoading">Génération en cours...</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- PRÉVISUALISATION DE L'AFFICHE (POSTER CANVAS) -->
+  <div class="preview-card">
+    <h2>Aperçu de l'Affiche</h2>
+
+    <div class="poster-canvas" [class.after-match]="posterConfig?.matchType === 'AFTER'">
+      <!-- HEADER AFFICHE (BADGE / EN-TÊTE) -->
+      <div class="poster-header">
+        <span class="badge">{{ posterConfig ? posterConfig.title : (matchType === 'BEFORE' ? 'CHOC À VENIR' : 'RÉSULTAT DU MATCH') }}</span>
+      </div>
+
+      <!-- CORPS AVEC LES IMAGES DES JOUEURS -->
+      <div class="poster-body" [class.dual-image]="secondaryImagePreview || posterConfig?.secondaryImage">
+        <div class="player-img main" [style.background-image]="'url(' + (posterConfig?.primaryImage || mainImagePreview || 'https://via.placeholder.com/600x800?text=Joueur+1') + ')'"></div>
+        <div *ngIf="secondaryImagePreview || posterConfig?.secondaryImage" class="player-img secondary" [style.background-image]="'url(' + (posterConfig?.secondaryImage || secondaryImagePreview) + ')'"></div>
+      </div>
+
+      <!-- CONFRONTATION ET LOGOS DES ÉQUIPES -->
+      <div class="teams-overlay">
+        <div class="team home">
+          <img [src]="homeLogoPreview || posterConfig?.homeTeamLogoUrl || 'https://via.placeholder.com/80?text=Logo+1'" alt="Logo Home">
+          <span class="team-name">{{ homeTeamName || 'DOMICILE' }}</span>
+        </div>
+
+        <div class="vs-block">
+          <span *ngIf="matchType === 'BEFORE' && !score" class="vs-text">VS</span>
+          <span *ngIf="score || posterConfig?.score" class="score-text">{{ posterConfig?.score || score }}</span>
+        </div>
+
+        <div class="team away">
+          <img [src]="awayLogoPreview || posterConfig?.awayTeamLogoUrl || 'https://via.placeholder.com/80?text=Logo+2'" alt="Logo Away">
+          <span class="team-name">{{ awayTeamName || 'EXTÉRIEUR' }}</span>
+        </div>
+      </div>
+
+      <!-- BAS DE L'AFFICHE (CAPTION + DETAILS) -->
+      <div class="poster-footer">
+        <h1 class="caption">{{ posterConfig?.caption || customCaption || 'VOTRE ACCROCHE ICI' }}</h1>
+        <p class="details" *ngIf="matchDateOrVenue || posterConfig?.matchDetails">{{ posterConfig?.matchDetails || matchDateOrVenue }}</p>
+      </div>
+    </div>
+  </div>
+</div>

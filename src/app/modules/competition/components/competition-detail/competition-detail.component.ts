@@ -13,9 +13,10 @@ import { TabParticipantsComponent } from '../tab-participants/tab-participants.c
 import { TabPhasesComponent } from '../tab-phases/tab-phases.component';
 import { TabResumeComponent } from '../tab-resume/tab-resume.component';
 import { TabStatistiquesComponent } from '../tab-statistiques/tab-statistiques.component';
+import { TabTirageComponent } from '../../component/tab-tirage/tab-tirage.component';
 
 
-type Tab = 'resume' | 'participants' | 'phases' | 'statistiques';
+type Tab = 'resume' | 'participants' |'tirage' | 'phases' | 'statistiques';
 
 @Component({
   selector: 'app-competition-detail',
@@ -23,7 +24,7 @@ type Tab = 'resume' | 'participants' | 'phases' | 'statistiques';
   imports: [
     CommonModule, RouterModule, ReactiveFormsModule,
     TabResumeComponent, TabParticipantsComponent,
-    TabPhasesComponent, TabStatistiquesComponent
+    TabPhasesComponent, TabStatistiquesComponent,TabTirageComponent,
   ],
   templateUrl: './competition-detail.component.html',
   styleUrls: ['./competition-detail.component.scss']
@@ -79,6 +80,13 @@ export class CompetitionDetailComponent implements OnInit {
         return [];
     }
   }
+
+  onTirageLaunched(): void {
+  // Recharger la compétition depuis l'API
+  this.reload();
+  // Basculer sur l'onglet phases
+  this.activeTab.set('phases');
+}
 
   // ── Guards
   canModifier():       boolean { return this.competition()?.statut !== StatutCompetition.ANNULE; }
@@ -154,6 +162,10 @@ export class CompetitionDetailComponent implements OnInit {
       })
     });
   }
+
+  ouvrirTirage(): void {
+  this.activeTab.set('tirage');
+}
 
   sauvegarder(): void {
     if (!this.editForm || this.editForm.invalid) return;

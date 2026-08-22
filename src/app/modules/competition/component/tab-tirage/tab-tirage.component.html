@@ -1,0 +1,176 @@
+<div class="tirage">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="tirage__header">
+    <div class="tirage__header-info">
+      <h3>
+        <i class="material-icons">shuffle</i>
+        Tirage au sort
+      </h3>
+      <p class="tirage__hint">
+        Modifiez le tirage par glisser-déposer, puis validez pour lancer la compétition.
+      </p>
+    </div>
+    <div class="tirage__header-actions">
+      <button class="btn-ghost"
+              [disabled]="simulating() || validating()"
+              (click)="simuler()">
+        <i class="material-icons">refresh</i>
+        Re-simuler
+      </button>
+      <button class="btn-primary"
+              [disabled]="!tirage() || validating() || simulating()"
+              (click)="valider()">
+        <i class="material-icons">rocket_launch</i>
+        {{ validating() ? 'Lancement...' : 'Valider et lancer' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Erreur ──────────────────────────────────────────────── -->
+  <div class="alert alert--danger" *ngIf="error()">
+    <i class="material-icons">error_outline</i>
+    {{ error() }}
+  </div>
+
+  <!-- ── Loading ─────────────────────────────────────────────── -->
+  <div class="tirage__loading" *ngIf="simulating()">
+    <div class="spinner"></div>
+    Génération du tirage...
+  </div>
+
+  <!-- ══ GROUPES (championnat / mixte) ════════════════════════ -->
+  <ng-container *ngIf="!simulating() && tirage() && isGroupes()">
+    <div class="tirage__groupes">
+
+      <div class="tirage__groupe"
+           *ngFor="let groupe of tirage()!.groupes"
+           (dragover)="allowDrop($event)"
+           (drop)="onDropOnGroupe(groupe.index)">
+
+        <div class="tirage__groupe-header">
+          <span class="tirage__groupe-nom">{{ groupe.nom }}</span>
+          <span class="tirage__groupe-count">
+            {{ groupe.equipes.length }} équipe(s)
+          </span>
+        </div>
+
+        <div class="tirage__equipes">
+          <div class="tirage__equipe"
+               *ngFor="let eq of groupe.equipes"
+               draggable="true"
+               (dragstart)="onDragStart(eq, groupe.index)"
+               (dragover)="allowDrop($event); onDragOverEquipe(eq, groupe.index)"
+               (drop)="onDropOnGroupe(groupe.index)"
+               [class.tirage__equipe--drag-over]="dragOverEquipe?.id === eq.id && dragFromGroupe !== groupe.index">
+
+            <div class="tirage__equipe-logo">
+              <img *ngIf="eq.logoUrl" [src]="eq.logoUrl"/>
+              <span *ngIf="!eq.logoUrl">{{ getInitials(eq.nomEquipe) }}</span>
+            </div>
+
+            <span class="tirage__equipe-nom">{{ eq.nomEquipe }}</span>
+
+            <span class="tirage__equipe-seed" *ngIf="eq.seed">
+              T{{ eq.seed }}
+            </span>
+
+            <i class="material-icons tirage__drag-icon">drag_indicator</i>
+          </div>
+
+          <!-- Zone de dépôt si groupe pas plein -->
+          <div class="tirage__drop-zone"
+               *ngIf="groupe.equipes.length < (competition.config?.equipesParGroupe ?? 4)"
+               (dragover)="allowDrop($event)"
+               (drop)="onDropOnGroupe(groupe.index)">
+            <i class="material-icons">add_circle_outline</i>
+            Déposer une équipe ici
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Légende -->
+    <div class="tirage__legend">
+      <i class="material-icons">info_outline</i>
+      Glissez-déposez les équipes entre les groupes pour modifier le tirage
+    </div>
+  </ng-container>
+
+  <!-- ══ BRACKET (coupe) ══════════════════════════════════════ -->
+  <ng-container *ngIf="!simulating() && tirage() && isCoupe()">
+    <div class="tirage__bracket">
+
+      <div class="tirage__bracket-tour"
+           *ngFor="let tour of toursBracket()">
+
+        <div class="tirage__tour-label">{{ tour.label }}</div>
+
+        <div class="tirage__bracket-matchs">
+          <div class="tirage__match"
+               *ngFor="let noeud of tour.noeuds">
+
+            <!-- Slot équipe 1 -->
+            <div class="tirage__slot"
+                 [class.tirage__slot--filled]="!!noeud.equipe1"
+                 draggable="true"
+                 (dragstart)="noeud.equipe1 && onDragStartBracket(noeud.equipe1, 'equipe1', noeud.position)"
+                 (dragover)="allowDrop($event)"
+                 (drop)="onDropOnSlot(noeud.position, 'equipe1')">
+              <ng-container *ngIf="noeud.equipe1">
+                <div class="tirage__slot-logo">
+                  <img *ngIf="noeud.equipe1.logoUrl" [src]="noeud.equipe1.logoUrl"/>
+                  <span *ngIf="!noeud.equipe1.logoUrl">
+                    {{ getInitials(noeud.equipe1.nomEquipe) }}
+                  </span>
+                </div>
+                <span class="tirage__slot-nom">{{ noeud.equipe1.nomEquipe }}</span>
+                <span class="tirage__slot-seed" *ngIf="noeud.equipe1.seed">
+                  T{{ noeud.equipe1.seed }}
+                </span>
+              </ng-container>
+              <span *ngIf="!noeud.equipe1" class="tirage__slot-empty">
+                Déposer une équipe
+              </span>
+            </div>
+
+            <div class="tirage__match-vs">vs</div>
+
+            <!-- Slot équipe 2 -->
+            <div class="tirage__slot"
+                 [class.tirage__slot--filled]="!!noeud.equipe2"
+                 draggable="true"
+                 (dragstart)="noeud.equipe2 && onDragStartBracket(noeud.equipe2, 'equipe2', noeud.position)"
+                 (dragover)="allowDrop($event)"
+                 (drop)="onDropOnSlot(noeud.position, 'equipe2')">
+              <ng-container *ngIf="noeud.equipe2">
+                <div class="tirage__slot-logo">
+                  <img *ngIf="noeud.equipe2.logoUrl" [src]="noeud.equipe2.logoUrl"/>
+                  <span *ngIf="!noeud.equipe2.logoUrl">
+                    {{ getInitials(noeud.equipe2.nomEquipe) }}
+                  </span>
+                </div>
+                <span class="tirage__slot-nom">{{ noeud.equipe2.nomEquipe }}</span>
+                <span class="tirage__slot-seed" *ngIf="noeud.equipe2.seed">
+                  T{{ noeud.equipe2.seed }}
+                </span>
+              </ng-container>
+              <span *ngIf="!noeud.equipe2" class="tirage__slot-empty">
+                Déposer une équipe
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tirage__legend">
+      <i class="material-icons">info_outline</i>
+      Glissez-déposez les équipes entre les slots pour modifier les confrontations
+    </div>
+  </ng-container>
+
+</div>

@@ -56,9 +56,11 @@ export class MatchDetailComponent implements OnInit {
 
   compoSaisie = signal<{
     domicile:  { membreId: number; nom: string; prenom?: string;
-                 numeroDos?: number; poste?: string; titulaire: boolean; equipeId?: number }[];
+                 numeroDos?: number; poste?: string; titulaire: boolean;
+                 statut?: string; capitaine?: boolean; equipeId?: number }[];
     exterieur: { membreId: number; nom: string; prenom?: string;
-                 numeroDos?: number; poste?: string; titulaire: boolean; equipeId?: number }[];
+                 numeroDos?: number; poste?: string; titulaire: boolean;
+                 statut?: string; capitaine?: boolean; equipeId?: number }[];
   }>({ domicile: [], exterieur: [] });
 
   // Formulaire événement
@@ -116,13 +118,46 @@ export class MatchDetailComponent implements OnInit {
     { value: TypeEvent.BUT_ANNULE,                emoji: '❌', label: 'But annulé' },
   ];
 
+  // ── Helper tri alphabétique ───────────────────────────────
+  private trierAlpha(joueurs: JoueurOption[]): JoueurOption[] {
+    return [...joueurs].sort((a, b) => {
+      const nomA = `${a.nom} ${a.prenom ?? ''}`.trim().toLowerCase();
+      const nomB = `${b.nom} ${b.prenom ?? ''}`.trim().toLowerCase();
+      return nomA.localeCompare(nomB, 'fr');
+    });
+  }
+
   // ── Computed joueurs ──────────────────────────────────────
   joueursDisponibles = computed(() => {
     const equipe = this.eventEquipe();
     if (!equipe) return [];
-    return equipe === 'domicile'
+    const liste = equipe === 'domicile'
       ? this.joueursDomicileCompo
       : this.joueursExterieurCompo;
+
+    const minute = this.eventMinute ?? 0;
+    const compo  = equipe === 'domicile'
+      ? (this.match()?.compositionDomicile ?? [])
+      : (this.match()?.compositionExterieur ?? []);
+
+    // Si pas de composition saisie → retourner tout le monde
+    if (!compo.length) return liste;
+
+    return liste.filter(j => {
+      const c = compo.find(c =>
+        ((c as any).membreEquipeId ?? c.id) === j.membreId);
+      if (!c) return false;
+      // Non convoqué → jamais disponible
+      if (c.statut === 'NON_CONVOQUE') return false;
+      // Titulaire → sur le terrain sauf si sorti avant la minute
+      if (c.statut === 'TITULAIRE' || c.statut !== 'REMPLACANT') {
+        return c.minuteSortie == null || c.minuteSortie > minute;
+      }
+      // Remplaçant → disponible seulement s'il est entré avant la minute
+      return c.minuteEntree != null
+          && c.minuteEntree <= minute
+          && (c.minuteSortie == null || c.minuteSortie > minute);
+    });
   });
 
   joueursFiltres = computed(() => {
@@ -152,11 +187,52 @@ export class MatchDetailComponent implements OnInit {
   joueursSortants = computed(() => {
     const equipe = this.eventEquipe();
     if (!equipe) return [];
+    const minute = this.eventMinute ?? 0;
+    const compo  = equipe === 'domicile'
+      ? (this.match()?.compositionDomicile ?? [])
+      : (this.match()?.compositionExterieur ?? []);
     const liste = equipe === 'domicile'
       ? this.joueursDomicileCompo
       : this.joueursExterieurCompo;
-    // Titulaires ou remplaçants entrés — excluant le joueur entrant sélectionné
-    return liste.filter(j => j.membreId !== this.joueurSelectionne()?.membreId);
+
+    return liste.filter(j => {
+      // Ne pas proposer le joueur entrant comme sortant
+      if (j.membreId === this.joueurSelectionne()?.membreId) return false;
+      if (!compo.length) return true;
+      const c = compo.find(c =>
+        ((c as any).membreEquipeId ?? c.id) === j.membreId);
+      if (!c) return false;
+      if (c.statut === 'NON_CONVOQUE') return false;
+      // Doit être sur le terrain actuellement
+      if (c.statut === 'TITULAIRE' || c.statut !== 'REMPLACANT') {
+        return c.minuteSortie == null || c.minuteSortie > minute;
+      }
+      return c.minuteEntree != null
+          && c.minuteEntree <= minute
+          && (c.minuteSortie == null || c.minuteSortie > minute);
+    });
+  });
+
+  // Remplaçants disponibles = pas encore entrés ET pas non-convoqués
+  joueursEntrants = computed(() => {
+    const equipe = this.eventEquipe();
+    if (!equipe) return [];
+    const compo = equipe === 'domicile'
+      ? (this.match()?.compositionDomicile ?? [])
+      : (this.match()?.compositionExterieur ?? []);
+    const liste = equipe === 'domicile'
+      ? this.joueursDomicileCompo
+      : this.joueursExterieurCompo;
+
+    return liste.filter(j => {
+      if (!compo.length) return true;
+      const c = compo.find(c =>
+        ((c as any).membreEquipeId ?? c.id) === j.membreId);
+      if (!c) return false;
+      if (c.statut === 'NON_CONVOQUE') return false;
+      // Doit être remplaçant pas encore entré
+      return c.statut === 'REMPLACANT' && c.minuteEntree == null;
+    });
   });
 
   get competitionId(): number {
@@ -189,6 +265,17 @@ export class MatchDetailComponent implements OnInit {
     this.api.getById(this.competitionId, this.matchId).subscribe(m => {
       this.match.set(m);
       this.buildJoueursListes(m);
+      this.buildTousJoueurs(m);
+
+      console.log('compo domicile:', m.compositionDomicile);
+console.log('compo exterieur:', m.compositionExterieur);
+      // Pré-remplir commentaire et HDM si déjà saisis
+      if ((m as any).commentaire)    this.commentaireMatch = (m as any).commentaire;
+      if ((m as any).hommeDuMatchId) {
+        const hdm = this.tousJoueurs
+          .find(j => j.membreId === (m as any).hommeDuMatchId);
+        if (hdm) this.hommeDuMatch.set(hdm);
+      }
       if (m.butsDomicile != null) {
         this.scoreForm.patchValue({
           butsDomicile:  m.butsDomicile,
@@ -199,52 +286,63 @@ export class MatchDetailComponent implements OnInit {
   }
 
   private buildJoueursListes(m: MatchDetailDTO): void {
-    this.joueursDomicileCompo = this.compoToOptions(
-      m.compositionDomicile, m.domicile?.id, m.domicile?.nomEquipe);
-    this.joueursExterieurCompo = this.compoToOptions(
-      m.compositionExterieur, m.exterieur?.id, m.exterieur?.nomEquipe);
+    // FIX : trier alphabétiquement après le mapping
+    this.joueursDomicileCompo = this.trierAlpha(
+      this.compoToOptions(m.compositionDomicile, m.domicile?.id, m.domicile?.nomEquipe)
+    );
+    this.joueursExterieurCompo = this.trierAlpha(
+      this.compoToOptions(m.compositionExterieur, m.exterieur?.id, m.exterieur?.nomEquipe)
+    );
 
     if (!m.compositionDomicile?.length && m.domicile?.id) {
       this.membreApi.getJoueurs(this.competitionId, m.domicile.id)
         .subscribe(membres => {
-          this.joueursDomicileCompo = membres.map(mb =>
-            this.membreToOption(mb, m.domicile!.id, m.domicile?.nomEquipe));
+          this.joueursDomicileCompo = this.trierAlpha(
+            membres.map(mb => this.membreToOption(mb, m.domicile!.id, m.domicile?.nomEquipe))
+          );
+          // Reconstruire tousJoueurs après chargement async
+          this.tousJoueurs = this.trierAlpha([
+            ...this.joueursDomicileCompo,
+            ...this.joueursExterieurCompo
+          ]);
         });
     }
     if (!m.compositionExterieur?.length && m.exterieur?.id) {
       this.membreApi.getJoueurs(this.competitionId, m.exterieur.id)
         .subscribe(membres => {
-          this.joueursExterieurCompo = membres.map(mb =>
-            this.membreToOption(mb, m.exterieur!.id, m.exterieur?.nomEquipe));
+          this.joueursExterieurCompo = this.trierAlpha(
+            membres.map(mb => this.membreToOption(mb, m.exterieur!.id, m.exterieur?.nomEquipe))
+          );
+          // Reconstruire tousJoueurs après chargement async
+          this.tousJoueurs = this.trierAlpha([
+            ...this.joueursDomicileCompo,
+            ...this.joueursExterieurCompo
+          ]);
         });
     }
   }
 
-  private compoToOptions(
-      compo: MatchCompositionDTO[] | undefined,
-      equipeId?: number,
-      equipeNom?: string): JoueurOption[] {
-    if (!compo?.length || !equipeId) return [];
-    return compo.map(c => ({
-      // FIX : membreId = MembreEquipeCompetition.id (champ explicite dans MatchComposition)
-      //        c.membreEquipeId est l'id de MembreEquipeCompetition
-      //        c.id est l'id de MatchComposition (ne pas utiliser pour les events)
-      id:        c.joueurId,
-      membreId:  (c as any).membreEquipeId ?? c.id,
-      nom:       c.joueurNom ?? '',
-      prenom:    c.joueurPrenom,
-      numeroDos: c.numeroDos,
-      equipeId,
-      equipeNom,
-    }));
-  }
+private compoToOptions(
+    compo: MatchCompositionDTO[] | undefined,
+    equipeId?: number,
+    equipeNom?: string): JoueurOption[] {
+  if (!compo?.length || !equipeId) return [];
+  return compo.map(c => ({
+    id:        c.id,
+    membreId:  c.membreEquipeId ?? c.membreId ?? c.id, // ← priorité membreEquipeId
+    nom:       c.joueurNom ?? '',
+    prenom:    c.joueurPrenom,
+    numeroDos: c.numeroDos,
+    equipeId,
+    equipeNom,
+  }));
+}
 
   private membreToOption(
       m: MembreEquipeDTO,
       equipeId: number,
       equipeNom?: string): JoueurOption {
     return {
-      // FIX : id = MembreEquipeCompetition.id (roster)
       id:        m.id,
       membreId:  m.id,
       nom:       m.nom ?? '',
@@ -253,6 +351,7 @@ export class MatchDetailComponent implements OnInit {
       equipeId,
       equipeNom,
     };
+    // Note : le tri est appliqué dans buildJoueursListes via trierAlpha()
   }
 
   // ── Handlers formulaire événement ────────────────────────
@@ -330,14 +429,22 @@ export class MatchDetailComponent implements OnInit {
   }
 
   canSubmitEvent(): boolean {
-    return (!!this.joueurSelectionne() || !!this.joueurManuelNom.trim())
-        && this.eventMinute != null && this.eventMinute > 0
-        && !!this.eventEquipe()
-        && !!this.eventTypeSelect()
-        && (!this.isTypeRemplacement() || !!this.joueurSortantSelectionne());
+    const hasMinute  = this.eventMinute != null && this.eventMinute > 0;
+    const hasEquipe  = !!this.eventEquipe();
+    const hasType    = !!this.eventTypeSelect();
+
+    if (this.isTypeRemplacement()) {
+      // Remplacement : joueur entrant (joueurSelectionne) ET sortant obligatoires
+      return hasMinute && hasEquipe && hasType
+          && !!this.joueurSelectionne()        // entrant
+          && !!this.joueurSortantSelectionne(); // sortant
+    }
+
+    // Autres types : joueur principal (ou saisie manuelle)
+    return hasMinute && hasEquipe && hasType
+        && (!!this.joueurSelectionne() || !!this.joueurManuelNom.trim());
   }
 
-  // ── Soumettre événement ───────────────────────────────────
   ajouterEvenement(): void {
     if (!this.canSubmitEvent()) return;
     this.savingEvent.set(true);
@@ -350,33 +457,28 @@ export class MatchDetailComponent implements OnInit {
       : this.match()!.exterieur;
 
     const dto: MatchEventDTO = {
-      type:             this.eventTypeSelect(),
-      equipeId:         equipe?.id,
-      equipeNom:        equipe?.nomEquipe,
-      minute:           this.eventMinute!,
+      type:              this.eventTypeSelect(),
+      equipeId:          equipe?.id,
+      equipeNom:         equipe?.nomEquipe,
+      minute:            this.eventMinute!,
       minuteAdditionnel: this.eventMinuteAdd ?? undefined,
-      // FIX : joueurId = MembreEquipeCompetition.id (id du roster)
-      // pour les externes aussi (pas Membre.id)
-      joueurId:         sel?.membreId,   // ← membreId = MembreEquipeCompetition.id
-      joueurNom:        sel?.nom ?? this.joueurManuelNom,
-      joueurPrenom:     sel?.prenom,
-      // FIX : passeurId = MembreEquipeCompetition.id
-      passeurId:        passeur?.membreId, // ← membreId
-      passeurNom:       passeur
+      joueurId:          sel?.membreId,
+      joueurNom:         sel?.nom ?? this.joueurManuelNom,
+      joueurPrenom:      sel?.prenom,
+      passeurId:         passeur?.membreId,
+      passeurNom:        passeur
         ? `${passeur.prenom ?? ''} ${passeur.nom}`.trim()
         : undefined,
-      joueurSortantId:  sortant?.membreId, // ← membreId
-      joueurSortantNom: sortant
+      joueurSortantId:   sortant?.membreId,
+      joueurSortantNom:  sortant
         ? `${sortant.prenom ?? ''} ${sortant.nom}`.trim()
         : undefined,
     };
 
-    console.log(dto)
-
     this.api.ajouterEvenement(this.competitionId, this.matchId, dto)
       .subscribe({
         next: () => {
-          this.reload();          // recharger le match pour score + timeline
+          this.reload();
           this.resetEventForm();
           this.savingEvent.set(false);
         },
@@ -389,7 +491,6 @@ export class MatchDetailComponent implements OnInit {
       .subscribe(() => this.reload());
   }
 
-  // ── Statuts ───────────────────────────────────────────────
   setTab(t: MatchTab): void { this.activeTab.set(t); }
 
   isTermine(): boolean {
@@ -398,14 +499,10 @@ export class MatchDetailComponent implements OnInit {
       .includes(this.match()?.statut as StatutMatch);
   }
 
-  isEnCours(): boolean { return this.match()?.statut === StatutMatch.EN_COURS; }
+  isEnCours(): boolean  { return this.match()?.statut === StatutMatch.EN_COURS; }
   isPlanifie(): boolean { return this.match()?.statut === StatutMatch.PLANIFIE; }
-  showScore(): boolean { return this.isTermine() || this.isEnCours(); }
-
-  // FIX : canEdit seulement EN_COURS
-  canEdit(): boolean { return this.isEnCours(); }
-
-  // FIX : saisie score possible seulement EN_COURS
+  showScore(): boolean  { return this.isTermine() || this.isEnCours(); }
+  canEdit(): boolean    { return this.isEnCours(); }
   canSaisirScore(): boolean { return this.isEnCours(); }
 
   isWinner(side: 'home' | 'away'): boolean {
@@ -437,20 +534,12 @@ export class MatchDetailComponent implements OnInit {
   scoreDepuisEvenements(side: 'domicile' | 'exterieur'): number {
     const m = this.match();
     if (!m) return 0;
-
-    // FIX : chercher les événements dans plusieurs champs possibles
-    const events: any[] = (m as any).evenements
-                       ?? (m as any).events
-                       ?? (m as any).matchEvents
-                       ?? [];
+    const events: any[] = (m as any).evenements ?? (m as any).events ?? [];
     if (!events.length) return 0;
-
     const equipeId = side === 'domicile' ? m.domicile?.id : m.exterieur?.id;
-
     return events.reduce((total: number, e: any) => {
       const isBut = ['BUT', 'PENALTY_MARQUE', 'PENALTY'].includes(e.type);
       const isCSC = ['CONTRE_SON_CAMP', 'BUT_CSC'].includes(e.type);
-
       if (isBut && e.equipeId === equipeId) return total + 1;
       if (isCSC) {
         const adv = side === 'domicile' ? m.exterieur?.id : m.domicile?.id;
@@ -517,11 +606,25 @@ export class MatchDetailComponent implements OnInit {
 
   goBack(): void { history.back(); }
 
-  // ── Score ─────────────────────────────────────────────────
   saisirScore(): void {
     if (this.scoreForm.invalid || !this.canSaisirScore()) return;
     this.savingScore.set(true);
     const v = this.scoreForm.value;
+    const isBracket = !!(this.match() as any).bracketNoeudId;
+    if (isBracket) {
+      const dom = v.butsDomicile ?? 0;
+      const ext = v.butsExterieur ?? 0;
+      if (dom === ext && !v.avecProlong && !v.avecTab) {
+        alert('Un match d\'élimination directe doit avoir un vainqueur.');
+        this.savingScore.set(false);
+        return;
+      }
+      if (v.avecTab && v.tabDomicile === v.tabExterieur) {
+        alert('Les tirs au but ne peuvent pas être à égalité.');
+        this.savingScore.set(false);
+        return;
+      }
+    }
     this.api.saisirResultat(this.competitionId, this.matchId, {
       butsDomicile:         v.butsDomicile!,
       butsExterieur:        v.butsExterieur!,
@@ -542,25 +645,29 @@ export class MatchDetailComponent implements OnInit {
     });
   }
 
-  // ── Composition ───────────────────────────────────────────
-  // FIX : recharger depuis le serveur avant d'ouvrir l'édition
   toggleCompoEdit(): void {
     if (!this.compoEditMode()) {
       this.api.getById(this.competitionId, this.matchId).subscribe(m => {
         this.match.set(m);
-        const toSaisie = (compo: MatchCompositionDTO[] | undefined,
-                          equipeId?: number) =>
-          (compo ?? [])
-            .filter(c => c.joueurNom)
+        const toSaisie = (compo: MatchCompositionDTO[] | undefined, equipeId?: number) =>
+          // FIX : trier alphabétiquement dans le mode édition aussi
+          [...(compo ?? []).filter(c => c.joueurNom)]
+            .sort((a, b) =>
+              `${a.joueurNom} ${a.joueurPrenom ?? ''}`.trim()
+                .localeCompare(`${b.joueurNom} ${b.joueurPrenom ?? ''}`.trim(), 'fr'))
             .map(c => ({
-              membreId:  c.id ?? 0,
+              membreId: c.membreEquipeId ?? c.membreId ?? c.id ?? 0,
               nom:       c.joueurNom ?? '',
               prenom:    c.joueurPrenom,
               numeroDos: c.numeroDos,
               poste:     c.poste ? String(c.poste) : undefined,
-              titulaire: c.statut !== 'REMPLACANT',
+              titulaire: c.statut === 'TITULAIRE',
+              statut:    c.statut ?? 'REMPLACANT',
+              capitaine: c.capitaine ?? false,  // ← capitaine du jour
               equipeId
             }));
+
+            
 
         const domicile  = toSaisie(m.compositionDomicile,  m.domicile?.id);
         const exterieur = toSaisie(m.compositionExterieur, m.exterieur?.id);
@@ -570,10 +677,15 @@ export class MatchDetailComponent implements OnInit {
             .subscribe(membres => {
               this.compoSaisie.update(cs => ({
                 ...cs,
-                domicile: membres.map(mb => ({
-                  membreId: mb.id, nom: mb.nom ?? '', prenom: mb.prenom,
-                  numeroDos: mb.numeroDos, titulaire: true, equipeId: m.domicile?.id
-                }))
+                domicile: [...membres]
+                  .sort((a, b) => `${a.nom} ${a.prenom ?? ''}`.trim()
+                    .localeCompare(`${b.nom} ${b.prenom ?? ''}`.trim(), 'fr'))
+                  .map(mb => ({
+                    membreId: mb.id, nom: mb.nom ?? '', prenom: mb.prenom,
+                    numeroDos: mb.numeroDos,
+                    titulaire: false, statut: 'REMPLACANT',  // ← défaut
+                    capitaine: false, equipeId: m.domicile?.id
+                  }))
               }));
             });
         } else {
@@ -583,12 +695,20 @@ export class MatchDetailComponent implements OnInit {
         if (!exterieur.length && m.exterieur?.id) {
           this.membreApi.getJoueurs(this.competitionId, m.exterieur.id)
             .subscribe(membres => {
+               console.log('Roster domicile chargé:', membres.map(mb => ({
+      id: mb.id, nom: mb.nom, prenom: mb.prenom
+    })));
               this.compoSaisie.update(cs => ({
                 ...cs,
-                exterieur: membres.map(mb => ({
-                  membreId: mb.id, nom: mb.nom ?? '', prenom: mb.prenom,
-                  numeroDos: mb.numeroDos, titulaire: true, equipeId: m.exterieur?.id
-                }))
+                exterieur: [...membres]
+                  .sort((a, b) => `${a.nom} ${a.prenom ?? ''}`.trim()
+                    .localeCompare(`${b.nom} ${b.prenom ?? ''}`.trim(), 'fr'))
+                  .map(mb => ({
+                    membreId: mb.id, nom: mb.nom ?? '', prenom: mb.prenom,
+                    numeroDos: mb.numeroDos,
+                    titulaire: false, statut: 'REMPLACANT',  // ← défaut
+                    capitaine: false, equipeId: m.exterieur?.id
+                  }))
               }));
             });
         } else {
@@ -603,12 +723,43 @@ export class MatchDetailComponent implements OnInit {
   }
 
   toggleTitulaire(side: 'domicile' | 'exterieur', membreId: number): void {
+    // Garde pour compatibilité — cycle 3 états via setStatut()
     this.compoSaisie.update(cs => ({
       ...cs,
       [side]: cs[side].map(j =>
         j.membreId === membreId ? { ...j, titulaire: !j.titulaire } : j
       )
     }));
+  }
+
+  // Nouveau : statut à 3 états
+  toggleCapitaine(side: 'domicile' | 'exterieur', membreId: number): void {
+    this.compoSaisie.update(cs => ({
+      ...cs,
+      [side]: cs[side].map(j => ({
+        ...j,
+        // Un seul capitaine par équipe — désactiver les autres
+        capitaine: j.membreId === membreId ? !j.capitaine : false
+      }))
+    }));
+  }
+
+  setStatut(side: 'domicile' | 'exterieur',
+            membreId: number,
+            statut: 'TITULAIRE' | 'REMPLACANT' | 'NON_CONVOQUE'): void {
+    this.compoSaisie.update(cs => ({
+      ...cs,
+      [side]: cs[side].map(j =>
+        j.membreId === membreId
+          ? { ...j, statut, titulaire: statut === 'TITULAIRE' }
+          : j
+      )
+    }));
+  }
+
+  getStatut(j: { titulaire: boolean; statut?: string }): string {
+    if ((j as any).statut === 'NON_CONVOQUE') return 'NON_CONVOQUE';
+    return j.titulaire ? 'TITULAIRE' : 'REMPLACANT';
   }
 
   enregistrerComposition(): void {
@@ -624,7 +775,9 @@ export class MatchDetailComponent implements OnInit {
         joueurPrenom: j.prenom,
         numeroDos:   j.numeroDos,
         poste:       this.mapPosteToEnum(j.poste),
-        statut:      j.titulaire ? 'TITULAIRE' : 'REMPLACANT'
+        // FIX : utiliser statut explicite (3 états)
+        statut:    (j as any).statut ?? (j.titulaire ? 'TITULAIRE' : 'REMPLACANT'),
+        capitaine: (j as any).capitaine ?? false
       }));
 
     forkJoin([
@@ -648,15 +801,66 @@ export class MatchDetailComponent implements OnInit {
   private mapPosteToEnum(poste: string | undefined): string | null {
     if (!poste) return null;
     const p = poste.toLowerCase();
-    if (p.includes('gardien'))                                   return 'GARDIEN';
-    if (p.includes('défenseur') || p.includes('defenseur'))     return 'DEFENSEUR';
-    if (p.includes('milieu'))                                    return 'MILIEU';
-    if (p.includes('attaquant') || p.includes('ailier'))        return 'ATTAQUANT';
+    if (p.includes('gardien'))                               return 'GARDIEN';
+    if (p.includes('défenseur') || p.includes('defenseur')) return 'DEFENSEUR';
+    if (p.includes('milieu'))                                return 'MILIEU';
+    if (p.includes('attaquant') || p.includes('ailier'))    return 'ATTAQUANT';
     return poste.toUpperCase();
   }
 
-  // ── Autres actions ────────────────────────────────────────
-  declarerForfait(equipe: Cote): void {
+  // ── Homme du match ───────────────────────────────────────
+  hommeDuMatch    = signal<JoueurOption | null>(null);
+  hdmSearch       = '';
+  commentaireMatch = '';
+  savingFin       = signal(false);
+  private tousJoueurs: JoueurOption[] = [];
+
+  hdmFiltres = computed(() => {
+    const q = this.hdmSearch.toLowerCase().trim();
+    if (!q) return this.tousJoueurs;
+    return this.tousJoueurs.filter(j =>
+      j.nom.toLowerCase().includes(q) ||
+      (j.prenom?.toLowerCase().includes(q) ?? false) ||
+      (j.equipeNom?.toLowerCase().includes(q) ?? false)
+    );
+  });
+
+  private buildTousJoueurs(m: MatchDetailDTO): void {
+    // FIX : utiliser joueursDomicileCompo/joueursExterieurCompo qui ont
+    // déjà le bon membreId (MembreEquipeCompetition.id)
+    // Ces listes sont remplies par buildJoueursListes() — appeler après lui
+    if (this.joueursDomicileCompo.length || this.joueursExterieurCompo.length) {
+      this.tousJoueurs = this.trierAlpha([
+        ...this.joueursDomicileCompo,
+        ...this.joueursExterieurCompo
+      ]);
+    } else {
+      // Fallback si listes pas encore chargées (async)
+      // → sera mis à jour par buildJoueursListes une fois chargé
+      this.tousJoueurs = [];
+    }
+  }
+
+  selectionnerHommeDuMatch(j: JoueurOption): void {
+    this.hommeDuMatch.set(j);
+    this.hdmSearch = '';
+  }
+
+  saisirFin(): void {
+    this.savingFin.set(true);
+
+    console.log(this.hommeDuMatch())
+    const dto = {
+      hommeDuMatchId: this.hommeDuMatch()?.membreId ?? null,
+      commentaire:    this.commentaireMatch || null
+    };
+    this.api.saisirFin(this.competitionId, this.matchId, dto).subscribe({
+      next: m => { this.match.set(m); this.savingFin.set(false); },
+      error: () => this.savingFin.set(false)
+    });
+  }
+
+    declarerForfait(equipe: Cote): void {
     this.api.declarerForfait(this.competitionId, this.matchId,
       { equipeForfait: equipe }).subscribe(m => this.match.set(m));
   }

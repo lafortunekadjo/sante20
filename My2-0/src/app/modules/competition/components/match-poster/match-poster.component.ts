@@ -1,210 +1,126 @@
-// match-poster.component.ts
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
-import { Subject, takeUntil } from 'rxjs';
-import { Match } from '../../../../core/models/match.model';
-import { PosterPollingService } from '../../../../core/services/competition/poster-polling.service';
-import { PosterAvailability, Template, PosterService, PosterRequest } from '../../../../core/services/competition/poster.service';
-import { TemplateCacheService } from '../../../../core/services/competition/template-cache.service';
+export interface MatchPosterConfig {
+  title: string;
+  caption: string;
+  homeTeamName: string;
+  homeTeamLogoUrl: string;
+  awayTeamName: string;
+  awayTeamLogoUrl: string;
+  score: string;
+  matchType: string;
+  primaryImage: string;
+  secondaryImage: string;
+  matchDetails: string;
+}
 
 @Component({
   selector: 'app-match-poster',
-  templateUrl: './match-poster.component.html'
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './match-poster.component.html',
+  styleUrls: ['./match-poster.component.scss']
 })
-export class MatchPosterComponent implements OnInit, OnDestroy {
-  @Input() match!: Match;
-  
-  posterForm!: FormGroup;
-  availability!: PosterAvailability;
-  templates: Template[] = [];
-  availableTypes: string[] = [];
-  isLoading = false;
-  previewImage: string | null = null;
-  private destroy$ = new Subject<void>();
-  
-  formats = [
-    { value: 'PORTRAIT', label: 'Portrait (1080×1350)', icon: '📱' },
-    { value: 'CARRE', label: 'Carré (1080×1080)', icon: '⬛' },
-    { value: 'PAYSAGE', label: 'Paysage (1920×1080)', icon: '🖥️' }
-  ];
-  
-  photoModes = [
-    { value: 'SINGLE', label: 'Une photo globale' },
-    { value: 'DOUBLE', label: 'Une photo par équipe' }
-  ];
+export class MatchPosterComponent {
+  // Modèle de données du formulaire
+  matchType: 'BEFORE' | 'AFTER' = 'BEFORE';
+  homeTeamName: string = '';
+  awayTeamName: string = '';
+  score: string = '';
+  matchDateOrVenue: string = '';
+  customCaption: string = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private posterService: PosterService,
-    private pollingService: PosterPollingService,
-    private templateCache: TemplateCacheService
-  ) {}
+  // Stockage des fichiers
+  homeTeamLogoFile: File | null = null;
+  awayTeamLogoFile: File | null = null;
+  mainImageFile: File | null = null;
+  secondaryImageFile: File | null = null;
 
-  ngOnInit() {
-    this.initForm();
-    this.loadAvailability();
-    this.loadTemplates();
-  }
-  
-  private initForm() {
-    this.posterForm = this.fb.group({
-      type: ['', Validators.required],
-      format: ['CARRE', Validators.required],
-      templateId: ['classique', Validators.required],
-      photoMode: ['SINGLE'],
-      photo1: [null],
-      photo2: [null],
-      showWatermark: [true],
-      customTitle: [''],
-      language: ['fr']
-    });
-  }
-  
-  private loadAvailability() {
-    this.posterService.checkAvailability(this.match.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.availability = data;
-          this.availableTypes = data.availableTypes;
-          this.posterForm.patchValue({ type: data.defaultType });
-          this.posterForm.get('type')?.enable();
-        },
-        error: (err) => console.error('Erreur chargement disponibilité:', err)
-      });
-  }
-  
-  private loadTemplates() {
-    this.templateCache.getTemplates()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (templates) => this.templates = templates,
-        error: (err) => console.error('Erreur chargement templates:', err)
-      });
-  }
-  
-  onPhotoSelected(event: any, position: 'photo1' | 'photo2') {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
+  // Prévisualisations locales pour l'interface
+  homeLogoPreview: string | null = null;
+  awayLogoPreview: string | null = null;
+  mainImagePreview: string | null = null;
+  secondaryImagePreview: string | null = null;
+
+  // État de chargement et résultat
+  isLoading: boolean = false;
+  posterConfig: MatchPosterConfig | null = null;
+
+  private apiUrl = 'http://localhost:8000/api/posters/generate';
+
+  constructor(private http: HttpClient) {}
+
+  onFileSelected(event: Event, field: string): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
       const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.posterForm.patchValue({ [position]: e.target.result });
-      };
-      reader.readAsDataURL(file);
-      
-      // Upload vers le serveur
-      const teamSide = position === 'photo1' ? 'home' : 'away';
-      this.posterService.uploadPhoto(file, this.match.id, teamSide)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (response) => console.log('Photo uploadée:', response.photoUrl),
-          error: (err) => console.error('Erreur upload:', err)
-        });
-    }
-  }
-  
-  generatePoster() {
-    if (this.posterForm.invalid) return;
-    
-    this.isLoading = true;
-    
-    const request: PosterRequest = {
-      matchId: this.match.id,
-      type: this.posterForm.get('type')?.value,
-      format: this.posterForm.get('format')?.value,
-      templateId: this.posterForm.get('templateId')?.value,
-      photoMode: this.posterForm.get('photoMode')?.value,
-      photoUrls: this.getSelectedPhotos(),
-      options: {
-        showWatermark: this.posterForm.get('showWatermark')?.value,
-        customTitle: this.posterForm.get('customTitle')?.value,
-        language: this.posterForm.get('language')?.value
-      }
-    };
-    
-    // Utilisation asynchrone avec polling
-    this.posterService.generatePosterAsync(request)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (asyncResponse) => {
-          if (asyncResponse.jobId) {
-            this.pollingService.startPolling(asyncResponse.jobId)
-              .pipe(takeUntil(this.destroy$))
-              .subscribe({
-                next: (status) => {
-                  console.log('Progression:', status.progress, '%');
-                  if (status.status === 'COMPLETED' && status.posterUrl) {
-                    this.loadPreviewImage(status.posterUrl);
-                    this.isLoading = false;
-                  }
-                },
-                error: (err) => {
-                  console.error('Erreur polling:', err);
-                  this.isLoading = false;
-                }
-              });
-          }
-        },
-        error: (err) => {
-          console.error('Erreur génération:', err);
-          this.isLoading = false;
+
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        switch (field) {
+          case 'homeLogo':
+            this.homeTeamLogoFile = file;
+            this.homeLogoPreview = result;
+            break;
+          case 'awayLogo':
+            this.awayTeamLogoFile = file;
+            this.awayLogoPreview = result;
+            break;
+          case 'mainImage':
+            this.mainImageFile = file;
+            this.mainImagePreview = result;
+            break;
+          case 'secondaryImage':
+            this.secondaryImageFile = file;
+            this.secondaryImagePreview = result;
+            break;
         }
-      });
-  }
-  
-  private getSelectedPhotos(): string[] {
-    const photos = [];
-    const mode = this.posterForm.get('photoMode')?.value;
-    const photo1 = this.posterForm.get('photo1')?.value;
-    const photo2 = this.posterForm.get('photo2')?.value;
-    
-    if (mode === 'SINGLE' && photo1) {
-      photos.push(photo1);
-    } else if (mode === 'DOUBLE') {
-      if (photo1) photos.push(photo1);
-      if (photo2) photos.push(photo2);
-    }
-    
-    return photos;
-  }
-  
-  private loadPreviewImage(url: string) {
-    this.previewImage = url;
-  }
-  
-  downloadPoster() {
-    if (this.previewImage) {
-      const link = document.createElement('a');
-      link.href = this.previewImage;
-      link.download = `poster_match_${this.match.id}_${Date.now()}.png`;
-      link.click();
+      };
+
+      reader.readAsDataURL(file);
     }
   }
-  
-  sharePoster() {
-    if (this.previewImage) {
-      // Logique de partage (Web Share API)
-      fetch(this.previewImage)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'poster.png', { type: 'image/png' });
-          if (navigator.share) {
-            navigator.share({
-              title: 'Affiche My2-0',
-              text: `Affiche du match ${this.match.equipe1?.nom} vs ${this.match.equipe2?.nom}`,
-              files: [file]
-            });
-          } else {
-            this.downloadPoster();
-          }
-        });
-    }
+
+  removeSecondaryImage(): void {
+    this.secondaryImageFile = null;
+    this.secondaryImagePreview = null;
   }
-  
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.pollingService.stopAllPolling();
+
+  onSubmit(): void {
+    if (!this.homeTeamName || !this.awayTeamName) {
+      alert('Veuillez saisir au moins les noms des deux équipes.');
+      return;
+    }
+
+    this.isLoading = true;
+    const formData = new FormData();
+
+    formData.append('homeTeamName', this.homeTeamName);
+    formData.append('awayTeamName', this.awayTeamName);
+    formData.append('matchType', this.matchType);
+    formData.append('score', this.score || '');
+    formData.append('matchDateOrVenue', this.matchDateOrVenue || '');
+    formData.append('customCaption', this.customCaption || '');
+
+    if (this.homeTeamLogoFile) formData.append('homeTeamLogo', this.homeTeamLogoFile);
+    if (this.awayTeamLogoFile) formData.append('awayTeamLogo', this.awayTeamLogoFile);
+    if (this.mainImageFile) formData.append('mainImage', this.mainImageFile);
+    if (this.secondaryImageFile) formData.append('secondaryImage', this.secondaryImageFile);
+
+    this.http.post<MatchPosterConfig>(this.apiUrl, formData).subscribe({
+      next: (response) => {
+        this.posterConfig = response;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur de génération:', err);
+        alert('Une erreur est survenue lors de la génération.');
+        this.isLoading = false;
+      }
+    });
   }
 }

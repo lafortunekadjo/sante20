@@ -40,6 +40,17 @@ export class MatchApiService {
     );
   }
 
+    // ── Fin de match (homme du match + commentaire) ─────────
+  saisirFin(competitionId: number, matchId: number,
+            dto: { hommeDuMatchId?: number | null; commentaire?: string | null }
+  ): Observable<any> {
+    return this.http.patch<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/matchs/${matchId}/fin`,
+      dto
+    );
+  }
+ 
+
   // ── Détail d'un match ─────────────────────────────────────
   getById(competitionId: number, matchId: number): Observable<MatchDetailDTO> {
     return this.http.get<MatchDetailDTO>(

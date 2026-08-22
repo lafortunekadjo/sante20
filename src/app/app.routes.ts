@@ -144,6 +144,19 @@ export const routes: Routes = [
   component: SecurityPolicyComponent
 },
 
+  {
+    path: 'affiches',
+    loadComponent: () =>
+      import('./modules/competition/components/affiche-generator/affiche-generator.component')
+        .then(m => m.AfficheGeneratorComponent)
+  },
+  {
+    path: 'poster',
+    loadComponent: () =>
+      import('./modules/competition/components/match-poster/match-poster.component')
+        .then(m => m.MatchPosterComponent)
+  },
+
 // ════════════════════════════════════════════════════════════
 // PATCH app.routes.ts — routes compétition
 // ════════════════════════════════════════════════════════════
@@ -182,6 +195,7 @@ export const routes: Routes = [
       import('./modules/competition/components/match-card/match-card.component')
         .then(m => m.MatchCardComponent)
   },
+
   ]
 },
 

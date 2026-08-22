@@ -141,4 +141,30 @@ fermerInscriptions(id: number): Observable<void> {
     return this.http.get<BracketDTO>(
       `${this.base}/${competitionId}/phases/${phaseId}/bracket`);
   }
+
+  modifierMatch(competitionId: number, matchId: number, dto: {
+  dateHeure?:    string;
+  lieu?:         string;
+  domicileId?:   number;
+  exterieurId?:  number;
+  butsDomicile?:  number;
+  butsExterieur?: number;
+}): Observable<any> {
+  return this.http.patch<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/matchs/${matchId}`,
+    dto
+  );
+}
+
+  simulerTirage(competitionId: number): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/simuler-tirage`, {}
+    );
+  }
+ 
+  validerTirage(competitionId: number, tirage: any): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/valider-tirage`, tirage
+    );
+  }
 }
