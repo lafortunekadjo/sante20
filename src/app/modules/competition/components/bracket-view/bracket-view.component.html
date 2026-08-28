@@ -46,13 +46,16 @@
                   </span>
                   <span class="noeud__score"
                         *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
-                    {{ n.matchAller!.butsDomicile ?? 0 }}
+                    {{ scoreDom(n) }}
                   </span>
                 </div>
 
                 <!-- Séparateur -->
                 <div class="noeud__divider">
                   <span class="noeud__info">{{ getScore(n) }}</span>
+                  <span class="noeud__extra" *ngIf="hasExtra(n)">
+                    {{ extraLabel(n) }}
+                  </span>
                 </div>
 
                 <!-- Équipe 2 -->
@@ -65,9 +68,9 @@
                   <span class="noeud__nom">
                     {{ n.participant2?.nomEquipe ?? 'À déterminer' }}
                   </span>
-                  <span class="noeud__score"
+                   <span class="noeud__score"
                         *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
-                    {{ n.matchAller!.butsExterieur ?? 0 }}
+                    {{ scoreExt(n) }}
                   </span>
                 </div>
 
@@ -141,7 +144,7 @@
               </span>
               <span class="list-row__score"
                     *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
-                {{ n.matchAller!.butsDomicile ?? 0 }}
+                {{ scoreDom(n) }}
               </span>
             </div>
 
@@ -152,7 +155,7 @@
                  [class.list-row__team--lose]="!estVainqueur(n, 2) && !!n.vainqueur">
               <span class="list-row__score"
                     *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
-                {{ n.matchAller!.butsExterieur ?? 0 }}
+                {{ scoreExt(n) }}
               </span>
               <span class="list-row__name">
                 {{ n.participant2?.nomEquipe ?? '?' }}
@@ -164,9 +167,12 @@
           </div>
 
           <!-- Date si planifié -->
-          <span class="list-row__date"
+         <span class="list-row__date"
                 *ngIf="n.matchAller?.dateHeure && n.matchAller?.statut === 'PLANIFIE'">
             {{ n.matchAller!.dateHeure | date:'dd/MM HH:mm' }}
+          </span>
+          <span class="list-row__extra" *ngIf="hasExtra(n)">
+            {{ extraLabel(n) }}
           </span>
 
           <!-- Actions -->
@@ -213,28 +219,58 @@
     <div class="modal__body">
       <p class="modal__hint">
         <i class="material-icons">info_outline</i>
-        Corriger le tirage ou entrer un tirage effectué physiquement
+        Sélectionnez les équipes parmi les qualifiées
       </p>
 
       <div class="form-field">
-        <label class="form-label">Équipe 1 (Domicile)</label>
-        <input class="form-input"
-               [(ngModel)]="editParticipant1Nom"
-               placeholder="Nom de l'équipe"/>
+        <label class="form-label">
+          <i class="material-icons" style="font-size:14px;vertical-align:middle">home</i>
+          Équipe 1 (Domicile)
+        </label>
+        <select class="form-select"
+                [(ngModel)]="editParticipant1Id">
+          <option [ngValue]="null">— Choisir une équipe —</option>
+          <option *ngFor="let p of participantsDisponibles()"
+                  [ngValue]="p.id"
+                  [disabled]="p.id === editParticipant2Id">
+            {{ p.nomEquipe }}
+          </option>
+        </select>
       </div>
 
       <div class="form-field" style="margin-top:12px">
-        <label class="form-label">Équipe 2 (Extérieur)</label>
-        <input class="form-input"
-               [(ngModel)]="editParticipant2Nom"
-               placeholder="Nom de l'équipe"/>
+        <label class="form-label">
+          <i class="material-icons" style="font-size:14px;vertical-align:middle">flight_land</i>
+          Équipe 2 (Extérieur)
+        </label>
+        <select class="form-select"
+                [(ngModel)]="editParticipant2Id">
+          <option [ngValue]="null">— Choisir une équipe —</option>
+          <option *ngFor="let p of participantsDisponibles()"
+                  [ngValue]="p.id"
+                  [disabled]="p.id === editParticipant1Id">
+            {{ p.nomEquipe }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Alerte si même équipe -->
+      <div class="alert alert--danger"
+           *ngIf="editParticipant1Id && editParticipant2Id
+                  && editParticipant1Id === editParticipant2Id"
+           style="margin-top:8px">
+        <i class="material-icons">warning</i>
+        Une équipe ne peut pas s'affronter elle-même
       </div>
     </div>
 
     <div class="modal__footer">
       <button class="btn-ghost" (click)="fermerEdit()">Annuler</button>
       <button class="btn-primary"
-              [disabled]="savingNoeud()"
+              [disabled]="savingNoeud()
+                || !editParticipant1Id
+                || !editParticipant2Id
+                || editParticipant1Id === editParticipant2Id"
               (click)="sauvegarderNoeud()">
         <i class="material-icons">save</i>
         {{ savingNoeud() ? 'Enregistrement...' : 'Enregistrer' }}

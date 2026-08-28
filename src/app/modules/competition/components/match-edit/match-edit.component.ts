@@ -24,6 +24,7 @@ interface Participant {
 export class MatchEditComponent implements OnInit {
   @Input()  match!:         MatchDetailDTO;
   @Input()  competitionId!: number;
+  @Input()  bracketMode    = false; // true = phase éliminatoire, pas de changement d'équipes
   @Output() onClose  = new EventEmitter<void>();
   @Output() onSaved  = new EventEmitter<MatchDetailDTO>();
 

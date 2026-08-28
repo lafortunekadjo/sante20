@@ -430,6 +430,16 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
                 <span>Format</span>
                 <strong>{{ formatLabel(configForm.get('format')?.value) }}</strong>
               </div>
+              <div class="recap-row" *ngIf="form.get('lieu')?.value">
+                <span>Lieu</span>
+                <strong>{{ form.get('lieu')?.value }}</strong>
+              </div>
+              <div class="recap-row">
+                <span>Visibilité</span>
+                <strong>
+                  {{ form.get('publique')?.value ? '🌐 Publique' : '🔒 Privée' }}
+                </strong>
+              </div>
               <div class="recap-row" *ngIf="form.get('dateDebut')?.value">
                 <span>Date début</span>
                 <strong>{{ form.get('dateDebut')?.value | date:'dd/MM/yyyy' }}</strong>
@@ -584,6 +594,9 @@ export class CompetitionCreateComponent implements OnInit {
       dateFin:                [''],
       dateLimiteInscription:  [''],
       organisateurNom:        [''],
+      logoUrl:                [''],
+      lieu:                   [''],
+      publique:               [true],
       config: this.fb.group({
         format:                         [FormatCompetition.ALLER_RETOUR],
         pointsVictoire:                 [3],

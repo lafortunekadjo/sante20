@@ -1,0 +1,174 @@
+<div class="modal-overlay" (click)="closed.emit()">
+  <div class="modal-tirage" (click)="$event.stopPropagation()">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <div class="modal-tirage__header">
+      <div class="modal-tirage__title">
+        <i class="material-icons">emoji_events</i>
+        <div>
+          <h2>Tirage de la phase finale</h2>
+          <p>Choisissez les confrontations pour les matchs à élimination directe</p>
+        </div>
+      </div>
+      <button class="btn-close" (click)="closed.emit()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <!-- ── Loading ────────────────────────────────────────── -->
+    <div class="modal-tirage__loading" *ngIf="loading()">
+      <div class="spinner"></div>
+      Chargement des qualifiés...
+    </div>
+
+    <!-- ── Contenu ────────────────────────────────────────── -->
+    <div class="modal-tirage__body" *ngIf="!loading() && qualifies()">
+
+      <!-- Qualifiés par groupe (résumé) -->
+      <div class="qualifies-section">
+        <h3 class="section-label">
+          <i class="material-icons">groups</i>
+          Qualifiés
+        </h3>
+        <div class="qualifies-groupes">
+          <div class="qualifie-groupe"
+               *ngFor="let g of qualifies()!.groupes">
+            <div class="qualifie-groupe__nom">{{ g.nomGroupe }}</div>
+            <div class="qualifie-item"
+                 *ngFor="let q of g.qualifies">
+              <span class="qualifie-rang">{{ rangLabel(q.rang) }}</span>
+              <div class="qualifie-logo">
+                <img *ngIf="q.logoUrl" [src]="q.logoUrl"/>
+                <span *ngIf="!q.logoUrl">{{ getInitials(q.nomEquipe) }}</span>
+              </div>
+              <span class="qualifie-nom">{{ q.nomEquipe }}</span>
+              <span class="qualifie-pts">{{ q.points }}pts</span>
+              <span class="qualifie-ga"
+                    [class.positive]="q.goalAverage > 0"
+                    [class.negative]="q.goalAverage < 0">
+                {{ q.goalAverage > 0 ? '+' : '' }}{{ q.goalAverage }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Tirage -->
+      <div class="tirage-section">
+        <div class="tirage-section__header">
+          <h3 class="section-label">
+            <i class="material-icons">shuffle</i>
+            Confrontations
+          </h3>
+          <button class="btn-ghost btn-sm"
+                  (click)="resetSuggere()"
+                  title="Revenir au schéma suggéré">
+            <i class="material-icons">refresh</i>
+            Schéma CAF
+          </button>
+        </div>
+
+        <!-- Paires -->
+        <div class="paires-list">
+          <div class="paire-row"
+               *ngFor="let paire of paires(); let i = index">
+
+            <div class="paire-row__num">{{ i + 1 }}</div>
+
+            <!-- Équipe 1 -->
+            <div class="paire-row__side">
+              <select class="paire-select"
+                      [ngModel]="paire.participant1Id"
+                      (ngModelChange)="setPaire(i, 1, $event ? +$event : null)"
+                      [class.paire-select--error]="paire.participant1Id === paire.participant2Id
+                                                   && paire.participant1Id">
+                <option [ngValue]="null">— Équipe 1 —</option>
+                <option *ngFor="let q of tousQualifies()"
+                        [ngValue]="q.id"
+                        [disabled]="idsUtilises(i, 1).has(q.id)">
+                  {{ q.nomEquipe }}
+                </option>
+              </select>
+            </div>
+
+            <div class="paire-row__vs">vs</div>
+
+            <!-- Équipe 2 -->
+            <div class="paire-row__side">
+              <select class="paire-select"
+                      [ngModel]="paire.participant2Id"
+                      (ngModelChange)="setPaire(i, 2, $event ? +$event : null)"
+                      [class.paire-select--error]="paire.participant1Id === paire.participant2Id
+                                                   && paire.participant2Id">
+                <option [ngValue]="null">— Équipe 2 —</option>
+                <option *ngFor="let q of tousQualifies()"
+                        [ngValue]="q.id"
+                        [disabled]="idsUtilises(i, 2).has(q.id)">
+                  {{ q.nomEquipe }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Supprimer paire -->
+            <button class="btn-delete-paire"
+                    (click)="supprimerPaire(i)"
+                    title="Supprimer cette confrontation">
+              <i class="material-icons">remove_circle_outline</i>
+            </button>
+          </div>
+
+          <!-- Ajouter paire -->
+          <button class="btn-add-paire"
+                  (click)="ajouterPaire()">
+            <i class="material-icons">add_circle_outline</i>
+            Ajouter une confrontation
+          </button>
+        </div>
+
+        <!-- Erreurs de validation -->
+        <div class="validation-errors" *ngIf="paires().length">
+
+          <div class="validation-error"
+               *ngIf="hasMemesEquipes()">
+            <i class="material-icons">warning</i>
+            Une équipe ne peut pas s'affronter elle-même
+          </div>
+
+          <div class="validation-error"
+               *ngIf="hasPairesIncompletes()">
+            <i class="material-icons">info</i>
+            Toutes les confrontations doivent avoir 2 équipes
+          </div>
+
+          <div class="validation-ok" *ngIf="canValider()">
+            <i class="material-icons">check_circle</i>
+            Tirage valide — {{ paires().length }} confrontation(s)
+          </div>
+        </div>
+      </div>
+
+      <!-- Erreur API -->
+      <div class="alert alert--danger" *ngIf="error()">
+        <i class="material-icons">error_outline</i>
+        {{ error() }}
+      </div>
+
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <div class="modal-tirage__footer" *ngIf="!loading()">
+      <button class="btn-ghost" (click)="closed.emit()">
+        Annuler
+      </button>
+      <button class="btn-primary"
+              [disabled]="!canValider() || saving()"
+              (click)="valider()">
+        <i class="material-icons">rocket_launch</i>
+        {{ saving() ? 'Lancement...' : 'Valider et lancer la phase finale' }}
+      </button>
+    </div>
+
+  </div>
+</div>

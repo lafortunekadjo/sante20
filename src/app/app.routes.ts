@@ -170,6 +170,17 @@ export const routes: Routes = [
         .then(m => m.CompetitionListComponent)
     },
     {
+      path: 'public',
+      loadComponent: () => import('./modules/competition/components/competitions-publiques/competitions-publiques.component')
+        .then(m => m.CompetitionsPubliquesComponent)
+    },
+     {
+      path: ':id/public',
+      loadComponent: () => import('./modules/competition/components/competition-publique/competition-publique.component')
+        .then(m => m.CompetitionPubliqueComponent)
+    },
+   
+    {
       path: 'new',
       loadComponent: () => import('./modules/competition/components/competition-create/competition-create.component')
         .then(m => m.CompetitionCreateComponent)

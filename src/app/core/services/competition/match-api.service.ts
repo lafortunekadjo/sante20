@@ -28,14 +28,20 @@ export class MatchApiService {
       `${this.base}/${competitionId}/matchs`, { params: p });
   }
 
+getMatchsByPhase(competitionId: number, phaseId: number): Observable<MatchDTO[]> {
+  return this.http.get<MatchDTO[]>(
+    `${environment.apiUrl}/competitions/${competitionId}/matchs/phases/${phaseId}`
+  );
+}
+
    // ── Bracket — modifier les équipes d'un noeud ───────────
   modifierNoeudBracket(
     competitionId: number,
     noeudId: number,
-    dto: { participant1Nom?: string; participant2Nom?: string }
+    dto: any
   ): Observable<void> {
     return this.http.patch<void>(
-      `${environment.apiUrl}/competitions/${competitionId}/bracket/noeuds/${noeudId}`,
+      `${environment.apiUrl}/competitions/${competitionId}/matchs/bracket/noeuds/${noeudId}`,
       dto
     );
   }

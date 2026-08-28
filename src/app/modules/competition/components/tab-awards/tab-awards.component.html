@@ -1,0 +1,395 @@
+<div class="awards">
+
+  <!-- ── Loading ─────────────────────────────────────────── -->
+  <div class="awards__loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    Calcul des statistiques...
+  </div>
+
+  <ng-container *ngIf="!loading() && stats()">
+
+    <!-- ══ AWARDS — désignation manuelle ════════════════════ -->
+    <section class="awards-section">
+      <div class="awards-section__header">
+        <h3 class="awards-section__title">
+          <i class="material-icons">emoji_events</i>
+          Palmarès & Distinctions
+        </h3>
+        <p class="awards-section__hint" *ngIf="canEdit()">
+          Cliquez sur ✏️ pour désigner
+        </p>
+      </div>
+
+      <!-- Résultats sportifs -->
+      <div class="awards-group-label">Résultats sportifs</div>
+      <div class="awards-grid">
+        <div class="award-card"
+             *ngFor="let type of awardTypesSportifs"
+             [class.award-card--assigned]="getAward(type.type)">
+          <div class="award-card__emoji">{{ type.emoji }}</div>
+          <div class="award-card__info">
+            <div class="award-card__label">{{ type.label }}</div>
+            <ng-container *ngIf="getAward(type.type) as award">
+              <div class="award-card__value">
+                {{ award.nomJoueur ?? award.nomEquipeCollectif }}
+              </div>
+              <div class="award-card__comment" *ngIf="award.commentaire">
+                {{ award.commentaire }}
+              </div>
+            </ng-container>
+            <div class="award-card__empty" *ngIf="!getAward(type.type)">
+              Non désigné
+            </div>
+          </div>
+          <div class="award-card__actions" *ngIf="canEdit()">
+            <button class="btn-award-edit"
+                    (click)="ouvrirModal(type)" title="Désigner">
+              <i class="material-icons">edit</i>
+            </button>
+            <button class="btn-award-delete"
+                    *ngIf="getAward(type.type)"
+                    (click)="supprimerAward(getAward(type.type)!)"
+                    title="Retirer">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distinctions individuelles -->
+      <div class="awards-group-label" style="margin-top:16px">
+        Distinctions individuelles
+      </div>
+      <div class="awards-grid">
+        <div class="award-card"
+             *ngFor="let type of awardTypesIndividuels"
+             [class.award-card--assigned]="getAward(type.type)">
+          <div class="award-card__emoji">{{ type.emoji }}</div>
+          <div class="award-card__info">
+            <div class="award-card__label">{{ type.label }}</div>
+            <ng-container *ngIf="getAward(type.type) as award">
+              <div class="award-card__value">
+                {{ award.nomJoueur }}
+                <span class="award-card__equipe" *ngIf="award.nomEquipe">
+                  — {{ award.nomEquipe }}
+                </span>
+                <span class="award-card__valeur" *ngIf="award.valeur">
+                  ({{ award.valeur }})
+                </span>
+              </div>
+              <div class="award-card__comment" *ngIf="award.commentaire">
+                {{ award.commentaire }}
+              </div>
+            </ng-container>
+            <div class="award-card__empty" *ngIf="!getAward(type.type)">
+              Non désigné
+            </div>
+          </div>
+          <div class="award-card__actions" *ngIf="canEdit()">
+            <button class="btn-award-edit"
+                    (click)="ouvrirModal(type)" title="Désigner">
+              <i class="material-icons">edit</i>
+            </button>
+            <button class="btn-award-delete"
+                    *ngIf="getAward(type.type)"
+                    (click)="supprimerAward(getAward(type.type)!)"
+                    title="Retirer">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distinctions collectives -->
+      <div class="awards-group-label" style="margin-top:16px">
+        Distinctions collectives
+      </div>
+      <div class="awards-grid">
+        <div class="award-card"
+             *ngFor="let type of awardTypesCollectifs"
+             [class.award-card--assigned]="getAward(type.type)">
+          <div class="award-card__emoji">{{ type.emoji }}</div>
+          <div class="award-card__info">
+            <div class="award-card__label">{{ type.label }}</div>
+            <ng-container *ngIf="getAward(type.type) as award">
+              <div class="award-card__value">
+                {{ award.nomEquipeCollectif }}
+                <span class="award-card__valeur" *ngIf="award.valeur">
+                  ({{ award.valeur }})
+                </span>
+              </div>
+              <div class="award-card__comment" *ngIf="award.commentaire">
+                {{ award.commentaire }}
+              </div>
+            </ng-container>
+            <div class="award-card__empty" *ngIf="!getAward(type.type)">
+              Non désigné
+            </div>
+          </div>
+          <div class="award-card__actions" *ngIf="canEdit()">
+            <button class="btn-award-edit"
+                    (click)="ouvrirModal(type)" title="Désigner">
+              <i class="material-icons">edit</i>
+            </button>
+            <button class="btn-award-delete"
+                    *ngIf="getAward(type.type)"
+                    (click)="supprimerAward(getAward(type.type)!)"
+                    title="Retirer">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="awards-divider"></div>
+
+    <!-- ══ STATS — référence pour la désignation ════════════ -->
+    <section class="awards-section">
+      <h3 class="awards-section__title">
+        <i class="material-icons">bar_chart</i>
+        Statistiques de référence
+      </h3>
+
+      <div class="stats-grid">
+
+        <!-- Top buteurs -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>⚽</span> Top buteurs
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let j of stats()!.topButeurs; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-avatar">{{ getInitials(j.nom) }}</div>
+              <div class="stat-info">
+                <div class="stat-nom">{{ nomComplet(j) }}</div>
+                <div class="stat-equipe">{{ j.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ j.valeur }}</span>
+                <span class="stat-unit">but{{ j.valeur > 1 ? 's' : '' }}</span>
+              </div>
+            </div>
+            <div class="stat-empty" *ngIf="!stats()!.topButeurs?.length">
+              Aucune donnée
+            </div>
+          </div>
+        </div>
+
+        <!-- Top passeurs -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>🅰️</span> Top passeurs
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let j of stats()!.topPasseurs; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-avatar">{{ getInitials(j.nom) }}</div>
+              <div class="stat-info">
+                <div class="stat-nom">{{ nomComplet(j) }}</div>
+                <div class="stat-equipe">{{ j.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ j.valeur }}</span>
+                <span class="stat-unit">passe{{ j.valeur > 1 ? 's' : '' }}</span>
+              </div>
+            </div>
+            <div class="stat-empty" *ngIf="!stats()!.topPasseurs?.length">
+              Aucune donnée
+            </div>
+          </div>
+        </div>
+
+        <!-- Top gardiens -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>🧤</span> Gardiens (clean sheets)
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let j of stats()!.topGardiens; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-avatar">{{ getInitials(j.nom) }}</div>
+              <div class="stat-info">
+                <div class="stat-nom">{{ nomComplet(j) }}</div>
+                <div class="stat-equipe">{{ j.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ j.valeur }}</span>
+                <span class="stat-unit">CS</span>
+              </div>
+            </div>
+            <div class="stat-empty" *ngIf="!stats()!.topGardiens?.length">
+              Aucune donnée
+            </div>
+          </div>
+        </div>
+
+        <!-- Attaques -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>🔥</span> Meilleures attaques
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let e of stats()!.meilleuresAttaques; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-info">
+                <div class="stat-nom">{{ e.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ e.valeur }}</span>
+                <span class="stat-unit">buts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Défenses -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>🛡️</span> Meilleures défenses
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let e of stats()!.meilleuresDefenses; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-info">
+                <div class="stat-nom">{{ e.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ e.valeur }}</span>
+                <span class="stat-unit">enc.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fair-play -->
+        <div class="stat-block">
+          <div class="stat-block__title">
+            <span>🟨</span> Fair-play
+          </div>
+          <div class="stat-list">
+            <div class="stat-row"
+                 *ngFor="let e of stats()!.fairPlay; let i = index"
+                 [class.stat-row--top]="i === 0">
+              <span class="stat-rank">{{ i + 1 }}</span>
+              <div class="stat-info">
+                <div class="stat-nom">{{ e.nomEquipe }}</div>
+              </div>
+              <div class="stat-valeur">
+                <span class="stat-num">{{ e.valeur }}</span>
+                <span class="stat-unit">pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </ng-container>
+
+  <!-- ══ MODAL ATTRIBUTION ═════════════════════════════════════ -->
+  <div class="modal-overlay"
+       *ngIf="modalAward()"
+       (click)="fermerModal()">
+    <div class="modal-award" (click)="$event.stopPropagation()">
+
+      <div class="modal-award__header">
+        <h3>
+          <span class="modal-award__emoji">{{ modalAward()!.emoji }}</span>
+          Désigner — {{ modalAward()!.label }}
+        </h3>
+        <button class="btn-close" (click)="fermerModal()">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+
+      <div class="modal-award__body">
+
+        <!-- Stats de référence pour ce type -->
+        <div class="modal-award__ref" *ngIf="statsRef().length">
+          <div class="modal-award__ref-title">Statistiques de référence</div>
+          <div class="modal-award__ref-list">
+            <div class="ref-row"
+                 *ngFor="let r of statsRef(); let i = index"
+                 (click)="selectionner(r.id)"
+                 [class.ref-row--selected]="selectedId() === r.id">
+              <span class="ref-rank">{{ i + 1 }}</span>
+              <div class="ref-info">
+                <span class="ref-nom">{{ r.nom }}</span>
+                <span class="ref-equipe" *ngIf="r.equipe">{{ r.equipe }}</span>
+              </div>
+              <span class="ref-val">{{ r.valeur }}</span>
+              <i class="material-icons ref-check"
+                 *ngIf="selectedId() === r.id">check_circle</i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recherche si pas de stats ou autre choix -->
+        <div class="award-search" style="margin-top:10px">
+          <i class="material-icons">search</i>
+          <input [(ngModel)]="searchNom"
+                 placeholder="Chercher parmi tous les candidats..."
+                 class="award-search__input"/>
+        </div>
+
+        <div class="award-candidats" *ngIf="searchNom">
+          <div class="award-candidat"
+               *ngFor="let c of candidats()"
+               [class.award-candidat--selected]="selectedId() === (c.participantId ?? c.membreEquipeId)"
+               (click)="selectionner(c.participantId ?? c.membreEquipeId)">
+            <div class="award-candidat__avatar">
+              {{ getInitials(c.nomEquipe ?? c.nom) }}
+            </div>
+            <div class="award-candidat__info">
+              <div class="award-candidat__nom">
+                {{ c.nomJoueur ?? (c.prenom ? c.prenom + ' ' + c.nom : c.nom) ?? c.nomEquipe }}
+              </div>
+              <div class="award-candidat__equipe"
+                   *ngIf="c.nomEquipe && !modalAward()!.collectif">
+                {{ c.nomEquipe }}
+              </div>
+            </div>
+            <i class="material-icons award-candidat__check"
+               *ngIf="selectedId() === (c.participantId ?? c.membreEquipeId)">
+              check_circle
+            </i>
+          </div>
+        </div>
+
+        <!-- Commentaire -->
+        <div class="form-field" style="margin-top:12px">
+          <label class="form-label">Commentaire (optionnel)</label>
+          <input [(ngModel)]="commentaire"
+                 class="form-input"
+                 placeholder="Ex: 4 buts en finale..."/>
+        </div>
+
+      </div>
+
+      <div class="modal-award__footer">
+        <button class="btn-ghost" (click)="fermerModal()">Annuler</button>
+        <button class="btn-primary"
+                [disabled]="!selectedId() || savingAward()"
+                (click)="attribuer()">
+          <i class="material-icons">emoji_events</i>
+          {{ savingAward() ? 'Enregistrement...' : 'Attribuer' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

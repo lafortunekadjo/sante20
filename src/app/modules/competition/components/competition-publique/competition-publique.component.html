@@ -1,0 +1,502 @@
+<div class="pub">
+
+  <div class="pub__loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    Chargement...
+  </div>
+
+  <ng-container *ngIf="!loading() && competition()">
+
+    <!-- ══ HERO ═════════════════════════════════════════════ -->
+    <div class="pub-hero">
+      <div class="pub-hero__content">
+        <div class="pub-hero__top">
+          <div class="pub-hero__logo">
+            <img *ngIf="competition()!.logoUrl" [src]="competition()!.logoUrl"/>
+            <i *ngIf="!competition()!.logoUrl" class="material-icons">emoji_events</i>
+          </div>
+          <span class="pub-hero__statut"
+                [class]="'statut-' + competition()!.statut.toLowerCase()">
+            {{ statutLabel(competition()!.statut) }}
+          </span>
+        </div>
+
+        <h1 class="pub-hero__nom">{{ competition()!.nom }}</h1>
+        <p class="pub-hero__desc" *ngIf="competition()!.description">
+          {{ competition()!.description }}
+        </p>
+
+        <div class="pub-hero__meta">
+          <span *ngIf="competition()!.organisateurNom">
+            <i class="material-icons">person</i>
+            {{ competition()!.organisateurNom }}
+          </span>
+          <span *ngIf="competition()!.dateDebut">
+            <i class="material-icons">calendar_today</i>
+            {{ competition()!.dateDebut | date:'dd MMM yyyy' }}
+            <ng-container *ngIf="competition()!.dateFin">
+              — {{ competition()!.dateFin | date:'dd MMM yyyy' }}
+            </ng-container>
+          </span>
+          <span>
+            <i class="material-icons">groups</i>
+            {{ competition()!.nombreParticipants }} équipes
+          </span>
+          <span *ngIf="competition()!.format">
+            <i class="material-icons">sports_soccer</i>
+            {{ formatLabel(competition()!.format!) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TABS PRINCIPAL ════════════════════════════════════ -->
+    <div class="pub-tabs">
+      <div class="pub-tabs__nav">
+        <button class="pub-tab-btn"
+                [class.active]="activeTab() === 'apercu'"
+                (click)="activeTab.set('apercu')">
+          <i class="material-icons">dashboard</i> Aperçu
+        </button>
+        <button class="pub-tab-btn"
+                [class.active]="activeTab() === 'classement'"
+                (click)="activeTab.set('classement')">
+          <i class="material-icons">table_chart</i> Classement
+        </button>
+        <button class="pub-tab-btn"
+                [class.active]="activeTab() === 'resultats'"
+                (click)="activeTab.set('resultats')">
+          <i class="material-icons">sports_soccer</i> Matchs
+        </button>
+        <button class="pub-tab-btn"
+                *ngIf="stats()?.awards?.length"
+                [class.active]="activeTab() === 'palmares'"
+                (click)="activeTab.set('palmares')">
+          <i class="material-icons">emoji_events</i> Palmarès
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB APERÇU                                        -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div class="pub-tab-content" *ngIf="activeTab() === 'apercu'">
+
+        <!-- Stats globales -->
+        <div class="pub-stats-row">
+          <div class="pub-stat">
+            <div class="pub-stat__num">{{ competition()!.nombreParticipants }}</div>
+            <div class="pub-stat__label">Équipes</div>
+          </div>
+          <div class="pub-stat" *ngIf="stats()?.topButeurs?.length">
+            <div class="pub-stat__num">{{ stats().topButeurs[0]?.valeur ?? 0 }}</div>
+            <div class="pub-stat__label">Buts (record)</div>
+          </div>
+          <div class="pub-stat">
+            <div class="pub-stat__num">{{ tousMatchs().length }}</div>
+            <div class="pub-stat__label">Matchs joués</div>
+          </div>
+        </div>
+
+        <!-- Meilleur buteur -->
+        <div class="pub-section" *ngIf="stats()?.topButeurs?.length">
+          <h3 class="pub-section__title">⚽ Top buteurs</h3>
+          <div class="pub-top-list">
+            <div class="pub-top-row"
+                 *ngFor="let j of stats()!.topButeurs.slice(0,5); let i = index"
+                 [class.pub-top-row--gold]="i === 0">
+              <span class="pub-top-rank">{{ i + 1 }}</span>
+              <div class="pub-top-avatar">{{ getInitials(j.nom) }}</div>
+              <div class="pub-top-info">
+                <div class="pub-top-nom">{{ j.prenom }} {{ j.nom }}</div>
+                <div class="pub-top-equipe">{{ j.nomEquipe }}</div>
+              </div>
+              <div class="pub-top-val">
+                <span class="pub-top-num">{{ j.valeur }}</span>
+                <span class="pub-top-unit">buts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prochain match -->
+        <div class="pub-section" *ngIf="hasProchainMatchs()">
+          <h3 class="pub-section__title">📅 Prochains matchs</h3>
+          <div class="pub-matchs-mini">
+            <div class="pub-match-mini"
+                 *ngFor="let m of prochainMatchs()">
+              <div class="pub-match-mini__header">
+                <span class="pub-match-mini__label">
+                  {{ m.tourLabel ?? m.journeeNom ?? m.pouleNom }}
+                </span>
+                <span class="pub-match-mini__date" *ngIf="m.dateHeure">
+                  {{ m.dateHeure | date:'dd/MM HH:mm' }}
+                </span>
+              </div>
+              <div class="pub-match-mini__teams">
+                <span class="pub-match-mini__team">{{ m.domicileNom ?? '?' }}</span>
+                <span class="pub-match-mini__vs">vs</span>
+                <span class="pub-match-mini__team">{{ m.exterieurNom ?? '?' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Awards si terminée -->
+        <div class="pub-section"
+             *ngIf="stats()?.awards?.length">
+          <h3 class="pub-section__title">🏆 Palmarès</h3>
+          <div class="pub-awards-mini">
+            <div class="pub-award-mini"
+                 *ngFor="let a of stats()!.awards.slice(0,4)">
+              <span class="pub-award-mini__emoji">
+                {{ a.typeLabel?.split(' ')[0] }}
+              </span>
+              <div class="pub-award-mini__info">
+                <div class="pub-award-mini__type">
+                  {{ a.typeLabel?.split(' ').slice(1).join(' ') }}
+                </div>
+                <div class="pub-award-mini__nom">
+                  {{ a.nomJoueur ?? a.nomEquipeCollectif }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB CLASSEMENT                                    -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div class="pub-tab-content" *ngIf="activeTab() === 'classement'">
+
+        <!-- Sélecteur de phase -->
+        <div class="phase-selector"
+             *ngIf="competition()!.phases && competition()!.phases!.length > 1">
+          <button class="phase-btn"
+                  *ngFor="let p of competition()!.phases"
+                  [class.active]="phaseSelectId() === p.id"
+                  (click)="selectPhaseClassement(p)">
+            {{ phaseLabel(p) }}
+            <span class="phase-statut" [class]="'ps-' + p.statut.toLowerCase()">
+              {{ p.statut === 'EN_COURS' ? '🔴' : p.statut === 'TERMINE' ? '✓' : '⏳' }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Phase GROUPE → classements par poule -->
+        <ng-container *ngIf="phaseSelectionnee()?.type === 'GROUPE'">
+
+          <!-- Sélecteur de poule -->
+          <div class="poule-tabs"
+               *ngIf="phaseSelectionnee()!.poules!.length > 1">
+            <button class="poule-tab"
+                    *ngFor="let p of phaseSelectionnee()!.poules"
+                    [class.active]="pouleSelectId() === p.id"
+                    (click)="pouleSelectId.set(p.id)">
+              {{ p.nom }}
+            </button>
+          </div>
+
+          <!-- Tableau classement -->
+          <div class="classement-table" *ngIf="pouleSelectionnee()">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="th-equipe">Équipe</th>
+                  <th title="Matchs joués">J</th>
+                  <th title="Victoires">V</th>
+                  <th title="Nuls">N</th>
+                  <th title="Défaites">D</th>
+                  <th title="Buts pour">BP</th>
+                  <th title="Buts contre">BC</th>
+                  <th title="Goal average">Diff</th>
+                  <th title="Points">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of pouleSelectionnee()!.classement"
+                    [class.qualifie]="c.qualifie"
+                    [class.first]="c.position === 1">
+                  <td class="td-pos">
+                    <span class="pos-badge">{{ c.position }}</span>
+                  </td>
+                  <td class="td-equipe">
+                    <div class="equipe-cell">
+                      <div class="equipe-logo">
+                        <img *ngIf="c.logoUrl" [src]="c.logoUrl"/>
+                        <span *ngIf="!c.logoUrl">{{ getInitials(c.nomEquipe) }}</span>
+                      </div>
+                      <span class="equipe-nom">{{ c.nomEquipe }}</span>
+                      <span class="qualifie-badge" *ngIf="c.qualifie">Q</span>
+                    </div>
+                  </td>
+                  <td>{{ c.matchsJoues }}</td>
+                  <td>{{ c.victoires }}</td>
+                  <td>{{ c.nuls }}</td>
+                  <td>{{ c.defaites }}</td>
+                  <td>{{ c.butsPour }}</td>
+                  <td>{{ c.butsContre }}</td>
+                  <td [class.positive]="c.goalAverage > 0"
+                      [class.negative]="c.goalAverage < 0">
+                    {{ c.goalAverage > 0 ? '+' : '' }}{{ c.goalAverage }}
+                  </td>
+                  <td class="td-pts">{{ c.points }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="classement-legend">
+              <span class="legend-q">Q</span> Qualifié pour la phase suivante
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Phase ELIMINATOIRE → bracket -->
+        <ng-container *ngIf="phaseSelectionnee()?.type === 'ELIMINATOIRE'">
+          <div class="bracket-pub">
+
+            <div class="bracket-tour"
+                 *ngFor="let tour of bracketTours()">
+              <h4 class="bracket-tour__label">{{ tourLabel(tour) }}</h4>
+
+              <div class="bracket-matchs-tour">
+                <div class="bracket-match-pub"
+                     *ngFor="let n of bracketParTour().get(tour)"
+                     [class.bm--termine]="isTermine(n.match?.statut)"
+                     [class.bm--encours]="isEnCours(n.match?.statut)"
+                     [class.bm--3e]="n.typeNoeud === 'TROISIEME_PLACE'">
+
+                  <!-- Équipe 1 -->
+                  <div class="bm-team"
+                       [class.bm-team--win]="n.vainqueurNom === n.participant1Nom">
+                    <div class="bm-team__logo">
+                      {{ getInitials(n.participant1Nom) }}
+                    </div>
+                    <span class="bm-team__nom">
+                      {{ n.participant1Nom ?? 'À déterminer' }}
+                    </span>
+                    <span class="bm-team__score"
+                          *ngIf="n.match && (isTermine(n.match.statut) || isEnCours(n.match.statut))">
+                      {{ n.match.butsDomicile ?? 0 }}
+                    </span>
+                  </div>
+
+                  <!-- Séparateur -->
+                  <div class="bm-divider">
+                    <span *ngIf="!n.match || isAVenir(n.match?.statut)">–</span>
+                    <span *ngIf="isEnCours(n.match?.statut)"
+                          class="bm-live">LIVE</span>
+                    <ng-container *ngIf="n.match && isTermine(n.match.statut)">
+                      <span class="bm-score">
+                        {{ (n.match.butsDomicile ?? 0) + (n.match.butsDomicileProlong ?? 0) }}
+                        –
+                        {{ (n.match.butsExterieur ?? 0) + (n.match.butsExterieurProlong ?? 0) }}
+                      </span>
+                      <span class="bm-extra" *ngIf="hasExtra(n.match)">
+                        {{ extraLabel(n.match) }}
+                      </span>
+                    </ng-container>
+                  </div>
+
+                  <!-- Équipe 2 -->
+                  <div class="bm-team bm-team--away"
+                       [class.bm-team--win]="n.vainqueurNom === n.participant2Nom">
+                    <span class="bm-team__score"
+                          *ngIf="n.match && (isTermine(n.match.statut) || isEnCours(n.match.statut))">
+                      {{ n.match.butsExterieur ?? 0 }}
+                    </span>
+                    <span class="bm-team__nom">
+                      {{ n.participant2Nom ?? 'À déterminer' }}
+                    </span>
+                    <div class="bm-team__logo">
+                      {{ getInitials(n.participant2Nom) }}
+                    </div>
+                  </div>
+
+                  <!-- Date -->
+                  <div class="bm-date" *ngIf="n.match?.dateHeure">
+                    {{ n.match!.dateHeure | date:'dd/MM HH:mm' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bracket-empty" *ngIf="!bracketTours().length">
+              <i class="material-icons">hourglass_empty</i>
+              <p>Le bracket sera disponible après la phase de groupes</p>
+            </div>
+          </div>
+        </ng-container>
+
+      </div>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB MATCHS                                        -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div class="pub-tab-content" *ngIf="activeTab() === 'resultats'">
+
+        <!-- Filtres -->
+        <div class="matchs-filtres">
+
+          <!-- Filtre phase -->
+          <div class="matchs-filtres__phases"
+               *ngIf="competition()!.phases && competition()!.phases!.length > 1">
+            <button class="filtre-phase"
+                    [class.active]="phaseMatchId() === null"
+                    (click)="phaseMatchId.set(null)">
+              Tous
+            </button>
+            <button class="filtre-phase"
+                    *ngFor="let p of competition()!.phases"
+                    [class.active]="phaseMatchId() === p.id"
+                    (click)="phaseMatchId.set(p.id)">
+              {{ phaseLabel(p) }}
+            </button>
+          </div>
+
+          <!-- Filtre statut -->
+          <div class="matchs-filtres__statut">
+            <button class="filtre-btn"
+                    [class.active]="filtreMatch() === 'tous'"
+                    (click)="filtreMatch.set('tous')">
+              Tous
+            </button>
+            <button class="filtre-btn filtre-btn--live"
+                    [class.active]="filtreMatch() === 'en_cours'"
+                    (click)="filtreMatch.set('en_cours')">
+              🔴 Live
+            </button>
+            <button class="filtre-btn"
+                    [class.active]="filtreMatch() === 'a_venir'"
+                    (click)="filtreMatch.set('a_venir')">
+              À venir
+            </button>
+            <button class="filtre-btn"
+                    [class.active]="filtreMatch() === 'termines'"
+                    (click)="filtreMatch.set('termines')">
+              Terminés
+            </button>
+          </div>
+        </div>
+
+        <!-- Liste matchs groupés -->
+        <ng-container *ngFor="let key of matchsGroupesKeys()">
+          <div class="matchs-groupe">
+            <div class="matchs-groupe__label">{{ key }}</div>
+
+            <div class="match-pub"
+                 *ngFor="let m of matchsGroupes().get(key)">
+
+              <!-- Badge statut -->
+              <div class="match-pub__statut"
+                   [class.live]="isEnCours(m.statut)"
+                   [class.fini]="isTermine(m.statut)">
+                <span *ngIf="isEnCours(m.statut)">🔴 Live</span>
+                <span *ngIf="isTermine(m.statut)">Terminé</span>
+                <span *ngIf="isAVenir(m.statut) && m.dateHeure">
+                  {{ m.dateHeure | date:'dd/MM HH:mm' }}
+                </span>
+                <span *ngIf="isAVenir(m.statut) && !m.dateHeure">À planifier</span>
+              </div>
+
+              <!-- Équipes + score -->
+              <div class="match-pub__body">
+                <div class="match-pub__team match-pub__team--dom"
+                     [class.winner]="m.butsDomicile! > m.butsExterieur!
+                                     && isTermine(m.statut)">
+                  <div class="match-pub__logo">
+                    <img *ngIf="m.domicileLogo" [src]="m.domicileLogo"/>
+                    <span *ngIf="!m.domicileLogo">{{ getInitials(m.domicileNom) }}</span>
+                  </div>
+                  <span class="match-pub__nom">{{ m.domicileNom ?? '?' }}</span>
+                </div>
+
+                <div class="match-pub__score">
+                  <ng-container *ngIf="isTermine(m.statut) || isEnCours(m.statut)">
+                    <span class="score-normal">
+                      {{ (m.butsDomicile ?? 0) + (m.butsDomicileProlong ?? 0) }}
+                      –
+                      {{ (m.butsExterieur ?? 0) + (m.butsExterieurProlong ?? 0) }}
+                    </span>
+                    <span class="score-extra" *ngIf="hasExtra(m)">
+                      {{ extraLabel(m) }}
+                    </span>
+                  </ng-container>
+                  <span *ngIf="isAVenir(m.statut)" class="match-pub__vs">vs</span>
+                </div>
+
+                <div class="match-pub__team match-pub__team--ext"
+                     [class.winner]="m.butsExterieur! > m.butsDomicile!
+                                     && isTermine(m.statut)">
+                  <span class="match-pub__nom">{{ m.exterieurNom ?? '?' }}</span>
+                  <div class="match-pub__logo">
+                    <img *ngIf="m.exterieurLogo" [src]="m.exterieurLogo"/>
+                    <span *ngIf="!m.exterieurLogo">{{ getInitials(m.exterieurNom) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stade -->
+              <div class="match-pub__stade" *ngIf="m.stadeNom">
+                <i class="material-icons">stadium</i>
+                {{ m.stadeNom }}
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Vide -->
+        <div class="matchs-empty" *ngIf="!tousMatchs().length">
+          <i class="material-icons">sports_soccer</i>
+          <p>Aucun match disponible</p>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB PALMARÈS                                      -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div class="pub-tab-content" *ngIf="activeTab() === 'palmares'">
+        <div class="pub-awards-full">
+          <div class="pub-award-full" *ngFor="let a of stats()?.awards">
+            <span class="pub-award-full__emoji">
+              {{ a.typeLabel?.split(' ')[0] }}
+            </span>
+            <div class="pub-award-full__info">
+              <div class="pub-award-full__type">
+                {{ a.typeLabel?.split(' ').slice(1).join(' ') }}
+              </div>
+              <div class="pub-award-full__nom">
+                {{ a.nomJoueur ?? a.nomEquipeCollectif }}
+              </div>
+              <div class="pub-award-full__equipe" *ngIf="a.nomEquipe">
+                {{ a.nomEquipe }}
+              </div>
+              <div class="pub-award-full__comment" *ngIf="a.commentaire">
+                "{{ a.commentaire }}"
+              </div>
+            </div>
+            <div class="pub-award-full__val" *ngIf="a.valeur">
+              {{ a.valeur }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="pub-footer">
+      Propulsé par
+      <a href="https://my2-0.cloud" target="_blank">My2-0</a>
+    </div>
+
+  </ng-container>
+
+  <!-- Not found -->
+  <div class="pub-notfound" *ngIf="!loading() && !competition()">
+    <i class="material-icons">search_off</i>
+    <h2>Compétition introuvable</h2>
+    <a routerLink="/competitions" class="btn-primary">Voir toutes les compétitions</a>
+  </div>
+
+</div>

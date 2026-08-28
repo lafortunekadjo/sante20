@@ -31,6 +31,13 @@ export class CompetitionApiService {
   getTousLesGroupes(): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/groupes`);
   }
+
+    getPublicStats(competitionId: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiUrl}/public/competitions/${competitionId}/stats`
+    );
+  }
+ 
  
 
   // services/competition-api.service.ts — ajouts
@@ -167,4 +174,96 @@ fermerInscriptions(id: number): Observable<void> {
       `${environment.apiUrl}/competitions/${competitionId}/valider-tirage`, tirage
     );
   }
+
+ 
+  // ── Passer phase suivante ────────────────────────────────
+  passerPhaseSuivante(competitionId: number, tirage: any): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/passer-phase-suivante`,
+      tirage
+    );
+  }
+
+
+    // ── Phase finale — qualifiés + tirage ──────────────────
+  getQualifies(competitionId: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/qualifies`
+    );
+  }
+
+  // ── Awards / Distinctions ───────────────────────────────
+  getCompetitionStats(competitionId: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/awards/stats`
+    );
+  }
+ 
+  attribuerAward(competitionId: number, dto: any): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/awards`, dto
+    );
+  }
+ 
+  supprimerAward(competitionId: number, awardId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/awards/${awardId}`
+    );
+  }
+
+    // ── Vue publique (sans auth) ─────────────────────────────
+  getPublic(competitionId: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiUrl}/public/competitions/${competitionId}`
+    );
+  }
+
+  
+  // ── Accès staff ─────────────────────────────────────────
+  listerAcces(competitionId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/competitions/${competitionId}/acces`
+    );
+  }
+ 
+  donnerAcces(competitionId: number, dto: any): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/acces`, dto
+    );
+  }
+ 
+  revoquerAcces(competitionId: number, accesId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/acces/${accesId}`
+    );
+  }
+ 
+  mesCompetitions(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/competitions/acces/mes-competitions`
+    );
+  }
+
+  // ── Vue publique (sans auth) ─────────────────────────────
+  listerPublic(search?: string, statut?: string): Observable<any[]> {
+    let params = '';
+    if (search)  params += `?search=${search}`;
+    if (statut)  params += `${params ? '&' : '?'}statut=${statut}`;
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/public/competitions${params}`
+    );
+  }
+
+  getMonRole(competitionId: number): Observable<{ role: string }> {
+  return this.http.get<{ role: string }>(
+    `${environment.apiUrl}/competitions/${competitionId}/mon-role`
+  );
+}
+ 
+  // getPublic(competitionId: number): Observable<any> {
+  //   return this.http.get<any>(
+  //     `${environment.apiUrl}/public/competitions/${competitionId}`
+  //   );
+  // }
+ 
 }

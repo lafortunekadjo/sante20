@@ -1,0 +1,157 @@
+<div class="pub-list">
+
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <div class="pub-list__hero">
+    <div class="pub-list__hero-content">
+      <div class="pub-list__brand">
+        <i class="material-icons">sports_soccer</i>
+        My2-0
+      </div>
+      <h1 class="pub-list__hero-title">Compétitions</h1>
+      <p class="pub-list__hero-sub">
+        Suivez les compétitions en direct — résultats, classements et palmarès
+      </p>
+
+      <!-- Barre de recherche -->
+      <div class="pub-list__search">
+        <i class="material-icons">search</i>
+        <input [(ngModel)]="searchQuery"
+               placeholder="Rechercher une compétition, un organisateur..."
+               class="pub-list__search-input"/>
+        <button *ngIf="searchQuery"
+                (click)="searchQuery = ''"
+                class="pub-list__search-clear">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── CONTENU ───────────────────────────────────────────── -->
+  <div class="pub-list__body">
+
+    <!-- Stats globales -->
+    <div class="pub-list__counters" *ngIf="!loading() && competitions().length">
+      <button class="pub-counter"
+              [class.pub-counter--active]="filtreStatut() === ''"
+              (click)="filtreStatut.set('')">
+        <span class="pub-counter__num">{{ competitions().length }}</span>
+        <span class="pub-counter__label">Toutes</span>
+      </button>
+      <button class="pub-counter pub-counter--encours"
+              [class.pub-counter--active]="filtreStatut() === 'EN_COURS'"
+              (click)="filtreStatut.set(filtreStatut() === 'EN_COURS' ? '' : 'EN_COURS')">
+        <span class="pub-counter__dot"></span>
+        <span class="pub-counter__num">{{ nbEnCours() }}</span>
+        <span class="pub-counter__label">En cours</span>
+      </button>
+      <button class="pub-counter pub-counter--avenir"
+              [class.pub-counter--active]="filtreStatut() === 'BROUILLON'"
+              (click)="filtreStatut.set(filtreStatut() === 'BROUILLON' ? '' : 'BROUILLON')">
+        <span class="pub-counter__num">{{ nbAVenir() }}</span>
+        <span class="pub-counter__label">À venir</span>
+      </button>
+      <button class="pub-counter pub-counter--termine"
+              [class.pub-counter--active]="filtreStatut() === 'TERMINE'"
+              (click)="filtreStatut.set(filtreStatut() === 'TERMINE' ? '' : 'TERMINE')">
+        <span class="pub-counter__num">{{ nbTermines() }}</span>
+        <span class="pub-counter__label">Terminées</span>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="pub-list__loading" *ngIf="loading()">
+      <div class="spinner"></div>
+      Chargement des compétitions...
+    </div>
+
+    <!-- Grille des compétitions -->
+    <div class="pub-grid" *ngIf="!loading()">
+
+      <div class="pub-card"
+           *ngFor="let c of competitionsFiltrees()"
+           (click)="ouvrirCompetition(c)">
+
+        <!-- Badge statut -->
+        <div class="pub-card__statut"
+             [class]="'statut-' + c.statut.toLowerCase()">
+          <span class="statut-dot"></span>
+          {{ statutLabel(c.statut) }}
+        </div>
+
+        <!-- Logo + infos principales -->
+        <div class="pub-card__top">
+          <div class="pub-card__logo">
+            <img *ngIf="c.logoUrl" [src]="c.logoUrl"/>
+            <i *ngIf="!c.logoUrl" class="material-icons">emoji_events</i>
+          </div>
+          <div class="pub-card__main">
+            <h2 class="pub-card__nom">{{ c.nom }}</h2>
+            <p class="pub-card__desc" *ngIf="c.description">
+              {{ c.description | slice:0:80 }}{{ c.description?.length > 80 ? '...' : '' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Méta -->
+        <div class="pub-card__meta">
+          <span *ngIf="c.organisateurNom">
+            <i class="material-icons">person</i>
+            {{ c.organisateurNom }}
+          </span>
+          <span *ngIf="c.dateDebut">
+            <i class="material-icons">calendar_today</i>
+            {{ c.dateDebut | date:'dd/MM/yyyy' }}
+          </span>
+          <span>
+            <i class="material-icons">groups</i>
+            {{ c.nombreParticipants }} équipes
+          </span>
+          <span *ngIf="c.format">
+            <i class="material-icons">sports_soccer</i>
+            {{ formatLabel(c.format) }}
+          </span>
+        </div>
+
+        <!-- Footer carte -->
+        <div class="pub-card__footer">
+          <span class="pub-card__voir">
+            Voir les détails
+            <i class="material-icons">arrow_forward</i>
+          </span>
+        </div>
+
+      </div>
+
+      <!-- Aucun résultat -->
+      <div class="pub-empty"
+           *ngIf="!competitionsFiltrees().length && !loading()">
+        <i class="material-icons">search_off</i>
+        <p *ngIf="searchQuery || filtreStatut()">
+          Aucune compétition ne correspond à votre recherche
+        </p>
+        <p *ngIf="!searchQuery && !filtreStatut()">
+          Aucune compétition publique disponible pour l'instant
+        </p>
+        <button class="btn-ghost"
+                *ngIf="searchQuery || filtreStatut()"
+                (click)="searchQuery = ''; filtreStatut.set('')">
+          Effacer les filtres
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="pub-list__footer">
+      <span>Vous organisez une compétition ?</span>
+      <a routerLink="/auth/login" class="pub-list__footer-link">
+        Connectez-vous à My2-0
+        <i class="material-icons">arrow_forward</i>
+      </a>
+    </div>
+
+  </div>
+
+</div>

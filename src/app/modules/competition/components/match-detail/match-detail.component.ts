@@ -126,7 +126,19 @@ export class MatchDetailComponent implements OnInit {
       return nomA.localeCompare(nomB, 'fr');
     });
   }
+// totalDom(): number {
+//   const m = this.match()!;
+//   if (this.isTermine())
+//     return (m.butsDomicile ?? 0) + (m.butsDomicileProlong ?? 0);
+//   return this.scoreDepuisEvenements('domicile');
+// }
 
+// totalExt(): number {
+//   const m = this.match()!;
+//   if (this.isTermine())
+//     return (m.butsExterieur ?? 0) + (m.butsExterieurProlong ?? 0);
+//   return this.scoreDepuisEvenements('exterieur');
+// }
   // ── Computed joueurs ──────────────────────────────────────
   joueursDisponibles = computed(() => {
     const equipe = this.eventEquipe();
@@ -245,6 +257,7 @@ export class MatchDetailComponent implements OnInit {
   ngOnInit(): void {
     this.buildTempsForm();
     this.reload();
+    
   }
 
   buildTempsForm(): void {
@@ -261,29 +274,37 @@ export class MatchDetailComponent implements OnInit {
     });
   }
 
-  reload(): void {
-    this.api.getById(this.competitionId, this.matchId).subscribe(m => {
-      this.match.set(m);
-      this.buildJoueursListes(m);
-      this.buildTousJoueurs(m);
+reload(): void {
+  this.api.getById(this.competitionId, this.matchId).subscribe(m => {
+    this.match.set(m);
+    this.buildJoueursListes(m);
+    this.buildTousJoueurs(m);
 
-      console.log('compo domicile:', m.compositionDomicile);
-console.log('compo exterieur:', m.compositionExterieur);
-      // Pré-remplir commentaire et HDM si déjà saisis
-      if ((m as any).commentaire)    this.commentaireMatch = (m as any).commentaire;
-      if ((m as any).hommeDuMatchId) {
-        const hdm = this.tousJoueurs
-          .find(j => j.membreId === (m as any).hommeDuMatchId);
-        if (hdm) this.hommeDuMatch.set(hdm);
-      }
-      if (m.butsDomicile != null) {
-        this.scoreForm.patchValue({
-          butsDomicile:  m.butsDomicile,
-          butsExterieur: m.butsExterieur,
-        });
-      }
-    });
-  }
+    if ((m as any).commentaire) this.commentaireMatch = (m as any).commentaire;
+    if ((m as any).hommeDuMatchId) {
+      const hdm = this.tousJoueurs
+        .find(j => j.membreId === (m as any).hommeDuMatchId);
+      if (hdm) this.hommeDuMatch.set(hdm);
+    }
+
+    // FIX : pré-remplir TOUS les champs du score
+    if (m.butsDomicile != null) {
+      const avecProlong = m.butsDomicileProlong != null;
+      const avecTab     = m.tabDomicile != null;
+
+      this.scoreForm.patchValue({
+        butsDomicile:         m.butsDomicile,
+        butsExterieur:        m.butsExterieur,
+        butsDomicileProlong:  m.butsDomicileProlong ?? null,
+        butsExterieurProlong: m.butsExterieurProlong ?? null,
+        tabDomicile:          m.tabDomicile ?? null,
+        tabExterieur:         m.tabExterieur ?? null,
+        avecProlong,
+        avecTab,
+      });
+    }
+  });
+}
 
   private buildJoueursListes(m: MatchDetailDTO): void {
     // FIX : trier alphabétiquement après le mapping

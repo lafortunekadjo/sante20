@@ -33,10 +33,25 @@ export class BracketViewComponent implements OnChanges {
   private router   = inject(Router);
 
   // Edition d'un noeud
-  editNoeud      = signal<BracketNoeudDTO | null>(null);
-  savingNoeud    = signal(false);
-  editParticipant1Nom = '';
-  editParticipant2Nom = '';
+  editNoeud           = signal<BracketNoeudDTO | null>(null);
+  savingNoeud         = signal(false);
+  editParticipant1Id: number | null = null;
+  editParticipant2Id: number | null = null;
+
+  // Participants disponibles pour le tirage manuel
+  // = tous les participants du bracket (depuis les noeuds)
+  participantsDisponibles = computed(() => {
+    if (!this.bracket?.noeuds) return [];
+    const map = new Map<number, { id: number; nomEquipe: string }>();
+    for (const n of this.bracket.noeuds) {
+      if (n.participant1?.id) map.set(n.participant1.id,
+        { id: n.participant1.id, nomEquipe: n.participant1.nomEquipe ?? '' });
+      if (n.participant2?.id) map.set(n.participant2.id,
+        { id: n.participant2.id, nomEquipe: n.participant2.nomEquipe ?? '' });
+    }
+    return [...map.values()]
+      .sort((a, b) => a.nomEquipe.localeCompare(b.nomEquipe, 'fr'));
+  });
 
   // Ordre correct : du premier tour → finale
   // Les noeuds sont stockés racine=finale, feuilles=premiers matchs
@@ -98,17 +113,18 @@ export class BracketViewComponent implements OnChanges {
     return tours[niveau] ?? 'TOUR_PRELIMINAIRE';
   }
 
-  tourLabel(tour: string): string {
-    const m: Record<string, string> = {
-      TOUR_PRELIMINAIRE: 'Tours préliminaires',
-      SEIZIEME:          '32es de finale',
-      HUITIEME:          '16es de finale',
-      QUART_DE_FINALE:   'Quarts de finale',
-      DEMI_FINALE:       'Demi-finales',
-      FINALE:            'Finale'
-    };
-    return m[tour] ?? tour;
-  }
+tourLabel(tour: string): string {
+  const m: Record<string, string> = {
+    TOUR_PRELIMINAIRE: 'Tours préliminaires',
+    SEIZIEME:          '32es de finale',
+    HUITIEME:          '16es de finale',
+    QUART_DE_FINALE:   'Quarts de finale',
+    DEMI_FINALE:       'Demi-finales',
+    TROISIEME_PLACE:   'Match 3e place',  // ← manquant
+    FINALE:            'Finale'
+  };
+  return m[tour] ?? tour;
+}
 
   // ── Clic sur un match du bracket ─────────────────────────
   ouvrirMatch(noeud: BracketNoeudDTO): void {
@@ -122,8 +138,8 @@ export class BracketViewComponent implements OnChanges {
   // ── Edition du noeud (modifier les équipes) ───────────────
   ouvrirEditNoeud(noeud: BracketNoeudDTO): void {
     this.editNoeud.set(noeud);
-    this.editParticipant1Nom = noeud.participant1?.nomEquipe ?? '';
-    this.editParticipant2Nom = noeud.participant2?.nomEquipe ?? '';
+    this.editParticipant1Id = noeud.participant1?.id ?? null;
+    this.editParticipant2Id = noeud.participant2?.id ?? null;
   }
 
   fermerEdit(): void {
@@ -131,22 +147,24 @@ export class BracketViewComponent implements OnChanges {
   }
 
   sauvegarderNoeud(): void {
-    // Le tirage manuel modifie les équipes d'un noeud
-    // → PATCH /competitions/{id}/bracket/noeuds/{noeudId}
     const n = this.editNoeud();
     if (!n) return;
+    if (!this.editParticipant1Id || !this.editParticipant2Id) return;
+    if (this.editParticipant1Id === this.editParticipant2Id) {
+      alert('Une équipe ne peut pas s"affronter elle-même');
+      return;
+    }
     this.savingNoeud.set(true);
 
     this.matchApi.modifierNoeudBracket(
       this.competitionId, n.id, {
-        participant1Nom: this.editParticipant1Nom,
-        participant2Nom: this.editParticipant2Nom
+        participant1Id: this.editParticipant1Id,
+        participant2Id: this.editParticipant2Id
       }
     ).subscribe({
       next: () => {
         this.savingNoeud.set(false);
         this.fermerEdit();
-        // Signaler au parent de recharger
         this.matchClicked.emit(undefined as any);
       },
       error: () => this.savingNoeud.set(false)
@@ -182,5 +200,35 @@ export class BracketViewComponent implements OnChanges {
 
   isBye(noeud: BracketNoeudDTO): boolean {
     return noeud.bye === true;
+  }
+
+  // ── Score avec prolongation / TAB ─────────────────────────
+  scoreDom(n: BracketNoeudDTO): number {
+    const m = n.matchAller as any;
+    if (!m) return 0;
+    return (m.butsDomicile ?? 0) + (m.butsDomicileProlong ?? 0);
+  }
+ 
+  scoreExt(n: BracketNoeudDTO): number {
+    const m = n.matchAller as any;
+    if (!m) return 0;
+    return (m.butsExterieur ?? 0) + (m.butsExterieurProlong ?? 0);
+  }
+ 
+  hasExtra(n: BracketNoeudDTO): boolean {
+    const m = n.matchAller as any;
+    if (!m || m.statut !== 'TERMINE') return false;
+    return (m.tabDomicile !== null && m.tabDomicile !== undefined)
+        || (m.butsDomicileProlong !== null && m.butsDomicileProlong !== undefined);
+  }
+ 
+  extraLabel(n: BracketNoeudDTO): string {
+    const m = n.matchAller as any;
+    if (!m) return '';
+    if (m.tabDomicile !== null && m.tabDomicile !== undefined)
+      return `TAB ${m.tabDomicile}–${m.tabExterieur}`;
+    if (m.butsDomicileProlong !== null && m.butsDomicileProlong !== undefined)
+      return 'ap';
+    return '';
   }
 }

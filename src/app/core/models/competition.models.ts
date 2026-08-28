@@ -294,6 +294,12 @@ export interface MatchDetailDTO extends MatchDTO {
   tempsAdditionnelP1?: number;
   tempsAdditionnelP2?: number;
   conditions?: string;
+   butsDomicile?:         number;
+  butsExterieur?:        number;
+  butsDomicileProlong?:  number;  // ← existe ?
+  butsExterieurProlong?: number;  // ← existe ?
+  tabDomicile?:          number;  // ← existe ?
+  tabExterieur?:         number;  // ← existe ?
 }
 
 export interface ResultatDTO {

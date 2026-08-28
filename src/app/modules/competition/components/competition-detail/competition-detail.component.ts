@@ -14,9 +14,14 @@ import { TabPhasesComponent } from '../tab-phases/tab-phases.component';
 import { TabResumeComponent } from '../tab-resume/tab-resume.component';
 import { TabStatistiquesComponent } from '../tab-statistiques/tab-statistiques.component';
 import { TabTirageComponent } from '../../component/tab-tirage/tab-tirage.component';
+import { TabAwardsComponent } from '../tab-awards/tab-awards.component';
+import { TabAccesComponent } from '../tab-acces/tab-acces.component';
 
 
-type Tab = 'resume' | 'participants' |'tirage' | 'phases' | 'statistiques';
+type Tab = 'resume' | 'participants' | 'tirage' | 'phases' | 'statistiques' | 'awards' | 'acces';
+type RoleCompetition =
+  'RESPONSABLE' | 'SECRETAIRE' | 'ARBITRE' | 'MEDECIN' |
+  'KINESITHERAPEUTE' | 'COMMISSAIRE' | 'DELEGUE' | 'OBSERVATEUR';
 
 @Component({
   selector: 'app-competition-detail',
@@ -24,7 +29,7 @@ type Tab = 'resume' | 'participants' |'tirage' | 'phases' | 'statistiques';
   imports: [
     CommonModule, RouterModule, ReactiveFormsModule,
     TabResumeComponent, TabParticipantsComponent,
-    TabPhasesComponent, TabStatistiquesComponent,TabTirageComponent,
+    TabPhasesComponent, TabStatistiquesComponent,TabTirageComponent, TabAwardsComponent, TabAccesComponent
   ],
   templateUrl: './competition-detail.component.html',
   styleUrls: ['./competition-detail.component.scss']
@@ -34,6 +39,7 @@ export class CompetitionDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api   = inject(CompetitionApiService);
   private fb    = inject(FormBuilder);
+currentUserRole = signal<RoleCompetition | null>(null);
 
   competition   = signal<CompetitionDetailDTO | null>(null);
   activeTab     = signal<Tab>('resume');
@@ -56,6 +62,8 @@ export class CompetitionDetailComponent implements OnInit {
     { key: 'phases'       as Tab, label: 'Phases',       icon: 'format_list_bulleted' },
     { key: 'statistiques' as Tab, label: 'Statistiques', icon: 'bar_chart' },
   ];
+
+  
 
   // ── Transitions de statut autorisées
   transitionsDisponibles(): { statut: StatutCompetition; label: string }[] {
@@ -80,6 +88,29 @@ export class CompetitionDetailComponent implements OnInit {
         return [];
     }
   }
+
+  get competitionId(): number {
+  return Number(this.route.snapshot.paramMap.get('id'));
+}
+
+
+  // Dans ngOnInit() ou après chargement de la compétition
+private chargerMonRole(): void {
+  this.api.getMonRole(this.competitionId).subscribe({
+    next: r => this.currentUserRole.set((r.role as RoleCompetition) || null),
+    error: () => this.currentUserRole.set(null)
+  });
+}
+
+// Helper
+isResponsable(): boolean {
+  return this.currentUserRole() === 'RESPONSABLE';
+}
+
+canEdit(): boolean {
+  return ['RESPONSABLE', 'SECRETAIRE'].includes(
+    this.currentUserRole() ?? '');
+}
 
   onTirageLaunched(): void {
   // Recharger la compétition depuis l'API
@@ -115,7 +146,9 @@ export class CompetitionDetailComponent implements OnInit {
     return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000; // 3 jours
   }
 
-  ngOnInit(): void { this.reload(); }
+  ngOnInit(): void { this.reload();
+    this.chargerMonRole();
+   }
 
   reload(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));

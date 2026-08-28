@@ -1,0 +1,244 @@
+<div class="acces">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <div class="acces__header">
+    <div>
+      <h3 class="acces__title">
+        <i class="material-icons">manage_accounts</i>
+        Gestion des accès
+      </h3>
+      <p class="acces__subtitle">
+        {{ totalAcces() }} membre(s) du staff — seul le responsable peut gérer les accès
+      </p>
+    </div>
+    <button class="btn-primary"
+            *ngIf="isResponsable()"
+            (click)="ouvrirModal()">
+      <i class="material-icons">person_add</i>
+      Inviter
+    </button>
+  </div>
+
+  <!-- ── Loading ────────────────────────────────────────── -->
+  <div class="acces__loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    Chargement...
+  </div>
+
+  <!-- ── Liste accès ────────────────────────────────────── -->
+  <ng-container *ngIf="!loading()">
+
+    <!-- RESPONSABLE en premier -->
+    <div class="acces-groupe" *ngIf="accesParRole().get('RESPONSABLE')?.length">
+      <div class="acces-groupe__label">
+        <i class="material-icons" style="color:#f59e0b">star</i>
+        Responsable
+      </div>
+      <div class="acces-card"
+           *ngFor="let a of accesParRole().get('RESPONSABLE')">
+        <div class="acces-card__avatar">
+          <img *ngIf="a.photoUrl" [src]="a.photoUrl"/>
+          <span *ngIf="!a.photoUrl">{{ getInitials(a.nomComplet || a.username) }}</span>
+        </div>
+        <div class="acces-card__info">
+          <div class="acces-card__nom">{{ a.nomComplet || a.username }}</div>
+          <div class="acces-card__username">{{ a.username }}</div>
+        </div>
+        <div class="acces-card__role"
+             [style.background]="'rgba(245,158,11,.1)'"
+             [style.color]="'#d97706'">
+          ⭐ Responsable
+        </div>
+      </div>
+    </div>
+
+    <!-- Autres rôles -->
+    <ng-container *ngFor="let role of roles">
+      <div class="acces-groupe"
+           *ngIf="accesParRole().get(role.value)?.length">
+        <div class="acces-groupe__label">
+          <i class="material-icons" [style.color]="role.couleur">{{ role.icone }}</i>
+          {{ role.label }}
+        </div>
+        <div class="acces-card"
+             *ngFor="let a of accesParRole().get(role.value)">
+          <div class="acces-card__avatar">
+            <img *ngIf="a.photoUrl" [src]="a.photoUrl"/>
+            <span *ngIf="!a.photoUrl">
+              {{ getInitials(a.nomComplet || a.username) }}
+            </span>
+          </div>
+          <div class="acces-card__info">
+            <div class="acces-card__nom">{{ a.nomComplet || a.username }}</div>
+            <div class="acces-card__username">{{ a.username }}</div>
+            <div class="acces-card__equipe" *ngIf="a.nomEquipe">
+              <i class="material-icons">groups</i>
+              {{ a.nomEquipe }}
+            </div>
+          </div>
+          <div class="acces-card__role"
+               [style.background]="'rgba(0,0,0,.05)'"
+               [style.color]="role.couleur">
+            <i class="material-icons">{{ role.icone }}</i>
+            {{ role.label }}
+          </div>
+          <button class="acces-card__revoke"
+                  *ngIf="isResponsable()"
+                  (click)="revoquer(a)"
+                  title="Retirer l'accès">
+            <i class="material-icons">person_remove</i>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Vide -->
+    <div class="acces-empty"
+         *ngIf="totalAcces() <= 1">
+      <i class="material-icons">group_add</i>
+      <p>Aucun membre du staff invité pour l'instant</p>
+      <button class="btn-primary btn-sm"
+              *ngIf="isResponsable()"
+              (click)="ouvrirModal()">
+        Inviter le premier membre
+      </button>
+    </div>
+
+  </ng-container>
+
+  <!-- ══ MODAL INVITATION ══════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showModal()" (click)="fermerModal()">
+    <div class="modal-acces" (click)="$event.stopPropagation()">
+
+      <div class="modal-acces__header">
+        <h3>
+          <i class="material-icons">person_add</i>
+          Inviter un membre du staff
+        </h3>
+        <button class="btn-close" (click)="fermerModal()">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+
+      <div class="modal-acces__body">
+
+        <!-- Recherche utilisateur -->
+        <div class="form-field">
+          <label class="form-label">
+            Nom d'utilisateur ou email My2-0 *
+          </label>
+          <div class="search-input">
+            <i class="material-icons">search</i>
+            <input [(ngModel)]="searchUser"
+                   class="search-input__field"
+                   placeholder="Ex: jean.dupont ou jean@email.com"/>
+          </div>
+          <span class="form-hint">
+            L'utilisateur doit avoir un compte My2-0 actif
+          </span>
+        </div>
+
+        <!-- Sélection du rôle -->
+        <div class="form-field" style="margin-top:16px">
+          <label class="form-label">Rôle *</label>
+          <div class="roles-grid">
+            <div class="role-option"
+                 *ngFor="let r of roles"
+                 [class.role-option--selected]="selectedRole() === r.value"
+                 (click)="selectedRole.set(r.value)">
+              <i class="material-icons" [style.color]="r.couleur">{{ r.icone }}</i>
+              <div class="role-option__info">
+                <div class="role-option__nom">{{ r.label }}</div>
+                <div class="role-option__desc">{{ r.description }}</div>
+              </div>
+              <i class="material-icons role-option__check"
+                 *ngIf="selectedRole() === r.value">
+                check_circle
+              </i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Équipe si DELEGUE -->
+        <div class="form-field"
+             *ngIf="selectedRole() === 'DELEGUE'"
+             style="margin-top:12px">
+          <label class="form-label">Équipe représentée *</label>
+          <select class="form-select"
+                  [ngModel]="selectedParticipantId()"
+                  (ngModelChange)="selectedParticipantId.set($event)">
+            <option [ngValue]="null">— Choisir une équipe —</option>
+            <option *ngFor="let p of competition.participants"
+                    [ngValue]="p.id">
+              {{ p.nomEquipe }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Erreur -->
+        <div class="alert alert--danger" *ngIf="error()">
+          <i class="material-icons">error_outline</i>
+          {{ error() }}
+        </div>
+
+        <!-- Info droits -->
+        <div class="role-droits" *ngIf="selectedRole()">
+          <div class="role-droits__title">
+            Droits accordés — {{ getRoleInfo(selectedRole())?.label }}
+          </div>
+          <div class="role-droits__list">
+            <ng-container [ngSwitch]="selectedRole()">
+              <ng-container *ngSwitchCase="'SECRETAIRE'">
+                <span>✅ Saisir résultats et événements</span>
+                <span>✅ Saisir compositions</span>
+                <span>❌ Modifier la configuration</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'ARBITRE'">
+                <span>✅ Saisir ses matchs assignés</span>
+                <span>❌ Autres matchs</span>
+                <span>❌ Configuration</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'MEDECIN'">
+                <span>✅ Fiches médicales joueurs</span>
+                <span>✅ Vue lecture compétition</span>
+                <span>❌ Saisir matchs</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'KINESITHERAPEUTE'">
+                <span>✅ Fiches médicales joueurs</span>
+                <span>✅ Vue lecture compétition</span>
+                <span>❌ Saisir matchs</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'COMMISSAIRE'">
+                <span>✅ Valider feuilles de match</span>
+                <span>✅ Gérer réclamations</span>
+                <span>❌ Modifier résultats</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'DELEGUE'">
+                <span>✅ Voir feuille de son équipe</span>
+                <span>✅ Vue lecture résultats</span>
+                <span>❌ Saisir événements</span>
+              </ng-container>
+              <ng-container *ngSwitchCase="'OBSERVATEUR'">
+                <span>✅ Vue lecture seule</span>
+                <span>❌ Toute modification</span>
+              </ng-container>
+            </ng-container>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-acces__footer">
+        <button class="btn-ghost" (click)="fermerModal()">Annuler</button>
+        <button class="btn-primary"
+                [disabled]="!searchUser.trim() || saving()"
+                (click)="inviter()">
+          <i class="material-icons">send</i>
+          {{ saving() ? 'Invitation...' : 'Inviter' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
