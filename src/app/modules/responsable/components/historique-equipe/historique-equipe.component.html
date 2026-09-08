@@ -1,0 +1,37 @@
+<!-- shared/components/historique-equipe/historique-equipe.component.html -->
+<button class="historique-toggle" (click)="toggle()">
+  <mat-icon>history</mat-icon>
+  <span>{{ 'membres.historique' | translate }}</span>
+  <mat-icon class="chevron" [class.rotated]="expanded">expand_more</mat-icon>
+</button>
+
+<div class="historique-panel" *ngIf="expanded" @slideDown>
+
+  <div *ngIf="loading" class="historique-state">
+    <mat-spinner diameter="24"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading && error" class="historique-state error">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ 'membres.historiqueError' | translate }}</span>
+  </div>
+
+  <div *ngIf="!loading && !error && loaded && historique.length === 0" class="historique-state">
+    {{ 'membres.noHistorique' | translate }}
+  </div>
+
+  <div class="historique-timeline" *ngIf="!loading && !error && historique.length > 0">
+    <div class="hist-item" *ngFor="let h of historique" [class.current]="!h.dateFin">
+      <div class="hist-dot"></div>
+      <div class="hist-content">
+        <div class="hist-header">
+          <span class="hist-equipe">{{ h.equipeNom }}</span>
+          <span class="hist-badge" *ngIf="!h.dateFin">{{ 'membres.current' | translate }}</span>
+        </div>
+        <span class="hist-period">{{ formatDuree(h.dateDebut, h.dateFin) }}</span>
+        <span class="hist-source">{{ 'membres.source.' + h.source | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>

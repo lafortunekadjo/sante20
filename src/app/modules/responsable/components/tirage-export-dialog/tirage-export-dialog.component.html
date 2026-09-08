@@ -1,11 +1,10 @@
-<!-- tirage-export-dialog.component.html -->
 <h2 mat-dialog-title>
   <mat-icon>casino</mat-icon> {{ 'membres.tirageTitle' | translate }}
 </h2>
 
 <mat-dialog-content>
 
-  <!-- ÉTAPE 1 : SETUP -->
+  <!-- ═══════════ ÉTAPE 1 : SETUP ═══════════ -->
   <div *ngIf="step === 'setup'" class="setup-step">
     <p class="hint">{{ 'membres.tirageHint' | translate }} ({{ data.membres.length }} membres)</p>
 
@@ -44,9 +43,18 @@
     </mat-checkbox>
   </div>
 
-  <!-- ÉTAPE 2 : AJUSTEMENT DRAG & DROP -->
+  <!-- ═══════════ ÉTAPE 2 : AJUSTEMENT ═══════════ -->
   <div *ngIf="step === 'adjust'" class="adjust-step">
+
+    <div class="adjust-summary">
+      <span>{{ totalInclus }} {{ 'membres.membersIncluded' | translate }}</span>
+      <span *ngIf="excluded.length > 0" class="excluded-count">
+        · {{ excluded.length }} {{ 'membres.membersExcluded' | translate }}
+      </span>
+    </div>
+
     <div class="columns">
+      <!-- Équipe A -->
       <div class="team-column">
         <h4>{{ equipeAName }} <span class="count">({{ poolA.length }})</span></h4>
         <div class="drop-list"
@@ -58,10 +66,16 @@
           <div class="drop-item" *ngFor="let m of poolA" cdkDrag>
             <mat-icon cdkDragHandle>drag_indicator</mat-icon>
             <span>{{ m.prenom }} {{ m.nom }}</span>
+            <button class="remove-btn"
+                    (click)="retirerMembre(m, poolA)"
+                    [matTooltip]="'membres.removeFromExport' | translate">
+              <mat-icon>close</mat-icon>
+            </button>
           </div>
         </div>
       </div>
 
+      <!-- Équipe B -->
       <div class="team-column">
         <h4>{{ equipeBName }} <span class="count">({{ poolB.length }})</span></h4>
         <div class="drop-list"
@@ -73,15 +87,43 @@
           <div class="drop-item" *ngFor="let m of poolB" cdkDrag>
             <mat-icon cdkDragHandle>drag_indicator</mat-icon>
             <span>{{ m.prenom }} {{ m.nom }}</span>
+            <button class="remove-btn"
+                    (click)="retirerMembre(m, poolB)"
+                    [matTooltip]="'membres.removeFromExport' | translate">
+              <mat-icon>close</mat-icon>
+            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Membres retirés -->
+    <div class="excluded-section" *ngIf="excluded.length > 0">
+      <h4 class="excluded-title">
+        <mat-icon>person_off</mat-icon>
+        {{ 'membres.excludedMembers' | translate }} ({{ excluded.length }})
+      </h4>
+      <div class="excluded-list">
+        <div class="excluded-item" *ngFor="let m of excluded">
+          <span>{{ m.prenom }} {{ m.nom }}</span>
+          <div class="excluded-actions">
+            <button mat-button (click)="reintegrerMembre(m, 'A')">
+              → {{ equipeAName }}
+            </button>
+            <button mat-button (click)="reintegrerMembre(m, 'B')">
+              → {{ equipeBName }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
+
   <ng-container *ngIf="step === 'setup'">
     <button mat-stroked-button (click)="annuler()">{{ 'common.cancel' | translate }}</button>
     <button mat-raised-button color="primary" [disabled]="!canLaunchTirage()" (click)="lancerTirage()">
@@ -89,17 +131,22 @@
     </button>
   </ng-container>
 
- <ng-container *ngIf="step === 'adjust'">
-  <button mat-stroked-button (click)="retourSetup()" [disabled]="isSaving">
-    {{ 'common.back' | translate }}
-  </button>
-  <button mat-stroked-button (click)="confirmerEtExporter('excel')" [disabled]="isSaving">
-    <mat-icon>grid_on</mat-icon> Excel
-  </button>
-  <button mat-raised-button color="primary" (click)="confirmerEtExporter('pdf')" [disabled]="isSaving">
-    <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
-    <mat-icon *ngIf="!isSaving">picture_as_pdf</mat-icon>
-    {{ isSaving ? ('membres.saving' | translate) : 'PDF' }}
-  </button>
-</ng-container>
+  <ng-container *ngIf="step === 'adjust'">
+    <button mat-stroked-button (click)="retourSetup()" [disabled]="isSaving">
+      {{ 'common.back' | translate }}
+    </button>
+    <button mat-stroked-button
+            (click)="confirmerEtExporter('excel')"
+            [disabled]="isSaving || totalInclus === 0">
+      <mat-icon>grid_on</mat-icon> Excel
+    </button>
+    <button mat-raised-button color="primary"
+            (click)="confirmerEtExporter('pdf')"
+            [disabled]="isSaving || totalInclus === 0">
+      <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+      <mat-icon *ngIf="!isSaving">picture_as_pdf</mat-icon>
+      {{ isSaving ? ('membres.saving' | translate) : 'PDF' }}
+    </button>
+  </ng-container>
+
 </mat-dialog-actions>

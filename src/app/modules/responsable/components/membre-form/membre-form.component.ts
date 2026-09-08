@@ -41,6 +41,7 @@ import { RouterModule } from '@angular/router';
 import { Exercice, FinancesService } from '../../../../core/services/finances.service';
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 import { TirageExportDialogComponent } from '../tirage-export-dialog/tirage-export-dialog.component';
+import { HistoriqueEquipeComponent } from '../historique-equipe/historique-equipe.component';
 
 @Component({
   selector: 'app-membre-form',
@@ -69,7 +70,8 @@ import { TirageExportDialogComponent } from '../tirage-export-dialog/tirage-expo
     MatChipsModule,
     MatTooltipModule,
     TranslateModule,
-    RouterModule
+    RouterModule,
+    HistoriqueEquipeComponent
   ],
   templateUrl: './membre-form.component.html',
   styleUrls: ['./membre-form.component.scss'],

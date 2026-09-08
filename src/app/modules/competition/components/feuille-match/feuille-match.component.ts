@@ -71,6 +71,7 @@ interface FeuilleMatchDTO {
   tabExterieur?:      number;
   officiels:          OfficielFeuille[];
   evenements:         EvenementFeuille[];
+  statutMatch?:       string;
   typeCompetition: string;
 }
 
@@ -85,7 +86,8 @@ export class FeuilleMatchComponent implements OnInit {
   @Input() competitionId!: number;
   @Input() matchId!:       number;
   @Input() canValider  = false; // permission VALIDER_FEUILLES
-  @Input() canCloturer = false; // permission SAISIR_SCORES
+  @Input() canCloturer  = false; // permission SAISIR_SCORES
+  @Input() matchStatut?: string;  // statut du match (TERMINE, EN_COURS...)
 
   private api = inject(MatchApiService);
 
@@ -151,6 +153,25 @@ export class FeuilleMatchComponent implements OnInit {
   isValidee():   boolean { return this.feuille()?.statut === 'VALIDEE'; }
   isCloturee():  boolean { return this.feuille()?.statut === 'CLOTUREE'; }
   isBrouillon(): boolean { return this.feuille()?.statut === 'BROUILLON'; }
+  // Statut de la FEUILLE
+  isTermine():   boolean { return this.feuille()?.statut === 'CLOTUREE' || this.feuille()?.statut === 'VALIDEE'; }
+
+  // Statut du MATCH — passé en @Input depuis match-detail
+  matchTermine(): boolean {
+    return ['TERMINE','FORFAIT_DOMICILE','FORFAIT_EXTERIEUR','FORFAIT_DOUBLE']
+      .includes(this.matchStatut ?? '');
+  }
+
+  // Un joueur a joué si :
+  // - Titulaire → toujours (même s'il est sorti)
+  // - Remplaçant → seulement s'il a un remplacement entrant dans ses événements
+  aJoue(j: any): boolean {
+    if (j.statut === 'TITULAIRE') return true;
+    if (j.statut === 'REMPLACANT') {
+      return j.remplacements?.some((r: string) => r.includes('↑') || r.includes('&#8593;')) ?? false;
+    }
+    return false;
+  }
 
   statutLabel(): string {
     const m: Record<string, string> = {
@@ -203,7 +224,6 @@ export class FeuilleMatchComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  imprimer(): void { window.print(); }
 
   // ── Helpers ───────────────────────────────────────────────
   getInitials(nom: string): string {
@@ -226,5 +246,7 @@ export class FeuilleMatchComponent implements OnInit {
     return Array.from({ length: manque }, (_, i) => i);
   }
 
-
+  imprimer(): void {
+    window.print();
+  }
 }

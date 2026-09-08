@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../environment';
 import { Membre } from '../models/membre.model';
+import { HistoriqueEquipe } from '../../../../My2-0/src/app/core/models/historique-equipe.model';
 
 @Injectable({
   providedIn: 'root'
@@ -176,6 +177,10 @@ export class MembreService {
   // dans membre.service.ts
 assignEquipesBulk(assignments: { membreId: number; equipeId: number | null; equipeNom?: string }[]) {
   return this.http.post(`${this.apiUrl}/assign-equipes`, { assignments });
+}
+
+getHistoriqueEquipes(membreId: number) {
+  return this.http.get<HistoriqueEquipe[]>(`${this.apiUrl}/${membreId}/historique-equipes`);
 }
 }
 

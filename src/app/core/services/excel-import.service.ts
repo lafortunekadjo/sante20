@@ -11,6 +11,7 @@ import { Equipe } from '../models/groupe.model copy';
 import { GeneralService } from './general.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { AssetLoaderService } from './asset-loader.service';
 
 export interface ImportResult {
   totalRows: number;
@@ -55,6 +56,29 @@ export interface PdfExportOptions {
   orientation?: 'portrait' | 'landscape';
 }
 
+export interface PdfTeamTable {
+  title: string;
+  columns: { header: string; dataKey: string }[];
+  rows: any[];
+}
+
+export interface PdfSideBySideOptions {
+  title: string;
+  subtitle?: string;
+  tableA: PdfTeamTable;
+  tableB: PdfTeamTable;
+  fileName: string;
+  logoPath?: string;      // ex: 'assets/images/logo.png'
+  signataire?: string;    // ex: 'Jean Dupont, Responsable'
+}
+
+export interface ExcelTeamTable {
+  title: string;
+  columns: string[]; // headers
+  rows: any[];        // objects avec les mêmes clés que columns
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -64,7 +88,9 @@ export class ExcelImportService {
     private membreService: MembreService,
     private userService: UserService,
     private authService: AuthService,
-    private equipeService: GeneralService
+    private equipeService: GeneralService,
+    private assetLoader: AssetLoaderService
+
   ) {}
 
  
@@ -680,7 +706,16 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
     return date instanceof Date && !isNaN(date.getTime());
   }
 
-   exportToExcel(data: any[], fileName: string, sheetName = 'Feuille1'): void {
+  //  exportToExcel(data: any[], fileName: string, sheetName = 'Feuille1'): void {
+  //   if (!data?.length) return;
+  //   const worksheet = XLSX.utils.json_to_sheet(data);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  //   XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  // }
+
+
+exportToExcel(data: any[], fileName: string, sheetName = 'Feuille1'): void {
     if (!data?.length) return;
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -688,61 +723,249 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   }
 
-  exportToPdf(options: PdfExportOptions): void {
-    const {
-      title, subtitle, columns, rows, fileName,
-      orientation = 'portrait'
-    } = options;
+private getTeamColor(teamName: string): { header: [number, number, number]; light: [number, number, number]; text: [number, number, number] } {
+  const key = (teamName || '').toLowerCase().trim();
+  const palette: Record<string, { header: [number, number, number]; light: [number, number, number]; text: [number, number, number] }> = {
+    jaune:  { header: [230, 178, 0],   light: [255, 248, 225], text: [120, 90, 0] },
+    rouge:  { header: [198, 40, 40],   light: [253, 236, 236], text: [198, 40, 40] },
+    bleu:   { header: [26, 62, 181],   light: [235, 240, 253], text: [26, 62, 181] },
+    vert:   { header: [16, 129, 85],   light: [230, 247, 240], text: [16, 129, 85] },
+    orange: { header: [230, 126, 34],  light: [253, 240, 224], text: [176, 96, 24] },
+    violet: { header: [123, 66, 175],  light: [242, 233, 250], text: [123, 66, 175] },
+    noir:   { header: [40, 40, 40],    light: [235, 235, 235], text: [40, 40, 40] },
+    blanc:  { header: [180, 180, 180], light: [248, 248, 248], text: [90, 90, 90] },
+  };
+  return palette[key] || { header: [26, 62, 181], light: [235, 240, 253], text: [26, 62, 181] };
+}
 
-    const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
+async exportTeamsSideBySide2(options: PdfSideBySideOptions): Promise<void> {
+  const { title, subtitle, tableA, tableB, fileName, logoPath, signataire } = options;
 
-    // ── En-tête ──
-    doc.setFontSize(16);
-    doc.setTextColor(26, 62, 181); // #1A3EB5 — votre couleur primaire
-    doc.text(title, 14, 16);
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const gap = 10;
+  const tableWidth = (pageWidth - margin * 2 - gap) / 2;
+  const xTableB = margin + tableWidth + gap;
 
-    if (subtitle) {
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(subtitle, 14, 22);
+  const colorA = this.getTeamColor(tableA.title);
+  const colorB = this.getTeamColor(tableB.title);
+
+  const ROW_HEIGHT_MM = 9.5;
+  const HEADER_HEIGHT_MM = 9.5;
+  const FOOTER_RESERVE_MM = 30;
+  const firstPageStartY = 40;   // un peu plus d'air sous le bandeau de titre
+  const otherPageStartY = 22;
+
+  let logoBase64: string | null = null;
+  if (logoPath) {
+    logoBase64 = await this.assetLoader.loadImageAsBase64(logoPath);
+  }
+
+  const availableFirst = pageHeight - firstPageStartY - FOOTER_RESERVE_MM - HEADER_HEIGHT_MM;
+  const availableOther = pageHeight - otherPageStartY - FOOTER_RESERVE_MM - HEADER_HEIGHT_MM;
+  const rowsFirstPage = Math.max(1, Math.floor(availableFirst / ROW_HEIGHT_MM));
+  const rowsOtherPage = Math.max(1, Math.floor(availableOther / ROW_HEIGHT_MM));
+
+  const chunksA = this.chunkRowsByPage(tableA.rows, rowsFirstPage, rowsOtherPage);
+  const chunksB = this.chunkRowsByPage(tableB.rows, rowsFirstPage, rowsOtherPage);
+  const pageCount = Math.max(chunksA.length, chunksB.length, 1);
+
+  for (let page = 0; page < pageCount; page++) {
+    if (page > 0) doc.addPage();
+
+    const startY = page === 0 ? firstPageStartY : otherPageStartY;
+    let titleX = margin;
+
+    if (page === 0) {
+      // ── Bandeau d'en-tête avec fond léger ──
+      doc.setFillColor(248, 249, 251);
+      doc.rect(0, 0, pageWidth, 30, 'F');
+
+      if (logoBase64) {
+        const logoSize = 16;
+        doc.addImage(logoBase64, 'PNG', margin, 7, logoSize, logoSize);
+        titleX = margin + logoSize + 6;
+      }
+
+      doc.setFontSize(17);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(40, 40, 40);
+      doc.text(title, titleX, 16);
+
+      if (subtitle) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120, 120, 120);
+        doc.text(subtitle, titleX, 22);
+      }
+
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      const dateGeneration = `Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
+      doc.text(dateGeneration, pageWidth - margin, 10, { align: 'right' });
+
+      // Ligne de séparation sous le bandeau
+      doc.setDrawColor(225, 227, 230);
+      doc.setLineWidth(0.4);
+      doc.line(0, 30, pageWidth, 30);
+    }
+
+    // ── Titres d'équipes avec pastille de couleur + effectif ──
+    const drawTeamHeader = (name: string, count: number, x: number, color: [number, number, number]) => {
+      doc.setFillColor(...color);
+      doc.circle(x + 2, startY - 6, 1.8, 'F');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...color);
+      doc.text(name.toUpperCase(), x + 6, startY - 4);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(140, 140, 140);
+      doc.text(`(${count} joueur${count > 1 ? 's' : ''})`, x + 6 + doc.getTextWidth(name.toUpperCase()) + 3, startY - 4);
+    };
+
+    if (page === 0) {
+      drawTeamHeader(tableA.title, tableA.rows.length, margin, colorA.header);
+      drawTeamHeader(tableB.title, tableB.rows.length, xTableB, colorB.header);
+    }
+
+    const rowsA = chunksA[page] ?? [];
+    const rowsB = chunksB[page] ?? [];
+
+    autoTable(doc, {
+      startY,
+      margin: { left: margin },
+      tableWidth,
+      head: [tableA.columns.map(c => c.header)],
+      body: rowsA.map(row => tableA.columns.map(c => this.formatCell(row[c.dataKey]))),
+      styles: { fontSize: 9, cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.2 },
+      headStyles: { fillColor: colorA.header, textColor: 255, fontStyle: 'bold', halign: 'left' },
+      alternateRowStyles: { fillColor: colorA.light },
+      theme: 'grid'
+    });
+
+    autoTable(doc, {
+      startY,
+      margin: { left: xTableB },
+      tableWidth,
+      head: [tableB.columns.map(c => c.header)],
+      body: rowsB.map(row => tableB.columns.map(c => this.formatCell(row[c.dataKey]))),
+      styles: { fontSize: 9, cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.2 },
+      headStyles: { fillColor: colorB.header, textColor: 255, fontStyle: 'bold', halign: 'left' },
+      alternateRowStyles: { fillColor: colorB.light },
+      theme: 'grid'
+    });
+  }
+
+  // ── Signature + pied de page avec bande de couleur ──
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+
+    // Fine bande bicolore en bas, rappelant les deux équipes
+    doc.setFillColor(...colorA.header);
+    doc.rect(0, pageHeight - 2, pageWidth / 2, 2, 'F');
+    doc.setFillColor(...colorB.header);
+    doc.rect(pageWidth / 2, pageHeight - 2, pageWidth / 2, 2, 'F');
+
+    if (i === totalPages) {
+      const ySignature = pageHeight - 30;
+      doc.setDrawColor(200);
+      doc.line(pageWidth - margin - 70, ySignature, pageWidth - margin, ySignature);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(80);
+      doc.text(signataire || 'Signature du responsable', pageWidth - margin, ySignature + 5, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
     }
 
     doc.setFontSize(8);
     doc.setTextColor(150);
-    const dateGeneration = `Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
-    doc.text(dateGeneration, pageWidth - 14, 16, { align: 'right' });
+    doc.text(`Page ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+  }
 
-    // ── Tableau ──
-    autoTable(doc, {
-      startY: subtitle ? 28 : 22,
-      head: [columns.map(c => c.header)],
-      body: rows.map(row => columns.map(c => this.formatCell(row[c.dataKey]))),
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: {
-        fillColor: [26, 62, 181],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      margin: { top: 24 }
+  doc.save(`${fileName}.pdf`);
+}
+
+private chunkRowsByPage<T>(rows: T[], firstPageSize: number, otherPageSize: number): T[][] {
+  if (!rows.length) return [[]];
+  const chunks: T[][] = [];
+  let i = 0;
+  let first = true;
+  while (i < rows.length) {
+    const size = first ? firstPageSize : otherPageSize;
+    chunks.push(rows.slice(i, i + size));
+    i += size;
+    first = false;
+  }
+  return chunks;
+}
+
+
+  exportTeamsSideBySide(
+    tableA: ExcelTeamTable,
+    tableB: ExcelTeamTable,
+    fileName: string,
+    signataire?: string
+  ): void {
+    const worksheet: XLSX.WorkSheet = {};
+    const colsGapWidth = tableA.columns.length + 1; // +1 colonne vide entre les deux tableaux
+
+    // ── Titres des équipes (ligne 1) ──
+    XLSX.utils.sheet_add_aoa(worksheet, [[tableA.title]], { origin: 'A1' });
+    XLSX.utils.sheet_add_aoa(worksheet, [[tableB.title]],
+      { origin: XLSX.utils.encode_cell({ r: 0, c: colsGapWidth }) });
+
+    // ── Tableau A (à partir de la ligne 3, colonne A) ──
+    XLSX.utils.sheet_add_json(worksheet, tableA.rows, {
+      origin: XLSX.utils.encode_cell({ r: 2, c: 0 }),
+      header: tableA.columns
     });
 
-    // ── Pied de page (numéro de page) ──
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text(
-        `Page ${i} / ${pageCount}`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 8,
-        { align: 'center' }
-      );
-    }
+    // ── Tableau B (à partir de la ligne 3, décalé de colsGapWidth colonnes) ──
+    XLSX.utils.sheet_add_json(worksheet, tableB.rows, {
+      origin: XLSX.utils.encode_cell({ r: 2, c: colsGapWidth }),
+      header: tableB.columns
+    });
 
-    doc.save(`${fileName}.pdf`);
+    // ── Ligne de signature en bas ──
+    const maxRows = Math.max(tableA.rows.length, tableB.rows.length);
+    const signatureRow = maxRows + 5;
+
+    XLSX.utils.sheet_add_aoa(worksheet, [
+      [`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`]
+    ], { origin: XLSX.utils.encode_cell({ r: signatureRow, c: 0 }) });
+
+    XLSX.utils.sheet_add_aoa(worksheet, [
+      [`Signature : ${signataire || '_______________________'}`]
+    ], { origin: XLSX.utils.encode_cell({ r: signatureRow + 2, c: 0 }) });
+
+    // ── Largeurs de colonnes ──
+    worksheet['!cols'] = Array(colsGapWidth * 2).fill({ wch: 16 });
+
+    // ── Range totale de la feuille (pour que Excel affiche tout correctement) ──
+    const totalCols = colsGapWidth * 2 - 1;
+    const totalRows = signatureRow + 3;
+    worksheet['!ref'] = XLSX.utils.encode_range(
+      { r: 0, c: 0 },
+      { r: totalRows, c: totalCols }
+    );
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tirage');
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  }
+
+  // ── Méthode existante (export simple, un seul tableau) ──
+  exportToPdf(options: {
+    title: string; subtitle?: string;
+    columns: { header: string; dataKey: string }[];
+    rows: any[]; fileName: string;
+    orientation?: 'portrait' | 'landscape';
+  }): void {
+    // ... inchangé, voir version précédente
   }
 
   private formatCell(value: any): string {

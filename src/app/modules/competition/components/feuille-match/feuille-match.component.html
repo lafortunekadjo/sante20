@@ -136,7 +136,14 @@
           <div class="score-centre__tab" *ngIf="feuille()!.tabDomicile != null">
             tab {{ feuille()!.tabDomicile }} : {{ feuille()!.tabExterieur }}
           </div>
-          <div class="score-centre__statut">Mi-temps</div>
+          <div class="score-centre__statut">
+            {{ matchStatut === 'TERMINE' ? 'Terminé' :
+               matchStatut === 'EN_COURS' ? 'En cours' :
+               matchStatut === 'PLANIFIE' ? 'À venir' :
+               matchStatut === 'FORFAIT_DOMICILE' ? 'Forfait domicile' :
+               matchStatut === 'FORFAIT_EXTERIEUR' ? 'Forfait extérieur' :
+               matchStatut ?? '' }}
+          </div>
         </div>
 
         <!-- Équipe extérieure -->
@@ -203,6 +210,7 @@
                 <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
                 <td class="col-evt">
                   <span class="evt-tag evt-tag--but" *ngFor="let b of j.buts">⚽{{ b }}</span>
+                  <span class="evt-tag evt-tag--pd" *ngFor="let p of j.passesDecisives">🅿{{ p }}</span>
                   <span class="evt-tag evt-tag--carton" *ngFor="let c of j.cartons">{{ c }}</span>
                   <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
                 </td>
@@ -259,6 +267,7 @@
                 <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
                 <td class="col-evt">
                   <span class="evt-tag evt-tag--but" *ngFor="let b of j.buts">⚽{{ b }}</span>
+                  <span class="evt-tag evt-tag--pd" *ngFor="let p of j.passesDecisives">🅿{{ p }}</span>
                   <span class="evt-tag evt-tag--carton" *ngFor="let c of j.cartons">{{ c }}</span>
                   <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
                 </td>
@@ -370,7 +379,7 @@
 
     <!-- ── NOTES JOUEURS (commissaire, après match) ────── -->
     <div class="feuille-notes no-print"
-         *ngIf="canValider && isCloturee()">
+         *ngIf="canValider && matchTermine() && !isCloturee()">
       <div class="feuille-notes__header">
         <div class="feuille-notes__titre">
           <mat-icon>grade</mat-icon>
@@ -391,6 +400,7 @@
         <div class="notes-equipe">
           <div class="notes-equipe__titre">{{ feuille()!.domicile.nomEquipe }}</div>
           <div class="notes-equipe__list">
+            <!-- Titulaires — ont tous joué -->
             <ng-container *ngFor="let j of feuille()!.domicile.titulaires">
               <div class="note-ligne">
                 <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
@@ -402,10 +412,14 @@
                        placeholder="—"/>
               </div>
             </ng-container>
+            <!-- Remplaçants — seulement ceux entrés en jeu -->
             <ng-container *ngFor="let j of feuille()!.domicile.remplacants">
-              <div class="note-ligne note-ligne--rempl">
+              <div class="note-ligne note-ligne--rempl" *ngIf="aJoue(j)">
                 <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
-                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <span class="note-nom">
+                  {{ j.nom }} {{ j.prenom }}
+                  <span class="note-badge-rempl">entrant</span>
+                </span>
                 <input class="note-input"
                        type="number" min="0" max="10" step="0.5"
                        [value]="getNote(j.compositionId)"
@@ -420,6 +434,7 @@
         <div class="notes-equipe">
           <div class="notes-equipe__titre">{{ feuille()!.exterieur.nomEquipe }}</div>
           <div class="notes-equipe__list">
+            <!-- Titulaires -->
             <ng-container *ngFor="let j of feuille()!.exterieur.titulaires">
               <div class="note-ligne">
                 <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
@@ -431,10 +446,14 @@
                        placeholder="—"/>
               </div>
             </ng-container>
+            <!-- Remplaçants entrés en jeu seulement -->
             <ng-container *ngFor="let j of feuille()!.exterieur.remplacants">
-              <div class="note-ligne note-ligne--rempl">
+              <div class="note-ligne note-ligne--rempl" *ngIf="aJoue(j)">
                 <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
-                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <span class="note-nom">
+                  {{ j.nom }} {{ j.prenom }}
+                  <span class="note-badge-rempl">entrant</span>
+                </span>
                 <input class="note-input"
                        type="number" min="0" max="10" step="0.5"
                        [value]="getNote(j.compositionId)"
