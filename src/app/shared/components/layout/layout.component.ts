@@ -458,10 +458,12 @@ setupRoles(): void {
   // ──────────────────── Menus ────────────────────────────────
 
   loadMenusCommuns(): void {
+    const isPartenaire  = this.isPartenaire;
     const baseMenus: Menu[] = [
       { id:1,  code:'EXPLORER',    label:'Explorer',    icone:'explore',    route:'/explorer',    description:'', ordre:1, actif:true, categorie:'COMMUN' },
       { id:5,  code:'SUGGESTIONS', label:'Suggestions', icone:'lightbulb',  route:'/suggestions', description:'', ordre:6, actif:true, categorie:'COMMUN' },
       { id:11, code:'sc',          label:'Scouting',    icone:'search',     route:'/joueurs',     description:'', ordre:5, actif:true, categorie:'COMMUN' },
+      
     ];
 
     if (!this.userHasGroup) {
@@ -478,7 +480,6 @@ setupRoles(): void {
         { id:4,  code:'OBJECTIFS',  label:'Objectifs',       icone:'flag',      route:'/objectifs',  description:'', ordre:5, actif:true, categorie:'COMMUN' },
       );
     }
-
     this.menusCommuns = baseMenus.sort((a,b) => a.ordre - b.ordre);
   }
 
@@ -503,16 +504,57 @@ setupRoles(): void {
   }
 
   loadUserMenus(): void {
-    if (!this.isResponsable || !this.userHasGroup) {
-      this.menuCategories = []; return;
-    }
-    this.isLoadingMenus = true;
-    console.log(this.isResponsable)
-    this.roleCustomService.getUserMenus().subscribe({
-      next:  (um) => { this.organiserMenusParCategorie(um.menus); this.isLoadingMenus = false; this.cdr.detectChanges(); },
-      error: ()   => { this.menuCategories = []; this.isLoadingMenus = false; this.cdr.detectChanges(); }
-    });
+  if (!this.isResponsable || !this.userHasGroup) {
+    // Même sans groupe/responsable, ajouter COMPETITION
+    this.menuCategories = [];
+    this.ajouterCategorieCompetition();
+    return;
   }
+
+  this.isLoadingMenus = true;
+  this.roleCustomService.getUserMenus().subscribe({
+    next: (um) => {
+      this.organiserMenusParCategorie(um.menus);
+      // Ajouter COMPETITION si pas déjà dans les menus BD
+      this.ajouterCategorieCompetition();
+      this.isLoadingMenus = false;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.menuCategories = [];
+      this.ajouterCategorieCompetition();
+      this.isLoadingMenus = false;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+private ajouterCategorieCompetition(): void {
+  // TODO: remplacer !this.isPartenaire par this.authService.hasModule('COMPETITION')
+  if (this.isPartenaire) return;
+
+  // Déjà présente depuis la BD → ne pas dupliquer
+  const dejaPresente = this.menuCategories.some(c => c.code === 'COMPETITION');
+  if (dejaPresente) return;
+
+  const sousMenus: Menu[] = [
+    { id: 20, code: 'COMPT', label: 'Mes compétitions',
+      icone: 'emoji_events', route: '/competitions',
+      description: '', ordre: 1, actif: true, categorie: 'COMPETITION' },
+    { id: 21, code: 'COMPTEXPL', label: 'Explorer',
+      icone: 'public', route: '/competitions/public',
+      description: '', ordre: 2, actif: true, categorie: 'COMPETITION' },
+  ];
+
+ 
+
+  this.menuCategories.push({
+    code:  'COMPETITION',
+    label: 'Compétitions',
+    icone: 'emoji_events',
+    menus: sousMenus
+  });
+}
 
   organiserMenusParCategorie(menus: Menu[]): void {
     const map = new Map<string, Menu[]>();
@@ -525,6 +567,7 @@ setupRoles(): void {
       'SPORT':         { label:'Sport',          icone:'sports_soccer'  },
       'FINANCES':      { label:'Finances',       icone:'account_balance'},
       'COMMUNICATION': { label:'Communication',  icone:'campaign'       },
+       'COMPETITION':   { label:'Compétitions',   icone:'emoji_events'    },
     };
     this.menuCategories = Array.from(map.entries())
       .map(([code, menus]) => ({
@@ -532,8 +575,8 @@ setupRoles(): void {
         menus: menus.sort((a,b) => a.ordre - b.ordre)
       }))
       .sort((a,b) =>
-        ['GESTION','SPORT','FINANCES','COMMUNICATION'].indexOf(a.code) -
-        ['GESTION','SPORT','FINANCES','COMMUNICATION'].indexOf(b.code)
+        ['GESTION','SPORT','FINANCES','COMMUNICATION','COMPETITION'].indexOf(a.code) -
+        ['GESTION','SPORT','FINANCES','COMMUNICATION','COMPETITION'].indexOf(b.code)
       );
   }
 

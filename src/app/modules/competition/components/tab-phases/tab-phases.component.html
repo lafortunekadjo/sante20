@@ -4,11 +4,11 @@
   <div class="phase-actions"
        *ngIf="competition.config?.format === 'MIXTE' && canPasserPhase()">
     <div class="phase-action-banner">
-      <i class="material-icons">info</i>
-      <span>Tous les matchs de groupe sont terminés</span>
+      <mat-icon>info</mat-icon>
+      <span>{{ 'competition.phases.tousMatchsTermines' | translate }}</span>
       <button class="btn-primary btn-sm"
               (click)="passerPhaseSuivante()">
-        <i class="material-icons">arrow_forward</i>
+        <mat-icon>arrow_forward</mat-icon>
         Passer à la phase finale
       </button>
     </div>
@@ -18,16 +18,16 @@
   <div class="phase-next-banner"
        *ngIf="peutPasserPhaseActuelle()">
     <div class="phase-next-banner__content">
-      <i class="material-icons">check_circle</i>
+      <mat-icon>check_circle</mat-icon>
       <span>
-        <strong>Phase de groupes terminée</strong> —
+        <strong>{{ 'competition.phases.phaseTerminee' | translate }}</strong> —
         Tous les matchs sont joués
       </span>
     </div>
     <button class="btn-primary btn-sm"
             (click)="passerPhaseSuivante()">
-      <i class="material-icons">arrow_forward</i>
-      Lancer la phase finale
+      <mat-icon>arrow_forward</mat-icon>
+      {{ 'competition.phases.passerPhase' | translate }}
     </button>
   </div>
 
@@ -45,7 +45,7 @@
   <!-- ══ CHARGEMENT ══════════════════════════════════════════ -->
   <div class="phases-loading" *ngIf="loading()">
     <div class="spinner"></div>
-    <span>Chargement du calendrier...</span>
+    <span>{{ 'competition.phases.chargement' | translate }}</span>
   </div>
 
   <!-- ══ PHASE GROUPE / CHAMPIONNAT ══════════════════════════ -->
@@ -60,13 +60,13 @@
             <button class="poule-tab"
                     [class.active]="getActivePouleTab(poule.id) === 'classement'"
                     (click)="setPouleTab(poule.id, 'classement')">
-              <i class="material-icons">table_chart</i>
+              <mat-icon>table_chart</mat-icon>
               Classement
             </button>
             <button class="poule-tab"
                     [class.active]="getActivePouleTab(poule.id) === 'journees'"
                     (click)="setPouleTab(poule.id, 'journees')">
-              <i class="material-icons">calendar_month</i>
+              <mat-icon>calendar_month</mat-icon>
               Calendrier
             </button>
           </div>
@@ -87,7 +87,7 @@
           <!-- Indicateur aller/retour -->
           <div class="aller-retour-info"
                *ngIf="competition.config?.allerRetour">
-            <i class="material-icons">swap_horiz</i>
+            <mat-icon>swap_horiz</mat-icon>
             <span>
               Championnat aller-retour —
               chaque équipe affronte toutes les autres 2 fois
@@ -108,7 +108,7 @@
                           *ngIf="j.estRetour">↩ Retour</span>
                   </span>
                   <span class="journee-date" *ngIf="j.datePrevue">
-                    <i class="material-icons">event</i>
+                    <mat-icon>event</mat-icon>
                     {{ j.datePrevue | date:'dd/MM/yyyy' }}
                   </span>
                 </div>
@@ -117,9 +117,9 @@
                         [class]="'statut-' + j.statut.toLowerCase()">
                     {{ statutJourneeLabel(j.statut) }}
                   </span>
-                  <i class="material-icons chevron">
+                  <mat-icon>
                     {{ openJournee() === j.id ? 'expand_less' : 'expand_more' }}
-                  </i>
+                  </mat-icon>
                 </div>
               </button>
 
@@ -129,16 +129,16 @@
 
                 <div class="journee-loading" *ngIf="loadingJournee()">
                   <div class="spinner-sm"></div>
-                  Chargement...
+                  {{ 'competition.commun.chargement' | translate }}
                 </div>
 
                 <ng-container *ngIf="!loadingJournee() && journeeDetail()">
 
                   <!-- Actions journée (admin/responsable) -->
-                  <div class="journee-actions" *ngIf="canEdit()">
+                  <div class="journee-actions" *ngIf="peutEditerStatut()">
                     <button class="btn-outline btn-sm"
                             (click)="ouvrirPlanificationMasse(j.id)">
-                      <i class="material-icons">date_range</i>
+                      <mat-icon>date_range</mat-icon>
                       Planifier les matchs
                     </button>
                   </div>
@@ -150,14 +150,14 @@
                       <app-match-card
                         [match]="m"
                         [showActions]="true"
-                        [canEdit]="canEdit()"
+                        [canEdit]="peutEditerStatut()"
                         (onEdit)="ouvrirMatchEdit($event)"
                         (onDetail)="ouvrirMatchDetail($event)"/>
                     </div>
 
                     <div class="no-matchs"
                          *ngIf="!journeeDetail()!.matchs?.length">
-                      <i class="material-icons">sports_soccer</i>
+                      <mat-icon>sports_soccer</mat-icon>
                       <span>Aucun match dans cette journée</span>
                     </div>
                   </div>
@@ -169,8 +169,8 @@
             <!-- État vide journées -->
             <div class="empty-journees"
                  *ngIf="!getJournees(poule.id).length">
-              <i class="material-icons">calendar_today</i>
-              <p>Le calendrier n'a pas encore été généré</p>
+              <mat-icon>calendar_today</mat-icon>
+              <p>{{ 'competition.phases.calendrierVide' | translate }}</p>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@
 
       <!-- <div class="bracket-matchs" *ngIf="bracketMatchs().length">
         <h3 class="section-title">
-          <i class="material-icons">sports_soccer</i>
+          <mat-icon>sports_soccer</mat-icon>
           Matchs
         </h3>
         <div class="matchs-grid">
@@ -193,7 +193,7 @@
             <app-match-card
               [match]="m"
               [showActions]="true"
-              [canEdit]="canEdit()"
+              [canEdit]="peutEditerStatut()"
               (onEdit)="ouvrirMatchEdit($event)"
               (onDetail)="ouvrirMatchDetail($event)"/>
           </div>
@@ -201,13 +201,13 @@
       </div> -->
 
       <h3 class="section-title" style="margin-top: 24px">
-        <i class="material-icons">account_tree</i>
+        <mat-icon>account_tree</mat-icon>
         Tableau
       </h3>
       <app-bracket-view
         [bracket]="bracket() ?? undefined"
         [competitionId]="competition.id"
-        [canEdit]="canEdit()"
+        [canEdit]="peutEditerStatut()"
         (matchClicked)="onMatchClicked($event)"/>
     </div>
   </ng-container>
@@ -237,18 +237,18 @@
 
       <div class="modal__header">
         <h3>
-          <i class="material-icons">date_range</i>
+          <mat-icon>date_range</mat-icon>
           Planifier — {{ journeeDetail()?.nom }}
         </h3>
         <button class="btn-close" (click)="planifMasseOpen.set(false)">
-          <i class="material-icons">close</i>
+          <mat-icon>close</mat-icon>
         </button>
       </div>
 
       <div class="modal__body modal__body--scroll">
 
         <p class="planif-hint">
-          <i class="material-icons">info_outline</i>
+          <mat-icon>info_outline</mat-icon>
           Les dates sont pré-remplies automatiquement.
           Modifiez match par match si nécessaire.
         </p>
@@ -279,7 +279,7 @@
                      class="form-input planif-input"/>
             </div>
             <div class="planif-field">
-              <label>Stade</label>
+              <label>{{ 'competition.commun.stade' | translate }}</label>
               <select [(ngModel)]="planifStades[m.id]"
                       class="form-select planif-input">
                 <option [ngValue]="null">Stade...</option>
@@ -302,12 +302,12 @@
       <div class="modal__footer">
         <button class="btn-ghost"
                 (click)="planifMasseOpen.set(false)">
-          Annuler
+          {{ 'competition.commun.annuler' | translate }}
         </button>
         <button class="btn-primary"
                 [disabled]="savingPlanif()"
                 (click)="sauvegarderPlanifMasse()">
-          <i class="material-icons">save</i>
+          <mat-icon>save</mat-icon>
           {{ savingPlanif() ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
       </div>

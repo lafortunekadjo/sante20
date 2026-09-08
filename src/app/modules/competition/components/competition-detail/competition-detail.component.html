@@ -7,14 +7,14 @@
 
       <div class="hero-top-bar">
         <button class="btn-back" routerLink="/competitions">
-          <i class="material-icons">arrow_back</i>
-          Retour
+          <mat-icon>arrow_back</mat-icon>
+          {{ 'competition.nav.retour' | translate }}
         </button>
         <button class="btn-edit"
-                *ngIf="canModifier()"
+                *ngIf="canModifier() && canModifierConfig()"
                 (click)="openDrawer()">
-          <i class="material-icons">edit</i>
-          Modifier
+          <mat-icon>edit</mat-icon>
+          {{ 'competition.commun.modifier' | translate }}
         </button>
       </div>
 
@@ -23,8 +23,7 @@
           <img *ngIf="competition()!.logoUrl"
                [src]="competition()!.logoUrl"
                [alt]="competition()!.nom"/>
-          <i *ngIf="!competition()!.logoUrl"
-             class="material-icons">emoji_events</i>
+          <mat-icon *ngIf="!competition()!.logoUrl">emoji_events</mat-icon>
         </div>
         <div class="comp-detail__info">
           <div class="comp-detail__badges">
@@ -38,7 +37,7 @@
                     [class]="'statut-' + competition()!.statut.toLowerCase()"
                     (click)="toggleStatutMenu($event)">
                 {{ statutLabel(competition()!.statut) }}
-                <i class="material-icons">expand_more</i>
+                <mat-icon>expand_more</mat-icon>
               </span>
               <div class="statut-menu" *ngIf="showStatutMenu()">
                 <button type="button"
@@ -66,11 +65,11 @@
 
           <div class="comp-detail__meta">
             <span *ngIf="competition()!.organisateurNom">
-              <i class="material-icons">person</i>
+              <mat-icon>person</mat-icon>
               {{ competition()!.organisateurNom }}
             </span>
             <span *ngIf="competition()!.dateDebut">
-              <i class="material-icons">calendar_today</i>
+              <mat-icon>calendar_today</mat-icon>
               {{ competition()!.dateDebut | date:'dd/MM/yyyy' }}
               <span *ngIf="competition()!.dateFin">
                 → {{ competition()!.dateFin | date:'dd/MM/yyyy' }}
@@ -78,12 +77,12 @@
             </span>
             <span *ngIf="competition()!.dateLimiteInscription"
                   [class.date-limit-warning]="isDateLimiteProche()">
-              <i class="material-icons">event_busy</i>
+              <mat-icon>event_busy</mat-icon>
               Inscriptions jusqu'au
               {{ competition()!.dateLimiteInscription | date:'dd/MM/yyyy' }}
             </span>
             <span>
-              <i class="material-icons">groups</i>
+              <mat-icon>groups</mat-icon>
               {{ competition()!.nombreParticipants }} équipes
             </span>
           </div>
@@ -97,7 +96,7 @@
         <button class="btn-action btn-action--success"
                 *ngIf="canLancer()"
                 (click)="ouvrirTirage()">
-          <i class="material-icons">shuffle</i>
+          <mat-icon>shuffle</mat-icon>
           Simuler le tirage
         </button>
 
@@ -105,7 +104,7 @@
         <button class="btn-action btn-action--warning"
                 *ngIf="canPhaseSuivante()"
                 (click)="phaseSuivante()">
-          <i class="material-icons">skip_next</i>
+          <mat-icon>skip_next</mat-icon>
           Phase suivante
         </button>
 
@@ -113,7 +112,7 @@
         <button class="btn-action btn-action--ghost"
                 *ngIf="canTerminer()"
                 (click)="confirmerTerminer()">
-          <i class="material-icons">flag</i>
+          <mat-icon>flag</mat-icon>
           Terminer
         </button>
       </div>
@@ -127,14 +126,14 @@
       <button class="tab-btn"
               [class.active]="activeTab() === 'resume'"
               (click)="setTab('resume')">
-        <i class="material-icons">dashboard</i>
+        <mat-icon>dashboard</mat-icon>
         Résumé
       </button>
 
       <button class="tab-btn"
               [class.active]="activeTab() === 'participants'"
               (click)="setTab('participants')">
-        <i class="material-icons">groups</i>
+        <mat-icon>groups</mat-icon>
         Équipes
       </button>
 
@@ -143,7 +142,7 @@
               *ngIf="canLancer()"
               [class.active]="activeTab() === 'tirage'"
               (click)="setTab('tirage')">
-        <i class="material-icons">shuffle</i>
+        <mat-icon>shuffle</mat-icon>
         Tirage
       </button>
 
@@ -152,30 +151,39 @@
               *ngIf="!canLancer()"
               [class.active]="activeTab() === 'phases'"
               (click)="setTab('phases')">
-        <i class="material-icons">account_tree</i>
-        Phases
+        <mat-icon>account_tree</mat-icon>
+        {{ 'competition.detail.onglets.phases' | translate }}
       </button>
 
       <button class="tab-btn"
               [class.active]="activeTab() === 'statistiques'"
               (click)="setTab('statistiques')">
-        <i class="material-icons">bar_chart</i>
-        Statistiques
+        <mat-icon>bar_chart</mat-icon>
+        {{ 'competition.detail.onglets.statistiques' | translate }}
       </button>
 
       <button class="tab-btn"
               [class.active]="activeTab() === 'awards'"
               (click)="setTab('awards')">
-        <i class="material-icons">emoji_events</i>
-        Palmarès
+        <mat-icon>emoji_events</mat-icon>
+        {{ 'competition.detail.onglets.awards' | translate }}
       </button>
 
- <button class="tab-btn" *ngIf="isResponsable()"
-         [class.active]="activeTab() === 'acces'"
-         (click)="setTab('acces')">
-   <i class="material-icons">manage_accounts</i>
-   Staff & Accès
-    </button>
+      <button class="tab-btn"
+              *ngIf="canGererOfficiels()"
+              [class.active]="activeTab() === 'officiels'"
+              (click)="setTab('officiels')">
+        <mat-icon>sports</mat-icon>
+        Officiels
+      </button>
+
+      <button class="tab-btn"
+              *ngIf="canGererStaff()"
+              [class.active]="activeTab() === 'acces'"
+              (click)="setTab('acces')">
+        <mat-icon>manage_accounts</mat-icon>
+        Staff & Accès
+      </button>
 
       
 
@@ -205,7 +213,8 @@
       <!-- Onglet Phases -->
       <app-tab-phases
         *ngIf="activeTab() === 'phases'"
-        [competition]="competition()!"/>
+        [competition]="competition()!"
+        [canEdit]="canSaisirScores()"/>
 
       <app-tab-statistiques
         *ngIf="activeTab() === 'statistiques'"
@@ -213,16 +222,22 @@
 
       <app-tab-awards
         *ngIf="activeTab() === 'awards'"
-        [competition]="competition()!"/>
+        [competition]="competition()!"
+        [canEdit]="canAttribuerAwards()"/>
 
       <!-- <app-tab-awards
         *ngIf="activeTab() === 'awards'"
         [competition]="competition()!"/> -->
 
-       <app-tab-acces
-   *ngIf="activeTab() === 'acces'"
-   [competition]="competition()!"
-   [currentUserRole]="currentUserRole()"/>
+      <app-officiels
+        *ngIf="activeTab() === 'officiels'"
+        [competition]="competition()!"
+        [canEdit]="canGererOfficiels()"/>
+
+      <app-tab-acces
+        *ngIf="activeTab() === 'acces'"
+        [competition]="competition()!"
+        [currentUserRole]="currentUserRole()"/>
 
     </div>
   </div>
@@ -236,11 +251,11 @@
   <div class="drawer" [class.open]="drawerOpen()">
     <div class="drawer__header">
       <h2>
-        <i class="material-icons">edit</i>
+        <mat-icon>edit</mat-icon>
         Modifier la compétition
       </h2>
       <button class="drawer__close" (click)="closeDrawer()">
-        <i class="material-icons">close</i>
+        <mat-icon>close</mat-icon>
       </button>
     </div>
 
@@ -250,19 +265,19 @@
         <!-- Infos générales -->
         <div class="drawer-section">
           <h3 class="drawer-section__title">
-            <i class="material-icons">info</i>
-            Informations générales
+            <mat-icon>info</mat-icon>
+            {{ 'competition.creation.champs.nom' | translate }}
           </h3>
 
           <div class="form-field">
-            <label class="form-label">Nom</label>
+            <label class="form-label">{{ 'competition.commun.nom' | translate }}</label>
             <input formControlName="nom"
                    class="form-input"
                    placeholder="Nom de la compétition"/>
           </div>
 
           <div class="form-field">
-            <label class="form-label">Description</label>
+            <label class="form-label">{{ 'competition.creation.champs.description' | translate }}</label>
             <textarea formControlName="description"
                       class="form-textarea"
                       rows="3"
@@ -270,14 +285,14 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">Organisateur</label>
+            <label class="form-label">{{ 'competition.creation.champs.organisateur' | translate }}</label>
             <input formControlName="organisateurNom"
                    class="form-input"
                    placeholder="Nom de l'organisateur"/>
           </div>
 
           <div class="form-field">
-            <label class="form-label">Logo (URL)</label>
+            <label class="form-label">{{ 'competition.creation.champs.logoUrl' | translate }}</label>
             <input formControlName="logoUrl"
                    class="form-input"
                    placeholder="https://..."/>
@@ -287,12 +302,12 @@
         <!-- Dates -->
         <div class="drawer-section">
           <h3 class="drawer-section__title">
-            <i class="material-icons">calendar_today</i>
+            <mat-icon>calendar_today</mat-icon>
             Dates
           </h3>
 
           <div class="form-field">
-            <label class="form-label">Date de début</label>
+            <label class="form-label">{{ 'competition.creation.champs.dateDebut' | translate }}</label>
             <input formControlName="dateDebut"
                    type="date" class="form-input"/>
           </div>
@@ -301,12 +316,12 @@
             <label class="form-label">Date de fin</label>
             <input formControlName="dateFin"
                    type="date" class="form-input"/>
-            <span class="form-hint">Optionnel</span>
+            <span class="form-hint">{{ 'competition.commun.optionnel' | translate }}</span>
           </div>
 
           <div class="form-field">
             <label class="form-label">
-              Date limite d'inscription
+              {{ 'competition.creation.champs.dateLimiteInscription' | translate }}
               <span class="badge-warning" *ngIf="isDateLimiteProche()">
                 Proche !
               </span>
@@ -321,19 +336,19 @@
              *ngIf="isBrouillon()"
              formGroupName="config">
           <h3 class="drawer-section__title">
-            <i class="material-icons">settings</i>
+            <mat-icon>settings</mat-icon>
             Configuration
             <span class="brouillon-only">Brouillon uniquement</span>
           </h3>
 
           <div class="form-field">
-            <label class="form-label">Nombre minimum d'équipes</label>
+            <label class="form-label">{{ 'competition.creation.equipes.nombreMin' | translate }}</label>
             <input formControlName="nombreEquipesMin"
                    type="number" min="2" class="form-input"/>
           </div>
 
           <div class="form-field">
-            <label class="form-label">Nombre maximum d'équipes</label>
+            <label class="form-label">{{ 'competition.creation.equipes.nombreMax' | translate }}</label>
             <input formControlName="nombreEquipesMax"
                    type="number" min="2" class="form-input"/>
           </div>
@@ -361,19 +376,19 @@
 
         <!-- Avertissements -->
         <div class="drawer-alert drawer-alert--warning" *ngIf="isEnCours()">
-          <i class="material-icons">warning</i>
+          <mat-icon>warning</mat-icon>
           <div>
-            <strong>Compétition en cours</strong>
+            <strong>{{ 'competition.detail.statuts.enCours' | translate }}</strong>
             <p>Seules les informations générales et les dates peuvent être modifiées.</p>
           </div>
         </div>
 
         <div class="drawer-alert drawer-alert--info"
              *ngIf="isTermine() || isAnnule()">
-          <i class="material-icons">info</i>
+          <mat-icon>info</mat-icon>
           <div>
-            <strong>Compétition clôturée</strong>
-            <p>Les modifications sont limitées.</p>
+            <strong>{{ 'competition.detail.statuts.cloturee' | translate }}</strong>
+            <p>{{ 'competition.detail.statuts.modifications' | translate }}</p>
           </div>
         </div>
 
@@ -381,17 +396,17 @@
     </div>
 
     <div class="drawer__footer">
-      <button class="btn-ghost" (click)="closeDrawer()">Annuler</button>
+      <button class="btn-ghost" (click)="closeDrawer()">{{ 'competition.commun.annuler' | translate }}</button>
       <button class="btn-danger-outline"
               *ngIf="canAnnuler()"
               (click)="confirmerAnnuler()">
-        <i class="material-icons">cancel</i>
+        <mat-icon>cancel</mat-icon>
         Annuler la compétition
       </button>
       <button class="btn-primary"
               (click)="sauvegarder()"
               [disabled]="saving()">
-        <i class="material-icons">save</i>
+        <mat-icon>save</mat-icon>
         {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </div>
@@ -403,9 +418,9 @@
        (click)="confirmModal.set(null)">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal__header">
-        <i class="material-icons" [class]="confirmModal()!.icon">
+        <mat-icon [class]="confirmModal()!.icon">
           {{ confirmModal()!.iconName }}
-        </i>
+        </mat-icon>
         <h3>{{ confirmModal()!.titre }}</h3>
       </div>
       <p class="modal__body">{{ confirmModal()!.message }}</p>
@@ -414,7 +429,7 @@
           Annuler
         </button>
         <button class="btn-danger" (click)="confirmModal()!.action()">
-          Confirmer
+          {{ 'competition.commun.confirmer' | translate }}
         </button>
       </div>
     </div>
@@ -425,6 +440,6 @@
 <ng-template #loadingTpl>
   <div class="comp-detail__loading">
     <div class="spinner"></div>
-    <span>Chargement...</span>
+    <span>{{ 'competition.commun.chargement' | translate }}</span>
   </div>
 </ng-template>

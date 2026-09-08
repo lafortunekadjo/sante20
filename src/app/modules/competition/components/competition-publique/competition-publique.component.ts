@@ -4,6 +4,8 @@ import {
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface MatchPublicDTO {
   id:                    number;
@@ -93,7 +95,7 @@ type FiltreMatch = 'tous' | 'a_venir' | 'en_cours' | 'termines';
 @Component({
   selector:    'app-competition-publique',
   standalone:  true,
-  imports:     [CommonModule, RouterModule, DatePipe],
+  imports:     [CommonModule, RouterModule, DatePipe,MatIconModule, TranslateModule],
   templateUrl: './competition-publique.component.html',
   styleUrls:   ['./competition-publique.component.scss']
 })

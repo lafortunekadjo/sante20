@@ -1,6 +1,8 @@
 import {
   Component, Input, OnInit, inject, signal, computed
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule }  from '@angular/forms';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
@@ -61,12 +63,14 @@ interface Candidat {
 @Component({
   selector:    'app-tab-awards',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports:     [CommonModule, FormsModule, TranslateModule,
+    MatIconModule],
   templateUrl: './tab-awards.component.html',
   styleUrls:   ['./tab-awards.component.scss']
 })
 export class TabAwardsComponent implements OnInit {
   @Input() competition!: any;
+  @Input() canEdit = false; // passé par competition-detail selon les permissions
 
   private api = inject(CompetitionApiService);
 
@@ -275,8 +279,10 @@ export class TabAwardsComponent implements OnInit {
       .subscribe({ next: () => this.chargerStats() });
   }
 
-  canEdit(): boolean {
-    return ['BROUILLON','EN_COURS','TERMINE'].includes(
+  // canEdit est maintenant un @Input() passé par competition-detail
+  // selon les permissions réelles (canAttribuerAwards)
+  peutEditerStatut(): boolean {
+    return this.canEdit && ['BROUILLON','EN_COURS','TERMINE'].includes(
       this.competition.statut as string);
   }
 

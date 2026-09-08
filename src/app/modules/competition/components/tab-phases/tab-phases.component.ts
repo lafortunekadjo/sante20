@@ -1,6 +1,8 @@
 import {
   Component, Input, OnInit, inject, signal
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule }   from '@angular/common';
 import { FormsModule }    from '@angular/forms';
 import { Router }         from '@angular/router';
@@ -25,13 +27,14 @@ import { forkJoin }                   from 'rxjs';
   imports: [
     CommonModule, FormsModule,
     ClassementTableComponent, BracketViewComponent,
-    MatchCardComponent, MatchEditComponent, ModalTirageFinaleComponent
-  ],
+    MatchCardComponent, MatchEditComponent, ModalTirageFinaleComponent, TranslateModule,
+    MatIconModule],
   templateUrl: './tab-phases.component.html',
   styleUrls:   ['./tab-phases.component.scss']
 })
 export class TabPhasesComponent implements OnInit {
   @Input() competition!: CompetitionDetailDTO;
+  @Input() canEdit = false; // passé par competition-detail selon les permissions
 
   // ── Services ──────────────────────────────────────────────
   private api        = inject(CompetitionApiService);
@@ -254,8 +257,10 @@ export class TabPhasesComponent implements OnInit {
   }
 
   // ── Helpers ───────────────────────────────────────────────
-  canEdit(): boolean {
-    return ['BROUILLON', 'EN_COURS'].includes(this.competition.statut as string);
+  // canEdit est maintenant un @Input() passé par competition-detail
+  // selon les permissions réelles du user (canSaisirScores)
+  peutEditerStatut(): boolean {
+    return this.canEdit && ['BROUILLON', 'EN_COURS'].includes(this.competition.statut as string);
   }
 
   peutPasserPhaseActuelle(): boolean {

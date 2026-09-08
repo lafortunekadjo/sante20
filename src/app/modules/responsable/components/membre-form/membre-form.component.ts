@@ -34,12 +34,13 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ImportResult } from '../../../../core/services/excel-import.service';
+import { ExcelImportService, ImportResult } from '../../../../core/services/excel-import.service';
 import { ExcelImportDialogComponent } from '../excel-import-dialog/excel-import-dialog.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterModule } from '@angular/router';
 import { Exercice, FinancesService } from '../../../../core/services/finances.service';
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+import { TirageExportDialogComponent } from '../tirage-export-dialog/tirage-export-dialog.component';
 
 @Component({
   selector: 'app-membre-form',
@@ -184,6 +185,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
     private cdr: ChangeDetectorRef,
     private financesService: FinancesService,
     private groupeContext : GroupeContextService,
+    private exportService : ExcelImportService,
   ) {}
 
  // APRÈS :
@@ -844,4 +846,81 @@ resetNewMembre(): void {
     const errorMessage = err.error?.message || defaultMessage;
     this.showErrorMessage(errorMessage);
   }
+
+  exportSimple(): void {
+  const data = this.filteredMembers.map(m => ({
+    Nom: m.nom,
+    Prénom: m.prenom,
+    Sexe: m.sexe,
+    Email: m.email,
+    Téléphone: m.tel,
+    Équipe: m.equipe?.nom || '',
+    Poste: m.poste,
+    Rôle: m.roleCustom?.nom || '',
+    Actif: m.active ? 'Oui' : 'Non',
+    'Cotisation payée': m.cotisationPayee ? 'Oui' : 'Non'
+  }));
+  this.exportService.exportToExcel(
+    data,
+    `membres_${this.groupe?.nom || 'groupe'}_${new Date().toISOString().slice(0, 10)}`
+  );
+}
+
+openTirageExportDialog(): void {
+  const dialogRef = this.dialog.open(TirageExportDialogComponent, {
+    width: '900px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    disableClose: true,
+    data: { membres: this.filteredMembers, equipes: this.equipes }
+  });
+
+  dialogRef.afterClosed().subscribe((success) => {
+    if (success) this.loadData();
+  });
+}
+
+exportSimplePdf(): void {
+  const rows = this.buildExportRows();
+  this.exportService.exportToPdf({
+    title: `Liste des membres — ${this.groupe?.nom || ''}`,
+    subtitle: `${rows.length} membre(s)`,
+    columns: [
+      { header: 'Nom', dataKey: 'Nom' },
+      { header: 'Prénom', dataKey: 'Prénom' },
+      { header: 'Équipe', dataKey: 'Équipe' },
+      { header: 'Poste', dataKey: 'Poste' },
+      { header: 'Rôle', dataKey: 'Rôle' },
+      { header: 'Actif', dataKey: 'Actif' },
+      { header: 'Cotisation', dataKey: 'Cotisation payée' },
+    ],
+    rows,
+    fileName: `membres_${this.groupe?.nom || 'groupe'}_${new Date().toISOString().slice(0, 10)}`,
+    orientation: 'landscape'
+  });
+}
+
+private buildExportRows(): any[] {
+  return this.filteredMembers.map(m => ({
+    Nom: m.nom,
+    Prénom: m.prenom,
+    Sexe: m.sexe,
+    Email: m.email,
+    Téléphone: m.tel,
+    Équipe: m.equipe?.nom || '',
+    Poste: m.poste,
+    Rôle: m.roleCustom?.nom || '',
+    Actif: m.active,
+    'Cotisation payée': m.cotisationPayee
+  }));
+}
+
+exportSimpleExcel(): void {
+  const data = this.buildExportRows();
+  this.exportService.exportToExcel(
+    data,
+    `membres_${this.groupe?.nom || 'groupe'}_${new Date().toISOString().slice(0, 10)}`
+  );
+}
+
 }

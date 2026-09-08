@@ -2,6 +2,8 @@ import {
   Component, Input, OnInit, Output, EventEmitter,
   inject, signal, computed
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import {
@@ -21,12 +23,15 @@ interface GroupeOption {
 @Component({
   selector:    'app-tab-participants',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, ReactiveFormsModule, RosterComponent],
+  imports:     [CommonModule, FormsModule, ReactiveFormsModule, RosterComponent,
+    TranslateModule,
+    MatIconModule],
   templateUrl: './tab-participants.component.html',
   styleUrls:   ['./tab-participants.component.scss']
 })
 export class TabParticipantsComponent implements OnInit {
   @Input()  competition!: CompetitionDetailDTO;
+  @Input()  permissions: string[] = []; // permissions du user connecté
   @Output() updated = new EventEmitter<void>();
 
   private api  = inject(CompetitionApiService);
@@ -209,7 +214,8 @@ export class TabParticipantsComponent implements OnInit {
 
   // Ajouter après canInscrire()
 peutGererRoster(): boolean {
-  return !['TERMINE', 'ANNULE'].includes(this.competition.statut as string);
+  return !['TERMINE', 'ANNULE'].includes(this.competition.statut as string)
+      && this.hasPermission('GERER_COMPOSITIONS');
 }
 
   // ── Actions participants ───────────────────────────────────
@@ -230,13 +236,24 @@ peutGererRoster(): boolean {
   }
 
   // ── Helpers ───────────────────────────────────────────────
+  hasPermission(perm: string): boolean {
+    return this.permissions.includes('MODIFIER_CONFIG') // responsable
+        || this.permissions.includes(perm);
+  }
+
   canInscrire(): boolean {
-    return ['BROUILLON', 'INSCRIPTION_OUVERTE'].includes(this.competition.statut);
+    return ['BROUILLON', 'INSCRIPTION_OUVERTE'].includes(this.competition.statut)
+        && this.hasPermission('MODIFIER_CONFIG');
   }
 
   canRetirer(p: CompetitionParticipantDTO): boolean {
     return p.statutInscription === StatutInscription.VALIDE
-        && this.competition.statut !== 'EN_COURS' as any;
+        && this.competition.statut !== 'EN_COURS' as any
+        && this.hasPermission('MODIFIER_CONFIG');
+  }
+
+  canValiderRejeter(): boolean {
+    return this.hasPermission('MODIFIER_CONFIG');
   }
 
   countByStatut(s: StatutInscription): number {

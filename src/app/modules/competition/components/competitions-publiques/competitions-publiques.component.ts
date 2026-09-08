@@ -5,11 +5,13 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector:    'app-competitions-publiques',
   standalone:  true,
-  imports:     [CommonModule, RouterModule, FormsModule, DatePipe],
+  imports:     [CommonModule, RouterModule, FormsModule, DatePipe,MatIconModule, TranslateModule],
   templateUrl: './competitions-publiques.component.html',
   styleUrls:   ['./competitions-publiques.component.scss']
 })

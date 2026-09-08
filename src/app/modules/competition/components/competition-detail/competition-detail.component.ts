@@ -1,27 +1,38 @@
 // pages/competition-detail/competition-detail.component.ts
 import {
-  Component, OnInit, inject, signal, HostListener
+  Component, OnInit, inject, signal, computed
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   ReactiveFormsModule, FormBuilder, FormGroup
 } from '@angular/forms';
-import { CompetitionDetailDTO, StatutCompetition, FormatCompetition } from '../../../../core/models/competition.models';
+import {
+  CompetitionDetailDTO, StatutCompetition, FormatCompetition
+} from '../../../../core/models/competition.models';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
 import { TabParticipantsComponent } from '../tab-participants/tab-participants.component';
-import { TabPhasesComponent } from '../tab-phases/tab-phases.component';
-import { TabResumeComponent } from '../tab-resume/tab-resume.component';
+import { TabPhasesComponent }       from '../tab-phases/tab-phases.component';
+import { TabResumeComponent }       from '../tab-resume/tab-resume.component';
 import { TabStatistiquesComponent } from '../tab-statistiques/tab-statistiques.component';
-import { TabTirageComponent } from '../../component/tab-tirage/tab-tirage.component';
-import { TabAwardsComponent } from '../tab-awards/tab-awards.component';
-import { TabAccesComponent } from '../tab-acces/tab-acces.component';
+import { TabTirageComponent }       from '../../component/tab-tirage/tab-tirage.component';
+import { TabAwardsComponent }       from '../tab-awards/tab-awards.component';
+import { TabAccesComponent }        from '../tab-acces/tab-acces.component';
+import { OfficielsComponent }       from '../officiels/officiels.component';
 
+type Tab = 'resume' | 'participants' | 'tirage' | 'phases' |
+           'statistiques' | 'awards' | 'officiels' | 'acces';
 
-type Tab = 'resume' | 'participants' | 'tirage' | 'phases' | 'statistiques' | 'awards' | 'acces';
 type RoleCompetition =
   'RESPONSABLE' | 'SECRETAIRE' | 'ARBITRE' | 'MEDECIN' |
   'KINESITHERAPEUTE' | 'COMMISSAIRE' | 'DELEGUE' | 'OBSERVATEUR';
+
+interface MonAccesDTO {
+  role:        string;
+  permissions: string[];
+}
 
 @Component({
   selector: 'app-competition-detail',
@@ -29,152 +40,156 @@ type RoleCompetition =
   imports: [
     CommonModule, RouterModule, ReactiveFormsModule,
     TabResumeComponent, TabParticipantsComponent,
-    TabPhasesComponent, TabStatistiquesComponent,TabTirageComponent, TabAwardsComponent, TabAccesComponent
+    TabPhasesComponent, TabStatistiquesComponent,
+    TabTirageComponent, TabAwardsComponent,
+    TabAccesComponent, OfficielsComponent,
+    TranslateModule, MatIconModule,
   ],
   templateUrl: './competition-detail.component.html',
-  styleUrls: ['./competition-detail.component.scss']
+  styleUrls:   ['./competition-detail.component.scss']
 })
 export class CompetitionDetailComponent implements OnInit {
 
   private route = inject(ActivatedRoute);
   private api   = inject(CompetitionApiService);
   private fb    = inject(FormBuilder);
-currentUserRole = signal<RoleCompetition | null>(null);
 
-  competition   = signal<CompetitionDetailDTO | null>(null);
-  activeTab     = signal<Tab>('resume');
-  drawerOpen    = signal(false);
+  // ── State ──────────────────────────────────────────────────
+  competition    = signal<CompetitionDetailDTO | null>(null);
+  activeTab      = signal<Tab>('resume');
+  drawerOpen     = signal(false);
   showStatutMenu = signal(false);
-  saving        = signal(false);
-  confirmModal  = signal<{
-    titre: string;
-    message: string;
-    iconName: string;
-    icon: string;
-    action: () => void;
+  saving         = signal(false);
+  confirmModal   = signal<{
+    titre: string; message: string;
+    iconName: string; icon: string; action: () => void;
   } | null>(null);
+
+  // ── Accès & permissions ───────────────────────────────────
+  currentUserRole = signal<RoleCompetition | null>(null);
+  monAcces        = signal<MonAccesDTO | null>(null);
+  isAdminMyApp    = false;
+
+  // ── Computed permissions ──────────────────────────────────
+  // Toutes les permissions sont dérivées de monAcces
+  canSaisirScores      = computed(() => this.hp('SAISIR_SCORES'));
+  canGererCompositions = computed(() => this.hp('GERER_COMPOSITIONS'));
+  canValiderFeuilles   = computed(() => this.hp('VALIDER_FEUILLES'));
+  canFichesMedicales   = computed(() => this.hp('FICHES_MEDICALES'));
+  canGererOfficiels    = computed(() => this.hp('GERER_OFFICIELS'));
+  canPlanifierMatchs   = computed(() => this.hp('PLANIFIER_MATCHS'));
+  canGererPhases       = computed(() => this.hp('GERER_PHASES'));
+  canAttribuerAwards   = computed(() => this.hp('ATTRIBUER_AWARDS'));
+  canGererStaff        = computed(() => this.hp('GERER_STAFF'));
+  canModifierConfig    = computed(() => this.hp('MODIFIER_CONFIG'));
+
+  private hp(perm: string): boolean {
+    if (this.isAdminMyApp) return true;
+    return this.monAcces()?.permissions?.includes(perm) ?? false;
+  }
 
   editForm?: FormGroup;
 
   tabs = [
-    { key: 'resume'       as Tab, label: 'Résumé',      icon: 'dashboard' },
-    { key: 'participants' as Tab, label: 'Équipes',      icon: 'groups' },
+    { key: 'resume'       as Tab, label: 'Résumé',      icon: 'dashboard'            },
+    { key: 'participants' as Tab, label: 'Équipes',      icon: 'groups'               },
     { key: 'phases'       as Tab, label: 'Phases',       icon: 'format_list_bulleted' },
-    { key: 'statistiques' as Tab, label: 'Statistiques', icon: 'bar_chart' },
+    { key: 'statistiques' as Tab, label: 'Statistiques', icon: 'bar_chart'            },
   ];
 
-  
+  get competitionId(): number {
+    return Number(this.route.snapshot.paramMap.get('id'));
+  }
 
-  // ── Transitions de statut autorisées
+  // ── Init ──────────────────────────────────────────────────
+  ngOnInit(): void {
+    this.reload();
+    this.chargerMonRole();
+  }
+
+  reload(): void {
+    this.api.getById(this.competitionId).subscribe(c => {
+      this.competition.set(c);
+      this.buildForm(c);
+    });
+  }
+
+  // ── Charger le rôle + permissions depuis le backend ───────
+  private chargerMonRole(): void {
+    this.api.getMonRole(this.competitionId).subscribe({
+      next: (r: any) => {
+        this.currentUserRole.set((r.role as RoleCompetition) || null);
+        this.monAcces.set({
+          role:        r.role ?? '',
+          permissions: r.permissions ?? []
+        });
+        this.isAdminMyApp = r.role === 'ADMIN' || r.isAdmin === true;
+      },
+      error: () => {
+        this.currentUserRole.set(null);
+        this.monAcces.set(null);
+      }
+    });
+  }
+
+  // ── Helpers rôle ─────────────────────────────────────────
+  isResponsable(): boolean {
+    return this.isAdminMyApp || this.currentUserRole() === 'RESPONSABLE';
+  }
+
+  canEdit(): boolean {
+    return this.isAdminMyApp
+      || this.canModifierConfig()
+      || this.canSaisirScores();
+  }
+
+  // ── Statuts ───────────────────────────────────────────────
   transitionsDisponibles(): { statut: StatutCompetition; label: string }[] {
+    if (!this.canModifierConfig() && !this.isResponsable()) return [];
     const s = this.competition()?.statut;
     switch (s) {
       case StatutCompetition.BROUILLON:
         return [{ statut: StatutCompetition.INSCRIPTION_OUVERTE,
                   label: 'Ouvrir les inscriptions' }];
       case StatutCompetition.INSCRIPTION_OUVERTE:
-        return [
-          { statut: StatutCompetition.BROUILLON,
-            label: 'Repasser en brouillon' },
-        ];
+        return [{ statut: StatutCompetition.BROUILLON,
+                  label: 'Repasser en brouillon' }];
       case StatutCompetition.EN_COURS:
         return [
-          { statut: StatutCompetition.TERMINE,
-            label: 'Marquer comme terminée' },
-          { statut: StatutCompetition.ANNULE,
-            label: 'Annuler la compétition' },
+          { statut: StatutCompetition.TERMINE, label: 'Marquer comme terminée' },
+          { statut: StatutCompetition.ANNULE,  label: 'Annuler la compétition' },
         ];
       default:
         return [];
     }
   }
 
-  get competitionId(): number {
-  return Number(this.route.snapshot.paramMap.get('id'));
-}
-
-
-  // Dans ngOnInit() ou après chargement de la compétition
-private chargerMonRole(): void {
-  this.api.getMonRole(this.competitionId).subscribe({
-    next: r => this.currentUserRole.set((r.role as RoleCompetition) || null),
-    error: () => this.currentUserRole.set(null)
-  });
-}
-
-// Helper
-isResponsable(): boolean {
-  return this.currentUserRole() === 'RESPONSABLE';
-}
-
-canEdit(): boolean {
-  return ['RESPONSABLE', 'SECRETAIRE'].includes(
-    this.currentUserRole() ?? '');
-}
-
-  onTirageLaunched(): void {
-  // Recharger la compétition depuis l'API
-  this.reload();
-  // Basculer sur l'onglet phases
-  this.activeTab.set('phases');
-}
-
-  // ── Guards
-  canModifier():       boolean { return this.competition()?.statut !== StatutCompetition.ANNULE; }
-  canChangerStatut():  boolean { return this.transitionsDisponibles().length > 0; }
-  canLancer():         boolean { return this.competition()?.statut === StatutCompetition.INSCRIPTION_OUVERTE; }
-  canPhaseSuivante():  boolean {
-    return this.competition()?.statut === StatutCompetition.EN_COURS
-        && this.competition()?.config?.format === FormatCompetition.MIXTE;
-  }
-  canTerminer():       boolean { return this.competition()?.statut === StatutCompetition.EN_COURS; }
-  canAnnuler():        boolean {
-    return [StatutCompetition.BROUILLON,
-            StatutCompetition.INSCRIPTION_OUVERTE].includes(
-      this.competition()?.statut as StatutCompetition);
-  }
-  isBrouillon():       boolean { return this.competition()?.statut === StatutCompetition.BROUILLON; }
+  canModifier():          boolean { return this.competition()?.statut !== StatutCompetition.ANNULE && this.canModifierConfig(); }
+  canChangerStatut():     boolean { return this.transitionsDisponibles().length > 0; }
+  canLancer():            boolean { return this.competition()?.statut === StatutCompetition.INSCRIPTION_OUVERTE && this.canGererPhases(); }
+  canPhaseSuivante():     boolean { return this.competition()?.statut === StatutCompetition.EN_COURS && this.competition()?.config?.format === FormatCompetition.MIXTE && this.canGererPhases(); }
+  canTerminer():          boolean { return this.competition()?.statut === StatutCompetition.EN_COURS && this.isResponsable(); }
+  canAnnuler():           boolean { return [StatutCompetition.BROUILLON, StatutCompetition.INSCRIPTION_OUVERTE].includes(this.competition()?.statut as StatutCompetition) && this.isResponsable(); }
+  isBrouillon():          boolean { return this.competition()?.statut === StatutCompetition.BROUILLON; }
   isInscriptionOuverte(): boolean { return this.competition()?.statut === StatutCompetition.INSCRIPTION_OUVERTE; }
-  isEnCours():         boolean { return this.competition()?.statut === StatutCompetition.EN_COURS; }
-  isTermine():         boolean { return this.competition()?.statut === StatutCompetition.TERMINE; }
-  isAnnule():          boolean { return this.competition()?.statut === StatutCompetition.ANNULE; }
+  isEnCours():            boolean { return this.competition()?.statut === StatutCompetition.EN_COURS; }
+  isTermine():            boolean { return this.competition()?.statut === StatutCompetition.TERMINE; }
+  isAnnule():             boolean { return this.competition()?.statut === StatutCompetition.ANNULE; }
 
   isDateLimiteProche(): boolean {
     const d = this.competition()?.dateLimiteInscription;
     if (!d) return false;
     const diff = new Date(d).getTime() - Date.now();
-    return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000; // 3 jours
+    return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
   }
 
-  ngOnInit(): void { this.reload();
-    this.chargerMonRole();
-   }
-
-  reload(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.api.getById(id).subscribe(c => {
-      this.competition.set(c);
-      this.buildForm(c);
-    });
-  }
-
-//   @HostListener('document:click', ['$event'])
-// onDocumentClick(event: MouseEvent): void {
-//   const target = event.target as HTMLElement;
-//   if (!target.closest('.statut-selector')) {
-//     this.showStatutMenu.set(false);
-//   }
-// }
-
-  // ── Drawer
+  // ── Drawer ────────────────────────────────────────────────
   openDrawer(): void {
     this.buildForm(this.competition()!);
     this.drawerOpen.set(true);
   }
 
-  closeDrawer(): void {
-    this.drawerOpen.set(false);
-  }
+  closeDrawer(): void { this.drawerOpen.set(false); }
 
   buildForm(c: CompetitionDetailDTO): void {
     this.editForm = this.fb.group({
@@ -196,27 +211,18 @@ canEdit(): boolean {
     });
   }
 
-  ouvrirTirage(): void {
-  this.activeTab.set('tirage');
-}
-
   sauvegarder(): void {
     if (!this.editForm || this.editForm.invalid) return;
     this.saving.set(true);
     const v = this.editForm.value;
-
-    // Construire le payload selon le statut
     const payload: any = {
-      nom:                   v.nom,
-      description:           v.description || undefined,
-      organisateurNom:       v.organisateurNom || undefined,
-      logoUrl:               v.logoUrl || undefined,
-      dateDebut:             v.dateDebut || undefined,
-      dateFin:               v.dateFin || undefined,
+      nom: v.nom, description: v.description || undefined,
+      organisateurNom: v.organisateurNom || undefined,
+      logoUrl: v.logoUrl || undefined,
+      dateDebut: v.dateDebut || undefined,
+      dateFin: v.dateFin || undefined,
       dateLimiteInscription: v.dateLimiteInscription || undefined,
     };
-
-    // Config seulement si brouillon
     if (this.isBrouillon()) {
       payload.config = {
         nombreEquipesMin:             v.config.nombreEquipesMin,
@@ -227,105 +233,76 @@ canEdit(): boolean {
         matchsSuspensionCartonRouge:  v.config.matchsSuspensionCartonRouge,
       };
     }
-
     this.api.modifier(this.competition()!.id, payload).subscribe({
-      next: () => {
-        this.reload();
-        this.closeDrawer();
-        this.saving.set(false);
-      },
+      next: () => { this.reload(); this.closeDrawer(); this.saving.set(false); },
       error: () => this.saving.set(false)
     });
   }
 
-  // ── Changement de statut
- toggleStatutMenu(event: MouseEvent): void {
-  event.stopPropagation(); // Empêche le HostListener de fermer le menu aussitôt
-  console.log('Toggle Menu cliqué'); 
-  this.showStatutMenu.update(v => !v);
-}
+  // ── Navigation ────────────────────────────────────────────
+  setTab(t: Tab): void { this.activeTab.set(t); }
 
- // ── Corriger changerStatut
-changerStatut(statut: StatutCompetition, event: MouseEvent): void {
-  event.stopPropagation();
-  console.log(statut)
-  this.showStatutMenu.set(false); // Ferme le menu immédiatement
-  const id = this.competition()!.id;
+  ouvrirTirage(): void { this.activeTab.set('tirage'); }
 
-  switch (statut) {
-    
-    case StatutCompetition.INSCRIPTION_OUVERTE:
-      console.log(statut)
-      // Appelle l'API pour ouvrir les inscriptions
-      this.api.ouvrirInscriptions(id).subscribe({
-        next: () => this.reload(), // Recharge les données pour mettre à jour l'UI
-        error: (e) => console.error('Erreur lors de l\'ouverture des inscriptions', e)
-      });
-      break;
-
-    case StatutCompetition.BROUILLON:
-      console.log(statut)
-      // Appelle l'API pour repasser en brouillon (fermer inscriptions)
-      this.api.fermerInscriptions(id).subscribe({
-        next: () => this.reload(),
-        error: (e) => console.error('Erreur lors du retour en brouillon', e)
-      });
-      break;
-
-    case StatutCompetition.TERMINE:
-      this.confirmerTerminer(); // Ouvre la modal de confirmation existante
-      break;
-
-    case StatutCompetition.ANNULE:
-      this.confirmerAnnuler(); // Ouvre la modal de confirmation existante
-      break;
+  onTirageLaunched(): void {
+    this.reload();
+    this.activeTab.set('phases');
   }
-}
 
-  // ── Actions avec confirmation
-lancer(): void {
-  this.confirmModal.set({
-    titre:    'Lancer la compétition',
-    message:  'Une fois lancée, les inscriptions seront fermées et le calendrier sera généré automatiquement.',
-    iconName: 'play_arrow',
-    icon:     'icon-success',
-    action:   () => {
-      this.api.lancer(this.competition()!.id).subscribe({
-        next: () => {
-          this.reload();
-          this.confirmModal.set(null);
-        },
-        error: (err) => {
-          // 1. Extraction du message de la BusinessException
-          // Spring Boot place le message d'exception dans la propriété 'message' du corps de la réponse
-          const messageErreur = err.error?.message || "Une erreur imprévue est survenue.";
+  // ── Statut ────────────────────────────────────────────────
+  toggleStatutMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showStatutMenu.update(v => !v);
+  }
 
-          // 2. Mise à jour de la modal pour afficher l'erreur au lieu de la fermer
-          this.confirmModal.update(current => current ? {
-            ...current,
-            titre: 'Lancement impossible',
-            message: messageErreur, // Affichera : "Pas assez d'équipes inscrites (min: 4)"
-            icon: 'icon-danger',
-            iconName: 'report_problem'
-          } : null);
-
-          console.error('Erreur métier capturée :', messageErreur);
-        }
-      });
+  changerStatut(statut: StatutCompetition, event: MouseEvent): void {
+    event.stopPropagation();
+    this.showStatutMenu.set(false);
+    const id = this.competition()!.id;
+    switch (statut) {
+      case StatutCompetition.INSCRIPTION_OUVERTE:
+        this.api.ouvrirInscriptions(id).subscribe({ next: () => this.reload() });
+        break;
+      case StatutCompetition.BROUILLON:
+        this.api.fermerInscriptions(id).subscribe({ next: () => this.reload() });
+        break;
+      case StatutCompetition.TERMINE:
+        this.confirmerTerminer();
+        break;
+      case StatutCompetition.ANNULE:
+        this.confirmerAnnuler();
+        break;
     }
-  });
-}
+  }
+
+  lancer(): void {
+    this.confirmModal.set({
+      titre: 'Lancer la compétition',
+      message: 'Une fois lancée, les inscriptions seront fermées et le calendrier sera généré automatiquement.',
+      iconName: 'play_arrow', icon: 'icon-success',
+      action: () => {
+        this.api.lancer(this.competition()!.id).subscribe({
+          next: () => { this.reload(); this.confirmModal.set(null); },
+          error: err => {
+            const msg = err.error?.message || 'Une erreur imprévue est survenue.';
+            this.confirmModal.update(c => c ? {
+              ...c, titre: 'Lancement impossible',
+              message: msg, icon: 'icon-danger', iconName: 'report_problem'
+            } : null);
+          }
+        });
+      }
+    });
+  }
+
   phaseSuivante(): void {
     this.confirmModal.set({
-      titre:    'Passer à la phase suivante',
-      message:  'Tous les matchs de la phase de groupes seront clôturés '
-              + 'et le bracket de la phase finale sera généré.',
-      iconName: 'skip_next',
-      icon:     'icon-warning',
-      action:   () => {
+      titre: 'Passer à la phase suivante',
+      message: 'Tous les matchs de la phase de groupes seront clôturés et le bracket sera généré.',
+      iconName: 'skip_next', icon: 'icon-warning',
+      action: () => {
         this.api.phaseSuivante(this.competition()!.id).subscribe(() => {
-          this.reload();
-          this.confirmModal.set(null);
+          this.reload(); this.confirmModal.set(null);
         });
       }
     });
@@ -333,15 +310,12 @@ lancer(): void {
 
   confirmerTerminer(): void {
     this.confirmModal.set({
-      titre:    'Terminer la compétition',
-      message:  'La compétition sera marquée comme terminée. '
-              + 'Aucune modification ne sera possible ensuite.',
-      iconName: 'flag',
-      icon:     'icon-warning',
-      action:   () => {
+      titre: 'Terminer la compétition',
+      message: 'La compétition sera marquée comme terminée. Aucune modification ne sera possible ensuite.',
+      iconName: 'flag', icon: 'icon-warning',
+      action: () => {
         this.api.terminer(this.competition()!.id).subscribe(() => {
-          this.reload();
-          this.confirmModal.set(null);
+          this.reload(); this.confirmModal.set(null);
         });
       }
     });
@@ -350,23 +324,18 @@ lancer(): void {
   confirmerAnnuler(): void {
     this.showStatutMenu.set(false);
     this.confirmModal.set({
-      titre:    'Annuler la compétition',
-      message:  'La compétition sera annulée définitivement. '
-              + 'Cette action est irréversible.',
-      iconName: 'cancel',
-      icon:     'icon-danger',
-      action:   () => {
+      titre: 'Annuler la compétition',
+      message: 'La compétition sera annulée définitivement. Cette action est irréversible.',
+      iconName: 'cancel', icon: 'icon-danger',
+      action: () => {
         this.api.annuler(this.competition()!.id).subscribe(() => {
-          this.reload();
-          this.confirmModal.set(null);
-          this.closeDrawer();
+          this.reload(); this.confirmModal.set(null); this.closeDrawer();
         });
       }
     });
   }
 
-  setTab(t: Tab): void { this.activeTab.set(t); }
-
+  // ── Labels ────────────────────────────────────────────────
   typeLabel(t: string): string {
     const m: Record<string, string> = {
       CHAMPIONNAT: 'Championnat', COUPE: 'Coupe', MIXTE: 'Mixte'
@@ -385,6 +354,3 @@ lancer(): void {
     return m[s] ?? s;
   }
 }
-
-
-

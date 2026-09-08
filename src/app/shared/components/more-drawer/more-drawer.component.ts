@@ -18,6 +18,7 @@ const CATEGORIE_CONFIG: Record<string, { icone: string; couleur: string; ordre: 
   SPORT:         { icone: 'sports_soccer',   couleur: 'green',  ordre: 2 },
   FINANCES:      { icone: 'account_balance', couleur: 'amber',  ordre: 3 },
   COMMUNICATION: { icone: 'campaign',        couleur: 'purple', ordre: 4 },
+  COMPETITION: { icone: 'emoji_events',        couleur: 'red', ordre: 5 },
 };
 
 const COMMUN_ICONS: Record<string, string> = {
@@ -62,6 +63,7 @@ export class MoreDrawerComponent implements OnInit, OnDestroy {
   isMembre      = false;
   isAdmin       = false;
   isPartenaire  = false;
+  isCompetition  = true;
   userHasGroup  = false;
 
   isDark      = false;

@@ -1,236 +1,504 @@
-<div class="feuille-wrap">
+<div class="feuille-wrapper">
 
-  <!-- Boutons impression (cachés à l'impression) -->
-  <div class="feuille-actions no-print">
-    <button class="btn-primary" (click)="imprimer()">
-      <i class="material-icons">print</i>
-      Imprimer
-    </button>
-    <button class="btn-outline" (click)="telechargerPDF()">
-      <i class="material-icons">picture_as_pdf</i>
-      PDF
-    </button>
+  <!-- ══ TOOLBAR (masqué à l'impression) ═══════════════════════ -->
+  <div class="toolbar no-print">
+    <div class="toolbar__title">
+      <span class="statut-badge statut-badge--{{ feuille()?.statut?.toLowerCase() ?? 'brouillon' }}">
+        <mat-icon style="font-size:14px">
+          {{ isCloturee() ? 'lock' : isValidee() ? 'verified' : 'edit_note' }}
+        </mat-icon>
+        Feuille de match {{ statutLabel() }}
+      </span>
+    </div>
+    <div class="toolbar__actions">
+      <button class="btn-primary btn-sm"
+              *ngIf="canValider && isBrouillon()"
+              (click)="showObsForm.set(!showObsForm())">
+        <mat-icon>verified</mat-icon>
+        Valider la feuille
+      </button>
+      <button class="btn-ghost btn-sm" (click)="telechargerAvant()">
+        <mat-icon>download</mat-icon>
+        Feuille avant match
+      </button>
+      <button class="btn-ghost btn-sm" (click)="telechargerRapport()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Rapport complet PDF
+      </button>
+      <button class="btn-ghost btn-sm" (click)="imprimer()">
+        <mat-icon>print</mat-icon>
+        Imprimer
+      </button>
+    </div>
   </div>
 
-  <!-- ══ FEUILLE DE MATCH ══════════════════════════════════════ -->
-  <div class="feuille" id="feuille-match">
+  <!-- Formulaire observations -->
+  <div class="obs-form no-print" *ngIf="showObsForm()">
+    <label class="form-label">Observations du commissaire (optionnel)</label>
+    <textarea [(ngModel)]="observations" rows="3"
+              placeholder="Incidents, conditions particulières..."></textarea>
+    <div class="obs-form__actions">
+      <button class="btn-ghost btn-sm" (click)="showObsForm.set(false)">Annuler</button>
+      <button class="btn-primary btn-sm" [disabled]="saving()" (click)="valider()">
+        <mat-icon>check</mat-icon>
+        {{ saving() ? 'Validation...' : 'Confirmer la validation' }}
+      </button>
+    </div>
+  </div>
 
-    <!-- En-tête -->
-    <div class="feuille__header">
-      <div class="feuille__logo">
-        <div class="logo-placeholder">My2-0</div>
+  <!-- ══ FEUILLE OFFICIELLE ════════════════════════════════════ -->
+  <div class="feuille-officielle" *ngIf="feuille()">
+
+    <!-- ── EN-TÊTE ─────────────────────────────────────────── -->
+    <div class="feuille-header">
+      <div class="feuille-header__top">
+        <div class="feuille-header__logo">
+          <div class="feuille-header__logo-placeholder">🏆</div>
+        </div>
+        <div class="feuille-header__titre">
+          <h1>{{ feuille()!.competition }}</h1>
+          <h2>Feuille de match officielle</h2>
+          <div class="feuille-type" *ngIf="feuille()!.typeCompetition">
+            {{ feuille()!.typeCompetition }}
+            <span *ngIf="feuille()!.phase"> — {{ feuille()!.phase }}</span>
+            <span *ngIf="feuille()!.journee"> · {{ feuille()!.journee }}</span>
+          </div>
+        </div>
+        <div class="feuille-header__validation">
+          <div class="valid-label">Statut</div>
+          <div style="font-size:11px; margin-bottom:6px">
+            <span class="valid-check" [class.checked]="isValidee() || isCloturee()"></span>
+            Validée
+          </div>
+          <div style="font-size:11px">
+            <span class="valid-check" [class.checked]="isCloturee()"></span>
+            Clôturée
+          </div>
+        </div>
       </div>
-      <div class="feuille__title">
-        <h1>FEUILLE DE MATCH</h1>
-        <h2>{{ competitionNom }}</h2>
-        <p>{{ journeeNom }}</p>
-      </div>
-      <div class="feuille__infos">
-        <p><strong>Date :</strong> {{ match.dateHeure | date:'dd/MM/yyyy' }}</p>
-        <p><strong>Heure :</strong> {{ match.dateHeure | date:'HH:mm' }}</p>
-        <p><strong>Lieu :</strong> {{ match.lieu ?? match.stade?.nom ?? '–' }}</p>
+
+      <!-- Méta-infos -->
+      <div class="feuille-header__meta">
+        <div class="meta-cell">
+          <span class="meta-label">Date</span>
+          <span class="meta-value">
+            {{ feuille()!.dateHeure | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+        <div class="meta-cell">
+          <span class="meta-label">Heure</span>
+          <span class="meta-value">
+            {{ feuille()!.dateHeure | date:'HH:mm' }}
+          </span>
+        </div>
+        <div class="meta-cell">
+          <span class="meta-label">Terrain / Stade</span>
+          <span class="meta-value">{{ feuille()!.stade || feuille()!.lieu || '—' }}</span>
+        </div>
+        <div class="meta-cell">
+          <span class="meta-label">N° Feuille</span>
+          <span class="meta-value">FM-{{ feuille()!.matchId }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Score -->
-    <div class="feuille__score">
-      <div class="feuille__equipe">
-        <strong>{{ match.domicile?.nomEquipe }}</strong>
-        <span class="feuille__label">DOMICILE</span>
+    <!-- ── SCORE ───────────────────────────────────────────── -->
+    <div class="feuille-score">
+      <div class="feuille-score__main">
+
+        <!-- Équipe domicile -->
+        <div class="score-equipe score-equipe--dom">
+          <div class="score-equipe__logo" style="justify-content:flex-end">
+            <div class="score-equipe__nom">{{ feuille()!.domicile.nomEquipe }}</div>
+            <img *ngIf="feuille()!.domicile.logoUrl"
+                 [src]="feuille()!.domicile.logoUrl"
+                 style="width:40px;height:40px;object-fit:contain"/>
+            <div class="score-equipe__logo-placeholder" *ngIf="!feuille()!.domicile.logoUrl">
+              {{ getInitials(feuille()!.domicile.nomEquipe) }}
+            </div>
+          </div>
+          <div class="score-equipe__stats">
+            <span>⚽ {{ feuille()!.domicile.nbButs }}</span>
+            <span *ngIf="feuille()!.domicile.nbCartonJaune">🟨 {{ feuille()!.domicile.nbCartonJaune }}</span>
+            <span *ngIf="feuille()!.domicile.nbCartonRouge">🟥 {{ feuille()!.domicile.nbCartonRouge }}</span>
+          </div>
+        </div>
+
+        <!-- Score -->
+        <div class="score-centre">
+          <div class="score-centre__chiffres">
+            {{ feuille()!.butsDomicile ?? '–' }} : {{ feuille()!.butsExterieur ?? '–' }}
+          </div>
+          <div class="score-centre__prolong"
+               *ngIf="feuille()!.butsDomicileProlong != null">
+            ap {{ feuille()!.butsDomicileProlong }} : {{ feuille()!.butsExterieurProlong }}
+          </div>
+          <div class="score-centre__tab" *ngIf="feuille()!.tabDomicile != null">
+            tab {{ feuille()!.tabDomicile }} : {{ feuille()!.tabExterieur }}
+          </div>
+          <div class="score-centre__statut">Mi-temps</div>
+        </div>
+
+        <!-- Équipe extérieure -->
+        <div class="score-equipe score-equipe--ext">
+          <div class="score-equipe__logo">
+            <div class="score-equipe__logo-placeholder" *ngIf="!feuille()!.exterieur.logoUrl">
+              {{ getInitials(feuille()!.exterieur.nomEquipe) }}
+            </div>
+            <img *ngIf="feuille()!.exterieur.logoUrl"
+                 [src]="feuille()!.exterieur.logoUrl"
+                 style="width:40px;height:40px;object-fit:contain"/>
+            <div class="score-equipe__nom">{{ feuille()!.exterieur.nomEquipe }}</div>
+          </div>
+          <div class="score-equipe__stats" style="justify-content:flex-start">
+            <span>⚽ {{ feuille()!.exterieur.nbButs }}</span>
+            <span *ngIf="feuille()!.exterieur.nbCartonJaune">🟨 {{ feuille()!.exterieur.nbCartonJaune }}</span>
+            <span *ngIf="feuille()!.exterieur.nbCartonRouge">🟥 {{ feuille()!.exterieur.nbCartonRouge }}</span>
+          </div>
+        </div>
       </div>
-      <div class="feuille__resultat">
-        <span class="feuille__score-num">
-          {{ match.butsDomicile ?? '–' }}
-        </span>
-        <span class="feuille__score-sep">–</span>
-        <span class="feuille__score-num">
-          {{ match.butsExterieur ?? '–' }}
-        </span>
-      </div>
-      <div class="feuille__equipe feuille__equipe--away">
-        <strong>{{ match.exterieur?.nomEquipe }}</strong>
-        <span class="feuille__label">EXTÉRIEUR</span>
+
+      <!-- Chronologie compacte des buts -->
+      <div class="feuille-chrono" *ngIf="feuille()!.evenements?.length">
+        <div class="feuille-chrono__titre">Chronologie</div>
+        <div class="feuille-chrono__events">
+          <span *ngFor="let e of feuille()!.evenements"
+                class="chrono-event"
+                [class.chrono-event--dom]="!e.coteExterieur"
+                [class.chrono-event--ext]="e.coteExterieur">
+            {{ e.emoji }} {{ e.minute }} {{ e.joueurNom }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <!-- Compositions côte à côte -->
-    <div class="feuille__compos">
+    <!-- ── COMPOSITIONS ──────────────────────────────────── -->
+    <div class="feuille-compos">
 
       <!-- Domicile -->
-      <div class="feuille__compo">
-        <h3 class="feuille__compo-title">{{ match.domicile?.nomEquipe }}</h3>
-
-        <table class="feuille__table">
+      <div class="compo-equipe">
+        <div class="compo-equipe__header">
+          <span class="compo-equipe__header-nom">{{ feuille()!.domicile.nomEquipe }}</span>
+          <span class="compo-equipe__header-badge">Domicile</span>
+        </div>
+        <table class="compo-table">
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Nom</th>
-              <th>Poste</th>
-              <th>Sign.</th>
+              <th class="col-dos">#</th>
+              <th>Nom et Prénom</th>
+              <th class="col-pos">P</th>
+              <th class="col-evt">Événements</th>
             </tr>
           </thead>
           <tbody>
             <!-- Titulaires -->
-            <tr class="feuille__section-row">
-              <td colspan="4">TITULAIRES</td>
-            </tr>
-            <tr *ngFor="let j of getTitulaires('domicile')">
-              <td>{{ j.numeroDos ?? '' }}</td>
-              <td>{{ j.joueurNom }} {{ j.joueurPrenom }}</td>
-              <td>{{ j.poste ?? '' }}</td>
-              <td class="signature-cell"></td>
-            </tr>
-            <!-- Lignes vides si < 11 -->
-            <tr *ngFor="let i of [].constructor(
-                  11 - getTitulaires('domicile').length < 0 ? 0
-                      : 11 - getTitulaires('domicile').length)"
-                class="feuille__empty-row">
-              <td></td><td></td><td></td><td></td>
+            <ng-container *ngFor="let j of feuille()!.domicile.titulaires">
+              <tr [class.capitaine]="j.capitaine">
+                <td class="col-dos">{{ j.numeroDos ?? '—' }}</td>
+                <td>
+                  {{ j.nom }} {{ j.prenom }}
+                  <span class="badge-cap" *ngIf="j.capitaine">C</span>
+                  <span class="badge-gk" *ngIf="j.gardienTitulaire">GK</span>
+                </td>
+                <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
+                <td class="col-evt">
+                  <span class="evt-tag evt-tag--but" *ngFor="let b of j.buts">⚽{{ b }}</span>
+                  <span class="evt-tag evt-tag--carton" *ngFor="let c of j.cartons">{{ c }}</span>
+                  <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
+                </td>
+              </tr>
+            </ng-container>
+            <!-- Séparateur -->
+            <tr class="rempl-sep">
+              <td colspan="4">Remplaçants</td>
             </tr>
             <!-- Remplaçants -->
-            <tr class="feuille__section-row">
-              <td colspan="4">REMPLAÇANTS</td>
-            </tr>
-            <tr *ngFor="let j of getRemplacants('domicile')">
-              <td>{{ j.numeroDos ?? '' }}</td>
-              <td>{{ j.joueurNom }} {{ j.joueurPrenom }}</td>
-              <td>{{ j.poste ?? '' }}</td>
-              <td class="signature-cell"></td>
-            </tr>
-            <tr *ngFor="let i of [].constructor(
-                  5 - getRemplacants('domicile').length < 0 ? 0
-                    : 5 - getRemplacants('domicile').length)"
-                class="feuille__empty-row">
-              <td></td><td></td><td></td><td></td>
-            </tr>
+            <ng-container *ngFor="let j of feuille()!.domicile.remplacants">
+              <tr>
+                <td class="col-dos">{{ j.numeroDos ?? '—' }}</td>
+                <td>{{ j.nom }} {{ j.prenom }}</td>
+                <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
+                <td class="col-evt">
+                  <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
+                </td>
+              </tr>
+            </ng-container>
+            <!-- Lignes vides si peu de joueurs -->
+            <ng-container *ngFor="let i of [].constructor(
+              Math.max(0, 5 - feuille()!.domicile.remplacants.length))">
+              <tr class="ligne-vide"><td class="col-dos">&nbsp;</td><td></td><td></td><td></td></tr>
+            </ng-container>
           </tbody>
         </table>
-
-        <div class="feuille__signature-block">
-          <p>Signature du responsable :</p>
-          <div class="signature-box"></div>
-        </div>
       </div>
 
       <!-- Extérieur -->
-      <div class="feuille__compo">
-        <h3 class="feuille__compo-title">{{ match.exterieur?.nomEquipe }}</h3>
-
-        <table class="feuille__table">
+      <div class="compo-equipe">
+        <div class="compo-equipe__header">
+          <span class="compo-equipe__header-nom">{{ feuille()!.exterieur.nomEquipe }}</span>
+          <span class="compo-equipe__header-badge">Extérieur</span>
+        </div>
+        <table class="compo-table">
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Nom</th>
-              <th>Poste</th>
-              <th>Sign.</th>
+              <th class="col-dos">#</th>
+              <th>Nom et Prénom</th>
+              <th class="col-pos">P</th>
+              <th class="col-evt">Événements</th>
             </tr>
           </thead>
           <tbody>
-            <tr class="feuille__section-row">
-              <td colspan="4">TITULAIRES</td>
-            </tr>
-            <tr *ngFor="let j of getTitulaires('exterieur')">
-              <td>{{ j.numeroDos ?? '' }}</td>
-              <td>{{ j.joueurNom }} {{ j.joueurPrenom }}</td>
-              <td>{{ j.poste ?? '' }}</td>
-              <td class="signature-cell"></td>
-            </tr>
-            <tr *ngFor="let i of [].constructor(
-                  11 - getTitulaires('exterieur').length < 0 ? 0
-                      : 11 - getTitulaires('exterieur').length)"
-                class="feuille__empty-row">
-              <td></td><td></td><td></td><td></td>
-            </tr>
-            <tr class="feuille__section-row">
-              <td colspan="4">REMPLAÇANTS</td>
-            </tr>
-            <tr *ngFor="let j of getRemplacants('exterieur')">
-              <td>{{ j.numeroDos ?? '' }}</td>
-              <td>{{ j.joueurNom }} {{ j.joueurPrenom }}</td>
-              <td>{{ j.poste ?? '' }}</td>
-              <td class="signature-cell"></td>
-            </tr>
-            <tr *ngFor="let i of [].constructor(
-                  5 - getRemplacants('exterieur').length < 0 ? 0
-                    : 5 - getRemplacants('exterieur').length)"
-                class="feuille__empty-row">
-              <td></td><td></td><td></td><td></td>
-            </tr>
+            <ng-container *ngFor="let j of feuille()!.exterieur.titulaires">
+              <tr [class.capitaine]="j.capitaine">
+                <td class="col-dos">{{ j.numeroDos ?? '—' }}</td>
+                <td>
+                  {{ j.nom }} {{ j.prenom }}
+                  <span class="badge-cap" *ngIf="j.capitaine">C</span>
+                  <span class="badge-gk" *ngIf="j.gardienTitulaire">GK</span>
+                </td>
+                <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
+                <td class="col-evt">
+                  <span class="evt-tag evt-tag--but" *ngFor="let b of j.buts">⚽{{ b }}</span>
+                  <span class="evt-tag evt-tag--carton" *ngFor="let c of j.cartons">{{ c }}</span>
+                  <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
+                </td>
+              </tr>
+            </ng-container>
+            <tr class="rempl-sep"><td colspan="4">Remplaçants</td></tr>
+            <ng-container *ngFor="let j of feuille()!.exterieur.remplacants">
+              <tr>
+                <td class="col-dos">{{ j.numeroDos ?? '—' }}</td>
+                <td>{{ j.nom }} {{ j.prenom }}</td>
+                <td class="col-pos">{{ posteAbbr(j.poste) }}</td>
+                <td class="col-evt">
+                  <span class="evt-tag evt-tag--rempl" *ngFor="let r of j.remplacements">{{ r }}</span>
+                </td>
+              </tr>
+            </ng-container>
+            <ng-container *ngFor="let i of [].constructor(
+              Math.max(0, 5 - feuille()!.exterieur.remplacants.length))">
+              <tr class="ligne-vide"><td class="col-dos">&nbsp;</td><td></td><td></td><td></td></tr>
+            </ng-container>
           </tbody>
         </table>
+      </div>
+    </div>
 
-        <div class="feuille__signature-block">
-          <p>Signature du responsable :</p>
-          <div class="signature-box"></div>
+    <!-- ── OFFICIELS ──────────────────────────────────────── -->
+    <div class="feuille-officiels" *ngIf="feuille()!.officiels?.length">
+      <div class="feuille-officiels__header">Corps arbitral</div>
+      <div class="feuille-officiels__grid">
+        <div class="officiel-cell" *ngFor="let o of feuille()!.officiels">
+          <span class="officiel-cell__role">{{ o.typeLabel }}</span>
+          <span class="officiel-cell__nom">{{ o.prenom }} {{ o.nom }}</span>
+          <span class="officiel-cell__licence" *ngIf="o.licenceNumero">
+            N° {{ o.licenceNumero }}
+          </span>
+          <div class="officiel-cell__ligne"></div>
         </div>
       </div>
     </div>
 
-    <!-- Événements -->
-    <div class="feuille__events" *ngIf="match.evenements?.length">
-      <h3>DÉROULEMENT DU MATCH</h3>
-      <table class="feuille__table feuille__table--events">
-        <thead>
-          <tr>
-            <th>Min.</th>
-            <th>Type</th>
-            <th>Joueur</th>
-            <th>Équipe</th>
-            <th>Passeur</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let e of match.evenements">
-            <td>{{ e.minute }}'<span *ngIf="e.minuteAdditionnel">+{{ e.minuteAdditionnel }}</span></td>
-            <td>{{ e.type }}</td>
-            <td>{{ e.joueurNom }}</td>
-            <td>{{ e.equipeNom }}</td>
-            <td>{{ e.passeurNom ?? '–' }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ── OBSERVATIONS ───────────────────────────────────── -->
+    <div class="feuille-obs">
+      <div class="feuille-obs__header">Observations du commissaire</div>
+      <div class="feuille-obs__content" *ngIf="feuille()!.observations">
+        {{ feuille()!.observations }}
+      </div>
+      <div class="feuille-obs__content feuille-obs__vide" *ngIf="!feuille()!.observations">
+        Aucune observation
+      </div>
     </div>
 
-    <!-- Officiels -->
-    <div class="feuille__officiels" *ngIf="match.officiels?.length">
-      <h3>OFFICIELS</h3>
-      <table class="feuille__table">
-        <thead>
-          <tr><th>Rôle</th><th>Nom</th><th>Licence</th><th>Signature</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let o of match.officiels">
-            <td>{{ o.role }}</td>
-            <td>{{ o.nom }} {{ o.prenom }}</td>
-            <td>{{ o.licence ?? '–' }}</td>
-            <td class="signature-cell"></td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ── NOTES JOUEURS (commissaire, après match) ─────── -->
+    <div class="feuille-notes"
+         *ngIf="canValider && (isCloturee() || isValidee())">
+      <div class="feuille-notes__header">
+        <span>Notes des joueurs</span>
+        <button class="btn-ghost btn-sm"
+                (click)="showNotes.set(!showNotes())">
+          <mat-icon>{{ showNotes() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ showNotes() ? 'Masquer' : 'Saisir les notes' }}
+        </button>
+      </div>
+
+      <ng-container *ngIf="showNotes()">
+        <!-- Domicile -->
+        <div class="notes-equipe" *ngIf="feuille()!.domicile">
+          <div class="notes-equipe__titre">{{ feuille()!.domicile.nomEquipe }}</div>
+          <div class="notes-grid">
+            <div class="note-row"
+                 *ngFor="let j of feuille()!.domicile.titulaires.concat(feuille()!.domicile.remplacants)">
+              <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+              <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+              <input class="note-input"
+                     type="number" min="0" max="10" step="0.5"
+                     [value]="getNote(j.compositionId)"
+                     (input)="setNote(j.compositionId, +$any($event.target).value)"
+                     placeholder="—"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extérieur -->
+        <div class="notes-equipe" *ngIf="feuille()!.exterieur">
+          <div class="notes-equipe__titre">{{ feuille()!.exterieur.nomEquipe }}</div>
+          <div class="notes-grid">
+            <div class="note-row"
+                 *ngFor="let j of feuille()!.exterieur.titulaires.concat(feuille()!.exterieur.remplacants)">
+              <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+              <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+              <input class="note-input"
+                     type="number" min="0" max="10" step="0.5"
+                     [value]="getNote(j.compositionId)"
+                     (input)="setNote(j.compositionId, +$any($event.target).value)"
+                     placeholder="—"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes-actions">
+          <button class="btn-primary btn-sm"
+                  [disabled]="savingNotes()"
+                  (click)="sauvegarderNotes()">
+            <mat-icon>save</mat-icon>
+            {{ savingNotes() ? 'Enregistrement...' : 'Enregistrer les notes' }}
+          </button>
+        </div>
+      </ng-container>
     </div>
 
-    <!-- Résultat final -->
-    <div class="feuille__final">
-      <table class="feuille__table">
-        <tr>
-          <td><strong>Score final :</strong></td>
-          <td>{{ match.domicile?.nomEquipe }} {{ match.butsDomicile ?? '–' }} – {{ match.butsExterieur ?? '–' }} {{ match.exterieur?.nomEquipe }}</td>
-        </tr>
-        <tr *ngIf="match.butsDomicileProlong != null">
-          <td><strong>Après prolongations :</strong></td>
-          <td>{{ match.butsDomicileProlong }} – {{ match.butsExterieurProlong }}</td>
-        </tr>
-        <tr *ngIf="match.tabDomicile != null">
-          <td><strong>T.A.B :</strong></td>
-          <td>{{ match.tabDomicile }} – {{ match.tabExterieur }}</td>
-        </tr>
-      </table>
+    <!-- ── NOTES JOUEURS (commissaire, après match) ────── -->
+    <div class="feuille-notes no-print"
+         *ngIf="canValider && isCloturee()">
+      <div class="feuille-notes__header">
+        <div class="feuille-notes__titre">
+          <mat-icon>grade</mat-icon>
+          Notes des joueurs
+          <span class="feuille-notes__hint">0 à 10 — saisie par le commissaire</span>
+        </div>
+        <button class="btn-primary btn-sm"
+                [disabled]="savingNotes()"
+                (click)="sauvegarderNotes()">
+          <mat-icon>save</mat-icon>
+          {{ savingNotes() ? 'Enregistrement...' : 'Enregistrer les notes' }}
+        </button>
+      </div>
+
+      <div class="feuille-notes__grille">
+
+        <!-- Domicile -->
+        <div class="notes-equipe">
+          <div class="notes-equipe__titre">{{ feuille()!.domicile.nomEquipe }}</div>
+          <div class="notes-equipe__list">
+            <ng-container *ngFor="let j of feuille()!.domicile.titulaires">
+              <div class="note-ligne">
+                <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <input class="note-input"
+                       type="number" min="0" max="10" step="0.5"
+                       [value]="getNote(j.compositionId)"
+                       (change)="setNote(j.compositionId, +$any($event.target).value)"
+                       placeholder="—"/>
+              </div>
+            </ng-container>
+            <ng-container *ngFor="let j of feuille()!.domicile.remplacants">
+              <div class="note-ligne note-ligne--rempl">
+                <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <input class="note-input"
+                       type="number" min="0" max="10" step="0.5"
+                       [value]="getNote(j.compositionId)"
+                       (change)="setNote(j.compositionId, +$any($event.target).value)"
+                       placeholder="—"/>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Extérieur -->
+        <div class="notes-equipe">
+          <div class="notes-equipe__titre">{{ feuille()!.exterieur.nomEquipe }}</div>
+          <div class="notes-equipe__list">
+            <ng-container *ngFor="let j of feuille()!.exterieur.titulaires">
+              <div class="note-ligne">
+                <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <input class="note-input"
+                       type="number" min="0" max="10" step="0.5"
+                       [value]="getNote(j.compositionId)"
+                       (change)="setNote(j.compositionId, +$any($event.target).value)"
+                       placeholder="—"/>
+              </div>
+            </ng-container>
+            <ng-container *ngFor="let j of feuille()!.exterieur.remplacants">
+              <div class="note-ligne note-ligne--rempl">
+                <span class="note-num">{{ j.numeroDos ?? '—' }}</span>
+                <span class="note-nom">{{ j.nom }} {{ j.prenom }}</span>
+                <input class="note-input"
+                       type="number" min="0" max="10" step="0.5"
+                       [value]="getNote(j.compositionId)"
+                       (change)="setNote(j.compositionId, +$any($event.target).value)"
+                       placeholder="—"/>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <!-- Pied de page -->
-    <div class="feuille__footer">
-      <p>Document généré par My2-0 — my2-0.cloud</p>
-      <p>{{ match.dateHeure | date:'dd/MM/yyyy à HH:mm' }}</p>
+    <!-- ── SIGNATURES ─────────────────────────────────────── -->
+    <div class="feuille-signatures">
+      <div class="sig-cell">
+        <div class="sig-cell__role">Responsable</div>
+        <div class="sig-cell__nom">{{ feuille()!.domicile.nomEquipe }}</div>
+        <div class="sig-cell__ligne"></div>
+        <div class="sig-cell__label">Signature</div>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-cell__role">Arbitre principal</div>
+        <div class="sig-cell__nom">
+          <span *ngIf="feuille()!.officiels?.[0]">
+            {{ feuille()!.officiels[0].prenom }} {{ feuille()!.officiels[0].nom }}
+          </span>
+        </div>
+        <div class="sig-cell__ligne"></div>
+        <div class="sig-cell__label">Signature</div>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-cell__role">Responsable</div>
+        <div class="sig-cell__nom">{{ feuille()!.exterieur.nomEquipe }}</div>
+        <div class="sig-cell__ligne"></div>
+        <div class="sig-cell__label">Signature</div>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-cell__role">Commissaire</div>
+        <div class="sig-cell__nom">{{ feuille()!.valideeParNom ?? '' }}</div>
+        <div class="sig-cell__ligne"></div>
+        <div class="sig-cell__label">Signature</div>
+      </div>
     </div>
+
+    <!-- ── PIED DE PAGE ───────────────────────────────────── -->
+    <div class="feuille-footer">
+      <span>My2-0 — Feuille de match officielle</span>
+      <span>{{ feuille()!.competition }}</span>
+      <span>
+        {{ isValidee() ? '✅ Validée' : isCloturee() ? '🔒 Clôturée' : '📝 Brouillon' }}
+        <span *ngIf="feuille()!.valideeAt">
+          le {{ feuille()!.valideeAt | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </span>
+    </div>
+
   </div>
+
+  <!-- Loading -->
+  <div style="display:flex;align-items:center;gap:12px;padding:40px;justify-content:center"
+       *ngIf="loading()">
+    <div class="spinner"></div>
+    Chargement de la feuille...
+  </div>
+
 </div>

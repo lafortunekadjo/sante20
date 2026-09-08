@@ -5,6 +5,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule }  from '@angular/forms';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface QualifieDTO {
   id:          number;
@@ -33,7 +35,8 @@ interface QualifiesDTO {
 @Component({
   selector:    'app-modal-tirage-finale',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports:     [CommonModule, FormsModule,
+    MatIconModule, TranslateModule],
   templateUrl: './modal-tirage-finale.component.html',
   styleUrls:   ['./modal-tirage-finale.component.scss']
 })

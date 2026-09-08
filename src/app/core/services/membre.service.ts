@@ -172,5 +172,10 @@ export class MembreService {
   deleteMembre(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  // dans membre.service.ts
+assignEquipesBulk(assignments: { membreId: number; equipeId: number | null; equipeNom?: string }[]) {
+  return this.http.post(`${this.apiUrl}/assign-equipes`, { assignments });
+}
 }
 

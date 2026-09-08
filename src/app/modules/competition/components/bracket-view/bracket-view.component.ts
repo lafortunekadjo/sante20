@@ -9,6 +9,8 @@ import {
   BracketDTO, BracketNoeudDTO, MatchDTO, NomTour
 } from '../../../../core/models/competition.models';
 import { MatchApiService } from '../../../../core/services/competition/match-api.service';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface Tour {
   nom:     NomTour | string;
@@ -19,7 +21,7 @@ interface Tour {
 @Component({
   selector:    'app-bracket-view',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports:     [CommonModule, FormsModule,MatIconModule, TranslateModule],
   templateUrl: './bracket-view.component.html',
   styleUrls:   ['./bracket-view.component.scss']
 })

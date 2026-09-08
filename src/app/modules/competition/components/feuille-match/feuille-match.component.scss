@@ -1,190 +1,873 @@
-// Styles normaux (interface)
-.feuille-wrap {
-  max-width: 900px;
+@use '../../../../../variables' as *;
+
+// ════════════════════════════════════════════════════════════
+// VARIABLES
+// ════════════════════════════════════════════════════════════
+$dom-color:    #1d4ed8;
+$ext-color:    #dc2626;
+$border:       1px solid #e5e7eb;
+$border-dark:  1px solid #d1d5db;
+
+// ════════════════════════════════════════════════════════════
+// WRAPPER
+// ════════════════════════════════════════════════════════════
+.feuille-wrapper {
+  max-width: 960px;
   margin: 0 auto;
-  padding: 16px;
+  padding: $spacing-md;
+  font-size: 13px;
 }
 
-.feuille-actions {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-// ── Feuille principale ────────────────────────────────────────
-.feuille {
-  background: white;
-  color: black;
-  padding: 24px;
-  border: 1px solid #ccc;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-}
-
-.feuille__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  border-bottom: 2px solid black;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
-
-.logo-placeholder {
-  font-size: 18px;
-  font-weight: bold;
-  padding: 8px 12px;
-  border: 2px solid black;
-}
-
-.feuille__title {
-  flex: 1;
-  text-align: center;
-  h1 { font-size: 18px; margin: 0; }
-  h2 { font-size: 14px; margin: 4px 0; }
-  p  { margin: 2px 0; font-size: 12px; }
-}
-
-.feuille__infos {
-  font-size: 11px;
-  p { margin: 2px 0; }
-}
-
-// ── Score ─────────────────────────────────────────────────────
-.feuille__score {
+// ════════════════════════════════════════════════════════════
+// TOOLBAR
+// ════════════════════════════════════════════════════════════
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 2px solid black;
-  padding: 12px 16px;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--background-secondary);
+  border-radius: $border-radius-lg;
+  border: $border;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 }
 
-.feuille__equipe {
-  text-align: left;
-  strong { display: block; font-size: 14px; }
-  &--away { text-align: right; }
-}
-
-.feuille__label {
-  font-size: 10px;
-  color: #666;
-}
-
-.feuille__resultat {
-  display: flex;
+.statut-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 28px;
-  font-weight: bold;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: $border-radius-full;
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+
+  &--brouillon { background: var(--background-secondary); color: var(--text-secondary); border: $border; }
+  &--validee   { background: rgba($success-color, .1);   color: $success-color; }
+  &--cloturee  { background: rgba($primary-blue, .1);    color: $primary-blue; }
 }
 
-.feuille__score-sep { font-size: 24px; }
+// ════════════════════════════════════════════════════════════
+// FORMULAIRE OBSERVATIONS
+// ════════════════════════════════════════════════════════════
+.obs-form {
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--background-secondary);
+  border: $border;
+  border-radius: $border-radius-lg;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 
-// ── Compositions ─────────────────────────────────────────────
-.feuille__compos {
+  textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border-color);
+    border-radius: $border-radius-md;
+    background: var(--background-primary);
+    font-size: $font-size-sm;
+    resize: vertical;
+    box-sizing: border-box;
+    &:focus { outline: none; border-color: $primary-blue; }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// FEUILLE OFFICIELLE
+// ════════════════════════════════════════════════════════════
+.feuille-officielle {
+  border: 2px solid #1d4ed8;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  background: white;
+  color: #111;
+}
+
+// ── EN-TÊTE ──────────────────────────────────────────────────
+.feuille-header {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: white;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px 10px;
+  }
+
+  &__logo {
+    flex-shrink: 0;
+  }
+
+  &__logo-placeholder {
+    width: 52px;
+    height: 52px;
+    background: rgba(255,255,255,.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+
+  &__titre {
+    flex: 1;
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 3px 0 0;
+      font-size: 11px;
+      font-weight: 500;
+      opacity: .8;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+  }
+
+  &__validation {
+    flex-shrink: 0;
+    background: rgba(255,255,255,.12);
+    border-radius: $border-radius-md;
+    padding: 8px 12px;
+    font-size: 11px;
+    min-width: 110px;
+  }
+
+  &__meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.08);
+  }
+}
+
+.feuille-type {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: .85;
+  font-style: italic;
+}
+
+.valid-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  opacity: .7;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.valid-check {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(255,255,255,.5);
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  position: relative;
+
+  &.checked {
+    background: #10b981;
+    border-color: #10b981;
+    &::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 1px;
+      font-size: 11px;
+      color: white;
+    }
+  }
+}
+
+.meta-cell {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  border-right: 1px solid rgba(255,255,255,.15);
+
+  &:last-child { border-right: none; }
+}
+
+.meta-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  opacity: .65;
+  font-weight: 700;
+}
+
+.meta-value {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+// ── SCORE ──────────────────────────────────────────────────
+.feuille-score {
+  background: #f8fafc;
+  border-bottom: 2px solid #e5e7eb;
+
+  &__main {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 16px 20px 10px;
+    gap: 8px;
+  }
+}
+
+.score-equipe {
+  &--dom { text-align: right; }
+  &--ext { text-align: left; }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__logo-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #374151;
+    flex-shrink: 0;
+  }
+
+  &__nom {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.2;
+  }
+
+  &--dom &__nom { color: $dom-color; }
+  &--ext &__nom { color: $ext-color; }
+
+  &__stats {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+
+  &--dom &__stats { justify-content: flex-end; }
+}
+
+.score-centre {
+  text-align: center;
+  padding: 0 12px;
+
+  &__chiffres {
+    font-size: 32px;
+    font-weight: 900;
+    color: #111;
+    letter-spacing: 2px;
+    line-height: 1;
+    padding: 8px 16px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: $border-radius-md;
+    min-width: 90px;
+  }
+
+  &__prolong,
+  &__tab {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  &__statut {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #9ca3af;
+    margin-top: 6px;
+  }
+}
+
+// Chronologie compacte sous le score
+.feuille-chrono {
+  padding: 8px 20px 12px;
+  border-top: 1px solid #e5e7eb;
+
+  &__titre {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #9ca3af;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  &__events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+.chrono-event {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  background: #f3f4f6;
+  color: #374151;
+
+  &--dom { background: rgba($dom-color, .08); color: $dom-color; }
+  &--ext { background: rgba($ext-color, .08); color: $ext-color; }
+}
+
+// ── COMPOSITIONS ─────────────────────────────────────────────
+.feuille-compos {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 0;
+  border-bottom: 2px solid #e5e7eb;
+
+  @include mobile { grid-template-columns: 1fr; }
 }
 
-.feuille__compo-title {
-  font-size: 13px;
-  font-weight: bold;
-  text-align: center;
-  background: #eee;
-  padding: 6px;
-  margin: 0 0 8px;
+.compo-equipe {
+  padding: 0;
+
+  &:first-child {
+    border-right: 2px solid #e5e7eb;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: $border-dark;
+
+    &-nom {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+
+    &-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: $border-radius-full;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+  }
+
+  &:first-child &__header {
+    background: rgba($dom-color, .05);
+    &-nom { color: $dom-color; }
+    &-badge { background: rgba($dom-color, .1); color: $dom-color; }
+  }
+
+  &:last-child &__header {
+    background: rgba($ext-color, .05);
+    &-nom { color: $ext-color; }
+    &-badge { background: rgba($ext-color, .1); color: $ext-color; }
+  }
 }
 
-.feuille__table {
+.compo-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
 
-  th, td {
-    border: 1px solid #999;
-    padding: 4px 6px;
-    text-align: left;
+  thead tr {
+    background: #f9fafb;
   }
 
-  th { background: #ddd; font-weight: bold; }
-}
-
-.feuille__section-row td {
-  background: #f0f0f0;
-  font-weight: bold;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.feuille__empty-row td {
-  height: 22px;
-}
-
-.signature-cell {
-  width: 60px;
-  min-width: 60px;
-}
-
-.feuille__signature-block {
-  margin-top: 12px;
-  p { font-size: 11px; margin-bottom: 4px; }
-}
-
-.signature-box {
-  border-bottom: 1px solid black;
-  height: 40px;
-}
-
-// ── Événements ────────────────────────────────────────────────
-.feuille__events, .feuille__officiels, .feuille__final {
-  margin-bottom: 16px;
-  h3 {
-    font-size: 12px;
-    font-weight: bold;
-    background: #ddd;
-    padding: 4px 8px;
-    margin: 0 0 6px;
+  th {
+    padding: 5px 6px;
+    border-bottom: $border-dark;
+    border-right: $border;
+    font-size: 9px;
     text-transform: uppercase;
+    letter-spacing: .3px;
+    font-weight: 700;
+    color: #6b7280;
+    text-align: left;
+
+    &:last-child { border-right: none; }
+  }
+
+  td {
+    padding: 5px 6px;
+    border-bottom: $border;
+    border-right: $border;
+    vertical-align: middle;
+
+    &:last-child { border-right: none; }
+  }
+
+  tr.capitaine td {
+    font-weight: 700;
+    background: rgba($primary-blue, .02);
+  }
+
+  tr.rempl-sep td {
+    background: #f3f4f6;
+    font-size: 9px;
+    font-style: italic;
+    color: #9ca3af;
+    padding: 3px 6px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    font-weight: 700;
+  }
+
+  tr.ligne-vide td {
+    height: 22px;
+    background: #fafafa;
+  }
+
+  tr:last-child td { border-bottom: none; }
+}
+
+.col-dos  { width: 24px; text-align: center; font-weight: 700; }
+.col-pos  { width: 20px; text-align: center; color: #9ca3af; font-weight: 700; font-size: 10px; }
+.col-evt  { width: 80px; }
+
+.badge-cap {
+  display: inline-block;
+  width: 14px; height: 14px;
+  background: #f59e0b;
+  color: white;
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 14px;
+  margin-left: 4px;
+}
+
+.badge-gk {
+  display: inline-block;
+  padding: 1px 4px;
+  background: rgba($primary-blue, .1);
+  color: $primary-blue;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.evt-tag {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin: 1px;
+
+  &--but    { background: rgba($success-color, .1); color: darken($success-color, 10%); }
+  &--carton { background: rgba($error-color, .1);   color: $error-color; }
+  &--rempl  { background: rgba($primary-blue, .1);  color: $primary-blue; }
+}
+
+// ── OFFICIELS ─────────────────────────────────────────────────
+.feuille-officiels {
+  border-bottom: 2px solid #e5e7eb;
+  padding: 10px 14px;
+
+  &__header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-weight: 700;
+    color: $primary-blue;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba($primary-blue, .2);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+
+    @include mobile { grid-template-columns: repeat(2, 1fr); }
   }
 }
 
-.feuille__table--events th:nth-child(3),
-.feuille__table--events td:nth-child(3) {
-  width: 30%;
+.officiel-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: $border;
+  border-radius: $border-radius-sm;
+  background: #fafafa;
+
+  &__role {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: .3px;
+  }
+
+  &__nom {
+    font-size: 11px;
+    font-weight: 600;
+    color: #111;
+    min-height: 14px;
+  }
+
+  &__licence {
+    font-size: 9px;
+    color: #9ca3af;
+  }
+
+  &__ligne {
+    margin-top: 16px;
+    border-bottom: 1.5px solid #9ca3af;
+    padding-bottom: 2px;
+  }
 }
 
-// ── Footer ────────────────────────────────────────────────────
-.feuille__footer {
-  text-align: center;
+// ── OBSERVATIONS ──────────────────────────────────────────────
+.feuille-obs {
+  border-bottom: 2px solid #e5e7eb;
+  padding: 10px 14px;
+  min-height: 50px;
+
+  &__header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  &__content {
+    font-size: 12px;
+    color: #374151;
+    min-height: 30px;
+    padding: 4px 8px;
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    border-radius: 0 $border-radius-sm $border-radius-sm 0;
+  }
+
+  &__vide {
+    color: #9ca3af;
+    font-style: italic;
+  }
+}
+
+// ── SIGNATURES ────────────────────────────────────────────────
+.feuille-signatures {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 2px solid #e5e7eb;
+
+  @include mobile { grid-template-columns: repeat(2, 1fr); }
+}
+
+.sig-cell {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-right: $border-dark;
+  gap: 3px;
+
+  &:last-child { border-right: none; }
+
+  &__role {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: .3px;
+  }
+
+  &__nom {
+    font-size: 11px;
+    font-weight: 600;
+    color: #111;
+    min-height: 14px;
+    margin-bottom: 6px;
+  }
+
+  &__ligne {
+    border-bottom: 1.5px solid #374151;
+    height: 40px;
+    margin-bottom: 4px;
+  }
+
+  &__label {
+    font-size: 9px;
+    color: #9ca3af;
+    text-align: center;
+    font-style: italic;
+  }
+}
+
+// ── PIED DE PAGE ──────────────────────────────────────────────
+.feuille-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: #1d4ed8;
+  color: rgba(255,255,255,.8);
   font-size: 10px;
-  color: #666;
-  border-top: 1px solid #ccc;
-  padding-top: 8px;
-  margin-top: 16px;
-  p { margin: 2px 0; }
+
+  span:nth-child(2) { font-weight: 700; color: white; }
 }
 
-// ── IMPRESSION ────────────────────────────────────────────────
+// ── Notes joueurs ─────────────────────────────────────────────
+.feuille-notes {
+  border-bottom: 2px solid #e5e7eb;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--background-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $primary-blue;
+  }
+}
+
+.notes-equipe {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+
+  &__titre {
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    letter-spacing: .3px;
+  }
+}
+
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 16px;
+
+  @include mobile { grid-template-columns: 1fr; }
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.note-num {
+  width: 24px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: $font-weight-bold;
+  color: $primary-blue;
+  flex-shrink: 0;
+}
+
+.note-nom {
+  flex: 1;
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-input {
+  width: 52px;
+  padding: 3px 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  text-align: center;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  flex-shrink: 0;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+  }
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; }
+}
+
+.notes-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+}
+
+
+// ── Notes joueurs ─────────────────────────────────────────────
+.feuille-notes {
+  border-top: 2px solid var(--border-color);
+  padding: 14px;
+  background: var(--background-secondary);
+
+  &__header {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+
+  &__titre {
+    display: flex; align-items: center; gap: 8px;
+    font-size: $font-size-sm; font-weight: $font-weight-bold;
+    mat-icon { color: $primary-blue; }
+  }
+
+  &__hint {
+    font-size: 11px; color: var(--text-secondary);
+    font-weight: $font-weight-normal;
+  }
+
+  &__grille {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    @include mobile { grid-template-columns: 1fr; }
+  }
+}
+
+.notes-equipe {
+  &__titre {
+    font-size: 11px; font-weight: $font-weight-bold;
+    text-transform: uppercase; color: $primary-blue;
+    padding-bottom: 6px; border-bottom: 2px solid $primary-blue;
+    margin-bottom: 8px; letter-spacing: .3px;
+  }
+
+  &__list { display: flex; flex-direction: column; gap: 3px; }
+}
+
+.note-ligne {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $border-radius-sm;
+
+  &--rempl {
+    background: var(--background-secondary);
+    opacity: .85;
+  }
+}
+
+.note-num {
+  width: 24px; text-align: center;
+  font-size: 11px; font-weight: $font-weight-bold;
+  color: $primary-blue; flex-shrink: 0;
+}
+
+.note-nom {
+  flex: 1; font-size: 11px; font-weight: $font-weight-medium;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.note-input {
+  width: 52px; flex-shrink: 0;
+  padding: 3px 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: $border-radius-sm;
+  font-size: 12px; font-weight: $font-weight-bold;
+  text-align: center; background: var(--background-primary);
+  color: var(--text-primary);
+
+  &:focus {
+    outline: none; border-color: $primary-blue;
+    background: rgba($primary-blue, .04);
+  }
+
+  &::-webkit-inner-spin-button { opacity: 1; }
+}
+
+// ════════════════════════════════════════════════════════════
+// IMPRESSION @media print
+// ════════════════════════════════════════════════════════════
 @media print {
   .no-print { display: none !important; }
 
-  .feuille-wrap { padding: 0; }
-
-  .feuille {
-    border: none;
-    padding: 10mm;
-    font-size: 10pt;
+  .feuille-wrapper {
+    max-width: 100%;
+    padding: 0;
   }
 
-  // Forcer le saut de page après les compositions
-  .feuille__events {
-    page-break-before: auto;
+  .feuille-officielle {
+    border: 2px solid #1d4ed8;
+    border-radius: 0;
   }
+
+  .feuille-header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .feuille-footer {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .feuille-compos { grid-template-columns: 1fr 1fr; }
+  .feuille-signatures { grid-template-columns: repeat(4, 1fr); }
+  .feuille-officiels__grid { grid-template-columns: repeat(4, 1fr); }
 
   // Éviter les coupures dans les tableaux
-  tr { page-break-inside: avoid; }
+  .compo-equipe { break-inside: avoid; }
+  .feuille-signatures { break-inside: avoid; }
+  .feuille-officiels { break-inside: avoid; }
+
+  @page {
+    size: A4 portrait;
+    margin: 1cm 1.5cm;
+  }
 }

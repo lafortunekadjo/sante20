@@ -142,6 +142,11 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       }
       if (hasFinanceMenu) {
         tabs.push({ id: 'finances', label: 'Finances', icon: 'account_balance',  route: '/responsable/finances/dashboard'  });
+
+      }
+      if (hasFinanceMenu) {
+       // Compétitions — toujours visible pour le responsable
+      tabs.push({ id: 'competitions', label: 'Compétitions', icon: 'emoji_events', route: '/competitions' });
       }
 
     } else if (isMembre && hasGroup) {

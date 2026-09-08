@@ -148,4 +148,76 @@ saisirComposition(
     return this.http.post<MatchDetailDTO>(
       `${this.base}/${competitionId}/matchs/${matchId}/temps`, dto);
   }
+
+    // ── Fin de match (homme du match + commentaire) ─────────
+  // ── Feuille de match ─────────────────────────────────────
+  getFeuille(competitionId: number, matchId: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/matchs/${matchId}/feuille`
+    );
+  }
+ 
+  validerFeuille(
+      competitionId: number, matchId: number,
+      observations?: string): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/matchs/${matchId}/feuille/valider`,
+      { observations }
+    );
+  }
+ 
+  cloturerFeuille(competitionId: number, matchId: number): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/matchs/${matchId}/feuille/cloturer`,
+      {}
+    );
+  }
+
+    // ── Feuille de match ──────────────────────────────────────
+  // getFeuille(competitionId: number, matchId: number): Observable<any> {
+  //   return this.http.get<any>(
+  //     `${this.base}/${competitionId}/matchs/${matchId}/feuille`
+  //   );
+  // }
+ 
+  // validerFeuille(
+  //     competitionId: number, matchId: number,
+  //     observations?: string): Observable<any> {
+  //   return this.http.post<any>(
+  //     `${this.base}/${competitionId}/matchs/${matchId}/feuille/valider`,
+  //     { observations }
+  //   );
+  // }
+ 
+  // cloturerFeuille(competitionId: number, matchId: number): Observable<any> {
+  //   return this.http.post<any>(
+  //     `${this.base}/${competitionId}/matchs/${matchId}/feuille/cloturer`,
+  //     {}
+  //   );
+  // }
+ 
+  telechargerFeuillePdf(
+      competitionId: number, matchId: number,
+      mode: 'avant' | 'rapport'): Observable<Blob> {
+    const endpoint = mode === 'avant' ? 'pdf/avant' : 'pdf/rapport';
+    return this.http.get(
+      `${this.base}/${competitionId}/matchs/${matchId}/feuille/${endpoint}`,
+      { responseType: 'blob' }
+    );
+  }
+
+  
+  // ── Notes joueurs ─────────────────────────────────────
+  getNotes(competitionId: number, matchId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.base}/${competitionId}/matchs/${matchId}/notes`
+    );
+  }
+ 
+  saisirNotes(competitionId: number, matchId: number, dto: any): Observable<void> {
+    return this.http.post<void>(
+      `${this.base}/${competitionId}/matchs/${matchId}/notes`, dto
+    );
+  }
+ 
 }

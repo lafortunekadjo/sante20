@@ -1,1 +1,290 @@
-<p>officiels works!</p>
+<div class="officiels">
+
+  <!-- ── HEADER ───────────────────────────────────────────── -->
+  <div class="officiels__header">
+    <div>
+      <h3 class="officiels__title">
+        <mat-icon>sports</mat-icon>
+        Officiels
+      </h3>
+      <p class="officiels__subtitle">
+        {{ officiels().length }} officiel(s) enregistré(s) pour cette compétition
+      </p>
+    </div>
+    <button class="btn-primary btn-sm"
+            *ngIf="canEdit"
+            (click)="ouvrirModal()">
+      <mat-icon>person_add</mat-icon>
+      Ajouter un officiel
+    </button>
+  </div>
+
+  <!-- ── LOADING ───────────────────────────────────────────── -->
+  <div class="officiels__loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    Chargement...
+  </div>
+
+  <!-- ── LISTE PAR TYPE ────────────────────────────────────── -->
+  <ng-container *ngIf="!loading()">
+
+    <div class="officiel-groupe"
+         *ngFor="let type of typesPresents()">
+
+      <div class="officiel-groupe__label">
+        <mat-icon>{{ getTypeIcon(officielsParType().get(type)![0].typeOfficiel) }}</mat-icon>
+        {{ type }}
+      </div>
+
+      <div class="officiel-card"
+           *ngFor="let o of officielsParType().get(type)">
+        <div class="officiel-card__avatar">
+          <img *ngIf="o.photoUrl" [src]="o.photoUrl"/>
+          <span *ngIf="!o.photoUrl">{{ getInitials(o) }}</span>
+        </div>
+        <div class="officiel-card__info">
+          <div class="officiel-card__nom">{{ o.prenom }} {{ o.nom }}</div>
+          <div class="officiel-card__meta">
+            <span *ngIf="o.email">
+              <mat-icon>email</mat-icon> {{ o.email }}
+            </span>
+            <span *ngIf="o.licenceNumero">
+              <mat-icon>badge</mat-icon> N° {{ o.licenceNumero }}
+            </span>
+            <span *ngIf="o.niveau">
+              <mat-icon>military_tech</mat-icon> {{ o.niveau }}
+            </span>
+          </div>
+        </div>
+        <div class="officiel-card__badges">
+          <span class="badge-compte" *ngIf="o.aCompteMyApp">
+            <mat-icon>verified</mat-icon>
+            My2-0
+          </span>
+          <span class="badge-no-compte" *ngIf="!o.aCompteMyApp">
+            Hors plateforme
+          </span>
+        </div>
+        <button class="btn-icon btn-icon--danger"
+                *ngIf="canEdit"
+                (click)="supprimer(o)"
+                title="Retirer">
+          <mat-icon>person_remove</mat-icon>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Vide -->
+    <div class="officiels__empty" *ngIf="!officiels().length">
+      <mat-icon>sports</mat-icon>
+      <p>Aucun officiel enregistré pour cette compétition</p>
+      <button class="btn-primary btn-sm"
+              *ngIf="canEdit"
+              (click)="ouvrirModal()">
+        Ajouter le premier officiel
+      </button>
+    </div>
+
+  </ng-container>
+
+  <!-- ══ MODAL ════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showModal()" (click)="fermerModal()">
+    <div class="modal-officiels" (click)="$event.stopPropagation()">
+
+      <div class="modal-officiels__header">
+        <h3>
+          <mat-icon>person_add</mat-icon>
+          Ajouter un officiel
+        </h3>
+        <button class="btn-close" (click)="fermerModal()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-officiels__body">
+
+        <!-- Sélection du type -->
+        <div class="form-field">
+          <label class="form-label">Type d'officiel *</label>
+          <div class="type-grid">
+            <button class="type-opt"
+                    *ngFor="let t of typeOptions"
+                    [class.active]="typeSelectModal() === t.value"
+                    type="button"
+                    (click)="typeSelectModal.set(t.value)">
+              <mat-icon>{{ t.icone }}</mat-icon>
+              <span>{{ t.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabs : Chercher / Créer -->
+        <div class="modal-tabs">
+          <button class="modal-tab"
+                  [class.active]="searchMode() === 'search'"
+                  type="button"
+                  (click)="searchMode.set('search')">
+            <mat-icon>search</mat-icon>
+            Chercher un utilisateur My2-0
+          </button>
+          <button class="modal-tab"
+                  [class.active]="searchMode() === 'create'"
+                  type="button"
+                  (click)="searchMode.set('create')">
+            <mat-icon>person_add</mat-icon>
+            Créer un nouveau compte
+          </button>
+        </div>
+
+        <!-- MODE RECHERCHE ─────────────────────────────────── -->
+        <div *ngIf="searchMode() === 'search'">
+          <div class="search-bar">
+            <mat-icon>search</mat-icon>
+            <input [(ngModel)]="searchQuery"
+                   class="search-bar__input"
+                   placeholder="Nom, prénom ou email My2-0..."
+                   (keyup.enter)="rechercherUser()"/>
+            <button class="btn-primary btn-sm"
+                    type="button"
+                    [disabled]="!searchQuery.trim() || searching()"
+                    (click)="rechercherUser()">
+              {{ searching() ? '...' : 'Chercher' }}
+            </button>
+          </div>
+
+          <!-- Résultats -->
+          <div class="search-result" *ngIf="searchResults().length">
+            <div class="user-found"
+                 *ngFor="let u of searchResults()"
+                 [class.selected]="userSelectionne()?.id === u.id"
+                 (click)="selectionnerUser(u)">
+              <div class="user-found__avatar">
+                <img *ngIf="u.photoUrl" [src]="u.photoUrl"/>
+                <span *ngIf="!u.photoUrl">
+                  {{ (u.firstName?.[0] ?? '') + (u.lastName?.[0] ?? '') }}
+                </span>
+              </div>
+              <div class="user-found__info">
+                <div class="user-found__nom">{{ u.firstName }} {{ u.lastName }}</div>
+                <div class="user-found__username">{{ '@' + u.username }}</div>
+                <div class="user-found__email">{{ u.email }}</div>
+              </div>
+              <mat-icon class="user-found__check"
+                        *ngIf="userSelectionne()?.id === u.id">
+                check_circle
+              </mat-icon>
+            </div>
+          </div>
+
+          <div class="search-no-result"
+               *ngIf="!searchResults().length && !searching() && searchQuery">
+            <mat-icon>person_off</mat-icon>
+            Aucun utilisateur trouvé —
+            <button class="link-btn"
+                    type="button"
+                    (click)="searchMode.set('create')">
+              créer un compte
+            </button>
+          </div>
+
+          <!-- Bouton ajouter -->
+          <div class="modal-action" *ngIf="userSelectionne()">
+            <button class="btn-primary"
+                    type="button"
+                    [disabled]="saving()"
+                    (click)="ajouterExistant()">
+              <mat-icon>check</mat-icon>
+              {{ saving() ? 'Ajout...' : 'Ajouter cet officiel' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- MODE CRÉATION ──────────────────────────────────── -->
+        <div *ngIf="searchMode() === 'create'" [formGroup]="createForm">
+
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="form-label">Prénom</label>
+              <input formControlName="prenom" class="form-input"
+                     placeholder="Prénom"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Nom *</label>
+              <input formControlName="nom" class="form-input"
+                     placeholder="Nom"
+                     [class.error]="isInvalid('nom')"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Email *</label>
+              <input formControlName="email" class="form-input"
+                     type="email" placeholder="email@exemple.com"
+                     [class.error]="isInvalid('email')"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Téléphone</label>
+              <input formControlName="telephone" class="form-input"
+                     placeholder="+237 6XX XXX XXX"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">N° Licence</label>
+              <input formControlName="licenceNumero" class="form-input"
+                     placeholder="Numéro de licence"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Niveau</label>
+              <select formControlName="niveau" class="form-select">
+                <option value="">— Choisir —</option>
+                <option value="International">International</option>
+                <option value="National">National</option>
+                <option value="Régional">Régional</option>
+                <option value="Local">Local</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="toggle-field" style="margin-top: 12px">
+            <div class="toggle-info">
+              <span class="toggle-label">
+                <mat-icon>app_registration</mat-icon>
+                Créer un compte My2-0
+              </span>
+              <small>
+                Un email avec les identifiants temporaires sera envoyé
+              </small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" formControlName="creerCompte"/>
+              <span class="toggle__slider"></span>
+            </label>
+          </div>
+
+          <div class="modal-action" style="margin-top: 16px">
+            <button class="btn-primary"
+                    type="button"
+                    [disabled]="createForm.invalid || saving()"
+                    (click)="creerEtAjouter()">
+              <mat-icon>person_add</mat-icon>
+              {{ saving() ? 'Création...' : 'Créer et ajouter' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Erreur -->
+        <div class="alert alert--danger" *ngIf="error()">
+          <mat-icon>error_outline</mat-icon>
+          {{ error() }}
+        </div>
+
+      </div>
+
+      <div class="modal-officiels__footer">
+        <button class="btn-ghost" type="button" (click)="fermerModal()">
+          Fermer
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

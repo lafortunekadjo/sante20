@@ -9,6 +9,8 @@ import { UserService } from './user.service';
 import { AuthService } from './auth.service';
 import { Equipe } from '../models/groupe.model copy';
 import { GeneralService } from './general.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface ImportResult {
   totalRows: number;
@@ -37,6 +39,20 @@ export interface ExcelRowData {
   assurance?: string | boolean;
   cotisationPayee?: string | boolean;
   active?: string | boolean;
+}
+
+export interface PdfColumn {
+  header: string;
+  dataKey: string;
+}
+
+export interface PdfExportOptions {
+  title: string;
+  subtitle?: string;
+  columns: PdfColumn[];
+  rows: any[];
+  fileName: string;
+  orientation?: 'portrait' | 'landscape';
 }
 
 @Injectable({
@@ -662,5 +678,76 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
 
     const date = new Date(dateString);
     return date instanceof Date && !isNaN(date.getTime());
+  }
+
+   exportToExcel(data: any[], fileName: string, sheetName = 'Feuille1'): void {
+    if (!data?.length) return;
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  }
+
+  exportToPdf(options: PdfExportOptions): void {
+    const {
+      title, subtitle, columns, rows, fileName,
+      orientation = 'portrait'
+    } = options;
+
+    const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // ── En-tête ──
+    doc.setFontSize(16);
+    doc.setTextColor(26, 62, 181); // #1A3EB5 — votre couleur primaire
+    doc.text(title, 14, 16);
+
+    if (subtitle) {
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(subtitle, 14, 22);
+    }
+
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    const dateGeneration = `Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
+    doc.text(dateGeneration, pageWidth - 14, 16, { align: 'right' });
+
+    // ── Tableau ──
+    autoTable(doc, {
+      startY: subtitle ? 28 : 22,
+      head: [columns.map(c => c.header)],
+      body: rows.map(row => columns.map(c => this.formatCell(row[c.dataKey]))),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: {
+        fillColor: [26, 62, 181],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { top: 24 }
+    });
+
+    // ── Pied de page (numéro de page) ──
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(
+        `Page ${i} / ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 8,
+        { align: 'center' }
+      );
+    }
+
+    doc.save(`${fileName}.pdf`);
+  }
+
+  private formatCell(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+    return String(value);
   }
 }

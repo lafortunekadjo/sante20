@@ -1,8 +1,11 @@
 // match-detail.component.ts — version corrigée
 
 import {
-  Component, OnInit, inject, signal, computed
+  Component, OnInit, inject, signal, computed, Input
 } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
+import { FeuilleMatchComponent } from '../feuille-match/feuille-match.component';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
@@ -15,6 +18,7 @@ import {
   MatchEventDTO, StatutMatch
 } from '../../../../core/models/competition.models';
 import { MatchApiService } from '../../../../core/services/competition/match-api.service';
+import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
 import { MembreEquipeApiService } from '../../../../core/services/competition/membre-equipe-api.service';
 import { forkJoin } from 'rxjs';
 
@@ -28,12 +32,14 @@ interface JoueurOption {
   equipeNom?: string;
 }
 
-type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie';
+type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie' | 'feuille';
 
 @Component({
   selector: 'app-match-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TranslateModule,
+    MatIconModule,
+    FeuilleMatchComponent],
   templateUrl: './match-detail.component.html',
   styleUrls: ['./match-detail.component.scss']
 })
@@ -41,12 +47,29 @@ export class MatchDetailComponent implements OnInit {
 
   Cote = Cote;
 
+  // ── Permissions passées par competition-detail ────────────
+  // @Input() permissions: string[] = [];
+    permissions   = signal<string[]>([]);
+
+  // private hasPermission(perm: string): boolean {
+  //   return this.permissions.includes(perm);
+  // }
+
   private route     = inject(ActivatedRoute);
-  private api       = inject(MatchApiService);
+  private api           = inject(MatchApiService);
+  private compApi       = inject(CompetitionApiService);
   private membreApi = inject(MembreEquipeApiService);
   private fb        = inject(FormBuilder);
 
   match         = signal<MatchDetailDTO | null>(null);
+
+  // ── Permissions ────────────────────────────────────────────
+
+  isAdminMyApp  = false;
+
+  canSaisirScores      = () => this.isAdminMyApp || this.permissions().includes('SAISIR_SCORES');
+  canGererCompositions = () => this.isAdminMyApp || this.permissions().includes('GERER_COMPOSITIONS');
+  canPlanifierMatchs   = () => this.isAdminMyApp || this.permissions().includes('PLANIFIER_MATCHS');
   activeTab     = signal<MatchTab>('apercu');
   savingEvent   = signal(false);
   savingScore   = signal(false);
@@ -92,12 +115,21 @@ export class MatchDetailComponent implements OnInit {
   tempsForm!: FormGroup;
   nouvelleDateHeure = '';
 
-  tabs = [
-    { key: 'apercu'      as MatchTab, label: 'Aperçu',      icon: 'visibility' },
-    { key: 'composition' as MatchTab, label: 'Composition', icon: 'people' },
-    { key: 'evenements'  as MatchTab, label: 'Événements',  icon: 'sports_soccer' },
-    { key: 'saisie'      as MatchTab, label: 'Saisie',      icon: 'edit' },
+  // Tous les tabs disponibles
+  private allTabs = [
+    { key: 'apercu'      as MatchTab, label: 'Aperçu',      icon: 'visibility',    perm: null },
+    { key: 'composition' as MatchTab, label: 'Composition', icon: 'people',        perm: 'GERER_COMPOSITIONS' },
+    { key: 'evenements'  as MatchTab, label: 'Événements',  icon: 'sports_soccer', perm: 'SAISIR_SCORES' },
+    { key: 'saisie'      as MatchTab, label: 'Saisie',      icon: 'edit',          perm: 'SAISIR_SCORES' },
+    { key: 'feuille'     as MatchTab, label: 'Feuille',     icon: 'description',   perm: null },
   ];
+
+  // Tabs visibles selon les permissions
+  tabs = computed(() =>
+    this.allTabs.filter(t =>
+      t.perm === null || this.hasPermission(t.perm)
+    )
+  );
 
   postes = [
     { value: PosteJoueur.GARDIEN,   label: 'Gardien' },
@@ -257,7 +289,17 @@ export class MatchDetailComponent implements OnInit {
   ngOnInit(): void {
     this.buildTempsForm();
     this.reload();
-    
+    this.chargerPermissions();
+  }
+
+  private chargerPermissions(): void {
+    this.compApi.getMonRole(this.competitionId).subscribe({
+      next: (r: any) => {
+        this.permissions.set(r.permissions ?? []);
+        this.isAdminMyApp = r.role === 'ADMIN' || r.isAdmin === true;
+      },
+      error: () => this.permissions.set([])
+    });
   }
 
   buildTempsForm(): void {
@@ -523,8 +565,31 @@ private compoToOptions(
   isEnCours(): boolean  { return this.match()?.statut === StatutMatch.EN_COURS; }
   isPlanifie(): boolean { return this.match()?.statut === StatutMatch.PLANIFIE; }
   showScore(): boolean  { return this.isTermine() || this.isEnCours(); }
-  canEdit(): boolean    { return this.isEnCours(); }
-  canSaisirScore(): boolean { return this.isEnCours(); }
+
+  // ── Helpers permissions ──────────────────────────────────
+  hasPermission(perm: string): boolean {
+    if (this.isAdminMyApp) return true;
+    return this.permissions().includes(perm);
+  }
+
+  // ── Guards basés sur permissions + statut ─────────────────
+  canEdit(): boolean {
+    return this.isEnCours() && this.hasPermission('SAISIR_SCORES');
+  }
+  canSaisirScore(): boolean {
+    return this.isEnCours() && this.hasPermission('SAISIR_SCORES');
+  }
+  canGererComposition(): boolean {
+    return this.hasPermission('GERER_COMPOSITIONS')
+        && !this.isTermine();
+  }
+  canDemarrerMatch(): boolean {
+    return this.isPlanifie() && this.hasPermission('SAISIR_SCORES');
+  }
+  canValiderFeuille(): boolean { return this.hasPermission('VALIDER_FEUILLES'); }
+  canPlanifier(): boolean {
+    return this.hasPermission('PLANIFIER_MATCHS') && !this.isTermine();
+  }
 
   isWinner(side: 'home' | 'away'): boolean {
     if (!this.isTermine()) return false;
@@ -660,7 +725,7 @@ private compoToOptions(
   }
 
   demarrerMatch(): void {
-    if (!this.isPlanifie()) return;
+    if (!this.canDemarrerMatch()) return;
     this.api.demarrerMatch(this.competitionId, this.matchId).subscribe({
       next: m => { this.match.set(m); this.activeTab.set('evenements'); }
     });

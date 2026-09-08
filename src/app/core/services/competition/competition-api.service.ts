@@ -238,11 +238,32 @@ fermerInscriptions(id: number): Observable<void> {
     );
   }
  
-  mesCompetitions(): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${environment.apiUrl}/competitions/acces/mes-competitions`
+  // mesCompetitions(): Observable<any[]> {
+  //   return this.http.get<any[]>(
+  //     `${environment.apiUrl}/competitions/acces/mes-competitions`
+  //   );
+  // }
+
+    mesCompetitions(params?: {
+    statut?: string;
+    type?:   string;
+    page?:   number;
+    size?:   number;
+  }): Observable<any> {
+    let query = '';
+    if (params) {
+      const p: string[] = [];
+      if (params.statut) p.push(`statut=${params.statut}`);
+      if (params.type)   p.push(`type=${params.type}`);
+      if (params.page !== undefined) p.push(`page=${params.page}`);
+      if (params.size !== undefined) p.push(`size=${params.size}`);
+      if (p.length) query = '?' + p.join('&');
+    }
+    return this.http.get<any>(
+      `${environment.apiUrl}/competitions/mes-competitions${query}`
     );
   }
+ 
 
   // ── Vue publique (sans auth) ─────────────────────────────
   listerPublic(search?: string, statut?: string): Observable<any[]> {
@@ -260,10 +281,79 @@ fermerInscriptions(id: number): Observable<void> {
   );
 }
  
+
   // getPublic(competitionId: number): Observable<any> {
   //   return this.http.get<any>(
   //     `${environment.apiUrl}/public/competitions/${competitionId}`
   //   );
   // }
+
+ // ── Officiels ─────────────────────────────────────────────
+  // Routes : /api/competitions/{id}/officiels/...
+ 
+  listerOfficiels(competitionId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels`
+    );
+  }
+ 
+  ajouterOfficiel(competitionId: number, dto: any): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels`, dto
+    );
+  }
+ 
+  supprimerOfficiel(competitionId: number, officielId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels/${officielId}`
+    );
+  }
+ 
+  assignerOfficiel(competitionId: number, matchId: number, dto: any): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels/matchs/${matchId}/assigner`,
+      dto
+    );
+  }
+ 
+  retirerOfficielDuMatch(
+      competitionId: number, matchId: number, officielId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels/matchs/${matchId}/officiel/${officielId}`
+    );
+  }
+ 
+  officielsDuMatch(competitionId: number, matchId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${environment.apiUrl}/competitions/${competitionId}/officiels/matchs/${matchId}`
+    );
+  }
+ 
+// Dans competition-api.service.ts — corriger
+rechercherUser(query: string): Observable<any> {
+  return this.http.get<any>(
+    `${environment.apiUrl}/user/search?q=${encodeURIComponent(query)}`
+    // ↑ /user/ et pas /users/
+  );
+}
+
+  modifierPermissions(
+      competitionId: number, accesId: number,
+      permissions: string[]): Observable<any> {
+    return this.http.patch<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/acces/${accesId}/permissions`,
+      permissions
+    );
+  }
+ 
+  reinitialiserPermissions(
+      competitionId: number, accesId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${environment.apiUrl}/competitions/${competitionId}/acces/${accesId}/reinitialiser`,
+      {}
+    );
+  }
+ 
+
  
 }

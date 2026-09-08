@@ -1,0 +1,105 @@
+<!-- tirage-export-dialog.component.html -->
+<h2 mat-dialog-title>
+  <mat-icon>casino</mat-icon> {{ 'membres.tirageTitle' | translate }}
+</h2>
+
+<mat-dialog-content>
+
+  <!-- ÉTAPE 1 : SETUP -->
+  <div *ngIf="step === 'setup'" class="setup-step">
+    <p class="hint">{{ 'membres.tirageHint' | translate }} ({{ data.membres.length }} membres)</p>
+
+    <div class="team-pickers">
+      <div class="team-picker">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'membres.teamA' | translate }}</mat-label>
+          <mat-select [(ngModel)]="equipeAId">
+            <mat-option [value]="null">— {{ 'membres.newTeam' | translate }} —</mat-option>
+            <mat-option *ngFor="let eq of data.equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" *ngIf="equipeAId === null">
+          <mat-label>{{ 'membres.teamNamePlaceholder' | translate }}</mat-label>
+          <input matInput [(ngModel)]="nomEquipeA">
+        </mat-form-field>
+      </div>
+
+      <div class="team-picker">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'membres.teamB' | translate }}</mat-label>
+          <mat-select [(ngModel)]="equipeBId">
+            <mat-option [value]="null">— {{ 'membres.newTeam' | translate }} —</mat-option>
+            <mat-option *ngFor="let eq of data.equipes" [value]="eq.id">{{ eq.nom }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" *ngIf="equipeBId === null">
+          <mat-label>{{ 'membres.teamNamePlaceholder' | translate }}</mat-label>
+          <input matInput [(ngModel)]="nomEquipeB">
+        </mat-form-field>
+      </div>
+    </div>
+
+    <mat-checkbox [(ngModel)]="includeInactive">
+      {{ 'membres.includeInactive' | translate }}
+    </mat-checkbox>
+  </div>
+
+  <!-- ÉTAPE 2 : AJUSTEMENT DRAG & DROP -->
+  <div *ngIf="step === 'adjust'" class="adjust-step">
+    <div class="columns">
+      <div class="team-column">
+        <h4>{{ equipeAName }} <span class="count">({{ poolA.length }})</span></h4>
+        <div class="drop-list"
+             cdkDropList
+             #listA="cdkDropList"
+             [cdkDropListData]="poolA"
+             [cdkDropListConnectedTo]="[listB]"
+             (cdkDropListDropped)="drop($event)">
+          <div class="drop-item" *ngFor="let m of poolA" cdkDrag>
+            <mat-icon cdkDragHandle>drag_indicator</mat-icon>
+            <span>{{ m.prenom }} {{ m.nom }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="team-column">
+        <h4>{{ equipeBName }} <span class="count">({{ poolB.length }})</span></h4>
+        <div class="drop-list"
+             cdkDropList
+             #listB="cdkDropList"
+             [cdkDropListData]="poolB"
+             [cdkDropListConnectedTo]="[listA]"
+             (cdkDropListDropped)="drop($event)">
+          <div class="drop-item" *ngFor="let m of poolB" cdkDrag>
+            <mat-icon cdkDragHandle>drag_indicator</mat-icon>
+            <span>{{ m.prenom }} {{ m.nom }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <ng-container *ngIf="step === 'setup'">
+    <button mat-stroked-button (click)="annuler()">{{ 'common.cancel' | translate }}</button>
+    <button mat-raised-button color="primary" [disabled]="!canLaunchTirage()" (click)="lancerTirage()">
+      <mat-icon>casino</mat-icon> {{ 'membres.launchTirage' | translate }}
+    </button>
+  </ng-container>
+
+ <ng-container *ngIf="step === 'adjust'">
+  <button mat-stroked-button (click)="retourSetup()" [disabled]="isSaving">
+    {{ 'common.back' | translate }}
+  </button>
+  <button mat-stroked-button (click)="confirmerEtExporter('excel')" [disabled]="isSaving">
+    <mat-icon>grid_on</mat-icon> Excel
+  </button>
+  <button mat-raised-button color="primary" (click)="confirmerEtExporter('pdf')" [disabled]="isSaving">
+    <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+    <mat-icon *ngIf="!isSaving">picture_as_pdf</mat-icon>
+    {{ isSaving ? ('membres.saving' | translate) : 'PDF' }}
+  </button>
+</ng-container>
+</mat-dialog-actions>
