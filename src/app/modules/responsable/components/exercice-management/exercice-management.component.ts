@@ -27,6 +27,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { FinancesService, Exercice, BilanExercice } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { ExerciceEditDialogComponent } from '../exercice-edit-dialog/exercice-edit-dialog.component';
 
 @Component({
   selector: 'app-exercice-management',
@@ -121,6 +122,22 @@ export class ExerciceManagementComponent implements OnInit {
       reporterImpayes: [true]
     });
   }
+
+  openEditDialog(exercice: Exercice): void {
+  if (exercice.cloture) return; // sécurité, le bouton ne devrait pas apparaître de toute façon
+
+  const dialogRef = this.dialog.open(ExerciceEditDialogComponent, {
+    width: '600px',
+    maxWidth: '95vw',
+    data: { exercice }
+  });
+
+  dialogRef.afterClosed().subscribe((result) => {
+    if (result) {
+      this.loadExercices();
+    }
+  });
+}
 
   loadExercices(): void {
     if (!this.groupeId) return;

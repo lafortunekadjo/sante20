@@ -1,0 +1,61 @@
+<!-- exercice-edit-dialog/exercice-edit-dialog.component.html -->
+<h2 mat-dialog-title>
+  <mat-icon>edit_calendar</mat-icon>
+  {{ 'exercice.edit.title' | translate }}
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="edit-form">
+    <div class="edit-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'exercice.fields.annee' | translate }}</mat-label>
+        <mat-icon matPrefix>event</mat-icon>
+        <input matInput type="number" formControlName="annee" min="2000" max="2100">
+        <mat-error *ngIf="form.get('annee')?.hasError('required')">
+          {{ 'exercice.errors.annee_requise' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'exercice.fields.libelle' | translate }}</mat-label>
+        <mat-icon matPrefix>label</mat-icon>
+        <input matInput formControlName="libelle">
+        <mat-error *ngIf="form.get('libelle')?.hasError('required')">
+          {{ 'exercice.errors.libelle_requis' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'exercice.fields.date_debut' | translate }}</mat-label>
+        <mat-icon matPrefix>event</mat-icon>
+        <input matInput [matDatepicker]="pickerDebut" formControlName="dateDebut">
+        <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
+        <mat-datepicker #pickerDebut></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'exercice.fields.date_fin' | translate }}</mat-label>
+        <mat-icon matPrefix>event</mat-icon>
+        <input matInput [matDatepicker]="pickerFin" formControlName="dateFin">
+        <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+        <mat-datepicker #pickerFin></mat-datepicker>
+      </mat-form-field>
+    </div>
+
+    <button mat-button type="button" class="reset-dates-btn" (click)="reinitialiserDatesDepuisAnnee()">
+      <mat-icon>refresh</mat-icon>
+      {{ 'exercice.edit.reset_dates' | translate }}
+    </button>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button (click)="annuler()" [disabled]="isSaving">
+    {{ 'common.cancel' | translate }}
+  </button>
+  <button mat-raised-button color="primary" (click)="enregistrer()" [disabled]="form.invalid || isSaving">
+    <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+    <mat-icon *ngIf="!isSaving">save</mat-icon>
+    {{ (isSaving ? 'exercice.edit.saving' : 'exercice.edit.save') | translate }}
+  </button>
+</mat-dialog-actions>

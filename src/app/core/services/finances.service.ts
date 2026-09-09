@@ -247,6 +247,17 @@ export class FinancesService {
     return this.http.post<Exercice>(`${this.baseUrl}/exercices/groupe/${groupeId}`, data);
   }
 
+  // dans finances.service.ts
+
+    modifierExercice(id: number, data: {
+      libelle?: string;
+      annee?: number;
+      dateDebut?: string;
+      dateFin?: string;
+    }): Observable<Exercice> {
+      return this.http.put<Exercice>(`${this.baseUrl}/exercices/${id}`, data);
+    }
+
   /**
    * GET /api/exercices/actif/groupe/{groupeId}
    * Récupérer l'exercice actif d'un groupe
