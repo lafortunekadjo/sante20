@@ -874,7 +874,7 @@ openTirageExportDialog(): void {
     maxWidth: '95vw',
     maxHeight: '90vh',
     disableClose: true,
-    data: { membres: this.filteredMembers, equipes: this.equipes }
+    data: { membres: this.filteredMembers, equipes: this.equipes ,  groupe: this.groupe}
   });
 
   dialogRef.afterClosed().subscribe((success) => {

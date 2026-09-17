@@ -145,7 +145,7 @@ export class AppComponent implements OnInit, OnDestroy {
         } else if (event instanceof NavigationEnd) {
           console.log('✅ NAV END:', event.url);
         } else if (event instanceof NavigationCancel) {
-          console.warn('⚠️ NAV CANCELLED:', event.url, '—', event.reason);
+          console.warn('⚠️ NAV CANCELLED:', event.url, '—', event);
         } else if (event instanceof NavigationError) {
           console.error('❌ NAV ERROR:', event.url, event.error);
         }

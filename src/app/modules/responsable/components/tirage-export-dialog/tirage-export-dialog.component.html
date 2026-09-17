@@ -56,16 +56,20 @@
     <div class="columns">
       <!-- Équipe A -->
       <div class="team-column">
-        <h4>{{ equipeAName }} <span class="count">({{ poolA.length }})</span></h4>
+        <h4>
+        <span class="team-color-dot" [style.background]="'rgb(' + equipeAColor.join(',') + ')'"></span>
+        {{ equipeAName }} <span class="count">({{ poolA.length }})</span>
+        </h4>
         <div class="drop-list"
              cdkDropList
              #listA="cdkDropList"
              [cdkDropListData]="poolA"
              [cdkDropListConnectedTo]="[listB]"
              (cdkDropListDropped)="drop($event)">
-          <div class="drop-item" *ngFor="let m of poolA" cdkDrag>
+          <div class="drop-item" *ngFor="let m of poolA; let i = index" cdkDrag>
+            <span class="drop-index">{{ i + 1 }}</span>
             <mat-icon cdkDragHandle>drag_indicator</mat-icon>
-            <span>{{ m.prenom }} {{ m.nom }}</span>
+            <span class="drop-name">{{ m.prenom }} {{ m.nom }}</span>
             <button class="remove-btn"
                     (click)="retirerMembre(m, poolA)"
                     [matTooltip]="'membres.removeFromExport' | translate">
@@ -77,16 +81,20 @@
 
       <!-- Équipe B -->
       <div class="team-column">
-        <h4>{{ equipeBName }} <span class="count">({{ poolB.length }})</span></h4>
+        <h4>
+            <span class="team-color-dot" [style.background]="'rgb(' + equipeBColor.join(',') + ')'"></span>
+            {{ equipeAName }} <span class="count">({{ poolB.length }})</span>
+            </h4>
         <div class="drop-list"
              cdkDropList
              #listB="cdkDropList"
              [cdkDropListData]="poolB"
              [cdkDropListConnectedTo]="[listA]"
              (cdkDropListDropped)="drop($event)">
-          <div class="drop-item" *ngFor="let m of poolB" cdkDrag>
+          <div class="drop-item" *ngFor="let m of poolB; let i = index" cdkDrag>
+            <span class="drop-index">{{ i + 1 }}</span>
             <mat-icon cdkDragHandle>drag_indicator</mat-icon>
-            <span>{{ m.prenom }} {{ m.nom }}</span>
+            <span class="drop-name">{{ m.prenom }} {{ m.nom }}</span>
             <button class="remove-btn"
                     (click)="retirerMembre(m, poolB)"
                     [matTooltip]="'membres.removeFromExport' | translate">
@@ -115,6 +123,45 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── Informations du document d'export ── -->
+    <div class="export-meta-section">
+      <h4 class="export-meta-title">
+        <mat-icon>description</mat-icon>
+        {{ 'membres.exportInfo.title' | translate }}
+      </h4>
+      <p class="export-meta-hint">{{ 'membres.exportInfo.hint' | translate }}</p>
+
+      <div class="export-meta-grid">
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>{{ 'membres.exportInfo.titre' | translate }}</mat-label>
+          <input matInput [(ngModel)]="exportMeta.titre">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>{{ 'membres.exportInfo.officiel' | translate }}</mat-label>
+          <input matInput [(ngModel)]="exportMeta.officiel"
+                 [placeholder]="'membres.exportInfo.officielPlaceholder' | translate">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'membres.exportInfo.lieu' | translate }}</mat-label>
+          <input matInput [(ngModel)]="exportMeta.lieu"
+                 [placeholder]="'membres.exportInfo.lieuPlaceholder' | translate">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'membres.exportInfo.dt' | translate }}</mat-label>
+          <input matInput [(ngModel)]="exportMeta.directeurTechnique"
+                 [placeholder]="'membres.exportInfo.dtPlaceholder' | translate">
+        </mat-form-field>
+      </div>
+
+      <div class="export-meta-preview" *ngIf="nomGroupe">
+        <mat-icon>groups</mat-icon>
+        <span>{{ 'membres.exportInfo.groupePreview' | translate }} : <strong>{{ nomGroupe }}</strong></span>
       </div>
     </div>
 

@@ -1,0 +1,174 @@
+<div class="cl-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Chargement du classement...</p>
+  </div>
+
+  <!-- Erreur -->
+  <div class="error-state" *ngIf="error() && !isLoading()">
+    <mat-icon>error_outline</mat-icon>
+    <p>Impossible de charger le classement</p>
+    <button mat-raised-button color="primary" (click)="chargerClassement()">
+      Réessayer
+    </button>
+  </div>
+
+  <ng-container *ngIf="!isLoading() && !error() && classement() as c">
+
+    <!-- ══ HERO ═══════════════════════════════════════════════ -->
+    <div class="hero">
+      <div class="hero-icon">🏆</div>
+      <h1>La Ligue des Légendes 2-0</h1>
+      <p>Classement mensuel des joueurs et clubs les plus engagés sur My2-0</p>
+
+      <!-- Sélecteur de mois -->
+      <mat-form-field appearance="outline" class="mois-selector">
+        <mat-label>Saison</mat-label>
+        <mat-select [(ngModel)]="anneeMois" (ngModelChange)="onMoisChange()">
+          <mat-option *ngFor="let m of moisDispos" [value]="m">
+            {{ getMoisLabel(m) }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- CTA si connecté -->
+      <button mat-raised-button class="ma-prog-btn"
+              *ngIf="isLoggedIn"
+              (click)="voirMaProgression()">
+        <mat-icon>emoji_events</mat-icon>
+        Ma progression
+      </button>
+    </div>
+
+    <!-- ══ PODIUM TOP 3 JOUEURS ════════════════════════════════ -->
+    <div class="podium-section" *ngIf="c.individuel.length >= 3">
+      <h2 class="section-title">⚽ Top Joueurs</h2>
+      <div class="podium">
+
+        <!-- 2ème — accès direct via index, pas de 'as' -->
+        <div class="podium-item rank-2">
+          <div class="podium-avatar"
+               [style.background]="getNiveauColor(c.individuel[1].niveau)">
+            {{ c.individuel[1].prenom[0] }}{{ c.individuel[1].nom[0] }}
+          </div>
+          <div class="podium-medal">🥈</div>
+          <div class="podium-name">{{ c.individuel[1].prenom }} {{ c.individuel[1].nom }}</div>
+          <div class="podium-groupe">{{ c.individuel[1].groupeNom }}</div>
+          <div class="podium-pts">{{ c.individuel[1].xpSaison | number }} XP</div>
+          <div class="podium-block silver"></div>
+        </div>
+
+        <!-- 1er -->
+        <div class="podium-item rank-1">
+          <div class="podium-crown">👑</div>
+          <div class="podium-avatar"
+               [style.background]="getNiveauColor(c.individuel[0].niveau)">
+            {{ c.individuel[0].prenom[0] }}{{ c.individuel[0].nom[0] }}
+          </div>
+          <div class="podium-medal">🥇</div>
+          <div class="podium-name">{{ c.individuel[0].prenom }} {{ c.individuel[0].nom }}</div>
+          <div class="podium-groupe">{{ c.individuel[0].groupeNom }}</div>
+          <div class="podium-pts">{{ c.individuel[0].xpSaison | number }} XP</div>
+          <div class="podium-block gold"></div>
+        </div>
+
+        <!-- 3ème -->
+        <div class="podium-item rank-3">
+          <div class="podium-avatar"
+               [style.background]="getNiveauColor(c.individuel[2].niveau)">
+            {{ c.individuel[2].prenom[0] }}{{ c.individuel[2].nom[0] }}
+          </div>
+          <div class="podium-medal">🥉</div>
+          <div class="podium-name">{{ c.individuel[2].prenom }} {{ c.individuel[2].nom }}</div>
+          <div class="podium-groupe">{{ c.individuel[2].groupeNom }}</div>
+          <div class="podium-pts">{{ c.individuel[2].xpSaison | number }} XP</div>
+          <div class="podium-block bronze"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ TABS JOUEURS / CLUBS ════════════════════════════════ -->
+    <mat-tab-group animationDuration="200ms" class="cl-tabs">
+
+      <!-- Tab Joueurs -->
+      <mat-tab label="⚽ Joueurs">
+        <div class="liste-wrap">
+          <div class="liste-item"
+               *ngFor="let p of c.individuel; let i = index">
+            <span class="rang">{{ getMedal(i + 1) }}</span>
+            <div class="avatar" [style.background]="p.profil ? 'transparent' : getNiveauColor(p.niveau)">
+                @if (p.profil) {
+                    <img [src]="p.profil" [alt]="p.username" class="avatar-img" />
+                } @else {
+                    <span>{{ p.username?.charAt(0)?.toUpperCase() }}</span>
+                }
+                </div>
+            <div class="info">
+              <span class="nom"> {{ p.username}}</span>
+              <span class="sub">
+                {{ getNiveauLabel(p.niveau) }} . {{ p.groupeNom }}
+              </span>
+            </div>
+            <span class="pts">{{ p.xpSaison | number }} XP</span>
+          </div>
+
+          <div class="liste-empty" *ngIf="c.individuel.length === 0">
+            <mat-icon>sports_soccer</mat-icon>
+            <p>Aucun joueur classé pour cette saison</p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Clubs -->
+      <mat-tab label="🏟️ Clubs">
+        <div class="liste-wrap">
+          <div class="liste-item"
+               *ngFor="let club of c.clubs; let i = index">
+            <span class="rang">{{ getMedal(i + 1) }}</span>
+            <div class="avatar club-avatar"
+                 [style.background-image]="club.photoUrl ? 'url('+club.photoUrl+')' : ''">
+              <span *ngIf="!club.photoUrl">{{ club.groupeNom[0] }}</span>
+            </div>
+            <div class="info">
+              <span class="nom">{{ club.groupeNom }}</span>
+              <span class="sub">{{ club.nbMembresActifs }} membres actifs</span>
+            </div>
+            <span class="pts">{{ club.xpTotal | number }} XP</span>
+          </div>
+
+          <div class="liste-empty" *ngIf="c.clubs.length === 0">
+            <mat-icon>groups</mat-icon>
+            <p>Aucun club classé pour cette saison</p>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+    <!-- ══ CTA NON CONNECTÉ ════════════════════════════════════ -->
+    <div class="cta-section" *ngIf="!isLoggedIn">
+      <div class="cta-card">
+        <div class="cta-icon">🚀</div>
+        <h3>Rejoins la Ligue et gagne des récompenses</h3>
+        <p>
+          Chaque action sur My2-0 te rapporte des XP.
+          Gère ton club, joue, vote — et grimpe dans le classement !
+        </p>
+        <div class="cta-btns">
+          <button mat-raised-button color="primary" (click)="rejoindre()">
+            <mat-icon>group_add</mat-icon>
+            Créer mon groupe
+          </button>
+          <button mat-stroked-button (click)="seConnecter()">
+            <mat-icon>login</mat-icon>
+            Se connecter
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

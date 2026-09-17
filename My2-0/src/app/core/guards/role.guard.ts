@@ -27,7 +27,7 @@ canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observab
         const requiredRoles = route.data['roles'] as string[];
         const userRoles = this.authService.getRoles();
         const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
-
+        console.log(hasRequiredRole)
         if (hasRequiredRole) return true;
 
         return this.router.createUrlTree(['/explorer']);

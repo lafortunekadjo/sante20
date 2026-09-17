@@ -10,6 +10,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatRippleModule } from '@angular/material/core';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { CampagneBannerComponent } from '../../modules/gamification/campagne-banner/campagne-banner.component';
 
 interface Feature {
   icon: string;
@@ -48,7 +49,8 @@ interface FAQ {
     MatChipsModule,
     MatDividerModule,
     MatRippleModule,
-    TranslateModule
+    TranslateModule,
+    CampagneBannerComponent
   ],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']

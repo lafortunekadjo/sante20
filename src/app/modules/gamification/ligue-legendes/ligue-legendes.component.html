@@ -1,0 +1,281 @@
+<div class="ligue-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <mat-spinner diameter="44"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="!isLoading() && profil()">
+  <ng-container *ngIf="profil() as p">
+
+    <!-- ══ HERO PROFIL ════════════════════════════════════════ -->
+    <div class="hero-profil"
+         [style.background]="'linear-gradient(135deg,' + getNiveauColor(p.niveau) + 'cc, ' + getNiveauColor(p.niveau) + '88)'">
+
+      <div class="hero-avatar">
+        <div class="avatar-ring" [style.border-color]="getNiveauColor(p.niveau)">
+          <div class="avatar-initiales">
+            {{ p.prenom[0] }}{{ p.nom[0] }}
+          </div>
+          <!-- Cadre de niveau (bordure colorée) -->
+          <div class="avatar-niveau-badge"
+               [style.background]="getNiveauColor(p.niveau)">
+            {{ p.niveau }}
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-infos">
+        <h2>{{ p.prenom }} {{ p.nom }}</h2>
+        <div class="titre-niveau">{{ p.titreNiveau }}</div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="stat-val">{{ p.xpTotal | number }}</span>
+            <span class="stat-lbl">XP total</span>
+          </div>
+          <div class="hero-stat-sep"></div>
+          <div class="hero-stat">
+            <span class="stat-val">{{ p.xpSaison | number }}</span>
+            <span class="stat-lbl">Ce mois</span>
+          </div>
+          <div class="hero-stat-sep"></div>
+          <div class="hero-stat">
+            <span class="stat-val">#{{ monRang() ?? '—' }}</span>
+            <span class="stat-lbl">Classement</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BARRE PROGRESSION NIVEAU ═══════════════════════════ -->
+    <div class="progression-card" *ngIf="p.niveau < 6">
+      <div class="progression-header">
+        <span>{{ p.titreNiveau }}</span>
+        <span class="arrow">→</span>
+        <span class="next">{{ p.prochainNiveau }}</span>
+      </div>
+      <mat-progress-bar mode="determinate"
+                        [value]="p.progressionNiveau"
+                        class="big-bar">
+      </mat-progress-bar>
+      <div class="progression-foot">
+        <span>{{ p.xpTotal | number }} XP</span>
+        <span>{{ p.xpProchainNiveau | number }} XP</span>
+      </div>
+      <div class="manque">
+        Encore {{ (p.xpProchainNiveau - p.xpTotal) | number }} XP
+        pour atteindre {{ p.prochainNiveau }}
+      </div>
+    </div>
+    <div class="niveau-max-card" *ngIf="p.niveau === 6">
+      🏆 Tu as atteint le niveau maximum — Légende My2-0 !
+    </div>
+
+    <!-- ══ TABS ═══════════════════════════════════════════════ -->
+    <mat-tab-group animationDuration="200ms" class="main-tabs">
+
+      <!-- ── Tab Missions ───────────────────────────────────── -->
+      <mat-tab label="🎯 Missions">
+        <div class="tab-content">
+
+          <!-- Missions hebdomadaires -->
+          <h3 class="section-label">
+            <mat-icon>repeat</mat-icon>
+            Missions de la semaine
+          </h3>
+
+          <div class="missions-list" *ngIf="getMissions('HEBDOMADAIRE').length > 0">
+            <div class="mission-card"
+                 *ngFor="let m of getMissions('HEBDOMADAIRE')"
+                 [class.complete]="m.complete">
+
+              <div class="mission-header">
+                <div class="mission-titre-wrap">
+                  <mat-icon *ngIf="m.complete" class="done-icon">check_circle</mat-icon>
+                  <span class="mission-titre">{{ m.titre }}</span>
+                </div>
+                <span class="mission-xp-badge">+{{ m.xpBonus }} XP</span>
+              </div>
+
+              <mat-progress-bar mode="determinate"
+                                [value]="getProgressionMission(m)"
+                                [color]="m.complete ? 'accent' : 'primary'">
+              </mat-progress-bar>
+
+              <div class="mission-footer">
+                <span class="progress-txt">
+                  {{ m.progression }}/{{ m.quantiteRequise }}
+                </span>
+                <span class="deadline">
+                  {{ m.complete ? '✅ Complétée' : getJoursRestants(m.dateFin) + 'j restants' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-missions" *ngIf="getMissions('HEBDOMADAIRE').length === 0">
+            <mat-icon>flag</mat-icon>
+            <p>Nouvelles missions disponibles lundi prochain</p>
+          </div>
+
+          <!-- Défis mensuels -->
+          <h3 class="section-label" style="margin-top: 24px">
+            <mat-icon>calendar_month</mat-icon>
+            Défis du mois
+          </h3>
+
+          <div class="missions-list">
+            <div class="mission-card"
+                 *ngFor="let m of getMissions('MENSUEL')"
+                 [class.complete]="m.complete">
+
+              <div class="mission-header">
+                <div class="mission-titre-wrap">
+                  <mat-icon *ngIf="m.complete" class="done-icon">check_circle</mat-icon>
+                  <span class="mission-titre">{{ m.titre }}</span>
+                </div>
+                <span class="mission-xp-badge">+{{ m.xpBonus }} XP</span>
+              </div>
+
+              <mat-progress-bar mode="determinate"
+                                [value]="getProgressionMission(m)"
+                                [color]="m.complete ? 'accent' : 'primary'">
+              </mat-progress-bar>
+
+              <div class="mission-footer">
+                <span class="progress-txt">
+                  {{ m.progression }}/{{ m.quantiteRequise }}
+                </span>
+                <span class="deadline">
+                  {{ m.complete ? '✅ Complété' : getJoursRestants(m.dateFin) + 'j' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </mat-tab>
+
+      <!-- ── Tab Badges ─────────────────────────────────────── -->
+      <mat-tab label="🏅 Badges">
+        <div class="tab-content">
+
+          <div class="badges-grid" *ngIf="p.badges.length > 0">
+            <div class="badge-card" *ngFor="let b of p.badges">
+              <div class="badge-emoji">{{ b.emoji }}</div>
+              <div class="badge-nom">{{ b.nom }}</div>
+              <div class="badge-desc">{{ b.description }}</div>
+              <div class="badge-date">
+                {{ b.dateObtention | date:'dd/MM/yyyy' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-badges" *ngIf="p.badges.length === 0">
+            <div class="empty-icon">🎖️</div>
+            <h3>Aucun badge encore</h3>
+            <p>Complète des missions et joue pour décrocher tes premiers badges !</p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- ── Tab Classement ─────────────────────────────────── -->
+      <mat-tab label="🏆 Classement">
+        <div class="tab-content" *ngIf="classement()">
+        <ng-container *ngIf="classement() as c">
+
+          <!-- Sous-onglets Individuel / Clubs -->
+          <mat-tab-group animationDuration="150ms" class="sub-tabs">
+
+            <mat-tab label="Joueurs">
+              <div class="classement-liste">
+                <div class="classement-item"
+                     *ngFor="let e of c.individuel; let i = index"
+                     [class.moi]="e.membreId === p.membreId">
+                  <span class="rang">
+                    {{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1) }}
+                  </span>
+                  <div class="joueur-avatar"
+                       [style.background]="getNiveauColor(e.niveau)">
+                    {{ e.prenom[0] }}{{ e.nom[0] }}
+                  </div>
+                  <div class="joueur-info">
+                    <span class="joueur-nom">
+                      {{ e.prenom }} {{ e.nom }}
+                      <span class="moi-badge" *ngIf="e.membreId === p.membreId">Moi</span>
+                    </span>
+                    <span class="joueur-groupe">
+                      {{ e.titreNiveau }} · {{ e.groupeNom }}
+                    </span>
+                  </div>
+                  <span class="joueur-xp">{{ e.xpSaison | number }} XP</span>
+                </div>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Clubs">
+              <div class="classement-liste">
+                <div class="classement-item"
+                     *ngFor="let club of c.clubs; let i = index">
+                  <span class="rang">
+                    {{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1) }}
+                  </span>
+                  <div class="club-avatar"
+                       [style.background-image]="club.photoUrl ? 'url('+club.photoUrl+')' : ''">
+                    <span *ngIf="!club.photoUrl">{{ club.groupeNom[0] }}</span>
+                  </div>
+                  <div class="joueur-info">
+                    <span class="joueur-nom">{{ club.groupeNom }}</span>
+                    <span class="joueur-groupe">
+                      {{ club.nbMembresActifs }} membres actifs
+                    </span>
+                  </div>
+                  <span class="joueur-xp">{{ club.xpTotal | number }} XP</span>
+                </div>
+              </div>
+            </mat-tab>
+
+          </mat-tab-group>
+
+      </ng-container>
+        </div>
+      </mat-tab>
+
+      <!-- ── Tab Niveaux ────────────────────────────────────── -->
+      <mat-tab label="📈 Niveaux">
+        <div class="tab-content">
+          <div class="niveaux-liste">
+            <div class="niveau-item"
+                 *ngFor="let n of NIVEAUX"
+                 [class.actuel]="n.niveau === p.niveau"
+                 [class.atteint]="p.xpTotal >= n.xp"
+                 [class.futur]="p.xpTotal < n.xp">
+
+              <div class="niveau-icon"
+                   [style.background]="n.color"
+                   [class.locked]="p.xpTotal < n.xp">
+                <span *ngIf="p.xpTotal >= n.xp">{{ n.titre.split(' ')[0] }}</span>
+                <mat-icon *ngIf="p.xpTotal < n.xp">lock</mat-icon>
+              </div>
+
+              <div class="niveau-details">
+                <span class="niveau-titre">{{ n.titre }}</span>
+                <span class="niveau-seuil">
+                  {{ n.xp | number }} XP requis
+                  <span *ngIf="p.xpTotal >= n.xp" class="check">✓ Atteint</span>
+                </span>
+              </div>
+
+              <div class="niveau-badge-actuel" *ngIf="n.niveau === p.niveau">
+                Actuel
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </ng-container>
+    </ng-container>
+</div>

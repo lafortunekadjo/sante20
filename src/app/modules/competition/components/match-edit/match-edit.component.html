@@ -14,89 +14,63 @@
 
     <!-- ── Match actuel ─────────────────────────────────── -->
     <div class="match-current">
-      <div class="match-current__team">
-        {{ match.domicile?.nomEquipe ?? '?' }}
-      </div>
+      <div class="match-current__team">{{ match.domicile?.nomEquipe ?? '?' }}</div>
       <div class="match-current__score" *ngIf="isTermine()">
         {{ match.butsDomicile }} – {{ match.butsExterieur }}
       </div>
       <div class="match-current__vs" *ngIf="!isTermine()">vs</div>
-      <div class="match-current__team">
-        {{ match.exterieur?.nomEquipe ?? '?' }}
-      </div>
+      <div class="match-current__team">{{ match.exterieur?.nomEquipe ?? '?' }}</div>
     </div>
 
-    <!-- ── Date & lieu ──────────────────────────────────── -->
+    <!-- ── Planification ────────────────────────────────── -->
     <div class="form-section">
       <h4 class="form-section__title">
         <i class="material-icons">schedule</i>
         Planification
       </h4>
-
       <div class="form-field">
-        <label class="form-label">Date & heure</label>
-        <input type="datetime-local"
-               [(ngModel)]="dateHeure"
-               class="form-input"/>
+        <label class="form-label">Date &amp; heure</label>
+        <input type="datetime-local" [(ngModel)]="dateHeure" class="form-input"/>
       </div>
-
       <div class="form-field">
         <label class="form-label">Lieu / Stade</label>
-        <input type="text"
-               [(ngModel)]="lieu"
-               class="form-input"
+        <input type="text" [(ngModel)]="lieu" class="form-input"
                placeholder="Ex: Stade Omnisports Yaoundé"/>
       </div>
     </div>
 
     <!-- ── Équipes ──────────────────────────────────────── -->
-    <div class="form-section">
+    <div class="form-section" *ngIf="!bracketMode">
       <h4 class="form-section__title">
         <i class="material-icons">groups</i>
         Équipes
-        <span class="form-section__hint">
-          (tirage manuel ou correction)
-        </span>
       </h4>
-
       <div class="loading-sm" *ngIf="loadingParticipants()">
-        <div class="spinner-sm"></div>
-        Chargement des équipes...
+        <div class="spinner-sm"></div> Chargement...
       </div>
-
       <ng-container *ngIf="!loadingParticipants()">
         <div class="equipes-grid">
-
-          <!-- Domicile -->
           <div class="form-field">
             <label class="form-label">Équipe domicile</label>
-            <select class="form-select"
-                    [(ngModel)]="domicileId">
+            <select class="form-select" [(ngModel)]="domicileId">
               <option [ngValue]="null">-- Choisir --</option>
               <option *ngFor="let p of participantsDisponibles()"
-                      [ngValue]="p.id"
-                      [disabled]="p.id === exterieurId">
+                      [ngValue]="p.id" [disabled]="p.id === exterieurId">
                 {{ p.nomEquipe }}
               </option>
             </select>
           </div>
-
-          <!-- Extérieur -->
           <div class="form-field">
             <label class="form-label">Équipe extérieur</label>
-            <select class="form-select"
-                    [(ngModel)]="exterieurId">
+            <select class="form-select" [(ngModel)]="exterieurId">
               <option [ngValue]="null">-- Choisir --</option>
               <option *ngFor="let p of participantsDisponibles()"
-                      [ngValue]="p.id"
-                      [disabled]="p.id === domicileId">
+                      [ngValue]="p.id" [disabled]="p.id === domicileId">
                 {{ p.nomEquipe }}
               </option>
             </select>
           </div>
         </div>
-
-        <!-- Alerte même équipe -->
         <div class="alert alert--danger" *ngIf="memeEquipe()">
           <i class="material-icons">warning</i>
           Une équipe ne peut pas jouer contre elle-même
@@ -104,31 +78,136 @@
       </ng-container>
     </div>
 
-    <!-- ── Correction résultat (si terminé) ─────────────── -->
-    <div class="form-section form-section--danger"
-         *ngIf="isTermine()">
+    <!-- ── Officiels du match ────────────────────────────── -->
+    <div class="form-section">
+      <h4 class="form-section__title">
+        <i class="material-icons">sports</i>
+        Officiels du match
+      </h4>
+
+      <!-- Liste des officiels assignés -->
+      <div class="loading-sm" *ngIf="loadingOfficiels()">
+        <div class="spinner-sm"></div> Chargement...
+      </div>
+
+      <ng-container *ngIf="!loadingOfficiels()">
+        <!-- Officiels déjà assignés -->
+        <div class="officiels-assignes" *ngIf="officielsMatch().length">
+          <div class="officiel-assigne" *ngFor="let o of officielsMatch()">
+            <div class="officiel-assigne__info">
+              <span class="officiel-role-badge"
+                    [class]="'role-' + o.roleMatch.toLowerCase()">
+                {{ roleLabel(o.roleMatch) }}
+              </span>
+              <span class="officiel-nom">
+                {{ o.nom }} {{ o.prenom }}
+              </span>
+            </div>
+            <button class="btn-icon btn-icon--danger btn-icon--sm"
+                    (click)="retirerOfficiel(o)"
+                    title="Retirer">
+              <i class="material-icons">remove_circle_outline</i>
+            </button>
+          </div>
+        </div>
+
+        <div class="officiel-empty" *ngIf="!officielsMatch().length">
+          <i class="material-icons">sports_soccer</i>
+          Aucun officiel assigné à ce match
+        </div>
+
+        <!-- Bouton ajouter -->
+        <button class="btn-outline btn-sm add-officiel"
+                (click)="ouvrirPicker()">
+          <i class="material-icons">add</i>
+          Assigner un officiel
+        </button>
+
+        <!-- Picker officiel -->
+        <div class="officiel-picker" *ngIf="showOfficielPicker()">
+          <div class="officiel-picker__header">
+            <span class="officiel-picker__titre">Assigner un officiel</span>
+            <button class="btn-close-sm" (click)="showOfficielPicker.set(false)">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+
+          <!-- Rôle -->
+          <div class="form-field">
+            <label class="form-label">Rôle dans ce match</label>
+            <select class="form-select" [(ngModel)]="roleSelectionne">
+              <option *ngFor="let r of rolesMatch" [value]="r.value">
+                {{ r.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Recherche officiel -->
+          <div class="form-field">
+            <label class="form-label">Officiel</label>
+            <div class="search-input">
+              <i class="material-icons">search</i>
+              <input class="search-input__field"
+                     [(ngModel)]="searchOfficiel"
+                     placeholder="Rechercher par nom..."/>
+            </div>
+          </div>
+
+          <!-- Résultats -->
+          <div class="officiel-results" *ngIf="officielsFiltres().length">
+            <div class="officiel-result-item"
+                 *ngFor="let o of officielsFiltres()"
+                 [class.selected]="officielSelectionne()?.id === o.id"
+                 (click)="selectionnerOfficiel(o)">
+              <div class="officiel-result-info">
+                <span class="officiel-result-nom">{{ o.nom }} {{ o.prenom }}</span>
+                <span class="officiel-result-type">{{ o.typeOfficiel }}</span>
+              </div>
+              <i class="material-icons" *ngIf="officielSelectionne()?.id === o.id">
+                check_circle
+              </i>
+            </div>
+          </div>
+
+          <div class="officiel-empty-search"
+               *ngIf="!officielsFiltres().length && searchOfficiel">
+            Aucun officiel trouvé
+          </div>
+
+          <div class="officiel-picker__actions">
+            <button class="btn-ghost btn-sm"
+                    (click)="showOfficielPicker.set(false)">
+              Annuler
+            </button>
+            <button class="btn-primary btn-sm"
+                    [disabled]="!officielSelectionne() || savingOfficiel()"
+                    (click)="assignerOfficiel()">
+              <i class="material-icons">check</i>
+              {{ savingOfficiel() ? 'Assignation...' : 'Assigner' }}
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ── Correction score ──────────────────────────────── -->
+    <div class="form-section form-section--danger" *ngIf="isTermine()">
       <h4 class="form-section__title">
         <i class="material-icons">scoreboard</i>
         Corriger le score
         <span class="form-section__badge">Admin</span>
       </h4>
-
       <div class="score-correction">
         <div class="score-correction__team">
           <label>{{ match.domicile?.nomEquipe }}</label>
-          <input type="number" min="0"
-                 [(ngModel)]="butsDomicile"
-                 class="score-input"/>
+          <input type="number" min="0" [(ngModel)]="butsDomicile" class="score-input"/>
         </div>
         <span class="score-sep">–</span>
         <div class="score-correction__team">
           <label>{{ match.exterieur?.nomEquipe }}</label>
-          <input type="number" min="0"
-                 [(ngModel)]="butsExterieur"
-                 class="score-input"/>
+          <input type="number" min="0" [(ngModel)]="butsExterieur" class="score-input"/>
         </div>
       </div>
-
       <p class="correction-warning">
         <i class="material-icons">info</i>
         La correction recalculera le classement automatiquement
@@ -137,15 +216,10 @@
 
   </div>
 
-  <!-- ── Actions ──────────────────────────────────────────── -->
+  <!-- ── Footer ──────────────────────────────────────────── -->
   <div class="match-edit__footer">
-    <button class="btn-ghost"
-            (click)="onClose.emit()">
-      Annuler
-    </button>
-    <button class="btn-primary"
-            [disabled]="!canSave()"
-            (click)="sauvegarder()">
+    <button class="btn-ghost" (click)="onClose.emit()">Annuler</button>
+    <button class="btn-primary" [disabled]="!canSave()" (click)="sauvegarder()">
       <i class="material-icons">save</i>
       {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
     </button>

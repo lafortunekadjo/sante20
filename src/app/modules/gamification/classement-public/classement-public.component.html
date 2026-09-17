@@ -1,0 +1,232 @@
+<div class="classement-container">
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Chargement du classement...</p>
+  </div>
+
+  <!-- Erreur -->
+  <div class="error-state" *ngIf="error()">
+    <mat-icon>error_outline</mat-icon>
+    <p>Classement introuvable</p>
+    <button mat-raised-button color="primary" routerLink="/">Retour</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading() && !error() && data() as d">
+
+    <!-- ══ HERO ═══════════════════════════════════════════════ -->
+    <div class="hero">
+      <div class="hero-badge">🏆 CONCOURS</div>
+      <h1 class="hero-title">{{ d.campagne.nom }}</h1>
+      <p class="hero-desc">{{ d.campagne.description }}</p>
+
+      <div class="hero-meta">
+        <span class="meta-chip">
+          <mat-icon>event</mat-icon>
+          Se termine le {{ d.campagne.dateFin | date:'dd/MM/yyyy' }}
+        </span>
+        <span class="meta-chip" [class.termine]="d.campagne.statut === 'TERMINEE'">
+          <mat-icon>{{ d.campagne.statut === 'ACTIVE' ? 'circle' : 'check_circle' }}</mat-icon>
+          {{ d.campagne.statut === 'ACTIVE' ? 'En cours' : 'Terminé' }}
+        </span>
+      </div>
+
+      <!-- Bouton Règles -->
+      <button class="regles-btn" (click)="toggleRegles()">
+        <mat-icon>{{ showRegles ? 'expand_less' : 'info_outline' }}</mat-icon>
+        {{ showRegles ? 'Masquer les règles' : 'Voir les règles du concours' }}
+      </button>
+    </div>
+
+    <!-- ══ RÈGLES DU CONCOURS ════════════════════════════════== -->
+    <div class="regles-section" *ngIf="showRegles" @slideDown>
+      <h3 class="regles-titre">
+        <mat-icon>emoji_events</mat-icon>
+        Comment gagner des points ?
+      </h3>
+      <div class="regles-grid">
+        <div class="regle-item">
+          <span class="regle-emoji">⚽</span>
+          <div class="regle-info">
+            <span class="regle-label">Présence au match</span>
+            <span class="regle-pts">+100 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">🎯</span>
+          <div class="regle-info">
+            <span class="regle-label">But validé</span>
+            <span class="regle-pts">+50 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">🤝</span>
+          <div class="regle-info">
+            <span class="regle-label">Passe décisive</span>
+            <span class="regle-pts">+30 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">🏅</span>
+          <div class="regle-info">
+            <span class="regle-label">Homme du match</span>
+            <span class="regle-pts">+150 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">🗳️</span>
+          <div class="regle-info">
+            <span class="regle-label">Voter pour le MVP</span>
+            <span class="regle-pts">+20 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">👤</span>
+          <div class="regle-info">
+            <span class="regle-label">Profil complété</span>
+            <span class="regle-pts">+200 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">📨</span>
+          <div class="regle-info">
+            <span class="regle-label">Membre invité qui rejoint</span>
+            <span class="regle-pts">+150 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">📋</span>
+          <div class="regle-info">
+            <span class="regle-label">Fiche de match validée &lt; 24h</span>
+            <span class="regle-pts">+80 pts</span>
+          </div>
+        </div>
+        <div class="regle-item">
+          <span class="regle-emoji">📱</span>
+          <div class="regle-info">
+            <span class="regle-label">Connexion hebdomadaire</span>
+            <span class="regle-pts">+15 pts</span>
+          </div>
+        </div>
+      </div>
+      <div class="regles-footer">
+        <mat-icon>info</mat-icon>
+        <span>
+          15 bourses de <strong>100 000 FCFA</strong> à gagner.
+          Les 5 premiers du mois 1 sont récompensés, ainsi que les 10 premiers du classement final.
+        </span>
+      </div>
+    </div>
+
+    <!-- ══ PODIUM TOP 3 groupes ════════════════════════════════ -->
+<div class="podium-section" *ngIf="(d?.topGroupes?.length ?? 0) >= 3 && d?.campagne?.type !== 'INDIVIDU'">
+      <h2 class="section-title">🏅 Top Groupes</h2>
+      <div class="podium">
+        <!-- 2ème -->
+        <div class="podium-item rank-2">
+          <div class="podium-avatar"
+               [style.background-image]="d.topGroupes[1].photoUrl ? 'url('+d.topGroupes[1].photoUrl+')' : ''">
+            <span *ngIf="!d.topGroupes[1].photoUrl">{{ d.topGroupes[1].groupeNom[0] }}</span>
+          </div>
+          <div class="podium-medal">🥈</div>
+          <div class="podium-name">{{ d.topGroupes[1].groupeNom }}</div>
+          <div class="podium-pts">{{ d.topGroupes[1].totalPoints }} pts</div>
+          <div class="podium-block rank-2-block"></div>
+        </div>
+
+        <!-- 1er -->
+        <div class="podium-item rank-1">
+          <div class="podium-crown">👑</div>
+          <div class="podium-avatar"
+               [style.background-image]="d.topGroupes[0].photoUrl ? 'url('+d.topGroupes[0].photoUrl+')' : ''">
+            <span *ngIf="!d.topGroupes[0].photoUrl">{{ d.topGroupes[0].groupeNom[0] }}</span>
+          </div>
+          <div class="podium-medal">🥇</div>
+          <div class="podium-name">{{ d.topGroupes[0].groupeNom }}</div>
+          <div class="podium-pts">{{ d.topGroupes[0].totalPoints }} pts</div>
+          <div class="podium-block rank-1-block"></div>
+        </div>
+
+        <!-- 3ème -->
+        <div class="podium-item rank-3">
+          <div class="podium-avatar"
+               [style.background-image]="d.topGroupes[2].photoUrl ? 'url('+d.topGroupes[2].photoUrl+')' : ''">
+            <span *ngIf="!d.topGroupes[2].photoUrl">{{ d.topGroupes[2].groupeNom[0] }}</span>
+          </div>
+          <div class="podium-medal">🥉</div>
+          <div class="podium-name">{{ d.topGroupes[2].groupeNom }}</div>
+          <div class="podium-pts">{{ d.topGroupes[2].totalPoints }} pts</div>
+          <div class="podium-block rank-3-block"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TABS Groupes / Individus ════════════════════════════ -->
+    <mat-tab-group class="classement-tabs" animationDuration="200ms">
+
+      <!-- Tab Groupes -->
+      <mat-tab label="🏟️ Groupes"  *ngIf="d?.campagne?.type !== 'INDIVIDU'">
+        <div class="liste-classement">
+          <div class="liste-item"
+               *ngFor="let g of d.topGroupes; let i = index">
+            <span class="rang">{{ getMedal(i + 1) }}</span>
+            <div class="avatar"
+                 [style.background-image]="g.photoUrl ? 'url('+g.photoUrl+')' : ''">
+              <span *ngIf="!g.photoUrl">{{ g.groupeNom[0] }}</span>
+            </div>
+            <div class="info">
+              <span class="nom">{{ g.groupeNom }}</span>
+              <span class="actions">{{ g.nbActionsDistinctes }} actions</span>
+            </div>
+            <span class="pts">{{ g.totalPoints }} pts</span>
+          </div>
+
+          <!-- CTA si moins de 10 → encourager à rejoindre -->
+          <div class="cta-rejoindre" *ngIf="d.topGroupes.length < 10">
+            <mat-icon>group_add</mat-icon>
+            <p>Ton groupe peut encore prendre la tête ! 💪</p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Individus -->
+      <mat-tab label="⚽ Joueurs" *ngIf="d?.campagne?.type !== 'GROUPE'">
+        <div class="liste-classement">
+          <div class="liste-item"
+               *ngFor="let p of d.topIndividus; let i = index">
+            <span class="rang">{{ getMedal(i + 1) }}</span>
+            <div class="avatar initiales">
+              {{ p.prenom[0] }}{{ p.nom[0] }}
+            </div>
+            <div class="info">
+              <span class="nom">{{ p.prenom }} {{ p.nom }}</span>
+              <span class="actions">{{ p.groupeNom }}</span>
+            </div>
+            <span class="pts">{{ p.totalPoints }} pts</span>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+    <!-- ══ CTA NON CONNECTÉ ════════════════════════════════════ -->
+    <div class="cta-section" *ngIf="!isLoggedIn">
+      <div class="cta-card">
+        <h3>Participe et gagne une bourse ! 🎓</h3>
+        <p>Crée ton groupe sur My2-0, enregistre tes matchs et grimpe dans le classement.</p>
+        <div class="cta-btns">
+          <button mat-raised-button color="primary" (click)="rejoindre()">
+            <mat-icon>group_add</mat-icon>
+            Créer mon groupe
+          </button>
+          <button mat-stroked-button (click)="seConnecter()">
+            <mat-icon>login</mat-icon>
+            Se connecter
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

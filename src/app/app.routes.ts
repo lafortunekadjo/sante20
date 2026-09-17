@@ -130,6 +130,17 @@ export const routes: Routes = [
         path: '',
         component: HomeComponent,
       },
+      {
+  path: 'c/:slug',
+  loadComponent: () => import('./modules/gamification/classement-public/classement-public.component')
+    .then(m => m.ClassementPublicComponent)
+},
+
+{
+  path: 'ligue',
+  loadComponent: () => import('./modules/gamification/classement-public-ligue/classement-public-ligue.component')
+    .then(m => m.ClassementPublicLigueComponent)
+},
 
       {
   path: 'privacy',
@@ -588,6 +599,11 @@ export const routes: Routes = [
             path: 'dashboard',
             component: MDashboardComponent
           },
+          {
+  path: 'ligue',
+  loadComponent: () => import('./modules/gamification/ligue-legendes/ligue-legendes.component')
+    .then(m => m.LigueLegendesComponent)
+},
             
            {
             path: 'vote',
@@ -663,8 +679,7 @@ export const routes: Routes = [
           },
           {
             path: 'presences/:matchId',
-            component: PresenceFormComponent,
-            canActivate: [RoleGuard]
+            component: PresenceFormComponent
           },
            {
                 path: 'finances/caisses/:id',

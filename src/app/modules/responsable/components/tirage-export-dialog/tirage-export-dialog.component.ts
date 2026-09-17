@@ -14,15 +14,17 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Membre } from '../../../../core/models/membre.model';
+import { Groupe } from '../../../../core/models/groupe.model';
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { MembreService } from '../../../../core/services/membre.service';
-
+import { ExcelExportService } from '../../../../core/services/excel-export.service';
+import { PdfExportService } from '../../../../core/services/pdf-export.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ExcelImportService } from '../../../../core/services/excel-import.service';
 
 export interface TirageDialogData {
   membres: Membre[];
   equipes: Equipe[];
+  groupe: Groupe | null;
 }
 
 @Component({
@@ -60,17 +62,45 @@ export class TirageExportDialogComponent {
   excluded: Membre[] = [];
   isSaving = false;
 
-  private readonly logoPath = 'assets/images/Logo2.png';
+  // ── Informations du document d'export (saisies par l'utilisateur, non stockées) ──
+  exportMeta = {
+    titre: 'Listes des équipes pour le prochain tournoi',
+    officiel: '',
+    lieu: '',
+    directeurTechnique: ''
+  };
+
+  private readonly logoPath = 'assets/images/logo.png';
 
   constructor(
     private dialogRef: MatDialogRef<TirageExportDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: TirageDialogData,
     private membreService: MembreService,
-    private exportService: ExcelImportService,
+    private exportService: ExcelExportService,
+    private pdfExportService: PdfExportService,
     private snackBar: MatSnackBar,
     private translate: TranslateService,
     private authService: AuthService
   ) {}
+
+  // ── Résolution des couleurs d'équipe (champ `couleur` sur Equipe) ──
+
+get equipeAColor(): [number, number, number] {
+  const equipe = this.data.equipes.find(e => e.id === this.equipeAId);
+  return this.hexToRgb(equipe?.couleur) || [185, 28, 28]; // rouge par défaut
+}
+
+get equipeBColor(): [number, number, number] {
+  const equipe = this.data.equipes.find(e => e.id === this.equipeBId);
+  return this.hexToRgb(equipe?.couleur) || [55, 65, 81]; // gris par défaut
+}
+
+private hexToRgb(hex?: string): [number, number, number] | null {
+  if (!hex) return null;
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!match) return null;
+  return [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)];
+}
 
   get equipeAName(): string {
     return this.data.equipes.find(e => e.id === this.equipeAId)?.nom || this.nomEquipeA || 'Équipe A';
@@ -87,6 +117,11 @@ export class TirageExportDialogComponent {
   get currentUserName(): string {
     return (this.authService as any).getCurrentUsername?.() || 'Responsable';
   }
+
+get nomGroupe(): string {
+
+  return this.data.groupe?.nom || '';
+}
 
   canLaunchTirage(): boolean {
     const aOk = !!this.equipeAId || !!this.nomEquipeA.trim();
@@ -149,7 +184,7 @@ export class TirageExportDialogComponent {
       ...this.poolA.map(m => ({ membreId: m.id, equipeId: this.equipeAId, equipeNom: this.equipeAName })),
       ...this.poolB.map(m => ({ membreId: m.id, equipeId: this.equipeBId, equipeNom: this.equipeBName }))
     ];
-    // Les membres dans `excluded` ne sont volontairement pas inclus ici :
+    // Les membres dans `excluded` ne sont volontairement pas inclus :
     // leur équipe actuelle n'est pas modifiée et ils n'apparaissent pas dans l'export.
 
     this.membreService.assignEquipesBulk(assignments).subscribe({
@@ -177,46 +212,60 @@ export class TirageExportDialogComponent {
     });
   }
 
-  private exportExcel(): void {
-    this.exportService.exportTeamsSideBySide(
-      {
-        title: this.equipeAName,
-        columns: ['Nom', 'Prénom'],
-        rows: this.poolA.map(m => ({ Nom: m.nom, Prénom: m.prenom }))
-      },
-      {
-        title: this.equipeBName,
-        columns: ['Nom', 'Prénom'],
-        rows: this.poolB.map(m => ({ Nom: m.nom, Prénom: m.prenom }))
-      },
-      `tirage_equipes_${new Date().toISOString().slice(0, 10)}`,
-      this.currentUserName
-    );
-  }
+ private exportExcel(): void {
+  const equipeA = this.data.equipes.find(e => e.id === this.equipeAId);
+  const equipeB = this.data.equipes.find(e => e.id === this.equipeBId);
 
-  private async exportPdf(): Promise<void> {
-    await this.exportService.exportTeamsSideBySide2({
-      title: 'Tirage au sort — Composition des équipes',
-      subtitle: `${this.equipeAName} vs ${this.equipeBName}`,
-      tableA: {
-        title: this.equipeAName,
-        columns: [
-          { header: 'Nom', dataKey: 'Nom' },
-          { header: 'Prénom', dataKey: 'Prénom' }
-        ],
-        rows: this.poolA.map(m => ({ Nom: m.nom, Prénom: m.prenom }))
-      },
-      tableB: {
-        title: this.equipeBName,
-        columns: [
-          { header: 'Nom', dataKey: 'Nom' },
-          { header: 'Prénom', dataKey: 'Prénom' }
-        ],
-        rows: this.poolB.map(m => ({ Nom: m.nom, Prénom: m.prenom }))
-      },
-      fileName: `tirage_equipes_${new Date().toISOString().slice(0, 10)}`,
-      logoPath: this.logoPath,
-      signataire: this.currentUserName
-    });
-  }
+  this.exportService.exportTeamsOfficialDocument(
+    this.exportMeta.titre,
+    {
+      title: this.equipeAName,
+      columns: ['Nom', 'Prénom'],
+      rows: this.poolA.map(m => ({ Nom: m.nom, Prénom: m.prenom })),
+      couleurHex: equipeA?.couleur
+    },
+    {
+      title: this.equipeBName,
+      columns: ['Nom', 'Prénom'],
+      rows: this.poolB.map(m => ({ Nom: m.nom, Prénom: m.prenom })),
+      couleurHex: equipeB?.couleur
+    },
+    `tirage_equipes_${new Date().toISOString().slice(0, 10)}`,
+    {
+      officiel: this.exportMeta.officiel,
+      lieu: this.exportMeta.lieu,
+      directeurTechnique: this.exportMeta.directeurTechnique,
+      nomGroupe: this.nomGroupe
+    }
+  );
+}
+private async exportPdf(): Promise<void> {
+  await this.pdfExportService.exportTeamsOfficialDocument({
+    titre: this.exportMeta.titre,
+    officiel: this.exportMeta.officiel,
+    tableA: {
+      title: this.equipeAName,
+      columns: [
+        { header: 'Nom', dataKey: 'Nom' },
+        { header: 'Prénom', dataKey: 'Prénom' }
+      ],
+      rows: this.poolA.map(m => ({ Nom: m.nom, Prénom: m.prenom })),
+      color: this.equipeAColor
+    },
+    tableB: {
+      title: this.equipeBName,
+      columns: [
+        { header: 'Nom', dataKey: 'Nom' },
+        { header: 'Prénom', dataKey: 'Prénom' }
+      ],
+      rows: this.poolB.map(m => ({ Nom: m.nom, Prénom: m.prenom })),
+      color: this.equipeBColor
+    },
+    lieu: this.exportMeta.lieu,
+    directeurTechnique: this.exportMeta.directeurTechnique,
+    nomGroupe: this.nomGroupe,
+    fileName: `tirage_equipes_${new Date().toISOString().slice(0, 10)}`,
+    logoPath: this.logoPath
+  });
+}
 }
