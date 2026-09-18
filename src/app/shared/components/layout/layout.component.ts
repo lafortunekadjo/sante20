@@ -45,6 +45,7 @@ import { GeneralService } from '../../../core/services/general.service';
 import { PushNotificationService } from '../../../core/services/push-notification.service';
 import { NotificationBellComponent } from '../../../modules/responsable/components/notification-bell/notification-bell.component';
 import { GroupeSwitcherComponent } from '../../../modules/shared/components/groupe-switcher/groupe-switcher.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-layout',
@@ -137,7 +138,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private cdr:               ChangeDetectorRef,
     private memberService:     MembreService,
     private equipeService:     GeneralService,
-    private pushService: PushNotificationService
+    private pushService: PushNotificationService,
+     private snackBar: MatSnackBar
   ) {
     this.isMobile     = window.innerWidth < 768;
     this.isMobileSize = window.innerWidth < 1024;
@@ -617,4 +619,30 @@ private ajouterCategorieCompetition(): void {
     // 4. Naviguer
     this.router.navigate(['/home']);
   }
+
+  partagerApp(): void {
+  const codeParrain = this.user?.codeParrainage || this.user?.username || '';
+  const shareUrl = `${window.location.origin}/signup?ref=${codeParrain}`;
+  
+  const shareData = {
+    title: 'Rejoins-moi sur My2-0 !',
+    text: `Inscris-toi sur My2-0 et rejoins la communauté pour gérer nos 2-0 et accumuler des points !`,
+    url: shareUrl
+  };
+
+  // Si le navigateur supporte le partage natif (ex: Mobile, Chrome, Safari)
+  if (navigator.share) {
+    navigator.share(shareData)
+      .then(() => console.log('Partage réussi'))
+      .catch((err) => console.log('Erreur de partage:', err));
+  } else {
+    // Fallback : Copier le lien dans le presse-papier
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.snackBar.open('Lien de parrainage copié dans le presse-papier !', 'OK', {
+        duration: 3000,
+        panelClass: ['snack-success']
+      });
+    });
+  }
+}
 }

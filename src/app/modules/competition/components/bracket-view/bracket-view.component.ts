@@ -30,6 +30,7 @@ export class BracketViewComponent implements OnChanges {
   @Input() competitionId!: number;
   @Input() canEdit =       false;
   @Output() matchClicked = new EventEmitter<MatchDTO>();
+  @Output() onMatchEdit = new EventEmitter<MatchDTO>();
 
   private matchApi = inject(MatchApiService);
   private router   = inject(Router);
@@ -99,6 +100,13 @@ export class BracketViewComponent implements OnChanges {
   });
 
   ngOnChanges(): void {}
+
+  ouvrirMatchEdit(noeud: BracketNoeudDTO): void {
+  if (noeud.matchAller) {
+    this.onMatchEdit.emit(noeud.matchAller as any);
+  }
+}
+ 
 
   calculerTourDepuisPosition(position: number, _total: number): string {
     // Position 1 = FINALE (racine), positions hautes = premiers tours (feuilles)

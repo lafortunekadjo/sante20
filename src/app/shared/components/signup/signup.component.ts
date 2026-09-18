@@ -75,7 +75,8 @@ export class SignupComponent implements OnInit {
       username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20), Validators.pattern('^[a-zA-Z0-9._-]+$')]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6), Validators.pattern('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{6,}$')]],
-      confirmPassword: ['', [Validators.required]]
+      confirmPassword: ['', [Validators.required]],
+      codeParrain: ['']
     }, { validators: confirmPasswordValidator });
   }
 
@@ -110,6 +111,7 @@ export class SignupComponent implements OnInit {
     email:      this.accountForm.value.email,
     motDePasse: this.accountForm.value.password,
     roles:      'ROLE_CANDIDAT',
+    codeParrain: this.accountForm.value.codeParrain ? this.accountForm.value.codeParrain.trim() : null, // ✅ Envoi du code parrain
     // Gardé pour rétrocompat (backend crée encore un Membre)
     membre:     { ...profileData },
     // NOUVEAU : données de profil centralisé (UserProfile)
@@ -120,6 +122,7 @@ export class SignupComponent implements OnInit {
     next: (response) => {
       this.isLoading = false;
       if (response.success) {
+        localStorage.removeItem('my20_ref_code');
         this.snackBar.open('Inscription réussie ! Vous pouvez vous connecter.', 'OK', {
           duration: 5000, panelClass: 'success-snackbar'
         });

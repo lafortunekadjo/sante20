@@ -526,4 +526,30 @@ skipOnboarding(event: Event) {
   event.stopPropagation(); // Évite de déclencher le clic du bouton derrière
   this.onboardingService.complete();
 }
+
+partagerApp(): void {
+  const codeParrain = this.user?.codeParrainage || this.user?.username || '';
+  const shareUrl = `${window.location.origin}/signup?ref=${codeParrain}`;
+  
+  const shareData = {
+    title: 'Rejoins-moi sur My2-0 !',
+    text: `Inscris-toi sur My2-0 et rejoins la communauté pour gérer nos 2-0 et accumuler des points !`,
+    url: shareUrl
+  };
+
+  // Si le navigateur supporte le partage natif (ex: Mobile, Chrome, Safari)
+  if (navigator.share) {
+    navigator.share(shareData)
+      .then(() => console.log('Partage réussi'))
+      .catch((err) => console.log('Erreur de partage:', err));
+  } else {
+    // Fallback : Copier le lien dans le presse-papier
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.snackBar.open('Lien de parrainage copié dans le presse-papier !', 'OK', {
+        duration: 3000,
+        panelClass: ['snack-success']
+      });
+    });
+  }
+}
 }
