@@ -39,7 +39,6 @@ export class TabParticipantsComponent implements OnInit {
   private fb   = inject(FormBuilder);
 
   // ── État ──────────────────────────────────────────────────
-  public StatutInscription = StatutInscription;
   participants          = signal<CompetitionParticipantDTO[]>([]);
   showForm              = signal(false);
   saving                = signal(false);
