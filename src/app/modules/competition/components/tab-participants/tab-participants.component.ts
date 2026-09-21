@@ -254,7 +254,7 @@ peutGererRoster(): boolean {
   }
 
   canValiderRejeter(): boolean {
-    console.log(this.permissions)
+
     return this.hasPermission('MODIFIER_CONFIG');
   }
 
