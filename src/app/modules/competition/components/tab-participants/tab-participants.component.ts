@@ -237,6 +237,7 @@ peutGererRoster(): boolean {
 
   // ── Helpers ───────────────────────────────────────────────
   hasPermission(perm: string): boolean {
+    console.log(perm);
     return this.permissions.includes('MODIFIER_CONFIG') // responsable
         || this.permissions.includes(perm);
   }
