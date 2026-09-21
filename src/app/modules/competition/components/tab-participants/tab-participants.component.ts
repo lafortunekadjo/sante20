@@ -237,10 +237,16 @@ peutGererRoster(): boolean {
 
   // ── Helpers ───────────────────────────────────────────────
   hasPermission(perm: string): boolean {
-    console.log(perm);
-    return this.permissions.includes('MODIFIER_CONFIG') // responsable
-        || this.permissions.includes(perm);
-  }
+  console.log('--- DIAGNOSTIC ---');
+  console.log('1. Paramètre demandé (perm) :', perm);
+  console.log('2. Contenu du tableau permissions :', this.permissions);
+  console.log('3. Est-ce un tableau ?', Array.isArray(this.permissions));
+  
+  const aAccès = this.permissions?.includes('MODIFIER_CONFIG') || this.permissions?.includes(perm);
+  console.log('4. Résultat final (aAccès) :', aAccès);
+  
+  return aAccès;
+}
 
   canInscrire(): boolean {
     return ['BROUILLON', 'INSCRIPTION_OUVERTE'].includes(this.competition.statut)
