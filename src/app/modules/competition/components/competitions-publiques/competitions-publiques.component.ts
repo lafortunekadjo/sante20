@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, OnInit, inject, signal, computed
 } from '@angular/core';
@@ -67,8 +68,8 @@ export class CompetitionsPubliquesComponent implements OnInit {
       BROUILLON:           'À venir',
       INSCRIPTION_OUVERTE: 'Inscriptions ouvertes',
       EN_COURS:            'En cours',
-      TERMINE:             'Terminée',
-      ANNULE:              'Annulée',
+      TERMINE:             t('partenaire.publicites.status.TERMINEE'),
+      ANNULE:              t('invitation.cancelled'),
     };
     return m[statut] ?? statut;
   }
@@ -78,7 +79,7 @@ export class CompetitionsPubliquesComponent implements OnInit {
       ALLER_SIMPLE:       'Championnat',
       ALLER_RETOUR:       'Championnat A/R',
       ELIMINATION_SIMPLE: 'Coupe',
-      MIXTE:              'Groupes + Élimination',
+      MIXTE:              t('ui.ts_groupes_elimination_1283'),
     };
     return m[format] ?? format;
   }

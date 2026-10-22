@@ -1,5 +1,6 @@
 // match-detail.component.ts — version corrigée
 
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, OnInit, inject, signal, computed, Input
 } from '@angular/core';
@@ -73,6 +74,9 @@ export class MatchDetailComponent implements OnInit {
   activeTab     = signal<MatchTab>('apercu');
   savingEvent   = signal(false);
   savingScore   = signal(false);
+  scoreError    = signal<string | null>(null);
+  demarrageError = signal<string | null>(null);
+  roleCompetition = signal<string | null>(null);
   savingCompo   = signal(false);
   showEventForm = signal(false);
   compoEditMode = signal(false);
@@ -296,6 +300,7 @@ export class MatchDetailComponent implements OnInit {
     this.compApi.getMonRole(this.competitionId).subscribe({
       next: (r: any) => {
         this.permissions.set(r.permissions ?? []);
+        this.roleCompetition.set(r.role ?? null);
         this.isAdminMyApp = r.role === 'ADMIN' || r.isAdmin === true;
       },
       error: () => this.permissions.set([])
@@ -696,17 +701,18 @@ private compoToOptions(
     if (this.scoreForm.invalid || !this.canSaisirScore()) return;
     this.savingScore.set(true);
     const v = this.scoreForm.value;
-    const isBracket = !!(this.match() as any).bracketNoeudId;
+    this.scoreError.set(null);
+    const isBracket = !!(this.match() as any).bracketNoeudId && !(this.match() as any).manche;
     if (isBracket) {
       const dom = v.butsDomicile ?? 0;
       const ext = v.butsExterieur ?? 0;
       if (dom === ext && !v.avecProlong && !v.avecTab) {
-        alert('Un match d\'élimination directe doit avoir un vainqueur.');
+        alert(t('ui.ts_un_match_d_elimination_directe_d_f99a'));
         this.savingScore.set(false);
         return;
       }
       if (v.avecTab && v.tabDomicile === v.tabExterieur) {
-        alert('Les tirs au but ne peuvent pas être à égalité.');
+        alert(t('ui.ts_les_tirs_au_but_ne_peuvent_pas_e_d673'));
         this.savingScore.set(false);
         return;
       }
@@ -720,15 +726,36 @@ private compoToOptions(
       tabExterieur:         v.avecTab ? (v.tabExterieur ?? undefined) : undefined,
     }).subscribe({
       next: m => { this.match.set(m); this.savingScore.set(false); },
-      error: () => this.savingScore.set(false)
+      error: err => {
+        this.scoreError.set(err?.error?.message ?? "Impossible d'enregistrer le score");
+        this.savingScore.set(false);
+      }
     });
   }
 
-  demarrerMatch(): void {
+  demarrerMatch(forcer = false): void {
     if (!this.canDemarrerMatch()) return;
-    this.api.demarrerMatch(this.competitionId, this.matchId).subscribe({
-      next: m => { this.match.set(m); this.activeTab.set('evenements'); }
+    this.demarrageError.set(null);
+    this.api.demarrerMatch(this.competitionId, this.matchId, forcer).subscribe({
+      next: m => { this.match.set(m); this.activeTab.set('evenements'); },
+      error: err => this.demarrageError.set(err?.error?.message ?? "Impossible de démarrer le match")
     });
+  }
+
+  /** Le responsable (ou l'admin) peut démarrer malgré des joueurs non éligibles. */
+  /** Refus de coup d'envoi qu'un responsable peut passer outre : joueurs non éligibles, trop tôt, composition manquante. */
+  erreurForcable(): boolean {
+    const m = this.demarrageError() ?? '';
+    return ['Joueurs non éligibles', 'Trop tôt', 'Composition manquante'].some(p => m.startsWith(p));
+  }
+
+  peutForcerDemarrage(): boolean {
+    return this.isAdminMyApp || this.roleCompetition() === 'RESPONSABLE';
+  }
+
+  forcerDemarrage(): void {
+    if (!confirm(t('ui.ts_demarrer_quand_meme_le_match_ave_68ae'))) return;
+    this.demarrerMatch(true);
   }
 
   toggleCompoEdit(): void {

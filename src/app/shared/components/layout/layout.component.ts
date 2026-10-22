@@ -2,6 +2,7 @@
 // LAYOUT COMPONENT — Mobile-first refactor
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import {
   Component, OnInit, OnDestroy,
   ChangeDetectorRef,
@@ -139,7 +140,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private memberService:     MembreService,
     private equipeService:     GeneralService,
     private pushService: PushNotificationService,
-     private snackBar: MatSnackBar
+     private snackBar: MatSnackBar,
+     private zone: NgZone
   ) {
     this.isMobile     = window.innerWidth < 768;
     this.isMobileSize = window.innerWidth < 1024;
@@ -149,6 +151,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.suivreDefilement();
     this.setupResponsiveLayout();
     this.loadProfilePhoto();
     this.listenToRouter();
@@ -233,7 +236,7 @@ this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady =>
 
       if (userId === null) {
         this.isChecking = false;
-        this.error = 'Utilisateur non authentifié ou ID introuvable.';
+        this.error = t('ui.ts_utilisateur_non_authentifie_ou_i_9bf6');
         return;
       }
 
@@ -252,7 +255,7 @@ this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady =>
 
       if (!checkInResult) {
         this.isChecking = false;
-        this.error = 'Check-in annulé.';
+        this.error = t('ui.ts_check_in_annule_dc8c');
         return;
       }
 
@@ -279,18 +282,36 @@ this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady =>
 
     } catch (err: any) {
       this.isChecking = false;
-      this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+      this.error = t('ui.ts_erreur_lors_du_check_in_fc66') + (err.message || 'inconnue');
       console.error(err);
     }
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.surDefilement, true);
+    document.body.classList.remove('is-scrolled');
     this.destroy$.next();
     this.destroy$.complete();
     this.menusSubscription?.unsubscribe();
     this.groupeSubscription?.unsubscribe();
     this.authStatusSubscription?.unsubscribe();
     this.menuRefreshSubscription?.unsubscribe();
+  }
+
+  // ── Défilement : le bouton flottant passe de « icône + texte » à « icône seule » dès qu'on quitte le haut de page ──
+  // (les scroll ne remontent pas : on écoute en phase de capture, quel que soit le conteneur qui défile)
+  private surDefilement = (e: Event): void => {
+    const el = e.target as HTMLElement | Document;
+    const haut = el instanceof Document ? (document.scrollingElement?.scrollTop ?? 0) : (el as HTMLElement).scrollTop;
+    document.body.classList.toggle('is-scrolled', haut > 80);
+  };
+
+  private suivreDefilement(): void {
+    this.zone.runOutsideAngular(() => document.addEventListener('scroll', this.surDefilement, true));
+    // nouvelle page = retour en haut : le bouton redevient étendu
+    this.router.events.pipe(takeUntil(this.destroy$)).subscribe(event => {
+      if (event instanceof NavigationEnd) document.body.classList.remove('is-scrolled');
+    });
   }
 
   // ──────────────────── Setup ────────────────────────────────
@@ -462,7 +483,7 @@ setupRoles(): void {
   loadMenusCommuns(): void {
     const isPartenaire  = this.isPartenaire;
     const baseMenus: Menu[] = [
-      { id:1,  code:'EXPLORER',    label:'Explorer',    icone:'explore',    route:'/explorer',    description:'', ordre:1, actif:true, categorie:'COMMUN' },
+      { id:1,  code:'EXPLORER',    label:t('menu.items.EXPLORER'),    icone:'explore',    route:'/explorer',    description:'', ordre:1, actif:true, categorie:'COMMUN' },
       { id:5,  code:'SUGGESTIONS', label:'Suggestions', icone:'lightbulb',  route:'/suggestions', description:'', ordre:6, actif:true, categorie:'COMMUN' },
       { id:11, code:'sc',          label:'Scouting',    icone:'search',     route:'/joueurs',     description:'', ordre:5, actif:true, categorie:'COMMUN' },
       
@@ -470,15 +491,15 @@ setupRoles(): void {
 
     if (!this.userHasGroup) {
       baseMenus.push(
-        { id:6,  code:'CREATEG', label:'Créer un groupe',    icone:'group_add', route:'/creategroup', description:'', ordre:2, actif:true, categorie:'COMMUN' },
-        { id:13, code:'JOIN',    label:'Rejoindre un groupe', icone:'group_add', route:null as any,    description:'', ordre:3, actif:true, categorie:'COMMUN' },
+        { id:6,  code:'CREATEG', label:t('menu.items.CREATEG'),    icone:'group_add', route:'/creategroup', description:'', ordre:2, actif:true, categorie:'COMMUN' },
+        { id:13, code:'JOIN',    label:t('ui.ts_rejoindre_un_groupe_ab8c'), icone:'group_add', route:null as any,    description:'', ordre:3, actif:true, categorie:'COMMUN' },
       );
     }
 
     if (this.userHasGroup) {
       baseMenus.push(
-        { id:10, code:'TB',         label:'Tableau de bord', icone:'newspaper', route:'/membre',     description:'', ordre:1, actif:true, categorie:'COMMUN' },
-        { id:3,  code:'ACTUALITES', label:'Actualités',      icone:'newspaper', route:'/actualites', description:'', ordre:3, actif:true, categorie:'COMMUN' },
+        { id:10, code:'TB',         label:t('menu.items.DASHBOARD'), icone:'newspaper', route:'/membre',     description:'', ordre:1, actif:true, categorie:'COMMUN' },
+        { id:3,  code:'ACTUALITES', label:t('menu.items.ACTUALITES'),      icone:'newspaper', route:'/actualites', description:'', ordre:3, actif:true, categorie:'COMMUN' },
         { id:4,  code:'OBJECTIFS',  label:'Objectifs',       icone:'flag',      route:'/objectifs',  description:'', ordre:5, actif:true, categorie:'COMMUN' },
       );
     }
@@ -540,19 +561,22 @@ private ajouterCategorieCompetition(): void {
   if (dejaPresente) return;
 
   const sousMenus: Menu[] = [
-    { id: 20, code: 'COMPT', label: 'Mes compétitions',
+    { id: 20, code: 'COMPT', label: t('ui.ts_mes_competitions_cc22'),
       icone: 'emoji_events', route: '/competitions',
-      description: '', ordre: 1, actif: true, categorie: 'COMPETITION' },
-    { id: 21, code: 'COMPTEXPL', label: 'Explorer',
-      icone: 'public', route: '/competitions/public',
       description: '', ordre: 2, actif: true, categorie: 'COMPETITION' },
+    { id: 21, code: 'COMPTEXPL', label: t('menu.items.EXPLORER'),
+      icone: 'public', route: '/competitions/public',
+      description: '', ordre: 3, actif: true, categorie: 'COMPETITION' },
+         { id: 22, code: 'COMPTDASH', label: 'Dashboard',
+      icone: 'public', route: '/competitions/dashboard',
+      description: '', ordre: 1, actif: true, categorie: 'COMPETITION' },
   ];
 
  
 
   this.menuCategories.push({
     code:  'COMPETITION',
-    label: 'Compétitions',
+    label: t('competition.nav.competitions'),
     icone: 'emoji_events',
     menus: sousMenus
   });
@@ -565,11 +589,11 @@ private ajouterCategorieCompetition(): void {
       map.get(m.categorie)!.push(m);
     });
     const cfg: Record<string,{label:string;icone:string}> = {
-      'GESTION':       { label:'Gestion',       icone:'settings'       },
+      'GESTION':       { label:t('partenaire.nav.gestion'),       icone:'settings'       },
       'SPORT':         { label:'Sport',          icone:'sports_soccer'  },
       'FINANCES':      { label:'Finances',       icone:'account_balance'},
       'COMMUNICATION': { label:'Communication',  icone:'campaign'       },
-       'COMPETITION':   { label:'Compétitions',   icone:'emoji_events'    },
+       'COMPETITION':   { label:t('competition.nav.competitions'),   icone:'emoji_events'    },
     };
     this.menuCategories = Array.from(map.entries())
       .map(([code, menus]) => ({
@@ -625,8 +649,8 @@ private ajouterCategorieCompetition(): void {
   const shareUrl = `${window.location.origin}/signup?ref=${codeParrain}`;
   
   const shareData = {
-    title: 'Rejoins-moi sur My2-0 !',
-    text: `Inscris-toi sur My2-0 et rejoins la communauté pour gérer nos 2-0 et accumuler des points !`,
+    title: t('ui.ts_rejoins_moi_sur_my2_0_c6fb'),
+    text: t('ui.ts_inscris_toi_sur_my2_0_et_rejoins_8e56'),
     url: shareUrl
   };
 
@@ -638,7 +662,7 @@ private ajouterCategorieCompetition(): void {
   } else {
     // Fallback : Copier le lien dans le presse-papier
     navigator.clipboard.writeText(shareUrl).then(() => {
-      this.snackBar.open('Lien de parrainage copié dans le presse-papier !', 'OK', {
+      this.snackBar.open(t('ui.ts_lien_de_parrainage_copie_dans_le_ac12'), 'OK', {
         duration: 3000,
         panelClass: ['snack-success']
       });

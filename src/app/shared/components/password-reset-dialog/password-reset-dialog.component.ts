@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, Inject } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -73,7 +74,7 @@ export class PasswordResetDialogComponent {
     const { oldPassword, newPassword } = this.passwordForm.value;
     // VERIFICATION CRITIQUE : S'assurer que l'ID utilisateur n'est pas null
   if (userId === null) {
-    this.errorMessage = 'Erreur: ID utilisateur non disponible. Veuillez vous reconnecter.';
+    this.errorMessage = t('ui.ts_erreur_id_utilisateur_non_dispon_5c29');
     console.error(this.errorMessage);
     return; // Arrêter l'exécution si l'ID est null
   }

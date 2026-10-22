@@ -14,6 +14,7 @@ export interface Match {
   typeMatch: TypeMatch;
   dateMatch: string;
   lieu?: string;
+  heureMatch?: string;
   commentaire?: string;
   
   // ===== ÉQUIPES INTERNES (INTERNE, DUEL, ANNIVERSAIRE) =====
@@ -37,6 +38,13 @@ export interface Match {
   // ===== FORFAIT =====
   forfait: boolean;
   equipeForfait?: string;
+  /** Score à la mi-temps (saisie détaillée ou manuelle). */
+  scoreMiTemps1?: number | null;
+  scoreMiTemps2?: number | null;
+  /** Journée sans match : les joueurs sont venus mais le match n'a pas eu lieu. */
+  matchNonJoue?: boolean | null;
+  /** PLUIE | ADVERSAIRE_ABSENT | TERRAIN | EFFECTIF | AUTRE. */
+  motifNonJoue?: string | null;
   
   // ===== OFFICIELS =====
   arbitrePrincipal?: Membre | null;

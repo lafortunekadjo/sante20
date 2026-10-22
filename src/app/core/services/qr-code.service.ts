@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environment';
 import * as QRCodeLib from 'qrcode';  // Renommé l'import
 import { QRCodeModel, QRScan } from '../models/qr-code.model';
 
@@ -9,7 +10,7 @@ import { QRCodeModel, QRScan } from '../models/qr-code.model';
   providedIn: 'root'
 })
 export class QrCodeService {
-  private apiUrl = 'http://localhost:8082/api/qrcodes';
+  private apiUrl = `${environment.apiUrl}/qrcodes`;
 
   constructor(private http: HttpClient) {}
 

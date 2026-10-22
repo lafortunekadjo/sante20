@@ -1,9 +1,11 @@
 // finances.service.ts
+import { t } from '../i18n/traduire';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environment';
+import { EvenementCollecte, EvenementBilan, CollecteEnCours } from '../models/collecte.model';
 
 
 // ==================== INTERFACES ====================
@@ -199,7 +201,8 @@ export interface StatistiquesBilan {
 }
 
 export interface EntreeCaisseRequest {
-  caisseId: number;
+  /** Absent pour une entrée « événement » : la caisse Événements est choisie par le serveur. */
+  caisseId?: number;
   membreId: number;
   montant: number;
   dateMouvement?: string;
@@ -212,7 +215,8 @@ export interface EntreeCaisseRequest {
 }
 
 export interface SortieCaisseRequest {
-  caisseId: number;
+  /** Absent pour une sortie « événement » : la caisse Événements est choisie par le serveur. */
+  caisseId?: number;
   montant: number;
   dateMouvement?: string;
   libelle: string;
@@ -220,6 +224,10 @@ export interface SortieCaisseRequest {
   beneficiaireId?: number;
   beneficiaireTexte?: string;
   evenementId?: number;
+  /** Sortie d'événement : REMISE (au bénéficiaire) ou FRAIS (location, repas...). */
+  nature?: 'REMISE' | 'FRAIS';
+  /** Dépasser ce que l'événement a collecté (décision explicite de l'organisateur). */
+  forcer?: boolean;
   pieceJustificative?: string;
   commentaire?: string;
 }
@@ -389,6 +397,24 @@ annulerMouvement(mouvementId: number, motif: string): Observable<MouvementCaisse
    * POST /api/caisses/sorties
    * Enregistrer une sortie de caisse
    */
+  // ── Collectes d'événements ─────────────────────────────────
+  getEvenementsGroupe(): Observable<EvenementCollecte[]> {
+    return this.http.get<EvenementCollecte[]>(`${this.baseUrl}/evenements/groupe`);
+  }
+  getEvenementBilan(id: number): Observable<EvenementBilan> {
+    return this.http.get<EvenementBilan>(`${this.baseUrl}/evenements/${id}/bilan`);
+  }
+  /** Les collectes ouvertes que le membre connecté peut alimenter (la sienne, s'il est concerné, n'y figure jamais). */
+  getCollectesOuvertes(): Observable<CollecteEnCours[]> {
+    return this.http.get<CollecteEnCours[]>(`${this.baseUrl}/evenements/collectes/ouvertes`);
+  }
+  ouvrirCollecte(id: number): Observable<EvenementCollecte> {
+    return this.http.put<EvenementCollecte>(`${this.baseUrl}/evenements/${id}/collecte/ouvrir`, {});
+  }
+  fermerCollecte(id: number): Observable<EvenementCollecte> {
+    return this.http.put<EvenementCollecte>(`${this.baseUrl}/evenements/${id}/collecte/fermer`, {});
+  }
+
   enregistrerSortie(data: SortieCaisseRequest): Observable<MouvementCaisse> {
     return this.http.post<MouvementCaisse>(`${this.baseUrl}/caisses/sorties`, data);
   }
@@ -749,14 +775,14 @@ deleteTypeDepense(id: number): Observable<void> {
 
   getFrequenceLabel(frequence: FrequenceContribution): string {
     const labels: Record<FrequenceContribution, string> = {
-      'UNIQUE': 'Unique (une fois)',
-      'PAR_MATCH': 'Par match',
+      'UNIQUE': t('finances.typesContributions.frequences.UNIQUE'),
+      'PAR_MATCH': t('finances.typesContributions.frequences.PAR_MATCH'),
       'HEBDOMADAIRE': 'Hebdomadaire',
       'MENSUELLE': 'Mensuelle',
       'TRIMESTRIELLE': 'Trimestrielle',
       'SEMESTRIELLE': 'Semestrielle',
       'ANNUELLE': 'Annuelle',
-      'PONCTUELLE': 'Ponctuelle (à la demande)'
+      'PONCTUELLE': t('ui.ts_ponctuelle_a_la_demande_5234')
     };
     return labels[frequence] || frequence;
   }
@@ -764,9 +790,9 @@ deleteTypeDepense(id: number): Observable<void> {
   getStatutMouvementLabel(statut: StatutMouvement): string {
     const labels: Record<StatutMouvement, string> = {
       'EN_ATTENTE': 'En attente',
-      'VALIDE': 'Validé',
-      'REJETE': 'Rejeté',
-      'ANNULE': 'Annulé'
+      'VALIDE': t('finances.statut.valide'),
+      'REJETE': t('finances.statut.rejete'),
+      'ANNULE': t('finances.statut.annule')
     };
     return labels[statut] || statut;
   }
@@ -775,10 +801,10 @@ deleteTypeDepense(id: number): Observable<void> {
     const labels: Record<StatutEcheance, string> = {
       'EN_ATTENTE': 'En attente',
       'PARTIEL': 'Partiel',
-      'PAYE': 'Payé',
+      'PAYE': t('membre.paid'),
       'EN_RETARD': 'En retard',
-      'EXONERE': 'Exonéré',
-      'REPORTE': 'Reporté'
+      'EXONERE': t('finances.echeancier.statuts.EXONERE'),
+      'REPORTE': t('finances.echeancier.statuts.REPORTE')
     };
     return labels[statut] || statut;
   }

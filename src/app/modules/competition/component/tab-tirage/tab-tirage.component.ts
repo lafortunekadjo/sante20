@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, Output, OnInit, inject, signal, computed, EventEmitter
 } from '@angular/core';
@@ -36,7 +38,7 @@ interface TirageSimule {
 @Component({
   selector:    'app-tab-tirage',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports: [TranslateModule, CommonModule, FormsModule],
   templateUrl: './tab-tirage.component.html',
   styleUrls:   ['./tab-tirage.component.scss']
 })
@@ -78,7 +80,7 @@ export class TabTirageComponent implements OnInit {
       FINALE: 'Finale', DEMI_FINALE: 'Demi-finales',
       QUART_DE_FINALE: 'Quarts de finale',
       HUITIEME: '8es de finale', SEIZIEME: '16es de finale',
-      TOUR_PRELIMINAIRE: 'Tour préliminaire'
+      TOUR_PRELIMINAIRE: t('ui.ts_tour_preliminaire_4996')
     };
     return labels[tour] ?? tour;
   }

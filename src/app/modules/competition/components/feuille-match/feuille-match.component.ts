@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, OnInit, inject, signal
 } from '@angular/core';
@@ -78,7 +80,7 @@ interface FeuilleMatchDTO {
 @Component({
   selector:    'app-feuille-match',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, MatIconModule, DatePipe],
+  imports: [TranslateModule, CommonModule, FormsModule, MatIconModule, DatePipe],
   templateUrl: './feuille-match.component.html',
   styleUrls:   ['./feuille-match.component.scss']
 })
@@ -176,8 +178,8 @@ export class FeuilleMatchComponent implements OnInit {
   statutLabel(): string {
     const m: Record<string, string> = {
       BROUILLON: 'Brouillon',
-      VALIDEE:   'Validée ✅',
-      CLOTUREE:  'Clôturée 🔒',
+      VALIDEE:   t('ui.ts_validee_2a11'),
+      CLOTUREE:  t('ui.ts_cloturee_5b71'),
     };
     return m[this.feuille()?.statut ?? ''] ?? '';
   }

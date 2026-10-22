@@ -25,6 +25,8 @@ interface QualifieGroupeDTO {
 interface PaireDTO {
   participant1Id: number | null;
   participant2Id: number | null;
+  /** Exemption : l'équipe passe directement au tour suivant (nombre de qualifiés non puissance de 2) */
+  bye?: boolean;
 }
 
 interface QualifiesDTO {
@@ -68,7 +70,7 @@ export class ModalTirageFinaleComponent implements OnInit {
       next: q => {
         this.qualifies.set(q);
         // Pré-remplir avec le tirage suggéré
-        this.paires.set(q.tirageSuggere.map((p: any) => ({ ...p })));
+        this.paires.set(q.tirageSuggere.map((p: any) => this.versPaire(p)));
         this.loading.set(false);
       },
       error: err => {
@@ -80,24 +82,30 @@ export class ModalTirageFinaleComponent implements OnInit {
 
   // ── Gestion des paires ────────────────────────────────────
   ajouterPaire(): void {
-    this.paires.update(p => [...p, { participant1Id: null, participant2Id: null }]);
+    this.paires.update(p => [...p, { participant1Id: null, participant2Id: null, bye: false }]);
   }
 
   supprimerPaire(index: number): void {
     this.paires.update(p => p.filter((_, i) => i !== index));
   }
 
-  setPaire(index: number, side: 1 | 2, id: number | null): void {
-    this.paires.update(p => p.map((paire, i) =>
-      i === index
-        ? { ...paire, [`participant${side}Id`]: id }
-        : paire
-    ));
+  setPaire(index: number, side: 1 | 2, id: number | null | 'BYE'): void {
+    this.paires.update(p => p.map((paire, i) => {
+      if (i !== index) return paire;
+      if (side === 2 && id === 'BYE') return { ...paire, participant2Id: null, bye: true };
+      return { ...paire, [`participant${side}Id`]: id, ...(side === 2 ? { bye: false } : {}) };
+    }));
+  }
+
+  /** Une confrontation sans 2e équipe renvoyée par le serveur est une exemption (bye). */
+  private versPaire(p: any): PaireDTO {
+    return { participant1Id: p.participant1Id, participant2Id: p.participant2Id,
+             bye: p.participant1Id != null && p.participant2Id == null };
   }
 
   resetSuggere(): void {
     const q = this.qualifies();
-    if (q) this.paires.set(q.tirageSuggere.map(p => ({ ...p })));
+    if (q) this.paires.set(q.tirageSuggere.map(p => this.versPaire(p)));
   }
 
   // ── Computed pour le template (pas de arrow fn dans Angular templates) ──
@@ -108,19 +116,26 @@ export class ModalTirageFinaleComponent implements OnInit {
   );
 
   hasPairesIncompletes = computed(() =>
-    this.paires().some(p => !p.participant1Id || !p.participant2Id)
+    this.paires().some(p => !p.participant1Id || (!p.participant2Id && !p.bye))
   );
+
+  /** Le tableau doit avoir 1, 2, 4, 8... confrontations (exemptions comprises). */
+  nombreConfrontationsInvalide = computed(() => {
+    const n = this.paires().length;
+    return n > 0 && (n & (n - 1)) !== 0;
+  });
 
   // ── Validation ────────────────────────────────────────────
   canValider = computed(() => {
     const p = this.paires();
     if (!p.length) return false;
     // Toutes les paires complètes
-    if (p.some(x => !x.participant1Id || !x.participant2Id)) return false;
+    if (p.some(x => !x.participant1Id || (!x.participant2Id && !x.bye))) return false;
+    if (this.nombreConfrontationsInvalide()) return false;
     // Pas d'équipe vs elle-même
     if (p.some(x => x.participant1Id === x.participant2Id)) return false;
     // Pas de doublon
-    const ids = p.flatMap(x => [x.participant1Id, x.participant2Id]);
+    const ids = p.flatMap(x => [x.participant1Id, x.participant2Id]).filter(id => id != null);
     return new Set(ids).size === ids.length;
   });
 
@@ -147,7 +162,10 @@ export class ModalTirageFinaleComponent implements OnInit {
     this.error.set(null);
 
     this.api.passerPhaseSuivante(this.competitionId, {
-      paires: this.paires()
+      paires: this.paires().map(p => ({
+        participant1Id: p.participant1Id,
+        participant2Id: p.bye ? null : p.participant2Id
+      }))
     }).subscribe({
       next: () => {
         this.saving.set(false);

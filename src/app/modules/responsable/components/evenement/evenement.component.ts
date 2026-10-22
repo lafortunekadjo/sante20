@@ -1,388 +1,235 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { Router, RouterModule } from '@angular/router';
-import { Evenement } from '../../../../core/models/evenement.model';
-import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { RouterModule } from '@angular/router';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { GeneralService } from '../../../../core/services/general.service';
-import { Membre } from '../../../../core/models/membre.model';
-import { MembreService } from '../../../../core/services/membre.service';
 import { MatSelectModule } from '@angular/material/select';
-import { Contribution } from '../../../../core/models/contribution.model'; // Ajouté
-import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { TranslateModule } from '@ngx-translate/core';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Subject, takeUntil } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subject, forkJoin, of, takeUntil } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+import { GeneralService } from '../../../../core/services/general.service';
+import { FinancesService } from '../../../../core/services/finances.service';
+import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+import { Membre } from '../../../../core/models/membre.model';
+import {
+  EvenementBilan, EvenementCollecte, MODES_COLLECTE, ModeCollecte, modeDe
+} from '../../../../core/models/collecte.model';
+import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { EvenementBilanDialogComponent } from '../evenement-bilan-dialog/evenement-bilan-dialog.component';
 
+/** Catégories d'événement : famille (heureux / malheureux) et collecte proposée par défaut. Libellés : collecte.types.<CODE>. */
+const TYPES: Record<string, { famille: 'heureux' | 'malheureux' | 'neutre'; collecteParDefaut: boolean }> = {
+  DECES:        { famille: 'malheureux', collecteParDefaut: true },
+  MARIAGE:      { famille: 'heureux',    collecteParDefaut: true },
+  NAISSANCE:    { famille: 'heureux',    collecteParDefaut: true },
+  BAPTEME:      { famille: 'heureux',    collecteParDefaut: true },
+  ANNIVERSAIRE: { famille: 'heureux',    collecteParDefaut: false },
+  AUTRE:        { famille: 'neutre',     collecteParDefaut: false },
+  // anciennes valeurs saisies avant les catégories ci-dessus
+  Heureux:      { famille: 'heureux',    collecteParDefaut: true },
+  Malheureux:   { famille: 'malheureux', collecteParDefaut: true }
+};
+
+interface FormEvenement {
+  id: number | null;
+  nomEvenement: string;
+  description: string;
+  typeEvenement: string;
+  dateEvenement: Date;
+  idMembreLie: number | null;
+  ouvrirCollecte: boolean;
+  modeCollecte: ModeCollecte;
+  montant: number | null;
+  objectif: number | null;
+  delai: Date | null;
+}
+
+/**
+ * Événements du groupe et leur collecte.
+ * Une collecte n'exige plus de « type de contribution » : chaque versement est une entrée de la caisse Événements
+ * rattachée à l'événement (voir « Entrée de caisse »), et le bilan se lit par événement.
+ */
 @Component({
   selector: 'app-evenement',
+  standalone: true,
   imports: [
-    CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTableModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatProgressSpinnerModule,
-    MatDialogModule,
-    FormsModule,
-    RouterModule,
-         MatDatepickerModule,
-    MatNativeDateModule,
-    TranslateModule,
-    MatTooltipModule
+    CommonModule, FormsModule, RouterModule, TranslateModule,
+    MatDialogModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule,
+    MatDatepickerModule, MatNativeDateModule, MatProgressSpinnerModule, MatTooltipModule
   ],
   templateUrl: './evenement.component.html',
   styleUrl: './evenement.component.scss'
 })
-export class EvenementComponent implements OnInit, AfterViewInit {
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-  dataSource = new MatTableDataSource<Evenement>([]);
-  displayedColumns: string[] = ['nomEvenement', 'typeEvenement', 'dateEvenement', 'estContributionOuverte', 'actions'];
-  isLoading: boolean = true;
-  showCreateRow: boolean = false;
-    editingRows: boolean[] = [];
-  editingEvenementId: number | null = null;
-  editEvenement: any = {};
+export class EvenementComponent implements OnInit, OnDestroy {
+  private evenementService = inject(GeneralService);
+  private finances = inject(FinancesService);
+  private membreService = inject(MembreService);
+  private authService = inject(AuthService);
+  private groupeContext = inject(GroupeContextService);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
+  private translate = inject(TranslateService);
   private destroy$ = new Subject<void>();
-// editingRows: boolean[] = [];
 
-  // editEvenement: Evenement={
-  //   id: 0,
-  //   idGroupe: 0,
-  //   nomEvenement: '',
-  //   description: '',
-  //   typeEvenement: '',
-  //   dateCreation: new Date(),
-  //   estContributionOuverte: false,
-  //   dateEvenement: new Date(),
-  // }
+  readonly modes = MODES_COLLECTE;
+  readonly types = Object.keys(TYPES).filter(k => !['Heureux', 'Malheureux'].includes(k));
 
+  isLoading = true;
+  showCreateRow = false;
+  saving = signal(false);
+  erreur = signal<string | null>(null);
 
-  newEvenement: Evenement = {
-    idGroupe: 1, // Remplacez par l'ID de groupe réel
-    nomEvenement: '',
-    description: '',
-    typeEvenement: 'Autre',
-    dateCreation: new Date(),
-    estContributionOuverte: false,
-    idMembreLie: null,
-    dateEvenement: new Date(),
-    id: 0
-  };
-
+  evenements = signal<EvenementCollecte[]>([]);
+  bilans = signal<Record<number, EvenementBilan>>({});
   membres: Membre[] = [];
-  
 
-  constructor(
-    private evenementService: GeneralService,
-    private membreService: MembreService,
-    private router: Router,
-    private dialog: MatDialog,
-     private snackBar: MatSnackBar,
-     private authService: AuthService,
-    private groupeContext: GroupeContextService
-  ) {}
+  form: FormEvenement = this.formVide();
 
-ngOnInit(): void {
-  const groupeId = this.authService.getGroupe() ?? 0;
- 
-  // Initialiser newEvenement avec le bon groupeId
-  this.newEvenement = {
-    idGroupe: groupeId,          // ← plus de hardcode à 1
-    nomEvenement: '',
-    description: '',
-    typeEvenement: 'Autre',
-    dateCreation: new Date(),
-    estContributionOuverte: false,
-    idMembreLie: null,
-    dateEvenement: new Date(),
-    id: 0
-  };
- 
-  this.loadEvenements();
-  this.loadMembres();
- 
-  // FIX 2 — recharger au switch de groupe
-  this.groupeContext.groupeChanged$
-    .pipe(takeUntil(this.destroy$))
-    .subscribe((newGroupeId) => {
-      this.newEvenement.idGroupe = newGroupeId;
-      this.loadEvenements();
-      this.loadMembres();
-    });
-}
+  nbCollectesOuvertes = computed(() => this.evenements().filter(e => e.estContributionOuverte).length);
+  totalCollecte = computed(() => Object.values(this.bilans()).reduce((s, b) => s + (b.totalCollecte ?? 0), 0));
 
-ngOnDestroy(): void {
-  this.destroy$.next();
-  this.destroy$.complete();
-}
- 
-
-  ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-  }
-  /**
-   * Retourne le nombre d'événements avec contributions ouvertes
-   */
-  getActiveEventsCount(): number {
-    return (this.dataSource.data || []).filter(e => e.estContributionOuverte).length;
+  ngOnInit(): void {
+    this.charger();
+    this.membreService.getGroupMembers().subscribe({ next: m => this.membres = m, error: () => {} });
+    this.groupeContext.groupeChanged$.pipe(takeUntil(this.destroy$)).subscribe(() => this.charger());
   }
 
-  /**
-   * Retourne le nombre total d'événements
-   */
-  getTotalEventsCount(): number {
-    return this.dataSource.data?.length || 0;
-  }
-  loadEvenements() {
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+
+  // ── Chargement ────────────────────────────────────────────
+  charger(): void {
     this.isLoading = true;
-    this.evenementService.getAllEvenements().subscribe({
-      next: (data) => {
-        console.log(data)
-        this.dataSource.data = data;
+    // endpoint du GROUPE (l'ancien chargeait les événements de tous les groupes)
+    this.finances.getEvenementsGroupe().subscribe({
+      next: liste => {
+        this.evenements.set([...liste].sort((a, b) => (b.dateEvenement ?? '').localeCompare(a.dateEvenement ?? '')));
         this.isLoading = false;
+        this.chargerBilans(liste);
       },
-      error: (err) => {
-        console.error('Erreur lors du chargement des événements:', err);
-        this.isLoading = false;
-      },
+      error: () => { this.isLoading = false; this.snackBar.open(this.t('page.loadError'), this.t('page.close'), { duration: 4000 }); }
     });
   }
 
-  loadMembres() {
-    this.membreService.getGroupMembers().subscribe({
-      next: (membres) => {
-        this.membres = membres;
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des membres:', err);
-      }
-    });
+  private chargerBilans(liste: EvenementCollecte[]): void {
+    if (!liste.length) { this.bilans.set({}); return; }
+    forkJoin(liste.map(e => this.finances.getEvenementBilan(e.id).pipe(catchError(() => of(null)))))
+      .subscribe(res => {
+        const map: Record<number, EvenementBilan> = {};
+        res.forEach(b => { if (b) map[b.evenementId] = b; });
+        this.bilans.set(map);
+      });
   }
 
-  toggleCreateRow() {
+  // ── Présentation ──────────────────────────────────────────
+  private t(cle: string, params?: object): string { return this.translate.instant('collecte.' + cle, params); }
+  label(type: string): string { return TYPES[type] ? this.t('types.' + type) : type; }
+  famille(type: string): string { return TYPES[type]?.famille ?? 'neutre'; }
+  mode(e: EvenementCollecte): ModeCollecte { return modeDe(e); }
+  fcfa(n: number | null | undefined): string { return (n ?? 0).toLocaleString('fr-FR') + ' FCFA'; }
+  pourcent(v: number, total: number): number { return total > 0 ? Math.min(100, Math.round((v / total) * 100)) : 0; }
+  nomMembre(id: number | null | undefined): string {
+    const m = this.membres.find(x => x.id === id);
+    return m ? `${m.prenom ?? ''} ${m.nom ?? ''}`.trim() : '';
+  }
+
+  // ── Formulaire ────────────────────────────────────────────
+  private formVide(): FormEvenement {
+    return { id: null, nomEvenement: '', description: '', typeEvenement: 'AUTRE', dateEvenement: new Date(), idMembreLie: null,
+             ouvrirCollecte: false, modeCollecte: 'LIBRE', montant: null, objectif: null, delai: null };
+  }
+
+  toggleCreateRow(): void {
     this.showCreateRow = !this.showCreateRow;
-    if (!this.showCreateRow) {
-      this.resetNewEvenement();
-    }
-  }
-resetNewEvenement(): void {
-  const groupeId = this.authService.getGroupe() ?? 0;
-  this.newEvenement = {
-    idGroupe: groupeId,         // ← dynamique
-    nomEvenement: '',
-    description: '',
-    typeEvenement: 'Autre',
-    dateCreation: new Date(),
-    estContributionOuverte: false,
-    idMembreLie: null,
-    dateEvenement: new Date(),
-    id: 0
-  };
-}
-
-  isCreateFormValid(): boolean {
-    return !!this.newEvenement.nomEvenement && !!this.newEvenement.description;
+    if (this.showCreateRow) { this.form = this.formVide(); this.erreur.set(null); }
   }
 
-  saveEvenement() {
-  if (this.isCreateFormValid()) {
-    this.isLoading = true;
+  cancelCreate(): void { this.showCreateRow = false; this.erreur.set(null); }
 
-    if (this.editingEvenementId) {
-        console.log(this.newEvenement)
-      this.evenementService.updateEvenement(this.editingEvenementId, this.newEvenement).subscribe({
-        next: () => {
-          this.loadEvenements();
-          this.cancelCreate();
-        },
-        error: (err) => {
-          console.error('Erreur lors de la modification de l\'événement:', err);
-          this.isLoading = false;
-        },
-      });
-    } else {
-      // Mode création
-      this.evenementService.createEvenement(this.newEvenement).subscribe({
-        next: () => {
-          this.loadEvenements();
-          this.cancelCreate();
-        },
-        error: (err) => {
-          console.error('Erreur lors de la création de l\'événement:', err);
-          this.isLoading = false;
-        },
-      });
-    }
+  /** À chaque changement de catégorie, la collecte est proposée (ou non) selon l'usage habituel — modifiable. */
+  onTypeChange(): void {
+    if (!this.form.id) this.form.ouvrirCollecte = TYPES[this.form.typeEvenement]?.collecteParDefaut ?? false;
   }
-}
 
-// editEvenement(evenement: Evenement) {
-//   console.log(evenement)
-//   this.newEvenement = { ...evenement }; // copie des données
-//   // this.newEvenement.idMembreLie = evenement.membreLie?.id ?? null;
-//   this.editingEvenementId = evenement.id;
-//   this.showCreateRow = true;
-  
-// }
+  modifier(e: EvenementCollecte): void {
+    this.form = {
+      id: e.id, nomEvenement: e.nomEvenement, description: e.description ?? '', typeEvenement: e.typeEvenement,
+      dateEvenement: e.dateEvenement ? new Date(e.dateEvenement) : new Date(), idMembreLie: e.membreLie?.id ?? null,
+      ouvrirCollecte: e.estContributionOuverte, modeCollecte: modeDe(e), montant: e.montantRequisParMembre ?? null,
+      objectif: e.objectifGlobal ?? null, delai: e.delaiCollecte ? new Date(e.delaiCollecte) : null
+    };
+    this.erreur.set(null);
+    this.showCreateRow = true;
+  }
 
+  formValide(): boolean {
+    const f = this.form;
+    if (!f.nomEvenement.trim()) return false;
+    if (!f.ouvrirCollecte) return true;
+    if (f.modeCollecte === 'FIXE') return (f.montant ?? 0) > 0;
+    if (f.modeCollecte === 'OBJECTIF') return (f.objectif ?? 0) > 0;
+    return true;
+  }
+  isCreateFormValid(): boolean { return this.formValide(); }
 
-  openDeleteDialog(id: number) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: { message: `Voulez-vous supprimer cet événement ?` },
+  saveEvenement(): void {
+    if (!this.formValide() || this.saving()) return;
+    const f = this.form;
+    const iso = (d: Date | null) => d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : null;
+    const corps: any = {
+      nomEvenement: f.nomEvenement.trim(), description: f.description.trim(), typeEvenement: f.typeEvenement,
+      dateEvenement: new Date(f.dateEvenement).toISOString(), idMembreLie: f.idMembreLie,
+      estContributionOuverte: f.ouvrirCollecte,
+      modeCollecte: f.ouvrirCollecte ? f.modeCollecte : null,
+      montantRequisParMembre: f.ouvrirCollecte && f.modeCollecte === 'FIXE' ? f.montant : null,
+      objectifGlobal: f.ouvrirCollecte && f.modeCollecte === 'OBJECTIF' ? f.objectif : null,
+      delaiCollecte: f.ouvrirCollecte ? iso(f.delai) : null
+    };
+    this.saving.set(true);
+    this.erreur.set(null);
+    const requete = f.id
+      ? this.evenementService.updateEvenement(f.id, corps)
+      : this.evenementService.createEvenement(corps);
+    requete.subscribe({
+      next: () => { this.saving.set(false); this.showCreateRow = false; this.charger(); },
+      error: err => { this.saving.set(false); this.erreur.set(err?.error?.message ?? this.t('page.saveError')); }
     });
+  }
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
+  // ── Actions sur un événement ──────────────────────────────
+  ouvrirBilan(e: EvenementCollecte): void {
+    this.dialog.open(EvenementBilanDialogComponent, { data: { evenementId: e.id }, width: '560px', maxWidth: '96vw' })
+      .afterClosed().subscribe(modifie => { if (modifie) this.charger(); });
+  }
+
+  basculerCollecte(e: EvenementCollecte): void {
+    const appel = e.estContributionOuverte ? this.finances.fermerCollecte(e.id) : this.finances.ouvrirCollecte(e.id);
+    appel.subscribe({
+      next: () => this.charger(),
+      error: err => this.snackBar.open(err?.error?.message ?? this.t('page.actionError'), this.t('page.close'), { duration: 5000 })
+    });
+  }
+
+  openDeleteDialog(id: number): void {
+    this.dialog.open(ConfirmationDialogComponent, { data: { message: this.t('page.deleteConfirm') } })
+      .afterClosed().subscribe(oui => {
+        if (!oui) return;
         this.evenementService.deleteEvenement(id).subscribe({
-          next: () => this.loadEvenements(),
-          error: (err) =>
-            console.error('Erreur lors de la suppression de l\'événement:', err),
+          next: () => this.charger(),
+          // un événement qui a reçu de l'argent ne se supprime pas : le serveur l'explique, on l'affiche tel quel
+          error: err => this.snackBar.open(err?.error?.message ?? this.t('page.deleteError'), this.t('page.close'), { duration: 7000 })
         });
-      }
-    });
+      });
   }
-
-  // viewContributions(evenementId: number) {
-  //   this.evenementService.getContributionsByEvenement(evenementId).subscribe({
-  //     next: (contributions: Contribution[]) => {
-  //       const total = contributions.reduce((sum, c) => sum + 0, 0);
-  //       this.dialog.open(ContributionDialogComponent, {
-  //         width: '400px',
-  //         data: { contributions, total }
-  //       });
-  //     },
-  //     error: (err) => {
-  //       console.error('Erreur lors du chargement des contributions:', err);
-  //       this.dialog.open(ContributionDialogComponent, {
-  //         width: '400px',
-  //         data: { contributions: [], total: 0 }
-  //       });
-  //     }
-  //   });
-  // }
-
-cancelCreate() {
-  this.toggleCreateRow();
-  this.editingEvenementId = null;
-}
-
-editRow(localIndex: number, membre: Evenement) {
-  // 1. Trouver l'index global en utilisant l'ID unique du membre
-  // C'est crucial car l'index 'localIndex' est affecté par le filtre/la pagination.
-  const globalIndex = this.dataSource.data.findIndex(m => m.id === membre.id);
-
-  console.log("Tentative d'édition pour Membre ID:", membre.id, "Index Global:", globalIndex);
-
-  if (membre && globalIndex !== -1) {
-    // 2. Utiliser l'index global pour activer l'édition dans le tableau 'editingRows'
-    // C'est l'index que le template utilise via getGlobalIndex(i)
-    this.editingRows[globalIndex] = true;
-    
-    // 3. Copier le membre pour l'édition
-    this.editEvenement = { ...membre };
-    
-    // Si vous utilisez OnPush, vous pourriez avoir besoin de: this.cdr.detectChanges();
-  } else {
-    console.error('Erreur: Impossible de trouver l\'index global du membre pour l\'édition.');
-    }
-  }
-
-  isEditFormValid(): boolean {
-    return !!this.editEvenement.nomEvenement ;
-  }
-
-// Méthode saveEdit modifiée avec loading et messages
-// saveEdit(index: number) {
-//   const membre = this.[index];
-//   const globalIndex = this.dataSource.data.findIndex(m => m.id === membre?.id);
-  
-//   if (!this.isEditFormValid() || globalIndex === -1) {
-//     return;
-//   }
-
-
-//   this.evenementService.updateEvenement(this.editEvenement.id, this.editEvenement).subscribe({
-//     next: () => {
-//       this.showSuccessMessage('Membre modifié avec succès');
-//       this.editingRows[globalIndex] = false;
-//     },
-//     error: (err) => {
-//       console.error('Erreur lors de la mise à jour du membre:', err);
-//       this.showErrorMessage('Erreur lors de la modification du membre');
-//     }
-//   });
-// }
-
-// Déclencher le mode édition d'une ligne/carte
-startEdit(index: number, evenement: any) {
-  this.editingRows[index] = true;
-  // On fait une copie profonde pour ne pas altérer directement le tableau d'origine avant sauvegarde
-  this.editEvenement = { ...evenement }; 
-}
-
-// Annuler la modification
-cancelEdit(index: number) {
-  this.editingRows[index] = false;
-  this.editEvenement = {};
-}
-
-// Sauvegarder les modifications (Appel API)
-saveEdit(index: number): void {
-  this.isLoading = true;
-  const evenementId = this.editEvenement.id ?? this.editEvenement.idEvenement;
-  this.evenementService.updateEvenement(evenementId, this.editEvenement).subscribe({
-    next: () => {
-      this.editingRows[index] = false;
-      this.loadEvenements();
-      this.snackBar.open('Événement modifié avec succès', 'Fermer', { duration: 3000 });
-      this.isLoading = false;
-    },
-    error: () => { this.isLoading = false; }
-  });
-}
- 
-  // Méthodes pour afficher les messages
-showSuccessMessage(message: string) {
-  this.snackBar.open(message, 'Fermer', {
-    duration: 4000,
-    horizontalPosition: 'end',
-    verticalPosition: 'top',
-    panelClass: ['message-snackbar', 'success']
-  });
-}
-
-showErrorMessage(message: string) {
-  this.snackBar.open(message, 'Fermer', {
-    duration: 5000,
-    horizontalPosition: 'end',
-    verticalPosition: 'top',
-    panelClass: ['message-snackbar', 'error']
-  });
-}
-
 }

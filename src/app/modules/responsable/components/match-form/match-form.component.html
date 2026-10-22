@@ -12,6 +12,10 @@
           <p class="header-sub">{{ 'MATCH.SUBTITLE' | translate }}</p>
         </div>
         <div class="header-actions">
+          <button class="btn-primary header-cta" *ngIf="!isLoading && activeTab === 'list'"
+                  (click)="setTab('create'); openCreateForm()">
+            <mat-icon>add</mat-icon>{{ 'MATCH.ACTIONS.NEW' | translate }}
+          </button>
           <!-- Export -->
           <button mat-icon-button [matMenuTriggerFor]="exportMenu"
                   class="header-icon-btn" [matTooltip]="'COMMON.EXPORT' | translate">
@@ -132,7 +136,7 @@
         <!-- Chips filtre statut -->
         <div class="filter-chips">
           <button class="fchip" [class.active]="filters.statut === 'tous'"
-                  (click)="filters.statut = 'tous'; applyFilters()">Tous</button>
+                  (click)="filters.statut = 'tous'; applyFilters()">{{ 'common.ALL' | translate }}</button>
           <button class="fchip played" [class.active]="filters.statut === 'joues'"
                   (click)="filters.statut = 'joues'; applyFilters()">
             <mat-icon>check_circle</mat-icon>{{ 'MATCH.STATS.PLAYED' | translate }}
@@ -306,12 +310,12 @@
           <div class="form-section">
             <div class="form-section-title">
               <mat-icon>info</mat-icon>
-              Informations générales
+              {{ 'groupConfig.tabs.generalInfo' | translate }}
             </div>
             <div class="form-grid-2">
               <!-- Type -->
               <mat-form-field appearance="outline">
-                <mat-label>Type de match</mat-label>
+                <mat-label>{{ 'MATCH.FORM.TYPE_LABEL' | translate }}</mat-label>
                 <mat-select [(ngModel)]="newMatch.typeMatch" required (selectionChange)="onTypeChange()">
                   <mat-option value="INTERNE"><mat-icon class="option-icon">groups</mat-icon> Interne</mat-option>
                   <mat-option value="DUEL"><mat-icon class="option-icon">sports</mat-icon> Duel</mat-option>
@@ -322,14 +326,14 @@
               </mat-form-field>
               <!-- Date -->
               <mat-form-field appearance="outline">
-                <mat-label>Date du match</mat-label>
+                <mat-label>{{ 'MATCH.FORM.DATE_LABEL' | translate }}</mat-label>
                 <input matInput type="date" [(ngModel)]="newMatch.dateMatch" required>
                 <mat-icon matPrefix>event</mat-icon>
               </mat-form-field>
               <!-- Lieu -->
               <mat-form-field appearance="outline" class="span-2">
-                <mat-label>Lieu</mat-label>
-                <input matInput [(ngModel)]="newMatch.lieu" placeholder="Stade, terrain...">
+                <mat-label>{{ 'invite.match.location' | translate }}</mat-label>
+                <input matInput [(ngModel)]="newMatch.lieu" [placeholder]="'MATCH.FORM.LOCATION_PLACEHOLDER' | translate">
                 <mat-icon matPrefix>location_on</mat-icon>
               </mat-form-field>
             </div>
@@ -339,13 +343,13 @@
           <div class="form-section" *ngIf="newMatch.typeMatch === 'INTERNE' || newMatch.typeMatch === 'DUEL'">
             <div class="form-section-title">
               <mat-icon>groups</mat-icon>
-              Configuration des équipes
+              {{ 'MATCH.FORM.TEAMS_CONFIG' | translate }}
             </div>
             <div class="teams-vs-grid">
               <div class="team-card team-1">
-                <span class="team-label">Équipe 1</span>
+                <span class="team-label">{{ 'calendar.teams.team1' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Sélectionner l'équipe</mat-label>
+                  <mat-label>{{ 'ui.selectionner_l_equipe_f73e' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.equipe1" (selectionChange)="updateEquipesForForfait()">
                     <mat-option *ngFor="let eq of equipes" [value]="eq"
                                 [disabled]="eq.id === newMatch.equipe2?.id">{{ eq.nom }}</mat-option>
@@ -354,9 +358,9 @@
               </div>
               <div class="vs-badge">VS</div>
               <div class="team-card team-2">
-                <span class="team-label">Équipe 2</span>
+                <span class="team-label">{{ 'calendar.teams.team2' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Sélectionner l'équipe</mat-label>
+                  <mat-label>{{ 'ui.selectionner_l_equipe_f73e' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.equipe2" (selectionChange)="updateEquipesForForfait()">
                     <mat-option *ngFor="let eq of equipes" [value]="eq"
                                 [disabled]="eq.id === newMatch.equipe1?.id">{{ eq.nom }}</mat-option>
@@ -366,7 +370,7 @@
             </div>
             <div class="random-btn-wrap" *ngIf="newMatch.typeMatch === 'INTERNE'">
               <button mat-stroked-button (click)="setRandomTeams()">
-                <mat-icon>shuffle</mat-icon> Tirage aléatoire
+                <mat-icon>shuffle</mat-icon> {{ 'ui.tirage_aleatoire_4071' | translate }}
               </button>
             </div>
           </div>
@@ -375,7 +379,7 @@
           <div class="form-section" *ngIf="newMatch.typeMatch === 'AMICAL'">
             <div class="form-section-title">
               <mat-icon>sports_soccer</mat-icon>
-              Équipe adverse
+              {{ 'ui.equipe_adverse_dd24' | translate }}
             </div>
             <mat-radio-group [(ngModel)]="selectedSourceAdversaire" (change)="onSourceAdversaireChange()"
                              class="source-radio-group">
@@ -383,7 +387,7 @@
                 <mat-icon>edit</mat-icon> Saisie manuelle
               </mat-radio-button>
               <mat-radio-button value="GROUPE_EXISTANT">
-                <mat-icon>group</mat-icon> Groupe existant
+                <mat-icon>group</mat-icon> {{ 'ui.groupe_existant_18ec' | translate }}
               </mat-radio-button>
               <mat-radio-button value="INVITATION">
                 <mat-icon>link</mat-icon> Via invitation
@@ -392,19 +396,19 @@
 
             <div *ngIf="selectedSourceAdversaire === 'MANUEL'" class="adversaire-input">
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Nom de l'équipe adverse</mat-label>
+                <mat-label>{{ 'ui.nom_de_l_equipe_adverse_2441' | translate }}</mat-label>
                 <input matInput [(ngModel)]="newMatch.nomAdversaireManuel"
                        (ngModelChange)="onAdversaireManuelInput()"
-                       placeholder="Ex: FC Lions, AS Yaoundé...">
+                       [placeholder]="'ui.ex_fc_lions_as_yaounde_0238' | translate">
                 <mat-icon matPrefix>shield</mat-icon>
               </mat-form-field>
             </div>
 
             <div *ngIf="selectedSourceAdversaire === 'GROUPE_EXISTANT'" class="groupe-selection">
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Rechercher un groupe</mat-label>
+                <mat-label>{{ 'groups.search' | translate }}</mat-label>
                 <input matInput [(ngModel)]="groupeSearch" (ngModelChange)="filterGroupes()"
-                       placeholder="Nom du groupe...">
+                       [placeholder]="'ui.nom_du_groupe_3a04' | translate">
                 <mat-icon matPrefix>search</mat-icon>
               </mat-form-field>
               <div *ngIf="newMatch.groupeAdverse" class="selected-groupe">
@@ -428,7 +432,7 @@
             <div *ngIf="selectedSourceAdversaire === 'INVITATION'" class="invitation-info">
               <div class="info-card">
                 <mat-icon>info</mat-icon>
-                <p>Créez d'abord le match, puis utilisez le bouton "Inviter équipe adverse" pour générer un lien d'invitation.</p>
+                <p>{{ 'ui.creez_d_abord_le_match_puis_utilis_9208' | translate }}</p>
               </div>
             </div>
 
@@ -443,7 +447,7 @@
           <div class="form-section" *ngIf="newMatch.typeMatch === 'ANNIVERSAIRE'">
             <div class="form-section-title">
               <mat-icon>cake</mat-icon>
-              Membres fêtés
+              {{ 'ui.membres_fetes_1fd1' | translate }}
             </div>
             <mat-chip-set *ngIf="membresAnniversaireSelected.length > 0" class="anniv-chips">
               <mat-chip *ngFor="let m of membresAnniversaireSelected" (removed)="removeMembreAnniversaire(m)">
@@ -452,8 +456,8 @@
               </mat-chip>
             </mat-chip-set>
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Rechercher un membre</mat-label>
-              <input matInput [(ngModel)]="membreSearch" placeholder="Nom ou prénom...">
+              <mat-label>{{ 'chat.privateChat.searchUser' | translate }}</mat-label>
+              <input matInput [(ngModel)]="membreSearch" [placeholder]="'PRESENCE.ADD.SEARCH_PLACEHOLDER' | translate">
               <mat-icon matPrefix>search</mat-icon>
             </mat-form-field>
             <div class="membres-list" *ngIf="filteredMembres.length > 0">
@@ -466,9 +470,9 @@
             <!-- Config équipes anniversaire -->
             <div class="teams-vs-grid" style="margin-top: 16px">
               <div class="team-card team-1">
-                <span class="team-label">Équipe Fêtés</span>
+                <span class="team-label">{{ 'ui.equipe_fetes_7d39' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Base équipe</mat-label>
+                  <mat-label>{{ 'ui.base_equipe_7058' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.equipe1">
                     <mat-option *ngFor="let eq of equipes" [value]="eq"
                                 [disabled]="eq.id === newMatch.equipe2?.id">{{ eq.nom }}</mat-option>
@@ -477,9 +481,9 @@
               </div>
               <div class="vs-badge">VS</div>
               <div class="team-card team-2">
-                <span class="team-label">Équipe Adverses</span>
+                <span class="team-label">{{ 'ui.equipe_adverses_9346' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Base équipe</mat-label>
+                  <mat-label>{{ 'ui.base_equipe_7058' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.equipe2">
                     <mat-option *ngFor="let eq of equipes" [value]="eq"
                                 [disabled]="eq.id === newMatch.equipe1?.id">{{ eq.nom }}</mat-option>
@@ -489,7 +493,7 @@
             </div>
             <div class="random-btn-wrap">
               <button mat-stroked-button (click)="setRandomTeams()">
-                <mat-icon>shuffle</mat-icon> Tirage aléatoire
+                <mat-icon>shuffle</mat-icon> {{ 'ui.tirage_aleatoire_4071' | translate }}
               </button>
             </div>
           </div>
@@ -497,10 +501,10 @@
           <!-- Forfait -->
           <div class="form-section forfait-section">
             <mat-checkbox [(ngModel)]="newMatch.forfait" (change)="onForfaitChange()">
-              Match déclaré forfait
+              {{ 'MATCH.FORM.FORFAIT_LABEL' | translate }}
             </mat-checkbox>
             <mat-form-field *ngIf="newMatch.forfait" appearance="outline" class="full-width" style="margin-top:12px">
-              <mat-label>Équipe ayant déclaré forfait</mat-label>
+              <mat-label>{{ 'ui.equipe_ayant_declare_forfait_89d3' | translate }}</mat-label>
               <mat-select [(ngModel)]="newMatch.equipeForfait" required>
                 <mat-option *ngFor="let eq of equipesForForfait" [value]="eq">{{ eq }}</mat-option>
               </mat-select>
@@ -512,37 +516,37 @@
           <div class="form-section">
             <div class="form-section-title">
               <mat-icon>gavel</mat-icon>
-              Officiels du match
+              {{ 'MATCH.FORM.OFFICIALS' | translate }}
             </div>
             <div class="officials-grid">
               <div class="official-group">
-                <span class="official-label">Arbitre principal</span>
+                <span class="official-label">{{ 'ui.arbitre_principal_306d' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Membre</mat-label>
+                  <mat-label>{{ 'evenement.table.member' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.arbitrePrincipal">
-                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option [value]="null">{{ 'partenaire.common.none' | translate }}</mat-option>
                     <mat-option *ngFor="let m of membres" [value]="m">{{ getMembreName(m) }}</mat-option>
                   </mat-select>
                   <mat-icon matPrefix>person</mat-icon>
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Nom (occasionnel)</mat-label>
+                  <mat-label>{{ 'ui.nom_occasionnel_1d5e' | translate }}</mat-label>
                   <input matInput [(ngModel)]="newMatch.arbitrePrincipalNomOccasionnel">
                   <mat-icon matPrefix>badge</mat-icon>
                 </mat-form-field>
               </div>
               <div class="official-group">
-                <span class="official-label">Arbitre assistant</span>
+                <span class="official-label">{{ 'ui.arbitre_assistant_a437' | translate }}</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Membre</mat-label>
+                  <mat-label>{{ 'evenement.table.member' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.arbitreAssistant">
-                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option [value]="null">{{ 'partenaire.common.none' | translate }}</mat-option>
                     <mat-option *ngFor="let m of membres" [value]="m">{{ getMembreName(m) }}</mat-option>
                   </mat-select>
                   <mat-icon matPrefix>person</mat-icon>
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Nom (occasionnel)</mat-label>
+                  <mat-label>{{ 'ui.nom_occasionnel_1d5e' | translate }}</mat-label>
                   <input matInput [(ngModel)]="newMatch.arbitreAssistantNomOccasionnel">
                   <mat-icon matPrefix>badge</mat-icon>
                 </mat-form-field>
@@ -550,15 +554,15 @@
               <div class="official-group">
                 <span class="official-label">Rapporteur</span>
                 <mat-form-field appearance="outline">
-                  <mat-label>Membre</mat-label>
+                  <mat-label>{{ 'evenement.table.member' | translate }}</mat-label>
                   <mat-select [(ngModel)]="newMatch.rapporteur">
-                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option [value]="null">{{ 'partenaire.common.none' | translate }}</mat-option>
                     <mat-option *ngFor="let m of membres" [value]="m">{{ getMembreName(m) }}</mat-option>
                   </mat-select>
                   <mat-icon matPrefix>person</mat-icon>
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Nom (occasionnel)</mat-label>
+                  <mat-label>{{ 'ui.nom_occasionnel_1d5e' | translate }}</mat-label>
                   <input matInput [(ngModel)]="newMatch.rapporteurNomOccasionnel">
                   <mat-icon matPrefix>badge</mat-icon>
                 </mat-form-field>
@@ -571,7 +575,7 @@
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Commentaire</mat-label>
               <textarea matInput [(ngModel)]="newMatch.commentaire" rows="2"
-                        placeholder="Notes supplémentaires..."></textarea>
+                        [placeholder]="'ui.notes_supplementaires_8366' | translate"></textarea>
               <mat-icon matPrefix>comment</mat-icon>
             </mat-form-field>
           </div>
@@ -730,10 +734,11 @@
   </div><!-- /tabs-wrapper -->
 
   <!-- FAB Nouveau match -->
-  <button class="fab-new" *ngIf="!isLoading && activeTab === 'list'"
+  <button class="fab-new fab" *ngIf="!isLoading && activeTab === 'list'"
           (click)="setTab('create'); openCreateForm()"
-          [matTooltip]="'MATCH.ACTIONS.NEW' | translate">
+          [attr.aria-label]="'MATCH.ACTIONS.NEW' | translate">
     <mat-icon>add</mat-icon>
+    <span class="fab-label">{{ 'MATCH.ACTIONS.NEW' | translate }}</span>
   </button>
 
 </div>

@@ -3,7 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environment';
-import { StatutCompetition, TypeCompetition, Page, CompetitionDTO, CompetitionDetailDTO, CompetitionResumeDTO, CompetitionCreateDTO, CompetitionUpdateDTO, StatutInscription, CompetitionParticipantDTO, InscriptionDTO, PhaseDTO, PouleDTO, ClassementDTO, BracketDTO } from '../../models/competition.models';
+import { StatutCompetition, TypeCompetition, Page, CompetitionDTO, CompetitionDetailDTO, CompetitionResumeDTO, CompetitionCreateDTO, CompetitionUpdateDTO, StatutInscription, CompetitionParticipantDTO, InscriptionDTO, PhaseDTO, PouleDTO, ClassementDTO, BracketDTO, LicenceDTO,LicenceConfigDTO } from '../../models/competition.models';
+import { AnimationKeyframesSequenceMetadata } from '@angular/animations';
 
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +26,17 @@ export class CompetitionApiService {
     if (params?.page != null) p = p.set('page', params.page);
     if (params?.size != null) p = p.set('size', params.size);
     return this.http.get<Page<CompetitionDTO>>(this.base, { params: p });
+  }
+
+    private licencesUrl(competitionId: number): string {
+    return `${this.base}/${competitionId}/licences`;
+  }
+ 
+  /** GET — toutes les licences, ou celles d'une équipe si participantId */
+  getLicences(competitionId: number, participantId?: number): Observable<any[]> {
+    let params = new HttpParams();
+    if (participantId != null) params = params.set('participantId', participantId);
+    return this.http.get<any[]>(this.licencesUrl(competitionId), { params });
   }
 
   // ── Admin — tous les groupes My2-0 ──────────────────────
@@ -108,9 +120,10 @@ fermerInscriptions(id: number): Observable<void> {
   }
 
   rejeterInscription(competitionId: number,
-                     participantId: number): Observable<void> {
+                     participantId: number,
+                     motif?: string): Observable<void> {
     return this.http.patch<void>(
-      `${this.base}/${competitionId}/participants/${participantId}/rejeter`, {});
+      `${this.base}/${competitionId}/participants/${participantId}/rejeter`, { motif: motif ?? null });
   }
 
   retirerParticipant(competitionId: number,
@@ -353,7 +366,192 @@ rechercherUser(query: string): Observable<any> {
       {}
     );
   }
- 
 
- 
+// ── Licences ─────────────────────────────────────────────
+
+
+
+refuserLicence(competitionId: number, licenceId: number, motif?: string): Observable<LicenceDTO> {
+  return this.http.patch<LicenceDTO>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/refuser`,
+    { motif }
+  );
+}
+
+suspendreJoueur(competitionId: number, licenceId: number): Observable<LicenceDTO> {
+  return this.http.patch<LicenceDTO>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/suspendre`,
+    {}
+  );
+}
+
+getLicenceConfig(competitionId: number): Observable<LicenceConfigDTO> {
+  return this.http.get<LicenceConfigDTO>(
+    `${environment.apiUrl}/competitions/${competitionId}/config/licences`
+  );
+}
+
+saveLicenceConfig(competitionId: number, config: LicenceConfigDTO): Observable<LicenceConfigDTO> {
+  return this.http.put<LicenceConfigDTO>(
+    `${environment.apiUrl}/competitions/${competitionId}/config/licences`,
+    config
+  );
+}
+
+exporterLicences(competitionId: number): Observable<Blob> {
+  return this.http.get(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/export`,
+    { responseType: 'blob' }
+  );
+}
+
+// ── Licences ─────────────────────────────────────────────
+
+
+
+getConfigLicences(competitionId: number): Observable<any> {
+  return this.http.get<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/config`
+  );
+}
+
+updateConfigLicences(competitionId: number, config: any): Observable<any> {
+  return this.http.put<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/config`,
+    config
+  );
+}
+
+creerLicence(competitionId: number, dto: any): Observable<any> {
+  return this.http.post<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences`,
+    dto
+  );
+}
+
+validerLicence(competitionId: number, licenceId: number): Observable<any> {
+  return this.http.patch<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/valider`,
+    {}
+  );
+}
+
+validerToutesLicencesEquipe(competitionId: number, participantId: number): Observable<any> {
+  return this.http.patch<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/equipe/${participantId}/valider-tout`,
+    {}
+  );
+}
+
+/** L'organisateur choisit les licences gratuites d'une équipe (les autres sont payantes). */
+definirLicencesGratuites(competitionId: number, participantId: number, licenceIds: number[]): Observable<any> {
+  return this.http.put<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/equipe/${participantId}/gratuites`,
+    { licenceIds }
+  );
+}
+
+/** Photo d'identité de la licence (jamais la photo de profil du compte). */
+televerserPhotoLicence(competitionId: number, licenceId: number, fichier: File): Observable<any> {
+  const donnees = new FormData();
+  donnees.append('file', fichier);
+  return this.http.post<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/photo`,
+    donnees
+  );
+}
+
+changerStatutLicence(competitionId: number, licenceId: number, statut: string): Observable<any> {
+  return this.http.patch<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/statut`,
+    { statut }
+  );
+}
+
+genererLicencesEquipe(competitionId: number, participantId: number): Observable<any> {
+  return this.http.post<any>(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/equipe/${participantId}/generer`,
+    {}
+  );
+}
+
+getLicencePdf(competitionId: number, licenceId: number): Observable<Blob> {
+  return this.http.get(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/${licenceId}/pdf`,
+    { responseType: 'blob' }
+  );
+}
+
+getLicencesPdfEquipe(competitionId: number, participantId: number): Observable<Blob> {
+  return this.http.get(
+    `${environment.apiUrl}/competitions/${competitionId}/licences/equipe/${participantId}/pdf`,
+    { responseType: 'blob' }
+  );
+}
+
+inscrireEquipe(competitionId: number, dto: any): Observable<any> {
+  return this.http.post(
+    `${this.base}/${competitionId}/inscriptions`, dto
+  );
+}
+
+
+/** Rapport PDF de la compétition (fr | en). */
+rapportCompetitionPdf(competitionId: number, langue: 'fr' | 'en'): Observable<Blob> {
+  return this.http.get(`${this.base}/${competitionId}/rapport/pdf?langue=${langue}`, { responseType: 'blob' });
+}
+
+// ── Récompenses ──────────────────────────────────────────────────
+getRecompenses(competitionId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.base}/${competitionId}/recompenses`);
+}
+
+/** Toutes les récompenses (publiées ou non) : réservé aux organisateurs. */
+getRecompensesGestion(competitionId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.base}/${competitionId}/recompenses/gestion`);
+}
+
+saveRecompenses(competitionId: number, recompenses: any[]): Observable<any[]> {
+  return this.http.put<any[]>(`${this.base}/${competitionId}/recompenses`, recompenses);
+}
+
+// ── Barème sanctions ─────────────────────────────────────────────
+getBaremeSanctions(competitionId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.base}/${competitionId}/bareme-sanctions`);
+}
+
+saveBaremeItem(competitionId: number, dto: any): Observable<any> {
+  return this.http.post<any>(`${this.base}/${competitionId}/bareme-sanctions`, dto);
+}
+
+deleteBaremeItem(competitionId: number, baremeId: number): Observable<void> {
+  return this.http.delete<void>(`${this.base}/${competitionId}/bareme-sanctions/${baremeId}`);
+}
+
+// ── Sanctions ────────────────────────────────────────────────────
+getSanctions(competitionId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.base}/${competitionId}/sanctions`);
+}
+
+getRecapSanctions(competitionId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.base}/${competitionId}/sanctions/recap`);
+}
+
+marquerSanctionPayee(competitionId: number, sanctionId: number): Observable<any> {
+  return this.http.patch<any>(
+    `${this.base}/${competitionId}/sanctions/${sanctionId}/payer`, {});
+}
+
+dispenserSanction(competitionId: number, sanctionId: number, motif?: string): Observable<any> {
+  return this.http.patch<any>(
+    `${this.base}/${competitionId}/sanctions/${sanctionId}/dispenser`,
+    motif ? { motif } : {}
+  );
+}
+
+getMesStatsCompetitions(): Observable<any> {
+  return this.http.get<AnimationKeyframesSequenceMetadata>(`${this.base.replace('/competitions', '')}/joueurs/moi/stats-competitions`);
+
+}
+
 }

@@ -1,3 +1,6 @@
+import { t } from '../../../../core/i18n/traduire';
+import { MatDialog } from '@angular/material/dialog';
+import { SignalementDialogComponent } from '../../../../shared/components/signalement-dialog/signalement-dialog.component';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -56,8 +59,27 @@ export class PlayerProfileComponent implements OnInit {
     private chatService: ChatService,
     private router: Router,
     private snackBar: MatSnackBar,
-    private location: Location
+    private location: Location,
+    private dialog: MatDialog
   ) {}
+
+  /** Signaler ce profil (et proposer de bloquer la personne). */
+  signalerProfil(): void {
+    const p: any = this.playerProfile;
+    this.dialog.open(SignalementDialogComponent, {
+      width: '480px', maxWidth: '96vw', autoFocus: false,
+      data: { cible: 'PROFIL', cibleId: p?.userId ?? null, utilisateurId: p?.userId ?? null, utilisateurNom: p?.username }
+    });
+  }
+
+  signalerVideo(video: any, event: Event): void {
+    event.stopPropagation();
+    const p: any = this.playerProfile;
+    this.dialog.open(SignalementDialogComponent, {
+      width: '480px', maxWidth: '96vw', autoFocus: false,
+      data: { cible: 'VIDEO', cibleId: video.id, utilisateurId: p?.userId ?? null, utilisateurNom: p?.username }
+    });
+  }
 
   @HostListener('window:blur', ['$event'])
     onWindowBlur() {
@@ -100,7 +122,7 @@ export class PlayerProfileComponent implements OnInit {
   startPrivateChat(): void {
     if (!this.playerProfile?.id) {
       this.snackBar.open(
-        'Ce joueur ne possède pas encore de compte My2-0',
+        t('ui.ts_ce_joueur_ne_possede_pas_encore__5f12'),
         '✕', { duration: 3000, panelClass: ['snackbar-warning'] }
       );
       return;

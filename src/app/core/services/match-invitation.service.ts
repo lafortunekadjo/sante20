@@ -1,3 +1,4 @@
+import { t } from '../i18n/traduire';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -234,10 +235,10 @@ export class MatchInvitationService {
     const labels: Record<InvitationStatus, string> = {
       'EN_ATTENTE': 'En attente',
       'SOUMIS': 'Liste soumise',
-      'VALIDE': 'Validée',
-      'REFUSE': 'Refusée',
-      'EXPIRE': 'Expirée',
-      'ANNULE': 'Annulée'
+      'VALIDE': t('invitation.validated'),
+      'REFUSE': t('demands.rejected'),
+      'EXPIRE': t('invitation.expired'),
+      'ANNULE': t('invitation.cancelled')
     };
     return labels[statut] || statut;
   }

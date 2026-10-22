@@ -1,4 +1,6 @@
 // caisses.component.ts
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -27,7 +29,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-caisses',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     RouterModule,
     MatCardModule,
@@ -148,10 +150,10 @@ export class CaissesComponent implements OnInit, OnDestroy {
 
   getTypeLibelle(type: string): string {
     const types: Record<string, string> = {
-      'ADHESION': 'Adhésions',
+      'ADHESION': t('finances.caisses.types.ADHESION'),
       'COTISATION': 'Cotisations',
       'SANCTION': 'Sanctions',
-      'EVENEMENT': 'Événements',
+      'EVENEMENT': t('menu.items.EVENEMENTS'),
       'FONCTIONNEMENT': 'Fonctionnement',
       'INVESTISSEMENT': 'Investissement',
       'AUTRE': 'Autre'

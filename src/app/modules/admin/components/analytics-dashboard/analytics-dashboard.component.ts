@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -32,10 +34,10 @@ interface PlatformKPIs {
   // Acquisition
   totalGroupes: number;
   newGroupesThisMonth: number;
-  groupesGrowthRate: number;
+  groupesGrowthRate: number | null;
   totalVisitors: number;
   totalSignups: number;
-  conversionRate: number;
+  conversionRate: number | null;
   
   // Activation
   totalUsers: number;
@@ -54,10 +56,14 @@ interface PlatformKPIs {
   avgMembersPerGroup: number;
   
   // Rétention
-  retentionRate7Days: number;
-  retentionRate30Days: number;
+  retentionRate7Days: number | null;
+  retentionRate30Days: number | null;
   churnedGroupes: number; // Groupes inactifs depuis 30j+
   churnRate: number;
+  tauxCalendrierUtilise?: number | null;
+  matchsEchusPeriode?: number;
+  totalMembres?: number;
+  usersEverConnected?: number;
 }
 
 interface GroupeEngagement {
@@ -94,7 +100,7 @@ interface ConversionFunnel {
 @Component({
   selector: 'app-analytics-dashboard',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     ReactiveFormsModule,
     MatCardModule,
@@ -294,7 +300,13 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
     
     const { startDate, endDate } = this.getDateRange();
     
+    const jours = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
+    const finPrec = new Date(new Date(startDate).getTime() - 86400000);
+    const debutPrec = new Date(finPrec.getTime() - (jours - 1) * 86400000);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+
     forkJoin([
+      this.analyticsService.getPlatformKPIs(iso(debutPrec), iso(finPrec), this.engagementCriteria),
       this.analyticsService.getPlatformKPIs(startDate, endDate, this.engagementCriteria),
       this.analyticsService.getGrowthData(12), // 12 derniers mois
       this.analyticsService.getGroupesEngagement(this.engagementCriteria),
@@ -302,8 +314,8 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
       this.analyticsService.getActivityByDay(startDate, endDate)
     ]).pipe(takeUntil(this.destroy$))
     .subscribe({
-      next: ([kpis, growth, groupes, funnel, activityByDay]) => {
-        this.previousKpis = { ...this.kpis };
+      next: ([kpisPrecedents, kpis, growth, groupes, funnel, activityByDay]) => {
+        this.previousKpis = kpisPrecedents;
         this.kpis = kpis;
         this.growthData = growth;
         this.groupesEngagement = groupes;
@@ -387,7 +399,7 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
       labels: this.growthData.map(d => d.period),
       datasets: [
         {
-          label: 'Groupes',
+          label: t('admin.groups'),
           data: this.growthData.map(d => d.groupes),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -395,7 +407,7 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
           tension: 0.4
         },
         {
-          label: 'Utilisateurs',
+          label: t('menu.items.USER'),
           data: this.growthData.map(d => d.users),
           borderColor: '#8b5cf6',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -468,10 +480,10 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
     const critical = this.groupesEngagement.filter(g => g.status === 'critical').length;
     
     this.engagementDistribution = [
-      { label: 'Excellent (≥4 matchs)', count: excellent, color: '#22c55e' },
-      { label: 'Bon (2-3 matchs)', count: good, color: '#3b82f6' },
-      { label: 'À surveiller (1 match)', count: warning, color: '#f59e0b' },
-      { label: 'Critique (0 match)', count: critical, color: '#ef4444' }
+      { label: t('admin.engagement.excellent'), count: excellent, color: '#22c55e' },
+      { label: t('admin.engagement.good'), count: good, color: '#3b82f6' },
+      { label: t('admin.engagement.warning'), count: warning, color: '#f59e0b' },
+      { label: t('admin.engagement.critical'), count: critical, color: '#ef4444' }
     ];
   }
 
@@ -494,8 +506,8 @@ activityByDayChartOptions: ChartConfiguration<'bar'>['options'] = {
     return 'neutral';
   }
 
-  formatPercent(value: number): string {
-    return value?.toFixed(1) + '%';
+  formatPercent(value: number | null | undefined): string {
+    return value == null ? '—' : value.toFixed(1) + '%';
   }
 
   formatNumber(value: number): string {

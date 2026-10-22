@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -239,16 +240,16 @@ ngOnDestroy(): void {
     
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        message = 'Accès à la localisation refusé. Veuillez autoriser l\'accès dans votre navigateur.';
+        message = t('ui.ts_acces_a_la_localisation_refuse_v_9dc7');
         break;
       case error.POSITION_UNAVAILABLE:
-        message = 'Position indisponible. Vérifiez votre connexion et réessayez.';
+        message = t('ui.ts_position_indisponible_verifiez_v_b0bf');
         break;
       case error.TIMEOUT:
-        message = 'Délai d\'attente dépassé. Réessayez ou entrez les coordonnées manuellement.';
+        message = t('ui.ts_delai_d_attente_depasse_reessaye_6feb');
         break;
       default:
-        message = 'Erreur inconnue lors de la géolocalisation.';
+        message = t('ui.ts_erreur_inconnue_lors_de_la_geolo_ffa9');
         break;
     }
     
@@ -462,7 +463,7 @@ loadData(): void {
     },
     error: (err) => {
       console.error('Erreur chargement:', err);
-      this.snackBar.open('Erreur lors du chargement du groupe', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_du_gro_d0a1'), 'Fermer', { duration: 3000 });
       this.isLoading = false;
     }
   });
@@ -491,7 +492,7 @@ loadVillesEtStades(callback: () => void): void {
       },
       error: (err) => {
         console.error('Erreur chargement questions:', err);
-        this.snackBar.open('Erreur lors du chargement des questions', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_des_qu_c045'), 'Fermer', { duration: 3000 });
       }
     });
   }
@@ -509,13 +510,13 @@ loadVillesEtStades(callback: () => void): void {
 
       this.groupeService.updateGroupe(this.groupe.id, groupeData).subscribe({
         next: () => {
-          this.snackBar.open('Groupe mis à jour avec succès !', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_groupe_mis_a_jour_avec_succes_a47b'), 'Fermer', { duration: 3000 });
           this.isSaving = false;
           this.loadData();
         },
         error: (err) => {
           console.error('Erreur sauvegarde groupe:', err);
-          this.snackBar.open('Erreur lors de la sauvegarde', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('evenement.messages.error_saving'), 'Fermer', { duration: 3000 });
           this.isSaving = false;
         }
       });
@@ -532,13 +533,13 @@ loadVillesEtStades(callback: () => void): void {
       
       // Vérifier le type de fichier
       if (!file.type.startsWith('image/')) {
-        this.snackBar.open('Veuillez sélectionner une image', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_veuillez_selectionner_une_image_5c21'), 'Fermer', { duration: 3000 });
         return;
       }
       
       // Vérifier la taille (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        this.snackBar.open('L\'image ne doit pas dépasser 5MB', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_l_image_ne_doit_pas_depasser_5mb_9677'), 'Fermer', { duration: 3000 });
         return;
       }
       
@@ -571,7 +572,7 @@ loadVillesEtStades(callback: () => void): void {
       })
     ).subscribe({
       next: (response) => {
-        this.snackBar.open('Photo de profil mise à jour avec succès', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_photo_de_profil_mise_a_jour_avec_7404'), 'Fermer', { duration: 3000 });
         // Mettre à jour l'URL de la photo dans le groupe
         if (this.groupe && response.url) {
           this.groupe.profilePhotoUrl = response.url;
@@ -580,7 +581,7 @@ loadVillesEtStades(callback: () => void): void {
       },
       error: (error) => {
         console.error('Erreur upload photo:', error);
-        this.snackBar.open('Erreur lors de l\'upload de la photo', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_upload_de_la_ph_2a5b'), 'Fermer', { duration: 3000 });
       }
     });
   }
@@ -658,7 +659,7 @@ loadVillesEtStades(callback: () => void): void {
         },
         error: (err) => {
           console.error('Erreur sauvegarde question:', err);
-          this.snackBar.open('Erreur lors de la sauvegarde', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('evenement.messages.error_saving'), 'Fermer', { duration: 3000 });
         }
       });
     }
@@ -671,15 +672,15 @@ loadVillesEtStades(callback: () => void): void {
   }
 
   deleteQuestion(question: QuestionCandidature): void {
-    if (confirm(`Voulez-vous vraiment supprimer cette question ?`)) {
+    if (confirm(t('ui.ts_voulez_vous_vraiment_supprimer_c_5a93'))) {
       this.questionService.deleteQuestion(question.id).subscribe({
         next: () => {
-          this.snackBar.open('Question supprimée !', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_question_supprimee_1864'), 'Fermer', { duration: 3000 });
           this.loadQuestions(this.groupe!.id);
         },
         error: (err) => {
           console.error('Erreur suppression question:', err);
-          this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('equipe.deleteError'), 'Fermer', { duration: 3000 });
         }
       });
     }
@@ -688,12 +689,12 @@ loadVillesEtStades(callback: () => void): void {
   duplicateQuestion(question: QuestionCandidature): void {
     this.questionService.duplicateQuestion(question.id).subscribe({
       next: () => {
-        this.snackBar.open('Question dupliquée !', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_question_dupliquee_f155'), 'Fermer', { duration: 3000 });
         this.loadQuestions(this.groupe!.id);
       },
       error: (err) => {
         console.error('Erreur duplication question:', err);
-        this.snackBar.open('Erreur lors de la duplication', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_la_duplication_15cf'), 'Fermer', { duration: 3000 });
       }
     });
   }
@@ -709,11 +710,11 @@ loadVillesEtStades(callback: () => void): void {
 
     this.questionService.updateOrdreQuestions(this.questions).subscribe({
       next: () => {
-        this.snackBar.open('Ordre mis à jour !', 'Fermer', { duration: 2000 });
+        this.snackBar.open(t('ui.ts_ordre_mis_a_jour_e1c2'), 'Fermer', { duration: 2000 });
       },
       error: (err) => {
         console.error('Erreur mise à jour ordre:', err);
-        this.snackBar.open('Erreur lors de la réorganisation', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_la_reorganisation_6138'), 'Fermer', { duration: 3000 });
         this.loadQuestions(this.groupe!.id); // Recharger en cas d'erreur
       }
     });

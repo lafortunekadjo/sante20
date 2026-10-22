@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, Output, EventEmitter,
   OnInit, OnDestroy, ElementRef,
@@ -11,7 +12,7 @@ import { PubliciteAffichage, PubliciteAffichageService } from '../../../core/ser
 @Component({
   selector: 'app-publicite-feed',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslateModule, CommonModule],
   templateUrl: './publicite-feed.component.html',
   styleUrls: ['./publicite-feed.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

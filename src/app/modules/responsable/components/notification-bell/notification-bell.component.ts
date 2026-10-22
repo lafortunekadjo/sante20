@@ -1,5 +1,7 @@
 // notification-bell.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { AuthService } from '../../../../core/services/auth.service';
+import { resolveNotificationUrl } from '../../../../core/utils/notification-route';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -75,6 +77,8 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   isLoading = false;
   bellState: 'idle' | 'shake' = 'idle';
 
+  private readonly authService = inject(AuthService);
+
   constructor(
     private notificationService: NotificationService,
     private router: Router
@@ -126,8 +130,9 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
     if (!notification.isRead) {
       this.markAsRead(notification);
     }
-    if (notification.actionUrl) {
-      this.router.navigateByUrl(notification.actionUrl);
+    const url = resolveNotificationUrl(notification.actionUrl, this.authService.isResponsable());
+    if (url) {
+      this.router.navigateByUrl(url);
     }
   }
 

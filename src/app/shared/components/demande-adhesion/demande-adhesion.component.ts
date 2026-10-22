@@ -1,3 +1,5 @@
+import { t } from '../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl, FormArray, AbstractControl, ValidatorFn } from '@angular/forms';
@@ -24,7 +26,7 @@ import { QuestionCandidatureService } from '../../../core/services/question-cand
 @Component({
   selector: 'app-demande-adhesion',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     ReactiveFormsModule,
     MatCardModule,
@@ -72,7 +74,7 @@ export class DemandeAdhesionComponent implements OnInit {
 
   ngOnInit(): void {
     if (!this.authService.isLoggedIn()) {
-      this.snackBar.open('Vous devez être connecté pour faire une demande', 'Fermer', {
+      this.snackBar.open(t('ui.ts_vous_devez_etre_connecte_pour_fa_640d'), 'Fermer', {
         duration: 3000
       });
       this.router.navigate(['/login']);
@@ -128,7 +130,7 @@ export class DemandeAdhesionComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur chargement groupe:', err);
-        this.snackBar.open('Groupe introuvable', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_groupe_introuvable_c843'), 'Fermer', { duration: 3000 });
         this.router.navigate(['/explorer2']);
       }
     });
@@ -143,7 +145,7 @@ export class DemandeAdhesionComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur chargement questions:', err);
-        this.snackBar.open('Erreur lors du chargement du formulaire', 'Fermer', {
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_du_for_1703'), 'Fermer', {
           duration: 3000
         });
         this.isLoading = false;
@@ -254,12 +256,12 @@ export class DemandeAdhesionComponent implements OnInit {
   onSubmit(): void {
     // FIX : garde-fou supplémentaire — ne jamais soumettre si déjà membre
     if (this.dejaMembre) {
-      this.snackBar.open('Vous êtes déjà membre de ce groupe', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_vous_etes_deja_membre_de_ce_grou_a25f'), 'Fermer', { duration: 3000 });
       return;
     }
 
     if (this.demandeForm.invalid) {
-      this.snackBar.open('Veuillez répondre à toutes les questions obligatoires', 'Fermer', {
+      this.snackBar.open(t('ui.ts_veuillez_repondre_a_toutes_les_q_94e0'), 'Fermer', {
         duration: 3000
       });
       this.markFormGroupTouched(this.demandeForm);
@@ -311,7 +313,7 @@ export class DemandeAdhesionComponent implements OnInit {
 
     this.questionnaireService.createDemandeAdhesion(this.groupeId, demande).subscribe({
       next: () => {
-        this.snackBar.open('Demande envoyée avec succès !', 'Fermer', {
+        this.snackBar.open(t('ui.ts_demande_envoyee_avec_succes_10ac'), 'Fermer', {
           duration: 4000
         });
         this.router.navigate(['/mes-demandes']);
@@ -374,7 +376,7 @@ export class DemandeAdhesionComponent implements OnInit {
   }
 
   cancel(): void {
-    if (confirm('Êtes-vous sûr de vouloir annuler ? Vos réponses seront perdues.')) {
+    if (confirm(t('ui.ts_etes_vous_sur_de_vouloir_annuler_f0af'))) {
       this.router.navigate(['/explorer2']);
     }
   }
@@ -386,7 +388,7 @@ export class DemandeAdhesionComponent implements OnInit {
   switchVersGroupe(): void {
     this.authService.switchGroupe(this.groupeId).subscribe({
       next: () => this.router.navigate(['/membre']),
-      error: () => this.snackBar.open('Erreur lors du changement de groupe', 'Fermer', { duration: 3000 })
+      error: () => this.snackBar.open(t('ui.ts_erreur_lors_du_changement_de_gro_d462'), 'Fermer', { duration: 3000 })
     });
   }
 

@@ -1,3 +1,6 @@
+import { environment } from '../../../../environment';
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -6,7 +9,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-affiche-generator',
    standalone:  true,
-    imports:     [CommonModule, FormsModule],
+    imports: [TranslateModule, CommonModule, FormsModule],
   templateUrl: './affiche-generator.component.html',
   styleUrls: ['./affiche-generator.component.scss']
 })
@@ -34,7 +37,7 @@ export class AfficheGeneratorComponent {
 
   generateAffiche() {
     if (!this.selectedFile) {
-      alert('Veuillez sélectionner une photo pour le match.');
+      alert(t('ui.ts_veuillez_selectionner_une_photo__2adf'));
       return;
     }
 
@@ -45,7 +48,7 @@ export class AfficheGeneratorComponent {
     formData.append('type', this.matchData.type);
     formData.append('playerImage', this.selectedFile);
 
-    this.http.post<any>('http://localhost:8000/api/v1/affiches/prepare', formData)
+    this.http.post<any>(`${environment.apiUrl}/affiches/prepare`, formData)
       .subscribe({
         next: (res) => {
           const themeToUse = this.selectedStyle === 'AUTO' ? res.styleTheme : this.selectedStyle;

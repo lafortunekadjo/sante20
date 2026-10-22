@@ -2,6 +2,7 @@
 // MY2-0 - LISTE DES ENTREPRISES PARTENAIRE
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -176,11 +177,11 @@ export class EntreprisesListComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.partenaireService.deleteEntreprise(entreprise.id).subscribe({
           next: () => {
-            this.snackBar.open('Entreprise supprimée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_entreprise_supprimee_4dfe'), 'OK', { duration: 3000 });
             this.loadData();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }

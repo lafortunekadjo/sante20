@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -27,7 +28,7 @@ export interface PlayersListDialogData {
 @Component({
   selector: 'app-players-list-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,

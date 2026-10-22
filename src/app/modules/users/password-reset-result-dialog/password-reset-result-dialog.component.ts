@@ -1,3 +1,5 @@
+import { t } from '../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -15,7 +17,7 @@ export interface PasswordResetDialogData {
 @Component({
   selector: 'app-password-reset-result-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,
@@ -39,7 +41,7 @@ export class PasswordResetResultDialogComponent {
   copyPassword(input: HTMLInputElement): void {
     input.select();
     navigator.clipboard.writeText(this.data.newPassword).then(() => {
-      this.snackBar.open('Mot de passe copié !', '✓', {
+      this.snackBar.open(t('ui.ts_mot_de_passe_copie_6b8a'), '✓', {
         duration: 2000,
         horizontalPosition: 'center',
         verticalPosition: 'top',

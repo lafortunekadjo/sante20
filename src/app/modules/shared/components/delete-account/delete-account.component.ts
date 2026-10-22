@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,7 @@ import { environment } from '../../../../environment';
 @Component({
   selector: 'app-delete-account',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, FormsModule,
     MatButtonModule, MatFormFieldModule, MatSelectModule,
     MatInputModule, MatIconModule, MatProgressSpinnerModule,

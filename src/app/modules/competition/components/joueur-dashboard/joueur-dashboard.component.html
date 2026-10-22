@@ -1,0 +1,167 @@
+<div class="jd-page">
+
+  <!-- ── Loading ───────────────────────────────────────────────────────── -->
+  <div class="jd-loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    <span>{{ 'ui.chargement_de_vos_statistiques_6bd4' | translate }}</span>
+  </div>
+
+  <!-- ── Erreur ─────────────────────────────────────────────────────────── -->
+  <div class="jd-error" *ngIf="erreur() && !loading()">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ 'ui.impossible_de_charger_vos_statisti_3f95' | translate }}</p>
+  </div>
+
+  <!-- ── Contenu principal ──────────────────────────────────────────────── -->
+  <ng-container *ngIf="stats() && !loading()">
+
+    <!-- En-tête -->
+    <div class="jd-header">
+      <div class="jd-header__title">
+        <mat-icon>sports_soccer</mat-icon>
+        <h1>Mon tableau de bord</h1>
+      </div>
+      <p class="jd-header__sub">{{ 'ui.vos_performances_sur_toutes_vos_co_06e0' | translate }}</p>
+    </div>
+
+    <!-- ── Navigation tabs ───────────────────────────────────────────────── -->
+    <div class="jd-tabs">
+      <button class="jd-tab-btn"
+              [class.active]="activeTab() === 'global'"
+              (click)="activeTab.set('global')">
+        <mat-icon>bar_chart</mat-icon>
+        <span>Vue globale</span>
+      </button>
+      <button class="jd-tab-btn"
+              [class.active]="activeTab() === 'competitions'"
+              (click)="activeTab.set('competitions')">
+        <mat-icon>emoji_events</mat-icon>
+        <span>{{ 'competition.nav.competitions' | translate }}</span>
+        <span class="jd-tab-badge">{{ stats()!.competitions.length }}</span>
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         TAB 1 — Vue globale
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="activeTab() === 'global'" class="jd-tab-content">
+
+      <p class="jd-section-label">{{ 'ui.toutes_competitions_confondues_36d7' | translate }}</p>
+
+      <!-- KPI grid -->
+      <div class="jd-kpi-grid">
+        <div class="jd-kpi-card jd-kpi-card--{{ card.color }}"
+             *ngFor="let card of kpiCards(stats()!.global)">
+          <div class="jd-kpi-card__icon">
+            <mat-icon>{{ card.icon }}</mat-icon>
+          </div>
+          <div class="jd-kpi-card__body">
+            <div class="jd-kpi-card__value">{{ card.value }}</div>
+            <div class="jd-kpi-card__label">{{ card.label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raccourci vers onglet compétitions -->
+      <button class="jd-goto-btn" (click)="activeTab.set('competitions')">
+        <mat-icon>emoji_events</mat-icon>
+        {{ 'ui.voir_mes_competitions_442b' | translate }}
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         TAB 2 — Compétitions
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="activeTab() === 'competitions'" class="jd-tab-content">
+
+      <!-- Filtres -->
+      <div class="jd-filters">
+        <button class="jd-filter-btn"
+                [class.active]="filtreStatut() === 'toutes'"
+                (click)="filtreStatut.set('toutes')">
+          {{ 'ui.m_toutes_3d3c' | translate:{p0: (stats()!.competitions.length)} }}
+        </button>
+        <button class="jd-filter-btn"
+                [class.active]="filtreStatut() === 'actives'"
+                (click)="filtreStatut.set('actives')">
+          <span class="dot dot--active"></span> En cours
+        </button>
+        <button class="jd-filter-btn"
+                [class.active]="filtreStatut() === 'terminees'"
+                (click)="filtreStatut.set('terminees')">
+          {{ 'partenaire.publicites.filters.ended' | translate }}
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div class="jd-empty" *ngIf="!competitionsFiltrees().length">
+        <mat-icon>sports_soccer</mat-icon>
+        <p>{{ 'ui.aucune_competition_pour_ce_filtre_9862' | translate }}</p>
+      </div>
+
+      <!-- Cards compétitions -->
+      <div class="jd-comp-grid">
+        <div class="jd-comp-card"
+             *ngFor="let c of competitionsFiltrees()"
+             [class.jd-comp-card--active]="c.statut === 'EN_COURS'">
+
+          <!-- En-tête card -->
+          <div class="jd-comp-card__head">
+            <div class="jd-comp-card__meta">
+              <span [class]="statutClass(c.statut)">{{ statutLabel(c.statut) }}</span>
+              <span class="jd-comp-card__equipe">
+                <mat-icon>groups</mat-icon>{{ c.equipeNom }}
+              </span>
+            </div>
+            <h3 class="jd-comp-card__nom">{{ c.competitionNom }}</h3>
+          </div>
+
+          <!-- Stats — grille 4 col sur mobile -->
+          <div class="jd-comp-card__stats">
+            <div class="jd-stat">
+              <span class="jd-stat__val">{{ c.matchsJoues }}</span>
+              <span class="jd-stat__lbl">{{ 'menu.items.MATCHS' | translate }}</span>
+            </div>
+            <div class="jd-stat jd-stat--goal">
+              <span class="jd-stat__val">{{ c.buts }}</span>
+              <span class="jd-stat__lbl">{{ 'dashboard.goals' | translate }}</span>
+            </div>
+            <div class="jd-stat jd-stat--assist">
+              <span class="jd-stat__val">{{ c.passesDecisives }}</span>
+              <span class="jd-stat__lbl">{{ 'membres.assists' | translate }}</span>
+            </div>
+            <div class="jd-stat">
+              <span class="jd-stat__val"
+                    [style.color]="c.cartonsRouges > 0 ? '#dc2626' : (c.cartonsJaunes > 0 ? '#ca8a04' : '#9ca3af')">
+                {{ c.cartonsJaunes }}/{{ c.cartonsRouges }}
+              </span>
+              <span class="jd-stat__lbl">🟨/🟥</span>
+            </div>
+          </div>
+
+          <!-- Awards -->
+          <div class="jd-comp-card__awards" *ngIf="c.awards.length">
+            <span class="jd-award-chip" *ngFor="let a of c.awards">
+              <mat-icon>military_tech</mat-icon>{{ a }}
+            </span>
+          </div>
+
+          <!-- Sanction -->
+          <div class="jd-comp-card__sanction" *ngIf="c.sanctionsSolde > 0">
+            <mat-icon>warning</mat-icon>
+            Sanction : {{ c.sanctionsSolde | number:'1.0-0' }} FCFA
+          </div>
+
+          <!-- Lien -->
+          <a class="jd-comp-card__link" [routerLink]="['/competitions', c.competitionId,'public'] ">
+            {{ 'ui.voir_la_competition_a926' | translate }} <mat-icon>arrow_forward</mat-icon>
+          </a>
+
+        </div>
+      </div>
+
+    </div><!-- /tab competitions -->
+
+  </ng-container>
+</div>

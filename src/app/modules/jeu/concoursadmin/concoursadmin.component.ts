@@ -1,3 +1,5 @@
+import { t } from '../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -42,7 +44,7 @@ interface ConcoursForm {
 @Component({
   selector: 'app-concours-admin',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, FormsModule, RouterModule,
     MatButtonModule, MatIconModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatProgressSpinnerModule,
@@ -76,7 +78,7 @@ export class ConcoursAdminComponent implements OnInit {
     this.isLoading = true;
     this.http.get<ConcoursDTO[]>(`${this.api}/admin`).subscribe({
       next: (data) => { this.concours = data; this.isLoading = false; },
-      error: () => { this.snackBar.open('Erreur chargement', '✕', { duration: 3000 }); this.isLoading = false; }
+      error: () => { this.snackBar.open(t('ui.ts_erreur_chargement_6bf1'), '✕', { duration: 3000 }); this.isLoading = false; }
     });
   }
 
@@ -93,9 +95,9 @@ export class ConcoursAdminComponent implements OnInit {
         this.concours.unshift(c);
         this.isSaving = false;
         this.closeCreatePanel();
-        this.snackBar.open('Concours créé en brouillon ✓', '✕', { duration: 3000, panelClass: ['snackbar-success'] });
+        this.snackBar.open(t('ui.ts_concours_cree_en_brouillon_d6b8'), '✕', { duration: 3000, panelClass: ['snackbar-success'] });
       },
-      error: () => { this.snackBar.open('Erreur création', '✕', { duration: 3000 }); this.isSaving = false; }
+      error: () => { this.snackBar.open(t('ui.ts_erreur_creation_4eab'), '✕', { duration: 3000 }); this.isSaving = false; }
     });
   }
 
@@ -128,16 +130,16 @@ export class ConcoursAdminComponent implements OnInit {
     this.http.patch<ConcoursDTO>(`${this.api}/admin/${id}/publier`, {}).subscribe({
       next: (updated) => {
         this.updateLocal(updated);
-        this.snackBar.open('Concours publié ✓', '✕', { duration: 3000, panelClass: ['snackbar-success'] });
+        this.snackBar.open(t('ui.ts_concours_publie_8137'), '✕', { duration: 3000, panelClass: ['snackbar-success'] });
       },
-      error: () => this.snackBar.open('Erreur publication', '✕', { duration: 3000 })
+      error: () => this.snackBar.open(t('ui.ts_erreur_publication_8439'), '✕', { duration: 3000 })
     });
   }
 
   archiver(id: number): void {
     this.http.patch<ConcoursDTO>(`${this.api}/admin/${id}/archiver`, {}).subscribe({
-      next: (updated) => { this.updateLocal(updated); this.snackBar.open('Archivé', '✕', { duration: 2000 }); },
-      error: () => this.snackBar.open('Erreur archivage', '✕', { duration: 3000 })
+      next: (updated) => { this.updateLocal(updated); this.snackBar.open(t('ui.ts_archive_9fd0'), '✕', { duration: 2000 }); },
+      error: () => this.snackBar.open(t('ui.ts_erreur_archivage_5b94'), '✕', { duration: 3000 })
     });
   }
 
@@ -152,7 +154,7 @@ export class ConcoursAdminComponent implements OnInit {
         this.concoursATraiter = null;
         this.tirageResultat = res;
         this.charger();
-        this.snackBar.open('Tirage effectué ! 🎉', '✕', { duration: 4000, panelClass: ['snackbar-success'] });
+        this.snackBar.open(t('ui.ts_tirage_effectue_c9f3'), '✕', { duration: 4000, panelClass: ['snackbar-success'] });
       },
       error: (err) => {
         this.isTirage = false;
@@ -164,7 +166,7 @@ export class ConcoursAdminComponent implements OnInit {
   voirResultats(id: number): void {
     this.http.get<TirageResultatDTO>(`${this.api}/admin/${id}/stats`).subscribe({
       next: (res) => this.tirageResultat = res,
-      error: () => this.snackBar.open('Erreur chargement résultats', '✕', { duration: 3000 })
+      error: () => this.snackBar.open(t('ui.ts_erreur_chargement_resultats_f859'), '✕', { duration: 3000 })
     });
   }
 
@@ -175,7 +177,7 @@ export class ConcoursAdminComponent implements OnInit {
   copyLink(slug: string): void {
     const url = `${window.location.origin}/concours/${slug}`;
     navigator.clipboard.writeText(url).then(() =>
-      this.snackBar.open('Lien copié !', '✓', { duration: 2000 }));
+      this.snackBar.open(t('ui.ts_lien_copie_2f42'), '✓', { duration: 2000 }));
   }
 
   shareLink(c: ConcoursDTO): void {
@@ -192,7 +194,7 @@ export class ConcoursAdminComponent implements OnInit {
   getTotalParticipants(): number { return this.concours.reduce((s, c) => s + c.nombreParticipants, 0); }
 
   getStatutLabel(s: string): string {
-    return { BROUILLON: 'Brouillon', ACTIF: 'En cours', TERMINE: 'Terminé', ANNULE: 'Annulé' }[s] ?? s;
+    return { BROUILLON: 'Brouillon', ACTIF: 'En cours', TERMINE: t('calendar.status.completed'), ANNULE: t('finances.statut.annule') }[s] ?? s;
   }
   getStatutIcon(s: string): string {
     return { BROUILLON: 'edit_note', ACTIF: 'play_circle', TERMINE: 'check_circle', ANNULE: 'cancel' }[s] ?? 'help';
@@ -209,7 +211,7 @@ export class ConcoursAdminComponent implements OnInit {
       titre: '', description: '', imageUrl: '',
       partenaireNom: '', partenaireLogoUrl: '', partenaireLien: '',
       dateFin: '', dateTirage: '',
-      lots: [{ description: 'Crédit téléphonique', valeur: 5000 }],
+      lots: [{ description: t('ui.ts_credit_telephonique_1339'), valeur: 5000 }],
       questions: [{ texte: '', type: 'QCM', options: ['', ''], bonneReponseIndex: undefined }]
     };
   }

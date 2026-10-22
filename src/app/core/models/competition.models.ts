@@ -121,29 +121,72 @@ export enum Cote {
 // ── Config
 export interface CompetitionConfigDTO {
   format: FormatCompetition;
+
+  // Points
   pointsVictoire: number;
   pointsNul: number;
   pointsDefaite: number;
+
+  // Forfait
   scoreForfaitVainqueur: number;
   scoreForfaitPerdant: number;
+
+  // Classement
   criteresClassement: CritereClassement[];
+
+  // Suspensions
   seuilCartonsJaunesSuspension: number;
   matchsSuspensionCartonRouge: number;
   cumulCartonsEntrePhases: boolean;
+
+  // Prolongations
   prolongationsActives: boolean;
   dureeProlong1: number;
   dureeProlong2: number;
   tabActif: boolean;
+  avecMatch3ePlace: boolean;        // ← manquant
+
+  // Équipes
   nombreEquipesMin: number;
   nombreEquipesMax: number;
+
+  // Championnat
   allerRetour: boolean;
+
+  // Mixte : les poules se jouent-elles en aller-retour ?
+  allerRetourGroupes?: boolean;
+
+  // Coupe / phase finale : tours avant la finale en aller-retour (finale et 3e place : match sec)
+  coupeAllerRetour?: boolean;
+
+  // Mixte / groupes
   nombreGroupes: number;
   equipesParGroupe: number;
   qualifiesParGroupe: number;
   meilleursTimesActif: boolean;
   nombreMeilleursTimesQualifies: number;
+
+  // Droits d'engagement
   droitsEngagementActifs: boolean;
   montantEngagement?: number;
+
+  // Planning                        ← section manquante
+  heureDefautMatch: string;         // "HH:mm"
+  intervalleJournees: number;
+  delaiMinEntreMatchs: number;
+  matchsParJournee?: number;        // null = pas de limite
+
+  // Effectif : repères non bloquants (amateur)
+  effectifMin?: number | null;
+  dateLimiteEffectif?: string | null; // "YYYY-MM-DD"
+
+  // Licences                        ← section manquante
+  licencesActivees: boolean;
+  licencesGratuites: number;
+  montantLicenceSup?: number;
+  blocageFeuilleSansLicence: boolean;
+  photoNumerique: boolean;
+  dateFinValiditeLicences?: string; // "YYYY-MM-DD"
 }
 
 // ── Participant
@@ -157,6 +200,8 @@ export interface CompetitionParticipantDTO {
   statutInscription: StatutInscription;
   dateInscription: string;
   seed?: number;
+  /** Motif donné par l'organisateur quand l'inscription est refusée. */
+  motifRefus?: string | null;
 }
 
 // ── Competition
@@ -173,6 +218,12 @@ export interface CompetitionDTO {
   organisateurNom?: string;
   nombreParticipants: number;
   format: FormatCompetition;
+  publique: boolean;
+
+  // Palmarès (compétition terminée)
+  championNom?: string;
+  finalisteNom?: string;
+  troisiemeNom?: string;
 }
 
 export interface CompetitionDetailDTO extends CompetitionDTO {
@@ -243,6 +294,8 @@ export interface ClassementDTO {
   goalAverage: number;
   points: number;
   penalitePoints: number;
+  butsExterieur?: number;
+  pointsFairPlay?: number;
   statutSpecial?: StatutClassement;
 }
 
@@ -265,6 +318,8 @@ export interface JourneeDetailDTO extends JourneeDTO {
 // ── Match
 export interface MatchDTO {
   id: number;
+  bracketNoeudId?: number;
+  manche?: "ALLER" | "RETOUR" | null;
   domicile: CompetitionParticipantDTO;
   exterieur: CompetitionParticipantDTO;
   butsDomicile?: number;
@@ -657,4 +712,48 @@ export interface TempsMatchDTO {
   tempsAdditionnelP1?: number;
   tempsAdditionnelP2?: number;
   conditions?: string;
+}
+
+
+export interface LicenceDTO {
+  id:             number;
+  nom:            string;
+  prenom:         string;
+  photoUrl?:      string;
+  numeroLicence?: string;
+  poste?:         string;
+  numeroDos?:     number;
+  dateNaissance?: string;
+  dateExpiration?: string;
+  statut:         'VALIDE' | 'EN_ATTENTE' | 'REFUSE' | 'EXPIRE' | 'SUSPENDU';
+  motifRefus?:    string;
+  capitaine?:     boolean;
+  nomEquipe:      string;
+  equipeId:       number;
+}
+
+export interface LicenceConfigDTO {
+  activee:              boolean;
+  validationObligatoire: boolean;
+  validationAuto:       boolean;
+  maxJoueursParEquipe?: number;
+  minTitulaires?:       number;
+  ageMin?:              number;
+  ageMax?:              number;
+  photoObligatoire:     boolean;
+  certificatMedical:    boolean;
+  pieceIdentite:        boolean;
+}
+
+
+
+// ── Suspension manuelle (décision disciplinaire)
+export interface SuspensionManuelleDTO {
+  /** Identifiant du joueur dans l'effectif de la compétition (MembreEquipeCompetition.id) */
+  joueurId?: number;
+  joueurNom: string;
+  joueurPrenom?: string;
+  participantId: number;
+  nbMatchs: number;
+  motif: string;
 }

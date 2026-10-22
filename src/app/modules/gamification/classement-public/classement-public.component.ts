@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -12,7 +13,7 @@ import { CampagneService, ClassementPublicDTO } from '../../../core/services/gam
 @Component({
   selector: 'app-classement-public',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, RouterModule, MatTabsModule, MatIconModule,
     MatButtonModule, MatProgressSpinnerModule
   ],

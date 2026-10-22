@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -75,7 +76,7 @@ onFileSelected(event: Event): void {
 
       // Validation de la taille du fichier au Frontend
       if (file.size > this.MAX_FILE_SIZE_BYTES) {
-        this.errorMessage = 'Le fichier est trop volumineux. La taille maximale autorisée est de 50 Mo.';
+        this.errorMessage = t('ui.ts_le_fichier_est_trop_volumineux_l_e5cb');
         this.selectedFile = null;
         this.videoPreviewUrl = null;
         input.value = ''; // Réinitialise l'input HTML
@@ -149,7 +150,7 @@ onFileSelected(event: Event): void {
   deleteVideo(videoId: number, event: Event): void {
     event.stopPropagation(); // Évite d'ouvrir la vidéo en cliquant sur supprimer
     
-    if (confirm('Voulez-vous vraiment supprimer cette vidéo de vos moments forts ?')) {
+    if (confirm(t('ui.ts_voulez_vous_vraiment_supprimer_c_7a0f'))) {
       this.profileService.deleteVideo(videoId, this.authservice.getUsername()!).subscribe({
         next: () => {
           this.videos = this.videos.filter(v => v.id !== videoId);

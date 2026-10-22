@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -308,7 +309,7 @@ export class TypeDepenseComponent implements OnInit {
         title: `${newStatus ? 'Activer' : 'Désactiver'} le type de dépense`,
         message: `Voulez-vous ${action} "${type.nom}" ?`,
         confirmText: newStatus ? 'Activer' : 'Désactiver',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         color: newStatus ? 'primary' : 'warn'
       }
     });
@@ -331,10 +332,10 @@ export class TypeDepenseComponent implements OnInit {
   deleteType(type: TypeDepense): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Supprimer le type de dépense',
+        title: t('ui.ts_supprimer_le_type_de_depense_32b8'),
         message: `Êtes-vous sûr de vouloir supprimer "${type.nom}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         color: 'warn'
       }
     });

@@ -1,4 +1,5 @@
 // pages/competition-create/competition-create.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, OnInit, inject, signal
 } from '@angular/core';
@@ -209,11 +210,40 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
                 </div>
               </div>
 
+              <div class="form-field form-field--full">
+                <div class="toggle-field">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Poules en aller-retour</span>
+                    <small>Chaque équipe affronte deux fois les autres de son groupe (aller simple par défaut)</small>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" formControlName="allerRetourGroupes"/>
+                    <span class="toggle__slider"></span>
+                  </label>
+                </div>
+              </div>
+
               <div class="form-field"
                    *ngIf="configForm.get('meilleursTimesActif')?.value">
                 <label class="form-label">Nombre de meilleurs N-èmes qualifiés</label>
                 <input formControlName="nombreMeilleursTimesQualifies"
                        type="number" min="1" class="form-input"/>
+              </div>
+            </ng-container>
+
+            <!-- Coupe / phase finale : aller-retour -->
+            <ng-container *ngIf="!isChampionnat()">
+              <div class="form-field form-field--full">
+                <div class="toggle-field">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Tours en aller-retour</span>
+                    <small>Deux matchs par confrontation, sauf la finale et la 3e place</small>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" formControlName="coupeAllerRetour"/>
+                    <span class="toggle__slider"></span>
+                  </label>
+                </div>
               </div>
             </ng-container>
 
@@ -607,6 +637,8 @@ export class CompetitionCreateComponent implements OnInit {
         nombreEquipesMin:               [4],
         nombreEquipesMax:               [16],
         allerRetour:                    [true],
+        allerRetourGroupes:             [false],
+        coupeAllerRetour:               [false],
         nombreGroupes:                  [4],
         equipesParGroupe:               [4],
         qualifiesParGroupe:             [2],
@@ -628,17 +660,17 @@ export class CompetitionCreateComponent implements OnInit {
   formatOptions() {
     const type = this.form.get('type')?.value;
     if (type === TypeCompetition.CHAMPIONNAT) return [
-      { value: FormatCompetition.ALLER_RETOUR, label: 'Aller-retour',
+      { value: FormatCompetition.ALLER_RETOUR, label: t('competition.formats.allerRetour'),
         desc: '2x(N-1) journées' },
-      { value: FormatCompetition.ALLER_SIMPLE, label: 'Aller simple',
+      { value: FormatCompetition.ALLER_SIMPLE, label: t('competition.formats.allerSimple'),
         desc: 'N-1 journées' },
     ];
     if (type === TypeCompetition.COUPE) return [
-      { value: FormatCompetition.ELIMINATION_SIMPLE, label: 'Élimination simple',
+      { value: FormatCompetition.ELIMINATION_SIMPLE, label: t('ui.ts_elimination_simple_5cc0'),
         desc: 'Perdant éliminé' },
     ];
     return [
-      { value: FormatCompetition.MIXTE, label: 'Poules + Knockout',
+      { value: FormatCompetition.MIXTE, label: t('competition.formats.mixte'),
         desc: 'Groupes puis bracket' },
     ];
   }
@@ -708,7 +740,7 @@ export class CompetitionCreateComponent implements OnInit {
     const m: Record<string, string> = {
       ALLER_SIMPLE:       'Aller simple',
       ALLER_RETOUR:       'Aller-retour',
-      ELIMINATION_SIMPLE: 'Élimination directe',
+      ELIMINATION_SIMPLE: t('ui.ts_elimination_directe_2ab4'),
       MIXTE:              'Poules + Knockout',
     };
     return m[f] ?? f;

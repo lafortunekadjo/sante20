@@ -1,6 +1,11 @@
 // src/app/modules/chat/components/message-item/message-item.component.ts
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, Input } from '@angular/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { ModerationService } from '../../../core/services/moderation.service';
+import { SignalementDialogComponent } from '../../../shared/components/signalement-dialog/signalement-dialog.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Message, MessageType } from '../../../core/models/message.model';
 import { ChatService } from '../../../core/services/chat.service';
@@ -27,6 +32,7 @@ import { MatBadgeModule } from '@angular/material/badge';
     ReactiveFormsModule,
     RouterModule,
     
+    TranslateModule,
     // Material
     MatDialogModule,
     MatButtonModule,
@@ -52,11 +58,34 @@ export class MessageItemComponent {
 
   constructor(
     private chatService: ChatService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private translate: TranslateService,
+    private moderation: ModerationService,
+    private snack: MatSnackBar
   ) {}
 
+  /** « Signaler » ce message (et, au choix, bloquer son auteur). */
+  signaler(): void {
+    this.dialog.open(SignalementDialogComponent, {
+      width: '480px', maxWidth: '96vw', autoFocus: false,
+      data: {
+        cible: 'MESSAGE', cibleId: this.message.id, utilisateurId: this.message.sender?.id,
+        utilisateurNom: this.message.sender ? this.getSenderName() : undefined
+      }
+    });
+  }
+
+  /** Ne plus voir les messages de cette personne. */
+  bloquer(): void {
+    const id = this.message.sender?.id;
+    if (!id) return;
+    this.moderation.bloquer(id).subscribe({
+      next: () => this.snack.open(this.translate.instant('moderation.bloque_ok'), 'OK', { duration: 4000 })
+    });
+  }
+
   formatTime(date: Date): string {
-    return new Date(date).toLocaleTimeString('fr-FR', {
+    return new Date(date).toLocaleTimeString(this.translate.currentLang === 'en' ? 'en-GB' : 'fr-FR', {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -64,7 +93,7 @@ export class MessageItemComponent {
 
   getSenderName(): string {
     if (!this.message.sender) {
-      return 'Système';
+      return this.translate.instant('chat.message.system');
     }
     return `${this.message.sender.nom} ${this.message.sender.prenom}`;
   }
@@ -82,7 +111,7 @@ export class MessageItemComponent {
   }
 
   onDeleteMessage(): void {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+    if (confirm(t('chat.deleteConfirm'))) {
       this.chatService.deleteMessage(this.message.conversationId, this.message.id)
         .subscribe({
           next: () => {

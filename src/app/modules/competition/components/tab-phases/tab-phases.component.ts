@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, Input, OnInit, inject, signal
 } from '@angular/core';
@@ -59,6 +60,7 @@ export class TabPhasesComponent implements OnInit {
   planifMasseOpen = signal(false);
   tirageFinaleOpen = signal(false);
   savingPlanif    = signal(false);
+  planifError     = signal<string | null>(null);
   tousStades      = signal<StadeDTO[]>([]);
 
   private classementMap = new Map<number, any[]>();
@@ -218,6 +220,7 @@ export class TabPhasesComponent implements OnInit {
 
   sauvegarderPlanifMasse(): void {
     this.savingPlanif.set(true);
+    this.planifError.set(null);
     const matchs = this.journeeDetail()?.matchs ?? [];
 
     const calls = matchs
@@ -252,7 +255,10 @@ export class TabPhasesComponent implements OnInit {
         this.savingPlanif.set(false);
         this.planifMasseOpen.set(false);
       },
-      error: () => this.savingPlanif.set(false)
+      error: err => {
+        this.planifError.set(err?.error?.message ?? "Planification impossible");
+        this.savingPlanif.set(false);
+      }
     });
   }
 
@@ -299,8 +305,8 @@ export class TabPhasesComponent implements OnInit {
     const m: Record<string, string> = {
       EN_ATTENTE: 'À venir',
       EN_COURS:   'En cours',
-      TERMINEE:   'Terminée',
-      TERMINE:    'Terminée',
+      TERMINEE:   t('partenaire.publicites.status.TERMINEE'),
+      TERMINE:    t('partenaire.publicites.status.TERMINEE'),
     };
     return m[statut] ?? statut;
   }

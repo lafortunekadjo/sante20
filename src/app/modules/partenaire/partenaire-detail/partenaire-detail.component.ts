@@ -3,6 +3,7 @@
 // Vue détaillée et gestion d'un partenaire
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -117,7 +118,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement partenaire:', err);
-        this.snackBar.open('Partenaire non trouvé', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_non_trouve_cc86'), 'OK', { duration: 3000 });
         this.router.navigate(['/admin/partenaires']);
       }
     });
@@ -164,10 +165,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     this.adminService.activerPartenaire(this.partenaireId).subscribe({
       next: (updated) => {
         this.partenaire = updated;
-        this.snackBar.open('Partenaire activé', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_active_1ed2'), 'OK', { duration: 3000 });
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'activation', 'OK', { duration: 3000 });
+        this.snackBar.open(t('membres.activateError'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -176,10 +177,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Suspendre le partenaire',
+        title: t('ui.ts_suspendre_le_partenaire_c909'),
         message: `Voulez-vous suspendre "${this.partenaire?.nom}" ? Toutes ses publicités seront désactivées.`,
         confirmText: 'Suspendre',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'pause_circle'
       }
@@ -193,7 +194,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
             this.snackBar.open('Partenaire suspendu', 'OK', { duration: 3000 });
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suspension', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_la_suspension_e6b9'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -204,10 +205,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '450px',
       data: {
-        title: 'Résilier le contrat',
+        title: t('ui.resilier_le_contrat_bc28'),
         message: `Attention ! La résiliation du contrat de "${this.partenaire?.nom}" est définitive. Le partenaire ne pourra plus accéder à son espace.`,
-        confirmText: 'Résilier le contrat',
-        cancelText: 'Annuler',
+        confirmText: t('ui.resilier_le_contrat_bc28'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'gavel'
       }
@@ -218,10 +219,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
         this.adminService.resilierPartenaire(this.partenaireId).subscribe({
           next: (updated) => {
             this.partenaire = updated;
-            this.snackBar.open('Contrat résilié', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_contrat_resilie_2713'), 'OK', { duration: 3000 });
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la résiliation', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_la_resiliation_c0f7'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -232,10 +233,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '450px',
       data: {
-        title: 'Supprimer définitivement',
+        title: t('ui.supprimer_definitivement_022b'),
         message: `ATTENTION ! Cette action est IRRÉVERSIBLE. Toutes les données de "${this.partenaire?.nom}" seront supprimées : entreprises, publicités, statistiques, utilisateurs.`,
-        confirmText: 'Supprimer définitivement',
-        cancelText: 'Annuler',
+        confirmText: t('ui.supprimer_definitivement_022b'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'delete_forever'
       }
@@ -245,11 +246,11 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.adminService.deletePartenaire(this.partenaireId).subscribe({
           next: () => {
-            this.snackBar.open('Partenaire supprimé', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_partenaire_supprime_dcf7'), 'OK', { duration: 3000 });
             this.router.navigate(['/admin/partenaires']);
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -277,10 +278,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
         ).subscribe({
           next: (updated) => {
             this.partenaire = updated;
-            this.snackBar.open('Contrat renouvelé', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_contrat_renouvele_df14'), 'OK', { duration: 3000 });
           },
           error: () => {
-            this.snackBar.open('Erreur lors du renouvellement', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_du_renouvellement_019a'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -304,10 +305,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
         ).subscribe({
           next: (updated) => {
             this.partenaire = updated;
-            this.snackBar.open('Limites modifiées', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_limites_modifiees_1db0'), 'OK', { duration: 3000 });
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la modification', 'OK', { duration: 3000 });
+            this.snackBar.open(t('membres.updateError'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -330,7 +331,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       if (result) {
         this.adminService.addUtilisateur(this.partenaireId, result).subscribe({
           next: () => {
-            this.snackBar.open('Utilisateur ajouté', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_utilisateur_ajoute_cea4'), 'OK', { duration: 3000 });
             this.loadUtilisateurs();
           },
           error: (err) => {
@@ -346,10 +347,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Supprimer l\'utilisateur',
+        title: t('partenaire.users.confirmDelete.title'),
         message: `Voulez-vous supprimer l'accès de ${user.prenom} ${user.nom} ?`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn'
       }
     });
@@ -358,11 +359,11 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.adminService.removeUtilisateur(this.partenaireId, user.id).subscribe({
           next: () => {
-            this.snackBar.open('Utilisateur supprimé', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_utilisateur_supprime_9602'), 'OK', { duration: 3000 });
             this.loadUtilisateurs();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -373,10 +374,10 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Réinitialiser le mot de passe',
+        title: t('utilisateurs.actions.reinit_mdp'),
         message: `Un nouveau mot de passe temporaire sera généré pour ${user.prenom} ${user.nom}.`,
-        confirmText: 'Réinitialiser',
-        cancelText: 'Annuler',
+        confirmText: t('dashboard.filters.reset'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'primary',
         icon: 'lock_reset'
       }
@@ -390,7 +391,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
             this.dialog.open(ConfirmationDialogComponent, {
               width: '400px',
               data: {
-                title: 'Mot de passe réinitialisé',
+                title: t('ui.mot_de_passe_reinitialise_f469'),
                 message: `Nouveau mot de passe temporaire :\n\n${result.temporaryPassword}\n\nCommuniquez-le à l'utilisateur.`,
                 confirmText: 'Compris',
                 icon: 'check_circle'
@@ -398,7 +399,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
             });
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la réinitialisation', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_la_reinitialisati_6086'), 'OK', { duration: 3000 });
           }
         });
       }

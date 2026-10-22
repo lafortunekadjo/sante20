@@ -1,0 +1,146 @@
+<div class="rapports-container">
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'rapports.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'rapports.subtitle' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container"><mat-spinner diameter="50"></mat-spinner></div>
+
+  <div *ngIf="!loading()" class="content">
+
+    <!-- ── 1. Type de rapport ── -->
+    <section class="bloc card">
+      <h2 class="bloc__titre"><span class="num">1</span>{{ 'rapports.typeLabel' | translate }}</h2>
+      <div class="types">
+        <label class="type" *ngFor="let t of types" [class.actif]="type === t.code">
+          <input type="radio" name="type" [(ngModel)]="type" [value]="t.code"/>
+          <mat-icon>{{ t.icone }}</mat-icon>
+          <strong>{{ 'rapports.types.' + t.code + '.label' | translate }}</strong>
+          <small>{{ 'rapports.types.' + t.code + '.help' | translate }}</small>
+        </label>
+      </div>
+    </section>
+
+    <!-- ── 2. Période ── -->
+    <section class="bloc card">
+      <h2 class="bloc__titre"><span class="num">2</span>{{ 'rapports.periodLabel' | translate }}</h2>
+
+      <div class="segment" role="tablist">
+        <button type="button" [class.actif]="mode === 'EXERCICE'" (click)="mode = 'EXERCICE'" [disabled]="!exercices().length">
+          {{ 'rapports.modeExercise' | translate }}
+        </button>
+        <button type="button" [class.actif]="mode === 'PERIODE'" (click)="mode = 'PERIODE'">
+          {{ 'rapports.modeCustom' | translate }}
+        </button>
+      </div>
+
+      <ng-container *ngIf="mode === 'EXERCICE'">
+        <label class="champ">
+          <span>{{ 'rapports.exercise' | translate }}</span>
+          <select [(ngModel)]="exerciceId" name="exercice">
+            <option *ngFor="let e of exercices()" [ngValue]="e.id">
+              {{ e.libelle }} — {{ (e.cloture ? 'rapports.closed' : 'rapports.ongoing') | translate }}
+            </option>
+          </select>
+        </label>
+        <p class="astuce" *ngIf="exerciceChoisi() as e" [class.astuce--provisoire]="!e.cloture">
+          <mat-icon>{{ e.cloture ? 'verified' : 'hourglass_top' }}</mat-icon>
+          {{ (e.cloture ? 'rapports.hintClosed' : 'rapports.hintOngoing') | translate }}
+        </p>
+      </ng-container>
+
+      <ng-container *ngIf="mode === 'PERIODE'">
+        <div class="dates">
+          <label class="champ"><span>{{ 'rapports.from' | translate }}</span><input type="date" [(ngModel)]="debut" name="debut" [max]="fin || null"/></label>
+          <label class="champ"><span>{{ 'rapports.to' | translate }}</span><input type="date" [(ngModel)]="fin" name="fin" [min]="debut || null"/></label>
+        </div>
+        <div class="raccourcis">
+          <button type="button" class="chip" (click)="raccourci('mois')">{{ 'rapports.quick.month' | translate }}</button>
+          <button type="button" class="chip" (click)="raccourci('moisPrecedent')">{{ 'rapports.quick.lastMonth' | translate }}</button>
+          <button type="button" class="chip" (click)="raccourci('trimestre')">{{ 'rapports.quick.quarter' | translate }}</button>
+          <button type="button" class="chip" (click)="raccourci('douzeMois')">{{ 'rapports.quick.twelve' | translate }}</button>
+        </div>
+        <p class="astuce"><mat-icon>info</mat-icon>{{ 'rapports.hintCustom' | translate }}</p>
+        <p class="erreur" *ngIf="debut && fin && debut > fin">{{ 'rapports.periodInvalid' | translate }}</p>
+      </ng-container>
+    </section>
+
+    <!-- ── 3. Options ── -->
+    <section class="bloc card">
+      <h2 class="bloc__titre"><span class="num">3</span>{{ 'rapports.optionsLabel' | translate }}</h2>
+
+      <div class="champ">
+        <span>{{ 'rapports.languageLabel' | translate }}</span>
+        <div class="segment segment--petit">
+          <button type="button" [class.actif]="langue === 'fr'" (click)="langue = 'fr'">{{ 'ui.francais_e054' | translate }}</button>
+          <button type="button" [class.actif]="langue === 'en'" (click)="langue = 'en'">English</button>
+        </div>
+      </div>
+
+      <label class="case" *ngIf="avecCompetitions">
+        <input type="checkbox" [(ngModel)]="inclureCompetitions" name="competitions"/>
+        <span>
+          <strong>{{ 'rapports.includeCompetitions' | translate }}</strong>
+          <small>{{ 'rapports.includeCompetitionsHelp' | translate }}</small>
+        </span>
+      </label>
+    </section>
+
+    <div class="generer">
+      <button class="btn-primary generer__btn" (click)="generer()" [disabled]="!periodeValide || generating()">
+        <mat-icon>{{ generating() ? 'hourglass_empty' : 'picture_as_pdf' }}</mat-icon>
+        {{ (generating() ? 'rapports.generating' : 'rapports.generate') | translate }}
+      </button>
+    </div>
+
+    <!-- ── Archive ── -->
+    <section class="archive">
+      <h2 class="archive__titre">{{ 'rapports.archiveTitle' | translate }}
+        <span class="badge" *ngIf="archive().length">{{ archive().length }}</span>
+      </h2>
+      <p class="vide" *ngIf="!archive().length">{{ 'rapports.empty' | translate }}</p>
+
+      <article class="rapport card" *ngFor="let r of archive()">
+        <div class="rapport__icone" [ngClass]="'rapport__icone--' + r.type"><mat-icon>{{ icone(r.type) }}</mat-icon></div>
+        <div class="rapport__corps">
+          <strong class="rapport__titre">{{ 'rapports.types.' + r.type + '.label' | translate }}</strong>
+          <span class="rapport__periode">{{ r.dateDebut | date:'dd/MM/yyyy' }} → {{ r.dateFin | date:'dd/MM/yyyy' }}</span>
+          <span class="rapport__meta">
+            <span class="pastille" [ngClass]="'pastille--' + r.statutPeriode">{{ 'rapports.status.' + r.statutPeriode | translate }}</span>
+            <span class="pastille pastille--langue">{{ r.langue | uppercase }}</span>
+            <span *ngIf="r.inclureCompetitions" class="pastille pastille--langue">{{ 'rapports.competitionsTag' | translate }}</span>
+          </span>
+          <small class="rapport__auteur">
+            {{ 'rapports.generatedBy' | translate: { name: r.generePar, date: (r.genereLe | date:'dd/MM/yyyy HH:mm') } }} · {{ taille(r.taille) }}
+          </small>
+        </div>
+        <div class="rapport__actions">
+          <button class="btn-outline btn-sm" (click)="voir(r)"><mat-icon>visibility</mat-icon>{{ 'rapports.view' | translate }}</button>
+          <button class="btn-ghost btn-sm" (click)="telecharger(r)"><mat-icon>download</mat-icon>{{ 'rapports.download' | translate }}</button>
+          <button class="btn-icon btn-icon--danger" (click)="supprimer(r)" [attr.aria-label]="'rapports.delete' | translate"><mat-icon>delete</mat-icon></button>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <!-- ── Aperçu du PDF ── -->
+  <div class="apercu" *ngIf="apercu() as a" (click)="fermerApercu()">
+    <div class="apercu__fenetre" (click)="$event.stopPropagation()">
+      <header class="apercu__tete">
+        <strong>{{ 'rapports.types.' + a.rapport.type + '.label' | translate }} · {{ a.rapport.dateDebut | date:'dd/MM/yyyy' }} → {{ a.rapport.dateFin | date:'dd/MM/yyyy' }}</strong>
+        <span class="apercu__actions">
+          <button class="btn-primary btn-sm" (click)="telecharger(a.rapport)"><mat-icon>download</mat-icon>{{ 'rapports.download' | translate }}</button>
+          <button class="btn-icon" (click)="fermerApercu()" [attr.aria-label]="'rapports.close' | translate"><mat-icon>close</mat-icon></button>
+        </span>
+      </header>
+      <iframe class="apercu__pdf" [src]="a.url" title="PDF"></iframe>
+    </div>
+  </div>
+</div>

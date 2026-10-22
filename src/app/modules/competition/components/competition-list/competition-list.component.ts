@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, OnInit, inject, signal, computed
 } from '@angular/core';
@@ -150,12 +151,12 @@ export class CompetitionListComponent implements OnInit {
     if (!role) return '';
     const m: Record<RoleCompetition, string> = {
       RESPONSABLE:      'Responsable',
-      SECRETAIRE:       'Secrétaire',
+      SECRETAIRE:       t('competition.acces.roles.secretaire'),
       ARBITRE:          'Arbitre',
-      MEDECIN:          'Médecin',
-      KINESITHERAPEUTE: 'Kinésithérapeute',
+      MEDECIN:          t('competition.acces.roles.medecin'),
+      KINESITHERAPEUTE: t('competition.acces.roles.kine'),
       COMMISSAIRE:      'Commissaire',
-      DELEGUE:          'Délégué',
+      DELEGUE:          t('ui.ts_delegue_599f'),
       OBSERVATEUR:      'Observateur',
     };
     return m[role] ?? role;
@@ -190,8 +191,8 @@ export class CompetitionListComponent implements OnInit {
       BROUILLON:           'Brouillon',
       INSCRIPTION_OUVERTE: 'Inscriptions ouvertes',
       EN_COURS:            'En cours',
-      TERMINE:             'Terminée',
-      ANNULE:              'Annulée',
+      TERMINE:             t('partenaire.publicites.status.TERMINEE'),
+      ANNULE:              t('invitation.cancelled'),
     };
     return m[s] ?? s;
   }
@@ -209,7 +210,7 @@ export class CompetitionListComponent implements OnInit {
     const m: Record<string, string> = {
       ALLER_SIMPLE:       'Aller simple',
       ALLER_RETOUR:       'Aller-retour',
-      ELIMINATION_SIMPLE: 'Élimination directe',
+      ELIMINATION_SIMPLE: t('ui.ts_elimination_directe_2ab4'),
       MIXTE:              'Poules + Knockout',
     };
     return m[f ?? ''] ?? f ?? '';

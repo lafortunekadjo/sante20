@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -79,7 +80,7 @@ export class SuggestionsComponent implements OnInit {
     this.userId = this.authService.getUserId();
     if (!this.userId) {
       console.error('Utilisateur non connecté.');
-      this.snackBar.open('Erreur: Vous devez être connecté pour faire une suggestion', 'Fermer', {
+      this.snackBar.open(t('ui.ts_erreur_vous_devez_etre_connecte__7315'), 'Fermer', {
         duration: 3000,
       });
       return;
@@ -95,12 +96,12 @@ export class SuggestionsComponent implements OnInit {
 
       this.suggestionsService.createSuggestion(suggestion).subscribe(
         () => {
-          this.snackBar.open('Votre suggestion a été soumise avec succès !', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_votre_suggestion_a_ete_soumise_a_004b'), 'Fermer', { duration: 3000 });
           this.suggestionForm.reset();
         },
         error => {
           console.error('Erreur lors de l\'envoi de la suggestion', error);
-          this.snackBar.open('Erreur lors de l\'envoi de la suggestion.', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_erreur_lors_de_l_envoi_de_la_sug_1ab4'), 'Fermer', { duration: 3000 });
         }
       );
     }

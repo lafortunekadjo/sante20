@@ -1,6 +1,7 @@
-<!-- poster-modal.component.html -->
+<div class="modal-overlay" (click)="close()"></div>
+
 <div class="poster-modal">
-  <h2>🎨 Créer votre affiche</h2>
+  <h2>{{ 'ui.creer_votre_affiche_pro_838d' | translate }}</h2>
   
   <div class="available-types" *ngIf="availableTypes.length > 0">
     <span *ngFor="let type of availableTypes" class="badge">
@@ -45,12 +46,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Switch IA Détourage -->
+    <div class="form-group ai-switch-group">
+      <label class="switch-label">
+        <input type="checkbox" formControlName="enableAiCutout">
+        <span>{{ 'ui.detourage_ia_automatique_supprime__92a0' | translate }}</span>
+      </label>
+    </div>
     
-    <!-- Sélecteur de couleurs -->
+    <!-- Couleurs -->
     <div class="form-group">
-      <label>🎨 Couleurs de l'affiche</label>
-      
-      <!-- Presets -->
+      <label>{{ 'ui.couleurs_du_theme_32dc' | translate }}</label>
       <div class="color-presets">
         <div *ngFor="let preset of colorPresets" 
              class="color-preset"
@@ -61,85 +68,139 @@
         </div>
       </div>
       
-      <!-- Pickers -->
       <div class="color-pickers">
         <div class="color-field">
-          <label>Couleur principale</label>
+          <label>Principale</label>
           <input type="color" formControlName="primaryColor" class="color-input">
-          <span class="color-value">{{ posterForm.get('primaryColor')?.value }}</span>
         </div>
         <div class="color-field">
-          <label>Couleur secondaire</label>
+          <label>Secondaire</label>
           <input type="color" formControlName="secondaryColor" class="color-input">
-          <span class="color-value">{{ posterForm.get('secondaryColor')?.value }}</span>
         </div>
       </div>
     </div>
     
-    <!-- Message personnalisé -->
+    <!-- Message -->
     <div class="form-group">
-      <label>💬 Message (optionnel)</label>
+      <label>💬 Message d'accroche</label>
       <input type="text" formControlName="message" 
              class="form-control" 
-             placeholder="Ex: Allez les gars ! 🔥"
+             [placeholder]="'ui.ex_le_choc_du_dimanche_99a2' | translate"
              maxlength="60">
     </div>
     
     <!-- Photos -->
     <div class="form-group">
-      <label>📸 Photos</label>
+      <label>{{ 'ui.photos_du_match_joueurs_2fef' | translate }}</label>
       <div class="photo-mode">
         <label>
-          <input type="radio" formControlName="photoMode" value="single">
-          Une photo globale
+          <input type="radio" formControlName="photoMode" value="single"> {{ 'ui.une_photo_6fdb' | translate }}
         </label>
         <label>
-          <input type="radio" formControlName="photoMode" value="double">
-          Une photo par équipe
+          <input type="radio" formControlName="photoMode" value="double"> {{ 'ui.une_par_equipe_759c' | translate }}
         </label>
       </div>
       
       <div class="photo-upload" *ngIf="posterForm.get('photoMode')?.value === 'single'">
         <input type="file" (change)="onPhotoSelected($event, 'photo1')" accept="image/*">
-        <div *ngIf="posterForm.get('photo1')?.value" class="photo-preview">
-          <img [src]="posterForm.get('photo1')?.value" alt="Aperçu">
-        </div>
       </div>
       
       <div class="photo-upload-double" *ngIf="posterForm.get('photoMode')?.value === 'double'">
         <div>
-          <label>🏠 Équipe 1</label>
+          <label>{{ 'ui.equipe_domicile_cc76' | translate }}</label>
           <input type="file" (change)="onPhotoSelected($event, 'photo1')" accept="image/*">
-          <div *ngIf="posterForm.get('photo1')?.value" class="photo-preview">
-            <img [src]="posterForm.get('photo1')?.value" alt="Equipe 1">
-          </div>
         </div>
         <div>
-          <label>✈️ Équipe 2</label>
+          <label>{{ 'ui.equipe_exterieur_8428' | translate }}</label>
           <input type="file" (change)="onPhotoSelected($event, 'photo2')" accept="image/*">
-          <div *ngIf="posterForm.get('photo2')?.value" class="photo-preview">
-            <img [src]="posterForm.get('photo2')?.value" alt="Equipe 2">
-          </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Aperçu -->
-    <div class="preview" *ngIf="previewImage">
-      <h3>🔍 Aperçu</h3>
-      <img [src]="previewImage" alt="Aperçu affiche">
-      <div class="actions">
-        <button (click)="downloadPoster()" class="btn-primary">⬇️ Télécharger</button>
-        <button (click)="close()" class="btn-secondary">Fermer</button>
+
+      <div *ngIf="isProcessingAiPhoto" class="ai-loading">
+        {{ 'ui.detourage_ia_de_la_photo_en_cours_8062' | translate }}
       </div>
     </div>
     
-    <!-- Bouton générer -->
+    <!-- Bouton Générer -->
     <button type="button" 
             (click)="generatePoster()" 
-            [disabled]="posterForm.invalid || isLoading"
+            [disabled]="posterForm.invalid || isGenerating || isProcessingAiPhoto"
             class="btn-generate">
-      {{ isLoading ? '⏳ Génération...' : '✨ Générer l\'affiche' }}
+      {{ isGenerating ? '⏳ Rendu HD en cours...' : '✨ Générer l\'affiche' }}
     </button>
   </form>
+
+  <!-- APERÇU DE L'IMAGE FINALE TÉLÉCHARGEABLE -->
+  <div class="preview" *ngIf="generatedPosterUrl">
+    <h3>{{ 'ui.resultat_final_859e' | translate }}</h3>
+    <img [src]="generatedPosterUrl" [alt]="'ui.affiche_generee_c073' | translate">
+    <div class="actions">
+      <button type="button" (click)="downloadPoster()" class="btn-primary">{{ 'ui.telecharger_png_d4c0' | translate }}</button>
+      <button type="button" (click)="close()" class="btn-secondary">{{ 'common.close' | translate }}</button>
+    </div>
+  </div>
+
+  <!-- GABARIT HORS-ÉCRAN DE CAPTURE (HTML5 CANVAS STYLISÉ) -->
+  <div class="poster-capture-wrapper">
+    <div #posterContainer 
+         class="poster-canvas" 
+         [ngClass]="[posterForm.get('format')?.value?.toLowerCase(), posterForm.get('templateId')?.value]"
+         [style.--primary-color]="posterForm.get('primaryColor')?.value"
+         [style.--secondary-color]="posterForm.get('secondaryColor')?.value">
+      
+      <!-- Overlay d'effets visuels (Fumée / Projecteurs) -->
+      <div class="light-effects"></div>
+      <div class="texture-overlay"></div>
+
+      <!-- En-tête -->
+      <div class="poster-header">
+        <span class="competition-tag">{{ matchData?.competitionNom || 'CHAMPIONNAT AMATEUR' }}</span>
+        <span class="match-date">{{ (matchData?.date | date:'dd/MM/yyyy') || 'JOUR DE MATCH' }}</span>
+      </div>
+
+      <!-- Corps du poster -->
+      <div class="poster-body">
+        
+        <!-- Équipe / Joueur Domicile -->
+        <div class="team-block">
+          <div class="image-wrapper">
+            <img [src]="mainImagePreview || matchData?.domicile?.logoUrl || 'assets/default-logo.png'" 
+                 (error)="onImageError($event, 'DOMICILE')" 
+                 class="player-photo">
+          </div>
+          <h3 class="team-name">{{ matchData?.domicile?.nom || 'ÉQUIPE DOMICILE' }}</h3>
+        </div>
+
+        <!-- Badge Central VS / Score -->
+        <div class="vs-badge">
+          <span *ngIf="posterForm.get('type')?.value === 'AVANT_MATCH'">VS</span>
+          <span *ngIf="posterForm.get('type')?.value !== 'AVANT_MATCH'" class="score">
+            {{ matchData?.scoreDomicile ?? 0 }} - {{ matchData?.scoreExterieur ?? 0 }}
+          </span>
+        </div>
+
+        <!-- Équipe / Joueur Extérieur -->
+        <div class="team-block">
+          <div class="image-wrapper">
+            <img [src]="secondaryImagePreview || matchData?.exterieur?.logoUrl || 'assets/default-logo.png'" 
+                 (error)="onImageError($event, 'EXTERIEUR')" 
+                 class="player-photo">
+          </div>
+          <h3 class="team-name">{{ matchData?.exterieur?.nom || 'ÉQUIPE EXTÉRIEUR' }}</h3>
+        </div>
+
+      </div>
+
+      <!-- Message personnalisable -->
+      <div class="poster-message" *ngIf="posterForm.get('message')?.value">
+        <p>" {{ posterForm.get('message')?.value }} "</p>
+      </div>
+
+      <!-- Filigrane / Branding -->
+      <div class="poster-footer">
+        <span>{{ 'ui.match_propulse_par_c2ea' | translate }} <strong>MY2-0</strong></span>
+      </div>
+
+    </div>
+  </div>
 </div>

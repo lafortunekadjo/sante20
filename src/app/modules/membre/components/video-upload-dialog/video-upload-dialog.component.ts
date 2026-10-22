@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,7 +15,7 @@ import { ProfileService } from '../../../../core/services/profile.service';
 @Component({
   selector: 'app-video-upload-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, 
     ReactiveFormsModule, 
     MatDialogModule, 
@@ -50,7 +52,7 @@ export class VideoUploadDialogComponent {
     if (file) {
       // Validation optionnelle de taille de sécurité (Ex: 60Mo max)
       if (file.size > 60 * 1024 * 1024) {
-        this.snackBar.open('La vidéo est trop lourde (Max 60 Mo)', 'Fermer', { duration: 4000 });
+        this.snackBar.open(t('ui.ts_la_video_est_trop_lourde_max_60__a377'), 'Fermer', { duration: 4000 });
         return;
       }
       this.selectedFile = file;
@@ -76,7 +78,7 @@ export class VideoUploadDialogComponent {
       },
       error: (err) => {
         console.error('Erreur lors du téléversement du highlight', err);
-        this.snackBar.open('Erreur lors de l\'envoi de la vidéo au serveur', 'Fermer', { duration: 4000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_envoi_de_la_vid_a3e2'), 'Fermer', { duration: 4000 });
         this.isUploading = false;
       }
     });

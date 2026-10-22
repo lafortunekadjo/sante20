@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { Equipe } from '../../../core/models/groupe.model copy';
@@ -25,7 +26,7 @@ export interface CheckInResult {
 
 @Component({
   selector: 'app-equipe-selection-dialog',
-  imports: [CommonModule,
+  imports: [TranslateModule, CommonModule,
       MatCardModule,
       MatButtonModule,
       MatIconModule,

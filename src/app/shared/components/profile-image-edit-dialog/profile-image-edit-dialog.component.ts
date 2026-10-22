@@ -1,4 +1,5 @@
 // profile-image-edit-dialog.component.ts
+import { t } from '../../../core/i18n/traduire';
 import { Component, Inject, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -119,7 +120,7 @@ export class ProfileImageEditDialogComponent {
       
       // Validation du type de fichier
       if (!this.allowedTypes.includes(file.type)) {
-        this.snackBar.open('Format de fichier non supporté. Utilisez JPG, PNG ou WEBP.', 'Fermer', {
+        this.snackBar.open(t('ui.ts_format_de_fichier_non_supporte_u_54e2'), 'Fermer', {
           duration: 4000,
           panelClass: ['snackbar-error']
         });
@@ -128,7 +129,7 @@ export class ProfileImageEditDialogComponent {
       
       // Validation de la taille
       if (file.size > this.maxFileSize) {
-        this.snackBar.open('Le fichier est trop volumineux. Taille maximale : 5MB.', 'Fermer', {
+        this.snackBar.open(t('ui.ts_le_fichier_est_trop_volumineux_t_3762'), 'Fermer', {
           duration: 4000,
           panelClass: ['snackbar-error']
         });
@@ -163,7 +164,7 @@ export class ProfileImageEditDialogComponent {
     };
     
     reader.onerror = () => {
-      this.snackBar.open('Erreur lors du chargement de l\'image.', 'Fermer', { 
+      this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_de_l_i_abc0'), 'Fermer', { 
         duration: 3000,
         panelClass: ['snackbar-error']
       });
@@ -365,7 +366,7 @@ export class ProfileImageEditDialogComponent {
    * Supprime l'image sélectionnée
    */
   removeImage(): void {
-    if (confirm('Voulez-vous vraiment supprimer cette image ?')) {
+    if (confirm(t('ui.ts_voulez_vous_vraiment_supprimer_c_7df9'))) {
       this.selectedFile = null;
       this.imagePreviewUrl = null;
       this.originalImage = null;
@@ -382,7 +383,7 @@ export class ProfileImageEditDialogComponent {
    */
   async onSave(): Promise<void> {
     if (!this.canvas || !this.originalImage) {
-      this.snackBar.open('Aucune image à enregistrer.', 'Fermer', { 
+      this.snackBar.open(t('ui.ts_aucune_image_a_enregistrer_63ce'), 'Fermer', { 
         duration: 3000,
         panelClass: ['snackbar-error']
       });
@@ -420,7 +421,7 @@ export class ProfileImageEditDialogComponent {
       this.dialogRef.close(result);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      this.snackBar.open('Erreur lors de la sauvegarde de l\'image.', 'Fermer', { 
+      this.snackBar.open(t('ui.ts_erreur_lors_de_la_sauvegarde_de__87e8'), 'Fermer', { 
         duration: 3000,
         panelClass: ['snackbar-error']
       });
@@ -433,7 +434,7 @@ export class ProfileImageEditDialogComponent {
    */
   onCancel(): void {
     if ((this.selectedFile || this.hasExistingImage) && 
-        !confirm('Voulez-vous vraiment annuler ? Les modifications seront perdues.')) {
+        !confirm(t('ui.ts_voulez_vous_vraiment_annuler_les_e2ff'))) {
       return;
     }
     this.dialogRef.close();

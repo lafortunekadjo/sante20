@@ -3,6 +3,7 @@
 // Page d'accueil de l'espace partenaire
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -149,7 +150,7 @@ export class PartenaireDashboardComponent implements OnInit, OnDestroy {
     } else if (daysRemaining <= 0) {
       this.alerts.push({
         type: 'error',
-        message: 'Votre contrat a expiré',
+        message: t('ui.ts_votre_contrat_a_expire_496c'),
         icon: 'error'
       });
     }
@@ -160,7 +161,7 @@ export class PartenaireDashboardComponent implements OnInit, OnDestroy {
         this.partenaire.nombrePublicitesActives >= this.partenaire.maxPublicitesActives) {
       this.alerts.push({
         type: 'info',
-        message: 'Vous avez atteint la limite de publicités actives',
+        message: t('partenaire.dashboard.alerts.limitReached'),
         icon: 'info'
       });
     }

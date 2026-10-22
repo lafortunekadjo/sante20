@@ -36,6 +36,7 @@ import { BaseChartDirective } from 'ng2-charts';
 // Services
 import { StatsService } from '../../../../core/services/stats.service';
 import { Exercice, FinancesService, MouvementCaisse, TypeContribution } from '../../../../core/services/finances.service';
+import { CollecteEnCours } from '../../../../core/models/collecte.model';
 import { AuthService } from '../../../../core/services/auth.service';
 
 // Models
@@ -158,6 +159,7 @@ export class MDashboardComponent implements OnInit, OnDestroy {
   dateRangeForm: FormGroup;
   monthFilterForm: FormGroup;
   contributionsEnCours: any[] = [];
+  collectesEvenements: CollecteEnCours[] = [];
   // Mois sélectionné
   selectedMonth: string = '';
 
@@ -433,6 +435,32 @@ isEnAlerte(contrib: any): boolean {
   return diffDays <= 7; // Alerte si l'échéance est dans 7 jours ou moins
 }
 
+/**
+ * Les collectes d'événements ouvertes deviennent des cartes « cotisation en cours » comme les autres.
+ * Le serveur ne renvoie jamais celle dont le membre est le membre concerné.
+ */
+private collectesVersCartes(): any[] {
+  return (this.collectesEvenements || []).map(c => {
+    const objectif = c.mode === 'FIXE' ? (c.montantParMembre || 0)
+                   : c.mode === 'OBJECTIF' ? (c.objectifGlobal || 0) : 0;
+    const verse = c.mode === 'OBJECTIF' ? c.totalCollecte : c.maContribution;
+    const delai = c.delaiCollecte ? new Date(c.delaiCollecte) : null;
+    const jours = delai ? Math.ceil((delai.getTime() - Date.now()) / 86400000) : null;
+    return {
+      evenement: true,
+      id: 'evt-' + c.evenementId,
+      libelle: c.nom,
+      mode: c.mode,
+      montantVerse: verse,
+      montantObjectif: objectif,
+      maContribution: c.maContribution,
+      totalCollecte: c.totalCollecte,
+      delaiContribution: c.delaiCollecte,
+      enAlerte: jours !== null && jours <= 7 && (objectif === 0 || verse < objectif)
+    };
+  });
+}
+
 calculerStatusContributions(): void {
   if (!this.contributions || !this.mouvementsMembre) return;
 console.log(this.contributions)
@@ -451,8 +479,9 @@ console.log(this.contributions)
     };
   });
 
-  console.log(this.contributions)
-  
+  // + collectes d evenements ouvertes
+  this.contributionsEnCours = [...this.contributionsEnCours, ...this.collectesVersCartes()];
+
   this.cdr.markForCheck();
 }
 
@@ -473,13 +502,15 @@ loadContribution(): void {
   // On charge les types et les mouvements en parallèle
   forkJoin({
     types: this.financesService.getTypesContributionsByExercice(exerciceId),
-    mouvements: this.financesService.getMouvementsMembre2()
+    mouvements: this.financesService.getMouvementsMembre2(),
+    collectes: this.financesService.getCollectesOuvertes().pipe(catchError(() => of([] as CollecteEnCours[])))
   })
   .pipe(takeUntil(this.destroy$))
   .subscribe({
     next: (res) => {
       this.contributions = res.types;
       this.mouvementsMembre = res.mouvements;
+      this.collectesEvenements = res.collectes;
 
       // On lance le calcul pour remplir 'contributionsEnCours'
       this.calculerStatusContributions();

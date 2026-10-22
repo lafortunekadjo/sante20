@@ -1,0 +1,417 @@
+@use '../../../../../variables' as *;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tokens locaux
+// ─────────────────────────────────────────────────────────────────────────────
+$primary: var(--primary, #1e3a5f);
+$text:    var(--text-primary, #111);
+$muted:   var(--text-secondary, #6b7280);
+$bg:      var(--background-primary, #fff);
+$border:  var(--border-color, #e5e7eb);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page container
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-page {
+  // marges de la page, réutilisées pour que l'en-tête aille jusqu'au bord (annulées par une marge négative)
+  --jd-x: 12px;
+  --jd-top: 20px;
+  @media (min-width: 600px) { --jd-x: 20px; --jd-top: 32px; }
+  @media (min-width: 900px) { --jd-x: 24px; --jd-top: 40px; }
+
+  max-width: 1100px;
+  margin: 0 auto;
+  // Mobile-first : padding horizontal réduit, vertical suffisant
+  padding: 20px 12px 64px;
+
+  @media (min-width: 600px) {
+    padding: 32px 20px 64px;
+  }
+  @media (min-width: 900px) {
+    padding: 40px 24px 80px;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading / Erreur
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-loading, .jd-error {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 80px 0;
+  color: $muted;
+  mat-icon { font-size: 48px; width: 48px; height: 48px; }
+}
+.jd-error { color: var(--danger, #ef4444); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// En-tête
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-header {
+  margin-bottom: 24px;
+
+  @media (min-width: 600px) { margin-bottom: 32px; }
+
+  &__title {
+    display: flex; align-items: center; gap: 10px;
+
+    h1 {
+      font-size: 20px; font-weight: 800; margin: 0;
+      @media (min-width: 600px) { font-size: 26px; }
+    }
+
+    mat-icon {
+      font-size: 26px; width: 26px; height: 26px;
+      color: $primary;
+      @media (min-width: 600px) { font-size: 32px; width: 32px; height: 32px; }
+    }
+  }
+
+  &__sub {
+    margin: 4px 0 0 36px;
+    font-size: 13px; color: $muted;
+    @media (min-width: 600px) { margin-left: 44px; font-size: 14px; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI Grid — 2 colonnes sur mobile, auto-fill sur tablette+
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);  // 2 colonnes sur mobile
+  gap: 10px;
+  margin-bottom: 32px;
+
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (min-width: 700px) {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+}
+
+.jd-kpi-card {
+  display: flex;
+  // Sur mobile : icône au-dessus, chiffre en dessous (plus lisible)
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  background: $bg;
+  border: 1.5px solid $border;
+  box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  text-align: center;
+  min-height: 88px;
+
+  @media (min-width: 700px) {
+    // Retour à la mise en page horizontale icône + texte
+    flex-direction: row; align-items: center;
+    text-align: left; padding: 16px 18px; gap: 14px; min-height: auto;
+  }
+
+  &__icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    @media (min-width: 700px) {
+      width: 40px; height: 40px;
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    }
+  }
+
+  &__value {
+    font-size: 22px; font-weight: 800;
+    line-height: 1; color: $text;
+    @media (min-width: 700px) { font-size: 24px; }
+  }
+
+  &__label {
+    font-size: 10px; font-weight: 500;
+    color: $muted; margin-top: 1px;
+    white-space: nowrap;
+    @media (min-width: 700px) { font-size: 11px; margin-top: 2px; }
+  }
+
+  // Couleurs
+  &--blue   .jd-kpi-card__icon { background: #eff6ff; mat-icon { color: #3b82f6; } }
+  &--green  .jd-kpi-card__icon { background: #f0fdf4; mat-icon { color: #22c55e; } }
+  &--teal   .jd-kpi-card__icon { background: #f0fdfa; mat-icon { color: #14b8a6; } }
+  &--yellow .jd-kpi-card__icon { background: #fefce8; mat-icon { color: #eab308; } }
+  &--red    .jd-kpi-card__icon { background: #fef2f2; mat-icon { color: #ef4444; } }
+  &--purple .jd-kpi-card__icon { background: #faf5ff; mat-icon { color: #a855f7; } }
+  &--gold   .jd-kpi-card__icon { background: #fffbeb; mat-icon { color: #f59e0b; } }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabs navigation
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-tabs {
+  display: flex;
+  border-bottom: 2px solid $border;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+
+.jd-tab-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  color: $muted;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;   // chevauche le border-bottom du parent
+  border-radius: 6px 6px 0 0;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &.active {
+    color: $primary;
+    border-bottom-color: $primary;
+    font-weight: 700;
+  }
+  &:hover:not(.active) { color: $text; background: var(--background-secondary, #f9fafb); }
+}
+
+.jd-tab-badge {
+  background: var(--background-secondary, #f3f4f6);
+  color: $muted;
+  font-size: 11px; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px;
+  .active & { background: $primary; color: #fff; }
+}
+
+.jd-tab-content {
+  animation: fadeIn .18s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.jd-section-label {
+  font-size: 12px; font-weight: 600; color: $muted;
+  text-transform: uppercase; letter-spacing: .05em;
+  margin: 0 0 16px;
+}
+
+.jd-goto-btn {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 28px;
+  padding: 12px 20px;
+  width: 100%;
+  background: var(--background-secondary, #f9fafb);
+  border: 1.5px solid $border;
+  border-radius: 12px; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: $primary;
+  transition: background .2s;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  mat-icon:last-child { margin-left: auto; }
+
+  &:hover { background: #eff6ff; border-color: $primary; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filtres — scrollable horizontalement sur mobile
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-filters {
+  display: flex; gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+  padding-bottom: 2px; // évite que le border de .active soit coupé
+
+  @media (min-width: 600px) {
+    width: auto; flex-wrap: wrap;
+  }
+}
+
+.jd-filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px;
+  border-radius: 20px; border: 1.5px solid $border;
+  background: transparent; cursor: pointer;
+  font-size: 13px; font-weight: 500;
+  color: $muted;
+  white-space: nowrap;   // empêche le retour à la ligne dans le scroll
+  transition: all .2s;
+  flex-shrink: 0;        // ne pas rétrécir dans le scroll horizontal
+
+  &.active, &:hover {
+    background: $primary;
+    color: #fff; border-color: $primary;
+  }
+
+  // Zone de tap plus grande sur mobile
+  min-height: 36px;
+}
+
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  &--active { background: #22c55e; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 48px 0;
+  color: var(--text-secondary, #9ca3af);
+  mat-icon { font-size: 48px; width: 48px; height: 48px; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid compétitions — 1 colonne sur mobile, 2 sur desktop
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-comp-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+
+  @media (min-width: 700px) {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Card compétition
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-comp-card {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: $bg;
+  border: 1.5px solid $border;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  transition: box-shadow .2s, border-color .2s;
+
+  @media (min-width: 600px) { padding: 20px 22px; gap: 14px; }
+
+  &:hover { box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+
+  &--active {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34,197,94,.12);
+  }
+
+  &__meta {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin-bottom: 4px;
+  }
+
+  &__equipe {
+    display: flex; align-items: center; gap: 3px;
+    font-size: 12px; color: $muted;
+    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  }
+
+  &__nom {
+    font-size: 15px; font-weight: 700;
+    color: $text; margin: 0; line-height: 1.3;
+    @media (min-width: 600px) { font-size: 16px; }
+  }
+
+  // ── Stats : 4 colonnes égales sur mobile, naturellement sur desktop ──────
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);  // 4 stats toujours visibles
+    gap: 6px;
+    background: var(--background-secondary, #f9fafb);
+    border-radius: 10px;
+    padding: 10px 8px;
+
+    @media (min-width: 600px) {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      background: none; border-radius: 0; padding: 0;
+    }
+  }
+
+  &__awards { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  &__sanction {
+    display: flex; align-items: center; gap: 6px;
+    background: #fef2f2; border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px; font-weight: 600; color: #ef4444;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+  }
+
+  &__link {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 4px; margin-top: auto;
+    font-size: 13px; font-weight: 600;
+    color: $primary; text-decoration: none;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    &:hover { text-decoration: underline; }
+
+    // Bouton pleine largeur sur mobile — plus facile à tapper
+    @media (max-width: 599px) {
+      justify-content: center;
+      border: 1.5px solid $primary;
+      border-radius: 8px; padding: 8px;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stat item — dans la grid 4 colonnes sur mobile, centré
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-stat {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 0;  // évite le débordement dans la grid
+
+  &__val {
+    font-size: 20px; font-weight: 800;
+    color: $text; line-height: 1;
+    @media (min-width: 600px) { font-size: 22px; }
+  }
+  &__lbl {
+    font-size: 9px; color: $muted;
+    margin-top: 2px; white-space: nowrap;
+    @media (min-width: 600px) { font-size: 10px; }
+  }
+
+  &--goal   .jd-stat__val { color: #16a34a; }
+  &--assist .jd-stat__val { color: #0891b2; }
+  &--yellow .jd-stat__val { color: #ca8a04; }
+  &--red    .jd-stat__val { color: #dc2626; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Award chip
+// ─────────────────────────────────────────────────────────────────────────────
+.jd-award-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  background: #fffbeb; border: 1px solid #fde68a;
+  font-size: 11px; font-weight: 600; color: #92400e;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; color: #f59e0b; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Badge statut
+// ─────────────────────────────────────────────────────────────────────────────
+.badge-statut {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.statut-en_cours            { background: #dcfce7; color: #166534; }
+.statut-inscription_ouverte { background: #dbeafe; color: #1e40af; }
+.statut-brouillon           { background: #f3f4f6; color: #374151; }
+.statut-termine             { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.statut-annule              { background: #fef2f2; color: #991b1b; }
+// Bandeau d'en-tête (même règle que toutes les pages : pleine largeur, coins droits, dégradé bleu)
+.jd-page .jd-header {
+  margin: calc(var(--jd-top) * -1) calc(var(--jd-x) * -1) 20px;
+  padding: 16px var(--jd-x);
+  &__title mat-icon { color: #fff; }
+  &__sub { margin-left: 36px; color: #fff; opacity: .85; }
+}

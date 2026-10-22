@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,7 +42,7 @@ interface MergeResult {
 @Component({
   selector: 'app-user-merge',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule, MatInputModule,
     MatFormFieldModule, MatAutocompleteModule, MatProgressSpinnerModule,
@@ -116,7 +118,7 @@ export class UserMergeComponent {
     ).subscribe({
       next: p => { this.preview = p; this.isLoadingPreview = false; },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'aperçu', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_apercu_31d3'), 'Fermer', { duration: 3000 });
         this.isLoadingPreview = false;
       }
     });
@@ -129,14 +131,14 @@ export class UserMergeComponent {
     this.dialog.open(ConfirmationDialogComponent, {
       width: '480px',
       data: {
-        title: 'Confirmer la fusion',
+        title: t('ui.ts_confirmer_la_fusion_073e'),
         message: `Fusionner <strong>${this.selectedB.username}</strong> dans <strong>${this.selectedA.username}</strong> ?
                  <br><br>
                  Cette action est <strong>irréversible</strong>.<br>
                  • ${this.selectedB.username} sera désactivé<br>
                  • Ses fiches membres seront transférées à ${this.selectedA.username}`,
         confirmText: 'Fusionner',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         type: 'warning'
       }
     }).afterClosed().subscribe(confirmed => {
@@ -156,7 +158,7 @@ export class UserMergeComponent {
         this.result  = result;
         this.preview = null;
         this.isMerging = false;
-        this.snackBar.open('Fusion réussie !', 'OK', { duration: 4000 });
+        this.snackBar.open(t('ui.fusion_reussie_7995'), 'OK', { duration: 4000 });
       },
       error: err => {
         this.snackBar.open(

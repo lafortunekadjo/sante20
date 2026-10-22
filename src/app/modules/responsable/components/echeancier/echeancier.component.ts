@@ -1,4 +1,5 @@
 // echeancier.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -307,12 +308,12 @@ export class EcheancierComponent implements OnInit, OnDestroy {
 
   getStatutLabel(statut: string): string {
     const labels: Record<string, string> = {
-      'PAYE': 'Payé',
+      'PAYE': t('membre.paid'),
       'PARTIEL': 'Partiel',
       'EN_ATTENTE': 'En attente',
       'EN_RETARD': 'En retard',
-      'EXONERE': 'Exonéré',
-      'REPORTE': 'Reporté'
+      'EXONERE': t('finances.echeancier.statuts.EXONERE'),
+      'REPORTE': t('finances.echeancier.statuts.REPORTE')
     };
     return labels[statut] || statut;
   }

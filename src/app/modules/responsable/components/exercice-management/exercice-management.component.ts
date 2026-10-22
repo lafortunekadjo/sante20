@@ -1,4 +1,5 @@
 // exercice-management.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -235,10 +236,10 @@ export class ExerciceManagementComponent implements OnInit {
 
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Confirmer la clôture',
+        title: t('finances.exercices.cloture.confirmer'),
         message: `Êtes-vous sûr de vouloir clôturer l'exercice "${this.selectedExercice.libelle}" ? Cette action est irréversible.`,
-        confirmText: 'Clôturer',
-        cancelText: 'Annuler',
+        confirmText: t('finances.exercices.cloturer'),
+        cancelText: t('common.CANCEL'),
         color: 'warn'
       }
     });

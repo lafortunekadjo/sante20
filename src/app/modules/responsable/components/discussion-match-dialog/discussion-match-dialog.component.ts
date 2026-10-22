@@ -1,5 +1,7 @@
 // src/app/shared/components/discussion-match-dialog/discussion-match-dialog.component.ts
 
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,7 +31,7 @@ export interface DiscussionMatchDialogData {
 @Component({
   selector: 'app-discussion-match-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     FormsModule,
     MatDialogModule,
@@ -116,7 +118,7 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
     },
     error: (err) => {
       console.error('Erreur chargement discussion:', err);
-      this.snackBar.open('Erreur lors du chargement de la discussion', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_de_la__c32d'), 'Fermer', { duration: 3000 });
       this.isLoading = false;
     }
   });
@@ -151,7 +153,7 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
     },
     error: (err) => {
       console.error('Erreur envoi message:', err);
-      this.snackBar.open('Erreur lors de l\'envoi du message', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('chat.errors.sendMessage'), 'Fermer', { duration: 3000 });
       this.isSending = false;
     }
   });
@@ -174,7 +176,7 @@ export class DiscussionMatchDialogComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement discussion:', err);
-        this.snackBar.open('Erreur lors du chargement de la discussion', 'Fermer', {
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_de_la__c32d'), 'Fermer', {
           duration: 3000
         });
         this.isLoading = false;

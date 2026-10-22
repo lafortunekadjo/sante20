@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -14,7 +15,7 @@ import { XpService, ClassementSaisonDTO } from '../../../core/services/gamificat
 @Component({
   selector: 'app-classement-public-ligue',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, RouterModule, FormsModule,
     MatTabsModule, MatIconModule, MatButtonModule,
     MatProgressSpinnerModule, MatSelectModule

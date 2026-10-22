@@ -1,7 +1,8 @@
 // presence-form.component.ts - isAmicalWithPlatformGroupersion avec support matchs amicaux inter-groupes
 
+import { t } from '../../../../core/i18n/traduire';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -22,6 +23,11 @@ import { Membre } from '../../../../core/models/membre.model';
 import { Presence } from '../../../../core/models/presence.model';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { MatchService } from '../../../../core/services/match.service';
+import { EvenementMatch, EvenementMatchService } from '../../../../core/services/evenement-match.service';
+import { FeuilleImageDialogComponent } from './feuille-image-dialog.component';
+import { FicheHdmDialogComponent } from './fiche-hdm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
+import { TranslateService } from '@ngx-translate/core';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { MembreService } from '../../../../core/services/membre.service';
@@ -79,7 +85,23 @@ isGeneratingImage = false;
 selectedImageFormat: 'full' | 'story' | 'square' = 'full';
 
   // ── Navigation tabs ──
-  activeTab: 'equipe1' | 'equipe2' | 'add' = 'equipe1';
+  activeTab: 'equipe1' | 'equipe2' | 'add' | 'journee' = 'equipe1';
+
+  // ── Journée : match non joué, motifs, absences excusées ──
+  readonly motifsMatchNonJoue = ['PLUIE', 'ADVERSAIRE_ABSENT', 'TERRAIN', 'EFFECTIF', 'AUTRE'];
+  readonly motifsNonJoue = ['SURNOMBRE', 'BLESSE', 'ARBITRE', 'REMPLACANT', 'AUTRE'];
+  private dialog = inject(MatDialog);
+  private translate = inject(TranslateService);
+  /** Chronologie du match (saisie en direct) : sert à la feuille PDF. */
+  liveEvenements: EvenementMatch[] = [];
+
+  /** Match saisi événement par événement : buts, passes et cartons viennent de la saisie en direct. */
+  modeChronologie = false;
+  matchNonJoue = false;
+  motifMatchNonJoue = 'PLUIE';
+  /** Absents excusés (membreId → motif facultatif). Un membre ni présent ni excusé est simplement absent. */
+  absencesExcusees = new Map<number, string>();
+  absentSearch = '';
 
   // ── Cards joueurs expandées ──
   private expandedPlayers = new Set<string>();
@@ -111,6 +133,7 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
   constructor(
     private matchService: MatchService,
     private presenceService: PresenceService,
+    private evenementMatchService: EvenementMatchService,
     private groupeService: GroupeService,
     private membreService: MembreService,
     private authService: AuthService,
@@ -121,7 +144,7 @@ selectedImageFormat: 'full' | 'story' | 'square' = 'full';
   ) {}
 
   // ── Méthodes navigation ──────────────────────────────────
-  setTab(tab: 'equipe1' | 'equipe2' | 'add'): void {
+  setTab(tab: 'equipe1' | 'equipe2' | 'add' | 'journee'): void {
     this.activeTab = tab;
   }
 
@@ -655,7 +678,24 @@ get equipe2Players(): Presence[] {
 
         this.isLoading = false;
         this.refreshView();
+        this.chargerJournee(matchId);
+        this.evenementMatchService.live(matchId).pipe(catchError(() => of(null))).subscribe(l => {
+          this.liveEvenements = l?.evenements ?? [];
+          this.modeChronologie = !!l && l.evenements.some(e => e.type !== 'MI_TEMPS');
+          this.refreshView();
+        });
       }
+    });
+  }
+
+  /** État de la journée : match non joué et absences excusées déjà enregistrées. */
+  private chargerJournee(matchId: number): void {
+    this.presenceService.getJournee(matchId).pipe(catchError(() => of(null))).subscribe(j => {
+      if (!j) return;
+      this.matchNonJoue = !!j.matchNonJoue;
+      this.motifMatchNonJoue = j.motifNonJoue || 'PLUIE';
+      this.absencesExcusees = new Map((j.absencesExcusees || []).map(a => [a.membreId, a.motif || ''] as [number, string]));
+      this.refreshView();
     });
   }
 
@@ -939,30 +979,100 @@ get equipe2Players(): Presence[] {
 
   // ===== VALIDATION =====
 
+  /**
+   * Enregistrable dès qu'il y a de quoi enregistrer : un match joué (au moins un joueur) ou une journée sans match.
+   * Le capitaine n'est plus bloquant : voir capitaineManquant (simple avertissement).
+   */
   isPresenceValid(): boolean {
-    const presentPlayers = this.dataSource.data.filter(p => p.present && p.aJoue);
+    if (this.matchNonJoue) return true;
+    return this.dataSource.data.some(p => p.present && p.aJoue);
+  }
 
-    if (presentPlayers.length === 0) return false;
+  /** Équipes qui ont des joueurs mais pas de capitaine désigné (avertissement, jamais bloquant). */
+  get capitaineManquant(): boolean {
+    if (this.matchNonJoue) return false;
+    const joueurs = this.dataSource.data.filter(p => p.present && p.aJoue);
+    const equipes = new Set(joueurs.map(p => p.equipeMatch));
+    return [...equipes].some(e => !joueurs.some(p => p.equipeMatch === e && p.estCapitaine));
+  }
 
-    if (this.match?.typeMatch === 'AMICAL') {
-      return true;
-    }
+  // ===== FEUILLE DE MATCH (PDF) : chronologie, mi-temps, présents sans jouer =====
 
-    const hasCapitaine1 = presentPlayers.some(p => 
-      p.equipeMatch === this.equipeNames[0] && p.estCapitaine
-    );
-    const hasCapitaine2 = presentPlayers.some(p => 
-      p.equipeMatch === this.equipeNames[1] && p.estCapitaine
-    );
+  ouvrirChoixFeuilleImage(): void {
+    if (!this.match?.id) return;
+    this.dialog.open(FeuilleImageDialogComponent, { data: { matchId: this.match.id }, maxWidth: '100vw', autoFocus: false });
+  }
 
-     const hasGardien1 = presentPlayers.some(p => 
-      p.equipeMatch === this.equipeNames[0] && p.estGardien
-    );
-    const hasGardien2 = presentPlayers.some(p => 
-      p.equipeMatch === this.equipeNames[1] && p.estGardien
-    );
+  /** Fiche « Homme du match » : joueurs (membres) qui ont joué, l'homme du match désigné en tête. */
+  ouvrirFicheHdm(): void {
+    if (!this.match?.id) return;
+    const joueurs = this.dataSource.data
+      .filter(p => p.present && p.aJoue && p.membre?.id)
+      .map(p => ({ membreId: p.membre!.id as number, nom: this.getMembreName(p), hdm: !!p.estHommeDuMatch }))
+      .sort((a, b) => Number(b.hdm) - Number(a.hdm) || a.nom.localeCompare(b.nom));
+    if (!joueurs.length) { this.showSnackbar(this.translate.instant('hdm.noPlayers'), 'error'); return; }
+    this.dialog.open(FicheHdmDialogComponent, { data: { matchId: this.match.id, joueurs }, maxWidth: '100vw', autoFocus: false });
+  }
 
-    return hasCapitaine1 && hasCapitaine2;
+  get miTempsLabel(): string {
+    const a = this.match?.scoreMiTemps1, b = this.match?.scoreMiTemps2;
+    return a != null && b != null ? `${a} - ${b}` : '';
+  }
+
+  get motifMatchLabel(): string {
+    return this.matchNonJoue ? this.translate.instant('journee.matchReasons.' + this.motifMatchNonJoue) : '';
+  }
+
+  iconeEvenement(type: string): string {
+    return ({ BUT: '⚽', COUP_FRANC_MARQUE: '⚽', PENALTI_MARQUE: '⚽', PENALTI_RATE: '❌', CONTRE_SON_CAMP: '↩', CARTON_JAUNE: '🟨', CARTON_ROUGE: '🟥', MI_TEMPS: '⏸' } as Record<string, string>)[type] ?? '•';
+  }
+
+  nomEquipeEvenement(e: EvenementMatch): string { return e.equipePosition === 2 ? this.equipeNames[1] : this.equipeNames[0]; }
+
+  libelleEvenement(e: EvenementMatch): string {
+    const joueur = e.joueurNom || this.nomEquipeEvenement(e);
+    const passe = e.passeurNom ? ` (${this.translate.instant('direct.assist')} ${e.passeurNom})` : '';
+    return `${this.translate.instant('direct.types.' + e.type)} — ${joueur}${passe}`;
+  }
+
+  get presentsSansJouer(): Presence[] { return this.dataSource.data.filter(p => p.present && !p.aJoue); }
+
+  libelleMotifJoueur(code: string | null | undefined): string {
+    return code ? this.translate.instant('journee.playerReasons.' + code) : '';
+  }
+
+  get absentsExcusesListe(): { nom: string; motif: string }[] {
+    return this.membresNonPresents.filter(m => this.absencesExcusees.has(m.id!))
+      .map(m => ({ nom: `${m.prenom ?? ''} ${m.nom ?? ''}`.trim(), motif: this.absencesExcusees.get(m.id!) || '' }));
+  }
+
+  // ===== JOURNÉE (match non joué, absences excusées) =====
+
+  onMatchNonJoueChange(): void {
+    if (!this.matchNonJoue) return;
+    // personne n'a joué : les présents sont « venus sans jouer »
+    this.dataSource.data.filter(p => p.present).forEach(p => {
+      p.aJoue = false;
+      this.onAJoueChange(p);
+      p.motifNonJoue = p.motifNonJoue || 'AUTRE';
+    });
+    this.refreshView();
+  }
+
+  get absentsFiltres(): Membre[] {
+    const q = this.absentSearch.trim().toLowerCase();
+    return this.membresNonPresents.filter(m => !q || `${m.prenom ?? ''} ${m.nom ?? ''}`.toLowerCase().includes(q));
+  }
+
+  get nbAbsentsExcuses(): number {
+    return this.membresNonPresents.filter(m => this.absencesExcusees.has(m.id!)).length;
+  }
+
+  estExcuse(membreId: number): boolean { return this.absencesExcusees.has(membreId); }
+
+  basculerExcuse(membreId: number): void {
+    if (this.absencesExcusees.has(membreId)) this.absencesExcusees.delete(membreId);
+    else this.absencesExcusees.set(membreId, '');
   }
 
   // ===== ÉVÉNEMENTS =====
@@ -1295,10 +1405,23 @@ private assignDefaultTeams(): void {
     const matchId = this.match!.id;
     const presencesToSave = this.dataSource.data.filter(p => p.present);
 
-    this.presenceService.savePresences(matchId, presencesToSave).subscribe({
+    if (this.matchNonJoue) presencesToSave.forEach(p => { p.aJoue = false; });
+
+    const journee = {
+      matchNonJoue: this.matchNonJoue,
+      motifNonJoue: this.matchNonJoue ? this.motifMatchNonJoue : null,
+      absencesExcusees: this.membresNonPresents
+        .filter(m => this.absencesExcusees.has(m.id!))
+        .map(m => ({ membreId: m.id!, motif: this.absencesExcusees.get(m.id!) || null }))
+    };
+
+    this.presenceService.savePresences(matchId, presencesToSave).pipe(
+      switchMap(() => this.presenceService.saveJournee(matchId, journee))
+    ).subscribe({
       next: () => {
         this.isLoading = false;
-        this.showSnackbar('Présences enregistrées !', 'success');
+        if (this.match) { this.match.matchNonJoue = this.matchNonJoue; this.match.motifNonJoue = journee.motifNonJoue; }
+        this.showSnackbar(this.matchNonJoue ? 'Journée enregistrée (match non joué)' : 'Présences enregistrées !', 'success');
       },
       error: (err) => {
         console.error('Erreur sauvegarde:', err);
@@ -1628,13 +1751,13 @@ private generateTeamTablePdf(
   
   const cols = [
     { label: '#', width: 6 },
-    { label: 'Joueur', width: width - 48 },
+    { label: t('dashboard.player'), width: width - 48 },
     { label: 'B', width: 7 },
     { label: 'P', width: 7 },
     { label: 'PD', width: 7 },
-    { label: 'CSC', width: 7 },
-    { label: 'CJ', width: 7 },
-    { label: 'CR', width: 7 }
+    { label: t('PRESENCE.STATS_FIELD.OWN_GOAL'), width: 7 },
+    { label: t('PRESENCE.BADGE.YC'), width: 7 },
+    { label: t('PRESENCE.BADGE.RC'), width: 7 }
   ];
   
   let colX = x;
@@ -1801,7 +1924,7 @@ private generateTeamTablePdf(
 
 //       (doc as any).autoTable({
 //         startY: y,
-//         head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
+//         head: [['N°', 'Nom et Prénom', 'Équipe', 'Statut', 'Signature']],
 //         body: tableData,
 //         theme: 'grid',
 //         headStyles: {
@@ -1918,8 +2041,13 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
         : '';
       doc.setFontSize(8);
       doc.text(`${this.match?.typeMatch || ''} - ${matchDate}`, pageWidth / 2, 25, { align: 'center' });
+      if (this.matchNonJoue) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`MATCH NON JOUÉ — ${this.motifMatchLabel}`, pageWidth / 2, 31, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+      }
 
-      y = 35;
+      y = this.matchNonJoue ? 39 : 35;
 
       // ===== OFFICIELS =====
       doc.setFontSize(8);
@@ -1938,11 +2066,12 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
           (i + 1).toString(),
           this.getMembreName(p),
           p.equipeMatch || '',
+          p.aJoue ? 'A joué' : ('Présent' + (p.motifNonJoue ? ` (${this.libelleMotifJoueur(p.motifNonJoue)})` : '')),
           ''
         ]);
       });
 
-      for (let i = 0; i < 5; i++) { tableData.push(['', '', '', '']); }
+      for (let i = 0; i < 5; i++) { tableData.push(['', '', '', '', '']); }
 
       const headerColor = [
         Math.round((this.team1Color[0] + this.team2Color[0]) / 2),
@@ -1952,11 +2081,11 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
 
       (doc as any).autoTable({
         startY: y,
-        head: [['N°', 'Nom et Prénom', 'Équipe', 'Signature']],
+        head: [['N°', 'Nom et Prénom', 'Équipe', 'Statut', 'Signature']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
-        columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 1: { cellWidth: 75 }, 2: { cellWidth: 40, halign: 'center' }, 3: { cellWidth: 50 } },
+        columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 60 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 36, halign: 'center', fontSize: 7 }, 4: { cellWidth: 52 } },
         didParseCell: (data: any) => {
           if (data.column.index === 2 && data.cell.section === 'body' && data.cell.raw) {
             if (data.cell.raw === this.equipeNames[0]) {
@@ -1978,6 +2107,14 @@ async downloadPresenceSheetAsPdf(): Promise<void> {
       doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.setFont('helvetica', 'bold');
       doc.text(`${this.dataSource.data.length}`, margin + 12, finalY);
+      const excuses = this.absentsExcusesListe;
+      if (excuses.length) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(90, 90, 90);
+        const texte = `Absents excusés (${excuses.length}) : ` + excuses.map(e => e.nom + (e.motif ? ` (${e.motif})` : '')).join(', ');
+        doc.text(doc.splitTextToSize(texte, pageWidth - 2 * margin), margin, finalY + 8);
+      }
       
       const dateFile = this.match?.dateMatch ? new Date(this.match.dateMatch).toISOString().split('T')[0] : 'match';
       const fileName = `fiche-presence-${this.groupeActif?.nom}-${dateFile}.pdf`;

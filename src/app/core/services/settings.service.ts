@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, LOCALE_ID } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -23,7 +23,7 @@ export class SettingsService {
   private settingsSubject = new BehaviorSubject<AppSettings>(this.DEFAULT_SETTINGS);
   public settings$ = this.settingsSubject.asObservable();
 
-  constructor(private translate: TranslateService) {
+  constructor(private translate: TranslateService, @Inject(LOCALE_ID) private locale: string) {
     this.loadSettings();
     this.initializeLanguage();
     this.initializeTheme();
@@ -69,8 +69,11 @@ export class SettingsService {
    */
   private initializeLanguage(): void {
     const currentSettings = this.settingsSubject.value;
-    this.translate.setDefaultLang(currentSettings.language);
+    // Langue de repli = français (langue de référence) : une clé absente d'une autre langue s'affiche en français
+    // au lieu de montrer la clé brute (ex. « directory.title »).
+    this.translate.setDefaultLang('fr');
     this.translate.use(currentSettings.language);
+    document.documentElement.lang = currentSettings.language;
   }
 
   /**
@@ -107,8 +110,11 @@ export class SettingsService {
    */
   setLanguage(language: Language): void {
     this.translate.use(language);
+    document.documentElement.lang = language;
     const currentSettings = this.settingsSubject.value;
     this.saveSettings({ ...currentSettings, language });
+    // Les dates et nombres suivent la langue au démarrage de l'application : on recharge pour qu'ils changent aussi
+    if (!this.locale.toLowerCase().startsWith(language)) setTimeout(() => window.location.reload(), 200);
   }
 
   /**

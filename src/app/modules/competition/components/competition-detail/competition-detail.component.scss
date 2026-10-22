@@ -624,3 +624,263 @@
   .drawer { width: 100%; }
   .modal { margin: $spacing-lg; }
 }
+// ── Ajouts SCSS pour le drawer étendu ─────────────────────────────────────
+// À fusionner dans competition-detail.component.scss
+
+// ── Grille de champs côte à côte ──────────────────────────────────────────
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  &.form-row--3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 360px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ── Champ avec toggle switch ───────────────────────────────────────────────
+.form-field--toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
+
+  &:last-child { border-bottom: none; }
+
+  .toggle-info {
+    flex: 1;
+    min-width: 0;
+
+    .form-label { margin-bottom: 2px; }
+    .form-hint  { display: block; font-size: 11px; color: var(--text-muted, #888); }
+  }
+}
+
+// ── Toggle switch ──────────────────────────────────────────────────────────
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: var(--color-border, #d0d5dd);
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+  }
+
+  input:checked + .toggle-slider {
+    background: var(--color-primary, #16a34a);
+
+    &::before { transform: translateX(20px); }
+  }
+
+  input:focus-visible + .toggle-slider {
+    outline: 2px solid var(--color-primary, #16a34a);
+    outline-offset: 2px;
+  }
+}
+
+// ── Badge visibilité dans le hero ─────────────────────────────────────────
+.badge-visibilite {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &.publique {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.privee {
+    background: #fef9c3;
+    color: #854d0e;
+  }
+}
+
+// ── Section brouillon-only tag ─────────────────────────────────────────────
+.brouillon-only {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-warning, #d97706);
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+// competition-detail.component.scss
+
+.drawer {
+  // ... tes styles existants (position, width, etc.) ...
+  
+  display: flex;
+  flex-direction: column;
+  height: 100%;          // ou 100dvh si le drawer est full-height
+  max-height: 100vh;
+
+  &__header {
+    flex-shrink: 0;      // ne rétrécit jamais
+  }
+
+  &__body {
+    flex: 1;             // prend tout l'espace disponible
+    overflow-y: auto;    // scroll interne
+    padding: 24px;       // ton padding actuel
+  }
+
+  &__footer {
+    flex-shrink: 0;      // toujours visible en bas
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light, #e5e7eb);
+    background: var(--surface, #fff);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;          // ← borné à la hauteur de l'écran
+  height: 100dvh;         // ← version moderne (évite les barres mobile)
+  display: flex;
+  flex-direction: column;
+  // ... tes autres styles (width, z-index, etc.)
+
+  &__header {
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1 1 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;  // scroll fluide iOS
+    padding: 24px;
+    // ⚠️ pas de padding-bottom ici, le footer s'en charge
+  }
+
+  &__footer {
+    flex-shrink: 0;
+    position: sticky;          // reste collé en bas
+    bottom: 0;
+    padding: 16px 24px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));  // safe area mobile
+    background: var(--surface, #fff);
+    border-top: 1px solid var(--border-light, #e5e7eb);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    z-index: 1;
+  }
+}
+.drawer__footer {
+  flex-wrap: wrap;      // ← les boutons passent à la ligne si trop étroits
+  gap: 8px;
+}
+// ── Palmarès (compétition terminée) : bandeau sous le hero, marges mobiles
+.comp-detail__palmares {
+  max-width: 1400px;
+  margin: $spacing-md auto 0;
+  padding: 0 $spacing-md;
+  box-sizing: border-box;
+
+  @include mobile { margin-top: $spacing-sm; }
+}
+
+// ════════════════════════════════════════════════════════════
+// En-tête harmonisé avec le reste de l'application (bleu nuit + or), mobile d'abord
+// ════════════════════════════════════════════════════════════
+.comp-detail__hero {
+  padding: 12px var(--page-gutter) 20px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(240, 180, 41, .28), transparent 45%),
+    var(--hero-gradient);
+}
+
+// Bouton « retour » lisible sur fond sombre
+.hero-top-bar {
+  margin-bottom: 8px;
+  .btn-back {
+    color: #fff;
+    background: rgba(255, 255, 255, .14);
+    border: 0;
+    border-radius: var(--radius-pill);
+    min-height: 40px;
+    padding: 0 14px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    &:hover { background: rgba(255, 255, 255, .22); }
+  }
+}
+
+.comp-detail__identity {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 6px 0 0;
+}
+.comp-detail__logo {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  @media (min-width: 768px) { width: 80px; height: 80px; border-radius: 20px; }
+}
+.comp-detail__info { min-width: 0; }
+.comp-detail__nom { font-size: clamp(20px, 6vw, 30px); line-height: 1.15; margin-bottom: 6px; }
+.comp-detail__desc {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  @media (min-width: 768px) { -webkit-line-clamp: 4; }
+}
+.comp-detail__meta { gap: 4px 14px; span { font-size: 12px; } }
+
+// Les onglets restent accessibles quand on fait défiler la page
+.tabs-nav { position: sticky; top: 0; z-index: 20; }
+
+// Icônes des métadonnées et des badges de l'en-tête : 14 px (24 px par défaut = lignes trop hautes sur mobile)
+.comp-detail__meta mat-icon, .comp-detail__badges mat-icon {
+  font-size: 14px; width: 14px; height: 14px;
+}
+.comp-detail__meta { flex-direction: row; }
+
+.hero-top-bar { gap: 8px; .btn-back { margin-right: auto; } }
+.btn-edit--rapport { padding-inline: 10px; }

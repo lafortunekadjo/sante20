@@ -45,7 +45,7 @@
                     {{ n.participant1?.nomEquipe ?? 'À déterminer' }}
                   </span>
                   <span class="noeud__score"
-                        *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                        *ngIf="scoreVisible(n)">
                     {{ scoreDom(n) }}
                   </span>
                 </div>
@@ -69,7 +69,7 @@
                     {{ n.participant2?.nomEquipe ?? 'À déterminer' }}
                   </span>
                    <span class="noeud__score"
-                        *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                        *ngIf="scoreVisible(n)">
                     {{ scoreExt(n) }}
                   </span>
                 </div>
@@ -79,21 +79,21 @@
                 <button class="noeud__btn noeud__btn--match"
                         *ngIf="n.matchAller"
                         (click)="ouvrirMatch(n)"
-                        title="Voir le match">
+                        [title]="'ui.voir_le_match_97a0' | translate">
                   <mat-icon>sports_soccer</mat-icon>
                 </button>
                 <!-- Modifier date / lieu / officiels → ouvre le drawer match-edit -->
                 <button class="noeud__btn noeud__btn--plan"
                         *ngIf="canEdit && n.matchAller"
                         (click)="ouvrirMatchEdit(n)"
-                        title="Modifier date, lieu, officiels">
+                        [title]="'ui.modifier_date_lieu_officiels_f1fa' | translate">
                   <mat-icon>event</mat-icon>
                 </button>
                 <!-- Modifier les équipes → tirage manuel -->
                 <button class="noeud__btn noeud__btn--edit"
                         *ngIf="canEdit"
                         (click)="ouvrirEditNoeud(n)"
-                        title="Modifier les équipes (tirage manuel)">
+                        [title]="'ui.modifier_les_equipes_tirage_manuel_7a93' | translate">
                   <mat-icon>shuffle</mat-icon>
                 </button>
               </div>
@@ -119,7 +119,7 @@
   <div class="bracket__list">
     <h3 class="bracket__list-title">
       <mat-icon>list</mat-icon>
-      Matchs
+      {{ 'menu.items.MATCHS' | translate }}
     </h3>
 
     <ng-container *ngFor="let tour of tours()">
@@ -151,7 +151,7 @@
                 {{ n.participant1?.nomEquipe ?? '?' }}
               </span>
               <span class="list-row__score"
-                    *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                    *ngIf="scoreVisible(n)">
                 {{ scoreDom(n) }}
               </span>
             </div>
@@ -162,7 +162,7 @@
                  [class.list-row__team--win]="estVainqueur(n, 2)"
                  [class.list-row__team--lose]="!estVainqueur(n, 2) && !!n.vainqueur">
               <span class="list-row__score"
-                    *ngIf="n.matchAller?.statut === 'TERMINE' || n.matchAller?.statut === 'EN_COURS'">
+                    *ngIf="scoreVisible(n)">
                 {{ scoreExt(n) }}
               </span>
               <span class="list-row__name">
@@ -179,6 +179,7 @@
                 *ngIf="n.matchAller?.dateHeure && n.matchAller?.statut === 'PLANIFIE'">
             {{ n.matchAller!.dateHeure | date:'dd/MM HH:mm' }}
           </span>
+          <span class="list-row__extra" *ngIf="aRetour(n)">{{ detailManches(n) }}</span>
           <span class="list-row__extra" *ngIf="hasExtra(n)">
             {{ extraLabel(n) }}
           </span>
@@ -188,13 +189,13 @@
             <button class="noeud__btn noeud__btn--plan"
                     *ngIf="canEdit && n.matchAller"
                     (click)="ouvrirMatchEdit(n)"
-                    title="Modifier date, lieu, officiels">
+                    [title]="'ui.modifier_date_lieu_officiels_f1fa' | translate">
               <mat-icon>event</mat-icon>
             </button>
             <button class="noeud__btn noeud__btn--edit"
                     *ngIf="canEdit"
                     (click)="ouvrirEditNoeud(n)"
-                    title="Modifier les équipes">
+                    [title]="'ui.modifier_les_equipes_87ad' | translate">
               <mat-icon>shuffle</mat-icon>
             </button>
             <i class="material-icons list-row__arrow"
@@ -223,7 +224,7 @@
     <div class="modal__header">
       <h3>
         <mat-icon>edit</mat-icon>
-        Tirage manuel — Modifier les équipes
+        {{ 'ui.tirage_manuel_modifier_les_equipes_ed16' | translate }}
       </h3>
       <button class="btn-close" (click)="fermerEdit()">
         <mat-icon>close</mat-icon>
@@ -233,17 +234,17 @@
     <div class="modal__body">
       <p class="modal__hint">
         <mat-icon>info_outline</mat-icon>
-        Sélectionnez les équipes parmi les qualifiées
+        {{ 'ui.selectionnez_les_equipes_parmi_les_e0fc' | translate }}
       </p>
 
       <div class="form-field">
         <label class="form-label">
           <mat-icon>home</mat-icon>
-          Équipe 1 (Domicile)
+          {{ 'ui.equipe_1_domicile_68b1' | translate }}
         </label>
         <select class="form-select"
                 [(ngModel)]="editParticipant1Id">
-          <option [ngValue]="null">— Choisir une équipe —</option>
+          <option [ngValue]="null">{{ 'ui.choisir_une_equipe_227c' | translate }}</option>
           <option *ngFor="let p of participantsDisponibles()"
                   [ngValue]="p.id"
                   [disabled]="p.id === editParticipant2Id">
@@ -255,11 +256,11 @@
       <div class="form-field" style="margin-top:12px">
         <label class="form-label">
           <mat-icon>flight_land</mat-icon>
-          Équipe 2 (Extérieur)
+          {{ 'ui.equipe_2_exterieur_0fb6' | translate }}
         </label>
         <select class="form-select"
                 [(ngModel)]="editParticipant2Id">
-          <option [ngValue]="null">— Choisir une équipe —</option>
+          <option [ngValue]="null">{{ 'ui.choisir_une_equipe_227c' | translate }}</option>
           <option *ngFor="let p of participantsDisponibles()"
                   [ngValue]="p.id"
                   [disabled]="p.id === editParticipant1Id">
@@ -274,7 +275,7 @@
                   && editParticipant1Id === editParticipant2Id"
            style="margin-top:8px">
         <mat-icon>warning</mat-icon>
-        Une équipe ne peut pas s'affronter elle-même
+        {{ 'competition.phases.tirage.erreurs.memesEquipes' | translate }}
       </div>
     </div>
 

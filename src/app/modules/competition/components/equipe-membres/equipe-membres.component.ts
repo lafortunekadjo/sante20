@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, OnInit, OnChanges,
   SimpleChanges, inject, signal, computed
@@ -35,7 +36,7 @@ interface JoueurCompo {
 @Component({
   selector:    'app-equipe-membres',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports: [TranslateModule, CommonModule, FormsModule],
   templateUrl: './equipe-membres.component.html',
   styleUrls:   ['./equipe-membres.component.scss']
 })

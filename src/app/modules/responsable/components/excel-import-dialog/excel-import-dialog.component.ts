@@ -1,4 +1,5 @@
 // excel-import-dialog.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
@@ -367,7 +368,7 @@ export class ExcelImportDialogComponent implements OnInit {
     ];
     
     if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
-      this.snackBar.open('Format de fichier non supporté. Utilisez .xlsx ou .xls', 'Fermer', {
+      this.snackBar.open(t('ui.ts_format_de_fichier_non_supporte_u_b8ae'), 'Fermer', {
         duration: 4000
       });
       return;
@@ -375,7 +376,7 @@ export class ExcelImportDialogComponent implements OnInit {
 
     // Vérifier la taille (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      this.snackBar.open('Le fichier est trop volumineux (max 5MB)', 'Fermer', {
+      this.snackBar.open(t('ui.ts_le_fichier_est_trop_volumineux_m_2f93'), 'Fermer', {
         duration: 4000
       });
       return;
@@ -450,7 +451,7 @@ export class ExcelImportDialogComponent implements OnInit {
       errors.push({
         row: rowIndex,
         field: 'nom',
-        message: 'Le nom est obligatoire',
+        message: t('partenaire.entreprises.form.nameRequired'),
         data: row
       });
     }
@@ -459,7 +460,7 @@ export class ExcelImportDialogComponent implements OnInit {
       errors.push({
         row: rowIndex,
         field: 'prenom',
-        message: 'Le prénom est obligatoire',
+        message: t('ui.ts_le_prenom_est_obligatoire_0f62'),
         data: row
       });
     }
@@ -468,7 +469,7 @@ export class ExcelImportDialogComponent implements OnInit {
       errors.push({
         row: rowIndex,
         field: 'sexe',
-        message: 'Le sexe doit être "masculin" ou "feminin"',
+        message: t('ui.ts_le_sexe_doit_etre_masculin_ou_fe_63de'),
         data: row
       });
     }
@@ -486,7 +487,7 @@ export class ExcelImportDialogComponent implements OnInit {
       return {
         icon: 'check_circle',
         color: 'primary',
-        message: 'Données valides'
+        message: t('ui.ts_donnees_valides_4226')
       };
     } else {
       return {
@@ -534,7 +535,7 @@ export class ExcelImportDialogComponent implements OnInit {
   // ===== UTILITAIRES =====
   downloadTemplate(): void {
     this.excelImportService.generateTemplate();
-    this.snackBar.open('Template téléchargé', 'Fermer', { duration: 3000 });
+    this.snackBar.open(t('ui.ts_template_telecharge_6d30'), 'Fermer', { duration: 3000 });
   }
 
   resetCounts(): void {

@@ -3,15 +3,17 @@ import {
   Component, Input, OnInit, inject, signal
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButeurDTO, PasseurDTO, CartonsDTO, SuspensionDTO } from '../../../../core/models/competition.models';
+import { FormsModule } from '@angular/forms';
+import { ButeurDTO, PasseurDTO, CartonsDTO, SuspensionDTO, MembreEquipeDTO, CompetitionParticipantDTO } from '../../../../core/models/competition.models';
 import { StatistiquesApiService } from '../../../../core/services/competition/statistiques-api.service';
+import { MembreEquipeApiService } from '../../../../core/services/competition/membre-equipe-api.service';
 
 type StatTab = 'buteurs' | 'passeurs' | 'cartons' | 'suspensions';
 
 @Component({
   selector: 'app-tab-statistiques',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="tab-stats">
 
@@ -139,6 +141,44 @@ type StatTab = 'buteurs' | 'passeurs' | 'cartons' | 'suspensions';
 
       <!-- Suspensions -->
       <div *ngIf="activeTab() === 'suspensions'" class="stats-section">
+        <!-- Décision disciplinaire (commission) -->
+        <div class="susp-actions" *ngIf="canDiscipline">
+          <button class="btn-susp" (click)="ouvrirFormSuspension()" *ngIf="!formOuvert()">
+            <i class="material-icons">gavel</i> Suspendre un joueur
+          </button>
+        </div>
+
+        <form class="susp-form" *ngIf="canDiscipline && formOuvert()" (ngSubmit)="suspendre()">
+          <label>Équipe
+            <select name="equipe" [ngModel]="formParticipantId()" (ngModelChange)="choisirEquipe($event)" required>
+              <option [ngValue]="null">— Choisir —</option>
+              <option *ngFor="let p of participantsValides()" [ngValue]="p.id">{{ p.nomEquipe }}</option>
+            </select>
+          </label>
+          <label>Joueur
+            <select name="joueur" [(ngModel)]="formJoueurId" required [disabled]="!roster().length">
+              <option [ngValue]="null">— Choisir —</option>
+              <option *ngFor="let m of roster()" [ngValue]="m.id">
+                {{ m.numeroDos ? '#' + m.numeroDos + ' ' : '' }}{{ m.prenom }} {{ m.nom }}
+              </option>
+            </select>
+          </label>
+          <label>Nombre de matchs
+            <input name="nb" type="number" min="1" inputmode="numeric" [(ngModel)]="formNbMatchs" required/>
+          </label>
+          <label>Motif
+            <input name="motif" type="text" maxlength="200" [(ngModel)]="formMotif" required
+                   placeholder="Ex. : comportement violent envers l'arbitre"/>
+          </label>
+          <p class="susp-form__error" *ngIf="formErreur()">{{ formErreur() }}</p>
+          <div class="susp-form__actions">
+            <button type="button" class="btn-ghost" (click)="fermerFormSuspension()">Annuler</button>
+            <button type="submit" class="btn-susp" [disabled]="!formValide() || envoiEnCours()">
+              {{ envoiEnCours() ? 'Enregistrement…' : 'Prononcer la suspension' }}
+            </button>
+          </div>
+        </form>
+
         <div class="suspension-list" *ngIf="suspensions().length; else empty">
           <div class="suspension-card"
                *ngFor="let s of suspensions()"
@@ -169,6 +209,9 @@ type StatTab = 'buteurs' | 'passeurs' | 'cartons' | 'suspensions';
                     [class]="s.active ? 'active' : 'inactive'">
                 {{ s.active ? 'Active' : 'Purgée' }}
               </span>
+              <button class="btn-lever" *ngIf="canDiscipline && s.active" (click)="lever(s)">
+                Lever
+              </button>
             </div>
           </div>
         </div>
@@ -186,8 +229,13 @@ type StatTab = 'buteurs' | 'passeurs' | 'cartons' | 'suspensions';
 })
 export class TabStatistiquesComponent implements OnInit {
   @Input() competitionId!: number;
+  /** Équipes de la compétition (pour la suspension manuelle) */
+  @Input() participants: CompetitionParticipantDTO[] = [];
+  /** Commission de discipline : peut prononcer et lever des suspensions */
+  @Input() canDiscipline = false;
 
   private api = inject(StatistiquesApiService);
+  private membreApi = inject(MembreEquipeApiService);
 
   buteurs     = signal<ButeurDTO[]>([]);
   passeurs    = signal<PasseurDTO[]>([]);
@@ -205,6 +253,81 @@ export class TabStatistiquesComponent implements OnInit {
   ngOnInit(): void {
     this.loadTab('buteurs');
   }
+
+  // ── Suspension manuelle (décision disciplinaire) ──────────
+  formOuvert         = signal(false);
+  formParticipantId  = signal<number | null>(null);
+  roster             = signal<MembreEquipeDTO[]>([]);
+  formJoueurId: number | null = null;
+  formNbMatchs = 1;
+  formMotif = '';
+  envoiEnCours = signal(false);
+  formErreur   = signal<string | null>(null);
+
+  participantsValides(): CompetitionParticipantDTO[] {
+    return this.participants.filter(p => p.statutInscription === 'VALIDE' as any);
+  }
+
+  ouvrirFormSuspension(): void {
+    this.formOuvert.set(true);
+    this.formErreur.set(null);
+  }
+
+  fermerFormSuspension(): void {
+    this.formOuvert.set(false);
+    this.formParticipantId.set(null);
+    this.roster.set([]);
+    this.formJoueurId = null;
+    this.formNbMatchs = 1;
+    this.formMotif = '';
+    this.formErreur.set(null);
+  }
+
+  choisirEquipe(participantId: number | null): void {
+    this.formParticipantId.set(participantId);
+    this.formJoueurId = null;
+    this.roster.set([]);
+    if (participantId == null) return;
+    this.membreApi.getJoueurs(this.competitionId, participantId)
+      .subscribe(j => this.roster.set(j));
+  }
+
+  formValide(): boolean {
+    return this.formParticipantId() != null && this.formJoueurId != null
+      && this.formNbMatchs >= 1 && this.formMotif.trim().length > 0;
+  }
+
+  suspendre(): void {
+    if (!this.formValide() || this.envoiEnCours()) return;
+    const joueur = this.roster().find(m => m.id === this.formJoueurId)!;
+    this.envoiEnCours.set(true);
+    this.formErreur.set(null);
+    this.api.suspendre(this.competitionId, {
+      joueurId: joueur.id,                 // identifiant dans l'effectif de la compétition
+      joueurNom: joueur.nom,
+      joueurPrenom: joueur.prenom,
+      participantId: this.formParticipantId()!,
+      nbMatchs: this.formNbMatchs,
+      motif: this.formMotif.trim()
+    }).subscribe({
+      next: liste => {
+        this.suspensions.set(liste);
+        this.envoiEnCours.set(false);
+        this.fermerFormSuspension();
+      },
+      error: err => {
+        this.formErreur.set(err?.error?.message ?? 'Impossible de prononcer la suspension');
+        this.envoiEnCours.set(false);
+      }
+    });
+  }
+
+  lever(s: SuspensionDTO): void {
+    if (!confirm(`Lever la suspension de ${s.joueurNom} ?`)) return;
+    this.api.leverSuspension(this.competitionId, s.id)
+      .subscribe(liste => this.suspensions.set(liste));
+  }
+
 
   setTab(tab: StatTab): void {
     this.activeTab.set(tab);

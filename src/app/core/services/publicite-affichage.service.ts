@@ -58,7 +58,8 @@ export class PubliciteAffichageService implements OnDestroy {
   
   // Cache des publicités par emplacement
   private cache = new Map<string, { data: PubliciteAffichage[]; timestamp: number }>();
-  private cacheTimeout = 5 * 60 * 1000; // 5 minutes
+  // court : le serveur fait tourner les publicités, un cache de 5 min montrait la même pendant toute la visite
+  private cacheTimeout = 60 * 1000; // 1 minute
   
   // Tracking des impressions déjà envoyées (éviter doublons)
   private impressionsTracked = new Set<string>();

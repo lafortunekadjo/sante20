@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, Input, Output, EventEmitter,
   inject, signal, computed, OnChanges
@@ -92,7 +93,7 @@ export class BracketViewComponent implements OnChanges {
     // Ajouter les tours non reconnus
     for (const [key, noeuds] of map) {
       if (!ordre.includes(key)) {
-        tours.push({ nom: key, label: key, noeuds });
+        tours.push({ nom: key, label: this.tourLabel(key), noeuds });
       }
     }
 
@@ -125,12 +126,12 @@ export class BracketViewComponent implements OnChanges {
 
 tourLabel(tour: string): string {
   const m: Record<string, string> = {
-    TOUR_PRELIMINAIRE: 'Tours préliminaires',
+    TOUR_PRELIMINAIRE: t('ui.ts_tours_preliminaires_d07a'),
     SEIZIEME:          '32es de finale',
     HUITIEME:          '16es de finale',
     QUART_DE_FINALE:   'Quarts de finale',
     DEMI_FINALE:       'Demi-finales',
-    TROISIEME_PLACE:   'Match 3e place',  // ← manquant
+    TROISIEME_PLACE:   t('ui.ts_match_3e_place_e002'),  // ← manquant
     FINALE:            'Finale'
   };
   return m[tour] ?? tour;
@@ -161,7 +162,7 @@ tourLabel(tour: string): string {
     if (!n) return;
     if (!this.editParticipant1Id || !this.editParticipant2Id) return;
     if (this.editParticipant1Id === this.editParticipant2Id) {
-      alert('Une équipe ne peut pas s"affronter elle-même');
+      alert(t('ui.ts_une_equipe_ne_peut_pas_s_affront_133c'));
       return;
     }
     this.savingNoeud.set(true);
@@ -183,6 +184,7 @@ tourLabel(tour: string): string {
 
   // ── Helpers affichage ─────────────────────────────────────
   getScore(noeud: BracketNoeudDTO): string {
+    if (noeud.matchRetour && this.scoreVisible(noeud)) return this.detailManches(noeud);
     const m = noeud.matchAller;
     if (!m) return '–';
     if (m.statut === 'TERMINE' || m.statut === 'FORFAIT_DOMICILE'
@@ -213,30 +215,61 @@ tourLabel(tour: string): string {
   }
 
   // ── Score avec prolongation / TAB ─────────────────────────
+  // Match sec : score du match. Aller-retour : cumul des deux manches (équipe 1 = domicile à l'aller).
+  private buts(m: any, cote: 'dom' | 'ext'): number {
+    if (!m) return 0;
+    const base = cote === 'dom' ? m.butsDomicile : m.butsExterieur;
+    const prol = cote === 'dom' ? m.butsDomicileProlong : m.butsExterieurProlong;
+    return (base ?? 0) + (prol ?? 0);
+  }
+
+  private joue(m: any): boolean {
+    return !!m && ['TERMINE', 'EN_COURS', 'FORFAIT_DOMICILE', 'FORFAIT_EXTERIEUR'].includes(m.statut);
+  }
+
+  aRetour(n: BracketNoeudDTO): boolean { return !!n.matchRetour; }
+
   scoreDom(n: BracketNoeudDTO): number {
-    const m = n.matchAller as any;
-    if (!m) return 0;
-    return (m.butsDomicile ?? 0) + (m.butsDomicileProlong ?? 0);
+    if (n.matchRetour)
+      return this.buts(n.matchAller, 'dom') + this.buts(n.matchRetour, 'ext');
+    return this.buts(n.matchAller, 'dom');
   }
- 
+
   scoreExt(n: BracketNoeudDTO): number {
-    const m = n.matchAller as any;
-    if (!m) return 0;
-    return (m.butsExterieur ?? 0) + (m.butsExterieurProlong ?? 0);
+    if (n.matchRetour)
+      return this.buts(n.matchAller, 'ext') + this.buts(n.matchRetour, 'dom');
+    return this.buts(n.matchAller, 'ext');
   }
- 
+
+  /** Afficher les scores : au moins une manche jouée ou en cours. */
+  scoreVisible(n: BracketNoeudDTO): boolean {
+    return this.joue(n.matchAller) || this.joue(n.matchRetour);
+  }
+
+  /** Détail des manches, ex. « Aller 2–1 · Retour 0–0 ». */
+  detailManches(n: BracketNoeudDTO): string {
+    if (!n.matchRetour) return '';
+    const a = this.joue(n.matchAller)
+      ? `${this.buts(n.matchAller, 'dom')}–${this.buts(n.matchAller, 'ext')}` : '–';
+    const r = this.joue(n.matchRetour)
+      // le retour est affiché du point de vue de l'équipe 1 (qui joue à l'extérieur)
+      ? `${this.buts(n.matchRetour, 'ext')}–${this.buts(n.matchRetour, 'dom')}` : '–';
+    return `Aller ${a} · Retour ${r}`;
+  }
+
   hasExtra(n: BracketNoeudDTO): boolean {
-    const m = n.matchAller as any;
+    const m = (n.matchRetour ?? n.matchAller) as any;
     if (!m || m.statut !== 'TERMINE') return false;
     return (m.tabDomicile !== null && m.tabDomicile !== undefined)
-        || (m.butsDomicileProlong !== null && m.butsDomicileProlong !== undefined);
+        || (!n.matchRetour && m.butsDomicileProlong !== null && m.butsDomicileProlong !== undefined);
   }
- 
+
   extraLabel(n: BracketNoeudDTO): string {
-    const m = n.matchAller as any;
+    const m = (n.matchRetour ?? n.matchAller) as any;
     if (!m) return '';
     if (m.tabDomicile !== null && m.tabDomicile !== undefined)
-      return `TAB ${m.tabDomicile}–${m.tabExterieur}`;
+      // au retour, l'équipe 1 est l'extérieur
+      return n.matchRetour ? `TAB ${m.tabExterieur}–${m.tabDomicile}` : `TAB ${m.tabDomicile}–${m.tabExterieur}`;
     if (m.butsDomicileProlong !== null && m.butsDomicileProlong !== undefined)
       return 'ap';
     return '';

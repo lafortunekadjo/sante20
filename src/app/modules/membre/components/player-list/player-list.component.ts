@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -146,7 +147,7 @@ toggleMobileFilters(): void {
     if (event.target.checked) {
       if (this.comparedPlayers.length >= 3) {
         event.target.checked = false;
-        alert('Maximum 3 joueurs pour la comparaison.');
+        alert(t('ui.ts_maximum_3_joueurs_pour_la_compar_d07a'));
         return;
       }
       this.comparedPlayers.push(player);

@@ -78,9 +78,10 @@ getMatchsByPhase(competitionId: number, phaseId: number): Observable<MatchDTO[]>
   }
 
   // ── Démarrer un match (PLANIFIE → EN_COURS) ─────────────────
-  demarrerMatch(competitionId: number, matchId: number): Observable<MatchDetailDTO> {
+  /** @param forcer coup d'envoi malgré des joueurs non éligibles (responsable uniquement) */
+  demarrerMatch(competitionId: number, matchId: number, forcer = false): Observable<MatchDetailDTO> {
     return this.http.post<MatchDetailDTO>(
-      `${this.base}/${competitionId}/matchs/${matchId}/demarrer`, {});
+      `${this.base}/${competitionId}/matchs/${matchId}/demarrer${forcer ? '?forcer=true' : ''}`, {});
   }
 
   // ── Corriger résultat (admin) ─────────────────────────────

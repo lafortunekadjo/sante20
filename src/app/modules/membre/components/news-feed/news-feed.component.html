@@ -70,8 +70,8 @@
               (click)="activeTab = 'actus'" role="tab">
         <mat-icon>newspaper</mat-icon>
         <span>Actus</span>
-        <span class="tab-badge" *ngIf="(ongoingContributions?.length || 0) + (currentEvents?.length || 0) + (upcomingBirthdays?.length || 0) > 0">
-          {{ (ongoingContributions?.length || 0) + (currentEvents?.length || 0) + (upcomingBirthdays?.length || 0) }}
+        <span class="tab-badge" *ngIf="(collectesFeed?.length || 0) + (currentEvents?.length || 0) + (upcomingBirthdays?.length || 0) > 0">
+          {{ (collectesFeed?.length || 0) + (currentEvents?.length || 0) + (upcomingBirthdays?.length || 0) }}
         </span>
       </button>
 
@@ -110,47 +110,78 @@
         </div>
 
         <!-- Contributions en cours -->
-        <div class="feed-block" *ngIf="(ongoingContributions?.length || 0) > 0">
+        <div class="feed-block" *ngIf="(collectesFeed?.length || 0) > 0">
           <div class="block-header">
             <div class="block-icon contributions">
               <mat-icon>account_balance_wallet</mat-icon>
             </div>
             <div class="block-title">
               <h2>{{ 'feed.sections.contributions.title' | translate }}</h2>
-              <span class="block-badge">{{ ongoingContributions.length }}</span>
+              <span class="block-badge">{{ collectesFeed.length }}</span>
             </div>
           </div>
           <div class="cards-list">
-            <div class="feed-card contribution-card" *ngFor="let contrib of ongoingContributions">
+            <div class="feed-card contribution-card" *ngFor="let c of collectesFeed"
+                 [class.is-urgent]="c.joursRestants !== null && c.joursRestants <= 3 && c.joursRestants >= 0"
+                 [class.is-late]="c.joursRestants !== null && c.joursRestants < 0">
               <div class="fc-header">
-                <div class="fc-icon"><mat-icon>payments</mat-icon></div>
+                <div class="fc-icon" [class.events]="c.evenement"><mat-icon>{{ c.evenement ? 'celebration' : 'payments' }}</mat-icon></div>
                 <div class="fc-title">
-                  <span class="fc-name">{{ contrib.contribution.nom }}</span>
-                  <span class="fc-sub">{{ 'feed.sections.contributions.target' | translate }}</span>
+                  <span class="fc-name">{{ c.nom }}</span>
+                  <span class="fc-sub">{{ (c.evenement ? 'feed.sections.contributions.kind_event' : 'feed.sections.contributions.kind_fund') | translate }}</span>
                 </div>
-              </div>
-              <div class="fc-body">
-                <!-- Dernier contributeur -->
-                <div class="contributor-row" *ngFor="let indiv of (contrib.individuelles || []) | slice:0:1">
-                  <div class="contrib-avatar">{{ indiv.displayName?.charAt(0) }}</div>
-                  <div class="contrib-info">
-                    <span class="contrib-name">{{ indiv.displayName }}</span>
-                    <span class="contrib-amount">{{ indiv.montant | number }} FCFA</span>
-                  </div>
-                </div>
-                <span class="more-contrib" *ngIf="contrib.individuelles.length > 1">
-                  {{ 'feed.sections.contributions.contributors_count' | translate:{ count: contrib.individuelles.length - 1 } }}
-                </span>
-                <!-- Échéance -->
-                <div class="fc-info-row" *ngIf="contrib.contribution.delaiContribution">
+                <span class="deadline-pill" *ngIf="c.joursRestants !== null"
+                      [class.urgent]="c.joursRestants >= 0 && c.joursRestants <= 3" [class.late]="c.joursRestants < 0">
                   <mat-icon>alarm</mat-icon>
+                  {{ (c.joursRestants < 0 ? 'feed.sections.contributions.late' : (c.joursRestants === 0 ? 'feed.sections.contributions.today' : 'feed.sections.contributions.days_left')) | translate: { count: c.joursRestants } }}
+                </span>
+              </div>
+
+              <div class="fc-body">
+                <!-- Total collecté (+ avancement vers l'objectif global) -->
+                <div class="collecte-total">
+                  <strong>{{ c.total | number }} FCFA</strong>
+                  <span *ngIf="c.mode === 'OBJECTIF' && c.objectif">{{ 'feed.sections.contributions.of_goal' | translate: { goal: (c.objectif | number) } }}</span>
+                  <span *ngIf="!(c.mode === 'OBJECTIF' && c.objectif)">{{ 'feed.sections.contributions.collected' | translate }}</span>
+                </div>
+                <div class="collecte-barre" *ngIf="c.mode === 'OBJECTIF' && c.objectif">
+                  <span [style.width.%]="pourcentCollecte(c)"></span>
+                </div>
+                <span class="collecte-hint" *ngIf="c.mode === 'FIXE' && c.objectif">{{ 'feed.sections.contributions.fixed_amount' | translate: { amount: (c.objectif | number) } }}</span>
+                <span class="collecte-hint" *ngIf="c.mode === 'LIBRE'">{{ 'feed.sections.contributions.free_amount' | translate }}</span>
+
+                <!-- Ma participation (événements) -->
+                <div class="collecte-mine" *ngIf="c.evenement" [class.done]="(c.mon || 0) > 0">
+                  <mat-icon>{{ (c.mon || 0) > 0 ? 'check_circle' : 'volunteer_activism' }}</mat-icon>
+                  <span *ngIf="(c.mon || 0) > 0">{{ 'feed.sections.contributions.my_share' | translate: { amount: (c.mon | number) } }}</span>
+                  <span *ngIf="!(c.mon || 0)">{{ 'feed.sections.contributions.not_yet' | translate }}</span>
+                </div>
+
+                <!-- Cotisations : dernier contributeur et nombre de participants -->
+                <ng-container *ngIf="!c.evenement">
+                  <div class="contributor-row" *ngIf="c.dernier">
+                    <div class="contrib-avatar">{{ c.dernier.nom?.charAt(0) }}</div>
+                    <div class="contrib-info">
+                      <span class="contrib-name">{{ c.dernier.nom }}</span>
+                      <span class="contrib-amount">{{ c.dernier.montant | number }} FCFA</span>
+                    </div>
+                  </div>
+                  <span class="more-contrib" *ngIf="(c.nbContributeurs || 0) > 1">
+                    {{ 'feed.sections.contributions.contributors_count' | translate: { count: (c.nbContributeurs || 0) - 1 } }}
+                  </span>
+                  <span class="more-contrib" *ngIf="!c.dernier">{{ 'feed.sections.contributions.nobody' | translate }}</span>
+                </ng-container>
+
+                <div class="fc-info-row" *ngIf="c.delai">
+                  <mat-icon>event</mat-icon>
                   <span>{{ 'feed.sections.contributions.deadline' | translate }}</span>
-                  <span class="fc-info-val">{{ contrib.contribution.delaiContribution | date:'dd/MM/yyyy' }}</span>
+                  <span class="fc-info-val">{{ c.delai | date:'dd/MM/yyyy' }}</span>
                 </div>
               </div>
-              <div class="fc-actions">
-                <button mat-raised-button color="accent" (click)="viewContributions(contrib.contribution.id!)">
-                  <mat-icon>add_circle</mat-icon>
+
+              <div class="fc-actions" *ngIf="!c.evenement && c.typeId">
+                <button mat-raised-button color="accent" (click)="viewContributions(c.typeId!)">
+                  <mat-icon>groups</mat-icon>
                   {{ 'feed.sections.contributions.view_button' | translate }}
                 </button>
               </div>
@@ -176,15 +207,14 @@
                 <div class="fc-icon events"><mat-icon>celebration</mat-icon></div>
                 <div class="fc-title">
                   <span class="fc-name">{{ event.nomEvenement }}</span>
-                  <span class="fc-sub">{{ event.typeEvenement }}</span>
+                  <span class="fc-sub">{{ ('collecte.types.' + event.typeEvenement) | translate }}</span>
                 </div>
               </div>
               <div class="fc-body">
                 <p class="fc-desc">{{ event.description }}</p>
-                <div class="fc-info-row" *ngIf="event.estContributionOuverte">
-                  <mat-icon>schedule</mat-icon>
-                  <span>{{ 'feed.sections.events.contribution_deadline' | translate }}</span>
-                  <span class="fc-info-val">{{ event.dateCreation | date:'dd/MM/yyyy' }}</span>
+                <div class="fc-info-row" *ngIf="event.dateEvenement">
+                  <mat-icon>event</mat-icon>
+                  <span class="fc-info-val">{{ event.dateEvenement | date:'dd/MM/yyyy' }}</span>
                 </div>
               </div>
               <div class="fc-actions">
@@ -230,10 +260,10 @@
 
         <!-- Vide -->
         <div class="empty-state"
-             *ngIf="!groupeId && ongoingContributions?.length === 0 && currentEvents?.length === 0 && upcomingBirthdays?.length === 0">
+             *ngIf="!groupeId && collectesFeed?.length === 0 && currentEvents?.length === 0 && upcomingBirthdays?.length === 0">
           <mat-icon>newspaper</mat-icon>
-          <h3>Pas d'actualités pour l'instant</h3>
-          <p>Les contributions, événements et anniversaires apparaîtront ici</p>
+          <h3>{{ 'ui.pas_d_actualites_pour_l_instant_9096' | translate }}</h3>
+          <p>{{ 'ui.les_contributions_evenements_et_an_c01a' | translate }}</p>
         </div>
 
       </div>
@@ -324,7 +354,7 @@
                       <span>{{ $any(match).mediaUrls.length }} {{ $any(match).mediaUrls.length > 1 ? 'médias' : 'média' }}</span>
                     </div>
                     <button class="mc-media-dl-all" (click)="downloadMedia(match)"
-                            matTooltip="Tout télécharger">
+                            [matTooltip]="'ui.tout_telecharger_9b81' | translate">
                       <mat-icon>download</mat-icon>
                     </button>
                   </div>
@@ -368,7 +398,7 @@
                     <button mat-stroked-button color="primary" class="mc-gallery-btn"
                             (click)="openLightbox($any(match).mediaUrls, 0)">
                       <mat-icon>collections</mat-icon>
-                      Ouvrir la galerie
+                      {{ 'ui.ouvrir_la_galerie_3490' | translate }}
                     </button>
                   </div>
 
@@ -419,7 +449,7 @@
     <span class="lb-top-counter">{{ currentMediaIndex + 1 }} / {{ activeMediaList.length }}</span>
     <div class="lb-top-actions">
       <button class="lb-icon-btn" (click)="downloadSingleMedia2(activeMediaList[currentMediaIndex], currentMediaIndex)"
-              matTooltip="Télécharger">
+              [matTooltip]="'common.download' | translate">
         <mat-icon>download</mat-icon>
       </button>
       <button class="lb-icon-btn" (click)="closeLightbox()">
@@ -468,7 +498,7 @@
         <!-- Bouton download individuel — toujours visible -->
         <button class="lb-ts-dl"
                 (click)="$event.stopPropagation(); downloadSingleMedia2(u, ti)"
-                matTooltip="Télécharger">
+                [matTooltip]="'common.download' | translate">
           <mat-icon>download</mat-icon>
         </button>
 
@@ -510,7 +540,7 @@
                     {{ i + 1 }}
                   </div>
                   <span class="lb-name">{{ scorer.membre.prenom }} {{ scorer.membre.nom }}</span>
-                  <span class="lb-score">{{ scorer.buts }} <small>buts</small></span>
+                  <span class="lb-score">{{ scorer.buts }} <small>{{ 'dashboard.goals' | translate }}</small></span>
                 </div>
                 <div class="empty-lb" *ngIf="topScorers.length === 0">
                   <mat-icon>sports_soccer</mat-icon>
@@ -531,7 +561,7 @@
                     {{ i + 1 }}
                   </div>
                   <span class="lb-name">{{ passer.membre.prenom }} {{ passer.membre.nom }}</span>
-                  <span class="lb-score">{{ passer.passes }} <small>passes</small></span>
+                  <span class="lb-score">{{ passer.passes }} <small>{{ 'membres.assists' | translate }}</small></span>
                 </div>
                 <div class="empty-lb" *ngIf="topPassers.length === 0">
                   <mat-icon>swap_horiz</mat-icon>

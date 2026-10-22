@@ -3,62 +3,78 @@
   <!-- ══ HEADER ═══════════════════════════════════════════════ -->
   <div class="roster__header">
     <span class="roster__count">
-      {{ joueurs().length }} joueurs · {{ staff().length }} staff
+      {{ 'ui.m_joueurs_staff_3715' | translate:{p0: (joueurs().length), p1: (staff().length)} }}
+      <span class="roster__alerte" *ngIf="nbAcompleter() > 0">
+        {{ 'ui.m_fiche_s_a_completer_20d2' | translate:{p0: (nbAcompleter())} }}
+      </span>
     </span>
     <div class="roster__actions" *ngIf="canEdit">
       <button class="btn-outline btn-sm"
               *ngIf="isGroupe20() && !showForm()"
-              (click)="showForm.set(true); mode.set('my20')">
+              (click)="ouvrirListeMembres()">
         <i class="material-icons">sports_soccer</i>
-        Membres My2-0
+        {{ 'ui.ajouter_depuis_mon_2_0_2ee2' | translate }}
       </button>
-      <!-- Toujours visible — équipe externe ou My2-0 -->
+      <button class="btn-primary btn-sm"
+              *ngIf="!showForm()"
+              (click)="ouvrirInvitation()">
+        <i class="material-icons">send</i>
+        {{ 'ui.inviter_un_joueur_5707' | translate }}
+      </button>
+      <button class="btn-outline btn-sm"
+              *ngIf="!showForm() && sourcesReprise().length"
+              (click)="ouvrirReprise()">
+        <i class="material-icons">history</i>
+        {{ 'ui.reprendre_une_saison_passee_a8ae' | translate }}
+      </button>
       <button class="btn-outline btn-sm"
               *ngIf="!showForm()"
-              (click)="showForm.set(true); mode.set('manuel')">
+              (click)="ouvrirImport()">
+        <i class="material-icons">upload_file</i>
+        Importer
+      </button>
+      <button class="btn-outline btn-sm"
+              *ngIf="!showForm()"
+              (click)="ouvrirAjout()">
         <i class="material-icons">person_add</i>
-        Ajouter manuellement
+        {{ 'directory.actions.full_sheet' | translate }}
       </button>
       <button class="btn-ghost btn-sm"
               *ngIf="showForm()"
-              (click)="showForm.set(false)">
+              (click)="fermerForm()">
         <i class="material-icons">close</i>
-        Fermer
+        {{ 'common.close' | translate }}
       </button>
     </div>
   </div>
 
-  <!-- ══ PANEL AJOUT ══════════════════════════════════════════ -->
+  <!-- ══ PANEL AJOUT / MODIFICATION ═══════════════════════════ -->
   <div class="roster__panel" *ngIf="showForm()">
 
-    <!-- Onglets My2-0 / Manuel -->
-    <div class="roster__panel-tabs" *ngIf="isGroupe20()">
-      <button class="panel-tab" [class.active]="mode() === 'my20'"
-              (click)="mode.set('my20')">
-        <i class="material-icons">sports_soccer</i> Membres My2-0
-      </button>
-      <button class="panel-tab" [class.active]="mode() === 'manuel'"
-              (click)="mode.set('manuel')">
-        <i class="material-icons">edit</i> Manuel
-      </button>
-    </div>
-
-    <!-- ── Mode My2-0 ──────────────────────────────────────── -->
+    <!-- Choisir un membre My2-0 : ses infos pré-remplissent le formulaire -->
     <div *ngIf="mode() === 'my20'">
+      <p class="roster__aide">
+        {{ 'ui.choisissez_un_membre_ses_informati_3bc4' | translate }}
+      </p>
+      <label class="champ" *ngIf="groupesSource().length > 1">{{ 'demands.group' | translate }}
+        <select class="form-select" name="groupeSource" [ngModel]="groupeChoisi()" (ngModelChange)="choisirGroupe($event)">
+          <option *ngFor="let g of groupesSource()" [ngValue]="g.id">{{ g.nom }}</option>
+        </select>
+      </label>
       <div class="roster__search">
         <i class="material-icons">search</i>
         <input [ngModel]="searchQuery()"
                (ngModelChange)="searchQuery.set($event)"
-               placeholder="Rechercher un membre..."/>
+               [placeholder]="'membre.searchPlaceholder' | translate"/>
       </div>
 
       <div class="roster__membres-list">
         <div class="roster__membre-item"
              *ngFor="let m of membresFiltres()"
-             (click)="ajouterMy20(m)">
+             (click)="ouvrirDepuisMembre(m)">
           <div class="roster__avatar"
                [style.background-image]="m.photoUrl ? 'url('+m.photoUrl+')' : null">
-            <span *ngIf="!m.photoUrl">{{ m.nom[0] }}{{ m.prenom?.[0] ?? '' }}</span>
+            <span *ngIf="!m.photoUrl">{{ initiales(m) }}</span>
           </div>
           <div class="roster__membre-info">
             <span class="roster__membre-nom">{{ m.nom }} {{ m.prenom }}</span>
@@ -67,82 +83,230 @@
               <span *ngIf="m.poste"> · {{ m.poste }}</span>
             </span>
           </div>
-          <i class="material-icons roster__add-icon">add_circle</i>
+          <i class="material-icons roster__add-icon">chevron_right</i>
         </div>
 
         <div class="roster__empty" *ngIf="!membresFiltres().length">
           <i class="material-icons">check_circle</i>
-          Tous les membres sont déjà dans le roster
+          {{ 'ui.tous_les_membres_sont_deja_dans_le_c28e' | translate }}
         </div>
       </div>
     </div>
 
-    <!-- ── Mode Manuel ─────────────────────────────────────── -->
-    <div class="roster__manuel" *ngIf="mode() === 'manuel'">
+    <!-- Invitation : nom, prénom, téléphone ; le joueur complète sa fiche via son lien -->
+    <form class="roster__manuel" *ngIf="mode() === 'inviter'" (ngSubmit)="envoyerInvitation()" autocomplete="off">
+      <h4 class="roster__form-titre">{{ 'ui.inviter_un_joueur_5707' | translate }}</h4>
+      <p class="roster__aide roster__aide--flush">
+        {{ 'ui.saisissez_seulement_son_nom_il_rec_c1fd' | translate }}
+      </p>
       <div class="roster__form-grid">
-        <input class="form-input" [(ngModel)]="nouveau.nom"
-               placeholder="Nom *"/>
-        <input class="form-input" [(ngModel)]="nouveau.prenom"
-               placeholder="Prénom"/>
-        <input class="form-input" type="number" min="1" max="99"
-               [(ngModel)]="nouveau.numeroDos"
-               placeholder="N° dos"/>
-        <select class="form-select" [(ngModel)]="nouveau.poste">
-          <option value="">Poste...</option>
-          <option *ngFor="let p of postes" [value]="p">{{ p }}</option>
-        </select>
-        <select class="form-select" [(ngModel)]="nouveau.role">
-          <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
-        </select>
-        <input class="form-input" [(ngModel)]="nouveau.telephone"
-               placeholder="Téléphone"/>
+        <label class="champ">{{ 'membre.role' | translate }}
+          <select class="form-select" name="roleInv" [(ngModel)]="form.role">
+            <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+          </select>
+        </label>
+        <label class="champ">{{ 'ui.nom_4652' | translate }}
+          <input class="form-input" name="nomInv" [(ngModel)]="form.nom" autocomplete="off"/>
+        </label>
+        <label class="champ">{{ 'ui.prenom_4f85' | translate }}
+          <input class="form-input" name="prenomInv" [(ngModel)]="form.prenom" autocomplete="off"/>
+        </label>
+        <label class="champ">{{ 'invite.form.phone' | translate }}
+          <input class="form-input" type="tel" name="telInv" [(ngModel)]="form.telephone"/>
+        </label>
+      </div>
+      <p class="roster__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+      <div class="roster__form-actions">
+        <button type="button" class="btn-ghost btn-sm" (click)="fermerForm()">{{ 'common.CANCEL' | translate }}</button>
+        <button type="submit" class="btn-primary btn-sm" [disabled]="!invitationPossible() || saving()">
+          <i class="material-icons">send</i>
+          {{ saving() ? 'Envoi...' : 'Ajouter et envoyer le lien' }}
+        </button>
+      </div>
+    </form>
+
+    <!-- Reprise d'un effectif précédent -->
+    <div class="roster__manuel" *ngIf="mode() === 'reprise'">
+      <h4 class="roster__form-titre">{{ 'ui.reprendre_un_effectif_77c7' | translate }}</h4>
+      <p class="roster__aide roster__aide--flush">
+        {{ 'ui.les_fiches_deja_completes_photo_d__5a34' | translate }}
+      </p>
+      <div class="roster__source-item" *ngFor="let s of sourcesReprise()">
+        <div>
+          <strong>{{ s.competitionNom || s.nomEquipe }}</strong>
+          <small> · {{ s.nbMembres }} personne(s)</small>
+        </div>
+        <button type="button" class="btn-primary btn-sm" [disabled]="saving() || !!rapport()" (click)="reprendre(s.participantId)">
+          {{ saving() ? 'Reprise...' : 'Reprendre' }}
+        </button>
+      </div>
+      <p class="roster__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+      <div class="roster__rapport" *ngIf="rapport() as r">
+        <strong>{{ r.creees }} personne(s) reprise(s)</strong>
+        <span *ngIf="r.aCompleter"> {{ 'ui.m_dont_fiche_s_a_completer_0f9e' | translate:{p0: (r.aCompleter)} }}</span>
+        <div *ngFor="let x of r.rejetees" class="roster__rejet">• {{ x }}</div>
       </div>
       <div class="roster__form-actions">
-        <button class="btn-primary btn-sm"
-                [disabled]="!nouveau.nom.trim() || saving()"
-                (click)="ajouterManuel()">
-          <i class="material-icons">add</i>
-          {{ saving() ? '...' : 'Ajouter' }}
+        <button type="button" class="btn-ghost btn-sm" (click)="fermerForm()">{{ 'common.close' | translate }}</button>
+      </div>
+    </div>
+
+    <!-- Import depuis un tableur -->
+    <div class="roster__manuel" *ngIf="mode() === 'import'">
+      <h4 class="roster__form-titre">Importer l'effectif</h4>
+      <p class="roster__aide roster__aide--flush">
+        {{ 'ui.collez_les_lignes_de_votre_tableur_49c4' | translate }}
+        <a href="javascript:void(0)" (click)="telechargerModele()">{{ 'ui.telecharger_un_modele_e28b' | translate }}</a>
+      </p>
+      <textarea class="form-input roster__import" rows="8" name="import"
+                [(ngModel)]="texteImport"
+                placeholder="Mbarga;Paul;14/03/2001;Camerounaise;MILIEU;8;677000000"></textarea>
+      <p class="roster__aide roster__aide--flush" *ngIf="lignesImport().length">
+        {{ 'ui.m_ligne_s_detectee_s_a64d' | translate:{p0: (lignesImport().length)} }}
+      </p>
+      <p class="roster__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+      <div class="roster__rapport" *ngIf="rapport() as r">
+        <strong>{{ 'ui.m_joueur_s_ajoute_s_a62d' | translate:{p0: (r.creees)} }}</strong>
+        <span *ngIf="r.aCompleter"> {{ 'ui.m_dont_fiche_s_a_completer_invit_28c4' | translate:{p0: (r.aCompleter)} }}</span>
+        <div *ngFor="let x of r.rejetees" class="roster__rejet">• {{ x }}</div>
+      </div>
+      <div class="roster__form-actions">
+        <button type="button" class="btn-ghost btn-sm" (click)="fermerForm()">{{ 'common.close' | translate }}</button>
+        <button type="button" class="btn-primary btn-sm"
+                [disabled]="!lignesImport().length || saving()" (click)="importer()">
+          <i class="material-icons">upload_file</i>
+          {{ saving() ? 'Import...' : 'Importer' }}
         </button>
       </div>
     </div>
+
+    <!-- Formulaire joueur (toutes les informations de la licence) -->
+    <form class="roster__manuel" *ngIf="mode() === 'formulaire'"
+          (ngSubmit)="enregistrer()" autocomplete="off">
+
+      <h4 class="roster__form-titre">
+        {{ form.id ? 'Modifier la fiche' : (form.membreId ? 'Compléter la fiche du membre' : 'Nouveau joueur') }}
+      </h4>
+
+      <div class="roster__form-grid">
+        <label class="champ">{{ 'membre.role' | translate }}
+          <select class="form-select" name="role" [(ngModel)]="form.role">
+            <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+          </select>
+        </label>
+
+        <label class="champ">{{ 'ui.nom_4652' | translate }}
+          <input class="form-input" name="nom" [(ngModel)]="form.nom" autocomplete="family-name"/>
+        </label>
+
+        <label class="champ">{{ 'ui.prenom_4f85' | translate }}
+          <input class="form-input" name="prenom" [(ngModel)]="form.prenom" autocomplete="given-name"/>
+        </label>
+
+        <ng-container *ngIf="estJoueurRole(form.role)">
+          <label class="champ">{{ 'ui.date_de_naissance_6a16' | translate }}
+            <input class="form-input" type="date" name="naissance"
+                   [(ngModel)]="form.dateNaissance" [max]="aujourdhui"/>
+          </label>
+
+          <label class="champ">{{ 'ui.nationalite_aa88' | translate }}
+            <input class="form-input" name="nationalite" [(ngModel)]="form.nationalite"
+                   placeholder="Ex. Camerounaise"/>
+          </label>
+
+          <label class="champ">Poste *
+            <select class="form-select" name="poste" [(ngModel)]="form.poste">
+              <option value="">{{ 'ui.choisir_ee46' | translate }}</option>
+              <option *ngFor="let p of postes" [value]="p">{{ p }}</option>
+            </select>
+          </label>
+
+          <label class="champ">N° de dos <small>(facultatif)</small>
+            <input class="form-input" type="number" min="1" max="99" inputmode="numeric"
+                   name="numeroDos" [(ngModel)]="form.numeroDos"/>
+          </label>
+        </ng-container>
+
+        <label class="champ">{{ 'invite.form.phone' | translate }}
+          <input class="form-input" type="tel" name="telephone" [(ngModel)]="form.telephone"
+                 autocomplete="tel"/>
+        </label>
+      </div>
+
+      <p class="roster__manque" *ngIf="champsManquants().length">
+        {{ 'ui.m_a_renseigner_7b5d' | translate:{p0: (champsManquants().join(', '))} }}
+      </p>
+      <p class="roster__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+      <p class="roster__aide" *ngIf="estJoueurRole(form.role) && !form.id">
+        {{ 'ui.la_photo_d_identite_se_televerse_j_b05a' | translate }}
+      </p>
+
+      <div class="roster__form-actions">
+        <button type="button" class="btn-ghost btn-sm" (click)="fermerForm()">{{ 'common.CANCEL' | translate }}</button>
+        <button type="submit" class="btn-primary btn-sm"
+                [disabled]="champsManquants().length > 0 || saving()">
+          <i class="material-icons">{{ form.id ? 'save' : 'add' }}</i>
+          {{ saving() ? 'Enregistrement...' : (form.id ? 'Enregistrer' : 'Ajouter') }}
+        </button>
+      </div>
+    </form>
   </div>
+
+  <p class="roster__info" *ngIf="message()">{{ message() }}</p>
 
   <!-- ══ LISTE ROSTER ══════════════════════════════════════════ -->
   <div class="roster__loading" *ngIf="loading()">
-    <div class="spinner-sm"></div> Chargement...
+    <div class="spinner-sm"></div> {{ 'calendar.states.loading' | translate }}
   </div>
 
   <ng-container *ngIf="!loading()">
 
     <!-- Joueurs -->
     <div class="roster__section" *ngIf="joueurs().length">
-      <div class="roster__section-label">Joueurs ({{ joueurs().length }})</div>
+      <div class="roster__section-label">{{ 'ui.m_joueurs_c0e4' | translate:{p0: (joueurs().length)} }}</div>
       <div class="roster__row" *ngFor="let m of joueurs()">
         <span class="roster__num">{{ m.numeroDos ?? '–' }}</span>
         <div class="roster__row-avatar"
              [style.background-image]="m.photoUrl ? 'url('+m.photoUrl+')' : null">
-          <span *ngIf="!m.photoUrl">{{ m.nom[0] }}</span>
+          <span *ngIf="!m.photoUrl">{{ initiales(m) }}</span>
         </div>
         <div class="roster__row-info">
           <span class="roster__row-nom">{{ m.nom }} {{ m.prenom }}</span>
           <span class="roster__row-meta">
             {{ m.poste ?? '–' }}
-            <span class="roster__source"
-                  *ngIf="m.joueurId">My2-0</span>
+            <span class="roster__source" *ngIf="m.joueurId">My2-0</span>
+          </span>
+          <span class="roster__todo" *ngIf="m.complet === false">
+            {{ 'ui.m_a_completer_6b6e' | translate:{p0: (m.champsManquants?.join(', '))} }}
+          </span>
+          <span class="roster__todo roster__todo--photo" *ngIf="m.photoManquante">
+            {{ 'ui.photo_d_identite_manquante_6fc2' | translate }}
           </span>
         </div>
         <span class="roster__statut-badge" [class]="statutClass(m.statut)">
           {{ statutLabel(m.statut) }}
         </span>
         <div class="roster__row-actions" *ngIf="canEdit">
+          <!-- Photo d'identité : appareil photo sur mobile, fichier sur ordinateur -->
+          <label class="btn-icon btn-icon--photo" [title]="'ui.photo_d_identite_2bf3' | translate">
+            <i class="material-icons">{{ photoEnCours() === m.id ? 'hourglass_top' : 'photo_camera' }}</i>
+            <input type="file" accept="image/*" capture="user" hidden
+                   (change)="onPhotoChoisie($event, m)"/>
+          </label>
+          <button class="btn-icon" *ngIf="m.complet === false || m.photoManquante"
+                  (click)="inviter(m)" [title]="'ui.envoyer_son_lien_au_joueur_4c3a' | translate">
+            <i class="material-icons">send</i>
+          </button>
+          <button class="btn-icon" (click)="ouvrirEdition(m)" [title]="'ui.modifier_la_fiche_10b5' | translate">
+            <i class="material-icons">edit</i>
+          </button>
           <select class="roster__statut-select"
                   [ngModel]="m.statut"
                   (ngModelChange)="changerStatut(m, $event)">
             <option value="ACTIF">Actif</option>
             <option value="SUSPENDU">Suspendu</option>
-            <option value="BLESSE">Blessé</option>
-            <option value="NON_CONVOQUE">Non convoqué</option>
+            <option value="BLESSE">{{ 'competition.match.composition.blesse' | translate }}</option>
+            <option value="NON_CONVOQUE">{{ 'competition.match.composition.nonConvoque' | translate }}</option>
           </select>
           <button class="btn-icon btn-icon--danger"
                   (click)="retirer(m)">
@@ -160,8 +324,14 @@
         <div class="roster__row-info">
           <span class="roster__row-nom">{{ m.nom }} {{ m.prenom }}</span>
           <span class="roster__row-meta">{{ m.role }}</span>
+          <span class="roster__todo" *ngIf="m.complet === false">
+            {{ 'ui.m_a_completer_6b6e' | translate:{p0: (m.champsManquants?.join(', '))} }}
+          </span>
         </div>
         <div class="roster__row-actions" *ngIf="canEdit">
+          <button class="btn-icon" (click)="ouvrirEdition(m)" [title]="'ui.modifier_la_fiche_10b5' | translate">
+            <i class="material-icons">edit</i>
+          </button>
           <button class="btn-icon btn-icon--danger" (click)="retirer(m)">
             <i class="material-icons">remove_circle</i>
           </button>
@@ -173,10 +343,10 @@
     <div class="roster__empty roster__empty--main"
          *ngIf="!roster().length">
       <i class="material-icons">group_off</i>
-      <span>Aucun membre dans le roster</span>
+      <span>{{ 'ui.aucun_membre_dans_le_roster_9121' | translate }}</span>
       <button class="btn-primary btn-sm" *ngIf="canEdit"
-              (click)="showForm.set(true)">
-        Ajouter le premier joueur
+              (click)="ouvrirAjout()">
+        {{ 'ui.ajouter_le_premier_joueur_ef46' | translate }}
       </button>
     </div>
 

@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -123,7 +124,7 @@ export class SignupComponent implements OnInit {
       this.isLoading = false;
       if (response.success) {
         localStorage.removeItem('my20_ref_code');
-        this.snackBar.open('Inscription réussie ! Vous pouvez vous connecter.', 'OK', {
+        this.snackBar.open(t('ui.ts_inscription_reussie_vous_pouvez__cf17'), 'OK', {
           duration: 5000, panelClass: 'success-snackbar'
         });
         const queryParams: any = {};
@@ -159,7 +160,7 @@ export class SignupComponent implements OnInit {
 
   // ── Connexion automatique après signup (méthode alternative) ──
   private handleSignupSuccess(response: any): void {
-    this.snackBar.open('Compte créé avec succès ! Bienvenue !', 'Fermer', { duration: 4000 });
+    this.snackBar.open(t('ui.ts_compte_cree_avec_succes_bienvenu_6b03'), 'Fermer', { duration: 4000 });
 
     this.authService.login(
       this.accountForm.value.username,
@@ -169,7 +170,7 @@ export class SignupComponent implements OnInit {
       error: () => {
         this.isLoading = false;
         // ── FIX : passer le returnUrl même en cas d'erreur de connexion auto
-        const queryParams: any = { message: 'Compte créé ! Veuillez vous connecter.' };
+        const queryParams: any = { message: t('ui.ts_compte_cree_veuillez_vous_connec_8246') };
         if (this.returnUrl) queryParams['returnUrl'] = this.returnUrl;
         this.router.navigate(['/login'], { queryParams });
       }
@@ -210,13 +211,13 @@ export class SignupComponent implements OnInit {
     let errorMessage = 'Erreur lors de l\'inscription';
 
     if (err.status === 409) {
-      if (err.error?.message?.includes('email'))    errorMessage = 'Cette adresse email est déjà utilisée';
-      else if (err.error?.message?.includes('username')) errorMessage = 'Ce nom d\'utilisateur est déjà pris';
-      else errorMessage = 'Ce nom d\'utilisateur ou cet email existe déjà';
+      if (err.error?.message?.includes('email'))    errorMessage = t('ui.ts_cette_adresse_email_est_deja_uti_163d');
+      else if (err.error?.message?.includes('username')) errorMessage = t('ui.ts_ce_nom_d_utilisateur_est_deja_pr_9924');
+      else errorMessage = t('ui.ts_ce_nom_d_utilisateur_ou_cet_emai_d9fc');
     } else if (err.status === 400) {
-      errorMessage = 'Données invalides. Veuillez vérifier vos informations';
+      errorMessage = t('ui.ts_donnees_invalides_veuillez_verif_60e6');
     } else if (err.status === 0) {
-      errorMessage = 'Problème de connexion. Vérifiez votre connexion internet';
+      errorMessage = t('ui.ts_probleme_de_connexion_verifiez_v_a95a');
     } else if (err.error?.message) {
       errorMessage = err.error.message;
     }
@@ -239,14 +240,14 @@ export class SignupComponent implements OnInit {
     if (!field || !field.errors || !field.touched) return '';
 
     const messages: Record<string, Record<string, string>> = {
-      username:         { required: 'Le nom d\'utilisateur est requis', minlength: 'Minimum 3 caractères', maxlength: 'Maximum 20 caractères', pattern: 'Lettres, chiffres, points, tirets et underscores uniquement' },
+      username:         { required: t('auth.usernameRequired'), minlength: t('join.errors.min3'), maxlength: t('ui.ts_maximum_20_caracteres_bc40'), pattern: t('ui.ts_lettres_chiffres_points_tirets_e_a3c6') },
       email:            { required: 'L\'email est requis', email: 'Format d\'email invalide' },
-      password:         { required: 'Le mot de passe est requis', minlength: 'Minimum 6 caractères', pattern: 'Doit contenir majuscule, minuscule et chiffre' },
-      confirmPassword:  { required: 'La confirmation est requise' },
-      nom:              { required: 'Le nom est requis', minlength: 'Minimum 2 caractères' },
-      sexe:             { required: 'Le sexe est requis' },
-      tel:              { required: 'Le téléphone est requis', pattern: 'Format invalide (9 à 15 chiffres)' },
-      accepteConditions:{ required: 'Vous devez accepter les conditions' }
+      password:         { required: t('auth.passwordRequired'), minlength: t('join.form.password_hint'), pattern: t('ui.ts_doit_contenir_majuscule_minuscul_0017') },
+      confirmPassword:  { required: t('auth.passwordReset.confirmPasswordRequired') },
+      nom:              { required: t('join.errors.nom_requis'), minlength: t('join.errors.min2') },
+      sexe:             { required: t('ui.ts_le_sexe_est_requis_fbc4') },
+      tel:              { required: t('join.errors.telephone_requis'), pattern: t('ui.ts_format_invalide_9_a_15_chiffres_193b') },
+      accepteConditions:{ required: t('ui.ts_vous_devez_accepter_les_conditio_d54c') }
     };
 
     if (fieldName === 'confirmPassword' && this.accountForm.errors?.['passwordMismatch'])

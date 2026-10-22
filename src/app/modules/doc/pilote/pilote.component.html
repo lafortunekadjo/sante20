@@ -1,0 +1,69 @@
+<div class="pl">
+  <header class="pl__top">
+    <span class="pl__brand">MY<b>2-0</b></span>
+    <div class="pl__langues">
+      <button [class.actif]="langue === 'fr'" (click)="changerLangue('fr')">FR</button>
+      <button [class.actif]="langue === 'en'" (click)="changerLangue('en')">EN</button>
+    </div>
+  </header>
+
+  <section class="pl__hero">
+    <h1>{{ 'pilote.titre' | translate }}</h1>
+    <p>{{ 'pilote.sous_titre' | translate }}</p>
+    <ul>
+      <li>{{ 'pilote.avantage1' | translate }}</li>
+      <li>{{ 'pilote.avantage2' | translate }}</li>
+      <li>{{ 'pilote.avantage3' | translate }}</li>
+      <li>{{ 'pilote.avantage4' | translate }}</li>
+    </ul>
+  </section>
+
+  <section class="pl__carte" *ngIf="!fait(); else merci">
+    <h2>{{ 'pilote.formulaire' | translate }}</h2>
+    <form (ngSubmit)="envoyer()" #form="ngForm" autocomplete="on">
+      <label>{{ 'pilote.nom' | translate }} *<input name="nom" [(ngModel)]="f.nom" required maxlength="120" autocomplete="name"/></label>
+      <label>{{ 'pilote.email' | translate }} *<input name="email" type="email" [(ngModel)]="f.email" required maxlength="160" autocomplete="email" inputmode="email"/></label>
+      <label>{{ 'pilote.telephone' | translate }}<input name="tel" type="tel" [(ngModel)]="f.telephone" maxlength="40" autocomplete="tel" inputmode="tel" [placeholder]="'pilote.telephone_aide' | translate"/></label>
+      <label>{{ 'pilote.organisation' | translate }}<input name="org" [(ngModel)]="f.organisation" maxlength="160" [placeholder]="'pilote.organisation_aide' | translate"/></label>
+      <div class="pl__duo">
+        <label>{{ 'pilote.ville' | translate }}<input name="ville" [(ngModel)]="f.ville" maxlength="100"/></label>
+        <label>{{ 'pilote.pays' | translate }}<input name="pays" [(ngModel)]="f.pays" maxlength="60"/></label>
+      </div>
+      <label>{{ 'pilote.type' | translate }}
+        <select name="type" [(ngModel)]="f.typeEvenement">
+          <option *ngFor="let t of types" [value]="t">{{ 'pilote.types.' + t | translate }}</option>
+        </select>
+      </label>
+      <div class="pl__duo">
+        <label>{{ 'pilote.equipes' | translate }}<input name="equipes" type="number" min="0" max="500" inputmode="numeric" [(ngModel)]="f.nombreEquipes"/></label>
+        <label>{{ 'pilote.date' | translate }}<input name="date" [(ngModel)]="f.dateSouhaitee" maxlength="60" [placeholder]="'pilote.date_aide' | translate"/></label>
+      </div>
+      <label>{{ 'pilote.message' | translate }}<textarea name="msg" rows="3" [(ngModel)]="f.message" maxlength="2000" [placeholder]="'pilote.message_aide' | translate"></textarea></label>
+
+      <!-- piège anti-robots : invisible pour les humains -->
+      <input class="pl__piege" name="site" [(ngModel)]="f.site" tabindex="-1" autocomplete="off" aria-hidden="true"/>
+
+      <label class="pl__consent">
+        <input type="checkbox" name="consent" [(ngModel)]="f.consentement"/>
+        <span>{{ 'pilote.consentement' | translate }} <a routerLink="/privacy" target="_blank">{{ 'legal.common.privacy' | translate }}</a></span>
+      </label>
+
+      <p class="pl__erreur" *ngIf="erreur()">{{ erreur()! | translate }}</p>
+      <button class="pl__envoyer" type="submit" [disabled]="!valide() || envoi()">{{ (envoi() ? 'pilote.envoi' : 'pilote.envoyer') | translate }}</button>
+      <small class="pl__note">{{ 'pilote.note' | translate }}</small>
+    </form>
+  </section>
+
+  <ng-template #merci>
+    <section class="pl__carte pl__merci">
+      <div class="pl__coche">✓</div>
+      <h2>{{ 'pilote.merci_titre' | translate }}</h2>
+      <p>{{ 'pilote.merci_texte' | translate }}</p>
+      <a routerLink="/" class="pl__lien">{{ 'legal.common.back' | translate }}</a>
+    </section>
+  </ng-template>
+
+  <footer class="pl__pied">
+    <a routerLink="/privacy">{{ 'legal.common.privacy' | translate }}</a> · <a routerLink="/terms">{{ 'legal.common.terms' | translate }}</a>
+  </footer>
+</div>

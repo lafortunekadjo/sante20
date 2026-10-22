@@ -27,7 +27,19 @@
         <span class="ts-kpi-lbl">Mvt auto</span>
       </div>
     </div>
+  
+    <!-- Action principale : bouton avec texte (toujours visible en haut de page) + bouton flottant étendu (voir _ui-kit.scss, section 11) -->
+    <div class="header-cta-row" *ngIf="!isLoading && activeTab !== 'create'">
+      <button class="btn-primary header-cta" (click)="activeTab = 'create'; toggleCreateRow()">
+        <mat-icon>add</mat-icon>{{ 'sanction.addType' | translate }}
+      </button>
+    </div>
   </div>
+
+  <button class="fab" *ngIf="!isLoading && activeTab !== 'create'" (click)="activeTab = 'create'; toggleCreateRow()" [attr.aria-label]="'sanction.addType' | translate">
+    <mat-icon>add</mat-icon>
+    <span class="fab-label">{{ 'sanction.addType' | translate }}</span>
+  </button>
 
   <!-- Loading -->
   <div *ngIf="isLoading" class="loading-container">
@@ -88,17 +100,17 @@
         </div>
         <div class="filter-chips">
           <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Rechercher</mat-label>
+            <mat-label>{{ 'common.search' | translate }}</mat-label>
             <input matInput [(ngModel)]="searchTerm"
                    (ngModelChange)="applyFilters()"
-                   placeholder="Nom ou description">
+                   [placeholder]="'type_depense.filtres.recherche_placeholder' | translate">
             <mat-icon matPrefix>search</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="filter-field">
-            <mat-label>Statut</mat-label>
+            <mat-label>{{ 'dashboard.filters.status' | translate }}</mat-label>
             <mat-select [(ngModel)]="filterActif" (ngModelChange)="applyFilters()">
-              <mat-option value="all">Tous</mat-option>
+              <mat-option value="all">{{ 'common.ALL' | translate }}</mat-option>
               <mat-option value="actif">Actifs</mat-option>
               <mat-option value="inactif">Inactifs</mat-option>
             </mat-select>
@@ -116,7 +128,7 @@
 
         <div class="ts-filter-apply">
           <button mat-raised-button color="primary" (click)="activeTab = 'list'">
-            <mat-icon>visibility</mat-icon>Voir les résultats
+            <mat-icon>visibility</mat-icon>{{ 'ui.voir_les_resultats_7132' | translate }}
           </button>
         </div>
       </div>
@@ -134,7 +146,7 @@
           </div>
           <div class="groupe-details">
             <h3 class="groupe-nom">{{ 'sanction.newType' | translate }}</h3>
-            <p class="groupe-subtitle">Configuration du type de sanction</p>
+            <p class="groupe-subtitle">{{ 'ui.configuration_du_type_de_sanction_a294' | translate }}</p>
           </div>
         </div>
       </div>
@@ -143,7 +155,7 @@
 
         <!-- Infos générales -->
         <div class="form-section">
-          <h4 class="section-title"><mat-icon>info</mat-icon> Informations générales</h4>
+          <h4 class="section-title"><mat-icon>info</mat-icon> {{ 'groupConfig.tabs.generalInfo' | translate }}</h4>
           <div class="form-grid">
 
             <mat-form-field appearance="outline" class="form-field">
@@ -170,7 +182,7 @@
                 </mat-option>
                 <mat-option value="MATERIEL">
                   <mat-icon class="option-icon materiel">inventory_2</mat-icon>
-                  Matériel
+                  {{ 'ui.materiel_2ed9' | translate }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -178,7 +190,7 @@
             <mat-form-field appearance="outline" class="form-field full-width">
               <mat-label>{{ 'sanction.description' | translate }}</mat-label>
               <textarea matInput [(ngModel)]="newTypeSanction.description"
-                        rows="2" placeholder="Description de la sanction"></textarea>
+                        rows="2" [placeholder]="'ui.description_de_la_sanction_7c49' | translate"></textarea>
               <mat-icon matPrefix>description</mat-icon>
             </mat-form-field>
 
@@ -192,7 +204,7 @@
             <!-- Durée — SUSPENSION uniquement -->
             <mat-form-field appearance="outline" class="form-field"
                             *ngIf="newTypeSanction.type === 'SUSPENSION'">
-              <mat-label>Durée (jours)</mat-label>
+              <mat-label>{{ 'ui.duree_jours_9cf4' | translate }}</mat-label>
               <input matInput type="number"
                      [(ngModel)]="newTypeSanction.duree" min="1" required>
               <mat-icon matPrefix>schedule</mat-icon>
@@ -201,15 +213,15 @@
             <!-- Champs MATERIEL -->
             <ng-container *ngIf="newTypeSanction.type === 'MATERIEL'">
               <mat-form-field appearance="outline" class="form-field">
-                <mat-label>Matériel concerné</mat-label>
+                <mat-label>{{ 'ui.materiel_concerne_486b' | translate }}</mat-label>
                 <input matInput [(ngModel)]="newTypeSanction.materiel"
                        placeholder="Ex: Maillot, Ballon...">
                 <mat-icon matPrefix>inventory_2</mat-icon>
-                <mat-hint>Précisez l'équipement à restituer ou remplacer</mat-hint>
+                <mat-hint>{{ 'ui.precisez_l_equipement_a_restituer__b30e' | translate }}</mat-hint>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="form-field">
-                <mat-label>Quantité par défaut</mat-label>
+                <mat-label>{{ 'ui.quantite_par_defaut_a9fb' | translate }}</mat-label>
                 <input matInput type="number"
                        [(ngModel)]="newTypeSanction.quantite" min="1">
                 <mat-icon matPrefix>production_quantity_limits</mat-icon>
@@ -223,7 +235,7 @@
           <h4 class="section-title"><mat-icon>palette</mat-icon> Apparence</h4>
           <div class="form-grid">
             <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Icône</mat-label>
+              <mat-label>{{ 'type_depense.champs.icone' | translate }}</mat-label>
               <mat-select [(ngModel)]="newTypeSanction.icone">
                 <mat-option *ngFor="let icon of icones" [value]="icon.value">
                   <mat-icon>{{ icon.value }}</mat-icon> {{ icon.label }}
@@ -247,13 +259,13 @@
 
         <!-- Liaison financière -->
         <div class="form-section finance-section">
-          <h4 class="section-title"><mat-icon>account_balance</mat-icon> Liaison Financière</h4>
+          <h4 class="section-title"><mat-icon>account_balance</mat-icon> {{ 'ui.liaison_financiere_9b67' | translate }}</h4>
           <div class="form-grid">
             <mat-form-field appearance="outline" class="form-field">
               <mat-label>Caisse de destination</mat-label>
               <mat-select [(ngModel)]="newTypeSanction.caisseId">
                 <mat-option [value]="null">
-                  <mat-icon>auto_awesome</mat-icon> Caisse Sanctions (par défaut)
+                  <mat-icon>auto_awesome</mat-icon> {{ 'ui.caisse_sanctions_par_defaut_88da' | translate }}
                 </mat-option>
                 <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
                   <mat-icon [style.color]="caisse.couleur">account_balance_wallet</mat-icon>
@@ -261,7 +273,7 @@
                 </mat-option>
               </mat-select>
               <mat-icon matPrefix>account_balance_wallet</mat-icon>
-              <mat-hint>Les paiements seront versés dans cette caisse</mat-hint>
+              <mat-hint>{{ 'ui.les_paiements_seront_verses_dans_c_15f9' | translate }}</mat-hint>
             </mat-form-field>
 
             <div class="toggle-field">
@@ -269,7 +281,7 @@
                 Mouvement de caisse automatique
               </mat-slide-toggle>
               <mat-icon class="info-icon"
-                        matTooltip="Un mouvement est créé automatiquement à chaque paiement">
+                        [matTooltip]="'ui.un_mouvement_est_cree_automatiquem_3a20' | translate">
                 info
               </mat-icon>
             </div>
@@ -334,7 +346,7 @@
               <!-- Vue édition — nom -->
               <ng-container *ngIf="editingRows[i]">
                 <mat-form-field appearance="outline" class="edit-field">
-                  <mat-label>Nom</mat-label>
+                  <mat-label>{{ 'type_depense.champs.nom' | translate }}</mat-label>
                   <input matInput [(ngModel)]="editTypeSanction.nom" required>
                 </mat-form-field>
               </ng-container>
@@ -350,7 +362,7 @@
               </button>
               <mat-menu #cardMenu="matMenu">
                 <button mat-menu-item (click)="editRow(i, typeSanction)">
-                  <mat-icon>edit</mat-icon><span>Modifier</span>
+                  <mat-icon>edit</mat-icon><span>{{ 'type_depense.actions.modifier' | translate }}</span>
                 </button>
                 <button mat-menu-item (click)="toggleActif(typeSanction)">
                   <mat-icon>{{ typeSanction.actif ? 'visibility_off' : 'visibility' }}</mat-icon>
@@ -358,7 +370,7 @@
                 </button>
                 <mat-divider></mat-divider>
                 <button mat-menu-item (click)="openDeleteDialog(typeSanction)" class="delete-action">
-                  <mat-icon>delete</mat-icon><span>Supprimer</span>
+                  <mat-icon>delete</mat-icon><span>{{ 'type_depense.actions.supprimer' | translate }}</span>
                 </button>
               </mat-menu>
             </ng-container>
@@ -367,12 +379,12 @@
               <button mat-icon-button color="primary"
                       (click)="saveEdit(i)"
                       [disabled]="!isEditFormValid()"
-                      matTooltip="Enregistrer">
+                      [matTooltip]="'common.SAVE' | translate">
                 <mat-icon>save</mat-icon>
               </button>
               <button mat-icon-button color="warn"
                       (click)="cancelEdit(i)"
-                      matTooltip="Annuler">
+                      [matTooltip]="'common.CANCEL' | translate">
                 <mat-icon>cancel</mat-icon>
               </button>
             </ng-container>
@@ -383,22 +395,22 @@
         <div class="card-content" *ngIf="!editingRows[i]">
           <div class="info-grid">
             <div class="info-item">
-              <label class="info-label">Montant</label>
+              <label class="info-label">{{ 'dashboard.stats.amount' | translate }}</label>
               <span class="amount">{{ formatMontant(typeSanction.montantParDefaut) }}</span>
             </div>
 
             <div class="info-item" *ngIf="typeSanction.type === 'SUSPENSION'">
-              <label class="info-label">Durée</label>
+              <label class="info-label">{{ 'sanction.duration' | translate }}</label>
               <span class="duration">{{ typeSanction.duree }} jours</span>
             </div>
 
             <div class="info-item" *ngIf="typeSanction.type === 'MATERIEL'">
-              <label class="info-label">Matériel</label>
+              <label class="info-label">{{ 'ui.materiel_2ed9' | translate }}</label>
               <span class="materiel-value">{{ typeSanction.materiel || '—' }}</span>
             </div>
 
             <div class="info-item" *ngIf="typeSanction.type === 'MATERIEL'">
-              <label class="info-label">Quantité</label>
+              <label class="info-label">{{ 'ui.quantite_1b27' | translate }}</label>
               <span class="materiel-value">{{ typeSanction.quantite || 1 }}</span>
             </div>
 
@@ -443,13 +455,13 @@
                     <mat-icon class="option-icon discipline">warning</mat-icon> Discipline
                   </mat-option>
                   <mat-option value="MATERIEL">
-                    <mat-icon class="option-icon materiel">inventory_2</mat-icon> Matériel
+                    <mat-icon class="option-icon materiel">inventory_2</mat-icon> {{ 'ui.materiel_2ed9' | translate }}
                   </mat-option>
                 </mat-select>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="edit-field">
-                <mat-label>Montant</mat-label>
+                <mat-label>{{ 'dashboard.stats.amount' | translate }}</mat-label>
                 <input matInput type="number"
                        [(ngModel)]="editTypeSanction.montantParDefaut" min="0" required>
                 <mat-icon matPrefix>attach_money</mat-icon>
@@ -458,7 +470,7 @@
               <!-- Durée — SUSPENSION -->
               <mat-form-field appearance="outline" class="edit-field"
                               *ngIf="editTypeSanction.type === 'SUSPENSION'">
-                <mat-label>Durée (jours)</mat-label>
+                <mat-label>{{ 'ui.duree_jours_9cf4' | translate }}</mat-label>
                 <input matInput type="number"
                        [(ngModel)]="editTypeSanction.duree" min="1">
                 <mat-icon matPrefix>schedule</mat-icon>
@@ -467,14 +479,14 @@
               <!-- Champs MATERIEL -->
               <ng-container *ngIf="editTypeSanction.type === 'MATERIEL'">
                 <mat-form-field appearance="outline" class="edit-field">
-                  <mat-label>Matériel concerné</mat-label>
+                  <mat-label>{{ 'ui.materiel_concerne_486b' | translate }}</mat-label>
                   <input matInput [(ngModel)]="editTypeSanction.materiel"
                          placeholder="Ex: Maillot, Ballon...">
                   <mat-icon matPrefix>inventory_2</mat-icon>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline" class="edit-field">
-                  <mat-label>Quantité</mat-label>
+                  <mat-label>{{ 'ui.quantite_1b27' | translate }}</mat-label>
                   <input matInput type="number"
                          [(ngModel)]="editTypeSanction.quantite" min="1">
                   <mat-icon matPrefix>production_quantity_limits</mat-icon>
@@ -494,7 +506,7 @@
               <mat-form-field appearance="outline" class="edit-field full-width">
                 <mat-label>Caisse</mat-label>
                 <mat-select [(ngModel)]="editTypeSanction.caisseId">
-                  <mat-option [value]="null">Par défaut</mat-option>
+                  <mat-option [value]="null">{{ 'sanction.default' | translate }}</mat-option>
                   <mat-option *ngFor="let caisse of caisses" [value]="caisse.id">
                     {{ caisse.nom }}
                   </mat-option>
@@ -520,10 +532,10 @@
             <button mat-raised-button color="primary"
                     (click)="saveEdit(i)"
                     [disabled]="!isEditFormValid()">
-              <mat-icon>save</mat-icon> Enregistrer
+              <mat-icon>save</mat-icon> {{ 'common.SAVE' | translate }}
             </button>
             <button mat-stroked-button color="warn" (click)="cancelEdit(i)">
-              <mat-icon>cancel</mat-icon> Annuler
+              <mat-icon>cancel</mat-icon> {{ 'common.CANCEL' | translate }}
             </button>
           </div>
         </div>
@@ -550,7 +562,7 @@
 
           <!-- Nom -->
           <ng-container matColumnDef="nom">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'type_depense.champs.nom' | translate }}</th>
             <td mat-cell *matCellDef="let ts; let i = index">
               <ng-container *ngIf="!editingRows[i]; else editNom">
                 <div class="nom-cell">
@@ -580,7 +592,7 @@
                     <mat-option value="AMENDE">Amende</mat-option>
                     <mat-option value="SUSPENSION">Suspension</mat-option>
                     <mat-option value="DISCIPLINE">Discipline</mat-option>
-                    <mat-option value="MATERIEL">Matériel</mat-option>
+                    <mat-option value="MATERIEL">{{ 'ui.materiel_2ed9' | translate }}</mat-option>
                   </mat-select>
                 </mat-form-field>
               </ng-template>
@@ -589,7 +601,7 @@
 
           <!-- Montant -->
           <ng-container matColumnDef="montantParDefaut">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Montant</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'dashboard.stats.amount' | translate }}</th>
             <td mat-cell *matCellDef="let ts; let i = index">
               <ng-container *ngIf="!editingRows[i]; else editMontant">
                 <span class="amount">{{ formatMontant(ts.montantParDefaut) }}</span>
@@ -605,7 +617,7 @@
 
           <!-- Durée / Matériel -->
           <ng-container matColumnDef="duree">
-            <th mat-header-cell *matHeaderCellDef>Durée / Matériel</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ui.duree_materiel_d822' | translate }}</th>
             <td mat-cell *matCellDef="let ts; let i = index">
               <ng-container *ngIf="!editingRows[i]; else editDuree">
                 <span *ngIf="ts.type === 'SUSPENSION'">{{ ts.duree }} j</span>
@@ -626,12 +638,12 @@
                 <div class="materiel-edit-inline"
                      *ngIf="editTypeSanction.type === 'MATERIEL'">
                   <mat-form-field appearance="outline" class="inline-field">
-                    <mat-label>Matériel</mat-label>
+                    <mat-label>{{ 'ui.materiel_2ed9' | translate }}</mat-label>
                     <input matInput [(ngModel)]="editTypeSanction.materiel">
                     <mat-icon matPrefix>inventory_2</mat-icon>
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="inline-field-sm">
-                    <mat-label>Qté</mat-label>
+                    <mat-label>{{ 'ui.qte_493a' | translate }}</mat-label>
                     <input matInput type="number"
                            [(ngModel)]="editTypeSanction.quantite" min="1">
                   </mat-form-field>
@@ -655,7 +667,7 @@
               <ng-template #editCaisse>
                 <mat-form-field appearance="outline">
                   <mat-select [(ngModel)]="editTypeSanction.caisseId">
-                    <mat-option [value]="null">Par défaut</mat-option>
+                    <mat-option [value]="null">{{ 'sanction.default' | translate }}</mat-option>
                     <mat-option *ngFor="let c of caisses" [value]="c.id">{{ c.nom }}</mat-option>
                   </mat-select>
                 </mat-form-field>
@@ -682,7 +694,7 @@
 
           <!-- Statut -->
           <ng-container matColumnDef="statut">
-            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.filters.status' | translate }}</th>
             <td mat-cell *matCellDef="let ts">
               <mat-chip [class.chip-actif]="ts.actif" [class.chip-inactif]="!ts.actif">
                 {{ ts.actif ? 'Actif' : 'Inactif' }}
@@ -692,12 +704,12 @@
 
           <!-- Actions -->
           <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ui.actions_06df' | translate }}</th>
             <td mat-cell *matCellDef="let ts; let i = index">
               <ng-container *ngIf="!editingRows[i]; else editActions">
                 <div class="action-buttons-horizontal">
                   <button mat-icon-button color="primary"
-                          (click)="editRow(i, ts)" matTooltip="Modifier">
+                          (click)="editRow(i, ts)" [matTooltip]="'type_depense.actions.modifier' | translate">
                     <mat-icon>edit</mat-icon>
                   </button>
                   <button mat-icon-button
@@ -706,7 +718,7 @@
                     <mat-icon>{{ ts.actif ? 'visibility_off' : 'visibility' }}</mat-icon>
                   </button>
                   <button mat-icon-button color="warn"
-                          (click)="openDeleteDialog(ts)" matTooltip="Supprimer">
+                          (click)="openDeleteDialog(ts)" [matTooltip]="'type_depense.actions.supprimer' | translate">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
@@ -716,12 +728,12 @@
                   <button mat-icon-button color="primary"
                           (click)="saveEdit(i)"
                           [disabled]="!isEditFormValid()"
-                          matTooltip="Enregistrer">
+                          [matTooltip]="'common.SAVE' | translate">
                     <mat-icon>save</mat-icon>
                   </button>
                   <button mat-icon-button color="warn"
                           (click)="cancelEdit(i)"
-                          matTooltip="Annuler">
+                          [matTooltip]="'common.CANCEL' | translate">
                     <mat-icon>cancel</mat-icon>
                   </button>
                 </div>

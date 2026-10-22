@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { AfterViewInit, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -41,7 +43,7 @@ interface GroupeStats {
 @Component({
   selector: 'app-groupe-list',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -425,10 +427,10 @@ export class GroupeListComponent implements OnInit, AfterViewInit, OnDestroy {
   openDeleteDialog(groupe: Groupe): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Supprimer le groupe',
+        title: t('ui.ts_supprimer_le_groupe_2a42'),
         message: `Êtes-vous sûr de vouloir supprimer le groupe "${groupe.nom}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         type: 'danger'
       }
     });
@@ -465,7 +467,7 @@ export class GroupeListComponent implements OnInit, AfterViewInit, OnDestroy {
         title: `${groupe.isActive ? 'Désactiver' : 'Activer'} le groupe`,
         message: `Voulez-vous ${action} le groupe "${groupe.nom}" ?`,
         confirmText: groupe.isActive ? 'Désactiver' : 'Activer',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         type: groupe.isActive ? 'warning' : 'success'
       }
     });

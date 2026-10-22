@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Contribution, ContributionIndividuelle } from '../../../../core/models/contribution.model';
@@ -7,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-contribution-dialog',
-  imports: [FormsModule,CommonModule, MatIconModule],
+  imports: [TranslateModule, FormsModule,CommonModule, MatIconModule],
   templateUrl: './contribution-dialog.component.html',
   styleUrl: './contribution-dialog.component.scss'
 })

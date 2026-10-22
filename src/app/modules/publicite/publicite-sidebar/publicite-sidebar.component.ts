@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, OnInit, OnDestroy,
   ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit
@@ -10,7 +11,7 @@ import { PubliciteAffichage, PubliciteAffichageService } from '../../../core/ser
 @Component({
   selector: 'app-publicite-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslateModule, CommonModule],
   templateUrl: './publicite-sidebar.component.html',
   styleUrls: ['./publicite-sidebar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

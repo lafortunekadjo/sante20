@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -108,7 +109,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       error: () => {
         // Rollback si erreur
         this.isPublic = !isPublic;
-        this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('common.messages.update_error'), 'Fermer', { duration: 3000 });
       }
     });
   }

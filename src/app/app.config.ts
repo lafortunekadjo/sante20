@@ -1,4 +1,6 @@
-import { ApplicationConfig, importProvidersFrom, isDevMode } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, isDevMode, LOCALE_ID } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, HttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -9,6 +11,20 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideServiceWorker } from '@angular/service-worker';
+
+registerLocaleData(localeFr);
+
+/**
+ * Langue des dates, mois et nombres (pipes `date`, `number`, `currency`) : celle choisie dans les paramètres, sinon celle
+ * de l'appareil. Sans cela Angular affichait toujours « Sat, Oct 25 » même en français.
+ */
+export function langueDeLApplication(): string {
+  try {
+    const choisie = JSON.parse(localStorage.getItem('app-settings') ?? 'null')?.language;
+    if (choisie === 'fr' || choisie === 'en') return choisie;
+  } catch { /* stockage indisponible */ }
+  return (navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en-US' : 'fr';
+}
 
 // Classe de loader personnalisée
 class CustomTranslateLoader implements TranslateLoader {
@@ -26,14 +42,11 @@ export function HttpLoaderFactory(http: HttpClient): TranslateLoader {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    { provide: LOCALE_ID, useFactory: langueDeLApplication },
     provideRouter(routes),
     provideHttpClient(
       withInterceptors([authInterceptor])
     ),
-     provideServiceWorker('sw-push.js', {
-      enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000'
-    }),
     provideAnimations(),
     provideNativeDateAdapter(), 
     importProvidersFrom(

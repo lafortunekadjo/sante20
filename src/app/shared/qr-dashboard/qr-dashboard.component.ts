@@ -1,4 +1,5 @@
 // components/qr-dashboard/qr-dashboard.component.ts
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { ChartConfiguration } from 'chart.js';
 import { QRCode } from 'qrcode';
@@ -20,7 +21,7 @@ import { BaseChartDirective  } from 'ng2-charts';
   templateUrl: './qr-dashboard.component.html',
   styleUrls: ['./qr-dashboard.component.scss'],
    standalone: true,
-    imports: [
+    imports: [TranslateModule, 
       CommonModule,
       MatIconModule,
       FormsModule,

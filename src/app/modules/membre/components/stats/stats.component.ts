@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -15,7 +16,7 @@ import { MatCardModule } from '@angular/material/card';
 @Component({
   selector: 'app-stats',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatButtonModule, RouterModule, BaseChartDirective, MatCardModule],
+  imports: [TranslateModule, CommonModule, MatTableModule, MatPaginatorModule, MatButtonModule, RouterModule, BaseChartDirective, MatCardModule],
   templateUrl: './stats.component.html',
   styleUrl: './stats.component.scss'
 })

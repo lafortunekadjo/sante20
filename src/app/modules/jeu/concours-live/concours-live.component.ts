@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, OnInit, OnDestroy
 } from '@angular/core';
@@ -48,7 +49,7 @@ interface Particle { x: number; y: number; delay: number; emoji: string; }
 @Component({
   selector: 'app-concours-live',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, DatePipe,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule
   ],

@@ -1,0 +1,117 @@
+<div class="mc">
+  <header class="mc__tete">
+    <div>
+      <h2>Ma carte My2-0</h2>
+      <p>{{ 'ui.choisissez_ce_qu_elle_raconte_puis_248d' | translate }}</p>
+    </div>
+    <button class="mc__x" (click)="fermer()" [attr.aria-label]="'common.close' | translate"><mat-icon>close</mat-icon></button>
+  </header>
+
+  <div class="mc__corps" *ngIf="!chargement(); else chargementTpl">
+    <p class="mc__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+
+    <!-- Aperçu -->
+    <div class="mc__scene" [class.mc__scene--story]="format() === 'story'">
+      <div class="mc__echelle" [class.mc__echelle--story]="format() === 'story'">
+        <div #carte class="carte" [ngClass]="['carte--' + theme(), 'carte--' + format()]">
+          <div class="carte__brillance"></div>
+          <div class="carte__motif"></div>
+
+          <div class="carte__haut">
+            <span class="carte__marque">My<b>2-0</b></span>
+            <span class="carte__niveau">{{ niveau().icone }} {{ niveau().nom }}</span>
+          </div>
+
+          <div class="carte__identite">
+            <div class="carte__photo">
+              <img *ngIf="photo(); else initialesTpl" [src]="photo()!" alt=""/>
+              <ng-template #initialesTpl><span>{{ initiales() }}</span></ng-template>
+            </div>
+            <div class="carte__noms">
+              <div class="carte__nom">{{ nomAffiche() }}</div>
+              <div class="carte__sous" *ngIf="profil()?.poste">{{ profil()!.poste }}<ng-container *ngIf="profil()?.piedFort"> · pied {{ profil()!.piedFort }}</ng-container></div>
+              <div class="carte__portee">{{ titreCarte() }}<ng-container *ngIf="roleUn()"> · {{ roleUn() }}</ng-container></div>
+            </div>
+          </div>
+
+          <div class="carte__logos" *ngIf="groupesCarte().length">
+            <span class="carte__logo" *ngFor="let g of groupesCarte().slice(0, maxLogos())" [title]="g.nom">
+              <img *ngIf="logos()[g.groupeId]; else lettreTpl" [src]="logos()[g.groupeId]!" alt=""/>
+              <ng-template #lettreTpl>{{ (g.abreviation || g.nom).slice(0, 2).toUpperCase() }}</ng-template>
+            </span>
+            <span class="carte__logo carte__logo--plus" *ngIf="groupesCarte().length > maxLogos()">+{{ groupesCarte().length - maxLogos() }}</span>
+          </div>
+
+          <div class="carte__stats">
+            <div><strong>{{ totaux().matchs }}</strong><span>{{ 'menu.items.MATCHS' | translate }}</span></div>
+            <div><strong>{{ totaux().buts }}</strong><span>{{ 'dashboard.goals' | translate }}</span></div>
+            <div><strong>{{ totaux().passes }}</strong><span>{{ 'ui.passes_d_d245' | translate }}</span></div>
+            <div *ngIf="totaux().competitions"><strong>{{ totaux().competitions }}</strong><span>{{ 'ui.compet_f189' | translate }}</span></div>
+            <div *ngIf="totaux().trophees"><strong>{{ totaux().trophees }}</strong><span>{{ 'ui.trophees_1f1f' | translate }}</span></div>
+          </div>
+
+          <div class="carte__bas">
+            <div class="carte__progres">
+              <div class="carte__barre"><i [style.width.%]="niveau().progression"></i></div>
+              <small>{{ niveau().points }} pts<ng-container *ngIf="niveau().prochain"> · prochain : {{ niveau().prochain }}</ng-container></small>
+            </div>
+            <div class="carte__qr">
+              <img *ngIf="qr()" [src]="qr()" [alt]="'ui.qr_du_profil_24a7' | translate"/>
+              <small>{{ numero() }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Réglages -->
+    <section class="mc__reglages">
+      <div class="mc__groupe">
+        <div class="mc__label">{{ 'ui.que_montrer_924e' | translate }}</div>
+        <div class="mc__puces">
+          <button [class.actif]="portee() === 'global'" (click)="portee.set('global')">🌍 Tout mon parcours</button>
+          <button [class.actif]="portee() === 'un'" (click)="portee.set('un')" [disabled]="!groupes().length">{{ 'ui.un_seul_2_0_9adf' | translate }}</button>
+          <button [class.actif]="portee() === 'selection'" (click)="portee.set('selection')" [disabled]="groupes().length < 2">{{ 'ui.ma_selection_29c5' | translate }}</button>
+        </div>
+        <p class="mc__aide" *ngIf="portee() === 'global'">{{ 'ui.tous_vos_2_0_vos_competitions_et_v_ec5a' | translate }}</p>
+
+        <select class="mc__select" *ngIf="portee() === 'un'" [value]="groupeUn()" (change)="groupeUn.set(+$any($event.target).value)">
+          <option *ngFor="let g of groupes()" [value]="g.groupeId">{{ g.nom }}</option>
+        </select>
+
+        <div class="mc__cases" *ngIf="portee() === 'selection'">
+          <label *ngFor="let g of groupes()">
+            <input type="checkbox" [checked]="selection().has(g.groupeId)" (change)="basculer(g.groupeId)"/> {{ g.nom }}
+          </label>
+        </div>
+      </div>
+
+      <div class="mc__groupe">
+        <div class="mc__label">{{ 'settings.theme' | translate }}</div>
+        <div class="mc__puces">
+          <button *ngFor="let t of themes" [class.actif]="theme() === t.v" (click)="theme.set(t.v)">
+            <i class="mc__pastille" [ngClass]="'mc__pastille--' + t.v"></i> {{ t.l }}
+          </button>
+        </div>
+      </div>
+
+      <div class="mc__groupe">
+        <div class="mc__label">Format</div>
+        <div class="mc__puces">
+          <button [class.actif]="format() === 'carte'" (click)="format.set('carte')">🪪 Carte</button>
+          <button [class.actif]="format() === 'story'" (click)="format.set('story')">📱 Story</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="mc__pied">
+      <button class="mc__btn mc__btn--ghost" (click)="partager(carte)" [disabled]="export()"><mat-icon>ios_share</mat-icon> Partager</button>
+      <button class="mc__btn" (click)="telecharger(carte)" [disabled]="export()">
+        <mat-icon>download</mat-icon> {{ export() ? 'Création…' : 'Télécharger (PNG)' }}
+      </button>
+    </footer>
+  </div>
+
+  <ng-template #chargementTpl><p class="mc__chargement">{{ 'ui.preparation_de_votre_carte_da2f' | translate }}</p></ng-template>
+
+</div>

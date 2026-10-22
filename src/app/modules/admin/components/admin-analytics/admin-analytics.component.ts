@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -18,6 +20,8 @@ Chart.register(...registerables);
  * Fusion de getAcquisitionKPIs + getActivationKPIs + getEngagementKPIs + getRetentionKPIs
  */
 interface PlatformKpis {
+  usersByRole?: Record<string, number>;
+  usersSansGroupe?: number;
   // Acquisition
   totalGroupes: number;
   newGroupesThisMonth: number;
@@ -103,8 +107,10 @@ interface WeeklySignup {
 /** /api/admin/analytics/peak-hours — clés : hourlyData, peakHour, peakHourFormatted */
 interface PeakHours {
   hourlyData: { hour: number; count: number }[];
+  heatmap?: { day: number; hour: number; count: number }[];
+  donneesDisponibles?: boolean;
   peakHour: number;
-  peakHourFormatted: string;
+  peakHourFormatted: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,7 +118,7 @@ interface PeakHours {
 @Component({
   selector: 'app-admin-analytics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslateModule, CommonModule],
   templateUrl: './admin-analytics.component.html',
   styleUrls: ['./admin-analytics.component.scss']
 })
@@ -385,7 +391,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
         datasets: [
           {
             type: 'line',
-            label: 'Utilisateurs',
+            label: t('menu.items.USER'),
             data: this.growthData.map(d => d.users),
             borderColor: this.C.blue,
             backgroundColor: 'rgba(37,99,235,0.07)',
@@ -395,7 +401,7 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
           },
           {
             type: 'line',
-            label: 'Groupes',
+            label: t('admin.groups'),
             data: this.growthData.map(d => d.groupes),
             borderColor: this.C.gold,
             borderDash: [5, 4],
@@ -459,25 +465,20 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     const c = this.canvas('rolesChart');
     if (!c) return;
 
-    const total  = this.kpis?.totalUsers || 1;
-    const active = this.kpis?.activeUsers || 0;
-    const withProfile = this.kpis?.usersWithCompleteProfile || 0;
-    const inGroup = this.funnelData[3]?.count || 0;
-    const sansRole = total - withProfile;
-
-    // Approximation cohérente avec les données réelles
-    const joueurs  = Math.round(inGroup * 0.6);
-    const coaches  = Math.round(inGroup * 0.2);
-    const gerants  = Math.round(inGroup * 0.15);
-    const sansGrp  = total - inGroup;
+    // Répartition RÉELLE des comptes par rôle (table des rôles) et comptes sans groupe
+    const parRole = this.kpis?.usersByRole ?? {};
+    const noms: Record<string, string> = { RESPONSABLE: t('admin.role.RESPONSABLE'), MEMBRE: t('admin.role.MEMBRE'), CANDIDAT: t('admin.role.CANDIDAT'), ADMIN: t('admin.role.ADMIN'), PARTENAIRE: t('admin.role.PARTENAIRE') };
+    const cles = Object.keys(parRole);
+    const libelles = cles.map(k => noms[k] ?? k);
+    const valeurs = cles.map(k => parRole[k]);
 
     this.charts['roles'] = new Chart(c, {
       type: 'doughnut',
       data: {
-        labels: ['Joueurs', 'Coaches/Admins', 'Gérants', 'Sans groupe'],
+        labels: libelles,
         datasets: [{
-          data: [joueurs, coaches, gerants, sansGrp],
-          backgroundColor: [this.C.blue, this.C.gold, this.C.light, this.C.lighter],
+          data: valeurs,
+          backgroundColor: [this.C.blue, this.C.gold, this.C.light, this.C.lighter, this.C.blueLight],
           borderWidth: 0
         }]
       },
@@ -581,29 +582,17 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     ];
     const getColor = (v: number) => stops[Math.min(Math.floor(v / 20), 5)];
 
-    // Index hour → intensité normalisée 0-100 depuis peakHours.hourlyData
-    const hourIntensity: Record<number, number> = {};
-    if (this.peakHours?.hourlyData?.length) {
-      const maxCount = Math.max(...this.peakHours.hourlyData.map(h => h.count), 1);
-      this.peakHours.hourlyData.forEach(h => {
-        hourIntensity[h.hour] = Math.round((h.count / maxCount) * 100);
-      });
+    // Données RÉELLES : connexions par jour de semaine × heure (journal des connexions). Rien n'est estimé ni inventé.
+    const cellules = this.peakHours?.heatmap ?? [];
+    if (!cellules.length) {
+      container.innerHTML = '<p class="hm-vide">' + t('admin.kpi.heatmap_vide') + '</p>';
+      return;
     }
-
-    // Facteur par jour depuis activityByDay (count normalisé 0–1)
-    const maxDay    = Math.max(...this.activityByDay.map(d => d.count), 1);
-    const dayFactor = this.activityByDay.map(d => d.count / maxDay);
-
-    const days  = this.activityByDay.length
-      ? this.activityByDay.map(d => d.day.slice(0, 3))
-      : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const maxCount = Math.max(...cellules.map(c => c.count), 1);
+    const valeurs = new Map<string, number>(cellules.map(c => [c.day + '-' + c.hour, Math.round(c.count / maxCount * 100)]));
+    const days  = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     const hours = Array.from({ length: 24 }, (_, i) => i);
-
-    const cellVal = (di: number, h: number): number => {
-      const base   = hourIntensity[h] ?? this.estimateHour(h);
-      const factor = dayFactor[di]    ?? 0.5;
-      return Math.min(Math.round(base * factor), 100);
-    };
+    const cellVal = (di: number, h: number): number => valeurs.get((di + 1) + '-' + h) ?? 0;
 
     let html = `<div class="hm-row hm-header">
       <div class="hm-day-label"></div>
@@ -621,14 +610,6 @@ export class AdminAnalyticsComponent implements OnInit, OnDestroy {
     });
 
     container.innerHTML = html;
-  }
-
-  /** Fallback estimation heure si peakHours non disponible */
-  private estimateHour(h: number): number {
-    if (h >= 6  && h <= 8)  return 35;
-    if (h >= 12 && h <= 14) return 55;
-    if (h >= 17 && h <= 21) return 85;
-    return 10;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

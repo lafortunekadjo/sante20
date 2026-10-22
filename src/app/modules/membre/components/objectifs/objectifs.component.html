@@ -7,11 +7,23 @@
         <div class="obj-icon"><mat-icon>flag</mat-icon></div>
         <div>
           <h1>Mes Objectifs</h1>
-          <p>Fixe tes objectifs et suis ta progression</p>
+          <p>{{ 'ui.fixe_tes_objectifs_et_suis_ta_prog_f1f2' | translate }}</p>
         </div>
       </div>
     </div>
+  
+    <!-- Action principale : bouton avec texte (toujours visible en haut de page) + bouton flottant étendu (voir _ui-kit.scss, section 11) -->
+    <div class="header-cta-row" *ngIf="activeTab === 'list'">
+      <button class="btn-primary header-cta" (click)="openCreateForm()">
+        <mat-icon>add</mat-icon>Nouvel objectif
+      </button>
+    </div>
   </div>
+
+  <button class="fab" *ngIf="activeTab === 'list'" (click)="openCreateForm()" aria-label="Nouvel objectif">
+    <mat-icon>add</mat-icon>
+    <span class="fab-label">Nouvel objectif</span>
+  </button>
 
   <!-- ══ TABS ═════════════════════════════════════════════ -->
   <div class="obj-tabs-wrapper">
@@ -36,7 +48,7 @@
         <div class="list-filters" *ngIf="!isLoading && objectifs.length > 0">
           <button class="filter-pill" [class.active]="activeListFilter === 'tous'"
                   (click)="activeListFilter = 'tous'">
-            Tous ({{ objectifs.length }})
+            {{ 'ui.m_tous_a8e6' | translate:{p0: (objectifs.length)} }}
           </button>
           <button class="filter-pill" [class.active]="activeListFilter === 'personnel'"
                   (click)="activeListFilter = 'personnel'">
@@ -44,14 +56,14 @@
           </button>
           <button class="filter-pill" [class.active]="activeListFilter === 'groupe'"
                   (click)="activeListFilter = 'groupe'">
-            <mat-icon>groups</mat-icon> Groupe
+            <mat-icon>groups</mat-icon> {{ 'demands.group' | translate }}
           </button>
         </div>
 
         <!-- Loading -->
         <div *ngIf="isLoading" class="obj-loading">
           <mat-spinner diameter="44"></mat-spinner>
-          <p>Chargement…</p>
+          <p>{{ 'ui.chargement_8f54' | translate }}</p>
         </div>
 
         <!-- Grille -->
@@ -71,7 +83,7 @@
             <!-- Créé par responsable -->
             <div class="responsable-badge" *ngIf="o.creeParResponsable">
               <mat-icon>admin_panel_settings</mat-icon>
-              <span>Fixé par {{ o.createurNom }}</span>
+              <span>{{ 'ui.m_fixe_par_fe28' | translate:{p0: (o.createurNom)} }}</span>
             </div>
 
             <div class="oc-header">
@@ -113,12 +125,12 @@
                 <mat-icon>share</mat-icon>
               </button>
               <!-- Ne peut modifier que ses propres objectifs -->
-              <button mat-icon-button matTooltip="Modifier"
+              <button mat-icon-button [matTooltip]="'type_depense.actions.modifier' | translate"
                       *ngIf="!o.creeParResponsable"
                       (click)="editObjectif(o); activeTab = 'form'">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button mat-icon-button matTooltip="Supprimer" color="warn"
+              <button mat-icon-button [matTooltip]="'type_depense.actions.supprimer' | translate" color="warn"
                       *ngIf="!o.creeParResponsable"
                       (click)="deleteObjectif(o)">
                 <mat-icon>delete</mat-icon>
@@ -130,10 +142,10 @@
         <!-- Vide -->
         <div *ngIf="!isLoading && objectifsFiltres.length === 0" class="obj-empty">
           <mat-icon>flag</mat-icon>
-          <h3>Aucun objectif</h3>
-          <p>Commence par créer ton premier objectif</p>
+          <h3>{{ 'ui.aucun_objectif_a905' | translate }}</h3>
+          <p>{{ 'ui.commence_par_creer_ton_premier_obj_d795' | translate }}</p>
           <button mat-raised-button color="primary" (click)="openCreateForm()">
-            <mat-icon>add</mat-icon>Créer un objectif
+            <mat-icon>add</mat-icon>{{ 'objectives.createObjective' | translate }}
           </button>
         </div>
 
@@ -151,7 +163,7 @@
             </div>
             <div>
               <h3>{{ editingObjectif ? 'Modifier l\'objectif' : 'Nouvel objectif' }}</h3>
-              <p *ngIf="isResponsable">En tant que responsable, tu peux créer des objectifs pour tes membres</p>
+              <p *ngIf="isResponsable">{{ 'ui.en_tant_que_responsable_tu_peux_cr_8be2' | translate }}</p>
             </div>
           </div>
 
@@ -162,7 +174,7 @@
               <mat-label>Titre (optionnel)</mat-label>
               <mat-icon matPrefix>title</mat-icon>
               <input matInput formControlName="titre"
-                     placeholder="Ex: Saison 2026 — Buts">
+                     [placeholder]="'ui.ex_saison_2026_buts_30e4' | translate">
             </mat-form-field>
 
             <!-- Type -->
@@ -190,10 +202,10 @@
 
             <!-- Période -->
             <mat-form-field appearance="outline" class="span-2">
-              <mat-label>Période</mat-label>
+              <mat-label>{{ 'bilan.resume.periode' | translate }}</mat-label>
               <mat-icon matPrefix>event</mat-icon>
               <mat-date-range-input [rangePicker]="picker">
-                <input matStartDate formControlName="dateDebut" placeholder="Début">
+                <input matStartDate formControlName="dateDebut" [placeholder]="'partenaire.dashboard.contract.startDate' | translate">
                 <input matEndDate   formControlName="dateFin"   placeholder="Fin">
               </mat-date-range-input>
               <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
@@ -221,7 +233,7 @@
               <!-- Sélecteur de groupe si pas global -->
               <mat-form-field appearance="outline"
                               *ngIf="!objectifForm.get('scopeGlobal')?.value && mesGroupes.length > 1">
-                <mat-label>Groupe cible</mat-label>
+                <mat-label>{{ 'matchRequest.targetGroup' | translate }}</mat-label>
                 <mat-icon matPrefix>groups</mat-icon>
                 <mat-select formControlName="groupeId">
                   <mat-option *ngFor="let g of mesGroupes" [value]="g.groupeId">
@@ -238,14 +250,14 @@
                 <div class="scope-label">
                   <mat-icon>admin_panel_settings</mat-icon>
                   <div>
-                    <strong>Objectif pour les membres</strong>
+                    <strong>{{ 'ui.objectif_pour_les_membres_e7bf' | translate }}</strong>
                     <p>{{ objectifForm.get('pourTousMembres')?.value
                       ? 'Sera créé pour tous les membres du groupe'
                       : 'Objectif personnel uniquement' }}</p>
                   </div>
                 </div>
                 <mat-slide-toggle formControlName="pourTousMembres" color="accent">
-                  Tous les membres
+                  {{ 'sanction.filter.allMembers' | translate }}
                 </mat-slide-toggle>
               </div>
             </div>
@@ -269,7 +281,7 @@
               {{ editingObjectif ? 'Enregistrer' : 'Créer l\'objectif' }}
             </button>
             <button mat-stroked-button (click)="cancelEdit()">
-              <mat-icon>close</mat-icon>Annuler
+              <mat-icon>close</mat-icon>{{ 'common.CANCEL' | translate }}
             </button>
           </div>
 

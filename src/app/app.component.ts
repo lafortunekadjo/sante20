@@ -14,6 +14,7 @@ import { NotificationService, AppNotification } from './core/services/notificati
 import { RxStompService }         from './rx-stomp.service';
 import { PushNotificationService } from './core/services/push-notification.service';
 import { BackButtonService }      from './core/services/back-button.service';
+import { resolveNotificationUrl } from './core/utils/notification-route';
 
 @Component({
   selector: 'app-root',
@@ -127,8 +128,9 @@ export class AppComponent implements OnInit, OnDestroy {
     );
 
     ref.onAction().subscribe(() => {
-      if (notification.actionUrl) {
-        this.router.navigateByUrl(notification.actionUrl);
+      const url = resolveNotificationUrl(notification.actionUrl, this.authService.isResponsable());
+      if (url) {
+        this.router.navigateByUrl(url);
       } else {
         this.router.navigate(['/notifications']);
       }
@@ -145,7 +147,8 @@ export class AppComponent implements OnInit, OnDestroy {
         } else if (event instanceof NavigationEnd) {
           console.log('✅ NAV END:', event.url);
         } else if (event instanceof NavigationCancel) {
-          console.warn('⚠️ NAV CANCELLED:', event.url, '—', event);
+          console.warn('⚠️ NAV CANCELLED:', event.url, event);
+            console.trace('Stack trace NavigationCancel');
         } else if (event instanceof NavigationError) {
           console.error('❌ NAV ERROR:', event.url, event.error);
         }

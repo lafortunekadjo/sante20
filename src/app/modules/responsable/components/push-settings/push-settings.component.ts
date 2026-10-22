@@ -3,6 +3,7 @@
 // Fichier: src/app/shared/components/push-settings/push-settings.component.ts
 // ============================================================
 
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -204,12 +205,12 @@ export class PushSettingsComponent implements OnInit, OnDestroy {
         const success = await this.pushService.subscribeToPush();
         
         if (success) {
-          this.snackBar.open('Notifications push activées ! 🔔', 'OK', {
+          this.snackBar.open(t('ui.ts_notifications_push_activees_d9d0'), 'OK', {
             duration: 3000,
             panelClass: ['snackbar-success']
           });
         } else {
-          this.snackBar.open('Impossible d\'activer les notifications', 'OK', {
+          this.snackBar.open(t('ui.ts_impossible_d_activer_les_notific_7d3e'), 'OK', {
             duration: 3000,
             panelClass: ['snackbar-error']
           });
@@ -218,13 +219,13 @@ export class PushSettingsComponent implements OnInit, OnDestroy {
         }
       } else {
         await this.pushService.unsubscribeFromPush();
-        this.snackBar.open('Notifications push désactivées', 'OK', {
+        this.snackBar.open(t('ui.ts_notifications_push_desactivees_155a'), 'OK', {
           duration: 3000
         });
       }
     } catch (error) {
       console.error('Erreur toggle push:', error);
-      this.snackBar.open('Une erreur est survenue', 'OK', {
+      this.snackBar.open(t('ui.ts_une_erreur_est_survenue_eeb2'), 'OK', {
         duration: 3000,
         panelClass: ['snackbar-error']
       });
@@ -235,7 +236,7 @@ export class PushSettingsComponent implements OnInit, OnDestroy {
 
   async sendTestNotification(): Promise<void> {
     await this.pushService.sendTestNotification();
-    this.snackBar.open('Notification de test envoyée !', 'OK', {
+    this.snackBar.open(t('ui.ts_notification_de_test_envoyee_6ee1'), 'OK', {
       duration: 2000
     });
   }

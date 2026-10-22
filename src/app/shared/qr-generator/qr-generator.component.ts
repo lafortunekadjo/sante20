@@ -1,4 +1,5 @@
 // components/qr-generator/qr-generator.component.ts
+import { TranslateModule } from '@ngx-translate/core';
 import { Component } from '@angular/core';
 import { QRCodeModel } from '../../core/models/qr-code.model';
 import { QrCodeService } from '../../core/services/qr-code.service';
@@ -14,7 +15,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   templateUrl: './qr-generator.component.html',
   styleUrls: ['./qr-generator.component.scss'],
   standalone: true,
-    imports: [
+    imports: [TranslateModule, 
       CommonModule,
       MatIconModule,
       FormsModule,

@@ -1,163 +1,181 @@
-// poster-modal.component.ts
-import { Component, Inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { PosterService } from '../../../../core/services/competition/poster.service';
-import { DialogRef } from '@angular/cdk/dialog';
-import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { TranslateModule } from '@ngx-translate/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
+import { toPng } from 'html-to-image';
+import { removeBackground } from '@imgly/background-removal';
 import { CommonModule } from '@angular/common';
-import { Match } from '../../../../core/models/match.model';
+import { ReactiveFormsModule } from '@angular/forms';
+
+export interface PosterFormat {
+  label: string;
+  value: 'SQUARE' | 'STORY';
+  icon: string;
+}
+
+export interface PosterTemplate {
+  id: string;
+  name: string;
+  preview: string;
+}
+
+export interface ColorPreset {
+  name: string;
+  primary: string;
+  secondary: string;
+}
 
 @Component({
   selector: 'app-poster-modal',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+    standalone: true,
+  imports: [TranslateModule, CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './poster-modal.component.html',
   styleUrls: ['./poster-modal.component.scss']
 })
 export class PosterModalComponent implements OnInit {
-  matchId: number;
+  @Input() matchData: any;
+  @Input() availableTypes: string[] = ['AVANT_MATCH', 'MI_TEMPS', 'APRES_MATCH'];
+  
+  @Output() closed = new EventEmitter<void>();
+
+  @ViewChild('posterContainer') posterContainer!: ElementRef<HTMLElement>;
+
   posterForm!: FormGroup;
-  availableTypes: string[] = [];
-  isLoading = false;
-  previewImage: string | null = null;
-  
-  templates = [
-    { id: 'classique', name: 'Classique', preview: 'assets/templates/classique-preview.jpg' },
-    { id: 'stadium', name: 'Stade', preview: 'assets/templates/stadium-preview.jpg' },
-    { id: 'street', name: 'Street', preview: 'assets/templates/street-preview.jpg' },
-    { id: 'minimal', name: 'Minimal', preview: 'assets/templates/minimal-preview.jpg' },
-    { id: 'elegant', name: 'Élégant', preview: 'assets/templates/elegant-preview.jpg' }
-  ];
-  
-  formats = [
-    { value: 'CARRE', label: 'Carré (Instagram)', icon: '⬛', width: 1080, height: 1080 },
-    { value: 'PORTRAIT', label: 'Portrait (Story)', icon: '📱', width: 1080, height: 1350 },
-    { value: 'PAYSAGE', label: 'Paysage (Facebook)', icon: '🖥️', width: 1920, height: 1080 }
-  ];
-  
-  // Couleurs prédéfinies pour les équipes
-  colorPresets = [
-    { name: 'Orange My2-0', primary: '#ff6b2b', secondary: '#1a1a2e' },
-    { name: 'Rouge Passion', primary: '#e53935', secondary: '#b71c1c' },
-    { name: 'Bleu Royal', primary: '#1e88e5', secondary: '#0d47a1' },
-    { name: 'Vert Émeraude', primary: '#43a047', secondary: '#1b5e20' },
-    { name: 'Violet Mystique', primary: '#8e24aa', secondary: '#4a148c' },
-    { name: 'Jaune Énergie', primary: '#fdd835', secondary: '#f57f17' },
-    { name: 'Rose Chic', primary: '#ec407a', secondary: '#880e4f' },
-    { name: 'Noir Élégant', primary: '#ffffff', secondary: '#212121' }
+  isGenerating = false;
+  isProcessingAiPhoto = false;
+  generatedPosterUrl: string | null = null;
+
+  mainImagePreview: string | null = null;
+  secondaryImagePreview: string | null = null;
+
+  formats: PosterFormat[] = [
+    { label: 'Carré (Post)', value: 'SQUARE', icon: '📱' },
+    { label: 'Vertical (Story)', value: 'STORY', icon: '📲' }
   ];
 
-  constructor(
-    private fb: FormBuilder,
-    private posterService: PosterService,
-    @Inject(MAT_DIALOG_DATA) public data: Match ,
-    private dialogRef: DialogRef<PosterModalComponent>
-  ) {
-    console.log(data)
-    this.matchId = data.id;
+  templates: PosterTemplate[] = [
+    { id: 'street', name: 'Street 2-0', preview: 'https://placehold.co/100x100/16213e/ffffff?text=Street' },
+    { id: 'neon', name: 'Néon Sport', preview: 'https://placehold.co/100x100/00f2fe/ffffff?text=Neon' },
+    { id: 'classic', name: 'Classique', preview: 'https://placehold.co/100x100/ff6b2b/ffffff?text=Classic' }
+  ];
+
+  colorPresets: ColorPreset[] = [
+    { name: 'Feu & Or', primary: '#ff6b2b', secondary: '#f1c40f' },
+    { name: 'Nuit Cyber', primary: '#00f2fe', secondary: '#4facfe' },
+    { name: 'Vert Terrain', primary: '#11998e', secondary: '#38ef7d' },
+    { name: 'Rouge Choc', primary: '#ff416c', secondary: '#ff4b2b' }
+  ];
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit(): void {
+    this.initForm();
   }
 
-  ngOnInit() {
-    this.initializeForm();
-    this.checkAvailability();
-  }
-
-  private initializeForm() {
+  private initForm(): void {
     this.posterForm = this.fb.group({
-      type: [{ value: '', disabled: true }, Validators.required],
-      format: ['CARRE', Validators.required],
-      templateId: ['classique', Validators.required],
-      message: [''],
+      type: [this.availableTypes[0] || 'AVANT_MATCH', Validators.required],
+      format: ['SQUARE', Validators.required],
+      templateId: ['street', Validators.required],
       primaryColor: ['#ff6b2b', Validators.required],
-      secondaryColor: ['#1a1a2e', Validators.required],
+      secondaryColor: ['#16213e', Validators.required],
+      message: ['', [Validators.maxLength(60)]],
       photoMode: ['single'],
-      photo1: [null],
-      photo2: [null]
+      enableAiCutout: [true] // Option pour activer/désactiver le détourage
     });
   }
 
-  private checkAvailability() {
-    this.posterService.checkAvailability(this.matchId).subscribe({
-      next: (data: any) => {
-        this.availableTypes = data.available;
-        this.posterForm.get('type')?.enable();
-        this.posterForm.get('type')?.setValue(data.default);
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  applyColorPreset(preset: any) {
+  applyColorPreset(preset: ColorPreset): void {
     this.posterForm.patchValue({
       primaryColor: preset.primary,
       secondaryColor: preset.secondary
     });
   }
 
-  onPhotoSelected(event: any, position: 'photo1' | 'photo2') {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.posterForm.patchValue({ [position]: e.target.result });
-      };
-      reader.readAsDataURL(file);
-    }
-  }
+  /**
+   * Gestion de l'import photo avec détourage IA automatique côté client
+   */
+async onPhotoSelected(event: Event, target: 'photo1' | 'photo2'): Promise<void> {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
 
-  private getSelectedPhotos(): string[] {
-    const photos = [];
-    const mode = this.posterForm.get('photoMode')?.value;
-    const photo1 = this.posterForm.get('photo1')?.value;
-    const photo2 = this.posterForm.get('photo2')?.value;
-    
-    if (mode === 'single' && photo1) {
-      photos.push(photo1);
-    } else if (mode === 'double') {
-      if (photo1) photos.push(photo1);
-      if (photo2) photos.push(photo2);
-    }
-    return photos;
-  }
+  const useAiCutout = this.posterForm.get('enableAiCutout')?.value;
 
-  generatePoster() {
-    if (this.posterForm.invalid) return;
-    
-    this.isLoading = true;
-    
-    const request = {
-      matchId: this.matchId,
-      type: this.posterForm.get('type')?.value,
-      format: this.posterForm.get('format')?.value,
-      templateId: this.posterForm.get('templateId')?.value,
-      message: this.posterForm.get('message')?.value,
-      primaryColor: this.posterForm.get('primaryColor')?.value,
-      secondaryColor: this.posterForm.get('secondaryColor')?.value,
-      photoUrls: this.getSelectedPhotos()
-    };
-    
-    this.posterService.generatePoster(request).subscribe({
-      next: (blob) => {
-        this.previewImage = URL.createObjectURL(blob);
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.isLoading = false;
+  if (useAiCutout) {
+    this.isProcessingAiPhoto = true;
+    try {
+      // ✅ Utilisation de removeBackground()
+      const blob = await removeBackground(file);
+      const imageUrl = URL.createObjectURL(blob);
+
+      if (target === 'photo1') {
+        this.mainImagePreview = imageUrl;
+      } else {
+        this.secondaryImagePreview = imageUrl;
       }
-    });
+    } catch (error) {
+      console.error('Erreur détourage IA, fallback sur image brute:', error);
+      this.loadRawImage(file, target);
+    } finally {
+      this.isProcessingAiPhoto = false;
+    }
+  } else {
+    this.loadRawImage(file, target);
+  }
+}
+  private loadRawImage(file: File, target: 'photo1' | 'photo2'): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (target === 'photo1') {
+        this.mainImagePreview = reader.result as string;
+      } else {
+        this.secondaryImagePreview = reader.result as string;
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
-  downloadPoster() {
-    if (this.previewImage) {
-      const link = document.createElement('a');
-      link.href = this.previewImage;
-      link.download = `poster_match_${this.matchId}_${Date.now()}.png`;
-      link.click();
+  onImageError(event: Event, defaultText: string = 'LOGO'): void {
+    const imgElement = event.target as HTMLImageElement | null;
+    if (imgElement) {
+      imgElement.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${defaultText}`;
     }
   }
 
-  close() {
-    this.dialogRef.close();
+  /**
+   * Génération de l'image PNG haute définition
+   */
+  async generatePoster(): Promise<void> {
+    if (this.posterForm.invalid) return;
+
+    this.isGenerating = true;
+
+    try {
+      if (this.posterContainer) {
+        const dataUrl = await toPng(this.posterContainer.nativeElement, {
+          quality: 0.98,
+          pixelRatio: 2,
+          skipFonts: true,
+          cacheBust: true
+        });
+        this.generatedPosterUrl = dataUrl;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de l affiche:', error);
+    } finally {
+      this.isGenerating = false;
+    }
+  }
+
+  downloadPoster(): void {
+    if (!this.generatedPosterUrl) return;
+
+    const link = document.createElement('a');
+    link.download = `my20-poster-${Date.now()}.png`;
+    link.href = this.generatedPosterUrl;
+    link.click();
+  }
+
+  close(): void {
+    this.closed.emit();
   }
 }

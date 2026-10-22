@@ -1,4 +1,5 @@
 // excel-import.service.ts
+import { t } from '../i18n/traduire';
 import { Injectable } from '@angular/core';
 import { Observable, from, map, mergeMap, catchError, of, forkJoin, lastValueFrom } from 'rxjs';
 import * as XLSX from 'xlsx';
@@ -151,7 +152,7 @@ export class ExcelImportService {
         result.errorCount = result.totalRows;
         result.errors.push({
           row: 0,
-          message: 'Erreur système lors de l\'importation',
+          message: t('ui.ts_erreur_systeme_lors_de_l_importa_0cea'),
           data: {}
         });
         return of(result);
@@ -423,7 +424,7 @@ export class ExcelImportService {
       errors.push({
         row: rowIndex,
         field: 'nom',
-        message: 'Le nom est obligatoire',
+        message: t('partenaire.entreprises.form.nameRequired'),
         data: row
       });
     }
@@ -432,7 +433,7 @@ export class ExcelImportService {
       errors.push({
         row: rowIndex,
         field: 'prenom',
-        message: 'Le prénom est obligatoire',
+        message: t('ui.ts_le_prenom_est_obligatoire_0f62'),
         data: row
       });
     }
@@ -441,7 +442,7 @@ export class ExcelImportService {
       errors.push({
         row: rowIndex,
         field: 'sexe',
-        message: 'Le sexe doit être "masculin" ou "feminin"',
+        message: t('ui.ts_le_sexe_doit_etre_masculin_ou_fe_63de'),
         data: row
       });
     }
@@ -451,7 +452,7 @@ export class ExcelImportService {
       errors.push({
         row: rowIndex,
         field: 'email',
-        message: 'Format d\'email invalide',
+        message: t('auth.usernameInvalid'),
         data: row
       });
     }
@@ -461,7 +462,7 @@ export class ExcelImportService {
       errors.push({
         row: rowIndex,
         field: 'dateNaissance',
-        message: 'Format de date invalide (attendu: YYYY-MM-DD)',
+        message: t('ui.ts_format_de_date_invalide_attendu__03aa'),
         data: row
       });
     }

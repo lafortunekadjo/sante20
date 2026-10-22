@@ -1,5 +1,5 @@
 <div class="evenement-container">
-  <!-- Header harmonisé -->
+  <!-- Bandeau commun -->
   <div class="page-header">
     <div class="header-background"></div>
     <div class="header-content">
@@ -11,247 +11,175 @@
       </div>
       <div class="header-stats">
         <div class="stat-item">
-          <span class="stat-number">{{ dataSource.data.length }}</span>
-          <span class="stat-label">{{ 'evenement.totalEvents' | translate }}</span>
+          <span class="stat-number">{{ evenements().length }}</span>
+          <span class="stat-label">{{ 'collecte.page.events' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ nbCollectesOuvertes() }}</span>
+          <span class="stat-label">{{ 'collecte.page.openCollectes' | translate }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">{{ fcfa(totalCollecte()) }}</span>
+          <span class="stat-label">{{ 'collecte.page.collected' | translate }}</span>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner">
-      <mat-spinner diameter="50"></mat-spinner>
-    </div>
-    <div class="loading-content">
-      <h3>{{ 'common.loading' | translate }}...</h3>
-      <p>{{ 'evenement.loadingData' | translate }}</p>
-    </div>
-  </div>
-
-  <!-- Content -->
-  <div *ngIf="!isLoading" class="content">
-    <!-- Bouton de création -->
-    <div class="action-buttons">
-      <button mat-raised-button color="primary" (click)="toggleCreateRow()">
-        <mat-icon>add</mat-icon>
-        <span>{{ 'evenement.createEvent' | translate }}</span>
+    <!-- Action principale : bouton avec texte ici + bouton flottant étendu plus bas (voir _ui-kit.scss, section 11) -->
+    <div class="header-cta-row" *ngIf="!isLoading && !showCreateRow">
+      <button class="btn-primary header-cta" (click)="toggleCreateRow()">
+        <mat-icon>add</mat-icon>{{ 'evenement.createEvent' | translate }}
       </button>
     </div>
+  </div>
 
-    <!-- Formulaire de création -->
-    <div *ngIf="showCreateRow" class="demande-card create-card">
-      <div class="demande-header">
-        <div class="groupe-info">
-          <div class="groupe-avatar">
-            <mat-icon class="discipline-icon">add_circle</mat-icon>
-          </div>
-          <div class="groupe-details">
-            <h3 class="groupe-nom">{{ 'evenement.newEvent' | translate }}</h3>
-          </div>
-        </div>
-      </div>
-      <div class="demande-content">
+  <button class="fab" *ngIf="!isLoading && !showCreateRow" (click)="toggleCreateRow()" [attr.aria-label]="'evenement.createEvent' | translate">
+    <mat-icon>add</mat-icon>
+    <span class="fab-label">{{ 'evenement.createEvent' | translate }}</span>
+  </button>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div *ngIf="!isLoading" class="content">
+
+    <!-- ── Création / modification ───────────────────────────── -->
+    <div *ngIf="showCreateRow" class="evt-form card">
+      <h3 class="evt-form__titre">{{ form.id ? ('collecte.page.editEvent' | translate) : ('evenement.newEvent' | translate) }}</h3>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'evenement.eventName' | translate }}</mat-label>
+        <input matInput [(ngModel)]="form.nomEvenement" required />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'collecte.page.description' | translate }}</mat-label>
+        <textarea matInput rows="2" [(ngModel)]="form.description"></textarea>
+      </mat-form-field>
+
+      <div class="evt-form__ligne">
         <mat-form-field appearance="outline">
-          <mat-label>{{ 'evenement.eventName' | translate }}</mat-label>
-          <input matInput [(ngModel)]="newEvenement.nomEvenement" required />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'evenement.description' | translate }}</mat-label>
-          <textarea matInput [(ngModel)]="newEvenement.description" required></textarea>
+          <mat-label>{{ 'evenement.eventType' | translate }}</mat-label>
+          <mat-select [(ngModel)]="form.typeEvenement" (selectionChange)="onTypeChange()">
+            <mat-option *ngFor="let t of types" [value]="t">{{ label(t) }}</mat-option>
+          </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>{{ 'evenement.eventDate' | translate }}</mat-label>
-          <input matInput [matDatepicker]="picker" [(ngModel)]="newEvenement.dateEvenement" required>
+          <input matInput [matDatepicker]="picker" [(ngModel)]="form.dateEvenement">
           <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'evenement.eventType' | translate }}</mat-label>
-          <mat-select [(ngModel)]="newEvenement.typeEvenement" required>
-            <mat-option value="ANNIVERSAIRE">{{ 'evenement.birthday' | translate }}</mat-option>
-            <mat-option value="DECES">{{ 'evenement.death' | translate }}</mat-option>
-            <mat-option value="MARIAGE">{{ 'evenement.marriage' | translate }}</mat-option>
-            <mat-option value="BAPTEME">{{ 'evenement.baptism' | translate }}</mat-option>
-            <mat-option value="AUTRE">{{ 'evenement.other' | translate }}</mat-option>
-          </mat-select>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'collecte.page.memberConcerned' | translate }}</mat-label>
+        <mat-select [(ngModel)]="form.idMembreLie">
+          <mat-option [value]="null">{{ 'collecte.page.none' | translate }}</mat-option>
+          <mat-option *ngFor="let m of membres" [value]="m.id">{{ m.prenom }} {{ m.nom }}</mat-option>
+        </mat-select>
+        <mat-hint>{{ 'collecte.page.memberHint' | translate }}</mat-hint>
+      </mat-form-field>
+
+      <!-- Collecte : aucun type de contribution à créer -->
+      <mat-checkbox class="evt-form__collecte" [(ngModel)]="form.ouvrirCollecte">
+        {{ 'collecte.page.openCollecte' | translate }}
+      </mat-checkbox>
+
+      <ng-container *ngIf="form.ouvrirCollecte">
+        <div class="evt-modes">
+          <label class="evt-mode" *ngFor="let m of modes" [class.actif]="form.modeCollecte === m.valeur">
+            <input type="radio" name="mode" [(ngModel)]="form.modeCollecte" [value]="m.valeur"/>
+            <strong>{{ m.label | translate }}</strong>
+            <small>{{ m.aide | translate }}</small>
+          </label>
+        </div>
+
+        <mat-form-field appearance="outline" *ngIf="form.modeCollecte === 'FIXE'">
+          <mat-label>{{ 'collecte.page.amountPerMember' | translate }}</mat-label>
+          <input matInput type="number" min="1" [(ngModel)]="form.montant" />
         </mat-form-field>
-        <mat-checkbox [(ngModel)]="newEvenement.estContributionOuverte">{{ 'evenement.openContributions' | translate }}</mat-checkbox>
-        <!-- <mat-form-field appearance="outline" *ngIf="newEvenement.estContributionOuverte">
-          <mat-label>{{ 'evenement.contributionDeadline' | translate }}</mat-label>
-          <input matInput [matDatepicker]="pickerDelai" [(ngModel)]="newEvenement.delaiContribution" required>
+        <mat-form-field appearance="outline" *ngIf="form.modeCollecte === 'OBJECTIF'">
+          <mat-label>{{ 'collecte.page.totalGoal' | translate }}</mat-label>
+          <input matInput type="number" min="1" [(ngModel)]="form.objectif" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'collecte.page.deadline' | translate }}</mat-label>
+          <input matInput [matDatepicker]="pickerDelai" [(ngModel)]="form.delai">
           <mat-datepicker-toggle matSuffix [for]="pickerDelai"></mat-datepicker-toggle>
           <mat-datepicker #pickerDelai></mat-datepicker>
-        </mat-form-field> -->
-        <!-- <mat-form-field appearance="outline" *ngIf="newEvenement.estContributionOuverte">
-          <mat-label>{{ 'evenement.targetAmount' | translate }}</mat-label>
-          <input matInput type="number" [(ngModel)]="newEvenement.montantCible" required>
-        </mat-form-field> -->
-      </div>
-      <div class="demande-actions">
-        <div class="primary-actions">
-          <button mat-raised-button color="primary" (click)="saveEvenement()" [disabled]="!isCreateFormValid()">
-            <mat-icon>save</mat-icon>
-            <span>{{ 'common.save' | translate }}</span>
-          </button>
-          <button mat-stroked-button color="warn" (click)="cancelCreate()">
-            <mat-icon>cancel</mat-icon>
-            <span>{{ 'common.cancel' | translate }}</span>
-          </button>
-        </div>
+        </mat-form-field>
+
+        <p class="evt-form__info">
+          {{ 'collecte.page.caisseInfo' | translate }}
+        </p>
+      </ng-container>
+
+      <p class="evt-form__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+
+      <div class="evt-form__actions">
+        <button class="btn-ghost" (click)="cancelCreate()">{{ 'common.cancel' | translate }}</button>
+        <button class="btn-primary" (click)="saveEvenement()" [disabled]="!formValide() || saving()">
+          <mat-icon>save</mat-icon>{{ saving() ? ('collecte.page.saving' | translate) : ('common.save' | translate) }}
+        </button>
       </div>
     </div>
 
-    <!-- Tableau des événements -->
-    <div class="table-wrapper" *ngIf="dataSource.data.length > 0">
-      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
-        <ng-container matColumnDef="idEvenement">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.id' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement">{{ evenement.idEvenement }}</td>
-        </ng-container>
-        <ng-container matColumnDef="nomEvenement">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventName' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editNom">
-              {{ evenement.nomEvenement }}
-            </ng-container>
-            <ng-template #editNom>
-              <mat-form-field appearance="outline">
-                <input matInput [(ngModel)]="editEvenement.nomEvenement" required>
-              </mat-form-field>
-            </ng-template>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="description">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.description' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editDesc">
-              {{ evenement.description }}
-            </ng-container>
-            <ng-template #editDesc>
-              <mat-form-field appearance="outline">
-                <textarea matInput [(ngModel)]="editEvenement.description" required></textarea>
-              </mat-form-field>
-            </ng-template>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="dateEvenement">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventDate' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editDate">
-              {{ evenement.dateEvenement | date:'dd/MM/yyyy' }}
-            </ng-container>
-            <ng-template #editDate>
-              <mat-form-field appearance="outline">
-                <input matInput [matDatepicker]="pickerEdit" [(ngModel)]="editEvenement.dateEvenement" required>
-                <mat-datepicker-toggle matSuffix [for]="pickerEdit"></mat-datepicker-toggle>
-                <mat-datepicker #pickerEdit></mat-datepicker>
-              </mat-form-field>
-            </ng-template>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="typeEvenement">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.eventType' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editType">
-              {{ evenement.typeEvenement | translate }}
-            </ng-container>
-            <ng-template #editType>
-              <mat-form-field appearance="outline">
-                <mat-select [(ngModel)]="editEvenement.typeEvenement" required>
-                  <mat-option value="ANNIVERSAIRE">{{ 'evenement.birthday' | translate }}</mat-option>
-                  <mat-option value="DECES">{{ 'evenement.death' | translate }}</mat-option>
-                  <mat-option value="MARIAGE">{{ 'evenement.marriage' | translate }}</mat-option>
-                  <mat-option value="BAPTEME">{{ 'evenement.baptism' | translate }}</mat-option>
-                  <mat-option value="AUTRE">{{ 'evenement.other' | translate }}</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </ng-template>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="estContributionOuverte">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.openContributions' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editOpen">
-              <mat-icon [color]="evenement.estContributionOuverte ? 'primary' : 'warn'">
-                {{ evenement.estContributionOuverte ? 'check_circle' : 'cancel' }}
-              </mat-icon>
-            </ng-container>
-            <ng-template #editOpen>
-              <mat-checkbox [(ngModel)]="editEvenement.estContributionOuverte"></mat-checkbox>
-            </ng-template>
-          </td>
-        </ng-container>
-        <!-- <ng-container matColumnDef="delaiContribution">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.contributionDeadline' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editDelai">
-              {{ evenement.delaiContribution | date:'dd/MM/yyyy' }}
-            </ng-container>
-            <ng-template #editDelai>
-              <mat-form-field appearance="outline" *ngIf="editEvenement.estContributionOuverte">
-                <input matInput [matDatepicker]="pickerDelaiEdit" [(ngModel)]="editEvenement.delai" required>
-                <mat-datepicker-toggle matSuffix [for]="pickerDelaiEdit"></mat-datepicker-toggle>
-                <mat-datepicker #pickerDelaiEdit></mat-datepicker>
-              </mat-form-field>
-            </ng-template>
-          </td>
-        </ng-container> -->
-        <!-- <ng-container matColumnDef="montantCible">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'evenement.targetAmount' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]; else editCible">
-              {{ evenement.montantCible | number }} FCFA
-            </ng-container>
-        
-          </td>
-        </ng-container> -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | translate }}</th>
-          <td mat-cell *matCellDef="let evenement; let i = index">
-            <ng-container *ngIf="!editingRows[i]">
-              <div class="action-buttons-horizontal">
-                <button mat-icon-button color="primary" (click)="saveEdit(evenement)">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button color="warn" (click)="openDeleteDialog(evenement.idEvenement)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </ng-container>
-            <ng-container *ngIf="editingRows[i]">
-              <div class="action-buttons-horizontal">
-                <!-- <button mat-raised-button color="primary" (click)="saveEdit(i)" >
-                  {{ 'common.save' | translate }}
-                </button> -->
-                <!-- <button mat-raised-button color="warn" (click)="cancelEdit(i)">
-                  {{ 'common.cancel' | translate }}
-                </button> -->
-              </div>
-            </ng-container>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-      <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons class="paginator"></mat-paginator>
+    <!-- ── Liste des événements (cartes : lisibles sur mobile) ── -->
+    <div class="evt-liste" *ngIf="evenements().length > 0">
+      <article class="evt-card card" *ngFor="let e of evenements()">
+        <div class="evt-card__top">
+          <span class="evt-chip" [ngClass]="'evt-chip--' + famille(e.typeEvenement)">{{ label(e.typeEvenement) }}</span>
+          <span class="evt-etat" [class.evt-etat--ouvert]="e.estContributionOuverte">
+            {{ (e.estContributionOuverte ? 'collecte.page.stateOpen' : (bilans()[e.id]?.totalCollecte ? 'collecte.page.stateClosed' : 'collecte.page.stateNone')) | translate }}
+          </span>
+        </div>
+
+        <h3 class="evt-card__nom">{{ e.nomEvenement }}</h3>
+        <p class="evt-card__desc" *ngIf="e.description">{{ e.description }}</p>
+        <p class="evt-card__meta">
+          <span *ngIf="e.dateEvenement"><mat-icon>event</mat-icon>{{ e.dateEvenement | date:'dd/MM/yyyy' }}</span>
+          <span *ngIf="e.membreLie"><mat-icon>person</mat-icon>{{ e.membreLie.prenom }} {{ e.membreLie.nom }}</span>
+        </p>
+
+        <!-- Où en est la collecte -->
+        <div class="evt-collecte" *ngIf="e.estContributionOuverte || bilans()[e.id]?.totalCollecte">
+          <div class="evt-collecte__ligne">
+            <strong>{{ fcfa(bilans()[e.id]?.totalCollecte) }}</strong>
+            <span *ngIf="mode(e) === 'OBJECTIF' && e.objectifGlobal"> {{ 'collecte.page.onGoal' | translate: { montant: fcfa(e.objectifGlobal) } }}</span>
+            <span *ngIf="mode(e) === 'FIXE' && e.montantRequisParMembre"> · {{ 'collecte.page.perMember' | translate: { montant: fcfa(e.montantRequisParMembre) } }}</span>
+            <span *ngIf="mode(e) === 'LIBRE'"> · {{ 'collecte.page.freeAmount' | translate }}</span>
+          </div>
+          <div class="evt-barre" *ngIf="mode(e) === 'OBJECTIF' && e.objectifGlobal">
+            <span [style.width.%]="pourcent(bilans()[e.id]?.totalCollecte ?? 0, e.objectifGlobal)"></span>
+          </div>
+          <small *ngIf="bilans()[e.id] as b">
+            {{ 'collecte.page.contributors' | translate: { n: b.nbContributeurs, total: b.nbMembresAttendus } }}
+            <ng-container *ngIf="b.totalDepense"> · {{ 'collecte.page.spent' | translate: { montant: fcfa(b.totalDepense) } }} · {{ 'collecte.page.available' | translate: { montant: fcfa(b.solde) } }}</ng-container>
+            <ng-container *ngIf="e.delaiCollecte"> · {{ 'collecte.page.until' | translate: { date: (e.delaiCollecte | date:'dd/MM/yyyy') } }}</ng-container>
+          </small>
+        </div>
+
+        <div class="evt-actions">
+          <button class="btn-outline btn-sm" (click)="ouvrirBilan(e)"><mat-icon>assessment</mat-icon>{{ 'collecte.page.bilan' | translate }}</button>
+          <button class="btn-ghost btn-sm" (click)="basculerCollecte(e)">
+            <mat-icon>{{ e.estContributionOuverte ? 'lock' : 'lock_open' }}</mat-icon>{{ (e.estContributionOuverte ? 'collecte.page.closeCollecte' : 'collecte.page.openCollecteAction') | translate }}
+          </button>
+          <button class="btn-icon" (click)="modifier(e)" [attr.aria-label]="'collecte.page.edit' | translate"><mat-icon>edit</mat-icon></button>
+          <button class="btn-icon btn-icon--danger" (click)="openDeleteDialog(e.id)" [attr.aria-label]="'collecte.page.delete' | translate"><mat-icon>delete</mat-icon></button>
+        </div>
+      </article>
     </div>
 
     <!-- État vide -->
-    <div class="empty-state" *ngIf="dataSource.data.length === 0">
-      <div class="empty-illustration">
-        <mat-icon class="empty-icon">event_busy</mat-icon>
-      </div>
-      <div class="empty-content">
-        <h3 class="empty-title">{{ 'evenement.noEvents' | translate }}</h3>
-        <p class="empty-text">{{ 'evenement.noEventsMessage' | translate }}</p>
-        <div class="empty-actions">
-          <button mat-raised-button color="primary" (click)="toggleCreateRow()">
-            <mat-icon>add</mat-icon>
-            <span>{{ 'evenement.createEvent' | translate }}</span>
-          </button>
-        </div>
-      </div>
+    <div class="empty-state" *ngIf="evenements().length === 0 && !showCreateRow">
+      <mat-icon>celebration</mat-icon>
+      <h3>{{ 'evenement.noEvents' | translate }}</h3>
+      <p>{{ 'collecte.page.emptyHint' | translate }}</p>
+      <button class="btn-primary" (click)="toggleCreateRow()">{{ 'evenement.createEvent' | translate }}</button>
     </div>
   </div>
 </div>

@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, OnInit, OnDestroy,
   ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit
@@ -12,7 +13,7 @@ type BannerPosition = 'HEADER' | 'FOOTER' | 'EXPLORER_TOP';
 @Component({
   selector: 'app-publicite-banner',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslateModule, CommonModule],
   templateUrl: './publicite-banner.component.html',
   styleUrls: ['./publicite-banner.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

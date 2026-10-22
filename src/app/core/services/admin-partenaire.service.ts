@@ -378,8 +378,10 @@ export class AdminPartenaireService {
   /**
    * Approuver une publicité
    */
-  approuverPublicite(id: number): Observable<PubliciteDTO> {
-    return this.http.post<PubliciteDTO>(`${this.apiUrl}/publicites/${id}/approuver`, {});
+  /** priorite : fréquence de diffusion relative (0 normale, 5 haute, 10 premium) — décidée par l'administrateur. */
+  approuverPublicite(id: number, priorite?: number): Observable<PubliciteDTO> {
+    const q = priorite != null ? `?priorite=${priorite}` : '';
+    return this.http.post<PubliciteDTO>(`${this.apiUrl}/publicites/${id}/approuver${q}`, {});
   }
 
   /**

@@ -1,3 +1,5 @@
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -111,7 +113,7 @@ type FilterMode = 'period' | 'dateRange';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     ReactiveFormsModule,
     MatCardModule,
@@ -419,7 +421,7 @@ barChartOptions: ChartConfiguration<'bar'>['options'] = {
       labels: growth.map(g => g.month),
       datasets: [
         {
-          label: 'Groupes',
+          label: t('admin.groups'),
           data: growth.map(g => g.groups),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -427,7 +429,7 @@ barChartOptions: ChartConfiguration<'bar'>['options'] = {
           tension: 0.4
         },
         {
-          label: 'Utilisateurs',
+          label: t('menu.items.USER'),
           data: growth.map(g => g.users),
           borderColor: '#22c55e',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -444,13 +446,13 @@ barChartOptions: ChartConfiguration<'bar'>['options'] = {
       labels: evolution.map(e => e.month),
       datasets: [
         {
-          label: 'Payées',
+          label: t('echeancier.stats.payees'),
           data: evolution.map(e => e.paid),
           backgroundColor: '#22c55e',
           borderRadius: 4
         },
         {
-          label: 'Non payées',
+          label: t('ui.ts_non_payees_50ff'),
           data: evolution.map(e => e.unpaid),
           backgroundColor: '#ef4444',
           borderRadius: 4

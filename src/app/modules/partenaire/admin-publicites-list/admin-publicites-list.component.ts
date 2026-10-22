@@ -3,6 +3,7 @@
 // Gestion et validation des publicités partenaires
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -178,7 +179,7 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoading = false;
-        this.snackBar.open('Erreur de chargement', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_de_chargement_110e'), 'OK', { duration: 3000 });
       }
     });
     this.subscriptions.push(sub);
@@ -240,10 +241,10 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Approuver la publicité',
+        title: t('ui.ts_approuver_la_publicite_985f'),
         message: `Voulez-vous approuver "${pub.titre}" ? Elle sera immédiatement visible.`,
         confirmText: 'Approuver',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         confirmColor: 'primary',
         icon: 'check_circle'
       }
@@ -253,12 +254,12 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.adminService.approuverPublicite(pub.id).subscribe({
           next: () => {
-            this.snackBar.open('Publicité approuvée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('partenaire.settings.notifications.adApproved'), 'OK', { duration: 3000 });
             this.loadPublicites();
             this.loadStats();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de l\'approbation', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_l_approbation_1b28'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -275,12 +276,12 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
       if (result) {
         this.adminService.rejeterPublicite(pub.id, result.motif).subscribe({
           next: () => {
-            this.snackBar.open('Publicité rejetée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('partenaire.settings.notifications.adRejected'), 'OK', { duration: 3000 });
             this.loadPublicites();
             this.loadStats();
           },
           error: () => {
-            this.snackBar.open('Erreur lors du rejet', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_du_rejet_76f8'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -290,12 +291,12 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
   pauserPublicite(pub: PubliciteDTO): void {
     this.adminService.pauserPublicite(pub.id).subscribe({
       next: () => {
-        this.snackBar.open('Publicité mise en pause', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_mise_en_pause_73d8'), 'OK', { duration: 3000 });
         this.loadPublicites();
         this.loadStats();
       },
       error: () => {
-        this.snackBar.open('Erreur', 'OK', { duration: 3000 });
+        this.snackBar.open(t('common.error'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -303,12 +304,12 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
   reprendrePublicite(pub: PubliciteDTO): void {
     this.adminService.reprendrePublicite(pub.id).subscribe({
       next: () => {
-        this.snackBar.open('Publicité réactivée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_reactivee_14ab'), 'OK', { duration: 3000 });
         this.loadPublicites();
         this.loadStats();
       },
       error: () => {
-        this.snackBar.open('Erreur', 'OK', { duration: 3000 });
+        this.snackBar.open(t('common.error'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -317,10 +318,10 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Supprimer la publicité',
+        title: t('partenaire.publicites.confirmDelete.title'),
         message: `Voulez-vous supprimer définitivement "${pub.titre}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'delete_forever'
       }
@@ -330,12 +331,12 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.adminService.supprimerPublicite(pub.id).subscribe({
           next: () => {
-            this.snackBar.open('Publicité supprimée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_publicite_supprimee_e721'), 'OK', { duration: 3000 });
             this.loadPublicites();
             this.loadStats();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -363,8 +364,8 @@ export class AdminPublicitesListComponent implements OnInit, OnDestroy {
       'ACTIVE': 'Active',
       'EN_ATTENTE': 'En attente',
       'PAUSEE': 'En pause',
-      'REJETEE': 'Rejetée',
-      'TERMINEE': 'Terminée',
+      'REJETEE': t('partenaire.publicites.status.REJETEE'),
+      'TERMINEE': t('partenaire.publicites.status.TERMINEE'),
       'BROUILLON': 'Brouillon'
     };
     return labels[statut] || statut;

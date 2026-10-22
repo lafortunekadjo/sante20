@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -66,7 +67,7 @@ export class ResetPasswordComponent implements OnInit {
     this.token = this.route.snapshot.queryParams['token'];
     
     if (!this.token) {
-      alert('Token de réinitialisation manquant ou invalide.');
+      alert(t('ui.ts_token_de_reinitialisation_manqua_0322'));
       this.router.navigate(['/login']);
     }
 

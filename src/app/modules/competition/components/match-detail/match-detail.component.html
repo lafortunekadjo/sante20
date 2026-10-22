@@ -52,6 +52,14 @@
               <mat-icon>play_circle</mat-icon>
               {{ 'competition.match.saisie.demarrer' | translate }}
             </button>
+        <div class="demarrage-erreur" *ngIf="demarrageError()">
+          <p>{{ demarrageError() }}</p>
+          <button type="button" class="btn-forcer"
+                  *ngIf="peutForcerDemarrage() && erreurForcable()"
+                  (click)="forcerDemarrage()">
+            {{ 'ui.demarrer_quand_meme_53d7' | translate }}
+          </button>
+        </div>
 
             <!-- Indicateur live -->
             <div class="live-badge" *ngIf="isEnCours()">
@@ -101,7 +109,7 @@
           <!-- ── APERÇU ──────────── -->
           <div *ngIf="activeTab() === 'apercu'" class="apercu-tab">
             <div class="timeline" *ngIf="sortedEvents().length">
-              <h3 class="section-title">Résumé du match</h3>
+              <h3 class="section-title">{{ 'ui.resume_du_match_a7d0' | translate }}</h3>
               <div class="timeline__content">
                 <div class="timeline__event"
                      *ngFor="let e of sortedEvents()"
@@ -230,7 +238,7 @@
 
                   <div class="compo-empty" *ngIf="!getCompo(side)?.length">
                     <mat-icon>group_off</mat-icon>
-                    Composition non saisie
+                    {{ 'ui.composition_non_saisie_8974' | translate }}
                   </div>
                 </div>
               </div>
@@ -259,18 +267,18 @@
                               [value]="getStatut(j)"
                               (change)="setStatut('domicile', j.membreId, $any($event.target).value)">
                         <option value="TITULAIRE">Titulaire</option>
-                        <option value="REMPLACANT">Remplaçant</option>
+                        <option value="REMPLACANT">{{ 'ui.remplacant_1a1f' | translate }}</option>
                         <option value="NON_CONVOQUE">{{ 'competition.match.composition.nonConvoque' | translate }}</option>
                       </select>
                       <button class="btn-capitaine"
                               [class.active]="j.capitaine"
                               (click)="toggleCapitaine('domicile', j.membreId)"
-                              title="Capitaine du jour">
+                              [title]="'ui.capitaine_du_jour_7124' | translate">
                         <mat-icon>star</mat-icon>
                       </button>
                     </div>
                     <div class="compo-edit-empty" *ngIf="!compoSaisie().domicile.length">
-                      Aucun joueur inscrit
+                      {{ 'ui.aucun_joueur_inscrit_9893' | translate }}
                     </div>
                   </div>
                 </div>
@@ -294,18 +302,18 @@
                               [value]="getStatut(j)"
                               (change)="setStatut('exterieur', j.membreId, $any($event.target).value)">
                         <option value="TITULAIRE">Titulaire</option>
-                        <option value="REMPLACANT">Remplaçant</option>
+                        <option value="REMPLACANT">{{ 'ui.remplacant_1a1f' | translate }}</option>
                         <option value="NON_CONVOQUE">{{ 'competition.match.composition.nonConvoque' | translate }}</option>
                       </select>
                       <button class="btn-capitaine"
                               [class.active]="j.capitaine"
                               (click)="toggleCapitaine('exterieur', j.membreId)"
-                              title="Capitaine du jour">
+                              [title]="'ui.capitaine_du_jour_7124' | translate">
                         <mat-icon>star</mat-icon>
                       </button>
                     </div>
                     <div class="compo-edit-empty" *ngIf="!compoSaisie().exterieur.length">
-                      Aucun joueur inscrit
+                      {{ 'ui.aucun_joueur_inscrit_9893' | translate }}
                     </div>
                   </div>
                 </div>
@@ -366,7 +374,7 @@
 
                   <!-- Équipe -->
                   <div class="form-field">
-                    <label class="form-label">Équipe *</label>
+                    <label class="form-label">{{ 'ui.equipe_abf7' | translate }}</label>
                     <div class="equipe-selector">
                       <button class="equipe-btn"
                               [class.active]="eventEquipe() === 'domicile'"
@@ -427,7 +435,7 @@
                     <div class="joueur-picker__search">
                       <mat-icon>search</mat-icon>
                       <input [(ngModel)]="joueurSearch"
-                             placeholder="Filtrer par nom..."
+                             [placeholder]="'ui.filtrer_par_nom_e618' | translate"
                              class="joueur-picker__input"/>
                     </div>
                     <div class="joueur-picker__list">
@@ -449,11 +457,11 @@
                        *ngIf="!joueursDisponibles().length">
                     <div class="fallback-warning">
                       <mat-icon>info</mat-icon>
-                      Composition non saisie — saisie manuelle
+                      {{ 'ui.composition_non_saisie_saisie_manu_a7cf' | translate }}
                     </div>
                     <input [(ngModel)]="joueurManuelNom"
                            class="form-input"
-                           placeholder="Nom du joueur"/>
+                           [placeholder]="'PRESENCE.ADD.PLAYER_NAME' | translate"/>
                   </div>
 
                   <!-- Joueur sélectionné -->
@@ -481,7 +489,7 @@
                     <div class="joueur-picker__search">
                       <mat-icon>search</mat-icon>
                       <input [(ngModel)]="passeurSearch"
-                             placeholder="Filtrer..."
+                             [placeholder]="'ui.filtrer_868c' | translate"
                              class="joueur-picker__input"/>
                     </div>
                     <div class="joueur-picker__list">
@@ -524,7 +532,7 @@
                   <div class="form-field">
                     <label class="form-label">
                       <mat-icon>arrow_upward</mat-icon>
-                      Joueur sortant *
+                      {{ 'ui.joueur_sortant_8f97' | translate }}
                     </label>
                     <div class="joueur-picker joueur-picker--sm"
                          *ngIf="joueursSortants().length; else pasSortant">
@@ -541,7 +549,7 @@
                     <ng-template #pasSortant>
                       <div class="fallback-warning">
                         <mat-icon>info</mat-icon>
-                        Aucun joueur sur le terrain à cette minute
+                        {{ 'ui.aucun_joueur_sur_le_terrain_a_cett_91fa' | translate }}
                       </div>
                     </ng-template>
                     <div class="joueur-selected" *ngIf="joueurSortantSelectionne()">
@@ -557,7 +565,7 @@
                   <div class="form-field" style="margin-top:12px">
                     <label class="form-label">
                       <mat-icon>arrow_downward</mat-icon>
-                      Joueur entrant *
+                      {{ 'ui.joueur_entrant_43d4' | translate }}
                     </label>
                     <div class="joueur-picker joueur-picker--sm"
                          *ngIf="joueursEntrants().length; else pasEntrant">
@@ -574,7 +582,7 @@
                     <ng-template #pasEntrant>
                       <div class="fallback-warning">
                         <mat-icon>info</mat-icon>
-                        Aucun remplaçant disponible
+                        {{ 'ui.aucun_remplacant_disponible_132c' | translate }}
                       </div>
                     </ng-template>
                     <div class="joueur-selected" *ngIf="joueurSelectionne()">
@@ -642,7 +650,7 @@
                 <button class="btn-icon--danger"
                         *ngIf="canEdit()"
                         (click)="supprimerEvenement(e.id!)"
-                        title="Supprimer">
+                        [title]="'type_depense.actions.supprimer' | translate">
                   <mat-icon>delete_outline</mat-icon>
                 </button>
               </div>
@@ -650,7 +658,7 @@
               <div class="no-events-list"
                    *ngIf="!sortedEvents().length">
                 <mat-icon>sports</mat-icon>
-                Aucun événement
+                {{ 'evenement.noEvents' | translate }}
               </div>
             </div>
           </div>
@@ -715,7 +723,14 @@
                   </div>
                 </div>
 
-                <div class="saisie-options">
+                <p class="saisie-manche" *ngIf="match()!.manche">
+                  Manche {{ match()!.manche === 'ALLER' ? 'aller' : 'retour' }} —
+                  {{ match()!.manche === 'ALLER'
+                      ? 'le vainqueur de la confrontation sera désigné au retour'
+                      : 'le vainqueur se décide sur l' + 'ensemble des deux matchs' }}
+                </p>
+
+                <div class="saisie-options" *ngIf="match()!.manche !== 'ALLER'">
                   <label class="checkbox-label">
                     <input type="checkbox" formControlName="avecProlong"/>
                     {{ 'competition.match.saisie.avecProlong' | translate }}
@@ -725,6 +740,8 @@
                     {{ 'competition.match.saisie.avecTab' | translate }}
                   </label>
                 </div>
+
+                <p class="saisie-erreur" *ngIf="scoreError()">{{ scoreError() }}</p>
 
                 <div class="saisie-actions">
                   <button type="submit"
@@ -795,7 +812,7 @@
                   <div class="joueur-picker__search">
                     <mat-icon>search</mat-icon>
                     <input [(ngModel)]="hdmSearch"
-                           placeholder="Chercher un joueur..."
+                           [placeholder]="'ui.chercher_un_joueur_6810' | translate"
                            class="joueur-picker__input"/>
                   </div>
                   <div class="joueur-picker__list">
@@ -825,12 +842,12 @@
               <div class="form-field" style="margin-top:12px">
                 <label class="form-label">
                   <mat-icon>comment</mat-icon>
-                  Commentaire du match
+                  {{ 'competition.match.saisie.apresMatch.commentaire' | translate }}
                 </label>
                 <textarea [(ngModel)]="commentaireMatch"
                           class="form-textarea"
                           rows="4"
-                          placeholder="Résumé, incidents, conditions de jeu..."></textarea>
+                          [placeholder]="'competition.match.saisie.apresMatch.commentairePlaceholder' | translate"></textarea>
               </div>
 
               <div class="saisie-actions" style="margin-top:12px">

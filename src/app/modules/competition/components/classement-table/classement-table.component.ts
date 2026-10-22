@@ -24,9 +24,9 @@ import { ClassementDTO, StatutClassement } from '../../../../core/models/competi
               <th class="col-num" title="Victoires">V</th>
               <th class="col-num" title="Nuls">N</th>
               <th class="col-num" title="Défaites">D</th>
-              <th class="col-num" title="Buts pour">BP</th>
-              <th class="col-num" title="Buts contre">BC</th>
-              <th class="col-num" title="Goal average">GA</th>
+              <th class="col-num hide-xs" title="Buts pour">BP</th>
+              <th class="col-num hide-xs" title="Buts contre">BC</th>
+              <th class="col-num" title="Différence de buts">Diff</th>
               <th class="col-pts">Pts</th>
             </tr>
           </thead>
@@ -68,8 +68,8 @@ import { ClassementDTO, StatutClassement } from '../../../../core/models/competi
               <td class="col-num col-v">{{ ligne.victoires }}</td>
               <td class="col-num">{{ ligne.nuls }}</td>
               <td class="col-num col-d">{{ ligne.defaites }}</td>
-              <td class="col-num">{{ ligne.butsPour }}</td>
-              <td class="col-num">{{ ligne.butsContre }}</td>
+              <td class="col-num hide-xs">{{ ligne.butsPour }}</td>
+              <td class="col-num hide-xs">{{ ligne.butsContre }}</td>
               <td class="col-num"
                   [class.positive]="ligne.goalAverage > 0"
                   [class.negative]="ligne.goalAverage < 0">

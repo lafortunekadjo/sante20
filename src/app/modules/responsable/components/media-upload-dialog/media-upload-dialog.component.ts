@@ -1,5 +1,7 @@
 // media-upload-dialog.component.ts
 
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -22,7 +24,7 @@ export interface MediaDialogData {
 @Component({
   selector: 'app-media-upload-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,
@@ -241,7 +243,7 @@ export class MediaUploadDialogComponent implements OnInit {
           this.uploadProgress = 'Médias uploadés avec succès !';
           this.uploadProgressValue = 100;
           
-          this.snackBar.open('Médias uploadés avec succès !', 'Fermer', {
+          this.snackBar.open(t('ui.ts_medias_uploades_avec_succes_29fe'), 'Fermer', {
             duration: 3000,
             panelClass: ['snackbar-success']
           });
@@ -284,7 +286,7 @@ export class MediaUploadDialogComponent implements OnInit {
    * Supprime un média par son index
    */
   deleteMedia(index: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce média ?')) {
+    if (!confirm(t('ui.ts_etes_vous_sur_de_vouloir_supprim_e80b'))) {
       return;
     }
 
@@ -303,7 +305,7 @@ export class MediaUploadDialogComponent implements OnInit {
           // Supprimer localement
           this.existingMediaUrls.splice(index, 1);
           
-          this.snackBar.open('Média supprimé avec succès', 'Fermer', {
+          this.snackBar.open(t('ui.ts_media_supprime_avec_succes_15ec'), 'Fermer', {
             duration: 3000,
             panelClass: ['snackbar-success']
           });

@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -12,7 +13,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-groupe-form',
   standalone: true,
-  imports: [MatToolbarModule, MatButtonModule, MatFormFieldModule, MatSelectModule, BaseChartDirective,CommonModule,ReactiveFormsModule, RouterModule],
+  imports: [TranslateModule, MatToolbarModule, MatButtonModule, MatFormFieldModule, MatSelectModule, BaseChartDirective,CommonModule,ReactiveFormsModule, RouterModule],
   templateUrl: './groupe-form.component.html',
   styleUrl: './groupe-form.component.scss'
 })

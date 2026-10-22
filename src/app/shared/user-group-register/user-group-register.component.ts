@@ -4,6 +4,7 @@
 // le nouveau groupe + redirection vers la config du groupe
 // ============================================================
 
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -37,7 +38,7 @@ interface GroupeRequest {
 @Component({
   selector: 'app-user-group-register',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     FormsModule,
     MatCardModule,

@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -199,7 +200,7 @@ shouldTruncate(content: string): boolean {
   }
 
   deleteAnnouncement(id: number | undefined): void {
-    if (!id || !confirm('Voulez-vous vraiment supprimer cette actualité ?')) return;
+    if (!id || !confirm(t('ui.ts_voulez_vous_vraiment_supprimer_c_3830'))) return;
 
     this.announcementService.delete(id).subscribe({
       next: () => {

@@ -9,6 +9,7 @@ import {
   PushNotificationSchema
 } from '@capacitor/push-notifications';
 import { AuthService } from './auth.service';
+import { resolveNotificationUrl } from '../utils/notification-route';
 import { environment } from '../../../app/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -116,6 +117,19 @@ export class PushNotificationService {
   // ── Navigation selon le type de notif ────────────────────
   private handleTap(data: Record<string, string>): void {
     if (!data) return;
+
+    // Nouveau message / ajout à une conversation → ouvrir la conversation
+    if (data['conversationId']) {
+      this.router.navigate(['/chat', data['conversationId']]);
+      return;
+    }
+
+    // Lien fourni par le backend (notifications enregistrées en base)
+    const url = resolveNotificationUrl(data['actionUrl'], this.authService.isResponsable());
+    if (url) {
+      this.router.navigateByUrl(url);
+      return;
+    }
 
     const routes: Record<string, string> = {
       'GROUPE_INVITATION':      '/responsable/invitations',

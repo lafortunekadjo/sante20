@@ -1,5 +1,6 @@
 // src/app/shared/components/match-request-dialog/match-request-dialog.component.ts
 
+import { t } from '../../../../core/i18n/traduire';
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -76,7 +77,7 @@ export class MatchRequestDialogComponent implements OnInit {
   onSubmit(): void {
     if (this.matchRequestForm.invalid) {
       this.snackBar.open(
-        'Veuillez remplir tous les champs requis',
+        t('ui.ts_veuillez_remplir_tous_les_champs_4471'),
         'OK',
         { duration: 3000 }
       );

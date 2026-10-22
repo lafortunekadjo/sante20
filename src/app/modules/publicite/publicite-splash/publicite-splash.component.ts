@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, Inject, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { PubliciteAffichageService } from '../../../core/services/publicite-affichage.service';
@@ -8,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 @Component({
   selector: 'app-publicite-splash',
    standalone: true,
-  imports: [CommonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [TranslateModule, CommonModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './publicite-splash.component.html',
   styleUrls: ['./publicite-splash.component.scss']
 })

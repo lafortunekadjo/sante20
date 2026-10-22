@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { MatBottomSheetModule, MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -142,7 +143,7 @@ export class MvpVoteComponent implements OnInit {
             : p
           )
         );
-        this.snackBar.open('Vote enregistré !', 'OK', { duration: 3000 });
+        this.snackBar.open(t('mvpVote.votedTitle'), 'OK', { duration: 3000 });
       } else if (result?.error) {
         this.snackBar.open(result.error, 'Compris', { duration: 5000 });
       }

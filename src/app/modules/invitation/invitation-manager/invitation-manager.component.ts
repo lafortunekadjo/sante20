@@ -3,6 +3,7 @@
 // Component Angular - invitation-manager.component.ts
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -151,10 +152,10 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
   regenererCode(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Régénérer le code',
-        message: 'L\'ancien code sera désactivé. Les personnes ayant l\'ancien lien ne pourront plus l\'utiliser.',
-        confirmText: 'Régénérer',
-        cancelText: 'Annuler',
+        title: t('invitation.actions.regenerer'),
+        message: t('ui.ts_l_ancien_code_sera_desactive_les_2827'),
+        confirmText: t('ui.ts_regenerer_dd38'),
+        cancelText: t('common.CANCEL'),
         color: 'warn'
       }
     });
@@ -167,12 +168,12 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
           next: (inv) => {
             this.invitation = inv;
             this.isRegenerating = false;
-            this.snackBar.open('Nouveau code généré !', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_nouveau_code_genere_06b8'), 'OK', { duration: 3000 });
           },
           error: (err) => {
             console.error('Erreur régénération:', err);
             this.isRegenerating = false;
-            this.snackBar.open('Erreur lors de la régénération', 'Fermer', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_la_regeneration_abdd'), 'Fermer', { duration: 3000 });
           }
         });
       }
@@ -187,9 +188,9 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
     this.isCopying = false;
 
     if (success) {
-      this.snackBar.open('Lien copié ! 📋', 'OK', { duration: 2000 });
+      this.snackBar.open(t('ui.ts_lien_copie_f3b1'), 'OK', { duration: 2000 });
     } else {
-      this.snackBar.open('Impossible de copier le lien', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_impossible_de_copier_le_lien_0189'), 'Fermer', { duration: 3000 });
     }
   }
 
@@ -201,7 +202,7 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
     this.isCopying = false;
 
     if (success) {
-      this.snackBar.open('Code copié ! 📋', 'OK', { duration: 2000 });
+      this.snackBar.open(t('ui.ts_code_copie_3eb3'), 'OK', { duration: 2000 });
     }
   }
 
@@ -251,7 +252,7 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Erreur acceptation:', err);
         this.isProcessing[demande.id] = false;
-        this.snackBar.open('Erreur lors de l\'acceptation', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_acceptation_09a7'), 'Fermer', { duration: 3000 });
       }
     });
   }
@@ -259,10 +260,10 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
   refuserDemande(demande: DemandeAdhesion): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Refuser la demande',
+        title: t('ui.ts_refuser_la_demande_0caf'),
         message: `Voulez-vous vraiment refuser la demande de ${demande.prenom} ${demande.nom} ?`,
-        confirmText: 'Refuser',
-        cancelText: 'Annuler',
+        confirmText: t('demands.reject'),
+        cancelText: t('common.CANCEL'),
         color: 'warn',
         showInput: true,
         inputLabel: 'Motif du refus (optionnel)'
@@ -280,12 +281,12 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
             this.demandesEnAttente = this.demandesEnAttente.filter(d => d.id !== demande.id);
             this.loadStats();
             
-            this.snackBar.open('Demande refusée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_demande_refusee_8c83'), 'OK', { duration: 3000 });
           },
           error: (err) => {
             console.error('Erreur refus:', err);
             this.isProcessing[demande.id] = false;
-            this.snackBar.open('Erreur lors du refus', 'Fermer', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_du_refus_068b'), 'Fermer', { duration: 3000 });
           }
         });
       }

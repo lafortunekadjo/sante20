@@ -8,11 +8,11 @@
   <ng-container *ngIf="!loading() && competition()">
 
     <!-- ══ HERO ═════════════════════════════════════════════ -->
-    <div class="pub-hero">
+    <header class="pub-hero">
       <div class="pub-hero__content">
         <div class="pub-hero__top">
           <div class="pub-hero__logo">
-            <img *ngIf="competition()!.logoUrl" [src]="competition()!.logoUrl"/>
+            <img *ngIf="competition()!.logoUrl" [src]="competition()!.logoUrl" alt=""/>
             <mat-icon *ngIf="!competition()!.logoUrl">emoji_events</mat-icon>
           </div>
           <span class="pub-hero__statut"
@@ -22,33 +22,113 @@
         </div>
 
         <h1 class="pub-hero__nom">{{ competition()!.nom }}</h1>
-        <p class="pub-hero__desc" *ngIf="competition()!.description">
-          {{ competition()!.description }}
+        <p class="pub-hero__orga" *ngIf="competition()!.organisateurNom">
+          {{ 'ui.m_organise_par_ec2f' | translate:{p0: (competition()!.organisateurNom)} }}
         </p>
 
-        <div class="pub-hero__meta">
-          <span *ngIf="competition()!.organisateurNom">
-            <mat-icon>person</mat-icon>
-            {{ competition()!.organisateurNom }}
-          </span>
-          <span *ngIf="competition()!.dateDebut">
+        <div class="pub-chips">
+          <span class="pub-chip" *ngIf="competition()!.dateDebut">
             <mat-icon>calendar_today</mat-icon>
             {{ competition()!.dateDebut | date:'dd MMM yyyy' }}
-            <ng-container *ngIf="competition()!.dateFin">
-              — {{ competition()!.dateFin | date:'dd MMM yyyy' }}
-            </ng-container>
+            <ng-container *ngIf="competition()!.dateFin">→ {{ competition()!.dateFin | date:'dd MMM' }}</ng-container>
           </span>
-          <span>
+          <span class="pub-chip">
             <mat-icon>groups</mat-icon>
-            {{ competition()!.nombreParticipants }} équipes
+            {{ competition()!.nombreParticipants }}<ng-container *ngIf="competition()!.nombreEquipesMax"> / {{ competition()!.nombreEquipesMax }}</ng-container> {{ 'menu.items.EQUIPES' | translate }}
           </span>
-          <span *ngIf="competition()!.format">
+          <span class="pub-chip" *ngIf="competition()!.format">
             <mat-icon>sports_soccer</mat-icon>
             {{ formatLabel(competition()!.format!) }}
           </span>
         </div>
+
+        <p class="pub-hero__desc" *ngIf="competition()!.description">
+          {{ competition()!.description }}
+        </p>
       </div>
-    </div>
+    </header>
+
+    <a class="pub-monequipe" *ngFor="let e of mesEquipesLiens()" [routerLink]="['/equipe', e.token]">
+      <mat-icon>groups</mat-icon>
+      <span>{{ 'ui.votre_equipe_3383' | translate }} <strong>{{ e.nomEquipe }}</strong> {{ 'ui.est_inscrite_gerer_mes_joueurs_527e' | translate }}</span>
+      <mat-icon>chevron_right</mat-icon>
+    </a>
+
+    <!-- ══ INSCRIPTION : conditions avant de s'engager ═══════ -->
+    <section class="pub-inscription" *ngIf="inscriptionOuverte()">
+      <div class="pub-inscription__head">
+        <h2>{{ 'ui.inscrire_mon_equipe_8e60' | translate }}</h2>
+        <span class="pub-pill"
+              [class.pub-pill--urgent]="(joursAvantCloture() ?? 99) <= 3 && (joursAvantCloture() ?? 0) >= 0"
+              [class.pub-pill--ferme]="complet() || clotureDepassee()"
+              *ngIf="clotureTexte() || complet()">
+          {{ complet() ? 'Complet' : clotureTexte() }}
+        </span>
+      </div>
+
+      <div class="pub-infos">
+        <div class="pub-info">
+          <mat-icon>payments</mat-icon>
+          <div>
+            <small>Droits d'engagement</small>
+            <strong>{{ competition()!.montantEngagement ? fcfa(competition()!.montantEngagement) + ' / équipe' : 'Gratuit' }}</strong>
+          </div>
+        </div>
+
+        <div class="pub-info" *ngIf="competition()!.licencesActivees">
+          <mat-icon>badge</mat-icon>
+          <div>
+            <small>{{ 'ui.licences_joueurs_8e61' | translate }}</small>
+            <strong>
+              <ng-container *ngIf="competition()!.licencesGratuites">{{ 'ui.m_offerte_s_par_equipe_7c42' | translate:{p0: (competition()!.licencesGratuites)} }}</ng-container><ng-container *ngIf="competition()!.licencesGratuites && competition()!.montantLicenceSup">, puis </ng-container><ng-container *ngIf="competition()!.montantLicenceSup">{{ 'ui.m_licence_3fd5' | translate:{p0: (fcfa(competition()!.montantLicenceSup))} }}</ng-container>
+              <ng-container *ngIf="!competition()!.licencesGratuites && !competition()!.montantLicenceSup">Incluses</ng-container>
+            </strong>
+          </div>
+        </div>
+
+        <div class="pub-info" *ngIf="competition()!.placesRestantes !== null && competition()!.placesRestantes !== undefined">
+          <mat-icon>event_seat</mat-icon>
+          <div>
+            <small>Places</small>
+            <strong>{{ competition()!.placesRestantes === 0 ? 'Complet'
+                       : competition()!.placesRestantes + ' restante(s) sur ' + competition()!.nombreEquipesMax }}</strong>
+          </div>
+        </div>
+
+        <div class="pub-info" *ngIf="competition()!.dateLimiteInscription">
+          <mat-icon>event_busy</mat-icon>
+          <div>
+            <small>{{ 'ui.inscriptions_jusqu_au_4091' | translate }}</small>
+            <strong>{{ competition()!.dateLimiteInscription | date:'dd MMMM yyyy' }}</strong>
+          </div>
+        </div>
+
+        <div class="pub-info" *ngIf="competition()!.effectifMin">
+          <mat-icon>groups</mat-icon>
+          <div>
+            <small>{{ 'ui.effectif_vise_3933' | translate }}</small>
+            <strong>{{ 'ui.m_joueurs_6410' | translate:{p0: (competition()!.effectifMin)} }}<ng-container *ngIf="competition()!.dateLimiteEffectif">{{ 'ui.m_prets_avant_le_39ba' | translate:{p0: (competition()!.dateLimiteEffectif | date:'dd/MM/yyyy')} }}</ng-container></strong>
+          </div>
+        </div>
+      </div>
+
+      <p class="pub-inscription__note">
+        {{ 'ui.vous_pouvez_completer_votre_effect_1537' | translate }}
+      </p>
+
+      <button class="pub-cta" [disabled]="!inscriptionPossible()" (click)="ouvrirInscription()">
+        <mat-icon>how_to_reg</mat-icon>
+        {{ complet() ? 'Compétition complète' : clotureDepassee() ? 'Inscriptions closes' : 'Inscrire mon équipe' }}
+      </button>
+    </section>
+
+    <!-- ══ PALMARÈS ══════════════════════════════════════════ -->
+    <app-palmares-banner
+      *ngIf="competition()!.statut === 'TERMINE' && competition()!.championNom"
+      class="pub-palmares"
+      [champion]="competition()!.championNom"
+      [finaliste]="competition()!.finalisteNom"
+      [troisieme]="competition()!.troisiemeNom"/>
 
     <!-- ══ TABS PRINCIPAL ════════════════════════════════════ -->
     <div class="pub-tabs">
@@ -61,12 +141,12 @@
         <button class="pub-tab-btn"
                 [class.active]="activeTab() === 'classement'"
                 (click)="activeTab.set('classement')">
-          <mat-icon>table_chart</mat-icon> Classement
+          <mat-icon>table_chart</mat-icon> {{ 'competition.publique.onglets.classement' | translate }}
         </button>
         <button class="pub-tab-btn"
                 [class.active]="activeTab() === 'resultats'"
                 (click)="activeTab.set('resultats')">
-          <mat-icon>sports_soccer</mat-icon> Matchs
+          <mat-icon>sports_soccer</mat-icon> {{ 'menu.items.MATCHS' | translate }}
         </button>
         <button class="pub-tab-btn"
                 *ngIf="stats()?.awards?.length"
@@ -81,19 +161,33 @@
       <!-- ══════════════════════════════════════════════════ -->
       <div class="pub-tab-content" *ngIf="activeTab() === 'apercu'">
 
+        <!-- Récompenses -->
+        <section class="pub-recompenses" *ngIf="groupesRecompenses().length">
+          <h3 class="pub-recompenses__titre">{{ 'ui.recompenses_a699' | translate }}</h3>
+          <div class="pub-recompenses__grille">
+            <div class="pub-recompense" *ngFor="let g of groupesRecompenses()">
+              <div class="pub-recompense__tete"><span>{{ g.icone }}</span> {{ g.titre }}</div>
+              <div class="pub-recompense__lot" *ngFor="let l of g.lots">{{ l }}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Partenaire (publicité) : visible aussi par les visiteurs sans compte -->
+        <app-publicite-feed class="pub-partenaire" pageSource="competition-publique"></app-publicite-feed>
+
         <!-- Stats globales -->
         <div class="pub-stats-row">
           <div class="pub-stat">
             <div class="pub-stat__num">{{ competition()!.nombreParticipants }}</div>
-            <div class="pub-stat__label">Équipes</div>
+            <div class="pub-stat__label">{{ 'menu.items.EQUIPES' | translate }}</div>
           </div>
           <div class="pub-stat" *ngIf="stats()?.topButeurs?.length">
             <div class="pub-stat__num">{{ stats().topButeurs[0]?.valeur ?? 0 }}</div>
-            <div class="pub-stat__label">Buts (record)</div>
+            <div class="pub-stat__label">{{ 'ui.buts_record_9e70' | translate }}</div>
           </div>
           <div class="pub-stat">
             <div class="pub-stat__num">{{ tousMatchs().length }}</div>
-            <div class="pub-stat__label">Matchs joués</div>
+            <div class="pub-stat__label">{{ 'dashboard.stats.matchesPlayed' | translate }}</div>
           </div>
         </div>
 
@@ -112,7 +206,7 @@
               </div>
               <div class="pub-top-val">
                 <span class="pub-top-num">{{ j.valeur }}</span>
-                <span class="pub-top-unit">buts</span>
+                <span class="pub-top-unit">{{ 'dashboard.goals' | translate }}</span>
               </div>
             </div>
           </div>
@@ -120,7 +214,7 @@
 
         <!-- Prochain match -->
         <div class="pub-section" *ngIf="hasProchainMatchs()">
-          <h3 class="pub-section__title">📅 Prochains matchs</h3>
+          <h3 class="pub-section__title">{{ 'ui.prochains_matchs_6b6d' | translate }}</h3>
           <div class="pub-matchs-mini">
             <div class="pub-match-mini"
                  *ngFor="let m of prochainMatchs()">
@@ -144,7 +238,7 @@
         <!-- Awards si terminée -->
         <div class="pub-section"
              *ngIf="stats()?.awards?.length">
-          <h3 class="pub-section__title">🏆 Palmarès</h3>
+          <h3 class="pub-section__title">{{ 'ui.palmares_7742' | translate }}</h3>
           <div class="pub-awards-mini">
             <div class="pub-award-mini"
                  *ngFor="let a of stats()!.awards.slice(0,4)">
@@ -203,13 +297,13 @@
               <thead>
                 <tr>
                   <th>#</th>
-                  <th class="th-equipe">Équipe</th>
-                  <th title="Matchs joués">J</th>
+                  <th class="th-equipe">{{ 'membre.team' | translate }}</th>
+                  <th [title]="'dashboard.stats.matchesPlayed' | translate">J</th>
                   <th title="Victoires">V</th>
                   <th title="Nuls">N</th>
-                  <th title="Défaites">D</th>
-                  <th title="Buts pour">BP</th>
-                  <th title="Buts contre">BC</th>
+                  <th [title]="'dashboard.losses' | translate">D</th>
+                  <th [title]="'ui.buts_pour_226e' | translate">BP</th>
+                  <th [title]="'ui.buts_contre_ba4e' | translate">BC</th>
                   <th title="Goal average">Diff</th>
                   <th title="Points">Pts</th>
                 </tr>
@@ -344,7 +438,7 @@
             <button class="filtre-phase"
                     [class.active]="phaseMatchId() === null"
                     (click)="phaseMatchId.set(null)">
-              Tous
+              {{ 'common.ALL' | translate }}
             </button>
             <button class="filtre-phase"
                     *ngFor="let p of competition()!.phases"
@@ -359,7 +453,7 @@
             <button class="filtre-btn"
                     [class.active]="filtreMatch() === 'tous'"
                     (click)="filtreMatch.set('tous')">
-              Tous
+              {{ 'common.ALL' | translate }}
             </button>
             <button class="filtre-btn filtre-btn--live"
                     [class.active]="filtreMatch() === 'en_cours'"
@@ -374,7 +468,7 @@
             <button class="filtre-btn"
                     [class.active]="filtreMatch() === 'termines'"
                     (click)="filtreMatch.set('termines')">
-              Terminés
+              {{ 'competition.publique.filtres.termines' | translate }}
             </button>
           </div>
         </div>
@@ -396,7 +490,7 @@
                 <span *ngIf="isAVenir(m.statut) && m.dateHeure">
                   {{ m.dateHeure | date:'dd/MM HH:mm' }}
                 </span>
-                <span *ngIf="isAVenir(m.statut) && !m.dateHeure">À planifier</span>
+                <span *ngIf="isAVenir(m.statut) && !m.dateHeure">{{ 'ui.a_planifier_0380' | translate }}</span>
               </div>
 
               <!-- Équipes + score -->
@@ -500,3 +594,48 @@
   </div>
 
 </div>
+
+<!-- Barre d'inscription fixe sur mobile : prix et action toujours à portée de pouce -->
+<div class="pub-stickybar" [class.pub-stickybar--avec-nav]="connecte" *ngIf="competition() && inscriptionPossible()">
+  <div class="pub-stickybar__txt">
+    <strong>{{ resumeDroits() }}</strong>
+    <small *ngIf="clotureTexte()">{{ clotureTexte() }}</small>
+  </div>
+  <button class="pub-cta pub-cta--compact" (click)="ouvrirInscription()">{{ 'ui.inscrire_mon_equipe_8e60' | translate }}</button>
+</div>
+
+<!-- Fenêtre « un compte est nécessaire » -->
+<div class="pub-sheet-backdrop" *ngIf="showConnexion()" (click)="showConnexion.set(false)">
+  <div class="pub-sheet" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <div class="pub-sheet__grip"></div>
+    <h3>{{ 'ui.comment_voulez_vous_vous_inscrire_a632' | translate }}</h3>
+    <p>
+      {{ 'ui.inutile_de_creer_un_compte_laissez_8e3f' | translate }}
+    </p>
+    <ul class="pub-sheet__recap" *ngIf="competition() as c">
+      <li><mat-icon>payments</mat-icon> {{ resumeDroits() }}</li>
+      <li *ngIf="c.dateLimiteInscription"><mat-icon>event_busy</mat-icon> {{ 'ui.m_jusqu_au_47ff' | translate:{p0: (c.dateLimiteInscription | date:'dd/MM/yyyy')} }}</li>
+    </ul>
+    <button class="pub-cta" (click)="ouvrirRapide()">S'inscrire sans compte</button>
+    <button class="pub-btn-secondaire" (click)="allerAuthentification('login')">Me connecter (club My2-0, compte existant)</button>
+    <button class="pub-btn-lien" (click)="allerAuthentification('signup')">{{ 'auth.register' | translate }}</button>
+    <button class="pub-btn-lien" (click)="showConnexion.set(false)">{{ 'ui.plus_tard_4fa7' | translate }}</button>
+  </div>
+</div>
+
+<!-- Inscription sans compte -->
+<app-inscription-rapide
+  *ngIf="showRapide() && competition()"
+  [competitionId]="competitionId"
+  [competitionNom]="competition()!.nom"
+  [resume]="resumeDroits()"
+  (closed)="showRapide.set(false); chargerMonEquipe()">
+</app-inscription-rapide>
+
+<!-- Modal inscription -->
+<app-inscription-modal
+  *ngIf="showInscriptionModal()"
+  [competitionId]="competitionId"
+  [competitionNom]="competition()!.nom"
+  (closed)="showInscriptionModal.set(false)">
+</app-inscription-modal>

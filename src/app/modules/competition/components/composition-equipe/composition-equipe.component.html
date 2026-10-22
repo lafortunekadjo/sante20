@@ -1,0 +1,93 @@
+<div class="compo">
+  <div class="compo__titre"><strong>{{ 'ui.compositions_des_matchs_df4e' | translate }}</strong></div>
+
+  <p class="compo__aide">
+    {{ 'ui.choisissez_vos_143c' | translate }} <b>titulaires</b> {{ 'ui.et_vos_3380' | translate }} <b>{{ 'competition.match.composition.remplacants' | translate }}</b> {{ 'ui.avant_chaque_match_la_composition__62f9' | translate }}
+    <b>{{ 'ui.jusqu_au_coup_d_envoi_5f50' | translate }}</b> {{ 'ui.il_faut_au_moins_d1d4' | translate }} <b>7 titulaires</b> {{ 'ui.pour_que_le_match_puisse_demarrer_c3f2' | translate }}
+  </p>
+
+  <p class="compo__vide" *ngIf="chargement()">{{ 'calendar.states.loading' | translate }}</p>
+  <p class="compo__vide" *ngIf="!chargement() && !matchs().length">
+    {{ 'ui.aucun_match_a_composer_pour_le_mom_772b' | translate }}
+  </p>
+
+  <!-- ── Liste des matchs ── -->
+  <article class="compo__match" *ngFor="let m of matchs()">
+    <div class="compo__match-infos">
+      <strong>{{ m.domicile ? 'Reçoit' : 'Se déplace chez' }} {{ m.adversaire }}</strong>
+      <span class="compo__meta">
+        <ng-container *ngIf="m.journee">{{ 'ui.m_journee_032c' | translate:{p0: (m.journee)} }} </ng-container>
+        {{ m.dateHeure ? (m.dateHeure | date:'EEE dd/MM à HH:mm') : 'Date à fixer' }}
+        <ng-container *ngIf="m.lieu"> · {{ m.lieu }}</ng-container>
+      </span>
+      <span class="compo__etat" [class.compo__etat--ok]="m.titulaires >= 7" [class.compo__etat--ko]="m.titulaires < 7">
+        <ng-container *ngIf="m.titulaires > 0; else aFaire">{{ 'ui.m_titulaire_s_remplacant_s_f7cb' | translate:{p0: (m.titulaires), p1: (m.remplacants)} }}</ng-container>
+        <ng-template #aFaire>{{ 'ui.a_composer_dc7d' | translate }}</ng-template>
+      </span>
+    </div>
+    <button class="btn-primary btn-sm" (click)="ouvrir(m)">
+      {{ m.modifiable ? (m.titulaires > 0 ? 'Modifier' : 'Composer') : 'Voir' }}
+    </button>
+  </article>
+
+  <!-- ── Éditeur ── -->
+  <div class="compo__fond" *ngIf="compo() as c" (click)="fermer()">
+    <div class="compo__fenetre" (click)="$event.stopPropagation()">
+      <header class="compo__tete">
+        <div>
+          <strong>{{ c.equipe }} — {{ c.adversaire }}</strong>
+          <small>{{ c.dateHeure ? (c.dateHeure | date:'EEEE dd/MM à HH:mm') : 'Date à fixer' }}</small>
+        </div>
+        <button class="compo__x" (click)="fermer()" [attr.aria-label]="'common.close' | translate">×</button>
+      </header>
+
+      <div class="compo__compteurs">
+        <span [class.compo__alerte]="nbTitulaires() > c.maxTitulaires">Titulaires <b>{{ nbTitulaires() }}</b>/{{ c.maxTitulaires }}</span>
+        <span [class.compo__alerte]="nbRemplacants() > c.maxRemplacants">{{ 'competition.match.composition.remplacants' | translate }} <b>{{ nbRemplacants() }}</b></span>
+        <span *ngIf="nbTitulaires() < c.minTitulaires" class="compo__info">{{ 'ui.m_minimum_pour_jouer_4b33' | translate:{p0: (c.minTitulaires)} }}</span>
+      </div>
+
+      <p class="compo__verrou" *ngIf="!c.modifiable">
+        {{ 'ui.le_match_a_commence_la_composition_0712' | translate }}
+      </p>
+
+      <div class="compo__liste">
+        <div class="compo__joueur" *ngFor="let l of lignes()" [class.compo__joueur--choisi]="l.statut !== 'NON_CONVOQUE'">
+          <span class="compo__num" *ngIf="!c.modifiable">{{ l.numeroDos ?? '–' }}</span>
+          <input class="compo__dorsal" *ngIf="c.modifiable" type="number" min="1" max="99" inputmode="numeric"
+                 [value]="l.numeroDos ?? ''" (input)="definirDorsal(l, $any($event.target).value)"
+                 [attr.aria-label]="'ui.dorsal_pour_ce_match_5d56' | translate" placeholder="N°"/>
+          <span class="compo__nom">
+            {{ nomComplet(l) }}
+            <small>{{ abrege(l.poste) }}</small>
+            <small class="compo__alerte" *ngIf="!l.eligible && l.statut !== 'NON_CONVOQUE'">⚠ {{ l.raison }}</small>
+            <small class="compo__alerte" *ngIf="!l.eligible && l.statut === 'NON_CONVOQUE'">{{ 'ui.m_non_eligible_325f' | translate:{p0: (l.raison)} }}</small>
+          </span>
+          <span class="compo__choix" *ngIf="c.modifiable">
+            <button type="button" [class.actif]="l.statut === 'TITULAIRE'" (click)="definir(l, 'TITULAIRE')" aria-label="Titulaire">T</button>
+            <button type="button" [class.actif]="l.statut === 'REMPLACANT'" (click)="definir(l, 'REMPLACANT')" [attr.aria-label]="'ui.remplacant_1a1f' | translate">R</button>
+            <button type="button" [class.actif]="l.statut === 'NON_CONVOQUE'" (click)="definir(l, 'NON_CONVOQUE')" [attr.aria-label]="'competition.match.composition.nonConvoque' | translate">–</button>
+          </span>
+          <span class="compo__roles" *ngIf="c.modifiable && l.statut !== 'NON_CONVOQUE'">
+            <button type="button" class="compo__role" [class.actif]="l.capitaine" (click)="basculerCapitaine(l)" title="Capitaine">C</button>
+            <button type="button" class="compo__role" [class.actif]="l.gardienTitulaire" [disabled]="l.statut !== 'TITULAIRE'"
+                    (click)="basculerGardien(l)" title="Gardien titulaire">G</button>
+          </span>
+          <span class="compo__statut-lecture" *ngIf="!c.modifiable && l.statut !== 'NON_CONVOQUE'">
+            {{ l.statut === 'TITULAIRE' ? 'Titulaire' : 'Remplaçant' }}{{ l.capitaine ? ' · C' : '' }}{{ l.gardienTitulaire ? ' · G' : '' }}
+          </span>
+        </div>
+      </div>
+
+      <p class="compo__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+      <p class="compo__ok" *ngIf="message()">{{ message() }}</p>
+
+      <footer class="compo__pied" *ngIf="c.modifiable">
+        <button class="btn-ghost btn-sm" (click)="toutVider()">Tout vider</button>
+        <button class="btn-primary" [disabled]="envoi() || depasse()" (click)="enregistrer()">
+          {{ envoi() ? 'Enregistrement...' : 'Enregistrer la composition' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+</div>

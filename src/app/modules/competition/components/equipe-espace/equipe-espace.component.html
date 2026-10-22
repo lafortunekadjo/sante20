@@ -1,0 +1,131 @@
+<div class="espace">
+
+  <div class="espace__loading" *ngIf="loading()">{{ 'calendar.states.loading' | translate }}</div>
+  <div class="espace__erreur" *ngIf="erreur()">{{ erreur() }}</div>
+
+  <ng-container *ngIf="espace() as e">
+
+    <!-- ══ EN-TÊTE ══════════════════════════════════════════ -->
+    <header class="espace__header">
+      <a class="espace__retour" routerLink="/mes-equipes" *ngIf="!token">{{ 'ui.mes_equipes_8081' | translate }}</a>
+      <h1>{{ e.nomEquipe }}</h1>
+      <p class="espace__sous">{{ e.competitionNom }}</p>
+      <span class="espace__statut"
+            [class.espace__statut--ok]="e.statutInscription === 'VALIDE'"
+            [class.espace__statut--ko]="e.statutInscription === 'REJETE'">
+        {{ statutLabel() }}
+      </span>
+    </header>
+
+    <!-- ══ INSCRIPTION REFUSÉE : motif + repostuler ═══════════ -->
+    <section class="espace__carte espace__refus" *ngIf="e.statutInscription === 'REJETE'">
+      <div class="espace__carte-titre"><strong>{{ 'ui.inscription_refusee_61a7' | translate }}</strong></div>
+      <p *ngIf="e.motifRefus" class="espace__aide"><b>Motif :</b> {{ e.motifRefus }}</p>
+      <p class="espace__aide">{{ 'ui.corrigez_ce_qui_est_demande_effect_ee8b' | translate }}</p>
+      <div class="espace__actions" *ngIf="e.inscriptionsOuvertes">
+        <button class="btn-primary btn-sm" (click)="repostuler()">Repostuler</button>
+      </div>
+      <p class="espace__aide" *ngIf="!e.inscriptionsOuvertes">{{ 'ui.les_inscriptions_sont_fermees_cont_6267' | translate }}</p>
+    </section>
+
+    <!-- ══ AVANCEMENT DE L'EFFECTIF ═════════════════════════ -->
+    <section class="espace__carte">
+      <div class="espace__carte-titre">
+        <strong>Mon effectif</strong>
+        <span class="espace__pret" *ngIf="e.effectifPret">{{ 'ui.pret_4c21' | translate }}</span>
+      </div>
+
+      <div class="espace__barre"><span [style.width.%]="progression()"></span></div>
+
+      <p class="espace__repere" *ngIf="e.effectifMin || e.dateLimiteEffectif">
+        <ng-container *ngIf="e.effectifMin">
+          {{ 'ui.effectif_vise_256b' | translate }} <b>{{ e.nbJoueurs }}/{{ e.effectifMin }}</b> {{ 'ui.joueurs_ee38' | translate }}
+        </ng-container>
+        <ng-container *ngIf="e.dateLimiteEffectif">
+          {{ 'ui.a_completer_avant_le_1066' | translate }} <b>{{ e.dateLimiteEffectif | date:'dd/MM/yyyy' }}</b>
+          <span *ngIf="(e.joursRestants ?? 0) >= 0"> ({{ e.joursRestants === 0 ? "c'est aujourd'hui" : 'dans ' + e.joursRestants + ' j' }})</span>
+          <span *ngIf="e.enRetard" class="espace__alerte"> {{ 'ui.date_depassee_2032' | translate }}</span>.
+        </ng-container>
+        <small>{{ 'ui.ce_sont_des_reperes_vous_pouvez_co_68b6' | translate }}</small>
+      </p>
+
+      <ul class="espace__liste">
+        <li><b>{{ e.nbJoueurs }}</b> {{ 'ui.joueur_s_3250' | translate }} <b>{{ e.nbStaff }}</b> staff</li>
+        <li [class.espace__alerte]="e.nbFichesIncompletes > 0">
+          <b>{{ e.nbFichesIncompletes }}</b> {{ 'ui.fiche_s_a_completer_f57f' | translate }}
+        </li>
+        <li *ngIf="e.photoRequise" [class.espace__alerte]="e.nbSansPhoto > 0">
+          <b>{{ e.nbSansPhoto }}</b> {{ 'ui.photo_s_d_identite_manquante_s_a238' | translate }}
+        </li>
+      </ul>
+
+      <p class="espace__astuce" *ngIf="e.nbFichesIncompletes + e.nbSansPhoto > 0">
+        {{ 'ui.astuce_invitez_chaque_joueur_avec__2fe7' | translate }} <b>{{ 'ui.inviter_un_joueur_5707' | translate }}</b> {{ 'ui.il_remplit_lui_meme_sa_fiche_et_en_7d8b' | translate }}
+      </p>
+    </section>
+
+    <p class="espace__message" *ngIf="message()">{{ message() }}</p>
+
+    <!-- ══ JOUEURS ══════════════════════════════════════════ -->
+    <section class="espace__carte espace__carte--roster">
+      <app-roster
+        [competitionId]="e.competitionId"
+        [participantId]="e.participantId"
+        [canEdit]="peutGerer()"
+        [apiBase]="apiBase()"
+        (changed)="rafraichir()"/>
+    </section>
+
+    <!-- ══ COMPOSITIONS DES MATCHS ══════════════════════════ -->
+    <section class="espace__carte" *ngIf="afficheCompositions()">
+      <app-composition-equipe [apiBase]="apiCompo()" [parLien]="!!token"/>
+    </section>
+
+    <!-- ══ ACCÈS À L'ÉQUIPE ═════════════════════════════════ -->
+    <section class="espace__carte" *ngIf="peutPartagerLien() || estResponsable()">
+      <div class="espace__carte-titre"><strong>{{ 'ui.acces_a_l_equipe_1fe6' | translate }}</strong></div>
+
+      <div *ngIf="peutPartagerLien()">
+        <p class="espace__aide">
+          {{ 'ui.envoyez_ce_lien_a_la_personne_qui__71ad' | translate }}
+        </p>
+        <div class="espace__actions">
+          <button class="btn-primary btn-sm" (click)="partagerAcces()">{{ 'ui.partager_le_lien_d_acces_6b9f' | translate }}</button>
+          <button class="btn-ghost btn-sm" (click)="regenerer()">{{ 'ui.nouveau_lien_dceb' | translate }}</button>
+        </div>
+      </div>
+
+      <div *ngIf="estResponsable() && !token && e.roleAcces !== 'PROMOTEUR'" class="espace__adjoint">
+        <p class="espace__aide">
+          Adjoint (compte My2-0) : <b>{{ e.adjointNom || 'aucun' }}</b>
+          <button class="btn-ghost btn-sm" *ngIf="e.adjointNom" (click)="definirAdjoint(true)">Retirer</button>
+        </p>
+        <div class="espace__actions">
+          <input class="form-input" type="email" [(ngModel)]="emailAdjoint" placeholder="E-mail de l'adjoint"/>
+          <button class="btn-outline btn-sm" [disabled]="!emailAdjoint.trim()" (click)="definirAdjoint()">{{ 'common.add' | translate }}</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ COMPTE FACULTATIF ════════════════════════════════ -->
+    <section class="espace__compte" *ngIf="sansCompte() && !bandeauMasque()">
+      <button class="espace__fermer" (click)="masquerBandeau()" aria-label="Masquer">×</button>
+      <strong>{{ 'ui.un_compte_my2_0_c_est_facultatif_e_0709' | translate }}</strong>
+      <ul>
+        <li>{{ 'ui.recevez_les_notifications_validati_e14c' | translate }}</li>
+        <li>{{ 'ui.retrouvez_vos_equipes_et_vos_compe_f506' | translate }}</li>
+        <li>{{ 'ui.suivez_classements_statistiques_et_0c9d' | translate }}</li>
+        <li>{{ 'ui.gerez_aussi_votre_club_membres_cot_279b' | translate }}</li>
+      </ul>
+      <div class="espace__actions" *ngIf="!connecte">
+        <a class="btn-primary btn-sm" routerLink="/signup" [queryParams]="{ returnUrl: '/equipe/' + token }">{{ 'auth.signup.createAccount' | translate }}</a>
+        <a class="btn-ghost btn-sm" routerLink="/login" [queryParams]="{ returnUrl: '/equipe/' + token }">{{ 'join.actions.deja_compte' | translate }}</a>
+      </div>
+      <div class="espace__actions" *ngIf="connecte">
+        <button class="btn-primary btn-sm" (click)="rattacher()">{{ 'ui.rattacher_cette_equipe_a_mon_compt_95be' | translate }}</button>
+      </div>
+      <small>{{ 'ui.vous_pouvez_continuer_a_tout_gerer_a868' | translate }}</small>
+    </section>
+
+  </ng-container>
+</div>

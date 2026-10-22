@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SanctionService } from '../../../../core/services/sanction.service';
 import { FinancesService, Caisse } from '../../../../core/services/finances.service';
@@ -176,7 +177,7 @@ ngOnDestroy(): void {
         this.errorMessage = null;
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors du chargement : ' + err.message;
+        this.errorMessage = t('ui.ts_erreur_lors_du_chargement_4d12') + err.message;
         this.isLoading = false;
       }
     });
@@ -228,7 +229,7 @@ ngOnDestroy(): void {
 
   saveTypeSanction(): void {
     if (!this.isCreateFormValid()) {
-      this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
+      this.errorMessage = t('ui.ts_veuillez_remplir_tous_les_champs_57ee');
       return;
     }
     const data = {
@@ -246,7 +247,7 @@ ngOnDestroy(): void {
         this.clearMessagesAfterDelay();
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de la création : ' + err.message;
+        this.errorMessage = t('ui.ts_erreur_lors_de_la_creation_319f') + err.message;
       },
     });
   }
@@ -269,7 +270,7 @@ ngOnDestroy(): void {
 
   saveEdit(index: number): void {
     if (!this.isEditFormValid()) {
-      this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
+      this.errorMessage = t('ui.ts_veuillez_remplir_tous_les_champs_57ee');
       return;
     }
     const data = {
@@ -284,7 +285,7 @@ ngOnDestroy(): void {
         this.clearMessagesAfterDelay();
       },
       error: (err) => {
-        this.errorMessage = 'Erreur lors de la mise à jour : ' + err.message;
+        this.errorMessage = t('ui.ts_erreur_lors_de_la_mise_a_jour_67a1') + err.message;
       },
     });
   }
@@ -310,14 +311,14 @@ ngOnDestroy(): void {
   }
 
   openDeleteDialog(typeSanction: TypeSanction): void {
-    if (confirm('Voulez-vous vraiment supprimer ce type de sanction ?')) {
+    if (confirm(t('ui.ts_voulez_vous_vraiment_supprimer_c_8526'))) {
       this.sanctionService.deleteTypeSanction(typeSanction.id!).subscribe({
         next: () => {
           this.successMessage = 'Type de sanction supprimé avec succès.';
           this.loadData();
           this.clearMessagesAfterDelay();
         },
-        error: (err) => (this.errorMessage = 'Erreur lors de la suppression : ' + err.message),
+        error: (err) => (this.errorMessage = t('ui.ts_erreur_lors_de_la_suppression_adaa') + err.message),
       });
     }
   }

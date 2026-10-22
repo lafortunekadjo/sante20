@@ -1,3 +1,4 @@
+import { t } from '../i18n/traduire';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, tap, switchMap, throwError, catchError, map, forkJoin, of, BehaviorSubject, first } from 'rxjs';
@@ -693,7 +694,7 @@ updateUserProfile(userData: Record<string, any>): Observable<any> {
       
       const response = await this.http.post<{ message: string }>(this.apiCheck, data, { headers }).toPromise();
 
-      return { success: true, message: 'Présence enregistrée avec succès' };
+      return { success: true, message: t('ui.ts_presence_enregistree_avec_succes_768f') };
     } catch (error: any) {
       console.error('Erreur API détaillée:', error);
       let errorMessage = 'Erreur : Une erreur inattendue est survenue.';

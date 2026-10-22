@@ -1,4 +1,5 @@
 // type-contribution.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -279,10 +280,10 @@ toggleStatus(entity: any): void {
   deleteType(type: TypeContribution): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Supprimer le type',
+        title: t('ui.ts_supprimer_le_type_21ba'),
         message: `Êtes-vous sûr de vouloir désactiver le type "${type.nom}" ?`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         color: 'warn'
       }
     });

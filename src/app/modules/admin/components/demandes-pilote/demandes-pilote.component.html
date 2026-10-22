@@ -1,0 +1,51 @@
+<div class="dp">
+  <header class="dp__tete">
+    <div>
+      <h1>{{ 'pilote.admin.titre' | translate }}</h1>
+      <p>{{ 'pilote.admin.aide' | translate }}</p>
+    </div>
+    <button class="dp__btn" (click)="exporter()">{{ 'pilote.admin.export' | translate }}</button>
+  </header>
+
+  <input class="dp__recherche" type="search" [ngModel]="recherche()" (ngModelChange)="recherche.set($event)" [placeholder]="'pilote.admin.recherche' | translate"/>
+
+  <div class="dp__filtres">
+    <button [class.actif]="filtre() === 'TOUS'" (click)="filtre.set('TOUS')">{{ 'pilote.admin.tous' | translate }} ({{ compte('TOUS') }})</button>
+    <button *ngFor="let s of statuts" [class.actif]="filtre() === s" (click)="filtre.set(s)">{{ 'pilote.statut.' + s | translate }} ({{ compte(s) }})</button>
+  </div>
+
+  <p class="dp__vide" *ngIf="!chargement() && !liste().length">{{ 'pilote.admin.vide' | translate }}</p>
+
+  <article class="dp__carte" *ngFor="let d of liste()" [attr.data-statut]="d.statut">
+    <header>
+      <div>
+        <strong>{{ d.nom }}</strong>
+        <span *ngIf="d.organisation"> · {{ d.organisation }}</span>
+        <div class="dp__meta">{{ d.createdAt | date:'short' }}<ng-container *ngIf="d.source"> · src : {{ d.source }}</ng-container></div>
+      </div>
+      <span class="dp__badge" [attr.data-s]="d.statut">{{ 'pilote.statut.' + d.statut | translate }}</span>
+    </header>
+
+    <div class="dp__infos">
+      <span *ngIf="d.ville || d.pays">📍 {{ d.ville }}<ng-container *ngIf="d.ville && d.pays">, </ng-container>{{ d.pays }}</span>
+      <span *ngIf="d.typeEvenement">🏆 {{ 'pilote.types.' + d.typeEvenement | translate }}</span>
+      <span *ngIf="d.nombreEquipes">👥 {{ d.nombreEquipes }}</span>
+      <span *ngIf="d.dateSouhaitee">📅 {{ d.dateSouhaitee }}</span>
+    </div>
+    <p class="dp__message" *ngIf="d.message">« {{ d.message }} »</p>
+
+    <div class="dp__contact">
+      <a [href]="'mailto:' + d.email">✉ {{ d.email }}</a>
+      <a *ngIf="d.telephone" [href]="'tel:' + d.telephone">📞 {{ d.telephone }}</a>
+      <a *ngIf="whatsapp(d) as w" [href]="w" target="_blank" rel="noopener">💬 WhatsApp</a>
+    </div>
+
+    <div class="dp__actions">
+      <button *ngFor="let s of statuts" [class.actif]="d.statut === s" (click)="statut(d, s)">{{ 'pilote.statut.' + s | translate }}</button>
+    </div>
+    <div class="dp__note">
+      <textarea rows="2" [(ngModel)]="notes[d.id]" [placeholder]="'pilote.admin.note' | translate" maxlength="2000"></textarea>
+      <button class="dp__btn dp__btn--petit" (click)="noter(d)" [disabled]="(notes[d.id] ?? '') === (d.noteAdmin ?? '')">{{ 'pilote.admin.enregistrer' | translate }}</button>
+    </div>
+  </article>
+</div>

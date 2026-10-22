@@ -2,6 +2,7 @@
 // MY2-0 - LISTE DES PUBLICITÉS PARTENAIRE
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -194,7 +195,7 @@ export class PublicitesListComponent implements OnInit, OnDestroy {
         this.snackBar.open(`Publicité ${action === 'reprendre' ? 'reprise' : 'mise en pause'}`, 'OK', { duration: 3000 });
       },
       error: () => {
-        this.snackBar.open(`Erreur lors de l'action`, 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_action_ff26'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -202,11 +203,11 @@ export class PublicitesListComponent implements OnInit, OnDestroy {
   duplicatePublicite(publicite: PubliciteDTO): void {
     this.partenaireService.duplicatePublicite(publicite.id).subscribe({
       next: () => {
-        this.snackBar.open('Publicité dupliquée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_dupliquee_36b4'), 'OK', { duration: 3000 });
         this.loadData();
       },
       error: () => {
-        this.snackBar.open('Erreur lors de la duplication', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_la_duplication_15cf'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -227,11 +228,11 @@ export class PublicitesListComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.partenaireService.deletePublicite(publicite.id).subscribe({
           next: () => {
-            this.snackBar.open('Publicité supprimée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_publicite_supprimee_e721'), 'OK', { duration: 3000 });
             this.loadData();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }

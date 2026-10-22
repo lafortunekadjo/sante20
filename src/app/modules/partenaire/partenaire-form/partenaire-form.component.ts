@@ -3,6 +3,7 @@
 // Création et édition des partenaires
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
@@ -240,7 +241,7 @@ export class PartenaireFormComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement partenaire:', err);
-        this.snackBar.open('Partenaire non trouvé', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_non_trouve_cc86'), 'OK', { duration: 3000 });
         this.router.navigate(['/admin/partenaires']);
       }
     });
@@ -314,14 +315,14 @@ export class PartenaireFormComponent implements OnInit, OnDestroy {
     // Valider tous les formulaires
     if (this.infoForm.invalid || this.contactForm.invalid || this.contratForm.invalid) {
       this.markAllAsTouched();
-      this.snackBar.open('Veuillez corriger les erreurs', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_veuillez_corriger_les_erreurs_9a15'), 'OK', { duration: 3000 });
       return;
     }
 
     // Validation utilisateur si création
     if (this.utilisateurForm.get('creerUtilisateur')?.value && this.utilisateurForm.invalid) {
       this.utilisateurForm.markAllAsTouched();
-      this.snackBar.open('Veuillez remplir les informations utilisateur', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_veuillez_remplir_les_information_3b50'), 'OK', { duration: 3000 });
       return;
     }
 
@@ -379,7 +380,7 @@ export class PartenaireFormComponent implements OnInit, OnDestroy {
     this.adminService.createPartenaire(request).subscribe({
       next: (partenaire) => {
         this.isSaving = false;
-        this.snackBar.open('Partenaire créé avec succès', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_cree_avec_succes_16b1'), 'OK', { duration: 3000 });
         this.router.navigate(['/admin/partenaires', partenaire.id]);
       },
       error: (err) => {
@@ -395,7 +396,7 @@ export class PartenaireFormComponent implements OnInit, OnDestroy {
     this.adminService.updatePartenaire(this.partenaireId!, request).subscribe({
       next: () => {
         this.isSaving = false;
-        this.snackBar.open('Partenaire mis à jour', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_mis_a_jour_64d9'), 'OK', { duration: 3000 });
         this.router.navigate(['/admin/partenaires', this.partenaireId]);
       },
       error: (err) => {

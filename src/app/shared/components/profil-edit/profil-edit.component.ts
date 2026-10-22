@@ -1,6 +1,8 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../../core/services/auth.service';
+import { MaCarteDialogComponent } from '../ma-carte-dialog/ma-carte-dialog.component';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, AsyncValidatorFn, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -86,6 +88,11 @@ profilePhotoUrl: string | null = null;
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
 
+  /** Carte de joueur My2-0 à télécharger (tout le parcours, un 2-0 ou une sélection). */
+  openCarte(): void {
+    this.dialog.open(MaCarteDialogComponent, { width: '560px', maxWidth: '96vw', autoFocus: false });
+  }
+
   ngOnInit(): void {
     this.initForm();
     this.loadMetadataAndUserData();
@@ -152,7 +159,7 @@ openUploadDialog(): void {
   dialogRef.afterClosed().subscribe(result => {
     if (result) {
       // Optionnel : Tu peux lever un toast ou rafraîchir un indicateur si nécessaire
-      this.snackBar.open('Vidéo ajoutée avec succès à votre galerie !', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_video_ajoutee_avec_succes_a_votr_26d5'), 'OK', { duration: 3000 });
     }
   });
 }
@@ -187,14 +194,14 @@ openPhotoEditionDialog(): void {
               this.authService.setCurrentUser({ profilePhotoUrl: serverUrl });
             }
             
-            this.snackBar.open('Photo de profil enregistrée avec succès !', 'Fermer', { 
+            this.snackBar.open(t('ui.ts_photo_de_profil_enregistree_avec_b90f'), 'Fermer', { 
               duration: 3000,
               panelClass: ['snackbar-success'] 
             });
           },
           error: (err) => {
             console.error("Échec du téléversement de l'image", err);
-            this.snackBar.open("Erreur lors de l'enregistrement de l'image sur le serveur.", 'Fermer', { 
+            this.snackBar.open(t('ui.ts_erreur_lors_de_l_enregistrement__2ff0'), 'Fermer', { 
               panelClass: ['snackbar-error'] 
             });
           }
@@ -279,7 +286,7 @@ private loadProfileData(): void {
       this.isLoading = false;
     },
     error: () => {
-      this.snackBar.open('Erreur lors du chargement du profil', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_du_pro_79cd'), 'Fermer', { duration: 3000 });
       this.isLoading = false;
     }
   });
@@ -602,7 +609,7 @@ saveProfile(): void {
       // Réinitialiser initialFormValues → hasChanges() = false
       this.initialFormValues = this.profileForm.getRawValue();
  
-      this.snackBar.open('Profil mis à jour avec succès !', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_profil_mis_a_jour_avec_succes_a424'), 'OK', { duration: 3000 });
       this.isSaving = false;
       this.dialogRef.close(true);
     },

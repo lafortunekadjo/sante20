@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
@@ -1210,9 +1211,9 @@ formatMontant(montant: number | undefined | null): string {
       const boxHeight = 25;
       const statsData = [
         { label: 'Total', value: this.stats.total.toString(), color: [102, 126, 234] },
-        { label: 'Non payées', value: this.stats.nonPayees.toString(), color: [245, 158, 11] },
+        { label: t('ui.ts_non_payees_50ff'), value: this.stats.nonPayees.toString(), color: [245, 158, 11] },
         { label: 'Partielles', value: this.stats.partielles.toString(), color: [139, 92, 246] },
-      { label: 'Montant dû', value: this.formatMontant(this.stats.montantRestant), color: [239, 68, 68] }
+      { label: t('sanction.stats.amountDue'), value: this.formatMontant(this.stats.montantRestant), color: [239, 68, 68] }
       ];
 
       statsData.forEach((stat, i) => {

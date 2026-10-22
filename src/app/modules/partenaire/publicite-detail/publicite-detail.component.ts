@@ -3,6 +3,7 @@
 // Vue détaillée et statistiques d'une publicité
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -100,7 +101,7 @@ export class PubliciteDetailComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement publicité:', err);
-        this.snackBar.open('Publicité non trouvée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_non_trouvee_e0c6'), 'OK', { duration: 3000 });
         this.router.navigate(['/partenaire/publicites']);
       }
     });
@@ -137,7 +138,7 @@ export class PubliciteDetailComponent implements OnInit, OnDestroy {
         this.snackBar.open(message, 'OK', { duration: 3000 });
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'action', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_action_ff26'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -147,11 +148,11 @@ export class PubliciteDetailComponent implements OnInit, OnDestroy {
 
     this.partenaireService.duplicatePublicite(this.publiciteId).subscribe({
       next: (newPub) => {
-        this.snackBar.open('Publicité dupliquée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_dupliquee_36b4'), 'OK', { duration: 3000 });
         this.router.navigate(['/partenaire/publicites', newPub.id, 'edit']);
       },
       error: () => {
-        this.snackBar.open('Erreur lors de la duplication', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_la_duplication_15cf'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -162,10 +163,10 @@ export class PubliciteDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Supprimer la publicité',
+        title: t('partenaire.publicites.confirmDelete.title'),
         message: `Voulez-vous vraiment supprimer "${this.publicite.titre}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn'
       }
     });
@@ -174,11 +175,11 @@ export class PubliciteDetailComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.partenaireService.deletePublicite(this.publiciteId).subscribe({
           next: () => {
-            this.snackBar.open('Publicité supprimée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_publicite_supprimee_e721'), 'OK', { duration: 3000 });
             this.router.navigate(['/partenaire/publicites']);
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }

@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCardModule } from '@angular/material/card';
@@ -18,6 +19,7 @@ import { ContributionService } from '../../../../core/services/contribution.serv
 import { MembreService } from '../../../../core/services/membre.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { Exercice, FinancesService, MouvementCaisse, TypeContribution } from '../../../../core/services/finances.service';
+import { CollecteEnCours } from '../../../../core/models/collecte.model';
 import { MatDialog } from '@angular/material/dialog';
 import { MediaPreviewDialogComponent } from '../media-preview-dialog/media-preview-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -79,6 +81,10 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   currentEvents: Evenement[] = [];
   recentMatches: Match[] = [];
   ongoingContributions: { contribution: TypeContribution; individuelles: any[] }[] = [];
+  /** Collectes d'événements ouvertes (le serveur écarte celles dont le membre connecté est le membre concerné). */
+  collectesEvenements: CollecteEnCours[] = [];
+  /** Cotisations et collectes d'événements, prêtes à afficher, les plus urgentes d'abord. */
+  collectesFeed: CollecteFeed[] = [];
   upcomingBirthdays: { membre: Membre; date: Date }[] = [];
   groupAnnouncements: Announcement[] = [];
   topScorers: { membre: Membre; buts: number }[] = [];
@@ -440,10 +446,10 @@ shouldTruncate(content: string): boolean {
   getTypeMatchLabel(type: TypeMatch | undefined): string {
     if (!type) return 'Match';
     const labels: Record<TypeMatch, string> = {
-      'INTERNE': 'Match Interne',
+      'INTERNE': t('ui.ts_match_interne_b305'),
       'DUEL': 'Duel',
-      'AMICAL': 'Match Amical',
-      'ANNIVERSAIRE': 'Match Anniversaire'
+      'AMICAL': t('invite.match.type'),
+      'ANNIVERSAIRE': t('ui.ts_match_anniversaire_bed5')
     };
     return labels[type] || 'Match';
   }
@@ -514,7 +520,8 @@ get matchesToDisplay(): Match[] {
     matches: this.matchService.getMatchesByExercice(this.exerciceId!),
     contributions: this.financeService.getTypesContributionByExercice(this.exerciceId),
     membres: this.membreService.getAllMembres(),
-    presences: this.matchService.getAllPresences()
+    presences: this.matchService.getAllPresences(),
+    collectes: this.financeService.getCollectesOuvertes().pipe(catchError(() => of([] as CollecteEnCours[])))
   });
 
   mainData$.pipe(
@@ -526,14 +533,17 @@ get matchesToDisplay(): Match[] {
     }),
 
     // 2. Traitement des données et déclenchement des appels imbriqués pour les contributions
-    switchMap(({ events, matches, contributions, membres, presences }) => {
+    switchMap(({ events, matches, contributions, membres, presences, collectes }) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      this.collectesEvenements = collectes;
 
       // --- FILTRAGE ÉVÉNEMENTS & MATCHS ---
+      // « Événements en cours » : ceux de la semaine. Leur collecte, s'il y en a une, est dans « Contributions en cours ».
+      const semaine = 7 * 86400000;
       this.currentEvents = events.filter(e => {
         const eventDate = new Date(e.dateEvenement);
-        return e.estContributionOuverte && eventDate <= today && this.isDateInCurrentExercice(eventDate);
+        return Math.abs(eventDate.getTime() - today.getTime()) <= semaine && this.isDateInCurrentExercice(eventDate);
       });
 
       this.recentMatches = this.filterAndSortRecentMatches(matches, presences, today);
@@ -584,6 +594,7 @@ get matchesToDisplay(): Match[] {
     // 3. Préchargement des médias après avoir récupéré les contributions
     switchMap(({ recentMatches, contributions }) => {
       this.ongoingContributions = contributions;
+      this.collectesFeed = this.composerCollectes();
       const token = this.authService.getToken();
       
       if (!token || !recentMatches.length) return of(null);
@@ -604,6 +615,58 @@ get matchesToDisplay(): Match[] {
   ).subscribe({
     error: (err) => console.error('Erreur News Feed:', err)
   });
+}
+
+/** Un seul modèle pour les cotisations (types) et les collectes d'événements. */
+private composerCollectes(): CollecteFeed[] {
+  const jours = (d?: string | null): number | null => {
+    if (!d) return null;
+    const t = new Date(d); t.setHours(0, 0, 0, 0);
+    const n = new Date(); n.setHours(0, 0, 0, 0);
+    return Math.round((t.getTime() - n.getTime()) / 86400000);
+  };
+
+  const cotisations: CollecteFeed[] = this.ongoingContributions.map(({ contribution, individuelles }) => {
+    const membresIds = new Set(individuelles.map(i => i.membre?.id).filter(Boolean));
+    const dernier = individuelles[0];
+    return {
+      cle: 'type-' + contribution.id,
+      evenement: false,
+      typeId: contribution.id,
+      nom: contribution.nom,
+      total: individuelles.reduce((s, i) => s + (i.montant ?? 0), 0),
+      objectif: null,
+      nbContributeurs: membresIds.size,
+      dernier: dernier ? { nom: dernier.displayName, montant: dernier.montant } : null,
+      mon: null,
+      mode: null,
+      delai: contribution.delaiContribution ? String(contribution.delaiContribution) : null,
+      joursRestants: jours(contribution.delaiContribution ? String(contribution.delaiContribution) : null)
+    };
+  });
+
+  const evenements: CollecteFeed[] = this.collectesEvenements.map(c => ({
+    cle: 'evt-' + c.evenementId,
+    evenement: true,
+    typeId: null,
+    nom: c.nom,
+    total: c.totalCollecte ?? 0,
+    objectif: c.mode === 'OBJECTIF' ? (c.objectifGlobal ?? null) : (c.mode === 'FIXE' ? (c.montantParMembre ?? null) : null),
+    nbContributeurs: null,
+    dernier: null,
+    mon: c.maContribution ?? 0,
+    mode: c.mode,
+    delai: c.delaiCollecte ?? null,
+    joursRestants: jours(c.delaiCollecte)
+  }));
+
+  // les échéances proches d'abord, puis celles sans date
+  return [...evenements, ...cotisations].sort((a, b) =>
+    (a.joursRestants ?? 9999) - (b.joursRestants ?? 9999));
+}
+
+pourcentCollecte(c: CollecteFeed): number {
+  return c.mode === 'OBJECTIF' && c.objectif ? Math.min(100, Math.round((c.total / c.objectif) * 100)) : 0;
 }
 
 // --- MÉTHODES UTILITAIRES ---
@@ -1059,7 +1122,7 @@ async openPresenceDialog(match: Match): Promise<void> {
           this.openCalendarDialog(filteredMatches);
         },
         error: () => {
-          this.snackBar.open('Impossible de charger les matchs', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_impossible_de_charger_les_matchs_e2d7'), 'Fermer', { duration: 3000 });
         }
       });
       return;
@@ -1112,4 +1175,22 @@ async openPresenceDialog(match: Match): Promise<void> {
     
     return `${debut} - ${fin}`;
   }
+}
+
+/** Une cotisation ou une collecte d'événement, telle qu'affichée dans « Contributions en cours ». */
+export interface CollecteFeed {
+  cle: string;
+  evenement: boolean;
+  typeId: number | null | undefined;
+  nom: string;
+  total: number;
+  /** Objectif global (événement) ou montant par membre (mode fixe). */
+  objectif: number | null;
+  nbContributeurs: number | null;
+  dernier: { nom: string; montant: number } | null;
+  /** Ce que le membre connecté a déjà versé (événements uniquement). */
+  mon: number | null;
+  mode: 'FIXE' | 'LIBRE' | 'OBJECTIF' | null;
+  delai: string | null;
+  joursRestants: number | null;
 }

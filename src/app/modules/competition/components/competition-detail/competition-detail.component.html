@@ -10,6 +10,12 @@
           <mat-icon>arrow_back</mat-icon>
           {{ 'competition.nav.retour' | translate }}
         </button>
+        <button class="btn-edit btn-edit--rapport" *ngIf="canModifier()" [disabled]="rapportEnCours()"
+                (click)="telechargerRapport('fr')" [title]="'ui.rapport_pdf_de_la_competition_1647' | translate">
+          <mat-icon>picture_as_pdf</mat-icon> {{ rapportEnCours() ? '…' : 'Rapport' }}
+        </button>
+        <button class="btn-edit btn-edit--rapport" *ngIf="canModifier()" [disabled]="rapportEnCours()"
+                (click)="telechargerRapport('en')" title="Competition report (English)">EN</button>
         <button class="btn-edit"
                 *ngIf="canModifier() && canModifierConfig()"
                 (click)="openDrawer()">
@@ -29,6 +35,14 @@
           <div class="comp-detail__badges">
             <span class="badge-type">
               {{ typeLabel(competition()!.type) }}
+            </span>
+
+            <!-- Badge visibilité -->
+            <span class="badge-visibilite"
+                  [class.publique]="competition()!.publique"
+                  [class.privee]="!competition()!.publique">
+              <mat-icon>{{ competition()!.publique ? 'public' : 'lock' }}</mat-icon>
+              {{ competition()!.publique ? 'Publique' : 'Privée' }}
             </span>
 
             <!-- Statut cliquable -->
@@ -78,12 +92,11 @@
             <span *ngIf="competition()!.dateLimiteInscription"
                   [class.date-limit-warning]="isDateLimiteProche()">
               <mat-icon>event_busy</mat-icon>
-              Inscriptions jusqu'au
-              {{ competition()!.dateLimiteInscription | date:'dd/MM/yyyy' }}
+              {{ 'ui.m_inscriptions_jusqu_au_995e' | translate:{p0: (competition()!.dateLimiteInscription | date:'dd/MM/yyyy')} }}
             </span>
             <span>
               <mat-icon>groups</mat-icon>
-              {{ competition()!.nombreParticipants }} équipes
+              {{ 'ui.m_equipes_fcdc' | translate:{p0: (competition()!.nombreParticipants)} }}
             </span>
           </div>
         </div>
@@ -97,15 +110,15 @@
                 *ngIf="canLancer()"
                 (click)="ouvrirTirage()">
           <mat-icon>shuffle</mat-icon>
-          Simuler le tirage
+          {{ 'ui.simuler_le_tirage_61dd' | translate }}
         </button>
 
         <!-- Phase suivante (Mixte) -->
         <button class="btn-action btn-action--warning"
                 *ngIf="canPhaseSuivante()"
-                (click)="phaseSuivante()">
+                (click)="allerAuxPhases()">
           <mat-icon>skip_next</mat-icon>
-          Phase suivante
+          Phase finale
         </button>
 
         <!-- Terminer -->
@@ -119,6 +132,14 @@
     </div>
   </div>
 
+  <!-- ── PALMARÈS (compétition terminée) ───────── -->
+  <app-palmares-banner
+    *ngIf="isTermine() && competition()!.championNom"
+    class="comp-detail__palmares"
+    [champion]="competition()!.championNom"
+    [finaliste]="competition()!.finalisteNom"
+    [troisieme]="competition()!.troisiemeNom"/>
+
   <!-- ── TABS ───────────────────────────────── -->
   <div class="comp-detail__tabs">
     <div class="tabs-nav">
@@ -127,14 +148,21 @@
               [class.active]="activeTab() === 'resume'"
               (click)="setTab('resume')">
         <mat-icon>dashboard</mat-icon>
-        Résumé
+        {{ 'ui.resume_2055' | translate }}
       </button>
 
       <button class="tab-btn"
               [class.active]="activeTab() === 'participants'"
               (click)="setTab('participants')">
         <mat-icon>groups</mat-icon>
-        Équipes
+        {{ 'menu.items.EQUIPES' | translate }}
+      </button>
+
+      <button class="tab-btn"
+        [class.active]="activeTab() === 'licences'"
+        (click)="setTab('licences')">
+        <mat-icon>badge</mat-icon>
+        {{ 'ui.licences_21e4' | translate }}
       </button>
 
       <!-- Onglet Tirage — visible seulement si pas encore lancé -->
@@ -182,13 +210,16 @@
               [class.active]="activeTab() === 'acces'"
               (click)="setTab('acces')">
         <mat-icon>manage_accounts</mat-icon>
-        Staff & Accès
+        {{ 'competition.detail.onglets.acces' | translate }}
       </button>
 
-      
-
-      
-
+      <button class="tab-btn"
+              *ngIf="canModifierConfig()"
+              [class.active]="activeTab() === 'config'"
+              (click)="setTab('config')">
+        <mat-icon>settings</mat-icon>
+        Config
+      </button>
 
     </div>
 
@@ -202,7 +233,14 @@
       <app-tab-participants
         *ngIf="activeTab() === 'participants'"
         [competition]="competition()!"
+        [permissions]="monAcces()?.permissions || []"
         (updated)="reload()"/>
+
+      <app-tab-licences
+        *ngIf="activeTab() === 'licences'"
+        [competition]="competition()!"
+        [canEdit]="canSaisirScores()"
+        [canValider]="canSaisirScores()"/>
 
       <!-- Onglet Tirage -->
       <app-tab-tirage
@@ -218,16 +256,14 @@
 
       <app-tab-statistiques
         *ngIf="activeTab() === 'statistiques'"
-        [competitionId]="competition()!.id"/>
+        [competitionId]="competition()!.id"
+        [participants]="competition()!.participants"
+        [canDiscipline]="canValiderFeuilles()"/>
 
       <app-tab-awards
         *ngIf="activeTab() === 'awards'"
         [competition]="competition()!"
         [canEdit]="canAttribuerAwards()"/>
-
-      <!-- <app-tab-awards
-        *ngIf="activeTab() === 'awards'"
-        [competition]="competition()!"/> -->
 
       <app-officiels
         *ngIf="activeTab() === 'officiels'"
@@ -238,6 +274,11 @@
         *ngIf="activeTab() === 'acces'"
         [competition]="competition()!"
         [currentUserRole]="currentUserRole()"/>
+
+      <app-competition-recompenses-sanctions
+        *ngIf="activeTab() === 'config'"
+        [competitionId]="competition()!.id"
+        [canEdit]="estOrganisateur()"/>
 
     </div>
   </div>
@@ -252,7 +293,7 @@
     <div class="drawer__header">
       <h2>
         <mat-icon>edit</mat-icon>
-        Modifier la compétition
+        {{ 'ui.modifier_la_competition_2cb1' | translate }}
       </h2>
       <button class="drawer__close" (click)="closeDrawer()">
         <mat-icon>close</mat-icon>
@@ -262,18 +303,18 @@
     <div class="drawer__body" *ngIf="editForm">
       <form [formGroup]="editForm" (ngSubmit)="sauvegarder()">
 
-        <!-- Infos générales -->
+        <!-- ══ 1. INFOS GÉNÉRALES ═══════════════════════════ -->
         <div class="drawer-section">
           <h3 class="drawer-section__title">
             <mat-icon>info</mat-icon>
-            {{ 'competition.creation.champs.nom' | translate }}
+            {{ 'groupConfig.tabs.generalInfo' | translate }}
           </h3>
 
           <div class="form-field">
             <label class="form-label">{{ 'competition.commun.nom' | translate }}</label>
             <input formControlName="nom"
                    class="form-input"
-                   placeholder="Nom de la compétition"/>
+                   [placeholder]="'competition.creation.champs.nom' | translate"/>
           </div>
 
           <div class="form-field">
@@ -288,7 +329,7 @@
             <label class="form-label">{{ 'competition.creation.champs.organisateur' | translate }}</label>
             <input formControlName="organisateurNom"
                    class="form-input"
-                   placeholder="Nom de l'organisateur"/>
+                   [placeholder]="'ui.nom_de_l_organisateur_b2dd' | translate"/>
           </div>
 
           <div class="form-field">
@@ -299,7 +340,28 @@
           </div>
         </div>
 
-        <!-- Dates -->
+        <!-- ══ 2. VISIBILITÉ ════════════════════════════════ -->
+        <div class="drawer-section">
+          <h3 class="drawer-section__title">
+            <mat-icon>visibility</mat-icon>
+            {{ 'competition.creation.recapitulatif.visibilite' | translate }}
+          </h3>
+
+          <div class="form-field form-field--toggle">
+            <div class="toggle-info">
+              <label class="form-label">{{ 'competition.creation.champs.publique' | translate }}</label>
+              <span class="form-hint">
+                {{ 'ui.visible_dans_la_liste_publique_et__d1db' | translate }}
+              </span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" formControlName="publique"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ══ 3. DATES ═════════════════════════════════════ -->
         <div class="drawer-section">
           <h3 class="drawer-section__title">
             <mat-icon>calendar_today</mat-icon>
@@ -313,7 +375,7 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">Date de fin</label>
+            <label class="form-label">{{ 'dashboard.filters.endDate' | translate }}</label>
             <input formControlName="dateFin"
                    type="date" class="form-input"/>
             <span class="form-hint">{{ 'competition.commun.optionnel' | translate }}</span>
@@ -322,64 +384,436 @@
           <div class="form-field">
             <label class="form-label">
               {{ 'competition.creation.champs.dateLimiteInscription' | translate }}
-              <span class="badge-warning" *ngIf="isDateLimiteProche()">
-                Proche !
-              </span>
+              <span class="badge-warning" *ngIf="isDateLimiteProche()">Proche !</span>
             </label>
             <input formControlName="dateLimiteInscription"
                    type="date" class="form-input"/>
           </div>
         </div>
 
-        <!-- Config (uniquement si BROUILLON) -->
-        <div class="drawer-section"
-             *ngIf="isBrouillon()"
-             formGroupName="config">
-          <h3 class="drawer-section__title">
-            <mat-icon>settings</mat-icon>
-            Configuration
-            <span class="brouillon-only">Brouillon uniquement</span>
-          </h3>
+        <!-- ══ CONFIG (BROUILLON SEULEMENT) ════════════════════ -->
+        <ng-container *ngIf="isBrouillon()" formGroupName="config">
 
-          <div class="form-field">
-            <label class="form-label">{{ 'competition.creation.equipes.nombreMin' | translate }}</label>
-            <input formControlName="nombreEquipesMin"
-                   type="number" min="2" class="form-input"/>
+          <!-- ── 4. ÉQUIPES ──────────────────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>groups</mat-icon>
+              {{ 'menu.items.EQUIPES' | translate }}
+              <span class="brouillon-only">Brouillon uniquement</span>
+            </h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.equipes_min_e1a8' | translate }}</label>
+                <input formControlName="nombreEquipesMin"
+                       type="number" min="2" class="form-input"/>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.equipes_max_0c05' | translate }}</label>
+                <input formControlName="nombreEquipesMax"
+                       type="number" min="2" class="form-input"/>
+              </div>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label class="form-label">{{ 'competition.creation.equipes.nombreMax' | translate }}</label>
-            <input formControlName="nombreEquipesMax"
-                   type="number" min="2" class="form-input"/>
+          <!-- ── 5. POINTS ───────────────────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>scoreboard</mat-icon>
+              Points
+            </h3>
+
+            <div class="form-row form-row--3">
+              <div class="form-field">
+                <label class="form-label">Victoire</label>
+                <input formControlName="pointsVictoire"
+                       type="number" min="0" class="form-input"/>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Nul</label>
+                <input formControlName="pointsNul"
+                       type="number" min="0" class="form-input"/>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'dashboard.loss' | translate }}</label>
+                <input formControlName="pointsDefaite"
+                       type="number" min="0" class="form-input"/>
+              </div>
+            </div>
           </div>
 
-          <div class="form-field"
-               *ngIf="isInscriptionOuverte() || isBrouillon()">
-            <label class="form-label">Droits d'engagement (FCFA)</label>
-            <input formControlName="montantEngagement"
-                   type="number" min="0" class="form-input"
-                   placeholder="0 = gratuit"/>
+          <!-- ── 6. FORFAIT ──────────────────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>do_not_disturb</mat-icon>
+              Score forfait
+            </h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Score vainqueur</label>
+                <input formControlName="scoreForfaitVainqueur"
+                       type="number" min="0" class="form-input"/>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Score perdant</label>
+                <input formControlName="scoreForfaitPerdant"
+                       type="number" min="0" class="form-input"/>
+              </div>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label class="form-label">Seuil CJ avant suspension</label>
-            <input formControlName="seuilCartonsJaunesSuspension"
-                   type="number" min="1" class="form-input"/>
+          <!-- ── 7. DROITS D'ENGAGEMENT ──────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>payments</mat-icon>
+              Droits d'engagement
+            </h3>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'config.droitsEngagementActifs' | translate }}</label>
+                <span class="form-hint">{{ 'ui.rendre_l_inscription_payante_c809' | translate }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="droitsEngagementActifs"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-field"
+                 *ngIf="editForm!.get('config.droitsEngagementActifs')!.value">
+              <label class="form-label">{{ 'sanction.form.amount' | translate }}</label>
+              <input formControlName="montantEngagement"
+                     type="number" min="0" class="form-input"
+                     placeholder="Ex : 5000"/>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label class="form-label">Matchs suspension carton rouge</label>
-            <input formControlName="matchsSuspensionCartonRouge"
-                   type="number" min="1" class="form-input"/>
-          </div>
-        </div>
+          <!-- ── 8. SUSPENSIONS / CARTONS ───────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>style</mat-icon>
+              {{ 'ui.suspensions_cartons_8fc0' | translate }}
+            </h3>
 
-        <!-- Avertissements -->
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">CJ avant suspension</label>
+                <input formControlName="seuilCartonsJaunesSuspension"
+                       type="number" min="1" class="form-input"/>
+                <span class="form-hint">{{ 'ui.nombre_de_cartons_jaunes_cumules_1e19' | translate }}</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.matchs_susp_cr_428c' | translate }}</label>
+                <input formControlName="matchsSuspensionCartonRouge"
+                       type="number" min="1" class="form-input"/>
+                <span class="form-hint">{{ 'ui.matchs_de_suspension_apres_un_cart_ed4b' | translate }}</span>
+              </div>
+            </div>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'ui.cumul_cartons_entre_phases_1091' | translate }}</label>
+                <span class="form-hint">
+                  {{ 'ui.les_cartons_de_la_phase_de_poules__8467' | translate }}
+                </span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="cumulCartonsEntrePhases"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── 9. PROLONGATIONS (COUPE / MIXTE) ───────────── -->
+          <div class="drawer-section" *ngIf="avecKnockout()">
+            <h3 class="drawer-section__title">
+              <mat-icon>timer</mat-icon>
+              Prolongations & TAB
+            </h3>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'config.prolongationsActives' | translate }}</label>
+                <span class="form-hint">{{ 'ui.en_cas_d_egalite_en_phase_knockout_09e3' | translate }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="prolongationsActives"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="editForm!.get('config.prolongationsActives')!.value">
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="form-label">{{ 'ui.1ere_prolongation_min_86b9' | translate }}</label>
+                  <input formControlName="dureeProlong1"
+                         type="number" min="5" max="30" class="form-input"/>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">{{ 'ui.2eme_prolongation_min_60f9' | translate }}</label>
+                  <input formControlName="dureeProlong2"
+                         type="number" min="5" max="30" class="form-input"/>
+                </div>
+              </div>
+
+              <div class="form-field form-field--toggle">
+                <div class="toggle-info">
+                  <label class="form-label">{{ 'ui.tirs_au_but_tab_actifs_04de' | translate }}</label>
+                  <span class="form-hint">{{ 'ui.apres_prolongations_sans_vainqueur_4028' | translate }}</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" formControlName="tabActif"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </ng-container>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'ui.match_pour_la_3eme_place_250e' | translate }}</label>
+                <span class="form-hint">{{ 'ui.petite_finale_entre_les_demi_final_8e38' | translate }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="avecMatch3ePlace"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'ui.tours_en_aller_retour_a3e0' | translate }}</label>
+                <span class="form-hint">
+                  {{ 'ui.chaque_confrontation_se_joue_en_de_e87b' | translate }}
+                </span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="coupeAllerRetour"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── 10. FORMAT CHAMPIONNAT ──────────────────────── -->
+          <div class="drawer-section" *ngIf="isFormatChampionnat()">
+            <h3 class="drawer-section__title">
+              <mat-icon>swap_horiz</mat-icon>
+              Format championnat
+            </h3>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'competition.formats.allerRetour' | translate }}</label>
+                <span class="form-hint">
+                  {{ 'ui.chaque_equipe_joue_deux_fois_contr_cc55' | translate }}
+                </span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="allerRetour"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── 11. CONFIG MIXTE (groupes) ──────────────────── -->
+          <div class="drawer-section" *ngIf="isFormatMixte()">
+            <h3 class="drawer-section__title">
+              <mat-icon>grid_view</mat-icon>
+              {{ 'ui.configuration_des_groupes_2181' | translate }}
+            </h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.nombre_de_groupes_ecfd' | translate }}</label>
+                <input formControlName="nombreGroupes"
+                       type="number" min="2" class="form-input"/>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'competition.creation.equipes.equipesParGroupe' | translate }}</label>
+                <input formControlName="equipesParGroupe"
+                       type="number" min="2" class="form-input"/>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label">{{ 'competition.creation.equipes.qualifiesParGroupe' | translate }}</label>
+              <input formControlName="qualifiesParGroupe"
+                     type="number" min="1" class="form-input"/>
+              <span class="form-hint">{{ 'ui.nombre_de_premiers_de_groupe_qui_p_ba9e' | translate }}</span>
+            </div>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'ui.poules_en_aller_retour_4d73' | translate }}</label>
+                <span class="form-hint">
+                  {{ 'ui.chaque_equipe_affronte_deux_fois_l_b263' | translate }}
+                </span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="allerRetourGroupes"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'ui.meilleurs_n_emes_actif_a3a2' | translate }}</label>
+                <span class="form-hint">
+                  {{ 'ui.des_equipes_non_premieres_peuvent__6405' | translate }}
+                </span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="meilleursTimesActif"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-field"
+                 *ngIf="editForm!.get('config.meilleursTimesActif')!.value">
+              <label class="form-label">{{ 'competition.creation.equipes.nombreMeilleursN' | translate }}</label>
+              <input formControlName="nombreMeilleursTimesQualifies"
+                     type="number" min="1" class="form-input"/>
+            </div>
+          </div>
+
+          <!-- ── 12. PLANNING ────────────────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>schedule</mat-icon>
+              {{ 'ui.planning_des_matchs_f7fa' | translate }}
+            </h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.heure_par_defaut_9382' | translate }}</label>
+                <input formControlName="heureDefautMatch"
+                       type="time" class="form-input"/>
+                <span class="form-hint">{{ 'ui.suggeree_a_la_creation_de_chaque_m_3c1b' | translate }}</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.intervalle_journees_jours_c230' | translate }}</label>
+                <input formControlName="intervalleJournees"
+                       type="number" min="1" class="form-input"/>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.delai_min_entre_matchs_jours_a5e3' | translate }}</label>
+                <input formControlName="delaiMinEntreMatchs"
+                       type="number" min="0" class="form-input"/>
+                <span class="form-hint">{{ 'ui.repos_minimum_d_une_equipe_entre_2_5bb1' | translate }}</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.matchs_par_journee_222e' | translate }}</label>
+                <input formControlName="matchsParJournee"
+                       type="number" min="1" class="form-input"
+                       [placeholder]="'ui.illimite_3263' | translate"/>
+                <span class="form-hint">{{ 'ui.laisser_vide_pas_de_limite_a30e' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── EFFECTIFS (repères souples) ──────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>groups</mat-icon>
+              {{ 'ui.effectifs_des_equipes_f39d' | translate }}
+            </h3>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.effectif_vise_joueurs_df49' | translate }}</label>
+                <input formControlName="effectifMin" type="number" min="1" class="form-input"
+                       [placeholder]="'partenaire.common.none' | translate"/>
+                <span class="form-hint">{{ 'ui.simple_repere_n_empeche_pas_de_val_2d93' | translate }}</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.effectifs_complets_avant_le_b4b8' | translate }}</label>
+                <input formControlName="dateLimiteEffectif" type="date" class="form-input"/>
+                <span class="form-hint">{{ 'ui.rappels_automatiques_aux_equipes_j_aa75' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 13. LICENCES ────────────────────────────────── -->
+          <div class="drawer-section">
+            <h3 class="drawer-section__title">
+              <mat-icon>badge</mat-icon>
+              {{ 'ui.licences_joueurs_8e61' | translate }}
+            </h3>
+
+            <div class="form-field form-field--toggle">
+              <div class="toggle-info">
+                <label class="form-label">{{ 'config.licencesActivees' | translate }}</label>
+                <span class="form-hint">{{ 'ui.obliger_les_joueurs_a_avoir_une_li_adf9' | translate }}</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" formControlName="licencesActivees"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="editForm!.get('config.licencesActivees')!.value">
+
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="form-label">{{ 'ui.licences_gratuites_equipe_98b4' | translate }}</label>
+                  <input formControlName="licencesGratuites"
+                         type="number" min="0" class="form-input"/>
+                  <span class="form-hint">{{ 'ui.nombre_inclus_dans_les_droits_d_en_31a9' | translate }}</span>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">{{ 'ui.montant_licence_sup_fcfa_2945' | translate }}</label>
+                  <input formControlName="montantLicenceSup"
+                         type="number" min="0" class="form-input"
+                         placeholder="0 = gratuite"/>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label class="form-label">{{ 'ui.date_fin_validite_licences_dbba' | translate }}</label>
+                <input formControlName="dateFinValiditeLicences"
+                       type="date" class="form-input"/>
+              </div>
+
+              <div class="form-field form-field--toggle">
+                <div class="toggle-info">
+                  <label class="form-label">{{ 'ui.bloquer_feuille_sans_licence_20f0' | translate }}</label>
+                  <span class="form-hint">
+                    {{ 'ui.empecher_la_validation_de_la_feuil_1219' | translate }}
+                  </span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" formControlName="blocageFeuilleSansLicence"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="form-field form-field--toggle">
+                <div class="toggle-info">
+                  <label class="form-label">{{ 'ui.photo_numerique_requise_8da7' | translate }}</label>
+                  <span class="form-hint">
+                    {{ 'ui.la_photo_du_joueur_doit_etre_valid_e0a6' | translate }}
+                  </span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" formControlName="photoNumerique"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+            </ng-container>
+          </div>
+
+        </ng-container><!-- /isBrouillon config -->
+
+        <!-- ── Avertissements ──────────────────────────────── -->
         <div class="drawer-alert drawer-alert--warning" *ngIf="isEnCours()">
           <mat-icon>warning</mat-icon>
           <div>
             <strong>{{ 'competition.detail.statuts.enCours' | translate }}</strong>
-            <p>Seules les informations générales et les dates peuvent être modifiées.</p>
+            <p>{{ 'ui.seules_les_informations_generales__0a4b' | translate }}</p>
           </div>
         </div>
 
@@ -397,18 +831,19 @@
 
     <div class="drawer__footer">
       <button class="btn-ghost" (click)="closeDrawer()">{{ 'competition.commun.annuler' | translate }}</button>
-      <button class="btn-danger-outline"
-              *ngIf="canAnnuler()"
-              (click)="confirmerAnnuler()">
-        <mat-icon>cancel</mat-icon>
-        Annuler la compétition
-      </button>
-      <button class="btn-primary"
+       <button class="btn-primary"
               (click)="sauvegarder()"
               [disabled]="saving()">
         <mat-icon>save</mat-icon>
         {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
+      <button class="btn-danger-outline"
+              *ngIf="canAnnuler()"
+              (click)="confirmerAnnuler()">
+        <mat-icon>cancel</mat-icon>
+        {{ 'ui.annuler_la_competition_9b21' | translate }}
+      </button>
+     
     </div>
   </div>
 
@@ -426,7 +861,7 @@
       <p class="modal__body">{{ confirmModal()!.message }}</p>
       <div class="modal__footer">
         <button class="btn-ghost" (click)="confirmModal.set(null)">
-          Annuler
+          {{ 'common.CANCEL' | translate }}
         </button>
         <button class="btn-danger" (click)="confirmModal()!.action()">
           {{ 'competition.commun.confirmer' | translate }}

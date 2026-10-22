@@ -15,6 +15,10 @@
           </div>
         </div>
         <div class="header-actions">
+          <button class="btn-primary header-cta" *ngIf="!isLoading && activeTab === 'list'"
+                  (click)="activeTab = 'create'; openCreateTab()">
+            <mat-icon>add</mat-icon>{{ 'sanction.actions.new' | translate }}
+          </button>
           <button mat-icon-button class="header-icon-btn"
                   [matMenuTriggerFor]="exportMenu"
                   [matTooltip]="'COMMON.EXPORT' | translate">
@@ -241,7 +245,7 @@
                       {{ isMaterielSanction(sanction) ? 'inventory_2' : 'gavel' }}
                     </mat-icon>
                     <span>{{ getTypeSanctionName(sanction.typeSanction) }}</span>
-                    <span class="mat-badge" *ngIf="isMaterielSanction(sanction)">Matériel</span>
+                    <span class="mat-badge" *ngIf="isMaterielSanction(sanction)">{{ 'ui.materiel_2ed9' | translate }}</span>
                   </div>
                 </div>
               </div>
@@ -538,7 +542,7 @@
                             (ngModelChange)="onTypeSanctionChange(newSanction)" required>
                   <mat-option *ngFor="let t of typeSanctions" [value]="t.id">
                     {{ t.nom }}
-                    <span *ngIf="t.type === 'MATERIEL'" class="type-mat-tag"> · Matériel</span>
+                    <span *ngIf="t.type === 'MATERIEL'" class="type-mat-tag"> {{ 'ui.materiel_7445' | translate }}</span>
                   </mat-option>
                 </mat-select>
                 <mat-icon matPrefix>category</mat-icon>
@@ -565,18 +569,18 @@
           <div class="form-section materiel-section" *ngIf="isMaterial">
             <div class="form-section-title">
               <mat-icon class="materiel-color">inventory_2</mat-icon>
-              Détail du matériel
+              {{ 'ui.detail_du_materiel_6634' | translate }}
             </div>
             <div class="form-grid">
               <mat-form-field appearance="outline" class="span-2">
-                <mat-label>Matériel *</mat-label>
+                <mat-label>{{ 'ui.materiel_d3cf' | translate }}</mat-label>
                 <input matInput [(ngModel)]="newSanction.materiel"
                        [placeholder]="getMaterielPlaceholder(newSanction)" required>
                 <mat-icon matPrefix>inventory_2</mat-icon>
-                <mat-hint>Équipement à restituer ou remplacer</mat-hint>
+                <mat-hint>{{ 'ui.equipement_a_restituer_ou_remplace_5779' | translate }}</mat-hint>
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Quantité</mat-label>
+                <mat-label>{{ 'ui.quantite_1b27' | translate }}</mat-label>
                 <input matInput type="number" [(ngModel)]="newSanction.quantite" min="1" placeholder="1">
                 <mat-icon matPrefix>production_quantity_limits</mat-icon>
               </mat-form-field>
@@ -585,8 +589,7 @@
             <div class="materiel-recap" *ngIf="newSanction.materiel && (newSanction.montant || 0) > 0">
               <mat-icon>calculate</mat-icon>
               <span>
-                <strong>{{ newSanction.quantite || 1 }}</strong> × {{ newSanction.materiel }}
-                à <strong>{{ formatMontant(newSanction.montant || 0) }}</strong>
+                <strong>{{ newSanction.quantite || 1 }}</strong> {{ 'ui.m_a_7a01' | translate:{p0: (newSanction.materiel)} }} <strong>{{ formatMontant(newSanction.montant || 0) }}</strong>
                 = <span class="recap-total">{{ formatMontant((newSanction.montant || 0) * (newSanction.quantite || 1)) }}</span>
               </span>
             </div>
@@ -628,7 +631,7 @@
                 {{ type.type === 'MATERIEL' ? 'Matériel' : 'Financière' }}
               </span>
               <span class="type-montant" *ngIf="type.montantDefaut">
-                {{ formatMontant(type.montantDefaut) }} par défaut
+                {{ 'ui.m_par_defaut_c3ea' | translate:{p0: (formatMontant(type.montantDefaut))} }}
               </span>
             </div>
             <span class="type-count">
@@ -637,8 +640,8 @@
           </div>
           <div class="empty-state" *ngIf="typeSanctions.length === 0">
             <mat-icon>category</mat-icon>
-            <h3>Aucun type de sanction</h3>
-            <p>Configurez les types dans les paramètres du groupe</p>
+            <h3>{{ 'sanction.noTypesMessage' | translate }}</h3>
+            <p>{{ 'ui.configurez_les_types_dans_les_para_6526' | translate }}</p>
           </div>
         </div>
       </div>
@@ -647,10 +650,11 @@
   </div><!-- /tabs-wrapper -->
 
   <!-- FAB Nouvelle sanction -->
-  <button class="fab-new" *ngIf="!isLoading && activeTab === 'list'"
+  <button class="fab-new fab" *ngIf="!isLoading && activeTab === 'list'"
           (click)="activeTab = 'create'; openCreateTab()"
-          [matTooltip]="'sanction.actions.new' | translate">
+          [attr.aria-label]="'sanction.actions.new' | translate">
     <mat-icon>add</mat-icon>
+    <span class="fab-label">{{ 'sanction.actions.new' | translate }}</span>
   </button>
 
 </div>

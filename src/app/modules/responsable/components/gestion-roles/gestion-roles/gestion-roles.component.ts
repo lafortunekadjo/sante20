@@ -1,5 +1,6 @@
 // src/app/modules/responsable/components/gestion-roles/gestion-roles.component.ts
 
+import { t } from '../../../../../core/i18n/traduire';
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -148,7 +149,7 @@ ngOnInit(): void {
       this.isLoading = false;
     }).catch(err => {
       console.error('Erreur chargement données:', err);
-      this.snackBar.open('Erreur lors du chargement', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_c064'), 'Fermer', { duration: 3000 });
       this.isLoading = false;
     });
   }
@@ -166,7 +167,7 @@ ngOnInit(): void {
     this.menuCategories = [
       {
         code: 'GESTION',
-        label: 'Gestion',
+        label: t('partenaire.nav.gestion'),
         icone: 'settings',
         menus: categoriesMap.get('GESTION') || []
       },
@@ -205,7 +206,7 @@ ngOnInit(): void {
 
   editRole(role: RoleCustom): void {
     if (role.systeme) {
-      this.snackBar.open('Les rôles système ne peuvent pas être modifiés', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_les_roles_systeme_ne_peuvent_pas_18b8'), 'Fermer', { duration: 3000 });
       return;
     }
 
@@ -285,12 +286,12 @@ ngOnInit(): void {
 
   saveRole(): void {
     if (this.roleForm.invalid) {
-      this.snackBar.open('Veuillez remplir tous les champs requis', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_veuillez_remplir_tous_les_champs_4471'), 'Fermer', { duration: 3000 });
       return;
     }
 
     if (this.selectedMenuIds().length === 0) {
-      this.snackBar.open('Veuillez sélectionner au moins un menu', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_veuillez_selectionner_au_moins_u_a08f'), 'Fermer', { duration: 3000 });
       return;
     }
 
@@ -330,7 +331,7 @@ ngOnInit(): void {
 
   deleteRole(role: RoleCustom): void {
     if (role.systeme) {
-      this.snackBar.open('Les rôles système ne peuvent pas être supprimés', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_les_roles_systeme_ne_peuvent_pas_80de'), 'Fermer', { duration: 3000 });
       return;
     }
 
@@ -349,7 +350,7 @@ ngOnInit(): void {
 
     this.roleCustomService.deleteRole(role.id).subscribe({
       next: () => {
-        this.snackBar.open('Rôle supprimé !', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_role_supprime_43bd'), 'Fermer', { duration: 3000 });
         this.loadData();
       },
       error: (err) => {
@@ -365,7 +366,7 @@ ngOnInit(): void {
 
   toggleRoleStatus(role: RoleCustom): void {
     if (role.systeme) {
-      this.snackBar.open('Les rôles système ne peuvent pas être désactivés', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_les_roles_systeme_ne_peuvent_pas_38eb'), 'Fermer', { duration: 3000 });
       return;
     }
 
@@ -380,19 +381,19 @@ ngOnInit(): void {
       },
       error: (err) => {
         console.error('Erreur toggle status:', err);
-        this.snackBar.open('Erreur lors de la modification', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('membres.updateError'), 'Fermer', { duration: 3000 });
       }
     });
   }
 
   createDefaultRoles(): void {
-    if (!confirm('Voulez-vous créer les rôles par défaut ? (Président, Trésorier, Capitaine, Secrétaire)')) {
+    if (!confirm(t('ui.ts_voulez_vous_creer_les_roles_par__d8fc'))) {
       return;
     }
 
     this.roleCustomService.createDefaultRoles(this.groupeId).subscribe({
       next: () => {
-        this.snackBar.open('Rôles par défaut créés avec succès !', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_roles_par_defaut_crees_avec_succ_c2fe'), 'Fermer', { duration: 3000 });
         this.loadData();
       },
       error: (err) => {

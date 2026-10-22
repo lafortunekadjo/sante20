@@ -1,0 +1,75 @@
+<div class="mm">
+  <header class="mm__tete">
+    <a class="mm__retour" routerLink="/competitions" [attr.aria-label]="'ui.retour_aux_competitions_d33d' | translate">‹</a>
+    <div>
+      <h1>{{ 'ui.mes_matchs_fba6' | translate }}</h1>
+      <p>{{ 'ui.les_matchs_que_vous_avez_a_gerer_t_5bc8' | translate }}</p>
+    </div>
+  </header>
+
+  <div class="mm__resume" *ngIf="!chargement() && matchs().length">
+    <span class="mm__pastille mm__pastille--live" *ngIf="enCours().length">{{ enCours().length }} en cours</span>
+    <span class="mm__pastille mm__pastille--jour" *ngIf="aujourdhui()">{{ aujourdhui() }} aujourd'hui</span>
+    <span class="mm__pastille">{{ 'ui.m_a_venir_0401' | translate:{p0: (aVenir().length)} }}</span>
+  </div>
+
+  <div class="mm__filtres" *ngIf="!chargement() && matchs().length">
+    <select [ngModel]="filtreCompetition()" (ngModelChange)="filtreCompetition.set($event)" name="competition" *ngIf="competitions().length > 1">
+      <option [ngValue]="null">{{ 'ui.toutes_les_competitions_ff2c' | translate }}</option>
+      <option *ngFor="let c of competitions()" [ngValue]="c.id">{{ c.nom }}</option>
+    </select>
+    <label class="mm__case">
+      <input type="checkbox" [ngModel]="seulementMiens()" (ngModelChange)="seulementMiens.set($event)" name="miens"/>
+      {{ 'ui.seulement_ceux_ou_je_suis_designe_6082' | translate }}
+    </label>
+  </div>
+
+  <p class="mm__vide" *ngIf="chargement()">{{ 'calendar.states.loading' | translate }}</p>
+  <p class="mm__vide" *ngIf="erreur()">{{ 'ui.impossible_de_charger_vos_matchs_r_86aa' | translate }}</p>
+  <div class="mm__vide" *ngIf="!chargement() && !erreur() && !matchs().length">
+    <strong>{{ 'ui.aucun_match_a_gerer_pour_le_moment_0c77' | translate }}</strong>
+    <p>{{ 'ui.les_matchs_apparaissent_ici_des_qu_f741' | translate }}</p>
+  </div>
+
+  <ng-template #carte let-m>
+    <article class="mm__carte" [class.mm__carte--live]="m.statut === 'EN_COURS'" [class.mm__carte--jour]="estAujourdhui(m) && m.statut === 'PLANIFIE'">
+      <div class="mm__ligne1">
+        <span class="mm__competition">{{ m.competitionNom }}<ng-container *ngIf="m.journee"> · J{{ m.journee }}</ng-container></span>
+        <span class="mm__role">{{ role(m) }}</span>
+      </div>
+      <div class="mm__versus">
+        <span class="mm__equipe">{{ m.domicile }}</span>
+        <span class="mm__score" *ngIf="m.butsDomicile != null; else vs">{{ m.butsDomicile }} - {{ m.butsExterieur }}</span>
+        <ng-template #vs><span class="mm__score mm__score--vs">VS</span></ng-template>
+        <span class="mm__equipe mm__equipe--droite">{{ m.exterieur }}</span>
+      </div>
+      <div class="mm__ligne3">
+        <span>{{ m.dateHeure ? (m.dateHeure | date:'EEE dd/MM à HH:mm') : 'Date à fixer' }}<ng-container *ngIf="m.lieu"> · {{ m.lieu }}</ng-container></span>
+        <span class="mm__statut" [class.mm__statut--live]="m.statut === 'EN_COURS'">
+          {{ m.statut === 'PLANIFIE' ? delai(m) : statut(m) }}
+        </span>
+      </div>
+      <div class="mm__actions">
+        <a class="btn-primary btn-sm" [routerLink]="['/competitions', m.competitionId, 'matchs', m.matchId]">
+          {{ m.statut === 'EN_COURS' ? 'Reprendre le match' : (m.peutAgir && m.statut === 'PLANIFIE' ? 'Ouvrir / démarrer' : 'Ouvrir') }}
+        </a>
+        <span class="mm__lecture" *ngIf="!m.peutAgir">Lecture seule</span>
+      </div>
+    </article>
+  </ng-template>
+
+  <section *ngIf="enCours().length">
+    <h2 class="mm__titre mm__titre--live">En cours</h2>
+    <ng-container *ngFor="let m of enCours()"><ng-container *ngTemplateOutlet="carte; context: { $implicit: m }"></ng-container></ng-container>
+  </section>
+
+  <section *ngIf="aVenir().length">
+    <h2 class="mm__titre">{{ 'calendar.legend.future' | translate }}</h2>
+    <ng-container *ngFor="let m of aVenir()"><ng-container *ngTemplateOutlet="carte; context: { $implicit: m }"></ng-container></ng-container>
+  </section>
+
+  <section *ngIf="termines().length">
+    <h2 class="mm__titre">{{ 'ui.termines_recemment_64f1' | translate }}</h2>
+    <ng-container *ngFor="let m of termines()"><ng-container *ngTemplateOutlet="carte; context: { $implicit: m }"></ng-container></ng-container>
+  </section>
+</div>

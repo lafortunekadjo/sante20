@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import {
   Component, Input, Output, EventEmitter,
   OnInit, inject, signal, computed
@@ -46,7 +47,7 @@ const ROLES_MATCH = [
 @Component({
   selector:    'app-match-edit',
   standalone:  true,
-  imports:     [CommonModule, FormsModule],
+  imports: [TranslateModule, CommonModule, FormsModule],
   templateUrl: './match-edit.component.html',
   styleUrls:   ['./match-edit.component.scss']
 })
@@ -62,6 +63,7 @@ export class MatchEditComponent implements OnInit {
 
   // ── State ──────────────────────────────────────────────────
   saving              = signal(false);
+  erreur              = signal<string | null>(null);
   loadingParticipants = signal(false);
   loadingOfficiels    = signal(false);
   participantsDisponibles = signal<Participant[]>([]);
@@ -191,6 +193,7 @@ export class MatchEditComponent implements OnInit {
   sauvegarder(): void {
     if (!this.canSave()) return;
     this.saving.set(true);
+    this.erreur.set(null);
     const dto: any = {};
     if (this.dateHeure) dto.dateHeure = this.dateHeure;
     if (this.lieu)      dto.lieu      = this.lieu;
@@ -204,7 +207,10 @@ export class MatchEditComponent implements OnInit {
     }
     this.compApi.modifierMatch(this.competitionId, this.match.id, dto).subscribe({
       next: m => { this.saving.set(false); this.onSaved.emit(m); },
-      error: () => this.saving.set(false)
+      error: err => {
+        this.erreur.set(err?.error?.message ?? "Enregistrement impossible");
+        this.saving.set(false);
+      }
     });
   }
 }

@@ -7,7 +7,7 @@
         <mat-icon>emoji_events</mat-icon>
         <div>
           <h2>{{ 'competition.phases.tirage.titre' | translate }}</h2>
-          <p>Choisissez les confrontations pour les matchs à élimination directe</p>
+          <p>{{ 'competition.phases.tirage.sousTitre' | translate }}</p>
         </div>
       </div>
       <button class="btn-close" (click)="closed.emit()">
@@ -18,7 +18,7 @@
     <!-- ── Loading ────────────────────────────────────────── -->
     <div class="modal-tirage__loading" *ngIf="loading()">
       <div class="spinner"></div>
-      Chargement des qualifiés...
+      {{ 'ui.chargement_des_qualifies_f2e0' | translate }}
     </div>
 
     <!-- ── Contenu ────────────────────────────────────────── -->
@@ -28,7 +28,7 @@
       <div class="qualifies-section">
         <h3 class="section-label">
           <mat-icon>groups</mat-icon>
-          Qualifiés
+          {{ 'ui.qualifies_790c' | translate }}
         </h3>
         <div class="qualifies-groupes">
           <div class="qualifie-groupe"
@@ -64,7 +64,7 @@
           </h3>
           <button class="btn-ghost btn-sm"
                   (click)="resetSuggere()"
-                  title="Revenir au schéma suggéré">
+                  [title]="'ui.revenir_au_schema_suggere_4422' | translate">
             <mat-icon>refresh</mat-icon>
             {{ 'competition.phases.tirage.schemaCaf' | translate }}
           </button>
@@ -84,7 +84,7 @@
                       (ngModelChange)="setPaire(i, 1, $event ? +$event : null)"
                       [class.paire-select--error]="paire.participant1Id === paire.participant2Id
                                                    && paire.participant1Id">
-                <option [ngValue]="null">— Équipe 1 —</option>
+                <option [ngValue]="null">{{ 'competition.phases.tirage.equipe1' | translate }}</option>
                 <option *ngFor="let q of tousQualifies()"
                         [ngValue]="q.id"
                         [disabled]="idsUtilises(i, 1).has(q.id)">
@@ -98,11 +98,12 @@
             <!-- Équipe 2 -->
             <div class="paire-row__side">
               <select class="paire-select"
-                      [ngModel]="paire.participant2Id"
-                      (ngModelChange)="setPaire(i, 2, $event ? +$event : null)"
+                      [ngModel]="paire.bye ? 'BYE' : paire.participant2Id"
+                      (ngModelChange)="setPaire(i, 2, $event === 'BYE' ? 'BYE' : ($event ? +$event : null))"
                       [class.paire-select--error]="paire.participant1Id === paire.participant2Id
                                                    && paire.participant2Id">
-                <option [ngValue]="null">— Équipe 2 —</option>
+                <option [ngValue]="null">{{ 'competition.phases.tirage.equipe2' | translate }}</option>
+                <option value="BYE">{{ 'ui.exempt_passe_au_tour_suivant_933d' | translate }}</option>
                 <option *ngFor="let q of tousQualifies()"
                         [ngValue]="q.id"
                         [disabled]="idsUtilises(i, 2).has(q.id)">
@@ -114,7 +115,7 @@
             <!-- Supprimer paire -->
             <button class="btn-delete-paire"
                     (click)="supprimerPaire(i)"
-                    title="Supprimer cette confrontation">
+                    [title]="'ui.supprimer_cette_confrontation_54cb' | translate">
               <mat-icon>remove_circle_outline</mat-icon>
             </button>
           </div>
@@ -133,13 +134,19 @@
           <div class="validation-error"
                *ngIf="hasMemesEquipes()">
             <mat-icon>warning</mat-icon>
-            Une équipe ne peut pas s'affronter elle-même
+            {{ 'competition.phases.tirage.erreurs.memesEquipes' | translate }}
+          </div>
+
+          <div class="validation-error"
+               *ngIf="nombreConfrontationsInvalide()">
+            <mat-icon>info</mat-icon>
+            {{ 'ui.il_faut_1_2_4_ou_8_confrontations__2a92' | translate }}
           </div>
 
           <div class="validation-error"
                *ngIf="hasPairesIncompletes()">
             <mat-icon>info</mat-icon>
-            Toutes les confrontations doivent avoir 2 équipes
+            {{ 'competition.phases.tirage.erreurs.pairesIncompletes' | translate }}
           </div>
 
           <div class="validation-ok" *ngIf="canValider()">

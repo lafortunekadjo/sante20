@@ -22,20 +22,24 @@
         </div>
         <!-- Actions export -->
         <div class="header-actions">
+          <a mat-icon-button class="export-btn" [routerLink]="['/responsable/direct', match?.id]"
+             [matTooltip]="'direct.open' | translate" [attr.aria-label]="'direct.open' | translate">
+            <mat-icon>sports_soccer</mat-icon>
+          </a>
           <button mat-icon-button [matMenuTriggerFor]="exportMenu"
                   class="export-btn" [matTooltip]="'COMMON.EXPORT' | translate">
             <mat-icon>share</mat-icon>
           </button>
           <mat-menu #exportMenu="matMenu">
-            <button mat-menu-item (click)="downloadMatchSheetAsImage('full')">
-              <mat-icon>aspect_ratio</mat-icon>
-              <span>{{ 'PRESENCE.EXPORT.FULL_IMAGE' | translate }}</span>
+            <button mat-menu-item (click)="ouvrirFicheHdm()">
+              <mat-icon>military_tech</mat-icon>
+              <span>{{ 'hdm.menu' | translate }}</span>
+            </button>
+            <button mat-menu-item (click)="ouvrirChoixFeuilleImage()">
+              <mat-icon>wallpaper</mat-icon>
+              <span>{{ 'feuille.imageMenu' | translate }}</span>
             </button>
             <mat-divider></mat-divider>
-            <button mat-menu-item (click)="shareMatchSheetAsImage('full')">
-              <mat-icon>share</mat-icon>
-              <span>{{ 'COMMON.SHARE' | translate }}</span>
-            </button>
             <button mat-menu-item (click)="downloadMatchSheetAsPdf()">
               <mat-icon>picture_as_pdf</mat-icon>
               <span>{{ 'PRESENCE.EXPORT.MATCH_SHEET_PDF' | translate }}</span>
@@ -81,6 +85,19 @@
         </div>
       </div>
 
+      <div class="journee-banniere" *ngIf="matchNonJoue" (click)="setTab('journee')">
+        <mat-icon>event_busy</mat-icon>
+        <span>{{ 'journee.banner' | translate }}</span>
+      </div>
+      <div class="journee-banniere" *ngIf="modeChronologie" [routerLink]="['/responsable/direct', match?.id]">
+        <mat-icon>sports_soccer</mat-icon>
+        <span>{{ 'direct.managedByLive' | translate }}</span>
+      </div>
+      <div class="capitaine-avert" *ngIf="capitaineManquant">
+        <mat-icon>info</mat-icon>
+        <span>{{ 'journee.noCaptain' | translate }}</span>
+      </div>
+
       <!-- Tag match amical inter-groupes -->
       <div class="friendly-tag" *ngIf="isAmicalWithPlatformGroup">
         <mat-icon>groups</mat-icon>
@@ -121,7 +138,13 @@
               (click)="setTab('add')" role="tab">
         <mat-icon>person_add</mat-icon>
         <span class="hide-mobile">{{ 'PRESENCE.ADD.TITLE_MEMBER' | translate }}</span>
-        <span class="show-mobile">Ajouter</span>
+        <span class="show-mobile">{{ 'common.add' | translate }}</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'journee'"
+              (click)="setTab('journee')" role="tab">
+        <mat-icon>event_busy</mat-icon>
+        <span>{{ 'journee.tab' | translate }}</span>
+        <span class="tab-badge" *ngIf="matchNonJoue || membresNonPresents.length" [class.has-players]="matchNonJoue">{{ matchNonJoue ? '!' : membresNonPresents.length }}</span>
       </button>
     </div>
 
@@ -134,7 +157,7 @@
           <p>{{ 'PRESENCE.TEAM.EMPTY' | translate }}</p>
           <button mat-stroked-button (click)="setTab('add')">
             <mat-icon>person_add</mat-icon>
-            Ajouter des joueurs
+            {{ 'equipe.addMemberToTeam' | translate }}
           </button>
         </div>
 
@@ -157,7 +180,7 @@
           <p>{{ 'PRESENCE.TEAM.EMPTY' | translate }}</p>
           <button mat-stroked-button (click)="setTab('add')">
             <mat-icon>person_add</mat-icon>
-            Ajouter des joueurs
+            {{ 'equipe.addMemberToTeam' | translate }}
           </button>
         </div>
 
@@ -204,7 +227,7 @@
                       <mat-icon *ngIf="membre.estSuspendu" class="suspended-icon">block</mat-icon>
                       <span [class.suspended]="membre.estSuspendu">{{ membre.nom }} {{ membre.prenom }}</span>
                       <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" class="suspension-date">
-                        Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                        {{ 'ui.m_jusqu_au_47ff' | translate:{p0: (membre.dateFinSuspension | date:'dd/MM')} }}
                       </span>
                       <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">
                         ({{ membre.equipe.nom }})
@@ -275,7 +298,7 @@
                       <mat-icon *ngIf="membre.estSuspendu" class="suspended-icon">block</mat-icon>
                       <span [class.suspended]="membre.estSuspendu">{{ membre.nom }} {{ membre.prenom }}</span>
                       <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" class="suspension-date">
-                        Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                        {{ 'ui.m_jusqu_au_47ff' | translate:{p0: (membre.dateFinSuspension | date:'dd/MM')} }}
                       </span>
                       <span class="equipe-tag" *ngIf="membre.equipe && !membre.estSuspendu">{{ membre.equipe.nom }}</span>
                     </div>
@@ -318,7 +341,7 @@
                       <mat-icon *ngIf="membre.estSuspendu" class="suspended-icon">block</mat-icon>
                       <span [class.suspended]="membre.estSuspendu">{{ membre.nom }} {{ membre.prenom }}</span>
                       <span *ngIf="membre.estSuspendu && membre.dateFinSuspension" class="suspension-date">
-                        Jusqu'au {{ membre.dateFinSuspension | date:'dd/MM' }}
+                        {{ 'ui.m_jusqu_au_47ff' | translate:{p0: (membre.dateFinSuspension | date:'dd/MM')} }}
                       </span>
                     </div>
                   </mat-option>
@@ -368,6 +391,51 @@
           </div>
 
         </div>
+      </div>
+    </div>
+
+    <!-- ── TAB : JOURNÉE (match non joué, absences) ─────── -->
+    <div class="tab-content" *ngIf="activeTab === 'journee'">
+      <div class="content-inner journee">
+
+        <section class="journee-card" [class.alerte]="matchNonJoue">
+          <label class="journee-switch">
+            <input type="checkbox" [(ngModel)]="matchNonJoue" (change)="onMatchNonJoueChange()"/>
+            <span>
+              <strong>{{ 'journee.notPlayed' | translate }}</strong>
+              <small>{{ 'journee.notPlayedHelp' | translate }}</small>
+            </span>
+          </label>
+          <div class="journee-motif" *ngIf="matchNonJoue">
+            <label>{{ 'journee.reason' | translate }}</label>
+            <select [(ngModel)]="motifMatchNonJoue" name="motifMatchNonJoue">
+              <option *ngFor="let m of motifsMatchNonJoue" [value]="m">{{ 'journee.matchReasons.' + m | translate }}</option>
+            </select>
+            <p class="journee-info"><mat-icon>info</mat-icon>{{ 'journee.notPlayedInfo' | translate }}</p>
+          </div>
+        </section>
+
+        <section class="journee-card">
+          <h3>{{ 'journee.absentsTitle' | translate }}
+            <span class="journee-compteur">{{ 'journee.absentsCount' | translate: { total: membresNonPresents.length, excused: nbAbsentsExcuses } }}</span>
+          </h3>
+          <p class="journee-info"><mat-icon>info</mat-icon>{{ 'journee.absentsHelp' | translate }}</p>
+          <input class="journee-recherche" type="search" [(ngModel)]="absentSearch" name="absentSearch"
+                 [placeholder]="'journee.search' | translate"/>
+
+          <div class="absent" *ngFor="let m of absentsFiltres" [class.excuse]="estExcuse(m.id!)">
+            <div class="absent__ligne">
+              <span class="absent__nom">{{ m.prenom }} {{ m.nom }}</span>
+              <button type="button" class="absent__puce" [class.actif]="estExcuse(m.id!)" (click)="basculerExcuse(m.id!)">
+                {{ (estExcuse(m.id!) ? 'journee.excused' : 'journee.absent') | translate }}
+              </button>
+            </div>
+            <input *ngIf="estExcuse(m.id!)" class="absent__motif" type="text" maxlength="200"
+                   [ngModel]="absencesExcusees.get(m.id!)" (ngModelChange)="absencesExcusees.set(m.id!, $event)"
+                   [name]="'motif-' + m.id" [placeholder]="'journee.excuseReason' | translate"/>
+          </div>
+          <p class="journee-vide" *ngIf="!absentsFiltres.length">{{ 'journee.noAbsent' | translate }}</p>
+        </section>
       </div>
     </div>
 
@@ -442,6 +510,14 @@
                         class="check-item">
             {{ 'PRESENCE.FIELD.PLAYED' | translate }}
           </mat-checkbox>
+        </div>
+
+        <div class="motif-non-joue" *ngIf="presence.present && !presence.aJoue">
+          <label>{{ 'journee.cameNotPlayed' | translate }}</label>
+          <select [(ngModel)]="presence.motifNonJoue">
+            <option [ngValue]="null">—</option>
+            <option *ngFor="let m of motifsNonJoue" [value]="m">{{ 'journee.playerReasons.' + m | translate }}</option>
+          </select>
         </div>
 
         <ng-container *ngIf="presence.aJoue">
@@ -575,6 +651,14 @@
       </div>
     </div>
 
+    <div *ngIf="matchNonJoue" style="margin-bottom: 12px; padding: 10px; text-align: center; border: 2px solid #f59e0b; background: #fffbeb; border-radius: 6px;">
+      <div style="font-size: 13pt; font-weight: 800; color: #b45309; letter-spacing: 1px;">{{ 'feuille.notPlayed' | translate }}</div>
+      <div style="font-size: 9pt; color: #78350f;">{{ motifMatchLabel }}</div>
+    </div>
+    <div *ngIf="!matchNonJoue && miTempsLabel" style="text-align: center; font-size: 9pt; color: #666; margin: -6px 0 10px;">
+      {{ 'feuille.halfTime' | translate }} : <strong>{{ miTempsLabel }}</strong>
+    </div>
+
     <div *ngIf="isAmicalWithPlatformGroup" style="display: flex; gap: 10px; margin-bottom: 12px; padding: 8px; background: #fafafa; border-radius: 4px; font-size: 8pt;">
       <div style="flex: 1; border-right: 1px solid #ddd; padding-right: 10px;">
         <div style="font-weight: 600; color: #333; margin-bottom: 2px;">{{ groupeActif?.nom }}</div>
@@ -599,7 +683,7 @@
           <span style="font-size: 8pt; color: #000;">{{ getPlayersAJoue(equipeNames[0]).length }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}</span>
         </div>
         <div style="padding: 4px 10px; font-size: 8pt; border-bottom: 1px solid #eee; color: #000;">
-          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span> {{ getCapitaine(equipeNames[0]) }}
+          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span> {{ getCapitaine(equipeNames[0]) || '—' }}
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
           <thead>
@@ -652,7 +736,7 @@
           <span style="font-size: 8pt; color: #000;">{{ getPlayersAJoue(equipeNames[1]).length }} {{ 'PRESENCE.PRINT.PLAYERS' | translate }}</span>
         </div>
         <div style="padding: 4px 10px; font-size: 8pt; border-bottom: 1px solid #eee; color: #000;">
-          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span> {{ getCapitaine(equipeNames[1]) }}
+          <span style="font-weight: 500;">{{ 'PRESENCE.PRINT.CAPTAIN' | translate }}:</span> {{ getCapitaine(equipeNames[1]) || '—' }}
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
           <thead>
@@ -700,6 +784,21 @@
       </div>
     </div>
 
+    <div *ngIf="liveEvenements.length" style="margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+      <div style="padding: 5px 10px; background: #f5f5f5; font-size: 9pt; font-weight: 600;">{{ 'feuille.timeline' | translate }}</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
+        <tr *ngFor="let e of liveEvenements" [style.background]="e.type === 'MI_TEMPS' ? '#f1f5f9' : 'white'">
+          <td style="width: 34px; padding: 3px 6px; text-align: right; font-weight: 700; border-bottom: 1px solid #eee;">{{ e.minute != null ? e.minute + "'" : '—' }}</td>
+          <td style="width: 22px; text-align: center; border-bottom: 1px solid #eee;">{{ iconeEvenement(e.type) }}</td>
+          <td style="padding: 3px 6px; border-bottom: 1px solid #eee;">
+            <ng-container *ngIf="e.type !== 'MI_TEMPS'">{{ libelleEvenement(e) }}</ng-container>
+            <ng-container *ngIf="e.type === 'MI_TEMPS'"><strong>{{ 'direct.types.MI_TEMPS' | translate }}</strong> <span *ngIf="miTempsLabel">{{ miTempsLabel }}</span></ng-container>
+          </td>
+          <td style="width: 90px; padding: 3px 6px; text-align: right; color: #666; border-bottom: 1px solid #eee;">{{ e.type === 'MI_TEMPS' ? '' : nomEquipeEvenement(e) }}</td>
+        </tr>
+      </table>
+    </div>
+
     <div style="display: flex; gap: 10px; margin-bottom: 10px; font-size: 8pt;">
       <div style="flex: 1; padding: 6px 10px; border: 1px solid #eee; border-radius: 4px;">
         <div style="color: #000; margin-bottom: 3px; font-weight: 600;">{{ 'PRESENCE.PRINT.SCORERS' | translate }}</div>
@@ -733,6 +832,17 @@
       <div style="flex: 1; padding: 5px 10px; background: #fafafa; border-radius: 4px;">
         <span style="color: #000;">MVP {{ equipeNames[1] }}:</span>
         <strong>{{ getMvpEquipeFor(equipeNames[1]) }}</strong>
+      </div>
+    </div>
+
+    <div *ngIf="presentsSansJouer.length || absentsExcusesListe.length" style="margin-bottom: 12px; padding: 6px 10px; border: 1px solid #eee; border-radius: 4px; font-size: 8pt;">
+      <div *ngIf="presentsSansJouer.length">
+        <strong>{{ 'feuille.cameNotPlayed' | translate }} ({{ presentsSansJouer.length }}) :</strong>
+        <span *ngFor="let p of presentsSansJouer; let last = last">{{ getMembreNameAbbreviated(p) }}<span *ngIf="p.motifNonJoue"> ({{ libelleMotifJoueur(p.motifNonJoue) }})</span><span *ngIf="!last">, </span></span>
+      </div>
+      <div *ngIf="absentsExcusesListe.length" style="margin-top: 3px;">
+        <strong>{{ 'feuille.excusedAbsent' | translate }} ({{ absentsExcusesListe.length }}) :</strong>
+        <span *ngFor="let a of absentsExcusesListe; let last = last">{{ a.nom }}<span *ngIf="a.motif"> ({{ a.motif }})</span><span *ngIf="!last">, </span></span>
       </div>
     </div>
 

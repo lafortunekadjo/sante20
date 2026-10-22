@@ -2,6 +2,7 @@
 // DIALOG - REJET PUBLICITÉ
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -175,11 +176,11 @@ export class RejetPubliciteDialogComponent {
   onConfirm(): void {
     if (this.form.valid) {
       const motifs: Record<string, string> = {
-        'IMAGE_NON_CONFORME': 'Image non conforme aux spécifications',
-        'CONTENU_INAPPROPRIE': 'Contenu inapproprié',
-        'QUALITE_INSUFFISANTE': 'Qualité visuelle insuffisante',
+        'IMAGE_NON_CONFORME': t('ui.ts_image_non_conforme_aux_specifica_4d99'),
+        'CONTENU_INAPPROPRIE': t('ui.ts_contenu_inapproprie_7ba6'),
+        'QUALITE_INSUFFISANTE': t('ui.ts_qualite_visuelle_insuffisante_3337'),
         'INFORMATIONS_MANQUANTES': 'Informations manquantes',
-        'VIOLATION_REGLES': 'Violation des règles publicitaires',
+        'VIOLATION_REGLES': t('ui.ts_violation_des_regles_publicitair_c008'),
         'AUTRE': 'Autre raison'
       };
 

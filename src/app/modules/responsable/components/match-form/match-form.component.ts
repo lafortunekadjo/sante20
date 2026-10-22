@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { AfterViewInit, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -453,7 +454,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openMediaDialog(match: Match) {
     if (!this.canAccessMatchData(match)) {
-      alert('Les médias ne peuvent être ajoutés que pour les matchs passés ou du jour.');
+      alert(t('ui.ts_les_medias_ne_peuvent_etre_ajout_29df'));
       return;
     }
 
@@ -538,10 +539,10 @@ openPosterDialog(match: Match) {
   getTypeMatchLabel(type: string): string {
     if (!type) return 'Match';
     const labels: Record<TypeMatch, string> = {
-      'INTERNE': 'Match Interne',
+      'INTERNE': t('ui.ts_match_interne_b305'),
       'DUEL': 'Duel',
-      'AMICAL': 'Match Amical',
-      'ANNIVERSAIRE': 'Match Anniversaire'
+      'AMICAL': t('invite.match.type'),
+      'ANNIVERSAIRE': t('ui.ts_match_anniversaire_bed5')
     };
     return `MATCH.TYPES.${type}`;
   }
@@ -840,10 +841,10 @@ openPosterDialog(match: Match) {
   deleteMatch(match: Match) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Supprimer le match',
+        title: t('ui.ts_supprimer_le_match_14fd'),
         message: `Êtes-vous sûr de vouloir supprimer le match "${this.getMatchDisplayName(match)}" ?`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler'
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL')
       }
     });
 
@@ -1081,10 +1082,10 @@ openPosterDialog(match: Match) {
   // 4. Confirmation et exécution
   const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
     data: {
-      title: 'Générer les matchs',
+      title: t('ui.ts_generer_les_matchs_c0a9'),
       message: `Il y a ${newUniqueDates.length} nouveaux matchs à planifier.\n(Les matchs déjà présents dans la liste ont été ignorés).`,
-      confirmText: 'Générer',
-      cancelText: 'Annuler'
+      confirmText: t('MATCH.ACTIONS.GENERATE'),
+      cancelText: t('common.CANCEL')
     }
   });
 
@@ -1334,11 +1335,11 @@ openPosterDialog(match: Match) {
       link.click();
       window.URL.revokeObjectURL(url);
       this.loading = false;
-      this.snackBar.open('Affiche générée avec succès ! ⚽', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_affiche_generee_avec_succes_bc94'), 'OK', { duration: 3000 });
     },
     error: (err) => {
       this.loading = false;
-      this.snackBar.open('Erreur lors de la génération de l\'affiche', 'Fermer', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_de_la_generation_de__92d4'), 'Fermer', { duration: 3000 });
     
     }
   });

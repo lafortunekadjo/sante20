@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { AfterViewInit, ChangeDetectorRef, Component, EventEmitter, Output, ViewChild } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +12,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule,NavbarComponent, MatSidenavModule, MatToolbarModule, MatListModule, MatIconModule, MatButtonModule, RouterModule],
+  imports: [TranslateModule, CommonModule,NavbarComponent, MatSidenavModule, MatToolbarModule, MatListModule, MatIconModule, MatButtonModule, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })

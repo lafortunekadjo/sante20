@@ -7,8 +7,8 @@
       <div class="header-main">
         <mat-icon class="header-icon">campaign</mat-icon>
         <div class="header-text">
-          <h1>Gestion des Publicités</h1>
-          <p>Validation, suivi et statistiques des publicités partenaires</p>
+          <h1>{{ 'ui.gestion_des_publicites_b3ff' | translate }}</h1>
+          <p>{{ 'ui.validation_suivi_et_statistiques_d_b7a2' | translate }}</p>
         </div>
       </div>
 
@@ -56,7 +56,7 @@
       <mat-icon>cancel</mat-icon>
       <div class="stat-info">
         <span class="stat-value">{{ stats.rejetees }}</span>
-        <span class="stat-label">Rejetées</span>
+        <span class="stat-label">{{ 'partenaire.publicites.filters.rejected' | translate }}</span>
       </div>
     </div>
   </div>
@@ -66,7 +66,7 @@
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon>list</mat-icon>
-        Toutes
+        {{ 'demands.all' | translate }}
       </ng-template>
     </mat-tab>
     <mat-tab>
@@ -92,7 +92,7 @@
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon>cancel</mat-icon>
-        Rejetées
+        {{ 'partenaire.publicites.filters.rejected' | translate }}
       </ng-template>
     </mat-tab>
   </mat-tab-group>
@@ -100,7 +100,7 @@
   <!-- Filtres -->
   <div class="filters-bar">
     <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Rechercher</mat-label>
+      <mat-label>{{ 'common.search' | translate }}</mat-label>
       <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="Titre, entreprise...">
       <mat-icon matPrefix>search</mat-icon>
       <button mat-icon-button matSuffix *ngIf="searchQuery" (click)="searchQuery = ''; onSearchChange()">
@@ -111,7 +111,7 @@
     <mat-form-field appearance="outline" class="filter-field">
       <mat-label>Emplacement</mat-label>
       <mat-select [(ngModel)]="selectedEmplacement" (selectionChange)="onFilterChange()">
-        <mat-option [value]="null">Tous</mat-option>
+        <mat-option [value]="null">{{ 'common.ALL' | translate }}</mat-option>
         <mat-option *ngFor="let emp of emplacements" [value]="emp.value">
           {{ emp.labelKey | translate }}
         </mat-option>
@@ -121,14 +121,14 @@
     <mat-form-field appearance="outline" class="filter-field">
       <mat-label>Partenaire</mat-label>
       <mat-select [(ngModel)]="selectedPartenaire" (selectionChange)="onFilterChange()">
-        <mat-option [value]="null">Tous</mat-option>
+        <mat-option [value]="null">{{ 'common.ALL' | translate }}</mat-option>
         <mat-option *ngFor="let p of partenaires" [value]="p.id">
           {{ p.nom }}
         </mat-option>
       </mat-select>
     </mat-form-field>
 
-    <button mat-icon-button *ngIf="hasActiveFilters()" (click)="clearFilters()" matTooltip="Effacer les filtres">
+    <button mat-icon-button *ngIf="hasActiveFilters()" (click)="clearFilters()" [matTooltip]="'membres.clearFilters' | translate">
       <mat-icon>filter_alt_off</mat-icon>
     </button>
   </div>
@@ -136,7 +136,7 @@
   <!-- Loading -->
   <div class="loading-state" *ngIf="isLoading">
     <mat-spinner diameter="48"></mat-spinner>
-    <p>Chargement...</p>
+    <p>{{ 'calendar.states.loading' | translate }}</p>
   </div>
 
   <!-- Tableau -->
@@ -156,7 +156,7 @@
 
       <!-- Titre -->
       <ng-container matColumnDef="titre">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Publicité</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ui.publicite_a654' | translate }}</th>
         <td mat-cell *matCellDef="let pub">
           <div class="pub-info">
             <span class="pub-title">{{ pub.titre }}</span>
@@ -185,7 +185,7 @@
 
       <!-- Statut -->
       <ng-container matColumnDef="statut">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'dashboard.filters.status' | translate }}</th>
         <td mat-cell *matCellDef="let pub">
           <span class="status-badge" [ngClass]="getStatutClass(pub.statut)">
             <mat-icon>{{ getStatutIcon(pub.statut) }}</mat-icon>
@@ -216,7 +216,7 @@
 
       <!-- Dates -->
       <ng-container matColumnDef="dates">
-        <th mat-header-cell *matHeaderCellDef>Période</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'bilan.resume.periode' | translate }}</th>
         <td mat-cell *matCellDef="let pub">
           <div class="dates-cell">
             <span>{{ formatDate(pub.dateDebut) }}</span>
@@ -228,7 +228,7 @@
 
       <!-- Actions -->
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'ui.actions_06df' | translate }}</th>
         <td mat-cell *matCellDef="let pub">
           <div class="actions-cell">
             <!-- Actions rapides selon statut -->
@@ -248,7 +248,7 @@
             </ng-container>
 
             <ng-container *ngIf="pub.statut === 'PAUSEE'">
-              <button mat-icon-button color="primary" (click)="reprendrePublicite(pub)" matTooltip="Réactiver">
+              <button mat-icon-button color="primary" (click)="reprendrePublicite(pub)" [matTooltip]="'ui.reactiver_4bb0' | translate">
                 <mat-icon>play_arrow</mat-icon>
               </button>
             </ng-container>
@@ -270,11 +270,11 @@
         <td class="mat-cell" [attr.colspan]="displayedColumns.length">
           <div class="empty-state">
             <mat-icon>campaign</mat-icon>
-            <p *ngIf="hasActiveFilters()">Aucune publicité trouvée avec ces critères</p>
-            <p *ngIf="!hasActiveFilters() && selectedTab === 1">Aucune publicité en attente de validation</p>
-            <p *ngIf="!hasActiveFilters() && selectedTab !== 1">Aucune publicité</p>
+            <p *ngIf="hasActiveFilters()">{{ 'ui.aucune_publicite_trouvee_avec_ces__cd02' | translate }}</p>
+            <p *ngIf="!hasActiveFilters() && selectedTab === 1">{{ 'ui.aucune_publicite_en_attente_de_val_d1b1' | translate }}</p>
+            <p *ngIf="!hasActiveFilters() && selectedTab !== 1">{{ 'partenaire.dashboard.recentAds.noAds' | translate }}</p>
             <button mat-stroked-button (click)="clearFilters()" *ngIf="hasActiveFilters()">
-              Effacer les filtres
+              {{ 'membres.clearFilters' | translate }}
             </button>
           </div>
         </td>
@@ -286,7 +286,7 @@
       <ng-template matMenuContent>
         <button mat-menu-item [routerLink]="['/admin/publicites', selectedPublicite?.id]">
           <mat-icon>visibility</mat-icon>
-          <span>Voir détails</span>
+          <span>{{ 'mouvements.actions.voir_details' | translate }}</span>
         </button>
         <button mat-menu-item [routerLink]="['/admin/partenaires', selectedPublicite?.partenaireId]">
           <mat-icon>business</mat-icon>
@@ -315,12 +315,12 @@
           *ngIf="selectedPublicite?.statut === 'PAUSEE'"
           (click)="reprendrePublicite(selectedPublicite!)">
           <mat-icon>play_arrow</mat-icon>
-          <span>Réactiver</span>
+          <span>{{ 'ui.reactiver_4bb0' | translate }}</span>
         </button>
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="supprimerPublicite(selectedPublicite!)" class="delete-action">
           <mat-icon>delete</mat-icon>
-          <span>Supprimer</span>
+          <span>{{ 'type_depense.actions.supprimer' | translate }}</span>
         </button>
       </ng-template>
     </mat-menu>

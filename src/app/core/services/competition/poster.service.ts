@@ -1,4 +1,5 @@
 // poster.service.ts
+import { t } from '../../i18n/traduire';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, throwError, map } from 'rxjs';
@@ -66,28 +67,21 @@ export interface PosterHistory {
   providedIn: 'root'
 })
 export class PosterService {
-  private apiUrl = `${environment.apiUrl}/posters`;
+  private apiUrl = `${environment.apiUrl}/competition/posters`;
 
   constructor(private http: HttpClient) {}
 
   /**
    * Vérifie les types d'affiches disponibles pour un match
    */
-  checkAvailability(matchId: number): Observable<PosterAvailability> {
-    return this.http.get<PosterAvailability>(`${this.apiUrl}/availability/${matchId}`)
-      .pipe(catchError(this.handleError));
+ generatePoster(formData: FormData): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/generate`, formData, {
+      responseType: 'blob'
+    });
   }
 
-  /**
-   * Génère une affiche (téléchargement direct)
-   */
-  generatePoster(request: PosterRequest): Observable<Blob> {
-    return this.http.post(`${this.apiUrl}/generate`, request, {
-      responseType: 'blob',
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json'
-      })
-    }).pipe(catchError(this.handleError));
+  checkAvailability(matchId: number) {
+    return this.http.get(`${this.apiUrl}/availability/${matchId}`);
   }
 
   /**
@@ -156,9 +150,9 @@ export class PosterService {
     } else if (error.status === 400) {
       errorMessage = error.error?.message || 'Requête invalide';
     } else if (error.status === 404) {
-      errorMessage = 'Match non trouvé';
+      errorMessage = t('ui.ts_match_non_trouve_0d58');
     } else if (error.status === 500) {
-      errorMessage = 'Erreur serveur, veuillez réessayer';
+      errorMessage = t('ui.ts_erreur_serveur_veuillez_reessaye_45cd');
     }
     
     return throwError(() => new Error(errorMessage));

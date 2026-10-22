@@ -1,3 +1,4 @@
+import { t } from '../i18n/traduire';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -25,10 +26,10 @@ export class MatchImageService {
    * @param matchId ID du match
    * @param format 'full' ou 'story'
    */
- downloadMatchImage(matchId: number, format: 'full' | 'story' = 'full'): void {
-  this.snackBar.open('Génération de l\'image...', '', { duration: 2000 });
+ downloadMatchImage(matchId: number, format: 'full' | 'story' = 'full', fond: string = 'NUIT'): void {
+  this.snackBar.open(t('ui.ts_generation_de_l_image_0972'), '', { duration: 2000 });
 
-  this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
+  this.http.get(`${this.API_URL}/${matchId}/image?format=${format}&fond=${fond}`, {
     responseType: 'blob'
   }).subscribe({
     next: async (blob) => {
@@ -56,10 +57,10 @@ export class MatchImageService {
               contentType: 'image/png'
             });
 
-            this.snackBar.open('Image enregistrée dans Documents', '✓', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_image_enregistree_dans_documents_e8d1'), '✓', { duration: 3000 });
           } catch (error) {
             console.error('Erreur stockage mobile:', error);
-            this.snackBar.open('Erreur d\'enregistrement sur le téléphone', '✕', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_d_enregistrement_sur_le_t_3061'), '✕', { duration: 3000 });
           }
         };
       } else {
@@ -71,7 +72,7 @@ export class MatchImageService {
         link.click();
         window.URL.revokeObjectURL(url);
 
-        this.snackBar.open('Image téléchargée !', '✓', { 
+        this.snackBar.open(t('ui.ts_image_telechargee_5a9e'), '✓', { 
           duration: 3000,
           panelClass: 'snackbar-success'
         });
@@ -79,13 +80,77 @@ export class MatchImageService {
     },
     error: (err) => {
       console.error('Erreur téléchargement image:', err);
-      this.snackBar.open('Erreur lors du téléchargement', '✕', { 
+      this.snackBar.open(t('ui.ts_erreur_lors_du_telechargement_0134'), '✕', { 
         duration: 3000,
         panelClass: 'snackbar-error'
       });
     }
   });
 }
+
+  /** Image brute (aperçu dans le choix du fond). */
+  obtenirImage(matchId: number, format: 'full' | 'story' = 'full', fond: string = 'NUIT'): Observable<Blob> {
+    return this.http.get(`${this.API_URL}/${matchId}/image?format=${format}&fond=${fond}`, { responseType: 'blob' });
+  }
+
+  /** Fiche « Homme du match » : envoie la photo (facultative) et récupère l'image dessinée par le serveur. */
+  genererFicheHdm(matchId: number, opts: { membreId: number | null; photo: Blob | null; fond: string; format: 'carte' | 'story' }): Observable<Blob> {
+    const form = new FormData();
+    if (opts.membreId) form.append('membreId', String(opts.membreId));
+    if (opts.photo) form.append('photo', opts.photo, 'photo.jpg');
+    form.append('fond', opts.fond);
+    form.append('format', opts.format);
+    return this.http.post(`${this.API_URL}/${matchId}/hdm`, form, { responseType: 'blob' });
+  }
+
+  /** Enregistre une image : dossier Documents sur mobile (puis ouverture), téléchargement sur le web. */
+  sauvegarderBlob(blob: Blob, nomFichier: string): void {
+    if (Capacitor.isNativePlatform()) {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        try {
+          const fichier = await Filesystem.writeFile({ path: nomFichier, data: reader.result as string, directory: Directory.Documents, recursive: true });
+          await FileOpener.open({ filePath: fichier.uri, contentType: 'image/png' });
+          this.snackBar.open(t('ui.ts_image_enregistree_dans_documents_e8d1'), '✓', { duration: 3000 });
+        } catch {
+          this.snackBar.open(t('ui.ts_erreur_d_enregistrement_sur_le_t_3061'), '✕', { duration: 3000 });
+        }
+      };
+      return;
+    }
+    const url = window.URL.createObjectURL(blob);
+    const lien = document.createElement('a');
+    lien.href = url;
+    lien.download = nomFichier;
+    lien.click();
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  }
+
+  /** Partage une image : feuille de partage native sur mobile, Web Share sinon, téléchargement en dernier recours. */
+  async partagerBlob(blob: Blob, nomFichier: string, titre: string): Promise<void> {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const base64: string = await new Promise((ok, ko) => {
+          const reader = new FileReader();
+          reader.onloadend = () => ok(reader.result as string);
+          reader.onerror = ko;
+          reader.readAsDataURL(blob);
+        });
+        const fichier = await Filesystem.writeFile({ path: 'tmp_' + nomFichier, data: base64, directory: Directory.Cache });
+        await Share.share({ title: titre, url: fichier.uri, dialogTitle: 'Partager via' });
+        return;
+      }
+      const file = new File([blob], nomFichier, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: titre, files: [file] });
+      } else {
+        this.sauvegarderBlob(blob, nomFichier);
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') this.snackBar.open(t('ui.ts_erreur_lors_du_partage_ae92'), '✕', { duration: 3000 });
+    }
+  }
 
   generatePoster(matchId: number): Observable<Blob> {
     // Appel au endpoint backend qui utilise ImageGeneratorService
@@ -94,12 +159,12 @@ export class MatchImageService {
   /**
    * Partager l'image (mobile)
    */
-  async shareMatchImage(matchId: number, format: 'full' | 'story' = 'full'): Promise<void> {
+  async shareMatchImage(matchId: number, format: 'full' | 'story' = 'full', fond: string = 'NUIT'): Promise<void> {
   try {
-    this.snackBar.open('Préparation du partage...', '', { duration: 2000 });
+    this.snackBar.open(t('ui.ts_preparation_du_partage_6238'), '', { duration: 2000 });
 
     // 1. Récupérer l'image depuis ton API
-    const blob = await this.http.get(`${this.API_URL}/${matchId}/image?format=${format}`, {
+    const blob = await this.http.get(`${this.API_URL}/${matchId}/image?format=${format}&fond=${fond}`, {
       responseType: 'blob'
     }).toPromise();
 
@@ -123,8 +188,8 @@ export class MatchImageService {
 
         // Appel de la feuille de partage native
         await Share.share({
-          title: 'Feuille de match',
-          text: 'Voici le résumé du match !',
+          title: t('ui.ts_feuille_de_match_40b2'),
+          text: t('ui.ts_voici_le_resume_du_match_cea9'),
           url: savedFile.uri, // Capacitor utilise l'URI interne du fichier enregistré
           dialogTitle: 'Partager via',
         });
@@ -134,25 +199,25 @@ export class MatchImageService {
     else if (navigator.share) {
       const file = new File([blob], fileName, { type: 'image/png' });
       const shareData: ShareData = {
-        title: 'Feuille de match',
+        title: t('ui.ts_feuille_de_match_40b2'),
         files: [file]
       };
 
       if (navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
-        this.downloadMatchImage(matchId, format);
+        this.downloadMatchImage(matchId, format, fond);
       }
     } 
     // 4. Fallback (Téléchargement si rien n'est dispo)
     else {
-      this.downloadMatchImage(matchId, format);
+      this.downloadMatchImage(matchId, format, fond);
     }
 
   } catch (error: any) {
     if (error.name !== 'AbortError') {
       console.error('Erreur partage:', error);
-      this.snackBar.open('Erreur lors du partage', '✕', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_erreur_lors_du_partage_ae92'), '✕', { duration: 3000 });
     }
   }
 }
@@ -160,7 +225,7 @@ export class MatchImageService {
   /**
    * Obtenir l'URL de l'image (pour affichage preview)
    */
-  getImageUrl(matchId: number, format: 'full' | 'story' = 'full'): string {
-    return `${this.API_URL}/${matchId}/image?format=${format}`;
+  getImageUrl(matchId: number, format: 'full' | 'story' = 'full', fond: string = 'NUIT'): string {
+    return `${this.API_URL}/${matchId}/image?format=${format}&fond=${fond}`;
   }
 }

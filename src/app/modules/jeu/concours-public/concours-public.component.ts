@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -276,7 +277,7 @@ export class ConcoursPublicComponent implements OnInit, OnDestroy {
     } else {
       navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
         // Snackbar non disponible ici — on pourrait ajouter un @Output ou MatSnackBar
-        alert('Lien copié !');
+        alert(t('ui.ts_lien_copie_2f42'));
       });
     }
   }

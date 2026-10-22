@@ -14,10 +14,10 @@ export interface PlatformKPIs {
   // Acquisition
   totalGroupes: number;
   newGroupesThisMonth: number;
-  groupesGrowthRate: number;
+  groupesGrowthRate: number | null;
   totalVisitors: number;
   totalSignups: number;
-  conversionRate: number;
+  conversionRate: number | null;
   
   // Activation
   totalUsers: number;
@@ -36,10 +36,16 @@ export interface PlatformKPIs {
   avgMembersPerGroup: number;
   
   // Rétention
-  retentionRate7Days: number;
-  retentionRate30Days: number;
+  retentionRate7Days: number | null;
+  retentionRate30Days: number | null;
   churnedGroupes: number;
   churnRate: number;
+  // ajoutés : définitions claires (comptes ≠ fiches de groupe)
+  totalMembres?: number;
+  usersEverConnected?: number;
+  usersSansGroupe?: number;
+  usersByRole?: Record<string, number>;
+  engagementSeuil?: number;
 }
 
 export interface EngagementCriteria {

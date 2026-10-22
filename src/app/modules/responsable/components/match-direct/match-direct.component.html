@@ -1,0 +1,153 @@
+<div class="direct">
+
+  <div *ngIf="chargement()" class="direct__chargement"><mat-spinner diameter="44"></mat-spinner></div>
+
+  <ng-container *ngIf="!chargement() && match() as m">
+
+    <!-- ── Tableau de score (reste en haut pendant le défilement) ── -->
+    <header class="score">
+      <div class="score__ligne">
+        <a class="score__retour" [routerLink]="['/responsable/presences', matchId]" [attr.aria-label]="'direct.back' | translate">
+          <mat-icon>arrow_back</mat-icon>
+        </a>
+        <div class="score__equipe score__equipe--g">{{ noms()[0] }}</div>
+        <div class="score__valeur">{{ live()?.score1 ?? 0 }} <span>-</span> {{ live()?.score2 ?? 0 }}</div>
+        <div class="score__equipe score__equipe--d">{{ noms()[1] }}</div>
+      </div>
+      <div class="score__sous">
+        <span *ngIf="live()?.miTemps && live()?.scoreMiTemps1 != null">{{ 'direct.halfTime' | translate }} {{ live()?.scoreMiTemps1 }} - {{ live()?.scoreMiTemps2 }}</span>
+        <span *ngIf="minuteCourante() as mn" class="score__minute">{{ mn }}'</span>
+      </div>
+    </header>
+
+    <!-- ── Aucun joueur : il faut d'abord pointer les présences ── -->
+    <section class="vide" *ngIf="!aDesJoueurs()">
+      <mat-icon>how_to_reg</mat-icon>
+      <p>{{ 'direct.needPresences' | translate }}</p>
+      <a class="btn-primary" [routerLink]="['/responsable/presences', matchId]">{{ 'direct.goPresences' | translate }}</a>
+    </section>
+
+    <ng-container *ngIf="aDesJoueurs() || sansFiche(1) || sansFiche(2)">
+
+      <!-- ── Chrono ── -->
+      <section class="chrono">
+        <ng-container [ngSwitch]="chrono().etat">
+          <ng-container *ngSwitchCase="'avant'">
+            <button class="chrono__btn chrono__btn--principal" (click)="coupEnvoi()"><mat-icon>play_arrow</mat-icon>{{ 'direct.kickOff' | translate }}</button>
+          </ng-container>
+          <ng-container *ngSwitchCase="'premiere'">
+            <button class="chrono__btn" (click)="miTemps()"><mat-icon>pause</mat-icon>{{ 'direct.halfTimeBtn' | translate }}</button>
+          </ng-container>
+          <ng-container *ngSwitchCase="'mitemps'">
+            <button class="chrono__btn chrono__btn--principal" (click)="deuxiemeMiTemps()"><mat-icon>play_arrow</mat-icon>{{ 'direct.secondHalf' | translate }}</button>
+          </ng-container>
+          <ng-container *ngSwitchCase="'seconde'">
+            <span class="chrono__etat">{{ 'direct.secondHalfRunning' | translate }}</span>
+          </ng-container>
+        </ng-container>
+        <label class="chrono__duree" *ngIf="chrono().etat !== 'seconde'">{{ 'direct.halfLength' | translate }}
+          <input type="number" inputmode="numeric" min="1" max="90" step="1" name="dureeMiTemps"
+                 [ngModel]="chrono().dureeMiTemps" (ngModelChange)="changerDuree($event)"/>
+          <span>min</span>
+        </label>
+        <p class="chrono__aide" *ngIf="chrono().etat === 'avant'">{{ 'direct.chronoHelp' | translate }}</p>
+      </section>
+
+      <!-- ── Deux gros boutons « But » ── -->
+      <section class="buts">
+        <button class="but but--1" (click)="ouvrir('BUT', 1)">
+          <span class="but__ballon">⚽</span>
+          <span class="but__texte">{{ 'direct.goal' | translate }}</span>
+          <span class="but__equipe">{{ noms()[0] }}</span>
+        </button>
+        <button class="but but--2" (click)="ouvrir('BUT', 2)">
+          <span class="but__ballon">⚽</span>
+          <span class="but__texte">{{ 'direct.goal' | translate }}</span>
+          <span class="but__equipe">{{ noms()[1] }}</span>
+        </button>
+      </section>
+
+      <!-- ── Autres événements ── -->
+      <section class="autres">
+        <button class="autre" (click)="ouvrir('PENALTI_RATE', 1)">❌ {{ 'direct.types.PENALTI_RATE' | translate }}</button>
+        <button class="autre" (click)="ouvrir('CARTON_JAUNE', 1)">🟨 {{ 'direct.types.CARTON_JAUNE' | translate }}</button>
+        <button class="autre" (click)="ouvrir('CARTON_ROUGE', 1)">🟥 {{ 'direct.types.CARTON_ROUGE' | translate }}</button>
+      </section>
+
+      <!-- ── Chronologie ── -->
+      <section class="chrono-liste">
+        <h2>{{ 'direct.timeline' | translate }}</h2>
+        <p class="chrono-liste__vide" *ngIf="!live()?.evenements?.length">{{ 'direct.noEvents' | translate }}</p>
+        <article class="evt" *ngFor="let e of live()?.evenements"
+                 [class.evt--mitemps]="e.type === 'MI_TEMPS'" [class.evt--eq2]="e.equipePosition === 2">
+          <span class="evt__minute">{{ e.minute != null ? e.minute + "'" : '—' }}</span>
+          <span class="evt__icone">{{ icone(e.type) }}</span>
+          <span class="evt__texte">
+            {{ resume(e) }}
+            <small *ngIf="e.type !== 'MI_TEMPS'">{{ nomEquipe(e.equipePosition) }}</small>
+          </span>
+          <button class="evt__suppr" (click)="confirmerSuppression(e)" [attr.aria-label]="'direct.delete' | translate"><mat-icon>delete_outline</mat-icon></button>
+        </article>
+      </section>
+
+      <div class="terminer">
+        <button class="btn-primary terminer__btn" (click)="terminer()"><mat-icon>flag</mat-icon>{{ 'direct.finish' | translate }}</button>
+        <p>{{ 'direct.finishHelp' | translate }}</p>
+      </div>
+    </ng-container>
+
+    <!-- ── Feuille de saisie ── -->
+    <div class="feuille-fond" *ngIf="saisie() as s" (click)="fermer()">
+      <div class="feuille" (click)="$event.stopPropagation()">
+        <header class="feuille__tete">
+          <strong>{{ ('direct.types.' + s.type) | translate }}</strong>
+          <button class="feuille__fermer" (click)="fermer()" [attr.aria-label]="'direct.close' | translate"><mat-icon>close</mat-icon></button>
+        </header>
+
+        <div class="puces">
+          <button *ngFor="let t of typesProposes()" class="puce" [class.actif]="s.type === t" (click)="changerType(t)">
+            {{ icone(t) }} {{ ('direct.types.' + t) | translate }}
+          </button>
+        </div>
+
+        <div class="equipes">
+          <button class="equipe" [class.actif]="s.equipe === 1" (click)="changerEquipe(1)">{{ noms()[0] }}</button>
+          <button class="equipe" [class.actif]="s.equipe === 2" (click)="changerEquipe(2)">{{ noms()[1] }}</button>
+        </div>
+
+        <div class="minute">
+          <button (click)="changerMinute(-1)" [attr.aria-label]="'-1'"><mat-icon>remove</mat-icon></button>
+          <button class="minute__val" (click)="effacerMinute()" [title]="'direct.clearMinute' | translate">
+            {{ s.minute != null ? s.minute + "'" : '—' }}
+          </button>
+          <button (click)="changerMinute(1)" [attr.aria-label]="'+1'"><mat-icon>add</mat-icon></button>
+        </div>
+
+        <!-- Équipe extérieure : pas de fiche joueur, on enregistre simplement -->
+        <ng-container *ngIf="sansFiche(s.equipe); else avecJoueurs">
+          <p class="feuille__info">{{ 'direct.noPlayers' | translate }}</p>
+          <button class="btn-primary feuille__valider" [disabled]="envoi()" (click)="validerSansJoueur()">{{ 'direct.save' | translate }}</button>
+        </ng-container>
+
+        <ng-template #avecJoueurs>
+          <h3 class="feuille__titre">
+            {{ (s.etape === 'joueur' ? ('direct.pickPlayer' | translate) : ('direct.pickAssist' | translate: { name: s.joueur?.nom })) }}
+          </h3>
+          <input class="feuille__recherche" type="search" [(ngModel)]="recherche" name="recherche"
+                 *ngIf="equipe(s.equipe).length > 12" [placeholder]="'direct.search' | translate"/>
+
+          <div class="grille">
+            <button *ngIf="s.etape === 'passeur'" class="joueur joueur--aucun" (click)="choisirPasseur(null)" [disabled]="envoi()">
+              {{ 'direct.noAssist' | translate }}
+            </button>
+            <button *ngFor="let j of joueursAffiches(s.equipe, s.etape === 'passeur' ? s.joueur : null)" class="joueur"
+                    (click)="s.etape === 'joueur' ? choisirJoueur(j) : choisirPasseur(j)" [disabled]="envoi()">
+              <span class="joueur__avatar">{{ initiale(j.nom) }}</span>
+              <span class="joueur__nom">{{ j.nom }}</span>
+            </button>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+</div>

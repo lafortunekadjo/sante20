@@ -1,0 +1,30 @@
+<div class="sg">
+  <h2>{{ 'moderation.titre' | translate }}</h2>
+  <p class="sg__aide">{{ 'moderation.aide' | translate }}</p>
+
+  <div class="sg__motifs" role="radiogroup" [attr.aria-label]="'moderation.motif' | translate">
+    <label *ngFor="let m of motifs" class="sg__motif" [class.actif]="motif() === m">
+      <input type="radio" name="motif" [value]="m" [checked]="motif() === m" (change)="motif.set(m)"/>
+      {{ 'moderation.motifs.' + m | translate }}
+    </label>
+  </div>
+
+  <label class="sg__champ">
+    {{ 'moderation.details' | translate }}
+    <textarea rows="3" maxlength="1000" [(ngModel)]="details" [placeholder]="'moderation.details_placeholder' | translate"></textarea>
+  </label>
+
+  <label class="sg__bloquer" *ngIf="data.utilisateurId">
+    <input type="checkbox" [(ngModel)]="bloquerAussi"/>
+    {{ 'moderation.bloquer' | translate:{ nom: data.utilisateurNom || ('moderation.cette_personne' | translate) } }}
+  </label>
+
+  <p class="sg__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+
+  <div class="sg__actions">
+    <button type="button" class="sg__btn sg__btn--ghost" (click)="fermer()">{{ 'moderation.annuler' | translate }}</button>
+    <button type="button" class="sg__btn" [disabled]="!motif() || envoi()" (click)="envoyer()">
+      {{ (envoi() ? 'moderation.envoi' : 'moderation.envoyer') | translate }}
+    </button>
+  </div>
+</div>

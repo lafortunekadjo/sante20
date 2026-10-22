@@ -1,0 +1,417 @@
+<div class="licences">
+
+  <!-- ══ HEADER ════════════════════════════════════════════ -->
+  <div class="licences__header">
+    <div>
+      <h3 class="licences__titre">
+        <mat-icon>badge</mat-icon>
+        {{ 'ui.licences_joueurs_8e61' | translate }}
+      </h3>
+      <p class="licences__sous-titre">
+        {{ 'ui.m_licences_2f53' | translate:{p0: (statsParStatut().total)} }}
+        <span class="text-success">{{ 'ui.m_validees_a41d' | translate:{p0: (statsParStatut().valide)} }}</span> ·
+        <span class="text-warning">{{ statsParStatut().attente }} en attente</span>
+      </p>
+    </div>
+    <div class="licences__header-actions">
+      <button class="btn-ghost btn-sm" *ngIf="canEdit"
+              (click)="ouvrirConfig()">
+        <mat-icon>settings</mat-icon>
+        {{ 'menu.items.CONFIGURATION' | translate }}
+      </button>
+      <button class="btn-outline btn-sm"
+              *ngIf="canEdit && licencesActivees()"
+              [disabled]="generating()"
+              (click)="genererTout()">
+        <mat-icon>auto_awesome</mat-icon>
+        {{ generating() ? 'Génération...' : 'Générer tout' }}
+      </button>
+      <button class="btn-primary btn-sm"
+              *ngIf="canEdit && licencesActivees()"
+              (click)="showAjout.set(true)">
+        <mat-icon>add</mat-icon>
+        {{ 'common.add' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ LICENCES DÉSACTIVÉES ══════════════════════════════ -->
+  <div class="licences__disabled" *ngIf="!licencesActivees()">
+    <mat-icon>info_outline</mat-icon>
+    <div>
+      <strong>{{ 'ui.licences_non_activees_f322' | translate }}</strong>
+      <p>{{ 'ui.les_licences_ne_sont_pas_requises__a091' | translate }}</p>
+      <button class="btn-outline btn-sm" *ngIf="canEdit"
+              (click)="ouvrirConfig()">
+        {{ 'ui.activer_les_licences_ec43' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="licencesActivees()">
+
+    <!-- ══ STATS RAPIDES ════════════════════════════════════ -->
+    <div class="licences__stats">
+      <div class="stat-card stat-card--blue">
+        <div class="stat-card__val">{{ statsParStatut().total }}</div>
+        <div class="stat-card__label">Total</div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <div class="stat-card__val">{{ statsParStatut().valide }}</div>
+        <div class="stat-card__label">{{ 'ui.validees_99fb' | translate }}</div>
+      </div>
+      <div class="stat-card stat-card--orange">
+        <div class="stat-card__val">{{ statsParStatut().attente }}</div>
+        <div class="stat-card__label">En attente</div>
+      </div>
+    </div>
+
+    <p class="licences__rapport" *ngIf="rapport().length">
+      <strong>{{ 'ui.licences_non_creees_non_validees_c7d8' | translate }}</strong>
+      <span *ngFor="let r of rapport()"><br/>• {{ r }}</span>
+      <button class="btn-ghost btn-xs" (click)="rapport.set([])">{{ 'common.close' | translate }}</button>
+    </p>
+
+    <!-- ══ FILTRES ══════════════════════════════════════════ -->
+    <div class="licences__filtres">
+      <div class="search-input">
+        <mat-icon>search</mat-icon>
+        <input class="search-input__field"
+               [(ngModel)]="recherche"
+               [placeholder]="'ui.rechercher_par_nom_numero_equipe_6afa' | translate"/>
+      </div>
+      <select class="form-select form-select--sm"
+              [ngModel]="filtreStatut()"
+              (ngModelChange)="filtreStatut.set($event)">
+        <option value="">{{ 'demands.filters.all_status' | translate }}</option>
+        <option value="ATTENTE">En attente</option>
+        <option value="VALIDE">{{ 'invitation.validated' | translate }}</option>
+        <option value="EXPIREE">{{ 'invitation.expired' | translate }}</option>
+        <option value="SUSPENDUE">Suspendue</option>
+        <option value="REVOQUEE">{{ 'ui.revoquee_fdef' | translate }}</option>
+      </select>
+      <select class="form-select form-select--sm"
+              [ngModel]="filtreEquipe()"
+              (ngModelChange)="filtreEquipe.set($event)">
+        <option value="">{{ 'membre.allTeams' | translate }}</option>
+        <option *ngFor="let e of equipesDisponibles()" [value]="e">{{ e }}</option>
+      </select>
+    </div>
+
+    <!-- ══ CHARGEMENT ═══════════════════════════════════════ -->
+    <div class="licences__loading" *ngIf="loading()">
+      <div class="spinner"></div> {{ 'calendar.states.loading' | translate }}
+    </div>
+
+    <ng-container *ngIf="!loading()">
+
+      <!-- ══ PAR ÉQUIPE ══════════════════════════════════════ -->
+      <div class="equipe-section"
+           *ngFor="let equipe of equipesDisponibles()">
+
+        <div class="equipe-section__header">
+          <span class="equipe-section__nom">
+            <mat-icon>groups</mat-icon>
+            {{ equipe }}
+          </span>
+          <div class="equipe-section__actions">
+            <button class="btn-outline btn-xs" *ngIf="canEdit"
+                    (click)="genererPourEquipeNom(equipe!)">
+              <mat-icon>auto_awesome</mat-icon>
+              {{ 'ui.generer_manquantes_8107' | translate }}
+            </button>
+            <button class="btn-outline btn-xs"
+                    *ngIf="canEdit && (config()?.licencesGratuites ?? 0) > 0"
+                    (click)="ouvrirGratuites(equipe!)">
+              <mat-icon>redeem</mat-icon>
+              {{ 'ui.licences_gratuites_ec99' | translate }}
+            </button>
+            <button class="btn-outline btn-xs" *ngIf="canValider"
+                    (click)="validerToutEquipe(equipe!)">
+              <mat-icon>done_all</mat-icon>
+              {{ 'ui.valider_tout_4b6d' | translate }}
+            </button>
+            <button class="btn-ghost btn-xs"
+                    (click)="telechargerPdfEquipe(equipe!)">
+              <mat-icon>picture_as_pdf</mat-icon>
+              {{ 'ui.pdf_equipe_9e80' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <p class="equipe-section__vide" *ngIf="getLicencesParEquipe(equipe!).length === 0">
+          {{ 'ui.aucune_licence_pour_cette_equipe_u_4951' | translate }}
+        </p>
+
+        <!-- Liste des licences de l'équipe -->
+        <div class="licences-grid">
+          <div class="licence-card"
+               *ngFor="let l of getLicencesParEquipe(equipe!)">
+
+            <!-- Photo -->
+            <div class="licence-card__photo">
+              <img *ngIf="l.photoUrl" [src]="l.photoUrl" [alt]="l.nom"/>
+              <span *ngIf="!l.photoUrl">{{ getInitials(l.nom) }}</span>
+            </div>
+
+            <!-- Infos -->
+            <div class="licence-card__info">
+              <div class="licence-card__nom">{{ l.nom }} {{ l.prenom }}</div>
+              <div class="licence-card__numero">{{ l.numero }}</div>
+              <div class="licence-card__meta">
+                <span *ngIf="l.categorie">{{ l.categorie }}</span>
+                <span *ngIf="l.age"> · {{ l.age }} ans</span>
+              </div>
+            </div>
+
+            <!-- Statut -->
+            <div class="licence-card__statut">
+              <span class="badge" [class]="statutClass(l.statut)">
+                {{ statutLabel(l.statut) }}
+              </span>
+              <span class="licence-card__expiration" *ngIf="l.dateExpiration">
+                exp. {{ l.dateExpiration | date:'dd/MM/yy' }}
+              </span>
+            </div>
+
+            <!-- Actions -->
+            <div class="licence-card__actions">
+              <button class="btn-icon btn-icon--success btn-icon--sm"
+                      *ngIf="canValider && l.statut === 'ATTENTE'"
+                      (click)="valider(l)"
+                      [title]="'invitation.validate' | translate">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+              <button class="btn-icon btn-icon--warning btn-icon--sm"
+                      *ngIf="canEdit && l.statut === 'VALIDE'"
+                      (click)="changerStatut(l, 'SUSPENDUE')"
+                      title="Suspendre">
+                <mat-icon>pause_circle</mat-icon>
+              </button>
+              <button class="btn-icon btn-icon--primary btn-icon--sm"
+                      *ngIf="canEdit && l.statut === 'SUSPENDUE'"
+                      (click)="changerStatut(l, 'VALIDE')"
+                      [title]="'ui.reactiver_4bb0' | translate">
+                <mat-icon>play_circle</mat-icon>
+              </button>
+              <label class="btn-icon btn-icon--ghost btn-icon--sm"
+                     *ngIf="canEdit && config()?.photoNumerique"
+                     [title]="'ui.photo_d_identite_2bf3' | translate">
+                <mat-icon>{{ photoEnCours() === l.id ? 'hourglass_top' : 'photo_camera' }}</mat-icon>
+                <input type="file" accept="image/*" capture="user" hidden
+                       (change)="onPhotoChoisie($event, l)"/>
+              </label>
+              <button class="btn-icon btn-icon--ghost btn-icon--sm"
+                      (click)="telechargerPdf(l)"
+                      [title]="'ui.telecharger_pdf_c402' | translate">
+                <mat-icon>download</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Vide -->
+      <div class="licences__empty" *ngIf="licencesFiltrees().length === 0">
+        <mat-icon>badge</mat-icon>
+        <p>{{ 'ui.aucune_licence_trouvee_f3d4' | translate }}</p>
+        <button class="btn-primary btn-sm" *ngIf="canEdit"
+                (click)="genererTout()">
+          {{ 'ui.generer_les_licences_da82' | translate }}
+        </button>
+      </div>
+
+    </ng-container>
+
+  </ng-container>
+
+  <!-- ══ MODAL PARAMÈTRES ═════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="editConfig()"
+       (click)="editConfig.set(false)">
+    <div class="modal-config" (click)="$event.stopPropagation()">
+      <div class="modal-config__header">
+        <h3><mat-icon>settings</mat-icon> {{ 'ui.parametres_des_licences_472f' | translate }}</h3>
+        <button class="btn-close" (click)="editConfig.set(false)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="modal-config__body">
+
+        <div class="toggle-field">
+          <span class="toggle-label">{{ 'ui.licences_requises_89f8' | translate }}</span>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="configForm.licencesActivees"/>
+            <span class="toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-field">
+          <span class="toggle-label">{{ 'ui.bloquer_la_feuille_si_licence_manq_b6c3' | translate }}</span>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="configForm.blocageFeuilleSansLicence"/>
+            <span class="toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-field">
+          <span class="toggle-label">{{ 'ui.photo_numerique_sur_la_licence_dd9c' | translate }}</span>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="configForm.photoNumerique"/>
+            <span class="toggle__slider"></span>
+          </label>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">{{ 'ui.licences_gratuites_par_equipe_918a' | translate }}</label>
+          <input type="number" min="0"
+                 [(ngModel)]="configForm.licencesGratuites"
+                 class="form-input"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">{{ 'ui.montant_par_licence_supplementaire_2f10' | translate }}</label>
+          <input type="number" min="0"
+                 [(ngModel)]="configForm.montantLicenceSup"
+                 class="form-input"
+                 placeholder="0 = gratuite"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">{{ 'ui.type_de_licence_5e65' | translate }}</label>
+          <select class="form-select" [(ngModel)]="configForm.typeLicence">
+            <option value="INTERNE">Interne My2-0</option>
+            <option value="EXTERNE">{{ 'ui.federale_externe_5ba6' | translate }}</option>
+            <option value="LES_DEUX">{{ 'ui.les_deux_97e5' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">{{ 'ui.date_de_fin_de_validite_63d3' | translate }}</label>
+          <input type="date" [(ngModel)]="configForm.dateFinValiditeLicences"
+                 class="form-input"/>
+        </div>
+
+      </div>
+      <div class="modal-config__footer">
+        <button class="btn-ghost" (click)="editConfig.set(false)">{{ 'common.CANCEL' | translate }}</button>
+        <button class="btn-primary" [disabled]="saving()"
+                (click)="sauvegarderConfig()">
+          <mat-icon>save</mat-icon>
+          {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL AJOUT LICENCE ══════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showAjout()"
+       (click)="showAjout.set(false)">
+    <div class="modal-config" (click)="$event.stopPropagation()">
+      <div class="modal-config__header">
+        <h3><mat-icon>add</mat-icon> {{ 'ui.ajouter_une_licence_9548' | translate }}</h3>
+        <button class="btn-close" (click)="showAjout.set(false)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="modal-config__body">
+
+        <div class="form-field">
+          <label class="form-label">{{ 'membre.team' | translate }}</label>
+          <select class="form-select" [(ngModel)]="ajoutForm.participantId">
+            <option [ngValue]="null">{{ 'ui.choisir_une_equipe_6400' | translate }}</option>
+            <option *ngFor="let p of participants()"
+                    [ngValue]="p.id">{{ p.nomEquipe }}</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">{{ 'ui.nom_4652' | translate }}</label>
+            <input class="form-input" [(ngModel)]="ajoutForm.nom"
+                   [placeholder]="'PRESENCE.ADD.PLAYER_NAME' | translate"/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">{{ 'ui.prenom_4f85' | translate }}</label>
+            <input class="form-input" [(ngModel)]="ajoutForm.prenom"
+                   [placeholder]="'invite.form.firstName' | translate"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">{{ 'partenaire.entreprises.form.category' | translate }}</label>
+            <input class="form-input" [(ngModel)]="ajoutForm.categorie"
+                   placeholder="Senior, Junior..."/>
+          </div>
+          <div class="form-field">
+            <label class="form-label">{{ 'ui.date_de_naissance_6a16' | translate }}</label>
+            <input type="date" class="form-input"
+                   [(ngModel)]="ajoutForm.dateNaissance"/>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Type</label>
+          <select class="form-select" [(ngModel)]="ajoutForm.typeLicence">
+            <option value="INTERNE">Interne My2-0</option>
+            <option value="EXTERNE">{{ 'ui.federale_numero_existant_de74' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="form-field" *ngIf="ajoutForm.typeLicence === 'EXTERNE'">
+          <label class="form-label">{{ 'ui.numero_de_licence_federale_3d39' | translate }}</label>
+          <input class="form-input" [(ngModel)]="ajoutForm.numeroExterne"
+                 placeholder="Ex: FEC-2025-00123"/>
+        </div>
+
+      </div>
+      <div class="modal-config__footer">
+        <button class="btn-ghost"
+                (click)="showAjout.set(false); resetAjoutForm()">
+          {{ 'common.CANCEL' | translate }}
+        </button>
+        <button class="btn-primary"
+                [disabled]="!ajoutForm.participantId || !ajoutForm.nom.trim() || !ajoutForm.prenom.trim() || !ajoutForm.dateNaissance || saving()"
+                (click)="ajouterLicence()">
+          <mat-icon>add</mat-icon>
+          {{ saving() ? 'Enregistrement...' : 'Ajouter' }}
+        </button>
+      </div>
+      <p class="licences__erreur" *ngIf="erreur()">{{ erreur() }}</p>
+    </div>
+  </div>
+
+  <!-- ══ MODAL CHOIX DES LICENCES GRATUITES ═══════════════════ -->
+  <div class="modal-overlay" *ngIf="gratuitesEquipe() as eq" (click)="gratuitesEquipe.set(null)">
+    <div class="modal-config" (click)="$event.stopPropagation()">
+      <div class="modal-config__header">
+        <h3><mat-icon>redeem</mat-icon> {{ 'ui.m_licences_gratuites_c3db' | translate:{p0: (eq)} }}</h3>
+        <button class="btn-close" (click)="gratuitesEquipe.set(null)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="modal-config__body">
+        <p class="licences__aide">
+          {{ 'ui.m_cochez_jusqu_a_licence_s_gratu_b964' | translate:{p0: (quotaGratuites())} }} <strong>{{ gratuitesChoisies().size }} / {{ quotaGratuites() }}</strong>
+        </p>
+        <label class="gratuite-ligne" *ngFor="let l of getLicencesParEquipe(eq)">
+          <input type="checkbox"
+                 [checked]="gratuitesChoisies().has(l.id)"
+                 [disabled]="!gratuitesChoisies().has(l.id) && gratuitesChoisies().size >= quotaGratuites()"
+                 (change)="basculerGratuite(l.id)"/>
+          <span>{{ l.nom }} {{ l.prenom }}</span>
+          <small>{{ l.numero }}</small>
+        </label>
+      </div>
+      <div class="modal-config__footer">
+        <button class="btn-ghost" (click)="gratuitesEquipe.set(null)">{{ 'common.CANCEL' | translate }}</button>
+        <button class="btn-primary" [disabled]="saving()" (click)="enregistrerGratuites()">
+          <mat-icon>save</mat-icon>
+          {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

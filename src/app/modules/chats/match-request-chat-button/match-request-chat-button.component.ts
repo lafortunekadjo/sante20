@@ -1,5 +1,6 @@
 // src/app/modules/chat/components/match-request-chat-button/match-request-chat-button.component.ts
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, Input } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -76,12 +77,12 @@ export class MatchRequestChatButtonComponent {
       next: (conversation) => {
         this.loading = false;
         this.router.navigate(['/chat', conversation.id]);
-        this.snackBar.open('Conversation créée avec succès', 'OK', { duration: 3000 });
+        this.snackBar.open(t('chat.matchRequest.conversationCreated'), 'OK', { duration: 3000 });
       },
       error: (error) => {
         this.loading = false;
         console.error('Error creating conversation:', error);
-        this.snackBar.open('Erreur lors de la création de la conversation', 'OK', { duration: 3000 });
+        this.snackBar.open(t('chat.matchRequest.conversationError'), 'OK', { duration: 3000 });
       }
     });
   }

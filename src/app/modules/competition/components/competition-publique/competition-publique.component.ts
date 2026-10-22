@@ -1,11 +1,18 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, OnInit, inject, signal, computed
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../../../core/services/auth.service';
+import { InscriptionModalComponent } from '../inscription-modal/inscription-modal.component';
+import { PalmaresBannerComponent } from '../palmares-banner/palmares-banner.component';
+import { InscriptionRapideComponent } from '../inscription-rapide/inscription-rapide.component';
+
 
 interface MatchPublicDTO {
   id:                    number;
@@ -87,6 +94,33 @@ interface CompetitionPublicDTO {
   nombreParticipants: number;
   format?:            string;
   phases?:            PhasePublicDTO[];
+  recompenses?: RecompensePublicDTO[];
+  championNom?:       string;
+  finalisteNom?:      string;
+  troisiemeNom?:      string;
+  // Conditions d'inscription
+  dateLimiteInscription?: string;
+  montantEngagement?:     number;
+  licencesActivees?:      boolean;
+  licencesGratuites?:     number;
+  montantLicenceSup?:     number;
+  nombreEquipesMax?:      number;
+  placesRestantes?:       number | null;
+  effectifMin?:           number | null;
+  dateLimiteEffectif?:    string | null;
+}
+
+// Nouvelle interface à ajouter
+interface RecompensePublicDTO {
+  rang:           number;
+  label?:         string;
+  typeRecompense: 'MONETAIRE' | 'TROPHEE' | 'MEDAILLE' | 'COUPE' | 'AUTRE';
+  montant?:       number;
+  devise:         string;
+  description?:   string;
+  materiau?:      string | null;
+  quantite?:      number | null;
+  cible?:         string;
 }
 
 type MainTab = 'apercu' | 'classement' | 'resultats' | 'palmares';
@@ -95,7 +129,7 @@ type FiltreMatch = 'tous' | 'a_venir' | 'en_cours' | 'termines';
 @Component({
   selector:    'app-competition-publique',
   standalone:  true,
-  imports:     [CommonModule, RouterModule, DatePipe,MatIconModule, TranslateModule],
+  imports:     [CommonModule, RouterModule, DatePipe,MatIconModule, TranslateModule, InscriptionModalComponent, PalmaresBannerComponent, InscriptionRapideComponent, PubliciteFeedComponent],
   templateUrl: './competition-publique.component.html',
   styleUrls:   ['./competition-publique.component.scss']
 })
@@ -106,6 +140,34 @@ export class CompetitionPubliqueComponent implements OnInit {
 
   competition  = signal<CompetitionPublicDTO | null>(null);
   stats        = signal<any>(null);
+  recompensesPub = signal<any[]>([]);
+
+  /** Récompenses regroupées : un bloc par rang (plusieurs lots possibles), puis les prix individuels. */
+  groupesRecompenses = computed(() => {
+    const liste = this.recompensesPub();
+    const equipe = liste.filter(r => !r.cible || r.cible === 'EQUIPE');
+    const rangs = [...new Set(equipe.map(r => r.rang))].sort((a, b) => a - b);
+    const ind = { BUTEUR: 'Meilleur buteur', PASSEUR: 'Meilleur passeur', GARDIEN: 'Meilleur gardien', DEFENSEUR: t('ui.ts_meilleur_defenseur_a667'), MVP: t('ui.ts_meilleur_joueur_83d4'), FAIR_PLAY: 'Fair-play' } as Record<string, string>;
+    return [
+      ...rangs.map(rang => {
+        const lots = equipe.filter(r => r.rang === rang);
+        const medaille = rang === 1 ? '🥇' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : '🏅';
+        return { titre: lots[0]?.label || `${rang}e place`, icone: medaille, lots: lots.map(l => this.libelleLot(l)) };
+      }),
+      ...liste.filter(r => r.cible && r.cible !== 'EQUIPE').map(r => ({ titre: r.cible === 'AUTRE_PRIX' ? (r.label || 'Distinction') : (ind[r.cible] ?? r.cible), icone: '⭐', lots: [this.libelleLot(r)] }))
+    ];
+  });
+
+  libelleLot(r: any): string {
+    const type = (r.typeRecompense as string) ?? 'AUTRE';
+    const nom = t('reward.lot.' + (['MONETAIRE', 'TROPHEE', 'MEDAILLE', 'COUPE'].includes(type) ? type : 'AUTRE'));
+    const mat = r.materiau && ['OR', 'ARGENT', 'BRONZE'].includes(r.materiau) ? t('reward.materiau.' + r.materiau) : '';
+    const icone = type === 'MONETAIRE' ? '💰' : type === 'MEDAILLE' ? '🏅' : (type === 'COUPE' || type === 'TROPHEE') ? '🏆' : '🎁';
+    let texte = `${icone} ${r.quantite > 1 ? r.quantite + ' × ' : ''}${nom}${mat}`;
+    if (type === 'MONETAIRE' && r.montant) texte += ` : ${Number(r.montant).toLocaleString()} ${r.devise ?? 'FCFA'}`;
+    if (r.description) texte += ` — ${r.description}`;
+    return texte;
+  }
   loading      = signal(true);
 
   // Tabs principal
@@ -119,17 +181,53 @@ export class CompetitionPubliqueComponent implements OnInit {
   filtreMatch    = signal<FiltreMatch>('tous');
   phaseMatchId   = signal<number | null>(null); // filtre par phase
 
+  private auth   = inject(AuthService);
+private router = inject(Router);
+
+showInscriptionModal = signal(false);
+  showConnexion = signal(false);
+  showRapide = signal(false);      // inscription sans compte
+
+  /** Équipe déjà inscrite depuis cet appareil (lien de gestion mémorisé) : on propose d'y revenir. */
+  monEquipe = signal<{ nomEquipe: string; token: string } | null>(null);
+  /** Toutes les équipes inscrites depuis cet appareil pour cette compétition (une personne peut en avoir plusieurs). */
+  mesEquipesLiens = signal<{ nomEquipe: string; token: string }[]>([]);
+
+  ouvrirRapide(): void {
+    this.showConnexion.set(false);
+    this.showRapide.set(true);
+  }
+
+  chargerMonEquipe(): void {
+    try {
+      const liste = JSON.parse(localStorage.getItem('equipes_liens') ?? '[]') as
+        { competitionId: number; nomEquipe: string; token: string }[];
+      const miennes = liste.filter(x => x.competitionId === this.competitionId);
+      const uniques = [...new Map(miennes.map(x => [x.token, { nomEquipe: x.nomEquipe, token: x.token }])).values()];
+      this.mesEquipesLiens.set(uniques);
+      const e = [...miennes].reverse()[0];
+      this.monEquipe.set(e ? { nomEquipe: e.nomEquipe, token: e.token } : null);
+    } catch { this.monEquipe.set(null); }
+  }   // fenêtre « un compte est nécessaire » (au lieu d'une redirection brutale)
+
   get competitionId(): number {
     return Number(this.route.snapshot.paramMap.get('id'));
   }
 
   ngOnInit(): void {
+    this.chargerMonEquipe();
     this.api.getPublic(this.competitionId).subscribe({
       next: c => {
         this.competition.set(c);
         this.loading.set(false);
+        // Retour de connexion/création de compte depuis « Inscrire mon équipe » : on rouvre le formulaire
+        if (this.route.snapshot.queryParamMap.get('inscrire') === '1' && this.auth.isLoggedIn()
+            && c.statut === 'INSCRIPTION_OUVERTE') {
+          this.showInscriptionModal.set(true);
+        }
         // Sélectionner la phase active par défaut
         this.initSelections(c);
+        this.api.getRecompenses(this.competitionId).subscribe({ next: r => this.recompensesPub.set(r ?? []), error: () => {} });
         // Stats en parallèle
         this.api.getPublicStats(this.competitionId).subscribe({
           next: s => this.stats.set(s),
@@ -140,6 +238,65 @@ export class CompetitionPubliqueComponent implements OnInit {
     });
   }
 
+ // Dans ouvrirInscription()
+ouvrirInscription(event?: Event): void {
+ 
+
+  if (!this.auth.isLoggedIn()) {
+    // On montre d'abord les conditions et pourquoi un compte est utile, sans brusquer
+    this.showConnexion.set(true);
+    return;
+  }
+  this.showInscriptionModal.set(true);
+}
+
+  /** Connexion ou création de compte, puis retour ici avec le formulaire d'inscription ouvert. */
+  allerAuthentification(destination: 'login' | 'signup'): void {
+    this.showConnexion.set(false);
+    this.router.navigate(['/' + destination], {
+      queryParams: { returnUrl: `/competitions/${this.competitionId}/public?inscrire=1` }
+    });
+  }
+
+  // ── Conditions d'inscription ──────────────────────────────
+  inscriptionOuverte = computed(() => this.competition()?.statut === 'INSCRIPTION_OUVERTE');
+
+  /** Jours avant la clôture des inscriptions ; null sans date limite. */
+  joursAvantCloture = computed(() => {
+    const d = this.competition()?.dateLimiteInscription;
+    if (!d) return null;
+    const fin = new Date(d + 'T23:59:59');
+    return Math.ceil((fin.getTime() - Date.now()) / 86400000) - 1;
+  });
+
+  complet = computed(() => this.competition()?.placesRestantes === 0);
+  clotureDepassee = computed(() => {
+    const j = this.joursAvantCloture();
+    return j !== null && j < 0;
+  });
+  inscriptionPossible = computed(() => this.inscriptionOuverte() && !this.complet() && !this.clotureDepassee());
+
+  /** Utilisateur connecté : la barre de navigation du bas est visible, la barre d'inscription se place au-dessus. */
+  get connecte(): boolean { return this.auth.isLoggedIn(); }
+
+  fcfa(n?: number | null): string {
+    return (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
+  }
+
+  /** Phrase courte pour la barre d'inscription : le prix en premier. */
+  resumeDroits(): string {
+    const c = this.competition();
+    if (!c) return '';
+    return c.montantEngagement ? `Droits : ${this.fcfa(c.montantEngagement)} / équipe` : 'Inscription gratuite';
+  }
+
+  clotureTexte(): string {
+    const j = this.joursAvantCloture();
+    if (j === null) return '';
+    if (j < 0) return 'Inscriptions closes';
+    if (j === 0) return 'Dernier jour';
+    return j === 1 ? 'Clôture demain' : `Clôture dans ${j} jours`;
+  }
   private initSelections(c: CompetitionPublicDTO): void {
     if (!c.phases?.length) return;
     // Sélectionner la phase EN_COURS, sinon la dernière
@@ -257,12 +414,12 @@ export class CompetitionPubliqueComponent implements OnInit {
 
   tourLabel(tour: string): string {
     const m: Record<string, string> = {
-      TOUR_PRELIMINAIRE: 'Tours préliminaires',
+      TOUR_PRELIMINAIRE: t('ui.ts_tours_preliminaires_d07a'),
       SEIZIEME:          '32es de finale',
       HUITIEME:          '16es de finale',
       QUART_DE_FINALE:   'Quarts de finale',
       DEMI_FINALE:       'Demi-finales',
-      TROISIEME_PLACE:   'Match pour la 3e place',
+      TROISIEME_PLACE:   t('ui.ts_match_pour_la_3e_place_88e2'),
       FINALE:            'Finale'
     };
     return m[tour] ?? tour;
@@ -274,8 +431,8 @@ export class CompetitionPubliqueComponent implements OnInit {
       BROUILLON:           'À venir',
       INSCRIPTION_OUVERTE: 'Inscriptions ouvertes',
       EN_COURS:            'En cours',
-      TERMINE:             'Terminée',
-      ANNULE:              'Annulée',
+      TERMINE:             t('partenaire.publicites.status.TERMINEE'),
+      ANNULE:              t('invitation.cancelled'),
     };
     return m[statut] ?? statut;
   }
@@ -285,7 +442,7 @@ export class CompetitionPubliqueComponent implements OnInit {
       ALLER_SIMPLE:       'Championnat',
       ALLER_RETOUR:       'Championnat A/R',
       ELIMINATION_SIMPLE: 'Coupe',
-      MIXTE:              'Groupes + Élimination',
+      MIXTE:              t('ui.ts_groupes_elimination_1283'),
     };
     return m[format] ?? format;
   }

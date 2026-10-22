@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -244,7 +245,7 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response) => { this.partenaires = response.content; },
       error: (err) => {
         console.error('Erreur partenaires:', err);
-        this.snackBar.open('Erreur lors du chargement', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_c064'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -565,9 +566,9 @@ getDisplayTel(user: any): string {
   openDeleteDialog(user: User): void {
     this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: "Supprimer l'utilisateur",
+        title: t('partenaire.users.confirmDelete.title'),
         message: `Voulez-vous vraiment supprimer "${user.username}" ?`,
-        confirmText: 'Supprimer', cancelText: 'Annuler', type: 'danger'
+        confirmText: t('type_depense.actions.supprimer'), cancelText: t('common.CANCEL'), type: 'danger'
       }
     }).afterClosed().subscribe(result => { if (result) this.deleteUser(user.id); });
   }
@@ -579,7 +580,7 @@ getDisplayTel(user: any): string {
         title: `${user.active ? 'Désactiver' : 'Activer'} l'utilisateur`,
         message: `Voulez-vous ${action} "${user.username}" ?`,
         confirmText: user.active ? 'Désactiver' : 'Activer',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         type: user.active ? 'warning' : 'success'
       }
     }).afterClosed().subscribe(result => {
@@ -642,9 +643,9 @@ getDisplayTel(user: any): string {
   resetPassword(user: User): void {
     this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Réinitialiser le mot de passe',
+        title: t('utilisateurs.actions.reinit_mdp'),
         message: `Voulez-vous réinitialiser le mot de passe de "${user.username}" ?`,
-        confirmText: 'Réinitialiser', cancelText: 'Annuler', type: 'warning'
+        confirmText: t('dashboard.filters.reset'), cancelText: t('common.CANCEL'), type: 'warning'
       }
     }).afterClosed().subscribe(result => {
       if (result) this.performPasswordReset(user);

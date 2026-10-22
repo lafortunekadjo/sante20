@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { LegalDocComponent } from '../legal-doc/legal-doc.component';
 
+/** Page « security » : le contenu bilingue vient de assets/i18n (clé legal.security), voir LegalDocComponent. */
 @Component({
   selector: 'app-security-policy',
-  imports: [RouterModule],
-  templateUrl: './security-policy.component.html',
-  styleUrl: './security-policy.component.scss'
+  standalone: true,
+  imports: [LegalDocComponent],
+  template: '<app-legal-doc doc="security"></app-legal-doc>'
 })
-export class SecurityPolicyComponent {
-
-}
+export class SecurityPolicyComponent {}

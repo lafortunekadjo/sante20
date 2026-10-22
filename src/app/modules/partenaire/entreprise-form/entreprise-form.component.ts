@@ -3,6 +3,7 @@
 // Création et édition d'entreprise
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -133,7 +134,7 @@ export class EntrepriseFormComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement entreprise:', err);
-        this.snackBar.open('Entreprise non trouvée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_entreprise_non_trouvee_d76e'), 'OK', { duration: 3000 });
         this.router.navigate(['/partenaire/entreprises']);
       }
     });
@@ -169,12 +170,12 @@ export class EntrepriseFormComponent implements OnInit, OnDestroy {
       
       // Validation
       if (!file.type.startsWith('image/')) {
-        this.snackBar.open('Le fichier doit être une image', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_le_fichier_doit_etre_une_image_cfb0'), 'OK', { duration: 3000 });
         return;
       }
       
       if (file.size > 2 * 1024 * 1024) {
-        this.snackBar.open('L\'image ne doit pas dépasser 2 Mo', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_l_image_ne_doit_pas_depasser_2_m_2172'), 'OK', { duration: 3000 });
         return;
       }
       
@@ -195,12 +196,12 @@ export class EntrepriseFormComponent implements OnInit, OnDestroy {
       const file = input.files[0];
       
       if (!file.type.startsWith('image/')) {
-        this.snackBar.open('Le fichier doit être une image', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_le_fichier_doit_etre_une_image_cfb0'), 'OK', { duration: 3000 });
         return;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        this.snackBar.open('L\'image ne doit pas dépasser 5 Mo', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_l_image_ne_doit_pas_depasser_5_m_cb6e'), 'OK', { duration: 3000 });
         return;
       }
       
@@ -314,7 +315,7 @@ export class EntrepriseFormComponent implements OnInit, OnDestroy {
         .then(() => this.onSuccess())
         .catch(() => {
           // Les fichiers n'ont pas été uploadés mais l'entreprise a été créée
-          this.snackBar.open('Entreprise créée mais erreur lors de l\'upload des images', 'OK', { duration: 5000 });
+          this.snackBar.open(t('ui.ts_entreprise_creee_mais_erreur_lor_8df2'), 'OK', { duration: 5000 });
           this.router.navigate(['/partenaire/entreprises']);
         });
     } else {

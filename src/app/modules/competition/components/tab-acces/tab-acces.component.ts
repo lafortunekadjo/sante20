@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import {
   Component, Input, OnInit, inject, signal, computed
 } from '@angular/core';
@@ -232,7 +233,7 @@ export class TabAccesComponent implements OnInit {
       SAISIR_SCORES:      'Scores',
       GERER_COMPOSITIONS: 'Compos',
       VALIDER_FEUILLES:   'Feuilles',
-      FICHES_MEDICALES:   'Médical',
+      FICHES_MEDICALES:   t('ui.ts_medical_4b38'),
       GERER_OFFICIELS:    'Officiels',
       PLANIFIER_MATCHS:   'Planning',
       GERER_PHASES:       'Phases',

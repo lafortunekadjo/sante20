@@ -22,7 +22,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map, startWith, debounceTime, switchMap } from 'rxjs/operators';
+import { map, startWith, debounceTime, switchMap, catchError } from 'rxjs/operators';
 
 import { 
   FinancesService, 
@@ -35,6 +35,7 @@ import {
 import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Membre } from '../../../../core/models/membre.model';
+import { EvenementCollecte, modeDe } from '../../../../core/models/collecte.model';
 
 @Component({
   selector: 'app-entree-caisse',
@@ -78,6 +79,9 @@ export class EntreeCaisseComponent implements OnInit {
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
   typesContributions: TypeContribution[] = [];
+  /** Collectes d'événements ouvertes : on peut y verser sans créer de type de contribution. */
+  evenements: EvenementCollecte[] = [];
+  evenementChoisi: EvenementCollecte | null = null;
   membres: Membre[] = [];
   filteredMembres: Observable<Membre[]> = of([]);
 
@@ -121,6 +125,7 @@ export class EntreeCaisseComponent implements OnInit {
     this.entreeForm = this.fb.group({
       membreId: [null, Validators.required],
       membreSearch: [''],
+      evenementId: [null],
       caisseId: [null, Validators.required],
       typeContributionId: [null],
       montant: [null, [Validators.required, Validators.min(1)]],
@@ -144,11 +149,13 @@ export class EntreeCaisseComponent implements OnInit {
 
     forkJoin({
       exercice: this.financesService.getExerciceActif(this.groupeId),
-      membres: this.membreService.getGroupMembers()
+      membres: this.membreService.getGroupMembers(),
+      evenements: this.financesService.getEvenementsGroupe().pipe(catchError(() => of([] as EvenementCollecte[])))
     }).pipe(
-      switchMap(({ exercice, membres }) => {
+      switchMap(({ exercice, membres, evenements }) => {
         this.exerciceActif = exercice;
         this.membres = membres;
+        this.evenements = evenements.filter(e => e.estContributionOuverte);
 
         if (exercice?.id) {
           return forkJoin({
@@ -180,10 +187,13 @@ export class EntreeCaisseComponent implements OnInit {
   }
 
   filterMembres(value: string): Membre[] {
-    if (!value || typeof value !== 'string') return this.membres.slice(0, 10);
-    
+    // Le membre concerné par l'événement ne cotise pas : il n'est pas proposé
+    const concerneId = this.evenementChoisi?.membreLie?.id;
+    const membres = concerneId ? this.membres.filter(m => m.id !== concerneId) : this.membres;
+    if (!value || typeof value !== 'string') return membres.slice(0, 10);
+
     const filterValue = value.toLowerCase();
-    return this.membres.filter(membre => 
+    return membres.filter(membre => 
       membre.nom?.toLowerCase().includes(filterValue) ||
       membre.prenom?.toLowerCase().includes(filterValue)
     ).slice(0, 10);
@@ -201,6 +211,25 @@ onMembreSelected(membre: Membre): void {
     membreSearch: membre 
   });
 }
+
+  /** Choix d'une collecte d'événement : plus de type ni de caisse à choisir (caisse Événements automatique). */
+  onEvenementChange(): void {
+    const id = this.entreeForm.get('evenementId')?.value;
+    this.evenementChoisi = id ? (this.evenements.find(e => e.id === id) ?? null) : null;
+    const caisse = this.entreeForm.get('caisseId')!;
+    if (this.evenementChoisi) {
+      const e = this.evenementChoisi;
+      caisse.clearValidators();
+      this.entreeForm.patchValue({ caisseId: null, typeContributionId: null, libelle: 'Collecte — ' + e.nomEvenement });
+      if (modeDe(e) === 'FIXE' && e.montantRequisParMembre) this.entreeForm.patchValue({ montant: e.montantRequisParMembre });
+      // un membre déjà choisi qui est le membre concerné est retiré
+      const membreId = this.entreeForm.get('membreId')?.value;
+      if (membreId && e.membreLie?.id === membreId) this.entreeForm.patchValue({ membreId: null, membreSearch: '' });
+    } else {
+      caisse.setValidators(Validators.required);
+    }
+    caisse.updateValueAndValidity();
+  }
 
   onTypeContributionChange(): void {
     const typeId = this.entreeForm.get('typeContributionId')?.value;
@@ -231,12 +260,14 @@ onMembreSelected(membre: Membre): void {
     const formData = this.entreeForm.value;
 
     const request: EntreeCaisseRequest = {
-      caisseId: formData.caisseId,
+      // pour un événement : pas de caisse (la caisse Événements est choisie par le serveur) ni de type
+      caisseId: this.evenementChoisi ? undefined : formData.caisseId,
+      evenementId: this.evenementChoisi ? this.evenementChoisi.id : undefined,
       membreId: formData.membreId,
       montant: formData.montant,
       dateMouvement: this.formatDate(formData.dateMouvement),
       libelle: formData.libelle,
-      typeContributionId: formData.typeContributionId || undefined,
+      typeContributionId: this.evenementChoisi ? undefined : (formData.typeContributionId || undefined),
       commentaire: formData.commentaire || undefined
     };
 
@@ -261,6 +292,9 @@ onMembreSelected(membre: Membre): void {
     this.entreeForm.reset({
       dateMouvement: new Date()
     });
+    this.evenementChoisi = null;
+    this.entreeForm.get('caisseId')?.setValidators(Validators.required);
+    this.entreeForm.get('caisseId')?.updateValueAndValidity();
   }
 
   markFormGroupTouched(): void {

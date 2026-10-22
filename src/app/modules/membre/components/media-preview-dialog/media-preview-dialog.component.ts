@@ -1,5 +1,6 @@
 // media-preview-dialog.component.ts
 
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -17,7 +18,7 @@ export interface MediaPreviewData {
 @Component({
   selector: 'app-media-preview-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,

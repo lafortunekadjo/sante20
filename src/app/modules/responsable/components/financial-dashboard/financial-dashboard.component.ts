@@ -1,4 +1,5 @@
 // financial-dashboard.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -225,14 +226,14 @@ export class FinancialDashboardComponent implements OnInit {
       labels: toutesLesCaisses.map(c => c.nom.replace('Caisse ', '')),
       datasets: [
         {
-          label: 'Entrées',
+          label: t('bilan.caisse.entrees'),
           data: toutesLesCaisses.map(c => c.totalEntrees),
           backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: '#10b981',
           borderWidth: 1
         },
         {
-          label: 'Sorties',
+          label: t('bilan.caisse.sorties'),
           data: toutesLesCaisses.map(c => c.totalSorties),
           backgroundColor: 'rgba(239, 68, 68, 0.8)',
           borderColor: '#ef4444',

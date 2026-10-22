@@ -158,6 +158,7 @@ export interface PubliciteDTO {
   
   createdAt?: string;
   dateApprobation?: string;
+  motifRejet?: string;
 }
 
 export interface CreatePubliciteRequest {

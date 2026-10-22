@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -219,7 +220,7 @@ export class GroupeSwitcherComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isSwitching.set(false);
-        this.snackBar.open('Erreur lors du changement de groupe', '✕', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_changement_de_gro_d462'), '✕', { duration: 3000 });
       }
     });
   }

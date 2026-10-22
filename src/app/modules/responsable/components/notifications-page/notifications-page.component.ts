@@ -3,7 +3,10 @@
 // Fichier: src/app/features/notifications/notifications-page.component.ts
 // ============================================================
 
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
+import { Component, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
+import { AuthService } from '../../../../core/services/auth.service';
+import { resolveNotificationUrl } from '../../../../core/utils/notification-route';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -38,7 +41,7 @@ import {
 @Component({
   selector: 'app-notifications-page',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     FormsModule,
     RouterModule,
@@ -116,6 +119,8 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
   // Paramètres
   settings: NotificationSettings | null = null;
   isSettingsLoading = false;
+
+  private readonly authService = inject(AuthService);
 
   constructor(
     private notificationService: NotificationService,
@@ -216,8 +221,9 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
       notification.isRead = true;
     }
 
-    if (notification.actionUrl) {
-      this.router.navigateByUrl(notification.actionUrl);
+    const url = resolveNotificationUrl(notification.actionUrl, this.authService.isResponsable());
+    if (url) {
+      this.router.navigateByUrl(url);
     }
   }
 

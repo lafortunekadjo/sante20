@@ -1,5 +1,6 @@
 // src/app/modules/chat/components/chat-main/chat-main.component.ts
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -275,7 +276,7 @@ openGroupChatDialog(): void {
     const currentUser = this.getCurrentUser();
     
     if (!currentUser.groupeId) {
-      alert('Vous devez faire partie d\'un groupe pour créer une discussion de groupe');
+      alert(t('ui.ts_vous_devez_faire_partie_d_un_gro_6af2'));
       return;
     }
 
@@ -288,7 +289,7 @@ openGroupChatDialog(): void {
         },
         error: (error) => {
           console.error('Error loading group members:', error);
-          alert('Erreur lors du chargement des membres');
+          alert(t('equipe.loadMembersError'));
         }
       });
     } else {
@@ -324,7 +325,7 @@ openGroupChatDialog(): void {
       },
       error: (error) => {
         console.error('Error creating group conversation:', error);
-        alert('Erreur lors de la création du groupe');
+        alert(t('chat.groupChat.createError'));
       }
     });
   }
@@ -353,7 +354,7 @@ private loadGroupMembersAndOpenDialog(): void {
       
       if (this.groupMembers.length === 0) {
         this.snackBar.open(
-          'Aucun membre disponible pour démarrer une conversation',
+          t('ui.ts_aucun_membre_disponible_pour_dem_38c9'),
           'OK',
           { duration: 3000 }
         );
@@ -365,7 +366,7 @@ private loadGroupMembersAndOpenDialog(): void {
     error: (error) => {
       console.error('Error loading group members:', error);
       this.snackBar.open(
-        'Erreur lors du chargement des membres',
+        t('equipe.loadMembersError'),
         'OK',
         { duration: 3000 }
       );
@@ -394,7 +395,7 @@ private createPrivateConversation(otherUserId: number): void {
   console.log(otherUserId)
   this.chatService.createPrivateConversation(otherUserId).subscribe({
     next: (conversation) => {
-      this.snackBar.open('Conversation créée', 'OK', { duration: 2000 });
+      this.snackBar.open(t('ui.ts_conversation_creee_5e06'), 'OK', { duration: 2000 });
       this.onConversationCreated(conversation);
     },
     error: (error) => {
@@ -403,13 +404,13 @@ private createPrivateConversation(otherUserId: number): void {
       // Si la conversation existe déjà
       if (error.status === 409 || error.error?.message?.includes('existe déjà')) {
         this.snackBar.open(
-          'Une conversation avec cet utilisateur existe déjà',
+          t('ui.ts_une_conversation_avec_cet_utilis_79ce'),
           'OK',
           { duration: 3000 }
         );
       } else {
         this.snackBar.open(
-          'Erreur lors de la création de la conversation',
+          t('chat.matchRequest.conversationError'),
           'OK',
           { duration: 3000 }
         );

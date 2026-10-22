@@ -1,0 +1,351 @@
+<div class="rs-container" [class.rs-container--lecture]="!canEdit">
+  <p class="rs-lecture" *ngIf="!canEdit">{{ 'ui.lecture_seule_seul_le_responsable__0b48' | translate }}</p>
+
+  <!-- ── Onglets ──────────────────────────────────────────────── -->
+  <div class="rs-tabs">
+    <button class="rs-tab" [class.rs-tab--active]="activeTab() === 'recompenses'"
+            (click)="activeTab.set('recompenses')">
+      <mat-icon>emoji_events</mat-icon> {{ 'ui.recompenses_8fc3' | translate }}
+    </button>
+    <button class="rs-tab" [class.rs-tab--active]="activeTab() === 'bareme'"
+            (click)="activeTab.set('bareme')">
+      <mat-icon>gavel</mat-icon> {{ 'ui.bareme_sanctions_2832' | translate }}
+    </button>
+    <button class="rs-tab" [class.rs-tab--active]="activeTab() === 'sanctions'"
+            (click)="activeTab.set('sanctions')">
+      <mat-icon>receipt_long</mat-icon>
+      Sanctions
+      <span class="rs-badge" *ngIf="sanctionsEnAttente().length">
+        {{ sanctionsEnAttente().length }}
+      </span>
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ONGLET RÉCOMPENSES
+       ════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab() === 'recompenses'" class="rs-panel">
+
+    <div class="rs-panel__header">
+      <div>
+        <div class="rs-panel__title">{{ 'ui.recompenses_par_rang_b2eb' | translate }}</div>
+        <div class="rs-panel__sub">
+          {{ 'ui.definissez_les_dotations_pour_chaq_6797' | translate }}
+        </div>
+      </div>
+      <button class="rs-btn rs-btn--secondary" (click)="ajouterRang()">
+        <mat-icon>add</mat-icon> {{ 'ui.ajouter_un_rang_58d2' | translate }}
+      </button>
+    </div>
+
+    <div class="rs-empty" *ngIf="!recompenses().length">
+      <mat-icon>emoji_events</mat-icon>
+      <p>{{ 'ui.aucune_recompense_configuree_cliqu_52fd' | translate }}</p>
+    </div>
+
+    <!-- ── Classement : un bloc par rang, plusieurs lots par rang ── -->
+    <div class="rs-recompenses-list">
+      <div class="rs-recompense-card rs-recompense-card--rang" *ngFor="let rang of rangs()">
+        <div class="rs-rang-head">
+          <div class="rs-recompense-card__rang">{{ rangLabel(rang) }}</div>
+          <input class="rs-input rs-rang-nom" [ngModel]="lotsDuRang(rang)[0]?.label" (ngModelChange)="renommerRang(rang, $event)"
+                 [placeholder]="'ui.intitule_champion_finaliste_8ef8' | translate"/>
+          <button class="rs-btn-icon rs-btn-icon--danger" (click)="supprimerRang(rang)" [title]="'ui.supprimer_ce_rang_df86' | translate">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+
+        <div class="rs-lot" *ngFor="let r of lotsDuRang(rang)">
+          <div class="rs-form-grid">
+            <div class="rs-field">
+              <label class="rs-label">Lot</label>
+              <select class="rs-input" [(ngModel)]="r.typeRecompense">
+                <option *ngFor="let t of typesRecompense" [value]="t">{{ typeRecompenseLabel(t) }}</option>
+              </select>
+            </div>
+            <div class="rs-field" *ngIf="avecMateriau(r)">
+              <label class="rs-label">{{ 'ui.matiere_19d4' | translate }}</label>
+              <select class="rs-input" [(ngModel)]="r.materiau">
+                <option [ngValue]="null">—</option>
+                <option *ngFor="let m of materiaux" [value]="m.v">{{ m.l }}</option>
+              </select>
+            </div>
+            <div class="rs-field" *ngIf="r.typeRecompense === 'MONETAIRE'">
+              <label class="rs-label">{{ 'dashboard.stats.amount' | translate }}</label>
+              <div class="rs-input-group">
+                <input class="rs-input" type="number" [(ngModel)]="r.montant" placeholder="0"/>
+                <span class="rs-input-group__suffix">{{ r.devise }}</span>
+              </div>
+            </div>
+            <div class="rs-field" *ngIf="r.typeRecompense !== 'MONETAIRE'">
+              <label class="rs-label">Nombre (facultatif)</label>
+              <input class="rs-input" type="number" min="1" [(ngModel)]="r.quantite" [placeholder]="'ui.non_precise_3096' | translate"/>
+            </div>
+            <div class="rs-field rs-field--full">
+              <label class="rs-label">{{ 'ui.detail_optionnel_203f' | translate }}</label>
+              <input class="rs-input" [(ngModel)]="r.description" [placeholder]="'ui.une_medaille_par_joueur_certificat_311e' | translate"/>
+            </div>
+            <label class="rs-check rs-field--full"><input type="checkbox" [(ngModel)]="r.publique"/> {{ 'ui.visible_sur_la_page_publique_a241' | translate }}</label>
+          </div>
+          <button class="rs-btn-icon rs-btn-icon--danger" (click)="supprimerLot(r)" [title]="'ui.retirer_ce_lot_b2db' | translate">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <button class="rs-btn rs-btn--secondary rs-btn--sm" (click)="ajouterLot(rang)">
+          <mat-icon>add</mat-icon> {{ 'ui.ajouter_un_lot_a_ce_rang_21b9' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Prix individuels ── -->
+    <div class="rs-panel__header rs-panel__header--sub">
+      <div>
+        <div class="rs-panel__title">Prix individuels</div>
+        <div class="rs-panel__sub">{{ 'ui.meilleur_buteur_meilleur_gardien_a_b449' | translate }}</div>
+      </div>
+      <button class="rs-btn rs-btn--secondary" (click)="ajouterPrixIndividuel()">
+        <mat-icon>add</mat-icon> {{ 'ui.ajouter_un_prix_3703' | translate }}
+      </button>
+    </div>
+    <div class="rs-recompenses-list">
+      <div class="rs-recompense-card" *ngFor="let r of individuels()">
+        <div class="rs-form-grid">
+          <div class="rs-field">
+            <label class="rs-label">Prix</label>
+            <select class="rs-input" [(ngModel)]="r.cible" (ngModelChange)="changerCible(r)">
+              <option *ngFor="let c of ciblesIndividuelles" [value]="c.v">{{ c.l }}</option>
+            </select>
+          </div>
+          <div class="rs-field">
+            <label class="rs-label">Lot</label>
+            <select class="rs-input" [(ngModel)]="r.typeRecompense">
+              <option *ngFor="let t of typesRecompense" [value]="t">{{ typeRecompenseLabel(t) }}</option>
+            </select>
+          </div>
+          <div class="rs-field" *ngIf="r.cible === 'AUTRE_PRIX'">
+            <label class="rs-label">{{ 'ui.nom_de_la_distinction_11ab' | translate }}</label>
+            <input class="rs-input" [(ngModel)]="r.label" [placeholder]="'ui.meilleur_defenseur_revelation_plus_c042' | translate"/>
+          </div>
+          <div class="rs-field" *ngIf="avecMateriau(r)">
+            <label class="rs-label">{{ 'ui.matiere_19d4' | translate }}</label>
+            <select class="rs-input" [(ngModel)]="r.materiau">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let m of materiaux" [value]="m.v">{{ m.l }}</option>
+            </select>
+          </div>
+          <div class="rs-field" *ngIf="r.typeRecompense === 'MONETAIRE'">
+            <label class="rs-label">{{ 'dashboard.stats.amount' | translate }}</label>
+            <div class="rs-input-group">
+              <input class="rs-input" type="number" [(ngModel)]="r.montant" placeholder="0"/>
+              <span class="rs-input-group__suffix">{{ r.devise }}</span>
+            </div>
+          </div>
+          <div class="rs-field" *ngIf="r.typeRecompense !== 'MONETAIRE'">
+            <label class="rs-label">Nombre (facultatif)</label>
+            <input class="rs-input" type="number" min="1" [(ngModel)]="r.quantite" [placeholder]="'ui.non_precise_3096' | translate"/>
+          </div>
+          <div class="rs-field rs-field--full">
+            <label class="rs-label">{{ 'ui.detail_optionnel_203f' | translate }}</label>
+            <input class="rs-input" [(ngModel)]="r.description"/>
+          </div>
+          <label class="rs-check rs-field--full"><input type="checkbox" [(ngModel)]="r.publique"/> {{ 'ui.visible_sur_la_page_publique_a241' | translate }}</label>
+        </div>
+        <button class="rs-btn-icon rs-btn-icon--danger" (click)="supprimerLot(r)" [title]="'ui.supprimer_ce_prix_4bb8' | translate">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="rs-budget" *ngIf="recompenses().length">
+      <div><span>{{ 'ui.budget_des_dotations_financieres_aea4' | translate }}</span><strong>{{ budget().total | number:'1.0-0' }} FCFA</strong></div>
+      <div><span>{{ 'ui.dont_annonce_publiquement_7afd' | translate }}</span><strong>{{ budget().publie | number:'1.0-0' }} FCFA</strong></div>
+      <div><span>{{ 'ui.dont_interne_non_publie_350c' | translate }}</span><strong>{{ budget().interne | number:'1.0-0' }} FCFA</strong></div>
+      <small>{{ 'ui.les_trophees_medailles_et_coupes_n_5b96' | translate }}</small>
+    </div>
+
+    <!-- Sauvegarde -->
+    <div class="rs-panel__footer" *ngIf="recompenses().length">
+      <span class="rs-action-msg" *ngIf="actionMsg()">{{ actionMsg() }}</span>
+      <button class="rs-btn rs-btn--primary" (click)="sauvegarderRecompenses()"
+              [disabled]="savingR()">
+        <mat-icon>save</mat-icon>
+        {{ savingR() ? 'Sauvegarde…' : 'Sauvegarder les récompenses' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ONGLET BARÈME SANCTIONS
+       ════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab() === 'bareme'" class="rs-panel">
+
+    <div class="rs-panel__header">
+      <div>
+        <div class="rs-panel__title">{{ 'ui.bareme_des_sanctions_7fe4' | translate }}</div>
+        <div class="rs-panel__sub">
+          {{ 'ui.configurez_le_montant_de_chaque_ty_47f6' | translate }}
+        </div>
+      </div>
+      <button class="rs-btn rs-btn--secondary" (click)="showBaremeForm.set(!showBaremeForm())">
+        <mat-icon>{{ showBaremeForm() ? 'close' : 'add' }}</mat-icon>
+        {{ showBaremeForm() ? 'Annuler' : 'Ajouter' }}
+      </button>
+    </div>
+
+    <!-- Formulaire ajout item -->
+    <div class="rs-bareme-form" *ngIf="showBaremeForm()">
+      <div class="rs-form-grid">
+        <div class="rs-field">
+          <label class="rs-label">{{ 'evenement.form.type' | translate }} <span class="req">*</span></label>
+          <select class="rs-input" [(ngModel)]="newBaremeItem.typeEvenement">
+            <option value="">{{ 'ui.choisir_7d94' | translate }}</option>
+            <option *ngFor="let t of typesEvenement" [value]="t">
+              {{ typeEvenementLabel(t) }}
+            </option>
+          </select>
+        </div>
+        <div class="rs-field">
+          <label class="rs-label">{{ 'ui.libelle_personnalise_d557' | translate }}</label>
+          <input class="rs-input" [(ngModel)]="newBaremeItem.libelle"
+                 [placeholder]="'ui.ex_retard_a_la_convocation_f133' | translate"/>
+        </div>
+        <div class="rs-field">
+          <label class="rs-label">{{ 'sanction.form.amount' | translate }} <span class="req">*</span></label>
+          <div class="rs-input-group">
+            <input class="rs-input" type="number" [(ngModel)]="newBaremeItem.montant"
+                   placeholder="0"/>
+            <span class="rs-input-group__suffix">FCFA</span>
+          </div>
+        </div>
+      </div>
+      <div class="rs-bareme-form__actions">
+        <button class="rs-btn rs-btn--primary" (click)="ajouterBaremeItem()"
+                [disabled]="savingB()">
+          <mat-icon>save</mat-icon>
+          {{ savingB() ? 'Sauvegarde…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Liste barème -->
+    <div class="rs-empty" *ngIf="!bareme().length">
+      <mat-icon>gavel</mat-icon>
+      <p>{{ 'ui.aucun_bareme_configure_ajoutez_les_bf41' | translate }}</p>
+    </div>
+
+    <div class="rs-bareme-table" *ngIf="bareme().length">
+      <div class="rs-bareme-row rs-bareme-row--header">
+        <span>Type</span><span>{{ 'finances.exercices.form.libelle' | translate }}</span><span>{{ 'dashboard.stats.amount' | translate }}</span><span></span>
+      </div>
+      <div class="rs-bareme-row" *ngFor="let b of bareme()">
+        <span>
+          <span class="rs-tag" [class]="'rs-tag--' + b.typeEvenement.toLowerCase()">
+            {{ typeEvenementLabel(b.typeEvenement) }}
+          </span>
+        </span>
+        <span>{{ b.libelle || '—' }}</span>
+        <span class="rs-montant">{{ b.montant | number:'1.0-0' }} {{ b.devise }}</span>
+        <span>
+          <button class="rs-btn-icon rs-btn-icon--danger"
+                  (click)="supprimerBaremeItem(b)" title="Retirer">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ONGLET SANCTIONS
+       ════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab() === 'sanctions'" class="rs-panel">
+
+    <div class="rs-panel__header">
+      <div>
+        <div class="rs-panel__title">{{ 'ui.sanctions_financieres_fdff' | translate }}</div>
+        <div class="rs-panel__sub">
+          {{ 'ui.amendes_en_attente_de_paiement_et__5fe8' | translate }}
+        </div>
+      </div>
+      <div class="rs-toggle">
+        <button [class.rs-toggle__btn--active]="vueRecap()"
+                class="rs-toggle__btn" (click)="vueRecap.set(true)">
+          <mat-icon>table_chart</mat-icon> {{ 'ui.par_equipe_414e' | translate }}
+        </button>
+        <button [class.rs-toggle__btn--active]="!vueRecap()"
+                class="rs-toggle__btn" (click)="vueRecap.set(false)">
+          <mat-icon>list</mat-icon> {{ 'ui.detail_ec1b' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Vue récap par équipe -->
+    <div *ngIf="vueRecap()">
+      <div class="rs-empty" *ngIf="!recapEquipes().length">
+        <mat-icon>receipt_long</mat-icon>
+        <p>{{ 'ui.aucune_sanction_enregistree_pour_c_5e62' | translate }}</p>
+      </div>
+      <div class="rs-recap-table" *ngIf="recapEquipes().length">
+        <div class="rs-recap-row rs-recap-row--header">
+          <span>{{ 'membre.team' | translate }}</span>
+          <span>Sanctions</span>
+          <span>{{ 'ui.total_du_2081' | translate }}</span>
+          <span>{{ 'dashboard.member.paid' | translate }}</span>
+          <span class="rs-solde-col">Solde</span>
+        </div>
+        <div class="rs-recap-row" *ngFor="let r of recapEquipes()"
+             [class.rs-recap-row--debt]="r.soldeEnAttente > 0">
+          <span class="rs-equipe-nom">{{ r.equipeNom }}</span>
+          <span>{{ r.nombreSanctions }}</span>
+          <span>{{ r.totalDu | number:'1.0-0' }} FCFA</span>
+          <span class="rs-paye">{{ r.totalPaye | number:'1.0-0' }} FCFA</span>
+          <span class="rs-solde" [class.rs-solde--nonzero]="r.soldeEnAttente > 0">
+            {{ r.soldeEnAttente | number:'1.0-0' }} FCFA
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue liste détaillée -->
+    <div *ngIf="!vueRecap()">
+      <div class="rs-empty" *ngIf="!sanctions().length">
+        <mat-icon>receipt_long</mat-icon>
+        <p>{{ 'ui.aucune_sanction_enregistree_760d' | translate }}</p>
+      </div>
+      <div class="rs-sanctions-list" *ngIf="sanctions().length">
+        <div class="rs-sanction-card" *ngFor="let s of sanctions()">
+          <div class="rs-sanction-card__left">
+            <span class="rs-tag" [class]="'rs-tag--' + s.typeEvenement.toLowerCase()">
+              {{ typeEvenementLabel(s.typeEvenement) }}
+            </span>
+            <div class="rs-sanction-card__infos">
+              <span class="rs-sanction-card__equipe">{{ s.equipeNom }}</span>
+              <span class="rs-sanction-card__joueur" *ngIf="s.joueurNom">{{ s.joueurNom }}</span>
+              <span class="rs-sanction-card__libelle">{{ s.libelle }}</span>
+              <span class="rs-sanction-card__date">
+                {{ s.dateSanction | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+          </div>
+          <div class="rs-sanction-card__right">
+            <span class="rs-montant-big">{{ s.montant | number:'1.0-0' }} {{ s.devise }}</span>
+            <span class="rs-badge" [class]="statutClass(s.statut)">
+              {{ statutLabel(s.statut) }}
+            </span>
+            <div class="rs-sanction-card__actions" *ngIf="s.statut === 'EN_ATTENTE'">
+              <button class="rs-btn rs-btn--sm rs-btn--success" (click)="marquerPayee(s)">
+                <mat-icon>check</mat-icon> {{ 'membres.paid' | translate }}
+              </button>
+              <button class="rs-btn rs-btn--sm rs-btn--secondary" (click)="dispenser(s)">
+                <mat-icon>cancel</mat-icon> Dispenser
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

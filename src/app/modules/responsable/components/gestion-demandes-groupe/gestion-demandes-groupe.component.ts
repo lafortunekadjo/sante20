@@ -1,5 +1,6 @@
 // src/app/modules/responsable/components/gestion-demandes-groupe/gestion-demandes-groupe.component.ts
 
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -112,7 +113,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur chargement groupe:', err);
-        this.snackBar.open('Erreur lors du chargement du groupe', 'Fermer', {
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_du_gro_d0a1'), 'Fermer', {
           duration: 3000
         });
       }
@@ -214,7 +215,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Erreur acceptation demande:', err);
-          this.snackBar.open('Erreur lors de l\'acceptation', 'Fermer', {
+          this.snackBar.open(t('ui.ts_erreur_lors_de_l_acceptation_09a7'), 'Fermer', {
             duration: 3000
           });
           this.processingDemandeId = null;
@@ -244,7 +245,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Erreur refus demande:', err);
-          this.snackBar.open('Erreur lors du refus', 'Fermer', {
+          this.snackBar.open(t('ui.ts_erreur_lors_du_refus_068b'), 'Fermer', {
             duration: 3000
           });
           this.processingDemandeId = null;
@@ -285,7 +286,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
 
       this.matchRequestService.cancelRequest(demande.id).subscribe({
         next: () => {
-          this.snackBar.open('Demande de match annulée', 'Fermer', {
+          this.snackBar.open(t('ui.ts_demande_de_match_annulee_54bf'), 'Fermer', {
             duration: 3000
           });
           this.loadDemandesMatchEnvoyees().subscribe();
@@ -293,7 +294,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Erreur annulation demande:', err);
-          this.snackBar.open('Erreur lors de l\'annulation', 'Fermer', {
+          this.snackBar.open(t('mouvements.annuler.erreur'), 'Fermer', {
             duration: 3000
           });
           this.processingDemandeId = null;
@@ -363,7 +364,7 @@ dialogRef.afterClosed().subscribe(infosFinales => {
 
       this.matchRequestService.refuseRequest(demande.id).subscribe({
         next: () => {
-          this.snackBar.open('Demande de match refusée', 'Fermer', {
+          this.snackBar.open(t('ui.ts_demande_de_match_refusee_ee59'), 'Fermer', {
             duration: 3000
           });
           this.loadDemandesMatchRecues().subscribe();
@@ -371,7 +372,7 @@ dialogRef.afterClosed().subscribe(infosFinales => {
         },
         error: (err) => {
           console.error('Erreur refus demande:', err);
-          this.snackBar.open('Erreur lors du refus', 'Fermer', {
+          this.snackBar.open(t('ui.ts_erreur_lors_du_refus_068b'), 'Fermer', {
             duration: 3000
           });
           this.processingDemandeId = null;
@@ -385,8 +386,8 @@ dialogRef.afterClosed().subscribe(infosFinales => {
   getStatutLabel(statut: string): string {
     const labels: { [key: string]: string } = {
       'EN_ATTENTE': 'En attente',
-      'ACCEPTEE': 'Acceptée',
-      'REFUSEE': 'Refusée'
+      'ACCEPTEE': t('demands.accepted'),
+      'REFUSEE': t('demands.rejected')
     };
     return labels[statut] || statut;
   }
@@ -462,7 +463,7 @@ dialogRef.afterClosed().subscribe(infosFinales => {
 
   exporterDemandes(): void {
     // À implémenter selon l'onglet actif
-    this.snackBar.open('Export en cours de développement', 'OK', { duration: 2000 });
+    this.snackBar.open(t('ui.ts_export_en_cours_de_developpement_bec5'), 'OK', { duration: 2000 });
   }
 
   /**

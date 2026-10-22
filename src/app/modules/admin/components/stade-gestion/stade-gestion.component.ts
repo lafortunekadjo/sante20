@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -134,7 +135,7 @@ export class StadeGestionComponent implements OnInit {
   }
 
   deleteStade(id: any) {
-    if (confirm('Supprimer ce stade ?')) {
+    if (confirm(t('ui.ts_supprimer_ce_stade_24e6'))) {
       this.service.delete(id).subscribe(() => this.fetchStades());
     }
   }

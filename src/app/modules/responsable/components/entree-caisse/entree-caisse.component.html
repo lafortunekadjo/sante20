@@ -53,6 +53,22 @@
         <div class="fin-form-card">
           <form [formGroup]="entreeForm" class="fin-form-body">
             <div class="fin-form-grid">
+              <!-- Collecte d'événement : aucun type à créer, la caisse « Événements » est automatique -->
+              <mat-form-field appearance="outline" class="span-2" *ngIf="evenements.length > 0">
+                <mat-label>{{ 'collecte.entry.forEvent' | translate }}</mat-label>
+                <mat-icon matPrefix>celebration</mat-icon>
+                <mat-select formControlName="evenementId" (selectionChange)="onEvenementChange()">
+                  <mat-option [value]="null">{{ 'collecte.entry.noEvent' | translate }}</mat-option>
+                  <mat-option *ngFor="let e of evenements" [value]="e.id">
+                    {{ e.nomEvenement }} <span class="evt-categorie">· {{ 'collecte.types.' + e.typeEvenement | translate }}</span>
+                  </mat-option>
+                </mat-select>
+                <mat-hint *ngIf="evenementChoisi">
+                  {{ 'collecte.entry.hint' | translate: { nom: evenementChoisi.nomEvenement } }}
+                  <ng-container *ngIf="evenementChoisi.membreLie"> {{ 'collecte.entry.concerned' | translate: { membre: evenementChoisi.membreLie.prenom + ' ' + evenementChoisi.membreLie.nom } }}</ng-container>
+                </mat-hint>
+              </mat-form-field>
+
               <mat-form-field appearance="outline" class="span-2">
                 <mat-label>{{ 'commun.champs.membre' | translate }}</mat-label>
                 <mat-icon matPrefix>person_search</mat-icon>
@@ -69,7 +85,7 @@
                 </mat-error>
               </mat-form-field>
 
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" *ngIf="!evenementChoisi">
                 <mat-label>{{ 'finances.entree.formulaire.type_contribution' | translate }}</mat-label>
                 <mat-icon matPrefix>category</mat-icon>
                 <mat-select formControlName="typeContributionId" (selectionChange)="onTypeContributionChange()">
@@ -80,7 +96,7 @@
                 </mat-select>
               </mat-form-field>
 
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" *ngIf="!evenementChoisi">
                 <mat-label>{{ 'finances.entree.formulaire.caisse_destination' | translate }} *</mat-label>
                 <mat-icon matPrefix>account_balance</mat-icon>
                 <mat-select formControlName="caisseId" required>

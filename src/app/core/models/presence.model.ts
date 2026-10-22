@@ -9,7 +9,9 @@ export interface Presence {
   estCapitaine: boolean;
   equipePosition: number;
   equipeMatch: string;
-  present: boolean; 
+  present: boolean;
+  /** Venu mais n'a pas joué : SURNOMBRE | BLESSE | ARBITRE | REMPLACANT | AUTRE. */
+  motifNonJoue?: string | null;
   estHommeDuMatch: boolean;
   estHommeDuMatchEq: boolean;
   nomOccasionnel?: string;

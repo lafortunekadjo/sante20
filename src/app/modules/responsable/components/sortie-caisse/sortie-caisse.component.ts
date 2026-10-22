@@ -1,4 +1,5 @@
 // sortie-caisse.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -23,7 +24,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map, startWith, switchMap } from 'rxjs/operators';
+import { catchError, map, startWith, switchMap } from 'rxjs/operators';
 
 import { 
   FinancesService, 
@@ -36,6 +37,7 @@ import { GeneralService } from '../../../../core/services/general.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Membre } from '../../../../core/models/membre.model';
+import { EvenementCollecte } from '../../../../core/models/collecte.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 interface TypeDepense {
@@ -97,6 +99,9 @@ export class SortieCaisseComponent implements OnInit {
   exerciceActif: Exercice | null = null;
   caisses: Caisse[] = [];
   typesDepenses: any[] = [];
+  evenements: EvenementCollecte[] = [];
+  /** Le serveur a refusé car l'événement n'a pas collecté assez : l'organisateur peut forcer. */
+  peutForcer = false;
   membres: Membre[] = [];
   filteredMembres: Observable<Membre[]> = of([]);
 
@@ -138,6 +143,8 @@ export class SortieCaisseComponent implements OnInit {
     this.sortieForm = this.fb.group({
       caisseId: [null, Validators.required],
       typeDepenseId: [null],
+      evenementId: [null],
+      nature: ['REMISE'],
       montant: [null, [Validators.required, Validators.min(1)]],
       dateMouvement: [new Date(), Validators.required],
       libelle: ['', Validators.required],
@@ -163,12 +170,14 @@ export class SortieCaisseComponent implements OnInit {
     forkJoin({
       exercice: this.financesService.getExerciceActif(this.groupeId),
       membres: this.membreService.getGroupMembers(),
-      typesDepenses: this.generalService.getAllTypesDepenses()
+      typesDepenses: this.generalService.getAllTypesDepenses(),
+      evenements: this.financesService.getEvenementsGroupe().pipe(catchError(() => of([] as EvenementCollecte[])))
     }).pipe(
-      switchMap(({ exercice, membres, typesDepenses }) => {
+      switchMap(({ exercice, membres, typesDepenses, evenements }) => {
         this.exerciceActif = exercice;
         this.membres = membres;
         this.typesDepenses = typesDepenses;
+        this.evenements = evenements;
 
         if (exercice?.id) {
           return forkJoin({
@@ -235,13 +244,33 @@ displayMembre = (membre: Membre): string => {
     }
   }
 
+  get evenementChoisi(): EvenementCollecte | null {
+    const id = this.sortieForm.get('evenementId')?.value;
+    return id ? this.evenements.find(e => e.id === id) ?? null : null;
+  }
+
+  /** Sortie d'événement : la caisse Événements est choisie par le serveur, le plafond est celui de l'événement. */
+  onEvenementChange(): void {
+    const caisse = this.sortieForm.get('caisseId')!;
+    if (this.evenementChoisi) {
+      caisse.setValue(null);
+      caisse.clearValidators();
+      this.selectedCaisse = null;
+    } else {
+      caisse.setValidators(Validators.required);
+    }
+    caisse.updateValueAndValidity();
+    this.peutForcer = false;
+  }
+
   checkSolde(): boolean {
+    if (this.evenementChoisi) return true;
     if (!this.selectedCaisse) return true;
     const montant = this.sortieForm.get('montant')?.value || 0;
     return montant <= this.selectedCaisse.soldeActuel;
   }
 
-  enregistrerSortie(): void {
+  enregistrerSortie(forcer = false): void {
     if (this.sortieForm.invalid) {
       this.markFormGroupTouched();
       return;
@@ -266,8 +295,12 @@ displayMembre = (membre: Membre): string => {
     this.isSaving = true;
     const formData = this.sortieForm.value;
 
+    const evenement = this.evenementChoisi;
     const request: SortieCaisseRequest = {
-      caisseId: formData.caisseId,
+      caisseId: evenement ? undefined : formData.caisseId,
+      evenementId: evenement?.id,
+      nature: evenement ? formData.nature : undefined,
+      forcer: evenement && forcer ? true : undefined,
       montant: formData.montant,
       dateMouvement: this.formatDate(formData.dateMouvement),
       libelle: formData.libelle,
@@ -292,7 +325,10 @@ displayMembre = (membre: Membre): string => {
       },
       error: (err) => {
         console.error('Erreur enregistrement:', err);
-        this.showError(err.error?.message || 'Erreur lors de l\'enregistrement');
+        const message: string = err.error?.message || 'Erreur lors de l\'enregistrement';
+        this.showError(message);
+        // « dépasserait » : l'événement n'a pas assez collecté — décision explicite de l'organisateur
+        this.peutForcer = !!evenement && /dépasserait/.test(message);
         this.isSaving = false;
       }
     });
@@ -301,10 +337,10 @@ displayMembre = (membre: Membre): string => {
   validerSortie(mouvement: MouvementCaisse): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Valider la sortie',
+        title: t('ui.ts_valider_la_sortie_29fc'),
         message: `Confirmez-vous la validation de cette sortie de ${this.formatMontant(mouvement.montant)} ?`,
-        confirmText: 'Valider',
-        cancelText: 'Annuler',
+        confirmText: t('invitation.validate'),
+        cancelText: t('common.CANCEL'),
         color: 'primary'
       }
     });
@@ -327,10 +363,10 @@ displayMembre = (membre: Membre): string => {
   rejeterSortie(mouvement: MouvementCaisse): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Rejeter la sortie',
+        title: t('ui.ts_rejeter_la_sortie_d292'),
         message: `Êtes-vous sûr de rejeter cette sortie de ${this.formatMontant(mouvement.montant)} ?`,
-        confirmText: 'Rejeter',
-        cancelText: 'Annuler',
+        confirmText: t('finances.sortie.rejeter'),
+        cancelText: t('common.CANCEL'),
         color: 'warn'
       }
     });
@@ -352,9 +388,13 @@ displayMembre = (membre: Membre): string => {
 
   resetForm(): void {
     this.sortieForm.reset({
-      dateMouvement: new Date()
+      dateMouvement: new Date(),
+      nature: 'REMISE'
     });
+    this.sortieForm.get('caisseId')!.setValidators(Validators.required);
+    this.sortieForm.get('caisseId')!.updateValueAndValidity();
     this.selectedCaisse = null;
+    this.peutForcer = false;
   }
 
   markFormGroupTouched(): void {

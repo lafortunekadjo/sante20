@@ -352,7 +352,13 @@ private initWebSocket(): void {
       'SOCIAL_WELCOME': 'waving_hand',
       'ADMIN_NEW_GROUPE': 'add_business',
       'ADMIN_NEW_USER': 'person_add',
-      'ADMIN_ALERT': 'warning'
+      'ADMIN_ALERT': 'warning',
+      'PRESENCE_RAPPEL': 'how_to_reg',
+      'PRESENCE_ABSENCE': 'person_off',
+      'COTISATION_NEW': 'savings',
+      'INSCRIPTION_COMPETITION': 'emoji_events',
+      'LICENCE': 'badge',
+      'CONCOURS_GAGNANT': 'military_tech'
     };
     return icons[category] || 'notifications';
   }

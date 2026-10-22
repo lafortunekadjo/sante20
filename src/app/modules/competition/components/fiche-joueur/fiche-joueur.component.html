@@ -1,0 +1,87 @@
+<div class="fiche">
+
+  <div class="fiche__loading" *ngIf="loading()">{{ 'calendar.states.loading' | translate }}</div>
+  <div class="fiche__erreur" *ngIf="erreur()">{{ erreur() }}</div>
+
+  <ng-container *ngIf="fiche() as f">
+    <header class="fiche__header">
+      <small>{{ f.competitionNom }}</small>
+      <h1>{{ f.nomEquipe }}</h1>
+      <p>{{ 'ui.completez_votre_fiche_joueur_elle__9060' | translate }}</p>
+    </header>
+
+    <!-- Photo d'identité (appareil photo sur téléphone) -->
+    <section class="fiche__photo">
+      <div class="fiche__cadre" [style.background-image]="f.photoUrl ? 'url(' + f.photoUrl + ')' : null">
+        <span *ngIf="!f.photoUrl">👤</span>
+      </div>
+      <label class="btn-outline btn-sm fiche__bouton">
+        {{ photoEnCours() ? 'Envoi...' : (f.photoUrl ? 'Changer ma photo' : 'Prendre ma photo') }}
+        <input type="file" accept="image/*" capture="user" hidden (change)="onPhoto($event)"/>
+      </label>
+      <small>{{ 'ui.photo_d_identite_visage_de_face_fo_a684' | translate }}</small>
+    </section>
+
+    <form class="fiche__form" (ngSubmit)="enregistrer()" autocomplete="off">
+      <label class="champ">{{ 'ui.nom_4652' | translate }}
+        <input class="form-input" name="nom" [(ngModel)]="form.nom" autocomplete="family-name"/>
+      </label>
+      <label class="champ">{{ 'ui.prenom_4f85' | translate }}
+        <input class="form-input" name="prenom" [(ngModel)]="form.prenom" autocomplete="given-name"/>
+      </label>
+      <ng-container *ngIf="estJoueur()">
+        <label class="champ">{{ 'ui.date_de_naissance_6a16' | translate }}
+          <input class="form-input" type="date" name="naissance" [(ngModel)]="form.dateNaissance" [max]="aujourdhui"/>
+        </label>
+        <label class="champ">{{ 'ui.nationalite_aa88' | translate }}
+          <input class="form-input" name="nationalite" [(ngModel)]="form.nationalite" placeholder="Ex. Camerounaise"/>
+        </label>
+        <label class="champ">Poste *
+          <select class="form-select" name="poste" [(ngModel)]="form.poste">
+            <option value="">{{ 'ui.choisir_ee46' | translate }}</option>
+            <option *ngFor="let p of postes" [value]="p">{{ p }}</option>
+          </select>
+        </label>
+        <label class="champ">{{ 'ui.numero_de_dos_9c14' | translate }} <small>(facultatif)</small>
+          <input class="form-input" type="number" min="1" max="99" inputmode="numeric"
+                 name="numeroDos" [(ngModel)]="form.numeroDos"/>
+        </label>
+      </ng-container>
+      <label class="champ">{{ 'invite.form.phone' | translate }}
+        <input class="form-input" type="tel" name="telephone" [(ngModel)]="form.telephone" autocomplete="tel"/>
+      </label>
+
+      <p class="fiche__manque" *ngIf="manque().length">{{ 'ui.m_a_renseigner_7b5d' | translate:{p0: (manque().join(', '))} }}</p>
+      <p class="fiche__erreur" *ngIf="message()">{{ message() }}</p>
+
+      <button type="submit" class="btn-primary fiche__valider" [disabled]="manque().length > 0 || saving()">
+        {{ saving() ? 'Enregistrement...' : 'Enregistrer ma fiche' }}
+      </button>
+    </form>
+
+    <!-- État de la fiche -->
+    <p class="fiche__etat fiche__etat--ok" *ngIf="f.complet">
+      ✔ Votre fiche est complète{{ f.photoRequise ? ', photo comprise' : '' }}. Merci !
+    </p>
+    <p class="fiche__etat" *ngIf="!f.complet && f.champsManquants.length">
+      {{ 'ui.m_il_reste_a_fournir_1976' | translate:{p0: (f.champsManquants.join(', '))} }}
+    </p>
+
+    <!-- Compte facultatif -->
+    <section class="fiche__compte" *ngIf="enregistre() || f.complet">
+      <ng-container *ngIf="!f.compteLie">
+        <strong>{{ 'ui.envie_de_suivre_vos_matchs_db1b' | translate }}</strong>
+        <p>{{ 'ui.avec_un_compte_my2_0_gratuit_facul_726f' | translate }}</p>
+        <div class="fiche__actions" *ngIf="!connecte">
+          <a class="btn-primary btn-sm" routerLink="/signup">{{ 'auth.signup.createAccount' | translate }}</a>
+          <a class="btn-ghost btn-sm" routerLink="/login">{{ 'join.actions.deja_compte' | translate }}</a>
+        </div>
+        <div class="fiche__actions" *ngIf="connecte">
+          <button class="btn-primary btn-sm" (click)="lierCompte()">{{ 'ui.rattacher_cette_fiche_a_mon_compte_5ece' | translate }}</button>
+        </div>
+        <small>{{ 'ui.vous_n_avez_rien_d_autre_a_faire_v_1f5f' | translate }}</small>
+      </ng-container>
+      <p *ngIf="f.compteLie">{{ 'ui.cette_fiche_est_rattachee_a_un_com_ad28' | translate }}</p>
+    </section>
+  </ng-container>
+</div>

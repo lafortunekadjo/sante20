@@ -13,6 +13,10 @@ import {
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
 import { AuthService }           from '../../../../core/services/auth.service';
 import { RosterComponent } from '../roster/roster.component';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environment';
+import { EquipeEspace } from '../equipe-espace/equipe-espace.component';
+import { partagerLien, urlApplication } from '../../../../core/utils/partage';
 
 interface GroupeOption {
   id:       number;
@@ -37,6 +41,11 @@ export class TabParticipantsComponent implements OnInit {
   private api  = inject(CompetitionApiService);
   private auth = inject(AuthService);
   private fb   = inject(FormBuilder);
+  private http = inject(HttpClient);
+
+  /** Avancement de l'effectif de chaque équipe (promoteur) : fiches à compléter, photos manquantes. */
+  avancement = signal<Record<number, EquipeEspace>>({});
+  messageLien = signal<string | null>(null);
 
   // ── État ──────────────────────────────────────────────────
   participants          = signal<CompetitionParticipantDTO[]>([]);
@@ -99,7 +108,29 @@ export class TabParticipantsComponent implements OnInit {
     this.form.get('nomEquipe')!.updateValueAndValidity();
   }
 
+  chargerAvancement(): void {
+    this.http.get<EquipeEspace[]>(`${environment.apiUrl}/competitions/${this.competition.id}/equipes/avancement`).subscribe({
+      next: liste => this.avancement.set(Object.fromEntries(liste.map(e => [e.participantId, e]))),
+      error: () => { /* réservé au promoteur : sans droit, on n'affiche simplement pas l'avancement */ }
+    });
+  }
+
+  /** Lien de gestion à envoyer au responsable d'une équipe (surtout hors plateforme). */
+  async partagerLienEquipe(p: CompetitionParticipantDTO): Promise<void> {
+    this.http.get<{ token: string }>(
+      `${environment.apiUrl}/competitions/${this.competition.id}/participants/${p.id}/lien-gestion`
+    ).subscribe({
+      next: async r => {
+        const texte = `Gérez l'effectif de ${p.nomEquipe} (${this.competition.nom}) : `;
+        const moyen = await partagerLien('Gestion de mon équipe', texte, urlApplication(`/equipe/${r.token}`));
+        if (moyen === 'copie') this.messageLien.set('Lien copié : collez-le dans un message au responsable.');
+      },
+      error: err => this.messageLien.set(err?.error?.message ?? 'Lien indisponible')
+    });
+  }
+
   load(): void {
+    this.chargerAvancement();
     this.api.getParticipants(this.competition.id).subscribe(p => {
       this.participants.set(p);
       // Mémoriser les groupes déjà inscrits pour griser dans la liste
@@ -220,13 +251,33 @@ peutGererRoster(): boolean {
 
   // ── Actions participants ───────────────────────────────────
   valider(p: CompetitionParticipantDTO): void {
+    const av = this.avancement()[p.id];
+    if (av && (av.sousMinimum || av.nbFichesIncompletes > 0)) {
+      // Information, pas un blocage : une équipe amateur complète souvent son effectif après validation
+      const reste: string[] = [];
+      if (av.sousMinimum) reste.push(`${av.nbJoueurs} joueur(s) sur ${av.effectifMin} visés`);
+      if (av.nbFichesIncompletes > 0) reste.push(`${av.nbFichesIncompletes} fiche(s) à compléter`);
+      if (!confirm(`${p.nomEquipe} : ${reste.join(', ')}.\n\nValider quand même ? L'équipe pourra compléter son effectif ensuite.`)) return;
+    }
     this.api.validerInscription(this.competition.id, p.id)
       .subscribe(() => { this.load(); this.updated.emit(); });
   }
 
+  // ── Refus d'une inscription : le motif est demandé (l'équipe le voit et peut corriger puis repostuler) ──
+  refusCible = signal<CompetitionParticipantDTO | null>(null);
+  motifRefus = '';
+  readonly motifsRapides = ['Dossier incomplet', 'Effectif insuffisant', 'Compétition complète', 'Équipe déjà engagée', 'Informations non conformes'];
+
   rejeter(p: CompetitionParticipantDTO): void {
-    this.api.rejeterInscription(this.competition.id, p.id)
-      .subscribe(() => this.load());
+    this.motifRefus = '';
+    this.refusCible.set(p);
+  }
+
+  confirmerRefus(): void {
+    const p = this.refusCible();
+    if (!p || this.motifRefus.trim().length < 3) return;
+    this.api.rejeterInscription(this.competition.id, p.id, this.motifRefus.trim())
+      .subscribe(() => { this.refusCible.set(null); this.load(); });
   }
 
   retirer(p: CompetitionParticipantDTO): void {

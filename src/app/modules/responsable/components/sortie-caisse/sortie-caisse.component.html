@@ -57,7 +57,26 @@
         <div class="fin-form-card">
           <form [formGroup]="sortieForm" class="fin-form-body">
             <div class="fin-form-grid">
-              <mat-form-field appearance="outline">
+              <!-- Sortie d'événement : caisse Événements automatique, plafonnée à ce que l'événement a collecté -->
+              <mat-form-field appearance="outline" class="span-2" *ngIf="evenements.length > 0">
+                <mat-label>{{ 'collecte.exit.forEvent' | translate }}</mat-label>
+                <mat-icon matPrefix>celebration</mat-icon>
+                <mat-select formControlName="evenementId" (selectionChange)="onEvenementChange()">
+                  <mat-option [value]="null">{{ 'collecte.exit.noEvent' | translate }}</mat-option>
+                  <mat-option *ngFor="let e of evenements" [value]="e.id">{{ e.nomEvenement }}</mat-option>
+                </mat-select>
+                <mat-hint *ngIf="evenementChoisi">{{ 'collecte.exit.hint' | translate: { nom: evenementChoisi.nomEvenement } }}</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="span-2" *ngIf="evenementChoisi">
+                <mat-label>{{ 'collecte.exit.nature' | translate }}</mat-label>
+                <mat-select formControlName="nature">
+                  <mat-option value="REMISE">{{ 'collecte.exit.handover' | translate }}</mat-option>
+                  <mat-option value="FRAIS">{{ 'collecte.exit.fees' | translate }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" *ngIf="!evenementChoisi">
                 <mat-label>{{ 'sortie_caisse.champs.caisse_source' | translate }} *</mat-label>
                 <mat-icon matPrefix>account_balance</mat-icon>
                 <mat-select formControlName="caisseId" required (selectionChange)="onCaisseChange()">
@@ -71,14 +90,14 @@
               </mat-form-field>
 
               <!-- Alerte solde -->
-              <div class="fin-solde-alert" *ngIf="selectedCaisse">
+              <div class="fin-solde-alert" *ngIf="selectedCaisse && !evenementChoisi">
                 <mat-icon [color]="selectedCaisse.soldeActuel < 10000 ? 'warn' : 'primary'">
                   {{ selectedCaisse.soldeActuel >= 10000 ? 'check_circle' : 'warning' }}
                 </mat-icon>
                 <span>{{ 'sortie_caisse.champs.solde_disponible' | translate }}: <strong>{{ formatMontant(selectedCaisse.soldeActuel) }}</strong></span>
               </div>
 
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" *ngIf="!evenementChoisi">
                 <mat-label>{{ 'sortie_caisse.champs.type_depense' | translate }}</mat-label>
                 <mat-icon matPrefix>category</mat-icon>
                 <mat-select formControlName="typeDepenseId">
@@ -151,6 +170,10 @@
                     [disabled]="sortieForm.invalid || isSaving || !checkSolde()">
               <mat-icon>{{ isSaving ? 'hourglass_empty' : 'remove_circle' }}</mat-icon>
               {{ (isSaving ? 'commun.actions.enregistrement_en_cours' : 'sortie_caisse.actions.enregistrer') | translate }}
+            </button>
+            <button mat-stroked-button color="warn" *ngIf="peutForcer" (click)="enregistrerSortie(true)"
+                    [disabled]="isSaving" [matTooltip]="'collecte.exit.exceeds' | translate">
+              <mat-icon>warning</mat-icon>{{ 'collecte.exit.forceAnyway' | translate }}
             </button>
             <button mat-stroked-button (click)="resetForm()">
               <mat-icon>refresh</mat-icon>{{ 'commun.actions.reinitialiser' | translate }}

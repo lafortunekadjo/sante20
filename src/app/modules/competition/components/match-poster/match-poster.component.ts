@@ -1,3 +1,6 @@
+import { environment } from '../../../../environment';
+import { t } from '../../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +23,7 @@ export interface MatchPosterConfig {
 @Component({
   selector: 'app-match-poster',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslateModule, CommonModule, FormsModule],
   templateUrl: './match-poster.component.html',
   styleUrls: ['./match-poster.component.scss']
 })
@@ -49,7 +52,7 @@ export class MatchPosterComponent {
   isLoading: boolean = false;
   posterConfig: MatchPosterConfig | null = null;
 
-  private apiUrl = 'http://localhost:8000/api/posters/generate';
+  private apiUrl = `${environment.apiUrl}/posters/generate`;
 
   constructor(private http: HttpClient) {}
 
@@ -92,7 +95,7 @@ export class MatchPosterComponent {
 
   onSubmit(): void {
     if (!this.homeTeamName || !this.awayTeamName) {
-      alert('Veuillez saisir au moins les noms des deux équipes.');
+      alert(t('ui.ts_veuillez_saisir_au_moins_les_nom_235f'));
       return;
     }
 
@@ -118,9 +121,11 @@ export class MatchPosterComponent {
       },
       error: (err) => {
         console.error('Erreur de génération:', err);
-        alert('Une erreur est survenue lors de la génération.');
+        alert(t('ui.ts_une_erreur_est_survenue_lors_de__38c1'));
         this.isLoading = false;
       }
     });
   }
+
+
 }

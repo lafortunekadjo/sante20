@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, EventEmitter, Output, OnInit, OnDestroy } from '@angular/core';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -219,7 +220,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   uploadProfilePhoto(file: File, previewUrl: string): void {
     if (!this.user?.userId) {
-      this.snackBar.open('Erreur : utilisateur non identifié', 'Fermer', {
+      this.snackBar.open(t('ui.ts_erreur_utilisateur_non_identifie_55ba'), 'Fermer', {
         duration: 3000,
         panelClass: ['snackbar-error']
       });
@@ -242,7 +243,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
           localStorage.setItem('profilUrl', serverUrl);
         }
         
-        this.snackBar.open('Photo de profil mise à jour avec succès !', 'Fermer', {
+        this.snackBar.open(t('ui.ts_photo_de_profil_mise_a_jour_avec_c339'), 'Fermer', {
           duration: 3000,
           panelClass: ['snackbar-success']
         });
@@ -251,7 +252,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         console.error('Erreur upload photo:', error);
         this.userProfileImage = previousImage;
         
-        this.snackBar.open('Erreur lors de la mise à jour de la photo', 'Fermer', {
+        this.snackBar.open(t('ui.ts_erreur_lors_de_la_mise_a_jour_de_9373'), 'Fermer', {
           duration: 4000,
           panelClass: ['snackbar-error']
         });
@@ -396,7 +397,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       if (userId === null) {
         this.isChecking = false;
-        this.error = 'Utilisateur non authentifié ou ID introuvable.';
+        this.error = t('ui.ts_utilisateur_non_authentifie_ou_i_9bf6');
         return;
       }
 
@@ -421,7 +422,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       if (!checkInResult) {
         this.isChecking = false;
-        this.error = 'Check-in annulé.';
+        this.error = t('ui.ts_check_in_annule_dc8c');
         return;
       }
 
@@ -453,7 +454,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     } catch (err: any) {
       this.isChecking = false;
-      this.error = 'Erreur lors du check-in : ' + (err.message || 'inconnue');
+      this.error = t('ui.ts_erreur_lors_du_check_in_fc66') + (err.message || 'inconnue');
       console.error(err);
     }
   }
@@ -532,8 +533,8 @@ partagerApp(): void {
   const shareUrl = `${window.location.origin}/signup?ref=${codeParrain}`;
   
   const shareData = {
-    title: 'Rejoins-moi sur My2-0 !',
-    text: `Inscris-toi sur My2-0 et rejoins la communauté pour gérer nos 2-0 et accumuler des points !`,
+    title: t('ui.ts_rejoins_moi_sur_my2_0_c6fb'),
+    text: t('ui.ts_inscris_toi_sur_my2_0_et_rejoins_8e56'),
     url: shareUrl
   };
 
@@ -545,7 +546,7 @@ partagerApp(): void {
   } else {
     // Fallback : Copier le lien dans le presse-papier
     navigator.clipboard.writeText(shareUrl).then(() => {
-      this.snackBar.open('Lien de parrainage copié dans le presse-papier !', 'OK', {
+      this.snackBar.open(t('ui.ts_lien_de_parrainage_copie_dans_le_ac12'), 'OK', {
         duration: 3000,
         panelClass: ['snack-success']
       });

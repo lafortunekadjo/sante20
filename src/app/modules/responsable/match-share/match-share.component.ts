@@ -1,8 +1,10 @@
+import { t } from '../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-match-share',
-  imports: [],
+  imports: [TranslateModule, ],
   templateUrl: './match-share.component.html',
   styleUrl: './match-share.component.scss'
 })
@@ -22,11 +24,11 @@ export class MatchShareComponent {
       link.download = `Match_${this.match.adversaire}_Score.png`;
       link.click();
       this.loading = false;
-      this.snackBar.open('Affiche prête ! ⚽', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_affiche_prete_9ce2'), 'OK', { duration: 3000 });
     },
     error: () => {
       this.loading = false;
-      this.snackBar.open('Erreur lors de la génération', 'Fermer');
+      this.snackBar.open(t('ui.ts_erreur_lors_de_la_generation_b4d1'), 'Fermer');
     }
   });
 }

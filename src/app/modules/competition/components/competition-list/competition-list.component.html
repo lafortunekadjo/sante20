@@ -1,60 +1,72 @@
-<div class="comp-list">
-
-  <!-- ── HEADER ───────────────────────────────────────────── -->
-  <div class="comp-list__header">
-    <div class="comp-list__header-left">
-      <h1 class="comp-list__title">
-        <mat-icon>emoji_events</mat-icon>
-        {{ 'competition.nav.competitions' | translate }}
-      </h1>
-      <span class="comp-list__count">
-        {{ isAdmin ? 'Toutes' : 'Mes compétitions' }}
-      </span>
+<!-- ── EN-TÊTE : même bandeau que les pages Membres / Matchs ── -->
+<header class="hero-header">
+  <div class="hero-header__top">
+    <div>
+      <h1 class="hero-header__title">{{ 'competition.nav.competitions' | translate }}</h1>
+      <p class="hero-header__sub">{{ isAdmin ? 'Toutes les compétitions' : 'Mes compétitions' }}</p>
     </div>
-    <button class="btn-primary btn-sm"
-            *ngIf="canCreate()"
-            (click)="creerCompetition()">
-      <mat-icon>add</mat-icon>
-      {{ 'competition.nav.nouvelle' | translate }}
+    <div class="hero-header__actions">
+      <a class="hero-action" routerLink="/competitions/mes-matchs" [title]="'ui.mes_matchs_a_gerer_65ea' | translate" [attr.aria-label]="'ui.mes_matchs_a_gerer_65ea' | translate">
+        <mat-icon>sports</mat-icon>
+      </a>
+      <a class="hero-action" routerLink="/mes-equipes" [title]="'ui.mes_equipes_45b1' | translate" [attr.aria-label]="'ui.mes_equipes_45b1' | translate">
+        <mat-icon>groups</mat-icon>
+      </a>
+    </div>
+  </div>
+  <!-- Action principale : bouton avec texte ici + bouton flottant étendu plus bas (voir _ui-kit.scss, section 11) -->
+  <div class="header-cta-row" *ngIf="canCreate()">
+    <button class="btn-primary header-cta" (click)="creerCompetition()">
+      <mat-icon>add</mat-icon>{{ 'competition.nav.nouvelle' | translate }}
     </button>
   </div>
+  <div class="hero-header__stats">
+    <div class="hero-stat"><strong>{{ totalElements() }}</strong><span>Total</span></div>
+    <div class="hero-stat"><strong>{{ nbEnCours() }}</strong><span>En cours</span></div>
+    <div class="hero-stat"><strong>{{ nbTermines() }}</strong><span>{{ 'partenaire.publicites.filters.ended' | translate }}</span></div>
+  </div>
+</header>
 
-  <!-- ── FILTRES ───────────────────────────────────────────── -->
-  <div class="comp-list__filters">
+<button class="fab" *ngIf="canCreate()" (click)="creerCompetition()" [attr.aria-label]="'competition.nav.nouvelle' | translate">
+  <mat-icon>add</mat-icon>
+  <span class="fab-label">{{ 'competition.nav.nouvelle' | translate }}</span>
+</button>
 
-    <!-- Filtre statut -->
-    <div class="filter-group">
-      <button class="filter-btn"
-              [class.active]="filtreStatut() === null"
-              (click)="setFiltreStatut(null)">
+<div class="comp-list page">
+
+  <!-- ── RECHERCHE + FILTRES : une ligne qui défile sur mobile ── -->
+  <div class="toolbar">
+    <div class="search-field">
+      <mat-icon>search</mat-icon>
+      <input [(ngModel)]="searchQuery"
+             [placeholder]="'competition.liste.rechercher' | translate"/>
+      <button class="comp-search__clear"
+              *ngIf="searchQuery"
+              (click)="searchQuery = ''" aria-label="Effacer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="chips-scroll">
+      <button class="chip" [class.active]="filtreStatut() === null" (click)="setFiltreStatut(null)">
         {{ 'competition.liste.filtres.toutes' | translate }}
       </button>
-      <button class="filter-btn"
-              [class.active]="filtreStatut() === 'EN_COURS'"
-              (click)="setFiltreStatut($any('EN_COURS'))">
+      <button class="chip" [class.active]="filtreStatut() === 'EN_COURS'" (click)="setFiltreStatut($any('EN_COURS'))">
         <span class="filter-dot dot-en_cours"></span>
         {{ 'competition.statuts.enCours' | translate }}
         <span *ngIf="nbEnCours() > 0">({{ nbEnCours() }})</span>
       </button>
-      <button class="filter-btn"
-              [class.active]="filtreStatut() === 'BROUILLON'"
-              (click)="setFiltreStatut($any('BROUILLON'))">
+      <button class="chip" [class.active]="filtreStatut() === 'BROUILLON'" (click)="setFiltreStatut($any('BROUILLON'))">
         <span class="filter-dot dot-brouillon"></span>
         {{ 'competition.statuts.brouillon' | translate }}
         <span *ngIf="nbAVenir() > 0">({{ nbAVenir() }})</span>
       </button>
-      <button class="filter-btn"
-              [class.active]="filtreStatut() === 'TERMINE'"
-              (click)="setFiltreStatut($any('TERMINE'))">
+      <button class="chip" [class.active]="filtreStatut() === 'TERMINE'" (click)="setFiltreStatut($any('TERMINE'))">
         <span class="filter-dot dot-termine"></span>
         {{ 'competition.statuts.termine' | translate }}
         <span *ngIf="nbTermines() > 0">({{ nbTermines() }})</span>
       </button>
-    </div>
-
-    <!-- Filtre type -->
-    <div class="filter-group">
-      <button class="filter-btn"
+      <button class="chip"
               *ngFor="let t of typeOptions"
               [class.active]="filtreType() === t.value"
               (click)="setFiltreType($any(t.value))">
@@ -62,20 +74,6 @@
         {{ t.label }}
       </button>
     </div>
-
-    <!-- Recherche -->
-    <div class="comp-search" style="margin-left: auto">
-      <mat-icon>search</mat-icon>
-      <input [(ngModel)]="searchQuery"
-             class="comp-search__input"
-             [placeholder]="'competition.liste.rechercher' | translate"/>
-      <button class="comp-search__clear"
-              *ngIf="searchQuery"
-              (click)="searchQuery = ''">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-
   </div>
 
   <!-- ── LOADING ───────────────────────────────────────────── -->
@@ -147,12 +145,12 @@
       <div class="comp-card__footer">
         <div class="comp-card__teams">
           <mat-icon>groups</mat-icon>
-          {{ c.nombreParticipants }} équipes
+          {{ 'ui.m_equipes_fcdc' | translate:{p0: (c.nombreParticipants)} }}
         </div>
         <span *ngIf="c.nbMatchsAVenir > 0"
               style="font-size:11px; color: var(--text-secondary)">
           <mat-icon style="font-size:14px">sports_soccer</mat-icon>
-          {{ c.nbMatchsAVenir }} à venir
+          {{ 'ui.m_a_venir_0401' | translate:{p0: (c.nbMatchsAVenir)} }}
         </span>
         <mat-icon class="comp-card__arrow">chevron_right</mat-icon>
       </div>
@@ -167,7 +165,7 @@
         {{ 'competition.liste.creerPremiere' | translate }}
       </p>
       <p *ngIf="searchQuery || filtreStatut() || filtreType()">
-        Aucune compétition ne correspond à vos filtres
+        {{ 'ui.aucune_competition_ne_correspond_a_8733' | translate }}
       </p>
       <button class="btn-primary"
               *ngIf="canCreate() && !searchQuery"

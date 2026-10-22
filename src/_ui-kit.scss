@@ -1,0 +1,489 @@
+// ============================================================
+// _ui-kit.scss — Base visuelle commune My2-0 (mobile d'abord)
+//
+// Objectif : qu'en passant d'une page à l'autre, l'en-tête, les boutons, les filtres et
+// les cartes aient le même aspect. Les composants gardent leurs styles propres ; ce fichier
+// fournit (1) des variables de design, (2) des corrections globales, (3) des briques de page
+// réutilisables (.page, .page-header, .toolbar, .chips-scroll, .card, .empty-state...).
+//
+// Règle : on écrit pour 360 px de large d'abord, puis on élargit avec min-width.
+// ============================================================
+
+// ── 1. Variables de design (identiques en clair et en sombre) ─
+:root {
+  --brand-navy:     #0a1628;
+  --brand-navy-2:   #1a3a8a;
+  --brand-gold:     #F0B429;
+  --brand-gradient: linear-gradient(135deg, #0a1628 0%, #1a3a8a 100%);
+
+  --radius-control: 12px;   // boutons, champs
+  --radius-card:    16px;   // cartes
+  --radius-pill:    999px;  // pastilles, recherche
+
+  --shadow-card:  0 1px 3px rgba(15, 23, 42, .08), 0 4px 12px rgba(15, 23, 42, .06);
+  --shadow-raise: 0 8px 24px rgba(15, 23, 42, .14);
+
+  --tap:          44px;     // zone tactile minimale
+  --page-gutter:  16px;
+  --page-max:     1100px;
+}
+@media (min-width: 768px) {
+  :root { --page-gutter: 24px; }
+}
+
+// Dégradé des bandeaux d'en-tête (même que les pages membres, matchs, explorer).
+// Déclaré sur body : c'est là que le thème définit --primary-color, une déclaration sur :root ne se résoudrait pas.
+body {
+  --hero-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+}
+
+// ── 2. Corrections globales ──────────────────────────────────
+// Les boutons/champs natifs et ceux de Material doivent utiliser la même police que le reste de l'application.
+button, input, select, textarea { font-family: inherit; }
+
+// Anneau de focus visible au clavier, sans gêner le tactile
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+// Pas de zoom automatique d'iOS à la saisie : champs de formulaire à 16 px sur mobile
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select, textarea { font-size: 16px; }
+}
+
+// ── 3. Boutons : tailles tactiles et rayon communs ───────────
+// (la palette de couleurs reste celle de styles.scss)
+.btn-primary, .btn-ghost, .btn-success, .btn-danger, .btn-danger-outline, .btn-warning, .btn-outline {
+  min-height: var(--tap);
+  padding: 0 20px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  line-height: 1.2;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active:not(:disabled) { transform: scale(.98); }
+}
+.btn-lg { min-height: 52px; padding: 0 28px; font-size: 16px; }
+.btn-sm { min-height: 38px; padding: 0 16px; font-size: 13px; }
+.btn-xs { min-height: 30px; padding: 0 12px; font-size: 12px; }
+
+// Plein écran sur mobile pour les actions principales d'un formulaire ou d'une carte
+@media (max-width: 575px) {
+  .btn-block-mobile { width: 100%; }
+}
+
+// Pas d'effet « survol » sur les écrans tactiles (il reste collé après un tap)
+@media (hover: none) {
+  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover { transform: none; box-shadow: none; }
+}
+
+// ── 4. Structure de page ─────────────────────────────────────
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 16px var(--page-gutter) 32px;
+  display: grid;
+  // minmax(0, 1fr) : une rangée de filtres qui défile ne doit jamais élargir la page au-delà de l'écran
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+// ── 5. Recherche et filtres ──────────────────────────────────
+.toolbar {
+  display: flex;
+  flex-direction: column;     // mobile : recherche puis filtres, chacun sur sa ligne
+  gap: 10px;
+  @media (min-width: 768px) { flex-direction: row; align-items: center; }
+}
+
+.search-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+
+  > mat-icon, > .material-icons {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 20px; width: 20px; height: 20px;
+    color: var(--text-tertiary); pointer-events: none;
+  }
+  > input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 14px 0 42px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--background-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    &:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+  }
+}
+
+// Une seule ligne qui défile horizontalement (au lieu de passer sur 3 lignes)
+.chips-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  margin: 0 calc(var(--page-gutter) * -1);   // va jusqu'au bord de l'écran
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+  @media (min-width: 768px) { margin: 0; padding-left: 2px; padding-right: 2px; flex-wrap: wrap; overflow: visible; }
+}
+.chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 38px; padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  mat-icon, .material-icons { font-size: 16px; width: 16px; height: 16px; }
+  &.active { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+}
+
+// ── 6. Cartes et états vides ─────────────────────────────────
+.card {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  > mat-icon, > .material-icons { font-size: 48px; width: 48px; height: 48px; color: var(--text-tertiary); }
+  h3 { margin: 0; font-size: 17px; color: var(--text-primary); }
+  p  { margin: 0; font-size: 14px; max-width: 32ch; }
+}
+
+// ── 7. Formulaires ───────────────────────────────────────────
+// Ces classes étaient redéfinies composant par composant (ou absentes, d'où des champs « bruts »).
+// Les composants qui ont leur propre style le gardent ; les autres héritent de celui-ci.
+.form-input,
+.form-select {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  border: 1.5px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+  transition: border-color .15s, box-shadow .15s;
+
+  &::placeholder { color: var(--text-tertiary); }
+  &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+textarea.form-input { padding: 10px 14px; min-height: 96px; resize: vertical; }
+.form-select { cursor: pointer; }
+
+.form-label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.form-field { display: grid; gap: 4px; }
+.form-hint  { font-size: 11px; color: var(--text-tertiary); }
+.form-row   { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; @media (min-width: 560px) { grid-template-columns: 1fr 1fr; } }
+
+// ── 8. Indicateur de chargement ──────────────────────────────
+.spinner {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: ui-spin .7s linear infinite;
+}
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+// ── 9. En-tête « hero » des pages de liste (titre, sous-titre, actions, bandeau de statistiques) ──
+// Même structure que les pages Membres, Matchs ou Explorer : un bandeau bleu, des actions rondes, 3 chiffres clés.
+.hero-header {
+  color: #fff;
+  padding: 16px var(--page-gutter) 18px;
+  background: var(--hero-gradient);
+
+  &__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  &__title { margin: 0; font-size: clamp(20px, 5.5vw, 26px); font-weight: 800; line-height: 1.2; }
+  &__sub   { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+  &__actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  &__stats {
+    display: flex;
+    margin-top: 14px;
+    padding: 10px 6px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .14);
+  }
+}
+// Bouton d'action rond du bandeau (icône seule, zone tactile de 44 px)
+.hero-action {
+  display: inline-grid; place-items: center;
+  width: 44px; height: 44px; border: 0; border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, .18); color: #fff; cursor: pointer; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  &:active { transform: scale(.96); }
+  &:hover { background: rgba(255, 255, 255, .28); }
+}
+.hero-stat {
+  flex: 1; text-align: center; min-width: 0;
+  & + & { border-left: 1px solid rgba(255, 255, 255, .2); }
+  strong { display: block; font-size: 20px; font-weight: 800; line-height: 1.2; }
+  span   { display: block; font-size: 11px; opacity: .8; }
+}
+
+// ════════════════════════════════════════════════════════════
+// 10. CONTRAT DES EN-TÊTES DE PAGE
+//
+// Chaque page a son en-tête (db-header, fin-header, obj-header...) avec son propre CSS, et ils avaient dérivé :
+// marges de 24 px contre 16 px pour le contenu, bleu nuit ici, bleu codé en dur là, vert pour les contributions,
+// rouge pour les sanctions, cartes arrondies pour les Paramètres et l'Admin.
+// Règle unique, appliquée à tous : bandeau PLEINE LARGEUR, coins DROITS, même dégradé, même marge latérale que le
+// contenu, pas d'ombre. Seule la géométrie est imposée : le contenu de chaque en-tête (icône, titre, chiffres,
+// actions) reste celui de la page.
+//
+// Spécificité volontairement élevée ([class] x3) pour l'emporter sur les styles propres à chaque composant.
+// Pour ajouter une page : ajouter sa classe d'en-tête à la liste ci-dessous (ou utiliser .hero-header).
+// ════════════════════════════════════════════════════════════
+:is(
+  .db-header, .fin-header, .fin-page-header, .obj-header, .dir-header, .sug-header, .explore-header,
+  .dash-header, .np-header, .mouvements-header, .bilan-header, .echeancier-header, .contrib-header,
+  .config-header, .membres-header, .match-header, .presence-header, .im-header, .ts-header, .an-header,
+  .sanction-header, .feed-header, .settings-header, .dashboard-header, .pub-list__hero, .hero-header, .jd-header, .video-management-wrapper .page-header, .espace__header, .mm__tete
+)[class][class][class] {
+  position: relative;
+  width: auto;
+  margin: 0;
+  padding: 16px var(--page-gutter);
+  // Forme et apparence : imposées (!important), car chaque composant a des règles plus spécifiques
+  border-radius: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #fff;
+  background: var(--hero-gradient) !important;
+}
+
+// ── Contenu type d'un en-tête : même titre, même sous-titre, même pastille d'icône, mêmes boutons ronds ──
+//   titre      : 20 → 24 px, gras, blanc, sans ombre
+//   sous-titre : 13 px, légèrement atténué (le <p> qui suit le titre)
+//   icône      : pastille de 40 px, coins 12 px, fond blanc translucide
+//   boutons    : icône seule → 44 x 44 px, coins 12 px, fond blanc translucide (zone tactile)
+:is(
+  .db-header, .fin-header, .fin-page-header, .obj-header, .dir-header, .sug-header, .explore-header,
+  .dash-header, .np-header, .mouvements-header, .bilan-header, .echeancier-header, .contrib-header,
+  .config-header, .membres-header, .match-header, .presence-header, .im-header, .ts-header, .an-header,
+  .sanction-header, .feed-header, .settings-header, .dashboard-header, .pub-list__hero, .hero-header, .jd-header, .video-management-wrapper .page-header, .espace__header, .mm__tete
+)[class][class][class] {
+  h1 {
+    margin: 0 !important;
+    color: #fff !important;
+    font-size: clamp(20px, 5.5vw, 24px) !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    text-shadow: none !important;
+  }
+  h1 + p {
+    margin: 2px 0 0 !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    opacity: .85;
+  }
+  // pastille d'icône : tout élément dont la classe contient « icon » et dont l'enfant direct est une <mat-icon>
+  [class*="icon"]:has(> mat-icon):not(mat-icon):not(button):not(.mat-mdc-icon-button) {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+    mat-icon { width: 22px; height: 22px; font-size: 22px; color: #fff; }
+  }
+  // boutons ronds (icône seule)
+  .mat-mdc-icon-button {
+    width: 44px; height: 44px; padding: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+    &:hover { background: rgba(255, 255, 255, .28); }
+  }
+  // chiffres clés des bandeaux : blancs, lisibles sur le bleu (le vert d'accent donnait ~1,6:1 de contraste)
+  [class*="stat-number"], [class*="kpi-val"], [class*="hkpi-val"], [class*="stat-val"] { color: #fff !important; }
+
+  // boutons avec texte dans l'en-tête : action principale = blanc plein, action secondaire = contour blanc
+  // (un bouton bleu sur un fond bleu n'a pas assez de contraste)
+  .mat-mdc-unelevated-button, .mat-mdc-raised-button, .btn-primary {
+    background: #fff !important;
+    color: var(--primary-dark) !important;
+    border-radius: 12px !important;
+    min-height: 44px;
+    font-weight: 700;
+  }
+  .mat-mdc-outlined-button, .btn-outline, .btn-ghost {
+    background: transparent !important;
+    color: #fff !important;
+    border: 1.5px solid rgba(255, 255, 255, .7) !important;
+    border-radius: 12px !important;
+    min-height: 44px;
+  }
+  // un sélecteur (exercice, saison) dans l'en-tête ne doit jamais chevaucher le titre
+  mat-form-field { max-width: 100%; }
+}
+
+// Mobile : quand l'en-tête contient un SÉLECTEUR (exercice, saison), le titre prend sa ligne et le sélecteur passe dessous,
+// pour ne jamais se chevaucher. Les en-têtes sans sélecteur gardent leurs icônes d'action en haut à droite.
+@media (max-width: 767px) {
+  :is(
+    .db-header, .fin-header, .fin-page-header, .obj-header, .dir-header, .sug-header, .explore-header,
+  .dash-header, .np-header, .mouvements-header, .bilan-header, .echeancier-header, .contrib-header,
+  .config-header, .membres-header, .match-header, .presence-header, .im-header, .ts-header, .an-header,
+  .sanction-header, .feed-header, .settings-header, .dashboard-header, .pub-list__hero, .jd-header, .video-management-wrapper .page-header, .espace__header, .mm__tete
+  )[class][class][class] {
+    [class*="-top"]:has(mat-form-field) { flex-wrap: wrap; row-gap: 8px; }
+    [class*="-top"]:has(mat-form-field) [class*="title-group"] { flex: 1 1 100%; min-width: 0; }
+    [class*="-top"]:has(mat-form-field) [class*="actions"] { flex-wrap: wrap; width: 100%; gap: 8px; }
+    [class*="actions"] mat-form-field { flex: 1 1 160px; min-width: 0; width: auto; }
+    // en-tête avec un bouton d'action AVEC TEXTE : le titre garde sa ligne, les actions passent dessous (le bouton prend toute la largeur)
+    :has(> .header-actions .header-cta) { flex-wrap: wrap; row-gap: 10px; }
+    :has(> .header-actions .header-cta) > :first-child { flex: 1 1 100%; min-width: 0; }
+    .header-actions:has(.header-cta) { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; gap: 8px; width: 100%; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// 11. ACTION PRINCIPALE D'UNE PAGE : DEUX BOUTONS COMPLÉMENTAIRES
+//
+//   • .header-cta : bouton AVEC TEXTE dans le bandeau (« Nouveau match »), toujours visible en haut de page.
+//   • .fab        : bouton flottant en bas à droite, à portée du pouce. Il est « étendu » (icône + texte) tant que la page
+//                   est en haut, puis se réduit à l'icône dès qu'on défile : on ne peut pas le manquer à l'arrivée,
+//                   et il ne masque pas le contenu ensuite. (La classe body.is-scrolled est posée par le layout.)
+// ════════════════════════════════════════════════════════════
+.fab[class][class] {
+  position: fixed;
+  right: 16px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 16px);   // au-dessus de la barre de navigation du bas
+  z-index: 1030;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: auto; min-width: 56px; height: 56px; padding: 0 20px;
+  border: 0; border-radius: 28px;
+  background: var(--primary-color); color: #fff;
+  font-size: 14px; font-weight: 700; letter-spacing: .01em;
+  box-shadow: var(--shadow-raise);
+  cursor: pointer;
+  transition: padding .25s ease, gap .25s ease, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+  &:active { transform: scale(.96); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  mat-icon { flex-shrink: 0; font-size: 24px; width: 24px; height: 24px; }
+  .fab-label { max-width: 180px; overflow: hidden; white-space: nowrap; transition: max-width .25s ease, opacity .2s ease; }
+
+  @media (min-width: 1024px) { bottom: 24px; right: 24px; }   // pas de barre du bas sur grand écran
+}
+body.is-scrolled .fab[class][class] {
+  padding: 0; gap: 0; width: 56px;
+  .fab-label { max-width: 0; opacity: 0; }
+}
+
+// Bouton d'action du bandeau : sur mobile il prend toute la largeur, sous le titre ; ensuite il rejoint les autres actions
+.header-cta[class][class] { flex: 1 1 100%; order: -1; justify-content: center; gap: 8px; }
+@media (min-width: 768px) { .header-cta[class][class] { flex: 0 0 auto; order: 0; } }
+
+// Bouton d'action du bandeau : toujours blanc plein (il n'est utilisé que sur le fond bleu des bandeaux)
+.header-cta[class][class] {
+  background: #fff !important;
+  color: var(--primary-dark) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  min-height: 44px;
+  font-weight: 700;
+}
+// Ligne qui porte le bouton quand il est ajouté en dernier élément d'un bandeau : pleine largeur sur mobile, à droite ensuite
+.header-cta-row {
+  position: relative; z-index: 1;
+  display: flex; justify-content: flex-end;
+  margin-top: 12px;
+  .header-cta { flex: 1 1 100%; }
+  @media (min-width: 768px) { .header-cta { flex: 0 0 auto; } }
+}
+
+// ════════════════════════════════════════════════════════════
+// 12. MINI-STATS DES EN-TÊTES, RECHERCHE ET FILTRES : MÊME DISPOSITION PARTOUT
+//
+//   • bandeau de chiffres clés : colonnes de largeur égale (3 ou 4 sur une ligne, 2 x 2 au-delà), valeur au-dessus du
+//     libellé, centrés, séparés par un filet, sous le titre et les actions ;
+//   • boîte de recherche : même hauteur (44 px), même rayon, icône à gauche ;
+//   • onglets / filtres : défilement horizontal si trop nombreux, zones tactiles de 40 px, jamais tronqués.
+// ════════════════════════════════════════════════════════════
+:is(
+  .db-header, .fin-header, .fin-page-header, .obj-header, .dir-header, .sug-header, .explore-header,
+  .dash-header, .np-header, .mouvements-header, .bilan-header, .echeancier-header, .contrib-header,
+  .config-header, .membres-header, .match-header, .presence-header, .im-header, .ts-header, .an-header,
+  .sanction-header, .feed-header, .settings-header, .dashboard-header, .pub-list__hero, .hero-header, .jd-header
+)[class][class][class] {
+  :is(.header-kpis, .eq-kpis, .fin-kpis, .db-kpis, .header-stats, .hero-header__stats) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 0;
+    margin: 12px 0 0 !important;
+    padding: 10px 4px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, .14) !important;
+    box-shadow: none !important;
+    // anciens séparateurs : remplacés par le filet de chaque colonne
+    > [class*="sep"], > [class*="divider"] { display: none !important; }
+    > :not([class*="sep"]):not([class*="divider"]) {
+      min-width: 0; padding: 2px 6px; text-align: center; background: none !important; border-radius: 0 !important;
+      border: 0 !important; box-shadow: none !important;
+      & + * { border-left: 1px solid rgba(255, 255, 255, .2) !important; }
+      color: #fff;
+    }
+    // montants longs : jamais coupés
+    strong, b, [class*="val"], [class*="number"] {
+      display: block; font-size: clamp(15px, 4.6vw, 20px); font-weight: 800; line-height: 1.2; overflow-wrap: anywhere;
+    }
+    span:not([class*="val"]):not([class*="number"]), small, [class*="label"], [class*="lbl"] {
+      display: block; font-size: 11px; opacity: .85; line-height: 1.25;
+    }
+  }
+  @media (max-width: 480px) {
+    :is(.header-kpis, .eq-kpis, .fin-kpis, .db-kpis, .header-stats, .hero-header__stats):has(> :nth-child(4)) {
+      grid-template-columns: repeat(2, 1fr);
+      > :nth-child(odd) { border-left: 0 !important; }
+      > :nth-child(n+3) { border-top: 1px solid rgba(255, 255, 255, .2) !important; padding-top: 8px; }
+    }
+  }
+}
+
+// Recherche : une seule apparence
+:is(.search-input-wrap, .eq-search, .search-wrap, .search-field, .pub-list__search)[class][class] {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 0 12px;
+  border-radius: var(--radius-control, 12px);
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: var(--background-primary);
+  mat-icon { flex-shrink: 0; width: 20px; height: 20px; font-size: 20px; color: var(--text-secondary); }
+  input { flex: 1; min-width: 0; min-height: 40px; border: 0; outline: 0; background: transparent; font-size: 16px; color: var(--text-primary); }
+}
+
+// Onglets / puces de filtre : défilement horizontal plutôt que troncature
+:is(.tabs-bar, .tabs-nav, .tab-bar, .filter-chips, .filters-row, .match-tabs)[class][class] {
+  display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+  > button, > a, > .tab-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+}

@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, Inject, inject } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -160,7 +161,7 @@ export class ObjectifsComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         },
         error: () => {
-          this.snackBar.open('Erreur lors du chargement des objectifs', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_des_ob_78db'), 'Fermer', { duration: 3000 });
           this.isLoading = false;
         }
       });
@@ -250,7 +251,7 @@ export class ObjectifsComponent implements OnInit, OnDestroy {
         this.isSaving = false;
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'enregistrement', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('partenaire.entreprises.form.error'), 'Fermer', { duration: 3000 });
         this.isSaving = false;
       }
     });
@@ -263,15 +264,15 @@ export class ObjectifsComponent implements OnInit, OnDestroy {
   }
 
   deleteObjectif(objectif: ObjectifDTO): void {
-    if (!confirm('Supprimer cet objectif ?')) return;
+    if (!confirm(t('ui.ts_supprimer_cet_objectif_97d5'))) return;
     this.objectifsSvc.deleteObjectif(objectif.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          this.snackBar.open('Objectif supprimé', 'Fermer', { duration: 3000 });
+          this.snackBar.open(t('ui.ts_objectif_supprime_857b'), 'Fermer', { duration: 3000 });
           this.loadObjectifs();
         },
-        error: () => this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 })
+        error: () => this.snackBar.open(t('equipe.deleteError'), 'Fermer', { duration: 3000 })
       });
   }
 
@@ -279,10 +280,10 @@ export class ObjectifsComponent implements OnInit, OnDestroy {
 
   getScopeLabel(scope: string): string {
     const map: Record<string, string> = {
-      PERSONNEL_GLOBAL:   'Personnel · Tous groupes',
-      PERSONNEL_GROUPE:   'Personnel · 1 groupe',
-      GROUPE_GLOBAL:      'Groupe · Tous membres',
-      GROUPE_SPECIFIQUE:  'Groupe · Pour moi',
+      PERSONNEL_GLOBAL:   t('ui.ts_personnel_tous_groupes_59c6'),
+      PERSONNEL_GROUPE:   t('ui.ts_personnel_1_groupe_c317'),
+      GROUPE_GLOBAL:      t('ui.ts_groupe_tous_membres_d5aa'),
+      GROUPE_SPECIFIQUE:  t('ui.ts_groupe_pour_moi_6b06'),
     };
     return map[scope] ?? scope;
   }

@@ -57,6 +57,8 @@ import { FinancialDashboardComponent } from "./modules/responsable/components/fi
 import { SortieCaisseComponent } from "./modules/responsable/components/sortie-caisse/sortie-caisse.component";
 import { TypeContributionComponent } from "./modules/responsable/components/type-contribution/type-contribution.component";
 import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
+import { RapportsComponent } from "./modules/responsable/components/rapports/rapports.component";
+import { MatchDirectComponent } from "./modules/responsable/components/match-direct/match-direct.component";
 import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
 import { CaissesComponent } from "./modules/responsable/components/caisses/caisses.component";
 import { EcheancierComponent } from "./modules/responsable/components/echeancier/echeancier.component";
@@ -154,6 +156,14 @@ export const routes: Routes = [
   path: 'security',
   component: SecurityPolicyComponent
 },
+{
+  path: 'pilote',
+  loadComponent: () => import('./modules/doc/pilote/pilote.component').then(m => m.PiloteComponent)
+},
+{
+  path: 'delete-account-info',
+  loadComponent: () => import('./modules/doc/delete-account-info/delete-account-info.component').then(m => m.DeleteAccountInfoComponent)
+},
 
   {
     path: 'affiches',
@@ -172,6 +182,32 @@ export const routes: Routes = [
 // PATCH app.routes.ts — routes compétition
 // ════════════════════════════════════════════════════════════
 
+// ── Équipes : espace du responsable, accès par lien (sans compte), fiche joueur ──
+{
+  path: 'mes-equipes',
+  canActivate: [RoleGuard],
+  data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'CANDIDAT', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'ROLE_CANDIDAT'] },
+  loadComponent: () => import('./modules/competition/components/mes-equipes/mes-equipes.component')
+    .then(m => m.MesEquipesComponent)
+},
+{
+  path: 'mes-equipes/:competitionId/:participantId',
+  canActivate: [RoleGuard],
+  data: { roles: ['ADMIN', 'RESPONSABLE', 'MEMBRE', 'CANDIDAT', 'ROLE_ADMIN', 'ROLE_RESPONSABLE', 'ROLE_MEMBRE', 'ROLE_CANDIDAT'] },
+  loadComponent: () => import('./modules/competition/components/equipe-espace/equipe-espace.component')
+    .then(m => m.EquipeEspaceComponent)
+},
+{
+  path: 'equipe/:token',
+  loadComponent: () => import('./modules/competition/components/equipe-espace/equipe-espace.component')
+    .then(m => m.EquipeEspaceComponent)
+},
+{
+  path: 'fiche/:token',
+  loadComponent: () => import('./modules/competition/components/fiche-joueur/fiche-joueur.component')
+    .then(m => m.FicheJoueurComponent)
+},
+
 {
   path: 'competitions',
   children: [
@@ -185,12 +221,22 @@ export const routes: Routes = [
       loadComponent: () => import('./modules/competition/components/competitions-publiques/competitions-publiques.component')
         .then(m => m.CompetitionsPubliquesComponent)
     },
+       {
+      path: 'dashboard',
+      loadComponent: () => import('./modules/competition/components/joueur-dashboard/joueur-dashboard.component')
+        .then(m => m.JoueurDashboardComponent)
+    },
      {
       path: ':id/public',
       loadComponent: () => import('./modules/competition/components/competition-publique/competition-publique.component')
         .then(m => m.CompetitionPubliqueComponent)
     },
    
+    {
+      path: 'mes-matchs',
+      loadComponent: () => import('./modules/competition/components/mes-matchs/mes-matchs.component')
+        .then(m => m.MesMatchsComponent)
+    },
     {
       path: 'new',
       loadComponent: () => import('./modules/competition/components/competition-create/competition-create.component')
@@ -468,6 +514,14 @@ export const routes: Routes = [
             component: AuditListComponent
           },
           {
+            path: 'pilote',
+            loadComponent: () => import('./modules/admin/components/demandes-pilote/demandes-pilote.component').then(m => m.DemandesPiloteComponent)
+          },
+          {
+            path: 'signalements',
+            loadComponent: () => import('./modules/admin/components/signalements/signalements.component').then(m => m.SignalementsComponent)
+          },
+          {
             path: 'groupes/nouveau',
             component: GroupeFormComponent
           },
@@ -632,6 +686,13 @@ export const routes: Routes = [
             path: 'dashboard',
             component: RDashboardComponent
           },
+          // Rapports PDF (financier / sportif / global) — réservé à ceux qui ont le menu « Rapports »
+          {
+            path: 'rapports',
+            component: RapportsComponent,
+            canActivate: [MenuGuard],
+            data: { title: 'Rapports' }
+          },
             {
             path: 'actualites',
             component: AnnouncementAdminComponent,
@@ -680,6 +741,10 @@ export const routes: Routes = [
           {
             path: 'presences/:matchId',
             component: PresenceFormComponent
+          },
+          {
+            path: 'direct/:matchId',
+            component: MatchDirectComponent
           },
            {
                 path: 'finances/caisses/:id',

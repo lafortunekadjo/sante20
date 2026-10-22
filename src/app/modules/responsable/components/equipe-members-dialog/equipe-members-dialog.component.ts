@@ -1,5 +1,6 @@
 // equipe-members-dialog.component.ts
 
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -14,7 +15,7 @@ import { Membre } from '../../../../core/models/membre.model';
 @Component({
   selector: 'app-equipe-members-dialog',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,

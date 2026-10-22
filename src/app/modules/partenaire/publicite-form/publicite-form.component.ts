@@ -3,6 +3,7 @@
 // Création et édition de publicité
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -180,7 +181,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement publicité:', err);
-        this.snackBar.open('Publicité non trouvée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_publicite_non_trouvee_e0c6'), 'OK', { duration: 3000 });
         this.router.navigate(['/partenaire/publicites']);
       }
     });
@@ -212,12 +213,12 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
       
       // Validation
       if (!file.type.startsWith('image/')) {
-        this.snackBar.open('Le fichier doit être une image', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_le_fichier_doit_etre_une_image_cfb0'), 'OK', { duration: 3000 });
         return;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        this.snackBar.open('L\'image ne doit pas dépasser 5 Mo', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_l_image_ne_doit_pas_depasser_5_m_cb6e'), 'OK', { duration: 3000 });
         return;
       }
       
@@ -273,7 +274,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
 
     // Vérifier l'image
     if (!this.imagePreview && !asBrouillon) {
-      this.snackBar.open('Une image est requise pour soumettre', 'OK', { duration: 3000 });
+      this.snackBar.open(t('ui.ts_une_image_est_requise_pour_soume_d60b'), 'OK', { duration: 3000 });
       return;
     }
 
@@ -358,7 +359,7 @@ export class PubliciteFormComponent implements OnInit, OnDestroy {
         this.onSuccess(asBrouillon);
       },
       error: () => {
-        this.snackBar.open('Publicité créée mais erreur lors de l\'upload de l\'image', 'OK', { duration: 5000 });
+        this.snackBar.open(t('ui.ts_publicite_creee_mais_erreur_lors_2697'), 'OK', { duration: 5000 });
         this.router.navigate(['/partenaire/publicite']);
       }
     });

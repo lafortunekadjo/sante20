@@ -419,17 +419,20 @@
 // ══════════════════════════════════════════════════════════════
 
 .main-content {
-  flex: 1;
+  // La règle globale « app-root, main, ... { height: 100dvh } » de styles.scss s'appliquait aussi à cette zone de contenu,
+  // qui commence pourtant sous la barre du haut : elle débordait de la hauteur de cette barre (≈ 52 px) et le bas des
+  // pages (pagination, derniers boutons) passait sous l'écran et sous le menu du bas. Elle occupe désormais
+  // exactement l'espace restant.
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
   background: var(--background-secondary);
 
-  // Sur mobile : padding-bottom pour la bottom nav
-  &.with-bottom-nav {
-    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom));
-  }
+  // Sur mobile, l'espace sous le contenu pour le menu du bas est réservé UNE seule fois, dans .page-content (ci-dessous).
 
   &.full-width {
     margin-left: 0 !important;
@@ -441,13 +444,28 @@
 }
 
 .page-content {
-  height: 100%;
-  animation: page-slide-in .2s ease forwards;
+  min-height: 100%;
+  // <main> est une colonne flex : sans cela la page se comprime à la hauteur visible et son contenu déborde, sous le menu du bas
+  flex: 0 0 auto;
+  // "backwards" et non "forwards" : une fois l'animation finie, plus AUCUNE transform ne reste sur .page-content.
+  // Une transform (même translateY(0)) crée un contexte pour position:fixed : les boutons flottants, barres fixes et
+  // bannières des pages défilaient alors avec le contenu au lieu de rester à l'écran.
+  animation: page-slide-in .2s ease backwards;
+
+  // Le padding ici est DANS le scroll container — jamais clippé
+  .with-bottom-nav & {
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + 16px);
+  }
+
+  // Bouton flottant : on réserve sa place pour qu'il ne recouvre pas la dernière ligne (pagination, dernière carte)
+  .with-bottom-nav &:has(.fab) {
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom) + 84px);
+  }
 }
 
 @keyframes page-slide-in {
   from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 // ── Logout menu item ─────────────────────────────────────────
@@ -485,3 +503,18 @@
   }
 }
 
+
+// ── Harmonisation des actions de l'en-tête mobile ────────────
+// Toutes les actions ont le même gabarit (36-44 px) : le pointage ne doit plus écraser les autres icônes.
+.mobile-header-right {
+  gap: 6px;
+
+  .check-in-btn {
+    width: 36px !important;
+    height: 36px !important;
+    box-shadow: none !important;
+    border: 1.5px solid rgba(240, 180, 41, .55);
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    &:active { transform: scale(.94); }
+  }
+}

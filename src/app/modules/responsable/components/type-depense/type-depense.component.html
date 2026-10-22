@@ -18,7 +18,19 @@
       <div class="fkpi-sep"></div>
       <div class="fkpi"><span class="fkpi-val">{{ typesAvecValidation }}</span><span class="fkpi-lbl">{{ 'type_depense.stats.avec_validation' | translate }}</span></div>
     </div>
+  
+    <!-- Action principale : bouton avec texte (toujours visible en haut de page) + bouton flottant étendu (voir _ui-kit.scss, section 11) -->
+    <div class="header-cta-row" *ngIf="activeTab === 'list'">
+      <button class="btn-primary header-cta" (click)="activeTab = 'form'; closeForm()">
+        <mat-icon>add</mat-icon>{{ 'type_depense.actions.nouveau_type' | translate }}
+      </button>
+    </div>
   </div>
+
+  <button class="fab" *ngIf="activeTab === 'list'" (click)="activeTab = 'form'; closeForm()" [attr.aria-label]="'type_depense.actions.nouveau_type' | translate">
+    <mat-icon>add</mat-icon>
+    <span class="fab-label">{{ 'type_depense.actions.nouveau_type' | translate }}</span>
+  </button>
 
   <div class="fin-tabs-wrapper">
     <div class="fin-tabs-bar">
@@ -30,21 +42,16 @@
       <button class="fin-tab" [class.active]="activeTab === 'form'"
               (click)="activeTab = 'form'">
         <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
-        <span>{{ (isEditing ? 'type_depense.formulaire.titre_modifier' : 'type_depense.formulaire.titre_creer') | translate }}</span>
+        <span>{{ (isEditing ? 'type_depense.formulaire.titre_modifier' : 'type_depense.actions.nouveau_type') | translate }}</span>
       </button>
     </div>
 
     <!-- Tab Liste -->
     <div class="fin-tab-content" *ngIf="activeTab === 'list'">
       <div class="fin-content">
-        <button mat-raised-button color="primary" class="fin-fab-create"
-                (click)="activeTab = 'form'; closeForm()">
-          <mat-icon>add</mat-icon>{{ 'type_depense.actions.nouveau_type' | translate }}
-        </button>
-
         <div class="fin-empty" *ngIf="typesDepenses.length === 0">
           <mat-icon>category</mat-icon>
-          <p>Aucun type de dépense</p>
+          <p>{{ 'type_depense.vide.titre' | translate }}</p>
         </div>
 
         <div class="fin-list" *ngIf="typesDepenses.length > 0">
@@ -96,7 +103,7 @@
         <div class="fin-form-card">
           <div class="form-card-header">
             <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
-            <span>{{ (isEditing ? 'type_depense.formulaire.titre_modifier' : 'type_depense.formulaire.titre_creer') | translate }}</span>
+            <span>{{ (isEditing ? 'type_depense.formulaire.titre_modifier' : 'type_depense.actions.nouveau_type') | translate }}</span>
             <button mat-icon-button (click)="closeForm(); activeTab = 'list'" style="margin-left:auto">
               <mat-icon>close</mat-icon>
             </button>
@@ -107,8 +114,8 @@
                 <mat-label>{{ 'type_depense.champs.nom' | translate }}</mat-label>
                 <mat-icon matPrefix>label</mat-icon>
                 <input matInput formControlName="nom" required>
-                <mat-error *ngIf="typeForm.get('nom')?.hasError('required')">Nom requis</mat-error>
-                <mat-error *ngIf="typeForm.get('nom')?.hasError('minlength')">Minimum 3 caractères</mat-error>
+                <mat-error *ngIf="typeForm.get('nom')?.hasError('required')">{{ 'ui.nom_requis_feea' | translate }}</mat-error>
+                <mat-error *ngIf="typeForm.get('nom')?.hasError('minlength')">{{ 'join.errors.min3' | translate }}</mat-error>
               </mat-form-field>
               <mat-form-field appearance="outline" class="span-2">
                 <mat-label>{{ 'type_depense.champs.description' | translate }}</mat-label>
@@ -138,7 +145,7 @@
                     <mat-icon>public</mat-icon>
                     <div>
                       <span>{{ 'type_depense.champs.generique' | translate }}</span>
-                      <small>Visible par tous les groupes</small>
+                      <small>{{ 'ui.visible_par_tous_les_groupes_5b87' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>
@@ -147,7 +154,7 @@
                     <mat-icon>verified_user</mat-icon>
                     <div>
                       <span>{{ 'type_depense.champs.necessiteValidation' | translate }}</span>
-                      <small>Requiert une approbation</small>
+                      <small>{{ 'ui.requiert_une_approbation_a43d' | translate }}</small>
                     </div>
                   </div>
                 </mat-checkbox>

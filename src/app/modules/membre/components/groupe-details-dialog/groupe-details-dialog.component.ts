@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatIconModule } from "@angular/material/icon";
@@ -109,7 +110,7 @@ private envoyerDemandeMatch(requestData: any): void {
   this.matchRequestService.createMatchRequest(requestData).subscribe({
     next: (response) => {
       this.snackBar.open(
-        'Demande de match envoyée avec succès !',
+        t('matchRequest.success'),
         'OK',
         { duration: 3000 }
       );
@@ -118,7 +119,7 @@ private envoyerDemandeMatch(requestData: any): void {
     error: (error) => {
       console.error('Error sending match request:', error);
       this.snackBar.open(
-        'Erreur lors de l\'envoi de la demande',
+        t('matchRequest.error'),
         'OK',
         { duration: 3000 }
       );

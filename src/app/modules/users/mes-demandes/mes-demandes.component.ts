@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -76,7 +77,7 @@ trackById(index: number, demande: any): any {
       },
       error: (err) => {
         console.error('Erreur chargement demandes:', err);
-        this.snackBar.open('Erreur lors du chargement des demandes', 'Fermer', {
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_des_de_542e'), 'Fermer', {
           duration: 3000
         });
         this.isLoading = false;
@@ -108,7 +109,7 @@ trackById(index: number, demande: any): any {
 
   annulerDemande(demande: DemandeAvecGroupe): void {
     if (demande.statut !== 'EN_ATTENTE') {
-      this.snackBar.open('Vous ne pouvez annuler que les demandes en attente', 'Fermer', {
+      this.snackBar.open(t('ui.ts_vous_ne_pouvez_annuler_que_les_d_e02a'), 'Fermer', {
         duration: 3000
       });
       return;
@@ -121,14 +122,14 @@ trackById(index: number, demande: any): any {
 
       this.questionnaireService.annulerDemandeAdhesion(demande.id).subscribe({
         next: () => {
-          this.snackBar.open('Demande annulée avec succès', 'Fermer', {
+          this.snackBar.open(t('ui.ts_demande_annulee_avec_succes_d140'), 'Fermer', {
             duration: 3000
           });
           this.loadDemandes();
         },
         error: (err) => {
           console.error('Erreur annulation demande:', err);
-          this.snackBar.open('Erreur lors de l\'annulation', 'Fermer', {
+          this.snackBar.open(t('mouvements.annuler.erreur'), 'Fermer', {
             duration: 3000
           });
         }
@@ -198,7 +199,7 @@ shareRequest(demande: any): void {
   } else {
     // Fallback pour navigateurs qui ne supportent pas Web Share API
     navigator.clipboard.writeText(shareData.url).then(() => {
-      this.snackBar.open('Lien copié dans le presse-papiers', 'Fermer', { duration: 2000 });
+      this.snackBar.open(t('invitation.linkCopied'), 'Fermer', { duration: 2000 });
     }).catch(console.error);
   }
 }
@@ -390,7 +391,7 @@ goToGroupe(groupeId: number): void {
  */
 confirmAndCancelRequest(demande: any): void {
   if (!this.canCancelRequest(demande)) {
-    this.snackBar.open('Vous ne pouvez annuler que les demandes en attente', 'Fermer', {
+    this.snackBar.open(t('ui.ts_vous_ne_pouvez_annuler_que_les_d_e02a'), 'Fermer', {
       duration: 3000
     });
     return;

@@ -54,6 +54,7 @@ export interface ClassementIndividuDTO {
   nom: string;
   prenom: string;
   groupeNom: string;
+  profilUrl: string;
   totalPoints: number;
 }
 

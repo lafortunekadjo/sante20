@@ -1,3 +1,4 @@
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -133,7 +134,7 @@ downloadMvpCard(): void {
   if (!gId || !this.winner()) return;
  
   this.isDownloading.set(true);
-  this.snackBar.open('Génération de la carte MVP...', '', { duration: 2000 });
+  this.snackBar.open(t('ui.ts_generation_de_la_carte_mvp_fd6a'), '', { duration: 2000 });
  
   const filename = `MVP_${this.selectedPeriod()}_My20.jpg`;
  
@@ -159,7 +160,7 @@ downloadMvpCard(): void {
                 contentType: 'image/jpeg'
               });
  
-              this.snackBar.open('Carte MVP enregistrée dans Documents', '✓', {
+              this.snackBar.open(t('ui.ts_carte_mvp_enregistree_dans_docum_aed9'), '✓', {
                 duration: 3000
               });
             } catch (error) {
@@ -168,7 +169,7 @@ downloadMvpCard(): void {
             }
           };
           reader.onerror = () => {
-            this.snackBar.open('Erreur lecture fichier', '✕', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lecture_fichier_1d4b'), '✕', { duration: 3000 });
           };
  
         } else {
@@ -180,20 +181,20 @@ downloadMvpCard(): void {
           link.click();
           window.URL.revokeObjectURL(url);
  
-          this.snackBar.open('Carte MVP téléchargée !', '✓', {
+          this.snackBar.open(t('ui.ts_carte_mvp_telechargee_ab40'), '✓', {
             duration: 3000,
             panelClass: 'snackbar-success'
           });
         }
       } catch (e) {
         console.error('Erreur sauvegarde MVP:', e);
-        this.snackBar.open('Erreur lors du téléchargement', '✕', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_telechargement_0134'), '✕', { duration: 3000 });
       }
       this.isDownloading.set(false);
     },
     error: (err) => {
       console.error('Erreur API MVP image:', err);
-      this.snackBar.open('Erreur lors de la génération', '✕', {
+      this.snackBar.open(t('ui.ts_erreur_lors_de_la_generation_b4d1'), '✕', {
         duration: 3000,
         panelClass: 'snackbar-error'
       });

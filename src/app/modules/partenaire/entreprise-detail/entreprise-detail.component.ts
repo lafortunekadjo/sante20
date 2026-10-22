@@ -3,6 +3,7 @@
 // Vue détaillée d'une entreprise partenaire
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -102,7 +103,7 @@ export class EntrepriseDetailComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erreur chargement entreprise:', err);
-        this.snackBar.open('Entreprise non trouvée', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_entreprise_non_trouvee_d76e'), 'OK', { duration: 3000 });
         this.router.navigate(['/partenaire/entreprises']);
       }
     });
@@ -139,7 +140,7 @@ export class EntrepriseDetailComponent implements OnInit, OnDestroy {
         this.snackBar.open(`Entreprise ${action === 'activer' ? 'activée' : 'désactivée'}`, 'OK', { duration: 3000 });
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'action', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_action_ff26'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -155,10 +156,10 @@ export class EntrepriseDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Supprimer l\'entreprise',
+        title: t('partenaire.entreprises.confirmDelete.title'),
         message: message,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
+        confirmText: t('type_depense.actions.supprimer'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn'
       }
     });
@@ -167,11 +168,11 @@ export class EntrepriseDetailComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.partenaireService.deleteEntreprise(this.entrepriseId).subscribe({
           next: () => {
-            this.snackBar.open('Entreprise supprimée', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_entreprise_supprimee_4dfe'), 'OK', { duration: 3000 });
             this.router.navigate(['/partenaire/entreprises']);
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }

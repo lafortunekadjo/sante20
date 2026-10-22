@@ -143,12 +143,9 @@ export class RxStompService implements OnDestroy {
  * Obtenir l'URL pour SockJS (Doit impérativement être http ou https)
  */
 private getWsUrl(): string {
-  // On définit l'URL de base manuellement ou via environment
-  const baseUrl = "http://localhost:8000"; 
-  
-  // On ajoute /api/ws (qui doit correspondre exactement au backend)
-  const endpoint = "/api/ws";
-  
-  return baseUrl + endpoint;
+  // Même serveur que l'API (« http://localhost:8000/api » en développement, « https://my2-0.cloud/api » dans l'application
+  // Android, « /api » derrière le proxy du site) : on retire le « /api » final puis on ajoute le point d'entrée /api/ws.
+  const baseUrl = environment.apiUrl.replace(/\/api\/?$/, '');
+  return baseUrl + '/api/ws';
 }
 }

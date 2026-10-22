@@ -365,3 +365,104 @@
     max-height: 180px; // réduit sur mobile à cause du bottom nav
   }
 }
+// ── Formulaire joueur complet (mobile d'abord : une colonne, champs de 44 px, police 16 px) ──
+.roster__form-titre { margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+
+.roster__manuel { padding: 14px 16px; }
+
+.champ {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+
+  .form-input, .form-select {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;   // 16 px : évite le zoom automatique d'iOS à la saisie
+  }
+}
+
+.roster__aide   { margin: 8px 16px; font-size: 12px; color: var(--text-secondary); }
+.roster__manque { margin: 10px 0 0; font-size: 13px; color: #b45309; }
+.roster__erreur {
+  margin: 10px 0 0; padding: 10px 12px;
+  font-size: 13px; color: #b91c1c;
+  background: rgba(239, 68, 68, .08); border-radius: 8px;
+}
+.roster__alerte { color: #b45309; }
+
+// ce qu'il manque sur la fiche d'un joueur
+.roster__todo {
+  display: block; margin-top: 2px;
+  font-size: 11px; color: #b45309;
+  &--photo { color: #b91c1c; }
+}
+
+// bouton photo (label déguisé en bouton pour ouvrir l'appareil photo)
+.btn-icon--photo { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+
+@include mobile {
+  .roster__form-grid { grid-template-columns: 1fr; }
+  .roster__form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .roster__row-actions { flex-wrap: wrap; justify-content: flex-end; }
+}
+
+.roster__aide--flush { margin: 0 0 10px; }
+.roster__import { width: 100%; font-size: 14px; font-family: monospace; }
+.roster__rapport { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; background: rgba(34, 197, 94, .1); }
+.roster__rejet { color: #b91c1c; font-size: 12px; margin-top: 2px; }
+.roster__info { margin: 8px 16px; font-size: 13px; color: var(--text-secondary); }
+
+.roster__source-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(128, 128, 128, .15); small { color: var(--text-secondary); } }
+
+// ════════════════════════════════════════════════════════════
+// Ligne de joueur — mobile d'abord
+// Téléphone : 1re ligne = n° · photo · nom/poste/alertes ; 2e ligne = les actions (zones tactiles de 40 px).
+// Écran large : tout sur une seule ligne.
+// ════════════════════════════════════════════════════════════
+.roster__row {
+  display: grid;
+  grid-template-columns: 26px 40px minmax(0, 1fr);
+  grid-template-areas:
+    "num avatar info"
+    "actions actions actions";
+  align-items: center;
+  gap: 6px 10px;
+  padding: 12px 16px;
+
+  .roster__num        { grid-area: num; }
+  .roster__row-avatar { grid-area: avatar; width: 40px; height: 40px; font-size: 13px; }
+  .roster__row-info   { grid-area: info; }
+  .roster__row-actions {
+    grid-area: actions;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-top: 4px;
+  }
+
+  // Le statut est déjà dans la liste déroulante des actions : pas de doublon sur mobile
+  .roster__statut-badge { display: none; }
+
+  .roster__row-nom  { font-size: 15px; font-weight: 600; }
+  .roster__row-meta { flex-wrap: wrap; font-size: 12px; }
+
+  .roster__statut-select { flex: 1 1 auto; min-width: 0; max-width: none; min-height: 40px; font-size: 14px; padding: 0 10px; border-radius: 10px; }
+  .btn-icon, .btn-icon--photo { width: 40px; height: 40px; flex-shrink: 0; }
+
+  // Staff : pas de photo ni de statut, la ligne d'actions est plus courte
+  @media (min-width: 768px) {
+    grid-template-columns: 28px 40px minmax(0, 1fr) auto auto;
+    grid-template-areas: "num avatar info statut actions";
+    .roster__statut-badge { display: inline-block; grid-area: statut; }
+    .roster__row-actions { padding-top: 0; }
+    .roster__statut-select { flex: 0 0 auto; max-width: 130px; min-height: 36px; font-size: 12px; }
+    .btn-icon, .btn-icon--photo { width: 36px; height: 36px; }
+  }
+}
+// Les alertes de fiche à compléter se lisent mieux sur plusieurs lignes qu'en une seule tronquée
+.roster__todo { line-height: 1.3; }

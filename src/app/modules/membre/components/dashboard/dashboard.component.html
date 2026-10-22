@@ -511,28 +511,49 @@
         <div class="contribution-card"
              *ngFor="let contrib of contributionsEnCours"
              [class.alert]="contrib.enAlerte"
-             [class.complete]="contrib.montantVerse >= contrib.montantObjectif">
+             [class.evenement]="contrib.evenement"
+             [class.complete]="contrib.montantObjectif > 0 && contrib.montantVerse >= contrib.montantObjectif">
 
           <div class="contribution-top">
             <div class="contribution-icon">
               <mat-icon>{{ contrib.montantVerse >= contrib.montantObjectif ? 'check_circle' : (contrib.enAlerte ? 'warning' : 'payments') }}</mat-icon>
             </div>
             <div class="contribution-info">
-              <span class="contribution-name">{{ contrib.libelle }}</span>
+              <span class="contribution-name">{{ contrib.libelle }}<span class="contribution-evt" *ngIf="contrib.evenement"> · {{ 'collecte.dashboard.event' | translate }}</span></span>
               <span class="contribution-deadline" *ngIf="contrib.delaiContribution">
                 <mat-icon>schedule</mat-icon>
                 {{ 'dashboard.member.dueDate' | translate }} {{ contrib.delaiContribution | date:'dd MMM yyyy' }}
               </span>
             </div>
-            <span class="contribution-status-pill" *ngIf="contrib.montantVerse >= contrib.montantObjectif">
+            <span class="contribution-status-pill" *ngIf="contrib.montantObjectif > 0 && contrib.montantVerse >= contrib.montantObjectif && !(contrib.evenement && contrib.mode === 'OBJECTIF')">
               {{ 'dashboard.member.paid' | translate }}
             </span>
-            <span class="contribution-status-pill alert" *ngIf="contrib.enAlerte && contrib.montantVerse < contrib.montantObjectif">
+            <span class="contribution-status-pill alert" *ngIf="contrib.enAlerte && (contrib.montantObjectif === 0 || contrib.montantVerse < contrib.montantObjectif)">
               {{ 'dashboard.member.dueSoon' | translate }}
             </span>
           </div>
 
-          <div class="contribution-progress">
+          <!-- Collecte d'événement : montant libre = votre don ; objectif global = avancement du groupe -->
+          <div class="contribution-progress" *ngIf="contrib.evenement && contrib.mode === 'LIBRE'">
+            <div class="progress-amounts">
+              <span class="amount-paid">{{ contrib.maContribution | number }} FCFA</span>
+              <span class="amount-sep"> · </span>
+              <span class="amount-total">{{ 'collecte.dashboard.freeAmount' | translate }}</span>
+            </div>
+          </div>
+          <div class="contribution-progress" *ngIf="contrib.evenement && contrib.mode === 'OBJECTIF'">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" [style.width.%]="getContribProgress(contrib)"></div>
+            </div>
+            <div class="progress-amounts">
+              <span class="amount-paid">{{ contrib.totalCollecte | number }} FCFA</span>
+              <span class="amount-sep">/</span>
+              <span class="amount-total">{{ contrib.montantObjectif | number }} FCFA</span>
+            </div>
+            <small *ngIf="contrib.maContribution > 0">{{ 'collecte.dashboard.yourShare' | translate: { montant: (contrib.maContribution | number) } }}</small>
+          </div>
+
+          <div class="contribution-progress" *ngIf="!contrib.evenement || contrib.mode === 'FIXE'">
             <div class="progress-bar-track">
               <div class="progress-bar-fill"
                    [class.complete]="contrib.montantVerse >= contrib.montantObjectif"

@@ -1,5 +1,6 @@
 // src/app/modules/responsable/components/groupes-explore/groupes-explore.component.ts
 
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -123,7 +124,7 @@ ngOnInit(): void {
       },
       error: (err) => {
         console.error('Erreur chargement groupes:', err);
-        this.snackBar.open('Erreur lors du chargement des groupes', 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_des_gr_ba7e'), 'Fermer', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -283,7 +284,7 @@ ngOnInit(): void {
         next: (demandeExiste) => {
           if (demandeExiste) {
             this.snackBar.open(
-              'Vous avez déjà une demande en attente pour ce groupe',
+              t('ui.ts_vous_avez_deja_une_demande_en_at_f2c7'),
               'Fermer', { duration: 4000 }
             );
           } else {
@@ -486,15 +487,15 @@ getFieldValue(groupe: any, field: string): number {
 getCompareMetrics(): { label: string; field: string; format: (g: any) => string }[] {
   return [
     { label: 'Discipline',    field: 'discipline',     format: g => g.discipline || '—' },
-    { label: 'Ville',         field: 'ville',          format: g => g.ville || '—' },
-    { label: 'Stade',         field: 'stade',          format: g => g.stade?.nom || '—' },
-    { label: 'Jour de match', field: 'jourMatch',      format: g => g.jourMatch || '—' },
-    { label: 'Heure',         field: 'heureMatch',     format: g => g.heureMatch || '—' },
-    { label: 'Type équipe', field: 'typeEquipe',    format: g => g.typeEquipe || '—' },
-    { label: 'Niveau requis', field: 'niveauRequis',   format: g => g.niveauRequis || 'Tous niveaux' },
-    { label: 'Membres',       field: 'nombreMembres',  format: g => g.nombreMembres != null ? `${g.nombreMembres}${g.capaciteMax ? ' / ' + g.capaciteMax : ''}` : '—' },
+    { label: t('groups.city'),         field: 'ville',          format: g => g.ville || '—' },
+    { label: t('groups.stadium'),         field: 'stade',          format: g => g.stade?.nom || '—' },
+    { label: t('groups.matchDay'), field: 'jourMatch',      format: g => g.jourMatch || '—' },
+    { label: t('invite.match.time'),         field: 'heureMatch',     format: g => g.heureMatch || '—' },
+    { label: t('ui.ts_type_equipe_d0bd'), field: 'typeEquipe',    format: g => g.typeEquipe || '—' },
+    { label: t('explorer.filtres.niveau'), field: 'niveauRequis',   format: g => g.niveauRequis || 'Tous niveaux' },
+    { label: t('menu.items.MEMBRES'),       field: 'nombreMembres',  format: g => g.nombreMembres != null ? `${g.nombreMembres}${g.capaciteMax ? ' / ' + g.capaciteMax : ''}` : '—' },
     { label: 'Remplissage',   field: 'tauxRemplissage',format: g => g.capaciteMax ? this.getCapacityPercentage(g) + '%' : '—' },
-    { label: 'Frais adhésion','field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' FCFA' },
+    { label: t('ui.ts_frais_adhesion_938d'),'field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' FCFA' },
     { label: 'Recrutement',   field: 'accepte',        format: g => g.accepteNouveauxMembres ? '✅ Ouvert' : '🔒 Fermé' },
   ];
 }
@@ -611,7 +612,7 @@ shareGroupe(groupe: any): void {
   } else {
     const url = `${window.location.origin}/groupe/${groupe.id}`;
     navigator.clipboard.writeText(url).then(() => {
-      this.snackBar.open('Lien copié dans le presse-papiers', 'Fermer', { duration: 2000 });
+      this.snackBar.open(t('invitation.linkCopied'), 'Fermer', { duration: 2000 });
     });
   }
 }

@@ -3,6 +3,7 @@
 // Gestion administrative des partenaires
 // ============================================================
 
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -165,7 +166,7 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Erreur chargement partenaires:', err);
         this.isLoading = false;
-        this.snackBar.open('Erreur lors du chargement', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_du_chargement_c064'), 'OK', { duration: 3000 });
       }
     });
     this.subscriptions.push(sub);
@@ -253,12 +254,12 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
   activerPartenaire(partenaire: PartenaireDTO): void {
     this.adminService.activerPartenaire(partenaire.id).subscribe({
       next: () => {
-        this.snackBar.open('Partenaire activé', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_partenaire_active_1ed2'), 'OK', { duration: 3000 });
         this.loadPartenaires();
         this.loadStats();
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'activation', 'OK', { duration: 3000 });
+        this.snackBar.open(t('membres.activateError'), 'OK', { duration: 3000 });
       }
     });
   }
@@ -267,10 +268,10 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Suspendre le partenaire',
+        title: t('ui.ts_suspendre_le_partenaire_c909'),
         message: `Voulez-vous vraiment suspendre le partenaire "${partenaire.nom}" ? Ses publicités seront désactivées.`,
         confirmText: 'Suspendre',
-        cancelText: 'Annuler',
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'pause_circle'
       }
@@ -285,7 +286,7 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
             this.loadStats();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suspension', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_erreur_lors_de_la_suspension_e6b9'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -296,10 +297,10 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
-        title: 'Supprimer le partenaire',
+        title: t('ui.ts_supprimer_le_partenaire_9250'),
         message: `Attention ! Cette action est irréversible. Toutes les données du partenaire "${partenaire.nom}" seront supprimées (entreprises, publicités, statistiques).`,
-        confirmText: 'Supprimer définitivement',
-        cancelText: 'Annuler',
+        confirmText: t('ui.supprimer_definitivement_022b'),
+        cancelText: t('common.CANCEL'),
         confirmColor: 'warn',
         icon: 'delete_forever'
       }
@@ -309,12 +310,12 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.adminService.deletePartenaire(partenaire.id).subscribe({
           next: () => {
-            this.snackBar.open('Partenaire supprimé', 'OK', { duration: 3000 });
+            this.snackBar.open(t('ui.ts_partenaire_supprime_dcf7'), 'OK', { duration: 3000 });
             this.loadPartenaires();
             this.loadStats();
           },
           error: () => {
-            this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+            this.snackBar.open(t('equipe.deleteError'), 'OK', { duration: 3000 });
           }
         });
       }
@@ -330,10 +331,10 @@ export class PartenairesListComponent implements OnInit, OnDestroy {
         a.download = `partenaires_${new Date().toISOString().split('T')[0]}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
-        this.snackBar.open('Export téléchargé', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_export_telecharge_b634'), 'OK', { duration: 3000 });
       },
       error: () => {
-        this.snackBar.open('Erreur lors de l\'export', 'OK', { duration: 3000 });
+        this.snackBar.open(t('ui.ts_erreur_lors_de_l_export_921f'), 'OK', { duration: 3000 });
       }
     });
   }

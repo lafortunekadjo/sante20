@@ -2,7 +2,7 @@
 
   <!-- ══ HEADER ═══════════════════════════════════════════════ -->
   <div class="tab-participants__header">
-    <h3>Équipes inscrites ({{ participants().length }})</h3>
+    <h3>{{ 'ui.m_equipes_inscrites_a04a' | translate:{p0: (participants().length)} }}</h3>
     <button class="btn-primary btn-sm"
             *ngIf="canInscrire()"
             (click)="showForm.set(!showForm())">
@@ -22,7 +22,7 @@
                 [class.active]="form.get('type')!.value === 'EXTERNE'"
                 (click)="form.patchValue({ type: 'EXTERNE', groupeId: null })">
           <mat-icon>public</mat-icon>
-          Équipe externe
+          {{ 'ui.equipe_externe_eb8b' | translate }}
         </button>
         <button type="button"
                 class="type-btn"
@@ -38,18 +38,18 @@
         <!-- ── Type GROUPE_MY20 → liste déroulante ────────────── -->
         <ng-container *ngIf="form.get('type')!.value === 'GROUPE_MY20'">
           <div class="form-field form-field--full">
-            <label>Sélectionner un club My2-0 *</label>
+            <label>{{ 'ui.selectionner_un_club_my2_0_92e1' | translate }}</label>
 
             <div class="loading-groupes" *ngIf="loadingGroupes()">
               <mat-icon>refresh</mat-icon>
-              Chargement des clubs...
+              {{ 'ui.chargement_des_clubs_6034' | translate }}
             </div>
 
             <select *ngIf="!loadingGroupes()"
                     formControlName="groupeId"
                     class="form-select"
                     (change)="onGroupeChange(+$any($event.target).value)">
-              <option value="">-- Choisir un club --</option>
+              <option value="">{{ 'ui.choisir_un_club_ae0b' | translate }}</option>
               <option *ngFor="let g of groupesDisponibles()"
                       [value]="g.id"
                       [disabled]="isGroupeDejaInscrit(g.id)">
@@ -59,9 +59,8 @@
 
             <div class="hint" *ngIf="groupesDisponibles().length === 0 && !loadingGroupes()">
               <mat-icon>info</mat-icon>
-              Vous n'êtes responsable d'aucun groupe My2-0.
-              Choisissez "Équipe externe" ou
-              <a routerLink="/groupes/new">créez un groupe</a>.
+              {{ 'ui.vous_n_etes_responsable_d_aucun_gr_fc1d' | translate }}
+              <a routerLink="/groupes/new">{{ 'ui.creez_un_groupe_887c' | translate }}</a>.
             </div>
           </div>
         </ng-container>
@@ -69,7 +68,7 @@
         <!-- ── Type EXTERNE → saisie libre ────────────────────── -->
         <ng-container *ngIf="form.get('type')!.value === 'EXTERNE'">
           <div class="form-field">
-            <label>Nom de l'équipe *</label>
+            <label>{{ 'ui.nom_de_l_equipe_206f' | translate }}</label>
             <input formControlName="nomEquipe"
                    class="form-input"
                    placeholder="Ex: AS Douala FC"/>
@@ -78,19 +77,19 @@
             <label>Contact responsable</label>
             <input formControlName="contactResponsable"
                    class="form-input"
-                   placeholder="Téléphone ou email"/>
+                   [placeholder]="'ui.telephone_ou_email_d449' | translate"/>
           </div>
         </ng-container>
 
         <!-- Tête de série — commun aux deux types -->
         <div class="form-field">
-          <label>Tête de série (optionnel)</label>
+          <label>{{ 'ui.tete_de_serie_optionnel_936b' | translate }}</label>
           <input formControlName="seed"
                  type="number"
                  class="form-input"
                  min="1" placeholder="1, 2, 3..."/>
           <span class="field-hint">
-            Utilisé pour éviter que les têtes de série se rencontrent en phase de groupes
+            {{ 'ui.utilise_pour_eviter_que_les_tetes__9e78' | translate }}
           </span>
         </div>
       </div>
@@ -114,7 +113,7 @@
     <button class="filter-btn"
             [class.active]="filtreStatut() === null"
             (click)="filtreStatut.set(null)">
-      Toutes ({{ participants().length }})
+      {{ 'ui.m_toutes_3d3c' | translate:{p0: (participants().length)} }}
     </button>
     <button class="filter-btn"
             *ngFor="let s of statutOptions"
@@ -125,6 +124,7 @@
   </div>
 
   <!-- ══ LISTE DES PARTICIPANTS ══════════════════════════════════ -->
+  <p class="participants-message" *ngIf="messageLien()">{{ messageLien() }}</p>
   <div class="participants-list">
     <div class="participant-card"
          *ngFor="let p of filteredParticipants()">
@@ -154,6 +154,15 @@
             {{ p.contactResponsable }}
           </span>
         </div>
+        <div class="participant-card__avancement" *ngIf="avancement()[p.id] as av">
+          {{ 'ui.m_joueur_s_2a81' | translate:{p0: (av.nbJoueurs)} }}
+          <span [class.avancement--alerte]="av.nbFichesIncompletes + av.nbSansPhoto > 0">
+            · {{ av.effectifPret ? 'effectif prêt' : av.nbFichesIncompletes + ' fiche(s) à compléter' }}
+          </span>
+          <span *ngIf="av.nbSansPhoto > 0" class="avancement--alerte">· {{ av.nbSansPhoto }} photo(s) manquante(s)</span>
+          <span *ngIf="av.sousMinimum" class="avancement--alerte">{{ 'ui.m_sous_l_effectif_vise_68b9' | translate:{p0: (av.nbJoueurs), p1: (av.effectifMin)} }}</span>
+          <span *ngIf="av.enRetard" class="avancement--alerte">· en retard</span>
+        </div>
       </div>
 
       <!-- Statut -->
@@ -162,6 +171,7 @@
               [class]="'statut-' + p.statutInscription.toLowerCase()">
           {{ statutLabel(p.statutInscription) }}
         </span>
+        <small class="participant-card__motif" *ngIf="p.statutInscription === 'REJETE' && p.motifRefus">Motif : {{ p.motifRefus }}</small>
       </div>
 
       <!-- Actions -->
@@ -169,24 +179,30 @@
         <button class="btn-icon btn-icon--success"
                 *ngIf="p.statutInscription === 'EN_ATTENTE' && canValiderRejeter()"
                 (click)="valider(p)"
-                title="Valider l'inscription">
+                [title]="'ui.valider_l_inscription_e433' | translate">
           <mat-icon>check_circle</mat-icon>
         </button>
         <button class="btn-icon btn-icon--danger"
                 *ngIf="p.statutInscription === 'EN_ATTENTE' && canValiderRejeter()"
                 (click)="rejeter(p)"
-                title="Rejeter l'inscription">
+                [title]="'ui.rejeter_l_inscription_0787' | translate">
           <mat-icon>cancel</mat-icon>
         </button>
         <button class="btn-icon btn-icon--ghost"
                 *ngIf="canRetirer(p)"
                 (click)="retirer(p)"
-                title="Retirer de la compétition">
+                [title]="'ui.retirer_de_la_competition_a024' | translate">
           <mat-icon>remove_circle_outline</mat-icon>
+        </button>
+        <button class="btn-icon btn-icon--ghost"
+                *ngIf="avancement()[p.id]"
+                (click)="partagerLienEquipe(p)"
+                [title]="'ui.envoyer_le_lien_de_gestion_au_resp_ff45' | translate">
+          <mat-icon>share</mat-icon>
         </button>
         <button class="btn-icon btn-icon--info"
                 (click)="participantSelectionne.set(participantSelectionne()?.id === p.id ? null : p)"
-                title="Voir les joueurs">
+                [title]="'ui.voir_les_joueurs_5890' | translate">
           <mat-icon>groups</mat-icon>
         </button>
       </div>
@@ -195,11 +211,11 @@
     <!-- État vide -->
     <div class="empty-state" *ngIf="filteredParticipants().length === 0">
       <mat-icon>groups</mat-icon>
-      <p>Aucune équipe dans cette catégorie</p>
+      <p>{{ 'ui.aucune_equipe_dans_cette_categorie_9040' | translate }}</p>
       <button class="btn-primary btn-sm"
               *ngIf="canInscrire() && filtreStatut() === null"
               (click)="showForm.set(true)">
-        Inscrire la première équipe
+        {{ 'ui.inscrire_la_premiere_equipe_57f7' | translate }}
       </button>
     </div>
   </div>
@@ -236,4 +252,20 @@
       [canEdit]="peutGererRoster()"/>
   </div>
 
+</div>
+
+<!-- ══ Refus d'une inscription : motif obligatoire ══ -->
+<div class="refus__fond" *ngIf="refusCible() as p" (click)="refusCible.set(null)">
+  <div class="refus__boite" (click)="$event.stopPropagation()">
+    <h3>Refuser « {{ p.nomEquipe }} »</h3>
+    <p>{{ 'ui.indiquez_le_motif_l_equipe_le_verr_68f0' | translate }}</p>
+    <div class="refus__puces">
+      <button type="button" *ngFor="let m of motifsRapides" (click)="motifRefus = m">{{ m }}</button>
+    </div>
+    <textarea rows="3" maxlength="400" [(ngModel)]="motifRefus" name="motifRefus" [placeholder]="'demands.refusalReason' | translate"></textarea>
+    <div class="refus__actions">
+      <button class="btn-ghost btn-sm" (click)="refusCible.set(null)">{{ 'common.CANCEL' | translate }}</button>
+      <button class="btn-danger btn-sm" [disabled]="motifRefus.trim().length < 3" (click)="confirmerRefus()">{{ 'ui.refuser_l_inscription_c482' | translate }}</button>
+    </div>
+  </div>
 </div>

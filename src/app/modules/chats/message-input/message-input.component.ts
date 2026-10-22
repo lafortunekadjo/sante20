@@ -1,5 +1,7 @@
 // src/app/modules/chat/components/message-input/message-input.component.ts
 
+import { t } from '../../../core/i18n/traduire';
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Subject, debounceTime, takeUntil } from 'rxjs';
@@ -26,7 +28,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 
 @Component({
   selector: 'app-message-input',
-    imports: [CommonModule,
+    imports: [TranslateModule, CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
@@ -136,7 +138,7 @@ export class MessageInputComponent implements OnDestroy {
       
       // Vérifier la taille du fichier (10MB max)
       if (file.size > 10 * 1024 * 1024) {
-        alert('Le fichier est trop volumineux. Taille maximale : 10MB');
+        alert(t('chat.attachments.sizeLimit'));
         return;
       }
 

@@ -1,4 +1,5 @@
 // caisse-detail.component.ts
+import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, RouterLink, Router } from '@angular/router';
@@ -235,10 +236,10 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
   // Helpers
   getTypeLibelle(type: string): string {
     const types: Record<string, string> = {
-      'ADHESION': 'Adhésions',
+      'ADHESION': t('finances.caisses.types.ADHESION'),
       'COTISATION': 'Cotisations',
       'SANCTION': 'Sanctions',
-      'EVENEMENT': 'Événements',
+      'EVENEMENT': t('menu.items.EVENEMENTS'),
       'FONCTIONNEMENT': 'Fonctionnement',
       'INVESTISSEMENT': 'Investissement',
       'AUTRE': 'Autre'

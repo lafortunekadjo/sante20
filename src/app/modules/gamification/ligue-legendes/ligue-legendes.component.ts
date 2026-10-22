@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -14,7 +15,7 @@ import { XpService, XpProfilDTO, ClassementSaisonDTO, MissionJoueurDTO } from '.
 @Component({
   selector: 'app-ligue-legendes',
   standalone: true,
-  imports: [
+  imports: [TranslateModule, 
     CommonModule, RouterModule, MatTabsModule, MatIconModule,
     MatButtonModule, MatProgressBarModule, MatProgressSpinnerModule,
     MatChipsModule

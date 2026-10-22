@@ -72,32 +72,45 @@
         <!-- Informations du message -->
         <div class="message-info">
           <span class="message-time">{{ formatTime(message.createdAt) }}</span>
-          <mat-icon *ngIf="message.isEdited" class="edited-icon" matTooltip="Modifié">edit</mat-icon>
+          <mat-icon *ngIf="message.isEdited" class="edited-icon" [matTooltip]="'chat.message.edited' | translate">edit</mat-icon>
           
           <!-- Indicateur de lecture (pour les messages envoyés) -->
-          <mat-icon *ngIf="isOwn && message.readStatuses.length > 0" class="read-icon" matTooltip="Lu">
+          <mat-icon *ngIf="isOwn && message.readStatuses.length > 0" class="read-icon" [matTooltip]="'chat.message.read' | translate">
             done_all
           </mat-icon>
         </div>
 
-        <!-- Menu d'actions -->
-        <button 
-          *ngIf="showMenu && isOwn && !message.isDeleted" 
-          mat-icon-button 
+        <!-- Menu d'actions (toujours présent : sur téléphone il n'y a pas de survol) -->
+        <button
+          *ngIf="!message.isDeleted"
+          mat-icon-button
           class="message-menu-button"
+          [attr.aria-label]="'chat.message.options' | translate"
           [matMenuTriggerFor]="messageMenu">
           <mat-icon>more_vert</mat-icon>
         </button>
 
         <mat-menu #messageMenu="matMenu">
-          <button mat-menu-item (click)="onEditMessage()" *ngIf="message.type === MessageType.TEXT">
-            <mat-icon>edit</mat-icon>
-            <span>Modifier</span>
-          </button>
-          <button mat-menu-item (click)="onDeleteMessage()">
-            <mat-icon>delete</mat-icon>
-            <span>Supprimer</span>
-          </button>
+          <ng-container *ngIf="isOwn">
+            <button mat-menu-item (click)="onEditMessage()" *ngIf="message.type === MessageType.TEXT">
+              <mat-icon>edit</mat-icon>
+              <span>{{ 'chat.message.edit' | translate }}</span>
+            </button>
+            <button mat-menu-item (click)="onDeleteMessage()">
+              <mat-icon>delete</mat-icon>
+              <span>{{ 'chat.message.delete' | translate }}</span>
+            </button>
+          </ng-container>
+          <ng-container *ngIf="!isOwn && message.sender?.id">
+            <button mat-menu-item (click)="signaler()">
+              <mat-icon>flag</mat-icon>
+              <span>{{ 'moderation.signaler' | translate }}</span>
+            </button>
+            <button mat-menu-item (click)="bloquer()">
+              <mat-icon>block</mat-icon>
+              <span>{{ 'moderation.bloquer_action' | translate }}</span>
+            </button>
+          </ng-container>
         </mat-menu>
       </div>
     </div>

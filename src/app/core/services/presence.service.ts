@@ -72,6 +72,7 @@ savePresences(matchId: number, presences: any[]): Observable<void> {
         aJoue: presence.aJoue,
         estCapitaine: presence.estCapitaine,
         estGardien:presence.estGardien,
+        motifNonJoue: presence.aJoue ? null : (presence.motifNonJoue || null),
         buts: presence.buts,
         passes: presence.passes,
         estHommeDuMatch: presence.estHommeDuMatch,
@@ -85,6 +86,15 @@ savePresences(matchId: number, presences: any[]): Observable<void> {
       }));
     console.log('Payload envoyé:', payload);
     return this.http.post<void>(`${this.presenceUrl}/match/${matchId}`, payload);
+  }
+
+  /** Match non joué + absences excusées de la journée. */
+  getJournee(matchId: number): Observable<JourneeMatch> {
+    return this.http.get<JourneeMatch>(`${this.presenceUrl}/match/${matchId}/journee`);
+  }
+
+  saveJournee(matchId: number, journee: JourneeMatch): Observable<void> {
+    return this.http.put<void>(`${this.presenceUrl}/match/${matchId}/journee`, journee);
   }
 
   deletePresence(id: number): Observable<void> {
@@ -103,4 +113,12 @@ savePresences(matchId: number, presences: any[]): Observable<void> {
 
     return this.http.get<Presence[]>(`${this.presenceUrl}/by-membre-and-dates`, { params });
   }
+}
+
+export interface AbsenceExcusee { membreId: number; motif?: string | null; }
+
+export interface JourneeMatch {
+  matchNonJoue: boolean;
+  motifNonJoue: string | null;
+  absencesExcusees: AbsenceExcusee[];
 }

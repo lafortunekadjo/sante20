@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -204,7 +205,7 @@ export class InvitationListComponent implements OnInit {
   validateInvitation(invitation: InvitationListItem): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Valider la liste',
+        title: t('ui.ts_valider_la_liste_eb65'),
         message: this.translate.instant('invitation.validateConfirm')
       }
     });
@@ -228,7 +229,7 @@ export class InvitationListComponent implements OnInit {
   rejectInvitation(invitation: InvitationListItem): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Refuser la liste',
+        title: t('ui.ts_refuser_la_liste_3f91'),
         message: this.translate.instant('invitation.rejectConfirm')
       }
     });
@@ -252,7 +253,7 @@ export class InvitationListComponent implements OnInit {
   cancelInvitation(invitation: InvitationListItem): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Annuler l\'invitation',
+        title: t('ui.ts_annuler_l_invitation_0b7e'),
         message: this.translate.instant('invitation.cancelConfirm')
       }
     });
