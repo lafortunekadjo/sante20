@@ -150,3 +150,17 @@ export interface MonthlyStats {
   mostManOfTheMatch: MonthlyPlayerStats;
 }
 
+
+/** Classement des équipes du groupe actif : interne (points) et bilan face aux adversaires extérieurs. */
+export interface ClassementEquipes {
+  debut: string;
+  fin: string;
+  interne: {
+    equipe: string; joues: number; victoires: number; nuls: number; defaites: number;
+    butsPour: number; butsContre: number; points: number;
+  }[];
+  bilanExterne: { joues: number; victoires: number; nuls: number; defaites: number; butsPour: number; butsContre: number };
+  externe: {
+    adversaire: string; joues: number; victoires: number; nuls: number; defaites: number; butsPour: number; butsContre: number;
+  }[];
+}

@@ -1,3 +1,4 @@
+import { TranslateModule } from '@ngx-translate/core';
 // pages/competition-create/competition-create.component.ts
 import { t } from '../../../../core/i18n/traduire';
 import {
@@ -16,7 +17,7 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
 @Component({
   selector: 'app-competition-create',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, TranslateModule],
   template: `
     <div class="create-page">
 
@@ -390,6 +391,18 @@ import { CompetitionApiService } from '../../../../core/services/competition/com
               </div>
             </div>
 
+            <!-- Durée d'un match (tous les formats) -->
+            <div class="section-block">
+              <h3 class="section-block__title">{{ 'config.dureeMatch' | translate }}</h3>
+              <div class="form-grid form-grid--2">
+                <div class="form-field">
+                  <label class="form-label">{{ 'config.dureeMiTemps' | translate }}</label>
+                  <input formControlName="dureeMiTemps" type="number" min="5" max="60" class="form-input"/>
+                  <small class="form-hint">{{ 'config.dureeMiTempsAide' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
             <!-- Prolongations (coupe/mixte uniquement) -->
             <div class="section-block"
                  *ngIf="!isChampionnat()">
@@ -650,6 +663,7 @@ export class CompetitionCreateComponent implements OnInit {
         matchsSuspensionCartonRouge:    [1],
         cumulCartonsEntrePhases:        [false],
         prolongationsActives:           [true],
+        dureeMiTemps:                   [45],
         dureeProlong1:                  [15],
         dureeProlong2:                  [15],
         tabActif:                       [true],

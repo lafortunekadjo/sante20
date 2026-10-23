@@ -423,6 +423,11 @@ export const routes: Routes = [
         path: 'explorer',
         component: GroupesExploreComponent,
       },
+      {
+        path: 'explorer/:id',
+        loadComponent: () => import('./modules/membre/components/groupe-profil/groupe-profil.component')
+          .then(m => m.GroupeProfilComponent)
+      },
         {
         path: 'memberstat',
         component: StatsDashboardComponent,

@@ -43,23 +43,32 @@
 
       
 
-      <!-- Stats pills -->
-      <div class="hero-stats">
+      <!-- Organisateurs : accès direct au programme pilote -->
+      <button type="button" class="hero-pilot-link" (click)="navigateToPilote()">
+        <mat-icon>emoji_events</mat-icon>
+        <span>{{ 'home.pilot.heroLink' | translate }}</span>
+        <mat-icon class="arrow">arrow_forward</mat-icon>
+      </button>
+
+      <!-- Chiffres réels (masqués tant qu'ils ne sont pas chargés) -->
+      <div class="hero-stats" *ngIf="chiffres as c">
         <div class="hstat">
-          <span class="hstat-num">10+</span>
+          <span class="hstat-num">{{ arrondi(c.groupes) }}</span>
           <span class="hstat-lbl">{{ 'home.hero.stats.activeGroups' | translate }}</span>
         </div>
         <div class="hstat-sep"></div>
         <div class="hstat">
-          <span class="hstat-num">500+</span>
+          <span class="hstat-num">{{ arrondi(c.joueurs) }}</span>
           <span class="hstat-lbl">{{ 'home.hero.stats.registeredPlayers' | translate }}</span>
         </div>
         <div class="hstat-sep"></div>
         <div class="hstat">
-          <span class="hstat-num">100+</span>
+          <span class="hstat-num">{{ arrondi(c.matchs) }}</span>
           <span class="hstat-lbl">{{ 'home.hero.stats.organizedMatches' | translate }}</span>
         </div>
       </div>
+
+      <img class="hero-preview" src="assets/images/hero-preview.svg" alt="" aria-hidden="true" width="380" height="760">
     </div>
 
     <div class="hero-scroll-hint">
@@ -82,8 +91,8 @@
         <div class="feat-icon" [style.background]="f.color + '18'" [style.color]="f.color">
           <mat-icon>{{ f.icon }}</mat-icon>
         </div>
-        <h3>{{ f.title }}</h3>
-        <p>{{ f.description }}</p>
+        <h3>{{ 'home.data.features.' + f.cle + '.title' | translate }}</h3>
+        <p>{{ 'home.data.features.' + f.cle + '.description' | translate }}</p>
       </div>
     </div>
 
@@ -165,7 +174,7 @@
               class="faq-chip"
               [class.active]="selectedFaqCategory === cat"
               (click)="selectFaqCategory(cat)">
-        {{ cat }}
+        {{ 'home.data.faqCategories.' + cat | translate }}
       </button>
     </div>
 
@@ -174,12 +183,12 @@
         <mat-expansion-panel-header>
           <mat-panel-title>
             <mat-icon class="faq-q-icon">help_outline</mat-icon>
-            {{ faq.question }}
+            {{ 'home.data.faq.' + faq.cle + '.q' | translate }}
           </mat-panel-title>
         </mat-expansion-panel-header>
         <div class="faq-ans">
-          <p>{{ faq.answer }}</p>
-          <span class="faq-tag">{{ faq.category }}</span>
+          <p>{{ 'home.data.faq.' + faq.cle + '.a' | translate }}</p>
+          <span class="faq-tag">{{ 'home.data.faqCategories.' + faq.category | translate }}</span>
         </div>
       </mat-expansion-panel>
     </mat-accordion>
@@ -202,7 +211,7 @@
               class="faq-chip"
               [class.active]="selectedTutorialCategory === cat"
               (click)="selectTutorialCategory(cat)">
-        {{ cat }}
+        {{ 'home.data.tutorialCategories.' + cat | translate }}
       </button>
     </div>
 
@@ -223,22 +232,24 @@
     <!-- Vidéos -->
     <div class="tuto-grid" *ngIf="tutoTab === 'video'">
       <div class="tuto-card" *ngFor="let t of videoTutorials"
+           [class.soon]="!estDisponible(t)"
            (click)="openTutorial(t)">
         <div class="tuto-thumb">
-          <img [src]="getThumbnail(t)" [alt]="t.title"
+          <img [src]="getThumbnail(t)" [alt]="'home.data.tutorials.' + t.id + '.title' | translate"
                (error)="onThumbError($event)">
-          <div class="tuto-play">
+          <div class="tuto-play" *ngIf="estDisponible(t)">
             <mat-icon>play_circle_filled</mat-icon>
           </div>
+          <span class="tuto-soon" *ngIf="!estDisponible(t)">{{ 'home.tutorials.soon' | translate }}</span>
           <span class="tuto-duration" *ngIf="t.duration">{{ t.duration }}</span>
           <span class="tuto-type-badge">
             <mat-icon>smart_display</mat-icon>
           </span>
         </div>
         <div class="tuto-info">
-          <span class="tuto-cat">{{ t.category }}</span>
-          <h4>{{ t.title }}</h4>
-          <p>{{ t.description }}</p>
+          <span class="tuto-cat">{{ 'home.data.tutorialCategories.' + t.category | translate }}</span>
+          <h4>{{ 'home.data.tutorials.' + t.id + '.title' | translate }}</h4>
+          <p>{{ 'home.data.tutorials.' + t.id + '.description' | translate }}</p>
         </div>
       </div>
 
@@ -251,19 +262,21 @@
     <!-- PDFs -->
     <div class="tuto-list" *ngIf="tutoTab === 'pdf'">
       <div class="tuto-pdf-item" *ngFor="let t of pdfTutorials"
+           [class.soon]="!estDisponible(t)"
            (click)="openTutorial(t)">
         <div class="tuto-pdf-icon">
           <mat-icon>picture_as_pdf</mat-icon>
         </div>
         <div class="tuto-pdf-info">
-          <span class="tuto-cat">{{ t.category }}</span>
-          <h4>{{ t.title }}</h4>
-          <p>{{ t.description }}</p>
+          <span class="tuto-cat">{{ 'home.data.tutorialCategories.' + t.category | translate }}</span>
+          <h4>{{ 'home.data.tutorials.' + t.id + '.title' | translate }}</h4>
+          <p>{{ 'home.data.tutorials.' + t.id + '.description' | translate }}</p>
         </div>
-        <button mat-icon-button class="tuto-dl"
+        <button mat-icon-button class="tuto-dl" *ngIf="estDisponible(t)"
                 (click)="openTutorial(t); $event.stopPropagation()">
           <mat-icon>download</mat-icon>
         </button>
+        <span class="tuto-soon inline" *ngIf="!estDisponible(t)">{{ 'home.tutorials.soon' | translate }}</span>
       </div>
 
       <div class="tuto-empty" *ngIf="pdfTutorials.length === 0">
@@ -272,6 +285,31 @@
       </div>
     </div>
 
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       PROGRAMME PILOTE (organisateurs)
+  ═══════════════════════════════════════ -->
+  <section class="pilot-section">
+    <div class="pilot-inner">
+      <div class="pilot-text">
+        <span class="sec-badge">{{ 'home.pilot.badge' | translate }}</span>
+        <h2>{{ 'home.pilot.title' | translate }}</h2>
+        <p>{{ 'home.pilot.subtitle' | translate }}</p>
+        <ul class="pilot-points">
+          <li><mat-icon>check_circle</mat-icon>{{ 'home.pilot.point1' | translate }}</li>
+          <li><mat-icon>check_circle</mat-icon>{{ 'home.pilot.point2' | translate }}</li>
+          <li><mat-icon>check_circle</mat-icon>{{ 'home.pilot.point3' | translate }}</li>
+        </ul>
+        <button mat-raised-button class="btn-pilot" (click)="navigateToPilote()">
+          <mat-icon>send</mat-icon>
+          {{ 'home.pilot.btn' | translate }}
+        </button>
+      </div>
+      <div class="pilot-visual" aria-hidden="true">
+        <mat-icon>emoji_events</mat-icon>
+      </div>
+    </div>
   </section>
 
   <!-- ═══════════════════════════════════════

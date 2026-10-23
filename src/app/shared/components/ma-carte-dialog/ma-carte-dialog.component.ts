@@ -6,12 +6,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { toPng } from 'html-to-image';
 import * as QRCode from 'qrcode';
 import { AuthService, MonGroupeDTO } from '../../../core/services/auth.service';
-import { ProfileService, PlayerProfile } from '../../../core/services/profile.service';
+import { ProfileService, PlayerProfile, SaisonStats } from '../../../core/services/profile.service';
 import { CompetitionApiService } from '../../../core/services/competition/competition-api.service';
 
 type Portee = 'global' | 'un' | 'selection';
 type Theme = 'nuit' | 'or' | 'terrain' | 'aurore';
 type Format = 'carte' | 'story';
+/** Période de la carte : tout le parcours, la saison en cours, la précédente, ou des saisons choisies à la main. */
+type Periode = 'tout' | 'courante' | 'precedente' | 'choix';
 
 interface Totaux { matchs: number; buts: number; passes: number; competitions: number; trophees: number; }
 
@@ -50,6 +52,9 @@ export class MaCarteDialogComponent implements OnInit {
   selection = signal<Set<number>>(new Set());
   theme = signal<Theme>('nuit');
   format = signal<Format>('carte');
+  periode = signal<Periode>('tout');
+  /** Saisons cochées (clé « club|exercice ») quand la période est « choix ». */
+  saisonsChoisies = signal<Set<string>>(new Set());
 
   themes: { v: Theme; l: string }[] = [
     { v: 'nuit', l: 'Nuit' }, { v: 'or', l: 'Or' }, { v: 'terrain', l: 'Terrain' }, { v: 'aurore', l: 'Aurore' }
@@ -69,6 +74,11 @@ export class MaCarteDialogComponent implements OnInit {
     const p = this.profil();
     const t: Totaux = { matchs: 0, buts: 0, passes: 0, competitions: 0, trophees: 0 };
     if (!p) return t;
+    // Une période de saison : on additionne les saisons retenues. Les compétitions et trophées ne sont pas rattachés à une saison de club.
+    if (this.periode() !== 'tout') {
+      for (const s of this.saisonsRetenues()) { t.matchs += s.matchsJoues ?? 0; t.buts += s.buts ?? 0; t.passes += s.passes ?? 0; }
+      return t;
+    }
     const cs = this.compStats();
     if (this.portee() === 'global') {
       t.matchs = p.totalMatchsJoues ?? 0; t.buts = p.totalButsGlobal ?? 0; t.passes = p.totalPassesGlobal ?? 0;
@@ -108,6 +118,59 @@ export class MaCarteDialogComponent implements OnInit {
   });
   roleUn = computed(() => (this.portee() === 'un' && this.groupesCarte()[0]?.roleInGroupe) || '');
   maxLogos = computed(() => (this.format() === 'story' ? 8 : 6));
+
+  // ── Saisons : chaque 2-0 a ses propres dates d'exercice (début et fin de saison), donc ses propres saisons ───────
+  cle(s: SaisonStats): string { return (s.clubNom ?? '') + '|' + s.exerciceId; }
+
+  private nom(v?: string | null): string { return (v ?? '').trim().toLowerCase(); }
+
+  /** Saisons de mes clubs (hors « hors saison ») dans la portée choisie, de la plus récente à la plus ancienne. */
+  saisonsDansLaPortee = computed<SaisonStats[]>(() => {
+    const noms = new Set(this.groupesCarte().map(g => this.nom(g.nom)));
+    return (this.profil()?.historiqueSaisons ?? [])
+      .filter(s => s.exerciceId !== -1 && !!s.dateDebut && !!s.dateFin)
+      .filter(s => this.portee() === 'global' || noms.has(this.nom(s.clubNom)))
+      .sort((a, b) => String(b.dateDebut).localeCompare(String(a.dateDebut)));
+  });
+
+  /** Saisons prises en compte selon la période : pour chaque club, sa saison en cours, sa dernière saison terminée, ou mon choix. */
+  saisonsRetenues = computed<SaisonStats[]>(() => {
+    const periode = this.periode();
+    if (periode === 'tout') return [];
+    const toutes = this.saisonsDansLaPortee();
+    if (periode === 'choix') return toutes.filter(s => this.saisonsChoisies().has(this.cle(s)));
+    const aujourdhui = new Date().toISOString().substring(0, 10);
+    const parClub = new Map<string, SaisonStats[]>();
+    for (const s of toutes) {
+      const k = this.nom(s.clubNom);
+      parClub.set(k, [...(parClub.get(k) ?? []), s]);
+    }
+    const retenues: SaisonStats[] = [];
+    for (const saisons of parClub.values()) {
+      if (periode === 'courante') {
+        retenues.push(...saisons.filter(s => String(s.dateDebut).substring(0, 10) <= aujourdhui && aujourdhui <= String(s.dateFin).substring(0, 10)));
+      } else {
+        const finies = saisons.filter(s => String(s.dateFin).substring(0, 10) < aujourdhui);
+        if (finies.length) retenues.push(finies.reduce((a, b) => (String(a.dateFin) >= String(b.dateFin) ? a : b)));
+      }
+    }
+    return retenues;
+  });
+
+  /** Libellé de la période, imprimé sur la carte (ex. « Exercice 2026 »). Vide pour tout le parcours. */
+  saisonsLibelle = computed(() => {
+    const noms = [...new Set(this.saisonsRetenues().map(s => s.exerciceLibelle).filter(Boolean))];
+    return noms.length > 2 ? noms.slice(0, 2).join(' + ') + ' +' + (noms.length - 2) : noms.join(' + ');
+  });
+
+  aucuneSaison = computed(() => this.periode() !== 'tout' && this.saisonsRetenues().length === 0);
+
+  basculerSaison(s: SaisonStats): void {
+    const set = new Set(this.saisonsChoisies());
+    const k = this.cle(s);
+    if (set.has(k)) set.delete(k); else set.add(k);
+    this.saisonsChoisies.set(set);
+  }
 
   ngOnInit(): void {
     const username = this.auth.getUsername() ?? '';
@@ -149,7 +212,7 @@ export class MaCarteDialogComponent implements OnInit {
     try {
       const a = document.createElement('a');
       a.href = await this.png(noeud);
-      a.download = `carte-my2-0-${this.nomAffiche()}-${this.portee()}.png`;
+      a.download = `carte-my2-0-${this.nomAffiche()}-${this.portee()}${this.periode() === 'tout' ? '' : '-' + this.periode()}.png`;
       a.click();
     } catch {
       this.erreur.set('Le téléchargement a échoué. Réessayez.');

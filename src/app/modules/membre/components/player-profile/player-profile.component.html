@@ -74,7 +74,7 @@
         </div>
           <p class="player-meta">
             <mat-icon>location_on</mat-icon>
-            <span>Douala, {{ playerProfile.quartier }}</span>
+            <span>{{ playerProfile.quartier }}</span>
           </p>
         </div>
 
@@ -93,15 +93,32 @@
           <span class="ribbon-num primary-stat">{{ playerProfile.totalPassesGlobal }}</span>
           <span class="ribbon-label">{{ 'directory.stats.assists' | translate }}</span>
         </div>
-        <div class="ribbon-item text-warn" *ngIf="playerProfile.poste === 'Gardien'">
+        <div class="ribbon-item text-warn" *ngIf="estGardien">
           <span class="ribbon-num primary-stat">{{ playerProfile.cleanSheets }}</span>
           <span class="ribbon-label">{{ 'profile.stats.clean_sheets' | translate }}</span>
         </div>
-        <div class="ribbon-item" *ngIf="playerProfile.poste !== 'Gardien'">
+        <div class="ribbon-item" *ngIf="!estGardien">
           <span class="ribbon-num primary-stat">{{ playerProfile.totalCartonsGlobal }}</span>
           <span class="ribbon-label">{{ 'profile.stats.cards_received' | translate }}</span>
         </div>
       </div>
+    </div>
+
+    <!-- Lecture rapide : ratios par match -->
+    <div class="insights-strip" *ngIf="playerProfile.totalMatchsJoues > 0">
+      <ng-container *ngIf="!estGardien">
+        <div class="insight"><strong>{{ butsParMatch | number:'1.0-2' }}</strong><span>{{ 'profile.insights.goalsPerMatch' | translate }}</span></div>
+        <div class="insight"><strong>{{ passesParMatch | number:'1.0-2' }}</strong><span>{{ 'profile.insights.assistsPerMatch' | translate }}</span></div>
+        <div class="insight accent"><strong>{{ contributionsParMatch | number:'1.0-2' }}</strong><span>{{ 'profile.insights.contributionsPerMatch' | translate }}</span></div>
+      </ng-container>
+      <ng-container *ngIf="estGardien">
+        <div class="insight"><strong>{{ encaissesParMatch | number:'1.0-2' }}</strong><span>{{ 'profile.insights.concededPerMatch' | translate }}</span></div>
+        <div class="insight accent"><strong>{{ tauxCleanSheets }}%</strong><span>{{ 'profile.insights.cleanRate' | translate }}</span></div>
+        <div class="insight"><strong>{{ playerProfile.butsEncaisses }}</strong><span>{{ 'profile.insights.conceded' | translate }}</span></div>
+      </ng-container>
+      <button type="button" class="insight share" (click)="partager()" [attr.aria-label]="'profile.insights.share' | translate">
+        <mat-icon>share</mat-icon><span>{{ 'profile.insights.share' | translate }}</span>
+      </button>
     </div>
 
     <div class="profile-tabs-card">
@@ -113,6 +130,36 @@
             <span>{{ 'profile.tabs.technical_sheet' | translate }}</span>
           </ng-template>
           <div class="tab-content">
+            <!-- Progression par saison -->
+            <div class="progress-block" *ngIf="saisonsChrono.length > 1">
+              <h3><mat-icon>show_chart</mat-icon>{{ 'profile.insights.progression' | translate }}</h3>
+              <div class="progress-legend">
+                <span><i class="dot a"></i>{{ (estGardien ? 'profile.insights.cleanSheets' : 'profile.insights.goals') | translate }}</span>
+                <span><i class="dot b"></i>{{ (estGardien ? 'profile.insights.matches' : 'profile.insights.assists') | translate }}</span>
+              </div>
+              <div class="progress-chart">
+                <div class="progress-col" *ngFor="let s of saisonsChrono">
+                  <div class="progress-bars">
+                    <div class="pbar a" [style.height.%]="hauteur(valeurSaison(s, 'a'))"><span>{{ valeurSaison(s, 'a') }}</span></div>
+                    <div class="pbar b" [style.height.%]="hauteur(valeurSaison(s, 'b'))"><span>{{ valeurSaison(s, 'b') }}</span></div>
+                  </div>
+                  <small class="progress-label">{{ s.exerciceLibelle }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parcours dans les clubs -->
+            <div class="clubs-block" *ngIf="clubs.length">
+              <h3><mat-icon>groups</mat-icon>{{ 'profile.insights.clubs' | translate }}</h3>
+              <div class="clubs-list">
+                <div class="club-chip" *ngFor="let c of clubs">
+                  <strong>{{ c.clubNom }}</strong>
+                  <span class="club-status" [class.active]="c.statut === 'Actif'">{{ c.statut }}</span>
+                  <small>{{ c.matchsJoues }} {{ 'profile.insights.matches' | translate }} · {{ c.buts }} {{ 'profile.insights.goals' | translate }} · {{ c.passes }} {{ 'profile.insights.assists' | translate }}</small>
+                </div>
+              </div>
+            </div>
+
             <div class="info-details-grid">
               <div class="detail-box">
                 <span class="box-label">{{ 'profile.specs.position' | translate }}</span>
@@ -124,7 +171,7 @@
               </div>
               <div class="detail-box">
                 <span class="box-label">{{ 'profil.fields.gender' | translate }}</span>
-                <span class="box-value">{{ playerProfile.sexe === 'M' ? ('profil.gender.male' | translate) : ('profil.gender.female' | translate) }}</span>
+                <span class="box-value">{{ estHomme ? ('profil.gender.male' | translate) : ('profil.gender.female' | translate) }}</span>
               </div>
               <!-- Bouton Contacter — visible uniquement si ce n'est pas notre propre profil -->
               <div class="detail-box contact-box" *ngIf="!isOwnProfile">

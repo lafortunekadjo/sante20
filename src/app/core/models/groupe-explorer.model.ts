@@ -88,3 +88,27 @@ export const NIVEAUX = [
   'Avancé',
   'Tous niveaux'
 ];
+/** Profil public d'un groupe (page de détail d'Explorer) : infos d'accueil et activité des 12 derniers mois. */
+export interface GroupeProfil {
+  id: number;
+  nom: string;
+  discipline: string;
+  ville?: string;
+  quartier?: string;
+  stade?: string;
+  jourMatch?: string;
+  heureMatch?: string;
+  fraisAdhesion?: number;
+  nombreMembres: number;
+  capaciteMax?: number;
+  imageUrl?: string;
+  description?: string;
+  niveauRequis?: string;
+  accepteNouveauxMembres: boolean;
+  activite: {
+    matchsJoues: number; matchsExternes: number; matchsInternes: number;
+    victoires: number; nuls: number; defaites: number;
+    butsPour: number; butsContre: number; serieInvaincue: number; seancesDeJeu: number;
+  };
+  derniersResultats: { date: string; adversaire?: string; score: string; issue: 'V' | 'N' | 'D' }[];
+}

@@ -34,6 +34,7 @@ import {
 import { BaseChartDirective } from 'ng2-charts';
 
 // Services
+import { ProfileService, PlayerProfile } from '../../../../core/services/profile.service';
 import { StatsService } from '../../../../core/services/stats.service';
 import { Exercice, FinancesService, MouvementCaisse, TypeContribution } from '../../../../core/services/finances.service';
 import { CollecteEnCours } from '../../../../core/models/collecte.model';
@@ -263,6 +264,7 @@ export class MDashboardComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private translate: TranslateService,
     private groupeService: GroupeService,
+    private profileService: ProfileService,
     private cdr: ChangeDetectorRef,
   ) {
     this.dateRangeForm = this.fb.group({
@@ -279,7 +281,39 @@ export class MDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadExercices();
-  
+    this.loadProfil();
+  }
+
+  // ============ CARTE PERSONNELLE ============
+
+  /** Mon profil joueur (photo, poste, carrière tous clubs). Un échec n'empêche pas le tableau de bord de s'afficher. */
+  profil: PlayerProfile | null = null;
+  nomClub = '';
+
+  private loadProfil(): void {
+    const username = this.authService.getUsername();
+    if (!username) return;
+    this.profileService.getProfileByUsername(username)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: p => { this.profil = p; this.cdr.markForCheck(); }, error: () => { /* carte réduite au nom */ } });
+  }
+
+  get nomAffiche(): string {
+    return this.profil?.username || this.authService.getUsername() || '';
+  }
+
+  get initiale(): string {
+    return (this.nomAffiche || '?').charAt(0).toUpperCase();
+  }
+
+  get butsParMatch(): string {
+    const m = this.stats.matchesPlayed || 0;
+    return m ? (Math.round(10 * (this.stats.goalsScored || 0) / m) / 10).toString() : '0';
+  }
+
+  get passesParMatch(): string {
+    const m = this.stats.matchesPlayed || 0;
+    return m ? (Math.round(10 * (this.stats.totalPasses || 0) / m) / 10).toString() : '0';
   }
 
   ngOnDestroy(): void {
@@ -354,6 +388,7 @@ private loadExercices(): void {
         }
 
         // 2. Gérer les infos de ville du groupe
+        this.nomClub = groupe?.nom || '';
         if (groupe && groupe.ville) {
           console.log('le groupe', groupe)
           this.userVille = groupe.ville.nom;

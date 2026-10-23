@@ -47,7 +47,7 @@
         </mat-form-field>
 
         <div class="sug-form-actions">
-          <button mat-raised-button color="primary" type="submit" [disabled]="!suggestionForm.valid">
+          <button mat-raised-button color="primary" type="submit" [disabled]="!suggestionForm.valid || envoiEnCours">
             <mat-icon>send</mat-icon>{{ 'suggestions.form.submitBtn' | translate }}
           </button>
           <button mat-stroked-button type="button" (click)="suggestionForm.reset()">
@@ -55,6 +55,45 @@
           </button>
         </div>
       </form>
+    </div>
+
+    <!-- Mes suggestions passées -->
+    <div class="sug-history-card">
+      <div class="sug-form-header">
+        <mat-icon>history</mat-icon>
+        <span>{{ 'suggestions.history.title' | translate }}</span>
+        <span class="sug-count" *ngIf="mesSuggestions.length">{{ mesSuggestions.length }}</span>
+      </div>
+
+      <div class="sug-history-body">
+        <div class="sug-history-state" *ngIf="historiqueChargement">
+          <mat-spinner diameter="28"></mat-spinner>
+        </div>
+
+        <div class="sug-history-state" *ngIf="!historiqueChargement && historiqueErreur">
+          <mat-icon>cloud_off</mat-icon>
+          <p>{{ 'suggestions.history.loadError' | translate }}</p>
+          <button mat-stroked-button type="button" (click)="chargerHistorique()">{{ 'suggestions.history.retry' | translate }}</button>
+        </div>
+
+        <div class="sug-history-state" *ngIf="!historiqueChargement && !historiqueErreur && !mesSuggestions.length">
+          <mat-icon>lightbulb</mat-icon>
+          <p>{{ 'suggestions.history.empty' | translate }}</p>
+        </div>
+
+        <ul class="sug-history-list" *ngIf="!historiqueChargement && mesSuggestions.length">
+          <li *ngFor="let s of mesSuggestions" class="sug-history-item" [class.open]="depliee === s.id">
+            <button type="button" class="sug-history-head" (click)="basculer(s.id)">
+              <span class="sug-history-date">
+                <mat-icon>schedule</mat-icon>{{ s.dateSoumission | date:'dd MMM yyyy' }}
+              </span>
+              <span class="sug-history-groupe" *ngIf="s.groupe">{{ s.groupe }}</span>
+              <mat-icon class="chevron" [class.rotated]="depliee === s.id">expand_more</mat-icon>
+            </button>
+            <p class="sug-history-texte" [class.court]="depliee !== s.id">{{ s.texte }}</p>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Conseils — accordéon -->

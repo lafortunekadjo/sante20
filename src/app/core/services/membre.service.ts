@@ -108,6 +108,21 @@ export class MembreService {
 
 
 
+  /** Archive un membre qui quitte le groupe (réservé au responsable). */
+  archiverMembre(id: number, demande: { motif: string; commentaire?: string; dateDepart?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${id}/archiver`, demande);
+  }
+
+  /** Enregistre le retour d'un membre archivé. */
+  reactiverMembre(id: number, demande: { commentaire?: string; dateRetour?: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${id}/reactiver`, demande);
+  }
+
+  /** Parcours du membre : arrivée, départs, retours. */
+  historiqueMembre(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/historique`);
+  }
+
   createMembre(membre: any): Observable<Membre> {
      const payload = {
       nom: membre.nom,

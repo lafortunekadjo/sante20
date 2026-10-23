@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environment';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -14,15 +16,14 @@ import { CampagneBannerComponent } from '../../modules/gamification/campagne-ban
 
 interface Feature {
   icon: string;
-  title: string;
-  description: string;
+  /** Clé de traduction : home.data.features.<cle>.title / .description */
+  cle: string;
   color: string;
 }
 
+/** Titre et description : home.data.tutorials.<id>.title / .description. Catégorie : home.data.tutorialCategories.<category>. */
 interface Tutorial {
   id: number;
-  title: string;
-  description: string;
   type: 'video' | 'pdf';
   url: string;
   thumbnail?: string;
@@ -30,9 +31,9 @@ interface Tutorial {
   category: string;
 }
 
+/** Question et réponse : home.data.faq.<cle>.q / .a. Catégorie : home.data.faqCategories.<category>. */
 interface FAQ {
-  question: string;
-  answer: string;
+  cle: string;
   category: string;
 }
 
@@ -62,190 +63,81 @@ export class HomeComponent implements OnInit {
 
   // Fonctionnalités principales
   features: Feature[] = [
-    {
-      icon: 'groups',
-      title: 'Gestion de Groupe',
-      description: 'Créez et gérez votre 2-0. Ajoutez des membres, définissez des équipes internes et organisez votre effectif.',
-      color: '#1976d2'
-    },
-    {
-      icon: 'sports_soccer',
-      title: 'Organisation des Matchs',
-      description: 'Planifiez vos matchs internes, duels inter-équipes, rencontres amicales et événements spéciaux comme les anniversaires.',
-      color: '#388e3c'
-    },
-    {
-      icon: 'how_to_reg',
-      title: 'Suivi des Présences',
-      description: 'Enregistrez les présences, suivez les statistiques de participation et générez des fiches de match imprimables.',
-      color: '#f57c00'
-    },
-    {
-      icon: 'emoji_events',
-      title: 'Statistiques & Classements',
-      description: 'Consultez les statistiques détaillées : buts, passes, cartons, hommes du match et classements des joueurs.',
-      color: '#7b1fa2'
-    },
-    {
-      icon: 'attach_money',
-      title: 'Gestion Financière',
-      description: 'Suivez les cotisations, les pénalités et la trésorerie de votre groupe avec des rapports détaillés.',
-      color: '#00796b'
-    },
-    {
-      icon: 'notifications_active',
-      title: 'Invitations & Notifications',
-      description: 'Envoyez des invitations pour les matchs amicaux et recevez les confirmations de présence en temps réel.',
-      color: '#c2185b'
-    }
+    { icon: 'groups', cle: 'group', color: '#1976d2' },
+    { icon: 'sports_soccer', cle: 'matches', color: '#388e3c' },
+    { icon: 'how_to_reg', cle: 'attendance', color: '#f57c00' },
+    { icon: 'emoji_events', cle: 'stats', color: '#7b1fa2' },
+    { icon: 'attach_money', cle: 'finances', color: '#00796b' },
+    { icon: 'notifications_active', cle: 'notifications', color: '#c2185b' }
   ];
 
   // Tutoriels
   tutorials: Tutorial[] = [
-    {
-      id: 1,
-      title: 'Premiers pas avec My2-0',
-      description: 'Découvrez comment créer votre compte et configurer votre premier groupe sportif.',
-      type: 'video',
-      url: 'assets/tutorials/getting-started.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/getting-started.jpg',
-      duration: '5:30',
-      category: 'Démarrage'
-    },
-    {
-      id: 2,
-      title: 'Ajouter et gérer les membres',
-      description: 'Apprenez à ajouter des membres, définir leurs rôles et les assigner à des équipes.',
-      type: 'video',
-      url: 'assets/tutorials/manage-members.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/members.jpg',
-      duration: '4:15',
-      category: 'Membres'
-    },
-    {
-      id: 3,
-      title: 'Créer et planifier un match',
-      description: 'Comment créer différents types de matchs et configurer les équipes participantes.',
-      type: 'video',
-      url: 'assets/tutorials/create-match.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/match.jpg',
-      duration: '6:45',
-      category: 'Matchs'
-    },
-    {
-      id: 4,
-      title: 'Enregistrer les présences et stats',
-      description: 'Tutoriel complet sur l\'enregistrement des présences, buts, passes et cartons.',
-      type: 'video',
-      url: 'assets/tutorials/presences.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/presences.jpg',
-      duration: '7:20',
-      category: 'Présences'
-    },
-    {
-      id: 5,
-      title: 'Guide complet de l\'application',
-      description: 'Documentation PDF complète couvrant toutes les fonctionnalités de la plateforme.',
-      type: 'pdf',
-      url: 'assets/tutorials/guide-complet-sante2.pdf',
-      category: 'Documentation'
-    },
-    {
-      id: 6,
-      title: 'Organiser un match amical',
-      description: 'Comment inviter un autre groupe et gérer les présences des deux équipes.',
-      type: 'video',
-      url: 'assets/tutorials/match-amical.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/amical.jpg',
-      duration: '5:00',
-      category: 'Matchs'
-    },
-    {
-      id: 7,
-      title: 'Gestion financière du groupe',
-      description: 'Guide PDF sur la gestion des cotisations, pénalités et trésorerie.',
-      type: 'pdf',
-      url: 'assets/tutorials/guide-finances.pdf',
-      category: 'Finances'
-    },
-    {
-      id: 8,
-      title: 'Imprimer les fiches de match',
-      description: 'Comment générer et imprimer les fiches de présence et feuilles de match.',
-      type: 'video',
-      url: 'assets/tutorials/print-sheets.mp4',
-      thumbnail: 'assets/tutorials/thumbnails/print.jpg',
-      duration: '3:10',
-      category: 'Présences'
-    }
+    { id: 1, type: 'video', url: 'assets/tutorials/getting-started.mp4', thumbnail: 'assets/tutorials/thumbnails/getting-started.svg', duration: '5:30', category: 'start' },
+    { id: 2, type: 'video', url: 'assets/tutorials/manage-members.mp4', thumbnail: 'assets/tutorials/thumbnails/members.svg', duration: '4:15', category: 'members' },
+    { id: 3, type: 'video', url: 'assets/tutorials/create-match.mp4', thumbnail: 'assets/tutorials/thumbnails/match.svg', duration: '6:45', category: 'matches' },
+    { id: 4, type: 'video', url: 'assets/tutorials/presences.mp4', thumbnail: 'assets/tutorials/thumbnails/presences.svg', duration: '7:20', category: 'attendance' },
+    { id: 5, type: 'pdf', url: 'assets/tutorials/guide-complet-sante2.pdf', category: 'docs' },
+    { id: 6, type: 'video', url: 'assets/tutorials/match-amical.mp4', thumbnail: 'assets/tutorials/thumbnails/amical.svg', duration: '5:00', category: 'matches' },
+    { id: 7, type: 'pdf', url: 'assets/tutorials/guide-finances.pdf', category: 'finances' },
+    { id: 8, type: 'video', url: 'assets/tutorials/print-sheets.mp4', thumbnail: 'assets/tutorials/thumbnails/print.svg', duration: '3:10', category: 'attendance' }
   ];
 
   // FAQ
   faqs: FAQ[] = [
-    {
-      question: 'Comment créer un nouveau groupe ?',
-      answer: 'Après vous être connecté, accédez à "Créer un groupe". Remplissez les informations du groupe (nom, ville et abrieviation) puis cree le groupe, une fois valide, vous serez notifiez.',
-      category: 'Groupe'
-    },
-    {
-      question: 'Comment ajouter un membre à mon groupe ?',
-      answer: 'Dans la section "Gestion des membres", cliquez sur "Ajouter un membre". Renseignez le nom, prénom, poste préféré et assignez-le optionnellement à une équipe interne. Le membre recevra une notification s\'il a un compte.',
-      category: 'Membres'
-    },
-    {
-      question: 'Quels sont les différents types de matchs ?',
-      answer: 'La plateforme supporte 4 types de matchs : INTERNE (entre équipes du groupe), DUEL (défi entre 2 équipes), AMICAL (contre un autre groupe ou équipe externe), et ANNIVERSAIRE (match spécial pour célébrer les membres).',
-      category: 'Matchs'
-    },
-    {
-      question: 'Comment organiser un match amical avec un autre groupe ?',
-      answer: 'Créez un match de type "AMICAL" et recherchez le groupe adverse sur la plateforme ou generez une invitation et transferez a l\'adversaire.',
-      category: 'Matchs'
-    },
-    {
-      question: 'Comment enregistrer les statistiques d\'un match ?',
-      answer: 'Dans la section Match, cliquer sur fiche de presence, Sur la fiche de présence du match, ajoutez les joueurs, cochez "A joué" pour chaque participant, puis renseignez les buts, passes décisives, pénaltys, cartons et désignez le capitaine et l\'homme du match pour chaque équipe.',
-      category: 'Présences'
-    },
-    {
-      question: 'Comment imprimer la feuille de match ?',
-      answer: 'Sur la page de présence d\'un match, utilisez les boutons "Imprimer Fiche" ou "Télécharger PDF" pour générer un document officiel avec les compositions d\'équipes, statistiques et espaces de signature.',
-      category: 'Présences'
-    },
-    {
-      question: 'Comment gérer les cotisations des membres ?',
-      answer: 'Accédez à la section "Finances" de votre groupe. Vous pouvez définir le montant des cotisations, enregistrer les paiements et suivre les arriérés. Des rappels automatiques peuvent être envoyés.',
-      category: 'Finances'
-    },
-    
-    {
-      question: 'Comment voir les statistiques de mon groupe ?',
-      answer: 'Le tableau de bord affiche les KPIs essentiels. Pour des statistiques détaillées, consultez la section "Classements" qui présente les meilleurs buteurs, passeurs et le palmarès des matchs.',
-      category: 'Statistiques'
-    },
-    {
-      question: 'L\'application est-elle disponible sur mobile ?',
-      answer: 'Oui, My2-0 est une application responsive qui fonctionne parfaitement sur smartphone et tablette. Une application mobile native est également en développement.',
-      category: 'Général'
-    }
+    { cle: 'createGroup', category: 'group' },
+    { cle: 'addMember', category: 'members' },
+    { cle: 'matchTypes', category: 'matches' },
+    { cle: 'friendly', category: 'matches' },
+    { cle: 'recordStats', category: 'attendance' },
+    { cle: 'printSheet', category: 'attendance' },
+    { cle: 'dues', category: 'finances' },
+    { cle: 'groupStats', category: 'stats' },
+    { cle: 'mobile', category: 'general' }
   ];
 
-  // Catégories de tutoriels
-  tutorialCategories = ['Tous', 'Démarrage', 'Membres', 'Matchs', 'Présences', 'Finances', 'Documentation'];
-  selectedTutorialCategory = 'Tous';
+  // Catégories (identifiants : le libellé affiché vient de home.data.*Categories.<id>)
+  tutorialCategories = ['all', 'start', 'members', 'matches', 'attendance', 'finances', 'docs'];
+  selectedTutorialCategory = 'all';
   tutoTab: 'video' | 'pdf' = 'video';
 
   // Catégories FAQ
-  faqCategories = ['Tous', 'Groupe', 'Membres', 'Matchs', 'Présences', 'Finances', 'Statistiques', 'Général'];
-  selectedFaqCategory = 'Tous';
+  faqCategories = ['all', 'group', 'members', 'matches', 'attendance', 'finances', 'stats', 'general'];
+  selectedFaqCategory = 'all';
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
+
+  // Chiffres réels de la plateforme (groupes publics actifs, joueurs, matchs joués). Masqués si indisponibles.
+  chiffres: { groupes: number; joueurs: number; matchs: number } | null = null;
 
   ngOnInit(): void {
     this.isLoggedIn = this.authService.isAuthenticated();
+    this.http.get<{ groupes: number; joueurs: number; matchs: number }>(`${environment.apiUrl}/public/chiffres`).subscribe({
+      next: c => { this.chiffres = c && (c.groupes || c.joueurs || c.matchs) ? c : null; },
+      error: () => { this.chiffres = null; }
+    });
+  }
+
+  /** « 12 » reste « 12 », 137 devient « 130+ », 2 480 devient « 2400+ » : un ordre de grandeur honnête, jamais gonflé. */
+  arrondi(n: number): string {
+    if (n < 10) return String(n);
+    const pas = n < 100 ? 10 : n < 1000 ? 50 : 100;
+    return Math.floor(n / pas) * pas + '+';
+  }
+
+  navigateToPilote(): void {
+    this.router.navigate(['/pilote']);
+  }
+
+  // Tutoriels dont le fichier existe réellement ; les autres affichent « Bientôt » au lieu d'un lien mort.
+  private readonly disponibles = new Set<string>(['assets/tutorials/getting-started.mp4']);
+
+  estDisponible(t: Tutorial): boolean {
+    return this.disponibles.has(t.url);
   }
 
   // Navigation
@@ -267,7 +159,7 @@ export class HomeComponent implements OnInit {
 
   // Tutoriels
   get filteredTutorials(): Tutorial[] {
-    if (this.selectedTutorialCategory === 'Tous') {
+    if (this.selectedTutorialCategory === 'all') {
       return this.tutorials;
     }
     return this.tutorials.filter(t => t.category === this.selectedTutorialCategory);
@@ -286,6 +178,7 @@ export class HomeComponent implements OnInit {
   }
 
   openTutorial(tutorial: Tutorial): void {
+    if (!this.estDisponible(tutorial)) return;
     if (tutorial.type === 'video') {
       // Ouvrir dans un modal ou nouvelle page
       window.open(tutorial.url, '_blank');
@@ -297,7 +190,7 @@ export class HomeComponent implements OnInit {
 
   // FAQ
   get filteredFaqs(): FAQ[] {
-    if (this.selectedFaqCategory === 'Tous') {
+    if (this.selectedFaqCategory === 'all') {
       return this.faqs;
     }
     return this.faqs.filter(f => f.category === this.selectedFaqCategory);

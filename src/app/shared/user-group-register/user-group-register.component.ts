@@ -76,8 +76,8 @@ export class UserGroupRegisterComponent implements OnInit {
   groupeCreeNom: string | null = null;
 
   disciplines = [
-    { value: 'FOOTBALL', label: 'Football', icon: 'sports_soccer' },
-    { value: 'BASKETBALL', label: 'Basketball', icon: 'sports_basketball' },
+    { value: 'Football', label: 'Football', icon: 'sports_soccer' },
+    { value: 'Basketball', label: 'Basketball', icon: 'sports_basketball' },
   ];
 
   constructor(

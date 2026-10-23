@@ -3,7 +3,7 @@ import { Injectable, ModelOptions } from '@angular/core';
 import { Observable, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../environment';
 import { AuthService } from './auth.service';
-import { MemberStats, MonthlyStats } from '../models/stats.model';
+import { ClassementEquipes, MemberStats, MonthlyStats } from '../models/stats.model';
 import { DatePipe } from '@angular/common';
 
 
@@ -78,6 +78,14 @@ getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
 
   return this.http.get(`${environment.apiUrl}/membre/stats`, { params });
 }
+  /** Classement des équipes du groupe actif (interne + bilan externe). Dates au format yyyy-MM-dd. */
+  getClassementEquipes(debut?: string, fin?: string): Observable<ClassementEquipes> {
+    let params = new HttpParams();
+    if (debut) params = params.set('startDate', debut);
+    if (fin) params = params.set('endDate', fin);
+    return this.http.get<ClassementEquipes>(`${environment.apiUrl}/stats/classement-equipes`, { params });
+  }
+
   getResponsableStats1(): Observable<ResponsableStats> {
     return this.http.get<ResponsableStats>(this.responsableStatsUrl, { headers: this.getHeaders() }).pipe(
       catchError(err => {

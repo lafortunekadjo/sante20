@@ -5,6 +5,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CommonModule } from '@angular/common';
+import { StatsService } from '../../../../core/services/stats.service';
+import { ClassementEquipes } from '../../../../core/models/stats.model';
 import { forkJoin, Observable, BehaviorSubject, of, Subject, lastValueFrom } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap, takeUntil } from 'rxjs/operators';
 import { Evenement } from '../../../../core/models/evenement.model';
@@ -115,6 +117,35 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exerciceDateFin: Date | null = null;
   isOpeningDialog = false;
   activeTab: 'actus' | 'matchs' | 'stats' | 'annonces' = 'actus';
+
+  // ── Classements : joueurs (déjà chargés avec le fil) ou équipes (chargées à la demande)
+  classementVue: 'joueurs' | 'equipes' = 'joueurs';
+  classementEquipes: ClassementEquipes | null = null;
+  classementChargement = false;
+  classementErreur = false;
+
+  choisirClassement(vue: 'joueurs' | 'equipes'): void {
+    this.classementVue = vue;
+    if (vue === 'equipes' && !this.classementEquipes && !this.classementChargement) this.chargerClassementEquipes();
+  }
+
+  chargerClassementEquipes(): void {
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.classementChargement = true;
+    this.classementErreur = false;
+    this.statsService.getClassementEquipes(
+      this.exerciceDateDebut ? iso(this.exerciceDateDebut) : undefined,
+      this.exerciceDateFin ? iso(this.exerciceDateFin) : undefined
+    ).pipe(takeUntil(this.destroy$)).subscribe({
+      next: c => { this.classementEquipes = c; this.classementChargement = false; },
+      error: () => { this.classementErreur = true; this.classementChargement = false; }
+    });
+  }
+
+  differenceDe(pour: number, contre: number): string {
+    const d = pour - contre;
+    return d > 0 ? '+' + d : String(d);
+  }
   isLightboxOpen = false;
   activeMediaList: any[] = [];
   currentMediaIndex = 0;
@@ -132,6 +163,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private groupeService: GroupeService,
     private financesService: FinancesService,
     private authService: AuthService,
+    private statsService: StatsService,
     private presenceService: PresenceService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,

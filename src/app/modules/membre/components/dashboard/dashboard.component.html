@@ -17,6 +17,23 @@
       </button>
     </div>
 
+    <!-- Carte personnelle -->
+    <div class="me-card">
+      <div class="me-avatar">
+        <img *ngIf="profil?.profilePhotoUrl as photo" [src]="photo" [alt]="nomAffiche">
+        <span *ngIf="!profil?.profilePhotoUrl">{{ initiale }}</span>
+      </div>
+      <div class="me-info">
+        <h2>{{ nomAffiche }}</h2>
+        <div class="me-tags">
+          <span class="me-tag" *ngIf="profil?.poste"><mat-icon>sports</mat-icon>{{ profil?.poste }}</span>
+          <span class="me-tag" *ngIf="profil?.piedFort"><mat-icon>directions_run</mat-icon>{{ profil?.piedFort }}</span>
+          <span class="me-tag" *ngIf="profil?.quartier"><mat-icon>place</mat-icon>{{ profil?.quartier }}</span>
+          <span class="me-tag" *ngIf="nomClub"><mat-icon>groups</mat-icon>{{ nomClub }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- KPIs toujours visibles -->
     <div class="dash-kpis">
       <div class="kpi">
@@ -33,14 +50,33 @@
         <span class="kpi-val">{{ stats.totalPasses || 0 }}</span>
         <span class="kpi-lbl">{{ 'dashboard.member.passes' | translate }}</span>
       </div>
+      <div class="kpi-sep" *ngIf="stats.matchesPlayed"></div>
+      <div class="kpi" *ngIf="stats.matchesPlayed">
+        <span class="kpi-val">{{ butsParMatch }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.goalsPerMatch' | translate }}</span>
+      </div>
+      <div class="kpi-sep" *ngIf="stats.matchesPlayed"></div>
+      <div class="kpi" *ngIf="stats.matchesPlayed">
+        <span class="kpi-val">{{ passesParMatch }}</span>
+        <span class="kpi-lbl">{{ 'dashboard.member.passesPerMatch' | translate }}</span>
+      </div>
       <div class="kpi-sep" *ngIf="stats.sanctions"></div>
       <div class="kpi" *ngIf="stats.sanctions">
         <span class="kpi-val">{{ getTotalSanctions() }}</span>
         <span class="kpi-lbl">{{ 'dashboard.member.sanctions' | translate }}</span>
       </div>
     </div>
+
+    <!-- Carrière tous clubs -->
+    <div class="career-strip" *ngIf="profil && (profil.totalMatchsJoues || profil.totalButsGlobal || profil.totalPassesGlobal)">
+      <span class="career-title"><mat-icon>military_tech</mat-icon>{{ 'dashboard.member.career' | translate }}</span>
+      <span class="career-item"><strong>{{ profil.totalMatchsJoues || 0 }}</strong> {{ 'dashboard.member.matches' | translate }}</span>
+      <span class="career-item"><strong>{{ profil.totalButsGlobal || 0 }}</strong> {{ 'dashboard.member.goals' | translate }}</span>
+      <span class="career-item"><strong>{{ profil.totalPassesGlobal || 0 }}</strong> {{ 'dashboard.member.passes' | translate }}</span>
+      <span class="career-item" *ngIf="profil.cleanSheets"><strong>{{ profil.cleanSheets }}</strong> {{ 'dashboard.member.cleanSheets' | translate }}</span>
+    </div>
   </div>
-  
+
   <!-- ============ LOADING ============ -->
   <div *ngIf="isLoading" class="loading-container">
     <div class="loading-spinner">

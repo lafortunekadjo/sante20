@@ -139,6 +139,9 @@ export interface CompetitionConfigDTO {
   matchsSuspensionCartonRouge: number;
   cumulCartonsEntrePhases: boolean;
 
+  /** Durée d'une mi-temps en minutes (45 par défaut). */
+  dureeMiTemps?: number;
+
   // Prolongations
   prolongationsActives: boolean;
   dureeProlong1: number;
@@ -336,6 +339,8 @@ export interface MatchDTO {
 }
 
 export interface MatchDetailDTO extends MatchDTO {
+  /** Durée d'une mi-temps de la compétition, en minutes. */
+  dureeMiTemps?: number;
   vainqueur?: CompetitionParticipantDTO;
   evenements: MatchEventDTO[];
   compositionDomicile: MatchCompositionDTO[];

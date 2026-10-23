@@ -31,6 +31,9 @@
               <div class="carte__nom">{{ nomAffiche() }}</div>
               <div class="carte__sous" *ngIf="profil()?.poste">{{ profil()!.poste }}<ng-container *ngIf="profil()?.piedFort"> · pied {{ profil()!.piedFort }}</ng-container></div>
               <div class="carte__portee">{{ titreCarte() }}<ng-container *ngIf="roleUn()"> · {{ roleUn() }}</ng-container></div>
+              <div class="carte__periode" *ngIf="periode() !== 'tout'">
+                📅 {{ 'maCarte.periode.' + periode() | translate }}<ng-container *ngIf="saisonsLibelle()"> · {{ saisonsLibelle() }}</ng-container>
+              </div>
             </div>
           </div>
 
@@ -84,6 +87,27 @@
             <input type="checkbox" [checked]="selection().has(g.groupeId)" (change)="basculer(g.groupeId)"/> {{ g.nom }}
           </label>
         </div>
+      </div>
+
+      <div class="mc__groupe">
+        <div class="mc__label">{{ 'maCarte.periode.label' | translate }}</div>
+        <div class="mc__puces">
+          <button [class.actif]="periode() === 'tout'" (click)="periode.set('tout')">🗂️ {{ 'maCarte.periode.tout' | translate }}</button>
+          <button [class.actif]="periode() === 'courante'" (click)="periode.set('courante')">📅 {{ 'maCarte.periode.courante' | translate }}</button>
+          <button [class.actif]="periode() === 'precedente'" (click)="periode.set('precedente')">⏮️ {{ 'maCarte.periode.precedente' | translate }}</button>
+          <button [class.actif]="periode() === 'choix'" (click)="periode.set('choix')" [disabled]="!saisonsDansLaPortee().length">✅ {{ 'maCarte.periode.choix' | translate }}</button>
+        </div>
+        <p class="mc__aide" *ngIf="periode() !== 'tout'">{{ 'maCarte.aide.' + periode() | translate }}</p>
+
+        <div class="mc__cases" *ngIf="periode() === 'choix'">
+          <label *ngFor="let s of saisonsDansLaPortee()">
+            <input type="checkbox" [checked]="saisonsChoisies().has(cle(s))" (change)="basculerSaison(s)"/>
+            {{ s.clubNom }} · {{ s.exerciceLibelle }}
+          </label>
+        </div>
+
+        <p class="mc__erreur" *ngIf="aucuneSaison() && periode() !== 'choix'">{{ 'maCarte.aucune' | translate }}</p>
+        <p class="mc__aide" *ngIf="periode() !== 'tout'">{{ 'maCarte.note' | translate }}</p>
       </div>
 
       <div class="mc__groupe">

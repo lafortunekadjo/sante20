@@ -72,6 +72,70 @@ export class PlayerProfileComponent implements OnInit {
     });
   }
 
+  // ── Lecture « scouting » du profil ─────────────────────────────
+
+  /** Gardien : « Gardien », « Gardien de but », « Goalkeeper »… */
+  get estGardien(): boolean {
+    return /gardien|goal/i.test(this.playerProfile?.poste || '');
+  }
+
+  /** Les données contiennent « M », « masculin », « F », « féminin »… */
+  get estHomme(): boolean {
+    return (this.playerProfile?.sexe || '').trim().toUpperCase().startsWith('M');
+  }
+
+  private ratio(total: number | undefined, matchs: number | undefined): number {
+    return matchs ? Math.round(100 * (total || 0) / matchs) / 100 : 0;
+  }
+
+  get butsParMatch(): number { return this.ratio(this.playerProfile?.totalButsGlobal, this.playerProfile?.totalMatchsJoues); }
+  get passesParMatch(): number { return this.ratio(this.playerProfile?.totalPassesGlobal, this.playerProfile?.totalMatchsJoues); }
+  get contributionsParMatch(): number {
+    return this.ratio((this.playerProfile?.totalButsGlobal || 0) + (this.playerProfile?.totalPassesGlobal || 0), this.playerProfile?.totalMatchsJoues);
+  }
+  get encaissesParMatch(): number { return this.ratio(this.playerProfile?.butsEncaisses, this.playerProfile?.totalMatchsJoues); }
+  get tauxCleanSheets(): number {
+    const m = this.playerProfile?.totalMatchsJoues || 0;
+    return m ? Math.round(100 * (this.playerProfile?.cleanSheets || 0) / m) : 0;
+  }
+
+  /** Les 6 dernières saisons, de la plus ancienne à la plus récente, pour le graphique de progression. */
+  get saisonsChrono(): any[] {
+    const l: any[] = [...(this.playerProfile?.historiqueSaisons || [])];
+    l.sort((a, b) => String(a.dateDebut || '').localeCompare(String(b.dateDebut || '')));
+    return l.slice(-6);
+  }
+
+  /** Valeur de la barre : buts / passes pour un joueur de champ, clean sheets pour un gardien. */
+  valeurSaison(s: any, type: 'a' | 'b'): number {
+    if (this.estGardien) return type === 'a' ? (s.cleanSheets || 0) : (s.matchsJoues || 0);
+    return type === 'a' ? (s.buts || 0) : (s.passes || 0);
+  }
+
+  get maxSaison(): number {
+    let m = 0;
+    for (const s of this.saisonsChrono) m = Math.max(m, this.valeurSaison(s, 'a'), this.valeurSaison(s, 'b'));
+    return m;
+  }
+
+  hauteur(valeur: number): number {
+    return this.maxSaison ? Math.max(valeur ? 6 : 0, Math.round(100 * valeur / this.maxSaison)) : 0;
+  }
+
+  /** Parcours : un résumé par club (le serveur renvoie une ligne par fiche de membre). */
+  get clubs(): any[] {
+    return this.playerProfile?.historiqueClubs || [];
+  }
+
+  async partager(): Promise<void> {
+    const url = `${window.location.origin}/p/${this.playerProfile?.username}`;
+    try {
+      if (navigator.share) { await navigator.share({ title: '@' + this.playerProfile?.username, url }); return; }
+      await navigator.clipboard.writeText(url);
+      this.snackBar.open(t('invitation.linkCopied'), 'OK', { duration: 2000 });
+    } catch { /* partage annulé */ }
+  }
+
   signalerVideo(video: any, event: Event): void {
     event.stopPropagation();
     const p: any = this.playerProfile;

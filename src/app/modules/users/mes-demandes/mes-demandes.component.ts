@@ -1,3 +1,4 @@
+import { normaliserDiscipline } from '../../../core/utils/referentiel';
 import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -268,7 +269,7 @@ getDisciplineIcon(discipline: string): string {
     'Musculation': 'fitness_center',
     'Boxe': 'sports_martial_arts'
   };
-  return icons[discipline] || 'sports';
+  return icons[normaliserDiscipline(discipline)] || 'sports';
 }
 
 /**

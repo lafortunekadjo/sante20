@@ -1,3 +1,4 @@
+import { normaliserSexe } from '../../../core/utils/referentiel';
 import { t } from '../../../core/i18n/traduire';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -245,7 +246,7 @@ private loadProfileData(): void {
         nom:            profil.nom            || '',
         prenom:         profil.prenom         || '',
         date_naissance: profil.dateNaissance  || '',
-        sexe:           profil.sexe           || '',
+        sexe:           normaliserSexe(profil.sexe)           || '',
         cni:            profil.cni            || '',
         adresse:        profil.adresse        || '',
         tel:            profil.tel            || '',
@@ -256,7 +257,7 @@ private loadProfileData(): void {
         nom:            membre?.nom            || '',
         prenom:         membre?.prenom         || '',
         date_naissance: membre?.dateNaissance  || '',
-        sexe:           membre?.sexe           || '',
+        sexe:           normaliserSexe(membre?.sexe)           || '',
         cni:            membre?.cni            || '',
         adresse:        membre?.adresse        || '',
         tel:            membre?.tel            || '',
@@ -387,7 +388,7 @@ this.userProfileService.getMyProfile().subscribe({
       nom:            profil.nom          || '',
       prenom:         profil.prenom       || '',
       date_naissance: profil.dateNaissance || '',
-      sexe:           profil.sexe         || '',
+      sexe:           normaliserSexe(profil.sexe)         || '',
       cni:            profil.cni          || '',
       adresse:        profil.adresse      || '',
       tel:            profil.tel          || '',
@@ -420,7 +421,7 @@ this.userProfileService.getMyProfile().subscribe({
           nom:            membre.nom           || '',
           prenom:         membre.prenom        || '',
           date_naissance: membre.dateNaissance || '',
-          sexe:           membre.sexe          || '',
+          sexe:           normaliserSexe(membre.sexe)          || '',
           cni:            membre.cni           || '',
           adresse:        membre.adresse       || '',
           tel:            membre.tel           || '',

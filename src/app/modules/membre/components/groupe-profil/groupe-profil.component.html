@@ -1,0 +1,138 @@
+<div class="gp-page">
+
+  <!-- ══ CHARGEMENT / ERREURS ═════════════════════════ -->
+  <div class="gp-state" *ngIf="chargement">
+    <mat-spinner diameter="44"></mat-spinner>
+  </div>
+
+  <div class="gp-state" *ngIf="!chargement && (introuvable || erreur)">
+    <mat-icon>{{ introuvable ? 'search_off' : 'cloud_off' }}</mat-icon>
+    <p>{{ (introuvable ? 'groupeProfil.notFound' : 'groupeProfil.error') | translate }}</p>
+    <div class="gp-state-actions">
+      <button mat-stroked-button type="button" (click)="retour()"><mat-icon>arrow_back</mat-icon>{{ 'groupeProfil.back' | translate }}</button>
+      <button mat-stroked-button type="button" *ngIf="erreur" (click)="charger(idCourant)"><mat-icon>refresh</mat-icon>{{ 'groupeProfil.retry' | translate }}</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="profil as p">
+
+    <!-- ══ HÉROS ══════════════════════════════════════ -->
+    <header class="gp-hero"
+            [style.background-image]="p.imageUrl ? 'linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.65)), url(' + p.imageUrl + ')' : null"
+            [style.background-color]="!p.imageUrl ? couleurDe(p.nom) : null">
+      <div class="gp-hero-top">
+        <button type="button" class="gp-round" (click)="retour()" [attr.aria-label]="'groupeProfil.back' | translate">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <button type="button" class="gp-round" (click)="partager()" [attr.aria-label]="'groupeProfil.share' | translate">
+          <mat-icon>share</mat-icon>
+        </button>
+      </div>
+      <div class="gp-hero-body">
+        <span class="gp-chip"><mat-icon>{{ icone }}</mat-icon>{{ p.discipline }}</span>
+        <h1>{{ p.nom }}</h1>
+        <p class="gp-lieu" *ngIf="p.ville || p.quartier">
+          <mat-icon>place</mat-icon>{{ p.quartier }}<ng-container *ngIf="p.quartier && p.ville">, </ng-container>{{ p.ville }}
+        </p>
+      </div>
+    </header>
+
+    <div class="gp-content">
+
+      <!-- ══ CHIFFRES CLÉS ═══════════════════════════ -->
+      <section class="gp-key">
+        <div class="gp-key-item">
+          <mat-icon>groups</mat-icon>
+          <strong>{{ p.nombreMembres }}<ng-container *ngIf="p.capaciteMax"> / {{ p.capaciteMax }}</ng-container></strong>
+          <span>{{ 'groupeProfil.members' | translate }}</span>
+        </div>
+        <div class="gp-key-item">
+          <mat-icon>payments</mat-icon>
+          <strong>{{ p.fraisAdhesion ? (p.fraisAdhesion | number:'1.0-0') + ' FCFA' : ('groupeProfil.free' | translate) }}</strong>
+          <span>{{ 'groupeProfil.fee' | translate }}</span>
+        </div>
+        <div class="gp-key-item">
+          <mat-icon>emoji_events</mat-icon>
+          <strong>{{ p.activite.matchsJoues }}</strong>
+          <span>{{ 'groupeProfil.played' | translate }}</span>
+        </div>
+      </section>
+
+      <!-- ══ À PROPOS ════════════════════════════════ -->
+      <section class="gp-card" *ngIf="p.description">
+        <h2><mat-icon>info</mat-icon>{{ 'groupeProfil.about' | translate }}</h2>
+        <p class="gp-description">{{ p.description }}</p>
+      </section>
+
+      <!-- ══ INFOS PRATIQUES ═════════════════════════ -->
+      <section class="gp-card">
+        <h2><mat-icon>event</mat-icon>{{ 'groupeProfil.practical' | translate }}</h2>
+        <dl class="gp-facts">
+          <div *ngIf="p.jourMatch"><dt>{{ 'groupeProfil.day' | translate }}</dt><dd>{{ p.jourMatch }}<ng-container *ngIf="p.heureMatch"> · {{ p.heureMatch }}</ng-container></dd></div>
+          <div *ngIf="p.stade"><dt>{{ 'groupeProfil.venue' | translate }}</dt><dd>{{ p.stade }}</dd></div>
+          <div><dt>{{ 'groupeProfil.level' | translate }}</dt><dd>{{ p.niveauRequis || ('groupeProfil.allLevels' | translate) }}</dd></div>
+          <div *ngIf="p.capaciteMax">
+            <dt>{{ 'groupeProfil.places' | translate }}</dt>
+            <dd>
+              <div class="gp-bar"><div class="gp-bar-fill" [class.full]="remplissage >= 100" [style.width.%]="remplissage"></div></div>
+              <span class="gp-bar-label">
+                {{ placesRestantes ? (('groupeProfil.placesLeft' | translate:{ n: placesRestantes })) : ('groupeProfil.full' | translate) }}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- ══ ACTIVITÉ ════════════════════════════════ -->
+      <section class="gp-card">
+        <h2><mat-icon>insights</mat-icon>{{ 'groupeProfil.activity' | translate }}</h2>
+
+        <p class="gp-empty" *ngIf="!p.activite.matchsJoues">{{ 'groupeProfil.noActivity' | translate }}</p>
+
+        <ng-container *ngIf="p.activite.matchsJoues">
+          <div class="gp-stats">
+            <div class="gp-stat"><strong>{{ p.activite.seancesDeJeu }}</strong><span>{{ 'groupeProfil.sessions' | translate }}</span></div>
+            <div class="gp-stat"><strong>{{ p.activite.matchsInternes }}</strong><span>{{ 'groupeProfil.internal' | translate }}</span></div>
+            <div class="gp-stat"><strong>{{ p.activite.matchsExternes }}</strong><span>{{ 'groupeProfil.external' | translate }}</span></div>
+          </div>
+
+          <ng-container *ngIf="p.activite.matchsExternes">
+            <div class="gp-record">
+              <div class="gp-record-seg win" [style.flex]="p.activite.victoires || 0.0001"><span>{{ p.activite.victoires }} {{ 'groupeProfil.wins' | translate }}</span></div>
+              <div class="gp-record-seg draw" [style.flex]="p.activite.nuls || 0.0001"><span>{{ p.activite.nuls }} {{ 'groupeProfil.draws' | translate }}</span></div>
+              <div class="gp-record-seg loss" [style.flex]="p.activite.defaites || 0.0001"><span>{{ p.activite.defaites }} {{ 'groupeProfil.losses' | translate }}</span></div>
+            </div>
+            <div class="gp-stats">
+              <div class="gp-stat"><strong>{{ tauxVictoire }}%</strong><span>{{ 'groupeProfil.winRate' | translate }}</span></div>
+              <div class="gp-stat"><strong>{{ p.activite.butsPour }} - {{ p.activite.butsContre }}</strong><span>{{ 'groupeProfil.goals' | translate }}</span></div>
+              <div class="gp-stat" *ngIf="p.activite.serieInvaincue > 1"><strong>{{ p.activite.serieInvaincue }}</strong><span>{{ 'groupeProfil.streak' | translate }}</span></div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </section>
+
+      <!-- ══ DERNIERS RÉSULTATS ══════════════════════ -->
+      <section class="gp-card" *ngIf="p.derniersResultats.length">
+        <h2><mat-icon>scoreboard</mat-icon>{{ 'groupeProfil.results' | translate }}</h2>
+        <ul class="gp-results">
+          <li *ngFor="let r of p.derniersResultats">
+            <span class="gp-issue" [class.win]="r.issue === 'V'" [class.draw]="r.issue === 'N'" [class.loss]="r.issue === 'D'">{{ r.issue }}</span>
+            <span class="gp-adv">{{ r.adversaire || ('groupeProfil.unknownOpponent' | translate) }}</span>
+            <strong class="gp-score">{{ r.score }}</strong>
+            <span class="gp-date">{{ r.date | date:'dd MMM yyyy' }}</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- ══ BARRE D'ACTION ══════════════════════════════ -->
+    <footer class="gp-cta">
+      <button mat-raised-button color="primary" type="button" *ngIf="p.accepteNouveauxMembres && placesRestantes !== 0" (click)="rejoindre()">
+        <mat-icon>person_add</mat-icon>{{ 'groupeProfil.join' | translate }}
+      </button>
+      <p class="gp-closed" *ngIf="!p.accepteNouveauxMembres || placesRestantes === 0">
+        <mat-icon>lock</mat-icon>{{ 'groupeProfil.closed' | translate }}
+      </p>
+    </footer>
+  </ng-container>
+</div>

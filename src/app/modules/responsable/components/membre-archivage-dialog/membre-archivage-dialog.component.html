@@ -1,0 +1,70 @@
+<div class="ad-wrap">
+  <h2 class="ad-title">
+    <mat-icon>{{ data.mode === 'archiver' ? 'inventory_2' : data.mode === 'retour' ? 'login' : 'history' }}</mat-icon>
+    {{ 'membres.archive.title.' + data.mode | translate }}
+  </h2>
+  <p class="ad-who">{{ nom }}</p>
+
+  <!-- ── Archiver / Retour ─────────────────────────── -->
+  <ng-container *ngIf="data.mode !== 'historique'">
+    <p class="ad-help">{{ 'membres.archive.help.' + data.mode | translate }}</p>
+
+    <p class="ad-previous" *ngIf="data.mode === 'retour' && data.membre.dateDepart">
+      <mat-icon>info</mat-icon>
+      {{ 'membres.archive.leftOn' | translate }} {{ data.membre.dateDepart | date:'dd MMM yyyy' }}
+      <ng-container *ngIf="data.membre.motifDepart"> · {{ 'membres.archive.motif.' + data.membre.motifDepart | translate }}</ng-container>
+    </p>
+
+    <label class="ad-field" *ngIf="data.mode === 'archiver'">
+      <span>{{ 'membres.archive.reason' | translate }}</span>
+      <select [(ngModel)]="motif" name="motif">
+        <option value="" disabled>{{ 'membres.archive.chooseReason' | translate }}</option>
+        <option *ngFor="let m of motifs" [value]="m">{{ 'membres.archive.motif.' + m | translate }}</option>
+      </select>
+    </label>
+
+    <label class="ad-field">
+      <span>{{ (data.mode === 'archiver' ? 'membres.archive.dateLeft' : 'membres.archive.dateBack') | translate }}</span>
+      <input type="date" [(ngModel)]="date" name="date" [max]="aujourdhui">
+    </label>
+
+    <label class="ad-field">
+      <span>{{ 'membres.archive.comment' | translate }}</span>
+      <textarea rows="3" maxlength="500" [(ngModel)]="commentaire" name="commentaire"
+                [placeholder]="'membres.archive.commentPlaceholder' | translate"></textarea>
+    </label>
+
+    <p class="ad-error" *ngIf="erreur"><mat-icon>error</mat-icon>{{ erreur | translate }}</p>
+
+    <div class="ad-actions">
+      <button mat-stroked-button type="button" (click)="fermer()">{{ 'common.cancel' | translate }}</button>
+      <button mat-raised-button color="primary" type="button" [disabled]="!valide || envoiEnCours" (click)="valider()">
+        <mat-spinner *ngIf="envoiEnCours" diameter="18"></mat-spinner>
+        {{ 'membres.archive.confirm.' + data.mode | translate }}
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ── Historique ────────────────────────────────── -->
+  <ng-container *ngIf="data.mode === 'historique'">
+    <div class="ad-state" *ngIf="chargement"><mat-spinner diameter="28"></mat-spinner></div>
+    <p class="ad-error" *ngIf="erreur"><mat-icon>error</mat-icon>{{ erreur | translate }}</p>
+
+    <ol class="ad-timeline" *ngIf="!chargement && !erreur">
+      <li *ngFor="let e of evenements" [class]="'ev-' + e.type.toLowerCase()">
+        <span class="ad-dot"><mat-icon>{{ icone(e.type) }}</mat-icon></span>
+        <div>
+          <strong>{{ 'membres.archive.event.' + e.type | translate }}</strong>
+          <span class="ad-date">{{ e.date | date:'dd MMM yyyy' }}</span>
+          <div class="ad-motif" *ngIf="e.motif">{{ 'membres.archive.motif.' + e.motif | translate }}</div>
+          <p class="ad-comment" *ngIf="e.commentaire">{{ e.commentaire }}</p>
+          <small class="ad-author" *ngIf="e.auteur">{{ 'membres.archive.by' | translate }} {{ e.auteur }}</small>
+        </div>
+      </li>
+    </ol>
+
+    <div class="ad-actions">
+      <button mat-stroked-button type="button" (click)="fermer()">{{ 'common.close' | translate }}</button>
+    </div>
+  </ng-container>
+</div>

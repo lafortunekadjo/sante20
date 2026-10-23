@@ -37,6 +37,10 @@ export interface PlayerProfile {
   isPublic?: boolean;
 }
 
+/** Résumé d'un joueur dans l'annuaire : l'essentiel, sans historique ni e-mail (la fiche complète se charge à l'ouverture). */
+export type ResumeJoueur = Pick<PlayerProfile, 'id' | 'username' | 'profilePhotoUrl' | 'poste' | 'piedFort' | 'quartier' | 'sexe'
+  | 'totalMatchsJoues' | 'totalButsGlobal' | 'totalPassesGlobal' | 'totalCartonsGlobal' | 'butsEncaisses' | 'cleanSheets'>;
+
 export interface SaisonStats {
   exerciceId: number;
   exerciceLibelle: string;
@@ -120,6 +124,11 @@ export class ProfileService {
    * côté client. Cette méthode agrège donc toutes les pages en interne
    * — aucun changement requis côté composant.
    */
+  /** Annuaire des joueurs publics : une seule requête légère (au lieu de toutes les pages avec historiques). */
+  getAnnuaire(): Observable<ResumeJoueur[]> {
+    return this.http.get<ResumeJoueur[]>(`${this.apiUrl}/annuaire`);
+  }
+
   getAllPlayers(): Observable<PlayerProfile[]> {
     const pageSize = 100;
 

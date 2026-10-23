@@ -1,3 +1,4 @@
+import { normaliserSexe } from '../../../../core/utils/referentiel';
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -5,6 +6,7 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { Membre } from '../../../../core/models/membre.model';
 import { User } from '../../../../core/models/user';
+import { MembreArchivageDialogComponent, ModeArchivage } from '../membre-archivage-dialog/membre-archivage-dialog.component';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { MembreService } from '../../../../core/services/membre.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
@@ -136,7 +138,7 @@ export class MembreFormComponent implements OnInit, AfterViewInit {
   showFilters = false;
   filters = {
     equipe: null as number | null,
-    active: null as boolean | null,
+    active: true as boolean | null,   // par défaut : membres actifs seulement (archivés et inactifs masqués)
     sexe: null as string | null,
     roleCustom: null as number | null,
     roleCO: null as string | null,
@@ -447,7 +449,7 @@ hasSanctionsEnabled(): boolean {
     }
 
     if (this.filters.sexe) {
-      filtered = filtered.filter(m => m.sexe === this.filters.sexe);
+      filtered = filtered.filter(m => normaliserSexe(m.sexe) === this.filters.sexe);
     }
 
     if (this.filters.roleCustom !== null) {
@@ -488,10 +490,20 @@ hasSanctionsEnabled(): boolean {
     this.updatePaginatedMembers();
   }
 
+  /** Membres inactifs ou archivés que le filtre par défaut cache (rappelé au-dessus de la liste). */
+  get inactifsMasques(): number {
+    return this.filters.active === true ? this.dataSource.data.filter(m => !m.active).length : 0;
+  }
+
+  afficherInactifs(): void {
+    this.filters.active = null;
+    this.applyFilters();
+  }
+
   calculateActiveFilters(): number {
     let count = 0;
     if (this.filters.equipe !== null) count++;
-    if (this.filters.active !== null) count++;
+    if (this.filters.active !== true) count++;   // « actifs » est le réglage par défaut : il n'est pas compté
     if (this.filters.sexe !== null) count++;
     if (this.filters.roleCustom !== null) count++;
     if (this.filters.cotisation !== null) count++;
@@ -502,7 +514,7 @@ hasSanctionsEnabled(): boolean {
   clearAllFilters(): void {
     this.filters = {
       equipe: null,
-      active: null,
+      active: true,
       sexe: null,
       roleCustom: null,
       roleCO: null,
@@ -716,6 +728,31 @@ resetNewMembre(): void {
       if (result) {
         this.deleteMembre(membre.id);
       }
+    });
+  }
+
+  // ===== ARCHIVAGE / RETOUR / HISTORIQUE =====
+
+  /** Un membre archivé a une date de départ ; un membre simplement inactif n'en a pas. */
+  estArchive(membre: Membre): boolean {
+    return !membre.active && !!membre.dateDepart;
+  }
+
+  get estAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  ouvrirArchivage(membre: Membre, mode: ModeArchivage): void {
+    if (!membre) return;
+    const ref = this.dialog.open(MembreArchivageDialogComponent, {
+      data: { mode, membre },
+      autoFocus: false,
+      maxWidth: '95vw'
+    });
+    ref.afterClosed().subscribe(fait => {
+      if (!fait) return;
+      this.showSuccessMessage(this.translate.instant(mode === 'archiver' ? 'membres.archive.doneArchive' : 'membres.archive.doneBack'));
+      this.loadData();
     });
   }
 

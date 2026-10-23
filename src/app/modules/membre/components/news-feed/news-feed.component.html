@@ -515,7 +515,17 @@
         <!-- Pub stats -->
         <app-publicite-feed [ville]="userVille" pageSource="news-feed-stats"></app-publicite-feed>
 
-        <div class="feed-block">
+        <!-- Bascule joueurs / équipes -->
+        <div class="rk-switch" role="tablist">
+          <button type="button" role="tab" [class.active]="classementVue === 'joueurs'" (click)="choisirClassement('joueurs')">
+            <mat-icon>person</mat-icon>{{ 'feed.ranking.players' | translate }}
+          </button>
+          <button type="button" role="tab" [class.active]="classementVue === 'equipes'" (click)="choisirClassement('equipes')">
+            <mat-icon>groups</mat-icon>{{ 'feed.ranking.teams' | translate }}
+          </button>
+        </div>
+
+        <div class="feed-block" *ngIf="classementVue === 'joueurs'">
           <div class="block-header">
             <div class="block-icon stats">
               <mat-icon>emoji_events</mat-icon>
@@ -572,6 +582,104 @@
 
           </div>
         </div>
+
+        <!-- ══ Classement des équipes ══ -->
+        <ng-container *ngIf="classementVue === 'equipes'">
+
+          <div class="rk-state" *ngIf="classementChargement"><mat-spinner diameter="32"></mat-spinner></div>
+
+          <div class="rk-state" *ngIf="classementErreur">
+            <mat-icon>cloud_off</mat-icon>
+            <p>{{ 'feed.ranking.loadError' | translate }}</p>
+            <button mat-stroked-button type="button" (click)="chargerClassementEquipes()">{{ 'feed.ranking.retry' | translate }}</button>
+          </div>
+
+          <ng-container *ngIf="classementEquipes as c">
+
+            <!-- Classement interne -->
+            <div class="feed-block">
+              <div class="block-header">
+                <div class="block-icon stats"><mat-icon>leaderboard</mat-icon></div>
+                <div class="block-title">
+                  <h2>{{ 'feed.ranking.internal' | translate }}</h2>
+                  <span class="block-badge season" *ngIf="exerciceEnCours">{{ exerciceNom }}</span>
+                </div>
+              </div>
+
+              <div class="rk-table" *ngIf="c.interne.length">
+                <div class="rk-head">
+                  <span class="rk-pos">#</span>
+                  <span class="rk-team">{{ 'feed.ranking.team' | translate }}</span>
+                  <span class="rk-num">{{ 'feed.ranking.played' | translate }}</span>
+                  <span class="rk-num win">{{ 'feed.ranking.wins' | translate }}</span>
+                  <span class="rk-num">{{ 'feed.ranking.draws' | translate }}</span>
+                  <span class="rk-num loss">{{ 'feed.ranking.losses' | translate }}</span>
+                  <span class="rk-num">+/-</span>
+                  <span class="rk-pts">{{ 'feed.ranking.points' | translate }}</span>
+                </div>
+                <div class="rk-row" *ngFor="let t of c.interne; let i = index" [class.leader]="i === 0">
+                  <span class="rk-pos" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">{{ i + 1 }}</span>
+                  <span class="rk-team">{{ t.equipe }}</span>
+                  <span class="rk-num">{{ t.joues }}</span>
+                  <span class="rk-num win">{{ t.victoires }}</span>
+                  <span class="rk-num">{{ t.nuls }}</span>
+                  <span class="rk-num loss">{{ t.defaites }}</span>
+                  <span class="rk-num">{{ differenceDe(t.butsPour, t.butsContre) }}</span>
+                  <span class="rk-pts"><strong>{{ t.points }}</strong></span>
+                </div>
+              </div>
+              <div class="empty-lb" *ngIf="!c.interne.length">
+                <mat-icon>groups</mat-icon>
+                <span>{{ 'feed.ranking.noInternal' | translate }}</span>
+              </div>
+            </div>
+
+            <!-- Face aux adversaires -->
+            <div class="feed-block">
+              <div class="block-header">
+                <div class="block-icon stats"><mat-icon>public</mat-icon></div>
+                <div class="block-title">
+                  <h2>{{ 'feed.ranking.external' | translate }}</h2>
+                </div>
+              </div>
+
+              <ng-container *ngIf="c.bilanExterne.joues; else sansExterne">
+                <div class="rk-bilan">
+                  <div><strong>{{ c.bilanExterne.joues }}</strong><span>{{ 'feed.ranking.played' | translate }}</span></div>
+                  <div class="win"><strong>{{ c.bilanExterne.victoires }}</strong><span>{{ 'feed.ranking.wins' | translate }}</span></div>
+                  <div><strong>{{ c.bilanExterne.nuls }}</strong><span>{{ 'feed.ranking.draws' | translate }}</span></div>
+                  <div class="loss"><strong>{{ c.bilanExterne.defaites }}</strong><span>{{ 'feed.ranking.losses' | translate }}</span></div>
+                  <div><strong>{{ c.bilanExterne.butsPour }} - {{ c.bilanExterne.butsContre }}</strong><span>{{ 'feed.ranking.goals' | translate }}</span></div>
+                </div>
+
+                <div class="rk-table">
+                  <div class="rk-head">
+                    <span class="rk-team">{{ 'feed.ranking.opponent' | translate }}</span>
+                    <span class="rk-num">{{ 'feed.ranking.played' | translate }}</span>
+                    <span class="rk-num win">{{ 'feed.ranking.wins' | translate }}</span>
+                    <span class="rk-num">{{ 'feed.ranking.draws' | translate }}</span>
+                    <span class="rk-num loss">{{ 'feed.ranking.losses' | translate }}</span>
+                    <span class="rk-pts">{{ 'feed.ranking.goals' | translate }}</span>
+                  </div>
+                  <div class="rk-row" *ngFor="let a of c.externe">
+                    <span class="rk-team">{{ a.adversaire }}</span>
+                    <span class="rk-num">{{ a.joues }}</span>
+                    <span class="rk-num win">{{ a.victoires }}</span>
+                    <span class="rk-num">{{ a.nuls }}</span>
+                    <span class="rk-num loss">{{ a.defaites }}</span>
+                    <span class="rk-pts">{{ a.butsPour }} - {{ a.butsContre }}</span>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #sansExterne>
+                <div class="empty-lb">
+                  <mat-icon>public</mat-icon>
+                  <span>{{ 'feed.ranking.noExternal' | translate }}</span>
+                </div>
+              </ng-template>
+            </div>
+          </ng-container>
+        </ng-container>
 
       </div>
     </div>

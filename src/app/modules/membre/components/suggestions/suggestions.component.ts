@@ -4,7 +4,7 @@ import { FormGroup, FormBuilder, Validators, FormsModule, ReactiveFormsModule } 
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../../core/services/auth.service';
 import { SuggestionsService } from '../../../../core/services/suggestions.service';
-import { MembreService } from '../../../../core/services/membre.service';
+import { SuggestionEnvoyee } from '../../../../core/models/suggestion.model';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -58,16 +58,20 @@ export class SuggestionsComponent implements OnInit {
   tipsExpanded = false;
   examplesExpanded = false;
   suggestionForm: FormGroup;
-  membreId!: number;
   userId: number | null = null;
+  mesSuggestions: SuggestionEnvoyee[] = [];
+  historiqueChargement = true;
+  historiqueErreur = false;
+  envoiEnCours = false;
+  /** Suggestion dont le texte complet est déplié. */
+  depliee: number | null = null;
   userVille: string | undefined;
 
   constructor(
     private fb: FormBuilder,
     private suggestionsService: SuggestionsService,
     private snackBar: MatSnackBar,
-    private authService: AuthService,
-    private membreService: MembreService
+    private authService: AuthService
   ) {
     this.suggestionForm = this.fb.group({
       texte: ['', [Validators.required, Validators.minLength(10)]]
@@ -85,26 +89,40 @@ export class SuggestionsComponent implements OnInit {
       });
       return;
     }
+    this.chargerHistorique();
+  }
+
+  chargerHistorique(): void {
+    this.historiqueChargement = true;
+    this.historiqueErreur = false;
+    this.suggestionsService.mesSuggestions().subscribe({
+      next: l => { this.mesSuggestions = l; this.historiqueChargement = false; },
+      error: () => { this.historiqueErreur = true; this.historiqueChargement = false; }
+    });
   }
 
   onSubmit(): void {
-    if (this.suggestionForm.valid && this.membreId) {
-      const suggestion = {
-        texte: this.suggestionForm.value.texte,
-        membre: { id: this.membreId }
-      };
+    if (this.suggestionForm.invalid || this.envoiEnCours) return;
+    this.envoiEnCours = true;
+    this.suggestionsService.createSuggestion(this.suggestionForm.value.texte).subscribe({
+      next: envoyee => {
+        this.envoiEnCours = false;
+        this.snackBar.open(t('ui.ts_votre_suggestion_a_ete_soumise_a_004b'), 'Fermer', { duration: 3000 });
+        this.suggestionForm.reset();
+        this.mesSuggestions = [envoyee, ...this.mesSuggestions];   // visible tout de suite dans l'historique
+      },
+      error: err => {
+        this.envoiEnCours = false;
+        const message = err?.status === 429 ? t('suggestions.form.errors.tooMany')
+          : err?.status === 400 && err?.error?.message ? err.error.message
+          : t('ui.ts_erreur_lors_de_l_envoi_de_la_sug_1ab4');
+        this.snackBar.open(message, 'Fermer', { duration: 4000 });
+      }
+    });
+  }
 
-      this.suggestionsService.createSuggestion(suggestion).subscribe(
-        () => {
-          this.snackBar.open(t('ui.ts_votre_suggestion_a_ete_soumise_a_004b'), 'Fermer', { duration: 3000 });
-          this.suggestionForm.reset();
-        },
-        error => {
-          console.error('Erreur lors de l\'envoi de la suggestion', error);
-          this.snackBar.open(t('ui.ts_erreur_lors_de_l_envoi_de_la_sug_1ab4'), 'Fermer', { duration: 3000 });
-        }
-      );
-    }
+  basculer(id: number): void {
+    this.depliee = this.depliee === id ? null : id;
   }
 
 }

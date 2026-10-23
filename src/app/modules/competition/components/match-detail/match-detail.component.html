@@ -65,6 +65,7 @@
             <div class="live-badge" *ngIf="isEnCours()">
               <span class="live-dot"></span>
               LIVE
+              <span class="live-chrono" *ngIf="chronoLabel()">· {{ chronoLabel() }}</span>
             </div>
             <div class="score-display__infos">
               <span *ngIf="match()!.dateHeure">
@@ -351,6 +352,45 @@
               </button>
             </div>
 
+            <!-- ── CHRONO DU MATCH ── -->
+            <div class="chrono-card" *ngIf="isEnCours()">
+              <div class="chrono-main">
+                <span class="chrono-label" [class.chrono-label--pause]="phase() === 'mt'">{{ chronoLabel() || '–' }}</span>
+                <span class="chrono-phase">{{ 'competition.match.chrono.phase.' + phase() | translate }}</span>
+              </div>
+
+              <div class="chrono-actions" *ngIf="canEdit()">
+                <button type="button" class="btn-primary btn-sm" *ngIf="phase() === 'avant'" (click)="lancerChrono()">
+                  <mat-icon>timer</mat-icon>{{ 'competition.match.chrono.lancer' | translate }}
+                </button>
+                <button type="button" class="btn-warning btn-sm" *ngIf="phase() === 'p1'" (click)="mettreMiTemps()">
+                  <mat-icon>pause_circle</mat-icon>{{ 'competition.match.chrono.mitemps' | translate }}
+                </button>
+                <button type="button" class="btn-primary btn-sm" *ngIf="phase() === 'mt'" (click)="reprendre()">
+                  <mat-icon>play_circle</mat-icon>{{ 'competition.match.chrono.reprise' | translate }}
+                </button>
+                <button type="button" class="btn-warning btn-sm" *ngIf="phase() === 'p2'" (click)="finirTempsReglementaire()">
+                  <mat-icon>flag</mat-icon>{{ 'competition.match.chrono.finir' | translate }}
+                </button>
+                <button type="button" class="btn-success btn-sm" *ngIf="phase() === 'fin'" (click)="setTab('saisie')">
+                  <mat-icon>scoreboard</mat-icon>{{ 'competition.match.chrono.validerScore' | translate }}
+                </button>
+
+                <ng-container *ngIf="phase() === 'p1' || phase() === 'p2'">
+                  <span class="chrono-ajust">
+                    <button type="button" class="chrono-mini" (click)="decaler(-1)" [attr.aria-label]="'competition.match.chrono.moins' | translate">−1′</button>
+                    <button type="button" class="chrono-mini" (click)="decaler(1)" [attr.aria-label]="'competition.match.chrono.plus' | translate">+1′</button>
+                    <input #minReg type="number" min="1" max="150" class="chrono-input" [placeholder]="'competition.match.chrono.minute' | translate"
+                           (keydown.enter)="regler(minReg.valueAsNumber); minReg.value = ''"/>
+                    <button type="button" class="chrono-mini" (click)="regler(minReg.valueAsNumber); minReg.value = ''">{{ 'competition.match.chrono.regler' | translate }}</button>
+                  </span>
+                </ng-container>
+              </div>
+
+              <p class="chrono-erreur" *ngIf="erreurChrono()">{{ erreurChrono() }}</p>
+              <p class="chrono-aide" *ngIf="canEdit()">{{ 'competition.match.chrono.aide' | translate }}</p>
+            </div>
+
             <!-- ── FORMULAIRE ÉVÉNEMENT ── -->
             <div class="event-form" *ngIf="showEventForm() && canEdit()">
 
@@ -407,15 +447,19 @@
                   <div class="form-field">
                     <label class="form-label">{{ 'competition.match.evenements.minute' | translate }}</label>
                     <div class="minute-input-group">
-                      <input [(ngModel)]="eventMinute"
+                      <input [(ngModel)]="eventMinute" (ngModelChange)="minuteManuelle = true"
                              type="number" min="1" max="120"
                              class="form-input minute-input"
                              placeholder="Ex: 45"/>
                       <span class="minute-sep">+</span>
-                      <input [(ngModel)]="eventMinuteAdd"
+                      <input [(ngModel)]="eventMinuteAdd" (ngModelChange)="minuteManuelle = true"
                              type="number" min="1" max="15"
                              class="form-input minute-input minute-input--add"
                              placeholder="0"/>
+                      <button type="button" class="chrono-sync" *ngIf="minuteManuelle && minuteChrono()" (click)="utiliserMinuteChrono()"
+                              [attr.title]="'competition.match.chrono.minuteChrono' | translate">
+                        <mat-icon>timer</mat-icon>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -686,16 +730,22 @@
                 <div class="score-inputs">
                   <div class="score-input-group">
                     <label>{{ match()!.domicile?.nomEquipe }}</label>
-                    <input formControlName="butsDomicile"
+                    <input formControlName="butsDomicile" (input)="scoreManuel = true"
                            type="number" min="0" class="score-big-input"/>
                   </div>
                   <span class="score-vs">–</span>
                   <div class="score-input-group">
                     <label>{{ match()!.exterieur?.nomEquipe }}</label>
-                    <input formControlName="butsExterieur"
+                    <input formControlName="butsExterieur" (input)="scoreManuel = true"
                            type="number" min="0" class="score-big-input"/>
                   </div>
                 </div>
+
+                <p class="score-hint" *ngIf="isEnCours()">
+                  <mat-icon>{{ scoreManuel ? 'edit' : 'auto_fix_high' }}</mat-icon>
+                  <span>{{ (scoreManuel ? 'competition.match.chrono.scoreManuel' : 'competition.match.chrono.scoreAuto') | translate }}</span>
+                  <button type="button" class="chrono-mini" *ngIf="scoreManuel" (click)="recalculerScore()">{{ 'competition.match.chrono.recalculer' | translate }}</button>
+                </p>
 
                 <!-- Prolongations -->
                 <div class="prolong-section"
@@ -750,6 +800,31 @@
                     <mat-icon>check</mat-icon>
                     {{ savingScore() ? 'Enregistrement...' : 'Valider le score' }}
                   </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Heures du match : coup d'envoi, mi-temps, reprise, fin — à corriger si besoin -->
+            <div class="saisie-section" *ngIf="isEnCours() && canEdit()">
+              <h3 class="section-title">
+                <mat-icon>schedule</mat-icon>
+                {{ 'competition.match.chrono.heures' | translate }}
+              </h3>
+              <form [formGroup]="tempsForm" (ngSubmit)="saisirTemps()" class="temps-grid">
+                <label class="temps-champ">{{ 'competition.match.chrono.debut' | translate }}
+                  <input type="datetime-local" formControlName="heureEffectiveDebut" class="form-input"/></label>
+                <label class="temps-champ">{{ 'competition.match.chrono.miTemps' | translate }}
+                  <input type="datetime-local" formControlName="heureEffectiveMiTemps" class="form-input"/></label>
+                <label class="temps-champ">{{ 'competition.match.chrono.repriseHeure' | translate }}
+                  <input type="datetime-local" formControlName="heureEffectiveReprise" class="form-input"/></label>
+                <label class="temps-champ">{{ 'competition.match.chrono.finHeure' | translate }}
+                  <input type="datetime-local" formControlName="heureEffectiveFin" class="form-input"/></label>
+                <label class="temps-champ">{{ 'competition.match.chrono.add1' | translate }}
+                  <input type="number" min="0" max="30" formControlName="tempsAdditionnel1" class="form-input"/></label>
+                <label class="temps-champ">{{ 'competition.match.chrono.add2' | translate }}
+                  <input type="number" min="0" max="30" formControlName="tempsAdditionnel2" class="form-input"/></label>
+                <div class="saisie-actions">
+                  <button type="submit" class="btn-primary btn-sm"><mat-icon>save</mat-icon>{{ 'competition.match.chrono.enregistrerHeures' | translate }}</button>
                 </div>
               </form>
             </div>

@@ -30,8 +30,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { trigger, transition, style, animate, stagger, query } from '@angular/animations';
-import { Subject, forkJoin } from 'rxjs';
-import { takeUntil, debounceTime } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, debounceTime, catchError } from 'rxjs/operators';
 import { jsPDF } from 'jspdf';
 import { applyPlugin } from 'jspdf-autotable';
 
@@ -44,7 +44,7 @@ import { TypeSanction } from '../../../../core/models/typeSanction.model';
 // Services
 import { SanctionService } from '../../../../core/services/sanction.service';
 import { SanctionFinanceService } from '../../../../core/services/sanction-finance.service';
-import { FinancesService, Caisse } from '../../../../core/services/finances.service';
+import { FinancesService, Caisse, Exercice } from '../../../../core/services/finances.service';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -250,14 +250,22 @@ getMaterielPlaceholder(sanction: any): string {
   // Utilise la clé générique pour la description
   return this.translate.instant('sanction.materielDescription');
 }
-  // Filtres rapides prédéfinis
+  // Puces de statut : elles pilotent le champ « statut » du formulaire, donc se combinent avec tous les autres filtres
   quickFilters = [
-    { label: 'Toutes', value: 'all', icon: 'list', count: 0 },
-    { label: 'Non payées', value: 'unpaid', icon: 'schedule', count: 0 },
-    { label: 'Partielles', value: 'partial', icon: 'timelapse', count: 0 },
-    { label: 'Payées', value: 'paid', icon: 'check_circle', count: 0 },
-    { label: 'Ce mois', value: 'month', icon: 'calendar_today', count: 0 }
+    { key: 'sanction.quick.all', value: 'all', icon: 'list', count: 0 },
+    { key: 'sanction.quick.due', value: 'due', icon: 'pending_actions', count: 0 },
+    { key: 'sanction.quick.unpaid', value: 'unpaid', icon: 'schedule', count: 0 },
+    { key: 'sanction.quick.partial', value: 'partial', icon: 'timelapse', count: 0 },
+    { key: 'sanction.quick.paid', value: 'paid', icon: 'check_circle', count: 0 }
   ];
+  private readonly statutDePuce: Record<string, string> = {
+    all: 'ALL', due: 'A_RECOUVRER', unpaid: 'NON_PAYEE', partial: 'PARTIELLE', paid: 'PAYEE'
+  };
+
+  // Période : exercice du groupe (par défaut l'exercice en cours), année civile, mois, 30 jours, tout ou dates libres
+  exercices: Exercice[] = [];
+  periode = 'annee';   // 'ex:<id>' | 'annee' | 'mois' | '30j' | 'tout' | 'perso'
+  private periodeParDefaut = 'annee';
   activeQuickFilter = 'all';
 
   constructor(
@@ -333,11 +341,16 @@ getMaterielPlaceholder(sanction: any): string {
       sanctions: this.sanctionService.getSanctionsAll(),
       membres: this.membreService.getGroupMembers(),
       typeSanctions: this.sanctionService.getTypeSanctions(),
-      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : []
+      caisses: groupeId ? this.financesService.getCaissesByGroupe(groupeId) : [],
+      exercices: groupeId
+        ? this.financesService.getExercicesByGroupe(groupeId).pipe(catchError(() => of([] as Exercice[])))
+        : of([] as Exercice[])
     }).pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ sanctions, membres, typeSanctions, caisses }) => {
+        next: ({ sanctions, membres, typeSanctions, caisses, exercices }) => {
           this.allSanctions = sanctions;
+          this.exercices = [...exercices].sort((a, b) => (b.dateDebut || '').localeCompare(a.dateDebut || ''));
+          if (!this.periodeInitialisee) { this.initialiserPeriode(); this.periodeInitialisee = true; }
           this.membres = membres;
           this.typeSanctions = typeSanctions;
           this.caisses = caisses;
@@ -364,7 +377,7 @@ getMaterielPlaceholder(sanction: any): string {
         takeUntil(this.destroy$)
       )
       .subscribe(() => {
-        this.activeQuickFilter = 'all';
+        this.synchroniserPeriode();
         this.applyFilters();
       });
   }
@@ -379,9 +392,12 @@ isMaterielSanction(sanction: any): boolean {
 // }
 
 
-  applyFilters(): void {
+  private periodeInitialisee = false;
+
+  /** Applique tous les filtres. `ignorerStatut` sert au calcul des compteurs des puces (ils doivent suivre la liste affichée). */
+  private filtrer(ignorerStatut: boolean): any[] {
     const filters = this.filterForm.value;
-    let filtered = [...this.allSanctions];
+    let filtered: any[] = [...this.allSanctions];
 
     // Recherche textuelle
     if (filters.search) {
@@ -401,9 +417,11 @@ isMaterielSanction(sanction: any): boolean {
       });
     }
 
-    // Statut - Modifié pour gérer PARTIELLE
-    if (filters.status && filters.status !== 'ALL') {
-      filtered = filtered.filter(s => s.etat === filters.status);
+    // Statut (« À recouvrer » = non payées + partielles)
+    if (!ignorerStatut && filters.status && filters.status !== 'ALL') {
+      filtered = filtered.filter(s => filters.status === 'A_RECOUVRER'
+        ? (s.etat === 'NON_PAYEE' || s.etat === 'PARTIELLE')
+        : s.etat === filters.status);
     }
 
     // Date début
@@ -429,19 +447,27 @@ isMaterielSanction(sanction: any): boolean {
     }
 
     // Montant min
-    if (filters.montantMin !== null && filters.montantMin !== undefined) {
+    if (filters.montantMin !== null && filters.montantMin !== undefined && filters.montantMin !== '') {
       filtered = filtered.filter(s => s.montant >= filters.montantMin);
     }
 
     // Montant max
-    if (filters.montantMax !== null && filters.montantMax !== undefined) {
+    if (filters.montantMax !== null && filters.montantMax !== undefined && filters.montantMax !== '') {
       filtered = filtered.filter(s => s.montant <= filters.montantMax);
     }
 
+    return filtered;
+  }
+
+  applyFilters(): void {
+    const filtered = this.filtrer(false);
     this.filteredSanctions = filtered;
     this.dataSource.data = filtered;
-    this.calculateStats()
+    this.calculateStats();
     this.updateGroupedSanctions();
+    this.updateQuickFilterCounts();
+    const statut = this.filterForm.value.status || 'ALL';
+    this.activeQuickFilter = Object.keys(this.statutDePuce).find(k => this.statutDePuce[k] === statut) ?? 'all';
 
     if (this.paginator) {
       this.paginator.firstPage();
@@ -449,85 +475,108 @@ isMaterielSanction(sanction: any): boolean {
   }
 
   applyQuickFilter(filterValue: string): void {
-    this.activeQuickFilter = filterValue;
-    this.filterForm.reset({
-      search: '',
-      typeId: null,
-      status: 'ALL',
-      dateDebut: null,
-      dateFin: null,
-      membreId: null,
-      montantMin: null,
-      montantMax: null
-    }, { emitEvent: false });
-
-    let filtered = [...this.allSanctions];
-    const now = new Date();
-
-    switch (filterValue) {
-      case 'unpaid':
-        filtered = filtered.filter(s => s.etat === 'NON_PAYEE');
-        break;
-      case 'partial':
-        filtered = filtered.filter(s => s.etat === 'PARTIELLE');
-        break;
-      case 'paid':
-        filtered = filtered.filter(s => s.etat === 'PAYEE');
-        break;
-      case 'week':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(s => new Date(s.dateSanction) >= weekAgo);
-        break;
-      case 'month':
-        const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = filtered.filter(s => new Date(s.dateSanction) >= monthAgo);
-        break;
-    }
-
-    this.filteredSanctions = filtered;
-    this.dataSource.data = filtered;
-    this.updateGroupedSanctions();
+    this.filterForm.patchValue({ status: this.statutDePuce[filterValue] ?? 'ALL' }, { emitEvent: false });
+    this.applyFilters();
   }
 
+  /** Compteurs des puces : tous les filtres sauf le statut, donc cohérents avec la liste affichée. */
   updateQuickFilterCounts(): void {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const base = this.filtrer(true);
+    const n = (etat: string) => base.filter(s => s.etat === etat).length;
+    this.quickFilters[0].count = base.length;
+    this.quickFilters[1].count = n('NON_PAYEE') + n('PARTIELLE');
+    this.quickFilters[2].count = n('NON_PAYEE');
+    this.quickFilters[3].count = n('PARTIELLE');
+    this.quickFilters[4].count = n('PAYEE');
+  }
 
-    this.quickFilters[0].count = this.allSanctions.length;
-    this.quickFilters[1].count = this.allSanctions.filter(s => s.etat === 'NON_PAYEE').length;
-    this.quickFilters[2].count = this.allSanctions.filter(s => s.etat === 'PARTIELLE').length;
-    this.quickFilters[3].count = this.allSanctions.filter(s => s.etat === 'PAYEE').length;
-    this.quickFilters[4].count = this.allSanctions.filter(s => new Date(s.dateSanction) >= monthStart).length;
+  // ============ PÉRIODE ============
+
+  private dateLocale(iso: string): Date {
+    const [y, m, d] = iso.substring(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  private plageDe(periode: string): { debut: Date | null; fin: Date | null } {
+    const now = new Date();
+    if (periode.startsWith('ex:')) {
+      const ex = this.exercices.find(e => 'ex:' + e.id === periode);
+      return ex && ex.dateDebut && ex.dateFin
+        ? { debut: this.dateLocale(ex.dateDebut), fin: this.dateLocale(ex.dateFin) }
+        : { debut: null, fin: null };
+    }
+    switch (periode) {
+      case 'annee': return { debut: new Date(now.getFullYear(), 0, 1), fin: new Date(now.getFullYear(), 11, 31) };
+      case 'mois': return { debut: new Date(now.getFullYear(), now.getMonth(), 1), fin: new Date(now.getFullYear(), now.getMonth() + 1, 0) };
+      case '30j': return { debut: new Date(now.getTime() - 30 * 86_400_000), fin: now };
+      default: return { debut: null, fin: null };   // « tout » et « personnalisée »
+    }
+  }
+
+  /** Exercice en cours par défaut ; à défaut, l'année civile. */
+  private initialiserPeriode(): void {
+    const actif = this.exercices.find(e => e.actif && !e.cloture) ?? this.exercices.find(e => e.actif);
+    this.periodeParDefaut = actif ? 'ex:' + actif.id : 'annee';
+    this.appliquerPeriode(this.periodeParDefaut, false);
+  }
+
+  appliquerPeriode(periode: string, filtrer = true): void {
+    this.periode = periode;
+    if (periode !== 'perso') {
+      const { debut, fin } = this.plageDe(periode);
+      this.filterForm.patchValue({ dateDebut: debut, dateFin: fin }, { emitEvent: false });
+    }
+    if (filtrer) this.applyFilters();
+  }
+
+  /** Si l'utilisateur modifie lui-même les dates, la période devient « personnalisée ». */
+  private synchroniserPeriode(): void {
+    if (this.periode === 'perso') return;
+    const { debut, fin } = this.plageDe(this.periode);
+    const f = this.filterForm.value;
+    const identique = (a: Date | null, b: any) =>
+      (!a && !b) || (!!a && !!b && new Date(b).setHours(0, 0, 0, 0) === new Date(a).setHours(0, 0, 0, 0));
+    if (!identique(debut, f.dateDebut) || !identique(fin, f.dateFin)) this.periode = 'perso';
+  }
+
+  libellePeriode(): string {
+    if (this.periode.startsWith('ex:')) {
+      return this.exercices.find(e => 'ex:' + e.id === this.periode)?.libelle ?? '';
+    }
+    switch (this.periode) {
+      case 'annee': return this.translate.instant('sanction.period.year') + ' ' + new Date().getFullYear();
+      case 'mois': return this.translate.instant('sanction.period.month');
+      case '30j': return this.translate.instant('sanction.period.days30');
+      case 'perso': return this.translate.instant('sanction.period.custom');
+      default: return '';
+    }
+  }
+
+  libelleExercice(e: Exercice): string {
+    return e.actif && !e.cloture ? e.libelle + ' (' + this.translate.instant('sanction.period.current') + ')' : e.libelle;
   }
 
   hasActiveFilters(): boolean {
-    const filters = this.filterForm.value;
+    const f = this.filterForm.value;
+    const nombre = (v: any) => v !== null && v !== undefined && v !== '';
     return !!(
-      filters.search ||
-      filters.typeId ||
-      (filters.status && filters.status !== 'ALL') ||
-      filters.dateDebut ||
-      filters.dateFin ||
-      filters.membreId ||
-      filters.montantMin !== null ||
-      filters.montantMax !== null
+      f.search ||
+      f.typeId ||
+      (f.status && f.status !== 'ALL') ||
+      f.membreId ||
+      nombre(f.montantMin) ||
+      nombre(f.montantMax) ||
+      this.periode !== this.periodeParDefaut
     );
   }
 
   resetFilters(): void {
-    this.filterForm.reset({
-      search: '',
-      typeId: null,
-      status: 'ALL',
-      dateDebut: null,
-      dateFin: null,
-      membreId: null,
-      montantMin: null,
-      montantMax: null
-    });
-    this.activeQuickFilter = 'all';
+    this.filterForm.patchValue({
+      search: '', typeId: null, status: 'ALL', membreId: null, montantMin: null, montantMax: null
+    }, { emitEvent: false });
+    this.appliquerPeriode(this.periodeParDefaut, false);
     this.applyFilters();
-    this.showSuccess('Filtres réinitialisés');
+    this.showSuccess(this.translate.instant('sanction.filter.resetDone'));
   }
 
   toggleAdvancedFilters(): void {
@@ -1121,7 +1170,7 @@ formatMontant(montant: number | undefined | null): string {
     const f = this.filterForm.value;
     if (f.search)   parts.push(`Recherche: "${f.search}"`);
     if (f.typeId)   parts.push(`Type: ${this.typeSanctions.find(t => t.id === f.typeId)?.nom || f.typeId}`);
-    if (f.status && f.status !== 'ALL') parts.push(`Statut: ${f.status}`);
+    if (f.status && f.status !== 'ALL') parts.push(`Statut: ${f.status === 'A_RECOUVRER' ? 'À recouvrer' : f.status}`);
     if (f.dateDebut) parts.push(`Du: ${new Date(f.dateDebut).toLocaleDateString('fr-FR')}`);
     if (f.dateFin)   parts.push(`Au: ${new Date(f.dateFin).toLocaleDateString('fr-FR')}`);
     if (f.membreId)  parts.push(`Membre: ${this.membres.find(m => m.id === f.membreId)?.nom || ''}`);

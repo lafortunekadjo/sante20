@@ -4,6 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { Groupe } from '../models/groupe.model';
 import { Sanction } from '../models/sanction.model';
 import { environment } from '../../environment';
+import { GroupeProfil } from '../models/groupe-explorer.model';
 import { Contribution } from '../models/contribution.model';
 import { Stade } from '../models/stade';
 import { Ville } from '../models/ville';
@@ -58,6 +59,11 @@ export class GroupeService {
   }
 
   constructor(private http: HttpClient) {}
+
+  /** Profil public d'un groupe (404 si le groupe n'est pas public). */
+  getProfilPublic(id: number): Observable<GroupeProfil> {
+    return this.http.get<GroupeProfil>(`${environment.apiUrl}/public/groupes/${id}/profil`);
+  }
 
   getAllGroupes(): Observable<Groupe[]> {
     return this.http.get<Groupe[]>(`${environment.apiUrl}/groupes`);

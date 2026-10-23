@@ -270,6 +270,7 @@ export class CompetitionDetailComponent implements OnInit {
         seuilCartonsJaunesSuspension:   [cfg?.seuilCartonsJaunesSuspension ?? 3],
         matchsSuspensionCartonRouge:    [cfg?.matchsSuspensionCartonRouge ?? 1],
         cumulCartonsEntrePhases:        [cfg?.cumulCartonsEntrePhases ?? false],
+        dureeMiTemps:                   [cfg?.dureeMiTemps ?? 45],
         // Prolongations (knockout)
         prolongationsActives:           [cfg?.prolongationsActives ?? true],
         dureeProlong1:                  [cfg?.dureeProlong1 ?? 15],
@@ -340,6 +341,7 @@ export class CompetitionDetailComponent implements OnInit {
         seuilCartonsJaunesSuspension:   cfg.seuilCartonsJaunesSuspension,
         matchsSuspensionCartonRouge:    cfg.matchsSuspensionCartonRouge,
         cumulCartonsEntrePhases:        cfg.cumulCartonsEntrePhases,
+        dureeMiTemps:                   cfg.dureeMiTemps ?? 45,
         // Prolongations
         prolongationsActives:           cfg.prolongationsActives,
         dureeProlong1:                  cfg.dureeProlong1,

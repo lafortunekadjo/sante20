@@ -25,6 +25,9 @@ export interface Membre {
   soldeSanctionsRestant: number;
   user: User;
   active: boolean;
+  /** Archivage : date et motif du départ (renseignés tant que le membre est archivé). */
+  dateDepart?: string | null;
+  motifDepart?: string | null;
   sexe: string;
   cni: string;
   adresse:string;

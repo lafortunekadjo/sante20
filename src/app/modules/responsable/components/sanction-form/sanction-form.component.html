@@ -65,10 +65,10 @@
 
 
       <!-- Badge filtre actif -->
-      <div class="filter-active-pill" *ngIf="isCurrentYearFilterActive()">
+      <div class="filter-active-pill" *ngIf="periode !== 'tout'">
         <mat-icon>calendar_today</mat-icon>
-        {{ 'sanction.filter.year' | translate }} {{ currentYear }}
-        <button (click)="resetFilters()"><mat-icon>close</mat-icon></button>
+        {{ libellePeriode() }}
+        <button (click)="appliquerPeriode('tout')" [attr.aria-label]="'sanction.period.all' | translate"><mat-icon>close</mat-icon></button>
       </div>
     </div>
   </div>
@@ -107,6 +107,22 @@
     <div class="tab-content" *ngIf="activeTab === 'list'">
       <div class="content-inner">
 
+        <!-- Période -->
+        <div class="period-row">
+          <mat-form-field appearance="outline" class="period-field">
+            <mat-label>{{ 'sanction.period.label' | translate }}</mat-label>
+            <mat-icon matPrefix>date_range</mat-icon>
+            <mat-select [value]="periode" (selectionChange)="appliquerPeriode($event.value)">
+              <mat-option *ngFor="let e of exercices" [value]="'ex:' + e.id">{{ libelleExercice(e) }}</mat-option>
+              <mat-option value="annee">{{ 'sanction.period.year' | translate }} {{ currentYear }}</mat-option>
+              <mat-option value="mois">{{ 'sanction.period.month' | translate }}</mat-option>
+              <mat-option value="30j">{{ 'sanction.period.days30' | translate }}</mat-option>
+              <mat-option value="tout">{{ 'sanction.period.all' | translate }}</mat-option>
+              <mat-option value="perso" *ngIf="periode === 'perso'" disabled>{{ 'sanction.period.custom' | translate }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
         <!-- Filtres rapides (chips scrollables) -->
         <div class="quick-filters-row">
           <button *ngFor="let f of quickFilters"
@@ -114,8 +130,8 @@
                   [class.active]="activeQuickFilter === f.value"
                   (click)="applyQuickFilter(f.value)">
             <mat-icon>{{ f.icon }}</mat-icon>
-            <span>{{ f.label }}</span>
-            <span class="qf-count" [class.highlight]="(f.value === 'unpaid' || f.value === 'partial') && f.count > 0">
+            <span>{{ f.key | translate }}</span>
+            <span class="qf-count" [class.highlight]="(f.value === 'due' || f.value === 'unpaid' || f.value === 'partial') && f.count > 0">
               {{ f.count }}
             </span>
           </button>
@@ -156,6 +172,7 @@
                 <mat-icon matPrefix>flag</mat-icon>
                 <mat-select formControlName="status">
                   <mat-option value="ALL">{{ 'COMMON.ALL' | translate }}</mat-option>
+                  <mat-option value="A_RECOUVRER">{{ 'sanction.quick.due' | translate }}</mat-option>
                   <mat-option value="NON_PAYEE">{{ 'sanction.status.unpaid' | translate }}</mat-option>
                   <mat-option value="PARTIELLE">{{ 'sanction.status.partial' | translate }}</mat-option>
                   <mat-option value="PAYEE">{{ 'sanction.status.paid' | translate }}</mat-option>

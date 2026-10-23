@@ -145,6 +145,15 @@
           </button>
         </div>
 
+        <!-- Rappel : membres inactifs ou archivés masqués par défaut -->
+        <div class="filters-active-bar hidden-hint" *ngIf="inactifsMasques > 0">
+          <mat-icon>inventory_2</mat-icon>
+          <span>{{ 'membres.hiddenInactive' | translate:{ n: inactifsMasques } }}</span>
+          <button mat-button (click)="afficherInactifs()">
+            <mat-icon>visibility</mat-icon>{{ 'membres.showInactive' | translate }}
+          </button>
+        </div>
+
         <!-- ── Liste members ──────────────────────── -->
         <div class="members-list">
           <div class="member-card"
@@ -214,8 +223,9 @@
 
               <!-- Badges statut + expand -->
               <div class="mc-right">
-                <span class="status-badge" [class.active]="membre.active" [class.inactive]="!membre.active">
-                  <mat-icon>{{ membre.active ? 'check_circle' : 'cancel' }}</mat-icon>
+                <span class="status-badge" [class.active]="membre.active" [class.inactive]="!membre.active"
+                      [attr.title]="estArchive(membre) ? (('membres.archive.archived' | translate) + ' · ' + (membre.dateDepart | date:'dd/MM/yyyy')) : null">
+                  <mat-icon>{{ membre.active ? 'check_circle' : (estArchive(membre) ? 'inventory_2' : 'cancel') }}</mat-icon>
                 </span>
                 <span class="pay-badge" [class.paid]="membre.cotisationPayee" [class.unpaid]="!membre.cotisationPayee">
                   <mat-icon>{{ membre.cotisationPayee ? 'paid' : 'money_off' }}</mat-icon>
@@ -361,11 +371,18 @@
                   <button mat-stroked-button (click)="editRow(i, membre); $event.stopPropagation()">
                     <mat-icon>edit</mat-icon>{{ 'common.edit' | translate }}
                   </button>
-                  <button mat-stroked-button (click)="openToggleActiveDialog(membre); $event.stopPropagation()">
-                    <mat-icon>{{ membre.active ? 'block' : 'check_circle' }}</mat-icon>
-                    {{ membre.active ? ('membres.deactivate' | translate) : ('membres.activate' | translate) }}
+                  <!-- Archivage : le membre quitte le groupe (motif, date) sans rien perdre ; il pourra revenir -->
+                  <button mat-stroked-button *ngIf="membre.active" (click)="ouvrirArchivage(membre, 'archiver'); $event.stopPropagation()">
+                    <mat-icon>inventory_2</mat-icon>{{ 'membres.archive.action' | translate }}
                   </button>
-                  <button mat-stroked-button class="btn-delete"
+                  <button mat-stroked-button color="primary" *ngIf="!membre.active" (click)="ouvrirArchivage(membre, 'retour'); $event.stopPropagation()">
+                    <mat-icon>login</mat-icon>{{ 'membres.archive.back' | translate }}
+                  </button>
+                  <button mat-stroked-button (click)="ouvrirArchivage(membre, 'historique'); $event.stopPropagation()">
+                    <mat-icon>history</mat-icon>{{ 'membres.archive.history' | translate }}
+                  </button>
+                  <!-- La suppression définitive reste réservée à l'administrateur de la plateforme -->
+                  <button mat-stroked-button class="btn-delete" *ngIf="estAdmin"
                           (click)="openDeleteDialog(membre); $event.stopPropagation()">
                     <mat-icon>delete</mat-icon>{{ 'common.delete' | translate }}
                   </button>

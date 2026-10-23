@@ -1,10 +1,11 @@
+import { memeDiscipline, normaliserDiscipline } from '../../../../core/utils/referentiel';
 // src/app/modules/responsable/components/groupes-explore/groupes-explore.component.ts
 
 import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -98,6 +99,7 @@ export class GroupesExploreComponent implements OnInit {
     private authService: AuthService,
     private dialog: MatDialog,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar
   ) {}
 
@@ -121,6 +123,7 @@ ngOnInit(): void {
         this.groupes = groupes.filter(g => g.isActive && g.isPublic);
         this.applyFilters();
         this.isLoading = false;
+        this.traiterDemandeDepuisProfil();
       },
       error: (err) => {
         console.error('Erreur chargement groupes:', err);
@@ -170,7 +173,7 @@ ngOnInit(): void {
     }
 
     if (this.filters.discipline) {
-      filtered = filtered.filter(g => g.discipline === this.filters.discipline);
+      filtered = filtered.filter(g => memeDiscipline(g.discipline, this.filters.discipline));
       }
 
    // CORRECTION FILTRE VILLE : On compare le nom de l'objet ville avec le string du filtre
@@ -236,19 +239,22 @@ ngOnInit(): void {
     this.showFilters = !this.showFilters;
   }
 
-  viewGroupeDetails(groupe: GroupePublic): void {
-    const dialogRef = this.dialog.open(GroupeDetailsDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      data: { groupe },
-      panelClass: 'groupe-details-dialog'
-    });
+  /** Ouvre la page de détail du groupe. */
+  ouvrirProfil(groupe: GroupePublic): void {
+    this.router.navigate(['/explorer', groupe.id]);
+  }
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === 'adhesion') {  
-        this.demanderAdhesion(groupe);
-      }
-    });
+  viewGroupeDetails(groupe: GroupePublic): void {
+    this.ouvrirProfil(groupe);
+  }
+
+  /** « Rejoindre » depuis la page de détail : on revient ici avec ?adhesion=<id> et la demande s'ouvre. */
+  private traiterDemandeDepuisProfil(): void {
+    const cible = Number(this.route.snapshot.queryParamMap.get('adhesion'));
+    if (!cible) return;
+    this.router.navigate([], { queryParams: { adhesion: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    const groupe = this.groupes.find(g => g.id === cible);
+    if (groupe) this.demanderAdhesion(groupe);
   }
 
   demanderAdhesion(groupe: GroupePublic): void {
@@ -364,7 +370,7 @@ ngOnInit(): void {
       'Tennis': 'sports_tennis',
       'Badminton': 'sports_tennis'
     };
-    return icons[discipline] || 'sports';
+    return icons[normaliserDiscipline(discipline)] || 'sports';
   }
 
   hasActiveFilters(): boolean {

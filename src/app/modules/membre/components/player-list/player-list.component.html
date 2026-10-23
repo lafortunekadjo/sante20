@@ -89,8 +89,8 @@
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-select [(ngModel)]="selectedSexe" (selectionChange)="applyAdvancedFilters()">
             <mat-option value="all">{{ 'directory.filters.all_genders' | translate }}</mat-option>
-            <mat-option value="M">{{ 'profil.gender.male' | translate }}</mat-option>
-            <mat-option value="F">{{ 'profil.gender.female' | translate }}</mat-option>
+            <mat-option value="masculin">{{ 'profil.gender.male' | translate }}</mat-option>
+            <mat-option value="feminin">{{ 'profil.gender.female' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -102,6 +102,16 @@
             <mat-option *ngFor="let q of quartiersDisponibles" [value]="q">{{ q }}</mat-option>
           </mat-select>
         </mat-form-field>
+      </div>
+    </div>
+    <div class="dir-filters-grid dir-filters-numbers">
+      <div class="filter-item">
+        <label>{{ 'directory.filters.min_goals' | translate }}</label>
+        <input type="number" min="0" inputmode="numeric" class="num-input" [(ngModel)]="minGoals" (ngModelChange)="applyAdvancedFilters()" placeholder="0">
+      </div>
+      <div class="filter-item">
+        <label>{{ 'directory.filters.min_matches' | translate }}</label>
+        <input type="number" min="0" inputmode="numeric" class="num-input" [(ngModel)]="minMatchs" (ngModelChange)="applyAdvancedFilters()" placeholder="0">
       </div>
     </div>
     <div class="filter-actions">
@@ -133,8 +143,9 @@
 
   <!-- Grille joueurs -->
   <div class="players-grid" *ngIf="!isLoading && filteredPlayers.length > 0">
-    <div class="player-mini-card" *ngFor="let player of filteredPlayers"
+    <div class="player-mini-card" *ngFor="let player of visiblePlayers; let i = index; trackBy: trackById"
          [class.selected-for-compare]="isCompared(player)">
+      <span class="rank-medal" *ngIf="medaille(i, player) as m" aria-hidden="true">{{ m }}</span>
 
       <div class="card-top-bar">
         <label class="compare-checkbox-label">
@@ -146,7 +157,7 @@
       </div>
 
       <div class="card-avatar-zone">
-        <img *ngIf="player.profilePhotoUrl" [src]="player.profilePhotoUrl" alt="Avatar">
+        <img *ngIf="player.profilePhotoUrl" [src]="player.profilePhotoUrl" [alt]="player.username" loading="lazy" decoding="async">
         <div *ngIf="!player.profilePhotoUrl" class="fallback-avatar">
           {{ player.username.substring(0,2).toUpperCase() }}
         </div>
@@ -156,7 +167,7 @@
         <h3>{{ player.username }}</h3>
         <p class="player-geo">
           📍 {{ player.quartier }} ·
-          {{ (player.sexe?.toUpperCase()?.startsWith('M') || player.sexe === 'M')
+          {{ (estMasculin(player.sexe))
              ? ('directory.genders.man' | translate) : ('directory.genders.woman' | translate) }}
         </p>
         <div class="player-stats-row">
@@ -171,6 +182,13 @@
         {{ 'directory.actions.full_sheet' | translate }}
       </button>
     </div>
+  </div>
+
+  <!-- Afficher la suite -->
+  <div class="show-more-wrap" *ngIf="!isLoading && restants > 0">
+    <button mat-stroked-button type="button" (click)="afficherPlus()">
+      <mat-icon>expand_more</mat-icon>{{ 'directory.show_more' | translate:{ n: restants } }}
+    </button>
   </div>
 
   <!-- Barre comparaison flottante -->
@@ -196,25 +214,32 @@
         <h2><mat-icon>military_tech</mat-icon> {{ 'directory.compare.modal_title' | translate }}</h2>
         <button mat-icon-button (click)="closeComparison()"><mat-icon>close</mat-icon></button>
       </div>
-      <div class="modal-body-table-wrapper">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th>{{ 'directory.compare.metrics' | translate }}</th>
-              <th *ngFor="let p of comparedPlayers">{{ p.username }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Position / Pied</td><td *ngFor="let p of comparedPlayers">{{ p.poste }} / {{ p.piedFort }}</td></tr>
-            <tr><td>Quartier</td><td *ngFor="let p of comparedPlayers">📍 {{ p.quartier }}</td></tr>
-            <tr><td>{{ 'menu.items.MATCHS' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">{{ p.totalMatchsJoues }}</td></tr>
-            <tr><td>{{ 'dashboard.goals' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight">⚽ {{ p.totalButsGlobal }}</td></tr>
-            <tr><td>{{ 'ui.passes_d_d245' | translate }}</td><td *ngFor="let p of comparedPlayers" class="stat-highlight" style="color:#059669">🎯 {{ p.totalPassesGlobal }}</td></tr>
-            <tr><td>{{ 'ui.buts_concedes_3b05' | translate }}</td><td *ngFor="let p of comparedPlayers">🥅 {{ p.butsEncaisses }}</td></tr>
-            <tr><td>Clean sheets</td><td *ngFor="let p of comparedPlayers">🧤 {{ p.cleanSheets }}</td></tr>
-            <tr><td>{{ 'dashboard.member.cards' | translate }}</td><td *ngFor="let p of comparedPlayers">🟨🟥 {{ p.totalCartonsGlobal }}</td></tr>
-          </tbody>
-        </table>
+      <div class="cmp-body">
+        <!-- Les joueurs comparés -->
+        <div class="cmp-players" [style.grid-template-columns]="'repeat(' + comparedPlayers.length + ', 1fr)'">
+          <a class="cmp-player" *ngFor="let p of comparedPlayers; let i = index" [routerLink]="['/p', p.username]" (click)="closeComparison()">
+            <span class="cmp-avatar">
+              <img *ngIf="p.profilePhotoUrl" [src]="p.profilePhotoUrl" [alt]="p.username" loading="lazy">
+              <b *ngIf="!p.profilePhotoUrl">{{ p.username.substring(0, 2).toUpperCase() }}</b>
+            </span>
+            <strong class="cmp-name">{{ p.username }}</strong>
+            <small>{{ p.poste }} · {{ p.piedFort }}</small>
+            <small>📍 {{ p.quartier }}</small>
+            <span class="cmp-lead" *ngIf="avantages(i) > 0">★ {{ avantages(i) }} {{ 'directory.compare.leads' | translate }}</span>
+          </a>
+        </div>
+
+        <!-- Une ligne par indicateur : la meilleure valeur est mise en avant -->
+        <div class="cmp-row" *ngFor="let l of lignesComparaison">
+          <div class="cmp-label">{{ l.icone }} {{ 'directory.compare.rows.' + l.cle | translate }}</div>
+          <div class="cmp-cells" [style.grid-template-columns]="'repeat(' + comparedPlayers.length + ', 1fr)'">
+            <div class="cmp-cell" *ngFor="let v of l.valeurs; let i = index" [class.best]="l.meilleurs[i]">
+              <span class="cmp-val">{{ v | number:'1.0-2' }}<i *ngIf="l.meilleurs[i]" class="cmp-crown">★</i></span>
+              <div class="cmp-bar"><div class="cmp-bar-fill" [style.width.%]="largeur(l, v)"></div></div>
+            </div>
+          </div>
+        </div>
+        <p class="cmp-note">{{ 'directory.compare.note' | translate }}</p>
       </div>
       <div class="modal-footer">
         <button mat-flat-button color="warn" (click)="closeComparison()">{{ 'directory.compare.close_btn' | translate }}</button>

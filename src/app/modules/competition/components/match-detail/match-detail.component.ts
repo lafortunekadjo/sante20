@@ -2,7 +2,7 @@
 
 import { t } from '../../../../core/i18n/traduire';
 import {
-  Component, OnInit, inject, signal, computed, Input
+  Component, OnInit, OnDestroy, inject, signal, computed, Input
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
@@ -16,12 +16,13 @@ import {
 import {
   Cote, MatchDetailDTO, TypeEvent, PosteJoueur,
   StatutComposition, MatchCompositionDTO, MembreEquipeDTO,
-  MatchEventDTO, StatutMatch
+  MatchEventDTO, StatutMatch, TempsMatchDTO
 } from '../../../../core/models/competition.models';
 import { MatchApiService } from '../../../../core/services/competition/match-api.service';
 import { CompetitionApiService } from '../../../../core/services/competition/competition-api.service';
 import { MembreEquipeApiService } from '../../../../core/services/competition/membre-equipe-api.service';
 import { forkJoin } from 'rxjs';
+import { minuteDuChrono, libelleMinute } from '../../../../core/utils/chrono-match';
 
 interface JoueurOption {
   id?: number;
@@ -44,7 +45,7 @@ type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie' | 'feuille';
   templateUrl: './match-detail.component.html',
   styleUrls: ['./match-detail.component.scss']
 })
-export class MatchDetailComponent implements OnInit {
+export class MatchDetailComponent implements OnInit, OnDestroy {
 
   Cote = Cote;
 
@@ -95,6 +96,185 @@ export class MatchDetailComponent implements OnInit {
   eventEquipe      = signal<'domicile' | 'exterieur' | null>(null);
   eventMinute: number | null = null;
   eventMinuteAdd: number | null = null;
+
+  // ══════════════ CHRONO DU MATCH ══════════════
+  // Le chrono se déduit des heures enregistrées sur le serveur (coup d'envoi, mi-temps, reprise, fin) :
+  // il survit à un rechargement de la page et se retrouve sur un autre téléphone.
+
+  /** Durée d'une mi-temps réglée sur la compétition (45 par défaut) : passage « 45 + temps additionnel », reprise à 46ᵉ. */
+  get dureeMiTemps(): number { return (this.match() as any)?.dureeMiTemps || 45; }
+  /** Horloge, rafraîchie chaque seconde. */
+  readonly maintenant = signal(Date.now());
+  private horloge: any = null;
+  /** Correction manuelle du chrono (en millisecondes) pour la phase en cours ; remise à zéro quand la phase change. */
+  readonly ajustementMs = signal(0);
+  private phaseAjustement = '';
+  /** Vrai dès que l'utilisateur tape lui-même la minute : le chrono ne la remplace plus. */
+  minuteManuelle = false;
+  /** Vrai dès que l'utilisateur modifie lui-même le score : il n'est plus recalculé depuis les événements. */
+  scoreManuel = false;
+  readonly erreurChrono = signal<string | null>(null);
+
+  private enMs(v: any): number | null {
+    if (v == null || v === '') return null;
+    if (Array.isArray(v)) { const [y, mo, d, h = 0, mi = 0, s = 0] = v; return new Date(y, mo - 1, d, h, mi, s).getTime(); }
+    const ms = new Date(v).getTime();
+    return isNaN(ms) ? null : ms;
+  }
+
+  private deuxChiffres(n: number): string { return String(n).padStart(2, '0'); }
+
+  /** Heure locale au format attendu par le serveur (sans fuseau : le serveur travaille en heure de Douala). */
+  private isoLocal(ms: number): string {
+    const d = new Date(ms), p = (n: number) => this.deuxChiffres(n);
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+
+  /** Valeur d'un champ « datetime-local » (jusqu'à la minute). */
+  private versChampHeure(v: any): string {
+    const ms = this.enMs(v);
+    return ms == null ? '' : this.isoLocal(ms).substring(0, 16);
+  }
+
+  /** Avant le coup d'envoi, 1ʳᵉ mi-temps, mi-temps, 2ᵉ mi-temps, ou temps réglementaire terminé. */
+  readonly phase = computed<'avant' | 'p1' | 'mt' | 'p2' | 'fin'>(() => {
+    const m: any = this.match();
+    if (!m || !this.isEnCours() || this.enMs(m.heureEffectiveDebut) == null) return 'avant';
+    if (this.enMs(m.heureEffectiveFin) != null) return 'fin';
+    if (this.enMs(m.heureEffectiveReprise) != null) return 'p2';
+    if (this.enMs(m.heureEffectiveMiTemps) != null) return 'mt';
+    return 'p1';
+  });
+
+  /** Minutes entières écoulées dans la mi-temps en cours, corrigées de l'ajustement manuel. */
+  private ecouleMs(sansAjustement = false): number {
+    const m: any = this.match();
+    const p = this.phase();
+    const debut = p === 'p1' ? this.enMs(m?.heureEffectiveDebut) : p === 'p2' ? this.enMs(m?.heureEffectiveReprise) : null;
+    if (debut == null) return 0;
+    return this.maintenant() - debut + (sansAjustement ? 0 : this.ajustementMs());
+  }
+
+  /** Minute du chrono : 34 → 34′ ; au-delà de la mi-temps : 45+1, 45+2… ; à la reprise : 46′. */
+  readonly minuteChrono = computed<{ minute: number; add: number | null } | null>(
+    () => minuteDuChrono(this.phase(), this.ecouleMs(), this.dureeMiTemps));
+
+  readonly chronoLabel = computed(() => {
+    const p = this.phase();
+    if (p === 'avant') return '';
+    if (p === 'mt') return t('competition.match.chrono.mtLabel');
+    if (p === 'fin') return t('competition.match.chrono.finLabel');
+    return libelleMinute(this.minuteChrono());
+  });
+
+  private surTick(): void {
+    this.maintenant.set(Date.now());
+    const p = this.phase();
+    if (p !== this.phaseAjustement) { this.phaseAjustement = p; this.lireAjustement(); }
+    this.remplirMinuteAuto();
+  }
+
+  private cleAjustement(): string { return `chrono-ajust-${this.matchId}-${this.phase()}`; }
+  private lireAjustement(): void {
+    try { this.ajustementMs.set(Number(localStorage.getItem(this.cleAjustement())) || 0); } catch { this.ajustementMs.set(0); }
+  }
+  private ecrireAjustement(): void {
+    try { localStorage.setItem(this.cleAjustement(), String(this.ajustementMs())); } catch { /* stockage indisponible : l'ajustement reste en mémoire */ }
+  }
+
+  /** Avance ou recule le chrono de quelques minutes (la mi-temps en cours seulement). */
+  decaler(minutes: number): void {
+    this.ajustementMs.update(v => v + minutes * 60000);
+    this.ecrireAjustement();
+    this.remplirMinuteAuto();
+  }
+
+  /** Règle le chrono pour qu'il affiche la minute donnée (ex. 38 si l'horloge est en retard). */
+  regler(minute: number): void {
+    const p = this.phase();
+    if (!minute || minute < 1 || (p !== 'p1' && p !== 'p2')) return;
+    const base = p === 'p1' ? 0 : this.dureeMiTemps;
+    const cible = Math.max(0, minute - base - 1);
+    this.ajustementMs.set(cible * 60000 + 1000 - this.ecouleMs(true));
+    this.ecrireAjustement();
+    this.remplirMinuteAuto();
+  }
+
+  /** Reporte la minute du chrono dans le formulaire d'événement tant que l'utilisateur ne l'a pas modifiée. */
+  private remplirMinuteAuto(): void {
+    if (this.minuteManuelle || !this.showEventForm()) return;
+    const c = this.minuteChrono();
+    if (!c) return;
+    this.eventMinute = c.minute;
+    this.eventMinuteAdd = c.add;
+  }
+
+  utiliserMinuteChrono(): void {
+    this.minuteManuelle = false;
+    this.remplirMinuteAuto();
+  }
+
+  // ── Enregistrement des heures (le serveur remplace tous les champs : on renvoie l'état complet) ──
+  private tempsActuels(): TempsMatchDTO {
+    const m: any = this.match() ?? {};
+    const iso = (v: any) => { const ms = this.enMs(v); return ms == null ? undefined : this.isoLocal(ms); };
+    return {
+      heureEffectiveDebut: iso(m.heureEffectiveDebut), heureEffectiveMiTemps: iso(m.heureEffectiveMiTemps),
+      heureEffectiveReprise: iso(m.heureEffectiveReprise), heureEffectiveFin: iso(m.heureEffectiveFin),
+      tempsAdditionnel1: m.tempsAdditionnel1 ?? undefined, tempsAdditionnel2: m.tempsAdditionnel2 ?? undefined,
+      tempsAdditionnelP1: m.tempsAdditionnelP1 ?? undefined, tempsAdditionnelP2: m.tempsAdditionnelP2 ?? undefined,
+      conditions: m.conditions ?? undefined
+    };
+  }
+
+  private enregistrerTemps(patch: TempsMatchDTO): void {
+    this.erreurChrono.set(null);
+    this.api.saisirTemps(this.competitionId, this.matchId, { ...this.tempsActuels(), ...patch }).subscribe({
+      next: m => { this.match.set(m); this.synchroniserFormTemps(m); this.surTick(); },
+      error: err => this.erreurChrono.set(err?.error?.message ?? t('competition.match.chrono.erreur'))
+    });
+  }
+
+  private synchroniserFormTemps(m: any): void {
+    this.tempsForm?.patchValue({
+      heureEffectiveDebut: this.versChampHeure(m.heureEffectiveDebut),
+      heureEffectiveMiTemps: this.versChampHeure(m.heureEffectiveMiTemps),
+      heureEffectiveReprise: this.versChampHeure(m.heureEffectiveReprise),
+      heureEffectiveFin: this.versChampHeure(m.heureEffectiveFin),
+      tempsAdditionnel1: m.tempsAdditionnel1 ?? null, tempsAdditionnel2: m.tempsAdditionnel2 ?? null,
+      conditions: m.conditions ?? ''
+    }, { emitEvent: false });
+  }
+
+  /** Coup d'envoi maintenant (match déjà « en cours » mais sans heure de début). */
+  lancerChrono(): void { this.enregistrerTemps({ heureEffectiveDebut: this.isoLocal(Date.now()) }); }
+
+  mettreMiTemps(): void {
+    const add = this.minuteChrono()?.add;
+    this.enregistrerTemps({ heureEffectiveMiTemps: this.isoLocal(Date.now()), ...(add ? { tempsAdditionnel1: add } : {}) });
+  }
+
+  reprendre(): void { this.enregistrerTemps({ heureEffectiveReprise: this.isoLocal(Date.now()) }); }
+
+  finirTempsReglementaire(): void {
+    const add = this.minuteChrono()?.add;
+    this.enregistrerTemps({ heureEffectiveFin: this.isoLocal(Date.now()), ...(add ? { tempsAdditionnel2: add } : {}) });
+  }
+
+  // ── Score ───────────────────────────────────────────────────────
+  /** Tant que le score n'a pas été modifié à la main, le formulaire de résultat suit les événements saisis. */
+  private synchroniserScore(): void {
+    if (!this.isEnCours() || this.scoreManuel) return;
+    this.scoreForm.patchValue({
+      butsDomicile: this.scoreDepuisEvenements('domicile'),
+      butsExterieur: this.scoreDepuisEvenements('exterieur')
+    }, { emitEvent: false });
+  }
+
+  recalculerScore(): void {
+    this.scoreManuel = false;
+    this.synchroniserScore();
+  }
   joueurSearch     = '';
   joueurManuelNom  = '';
   passeurSearch    = '';
@@ -294,6 +474,11 @@ export class MatchDetailComponent implements OnInit {
     this.buildTempsForm();
     this.reload();
     this.chargerPermissions();
+    this.horloge = setInterval(() => this.surTick(), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.horloge) clearInterval(this.horloge);
   }
 
   private chargerPermissions(): void {
@@ -350,6 +535,10 @@ reload(): void {
         avecTab,
       });
     }
+    // le formulaire de score suit les événements, les heures suivent le serveur, et le chrono se met à jour
+    this.synchroniserScore();
+    this.synchroniserFormTemps(m);
+    this.surTick();
   });
 }
 
@@ -456,11 +645,13 @@ private compoToOptions(
   toggleEventForm(): void {
     this.showEventForm.update(v => !v);
     if (!this.showEventForm()) this.resetEventForm();
+    else { this.minuteManuelle = false; this.remplirMinuteAuto(); }   // la minute du chrono est proposée d'emblée
   }
 
   resetEventForm(): void {
     this.eventTypeSelect.set(TypeEvent.BUT);
     this.eventEquipe.set(null);
+    this.minuteManuelle = false;
     this.eventMinute    = null;
     this.eventMinuteAdd = null;
     this.joueurSelectionne.set(null);
@@ -628,16 +819,16 @@ private compoToOptions(
     const events: any[] = (m as any).evenements ?? (m as any).events ?? [];
     if (!events.length) return 0;
     const equipeId = side === 'domicile' ? m.domicile?.id : m.exterieur?.id;
-    return events.reduce((total: number, e: any) => {
+    const adverse = side === 'domicile' ? m.exterieur?.id : m.domicile?.id;
+    const total = events.reduce((somme: number, e: any) => {
       const isBut = ['BUT', 'PENALTY_MARQUE', 'PENALTY'].includes(e.type);
       const isCSC = ['CONTRE_SON_CAMP', 'BUT_CSC'].includes(e.type);
-      if (isBut && e.equipeId === equipeId) return total + 1;
-      if (isCSC) {
-        const adv = side === 'domicile' ? m.exterieur?.id : m.domicile?.id;
-        if (e.equipeId === adv) return total + 1;
-      }
-      return total;
+      if (isBut && e.equipeId === equipeId) return somme + 1;
+      if (isCSC && e.equipeId === adverse) return somme + 1;          // le but contre son camp compte pour l'adversaire
+      if (e.type === 'BUT_ANNULE' && e.equipeId === equipeId) return somme - 1;   // but annulé
+      return somme;
     }, 0);
+    return Math.max(0, total);
   }
 
   sortedEvents(): any[] {
@@ -986,13 +1177,14 @@ private compoToOptions(
 
   saisirTemps(): void {
     const v = this.tempsForm.value;
-    this.api.saisirTemps(this.competitionId, this.matchId, {
+    this.enregistrerTemps({
       heureEffectiveDebut:   v.heureEffectiveDebut || undefined,
       heureEffectiveMiTemps: v.heureEffectiveMiTemps || undefined,
       heureEffectiveReprise: v.heureEffectiveReprise || undefined,
       heureEffectiveFin:     v.heureEffectiveFin || undefined,
       tempsAdditionnel1:     v.tempsAdditionnel1 ?? undefined,
       tempsAdditionnel2:     v.tempsAdditionnel2 ?? undefined,
-    }).subscribe(m => this.match.set(m));
+      conditions:            v.conditions || undefined
+    });
   }
 }

@@ -1,3 +1,4 @@
+import { normaliserDiscipline } from '../../../../core/utils/referentiel';
 // presence-form.component.ts - isAmicalWithPlatformGroupersion avec support matchs amicaux inter-groupes
 
 import { t } from '../../../../core/i18n/traduire';
@@ -78,6 +79,14 @@ export class PresenceFormComponent implements OnInit {
   isGeneratingPdf = false;
   match: Match | null = null;
   groupeActif: Groupe | null = null;
+
+  /** Discipline du groupe, quelle que soit la façon dont elle a été saisie (FOOTBALL, « Football »…). Sans discipline : football. */
+  get estFootball(): boolean {
+    const d = normaliserDiscipline(this.groupeActif?.discipline);
+    return !d || d === 'Football' || d === 'Futsal';
+  }
+  get estBasketball(): boolean { return normaliserDiscipline(this.groupeActif?.discipline) === 'Basketball'; }
+  get estVolleyball(): boolean { return normaliserDiscipline(this.groupeActif?.discipline) === 'Volleyball'; }
   groupeAdverse: Groupe | null = null;
 
   // Ajouter cette propriété

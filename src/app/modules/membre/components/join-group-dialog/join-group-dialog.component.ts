@@ -1,3 +1,4 @@
+import { normaliserDiscipline } from '../../../../core/utils/referentiel';
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -165,6 +166,6 @@ export class JoinGroupDialogComponent {
       'FOOTBALL':   'sports_soccer',
       'BASKETBALL': 'sports_basketball',
     };
-    return discipline ? (map[discipline] ?? 'sports') : 'sports';
+    return map[normaliserDiscipline(discipline).toUpperCase()] ?? 'sports';
   }
 }
