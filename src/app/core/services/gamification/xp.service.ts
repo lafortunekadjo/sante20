@@ -98,6 +98,11 @@ export class XpService {
     return this.http.get<ClassementSaisonDTO>(`${this.base}/classement${params}`);
   }
 
+  /** Barème des actions et niveaux (public). */
+  getRegles(): Observable<{ actions: { code: string; libelle: string; xp: number; actif: boolean }[]; niveaux: { niveau: number; titre: string; xpRequis: number }[] }> {
+    return this.http.get<any>(`${environment.apiUrl}/public/xp/regles`);
+  }
+
   getMesMissions(): Observable<MissionJoueurDTO[]> {
     return this.http.get<MissionJoueurDTO[]>(`${this.base}/missions`);
   }

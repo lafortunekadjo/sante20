@@ -18,10 +18,7 @@
             {{ p.prenom[0] }}{{ p.nom[0] }}
           </div>
           <!-- Cadre de niveau (bordure colorée) -->
-          <div class="avatar-niveau-badge"
-               [style.background]="getNiveauColor(p.niveau)">
-            {{ p.niveau }}
-          </div>
+          <app-ecusson-niveau class="avatar-niveau-badge" [value]="p.niveau" [taille]="40"/>
         </div>
       </div>
 
@@ -204,7 +201,7 @@
                       <span class="moi-badge" *ngIf="e.membreId === p.membreId">Moi</span>
                     </span>
                     <span class="joueur-groupe">
-                      {{ e.titreNiveau }} · {{ e.groupeNom }}
+                      <app-ecusson-niveau [value]="e.niveau" [taille]="18"/> {{ e.titreNiveau }} · {{ e.groupeNom }}
                     </span>
                   </div>
                   <span class="joueur-xp">{{ e.xpSaison | number }} XP</span>
@@ -234,7 +231,21 @@
               </div>
             </mat-tab>
 
-          </mat-tab-group>
+            <mat-tab [label]="'niveauJoueur.regles' | translate">
+        <div class="regles">
+          <p class="regles__aide">{{ 'niveauJoueur.reglesAide' | translate }}</p>
+          <ul class="regles__liste">
+            @for (r of regles(); track r.code) {
+              <li [class.regles__inactive]="!r.actif">
+                <span>{{ r.libelle }}</span>
+                <strong>+{{ r.xp }} XP</strong>
+                @if (!r.actif) { <small>{{ 'niveauJoueur.bientot' | translate }}</small> }
+              </li>
+            }
+          </ul>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
 
       </ng-container>
         </div>

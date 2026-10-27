@@ -39,7 +39,7 @@ export interface PlayerProfile {
 
 /** Résumé d'un joueur dans l'annuaire : l'essentiel, sans historique ni e-mail (la fiche complète se charge à l'ouverture). */
 export type ResumeJoueur = Pick<PlayerProfile, 'id' | 'username' | 'profilePhotoUrl' | 'poste' | 'piedFort' | 'quartier' | 'sexe'
-  | 'totalMatchsJoues' | 'totalButsGlobal' | 'totalPassesGlobal' | 'totalCartonsGlobal' | 'butsEncaisses' | 'cleanSheets'>;
+  | 'totalMatchsJoues' | 'totalButsGlobal' | 'totalPassesGlobal' | 'totalCartonsGlobal' | 'butsEncaisses' | 'cleanSheets'> & { niveau?: number };
 
 export interface SaisonStats {
   exerciceId: number;

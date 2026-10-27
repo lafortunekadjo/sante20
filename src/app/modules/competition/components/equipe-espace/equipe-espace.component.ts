@@ -8,6 +8,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { environment } from '../../../../environment';
 import { RosterComponent } from '../roster/roster.component';
 import { CompositionEquipeComponent } from '../composition-equipe/composition-equipe.component';
+import { FeuillesEquipeComponent } from '../feuilles-equipe/feuilles-equipe.component';
 import { partagerLien, urlApplication } from '../../../../core/utils/partage';
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -49,7 +50,7 @@ export interface EquipeEspace {
 @Component({
   selector: 'app-equipe-espace',
   standalone: true,
-  imports: [TranslateModule, CommonModule, FormsModule, RouterLink, RosterComponent, CompositionEquipeComponent],
+  imports: [TranslateModule, CommonModule, FormsModule, RouterLink, RosterComponent, CompositionEquipeComponent, FeuillesEquipeComponent],
   templateUrl: './equipe-espace.component.html',
   styleUrls: ['./equipe-espace.component.scss']
 })
@@ -86,6 +87,9 @@ export class EquipeEspaceComponent implements OnInit {
     if (this.token) return `${environment.apiUrl}/public/equipe/${this.token}`;
     return e ? `${environment.apiUrl}/competitions/${e.competitionId}/participants/${e.participantId}` : '';
   });
+
+  /** Seuls le lien de gestion, le responsable et l'adjoint signent (pas le promoteur qui consulte l'équipe). */
+  peutSigner = computed(() => !!this.token || ['RESPONSABLE', 'ADJOINT'].includes(this.espace()?.roleAcces ?? ''));
 
   /** Les compositions n'ont de sens qu'une fois l'équipe validée et le calendrier tiré. */
   afficheCompositions = computed(() => {

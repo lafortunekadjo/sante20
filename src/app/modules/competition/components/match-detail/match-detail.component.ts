@@ -7,6 +7,8 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
 import { FeuilleMatchComponent } from '../feuille-match/feuille-match.component';
+import { FeuilleSignaturesComponent } from '../feuille-signatures/feuille-signatures.component';
+import { environment } from '../../../../environment';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
@@ -41,7 +43,7 @@ type MatchTab = 'apercu' | 'composition' | 'evenements' | 'saisie' | 'feuille';
   standalone: true,
   imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TranslateModule,
     MatIconModule,
-    FeuilleMatchComponent],
+    FeuilleMatchComponent, FeuilleSignaturesComponent],
   templateUrl: './match-detail.component.html',
   styleUrls: ['./match-detail.component.scss']
 })
@@ -782,6 +784,7 @@ private compoToOptions(
   canDemarrerMatch(): boolean {
     return this.isPlanifie() && this.hasPermission('SAISIR_SCORES');
   }
+  signaturesUrl(): string { return `${environment.apiUrl}/competitions/${this.competitionId}/matchs/${this.matchId}/feuille/signatures`; }
   canValiderFeuille(): boolean { return this.hasPermission('VALIDER_FEUILLES'); }
   canPlanifier(): boolean {
     return this.hasPermission('PLANIFIER_MATCHS') && !this.isTermine();

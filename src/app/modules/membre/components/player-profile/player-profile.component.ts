@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PlayerProfile, ProfileService, VideoHighlight } from '../../../../core/services/profile.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { NiveauJoueurComponent } from '../../../../shared/components/niveau-joueur/niveau-joueur.component';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
@@ -34,7 +35,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     TranslateModule,
     MatExpansionModule,
     MatSlideToggleModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    NiveauJoueurComponent
   ],
   templateUrl: './player-profile.component.html',
   styleUrls: ['./player-profile.component.scss']

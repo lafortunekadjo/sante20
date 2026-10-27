@@ -9,6 +9,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { forkJoin } from 'rxjs';
+import { EcussonNiveauComponent } from '../../../shared/components/ecusson-niveau/ecusson-niveau.component';
 import { XpService, XpProfilDTO, ClassementSaisonDTO, MissionJoueurDTO } from '../../../core/services/gamification/xp.service';
 
 
@@ -18,7 +19,7 @@ import { XpService, XpProfilDTO, ClassementSaisonDTO, MissionJoueurDTO } from '.
   imports: [TranslateModule, 
     CommonModule, RouterModule, MatTabsModule, MatIconModule,
     MatButtonModule, MatProgressBarModule, MatProgressSpinnerModule,
-    MatChipsModule
+    MatChipsModule, EcussonNiveauComponent
   ],
   templateUrl: './ligue-legendes.component.html',
   styleUrl:    './ligue-legendes.component.scss'
@@ -39,7 +40,10 @@ export class LigueLegendesComponent implements OnInit {
     { niveau: 6, titre: '🏆 Légende',     xp: 5000, color: '#f97316' },
   ];
 
+  regles = signal<{ code: string; libelle: string; xp: number; actif: boolean }[]>([]);
+
   ngOnInit(): void {
+    this.xpService.getRegles().subscribe({ next: r => this.regles.set(r.actions), error: () => {} });
     forkJoin({
       profil:     this.xpService.getMonProfil(),
       classement: this.xpService.getClassement()

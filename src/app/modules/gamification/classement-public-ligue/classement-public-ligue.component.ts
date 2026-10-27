@@ -1,3 +1,4 @@
+import { EcussonNiveauComponent } from '../../../shared/components/ecusson-niveau/ecusson-niveau.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -18,7 +19,7 @@ import { XpService, ClassementSaisonDTO } from '../../../core/services/gamificat
   imports: [TranslateModule, 
     CommonModule, RouterModule, FormsModule,
     MatTabsModule, MatIconModule, MatButtonModule,
-    MatProgressSpinnerModule, MatSelectModule
+    MatProgressSpinnerModule, MatSelectModule, EcussonNiveauComponent
   ],
   templateUrl: './classement-public-ligue.component.html',
   styleUrl:    './classement-public-ligue.component.scss'

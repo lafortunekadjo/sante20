@@ -1,3 +1,4 @@
+import { EcussonNiveauComponent } from '../../../../shared/components/ecusson-niveau/ecusson-niveau.component';
 import { normaliserSexe, estMasculin } from '../../../../core/utils/referentiel';
 import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
@@ -22,7 +23,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
-    MatProgressSpinnerModule],
+    MatProgressSpinnerModule, EcussonNiveauComponent],
   templateUrl: './player-list.component.html',
   styleUrl: './player-list.component.scss'
 })

@@ -157,6 +157,10 @@ export const routes: Routes = [
   component: SecurityPolicyComponent
 },
 {
+  path: 'verifier/:code',
+  loadComponent: () => import('./modules/competition/components/verifier-feuille/verifier-feuille.component').then(m => m.VerifierFeuilleComponent)
+},
+{
   path: 'pilote',
   loadComponent: () => import('./modules/doc/pilote/pilote.component').then(m => m.PiloteComponent)
 },

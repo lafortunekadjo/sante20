@@ -1,4 +1,6 @@
 import { TranslateModule } from '@ngx-translate/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environment';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -35,6 +37,7 @@ export class MaCarteDialogComponent implements OnInit {
   private profileApi = inject(ProfileService);
   private compApi = inject(CompetitionApiService);
   private ref = inject(MatDialogRef<MaCarteDialogComponent>);
+  private http = inject(HttpClient);
 
   chargement = signal(true);
   erreur = signal<string | null>(null);
@@ -96,17 +99,11 @@ export class MaCarteDialogComponent implements OnInit {
     return t;
   });
 
-  /** Niveau : petit jeu de progression d'après l'activité (matchs, buts, passes, trophées). */
+  /** Niveau officiel de la Ligue des Légendes (le même que sur le profil et la page Ligue). */
+  niveauLigue = signal<{ titre: string; xpTotal: number; progression: number; prochainTitre?: string | null; niveauMax: boolean } | null>(null);
   niveau = computed(() => {
-    const t = this.totaux();
-    const pts = t.matchs * 2 + t.buts * 3 + t.passes * 2 + t.trophees * 25 + t.competitions * 5;
-    const paliers = [
-      { min: 0, nom: 'Recrue', icone: '🌱' }, { min: 20, nom: 'Titulaire', icone: '⚽' }, { min: 80, nom: 'Cadre', icone: '🔥' },
-      { min: 200, nom: 'Pro', icone: '💎' }, { min: 450, nom: 'Légende', icone: '👑' }
-    ];
-    const idx = paliers.reduce((acc, p, i) => (pts >= p.min ? i : acc), 0);
-    const cur = paliers[idx], next = paliers[idx + 1];
-    return { ...cur, points: pts, prochain: next?.nom ?? null, progression: next ? Math.round(((pts - cur.min) / (next.min - cur.min)) * 100) : 100 };
+    const n = this.niveauLigue();
+    return n ?? { titre: '', xpTotal: 0, progression: 0, prochainTitre: null, niveauMax: false };
   });
 
   numero = computed(() => 'M2-' + String(this.profil()?.userId ?? this.profil()?.id ?? 0).padStart(6, '0'));
@@ -191,6 +188,9 @@ export class MaCarteDialogComponent implements OnInit {
           { margin: 1, width: 220, color: { dark: '#0b1d4d', light: '#ffffff' } }));
       },
       error: () => { this.erreur.set('Impossible de charger votre profil.'); this.chargement.set(false); }
+    });
+    this.http.get<any>(`${environment.apiUrl}/profiles/${encodeURIComponent(username)}/niveau`).subscribe({
+      next: r => this.niveauLigue.set(r?.niveau ?? null), error: () => {}
     });
     this.compApi.getMesStatsCompetitions().subscribe({ next: s => this.compStats.set(s), error: () => {} });
   }
