@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId:   'com.my2_0.app',
+  appId:   'cloud.my2_0.app',
   appName: 'My2-0',
   webDir:  'dist/sante20/browser',
 
