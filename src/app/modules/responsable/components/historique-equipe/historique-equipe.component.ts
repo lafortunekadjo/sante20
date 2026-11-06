@@ -6,7 +6,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslateModule } from '@ngx-translate/core';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MembreService } from '../../../../core/services/membre.service';
-import { HistoriqueEquipe } from '../../../../../../My2-0/src/app/core/models/historique-equipe.model';
+import { HistoriqueEquipe } from '../../../../core/models/historique-equipe.model';
+
 
 
 @Component({
