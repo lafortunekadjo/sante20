@@ -1,3 +1,4 @@
+
 export interface HistoriqueEquipe {
   id: number;
   equipeId: number;
@@ -5,4 +6,5 @@ export interface HistoriqueEquipe {
   dateDebut: string; // ISO string
   dateFin: string | null; // null = en cours
   source: string;
+
 }
