@@ -31,7 +31,11 @@ class CustomTranslateLoader implements TranslateLoader {
   constructor(private http: HttpClient) {}
   
   getTranslation(lang: string): Observable<any> {
-    return this.http.get(`assets/i18n/${lang}.json`);
+    // Le fichier de langue garde le même nom d'une version à l'autre. Sans consigne de cache du serveur, le navigateur
+    // peut en garder une ancienne copie plusieurs heures après une mise en production : les nouveaux textes s'affichent
+    // alors comme des clés brutes. « no-cache » impose de vérifier auprès du serveur (réponse 304, sans retéléchargement,
+    // si le fichier n'a pas changé).
+    return this.http.get(`assets/i18n/${lang}.json`, { headers: { 'Cache-Control': 'no-cache' } });
   }
 }
 

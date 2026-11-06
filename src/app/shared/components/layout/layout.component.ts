@@ -125,6 +125,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   private menusSubscription?:      Subscription;
   private groupeSubscription?:     Subscription;
+  /** Dernier accès au groupe connu : sert à ne revalider la route que quand il CHANGE (voir revalidateCurrentRoute). */
+  private dernierAcces: string | null = null;
   private authStatusSubscription?: Subscription;
   private menuRefreshSubscription?: Subscription;
 
@@ -215,8 +217,14 @@ this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady =>
   }
 
   private revalidateCurrentRoute(): void {
+  // Une navigation est déjà en cours (typiquement le chargement de la page après un rechargement) : ses gardes lisent
+  // l'état à jour. L'interrompre annulerait la page demandée (« NAV CANCELLED ») et router.url vaut encore « / » : on
+  // « reviendrait » alors sur l'accueil au lieu de la page où l'on était.
+  if (this.router.getCurrentNavigation()) return;
+
   const currentUrl = this.router.url;
- 
+  if (currentUrl === '/' || currentUrl === '') return;     // l'accueil n'a rien à revalider
+
   this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
     this.router.navigateByUrl(currentUrl);
     // Si le guard de currentUrl échoue maintenant (plus responsable,
@@ -386,14 +394,24 @@ setupRoles(): void {
  
   // FIX : s'abonner AUSSI à l'accès du groupe actif (estResponsableGroupe)
   // pour réévaluer isResponsable + recharger les menus à chaque switch
-  this.authService.groupeActifAccess$.subscribe(() => {
+  this.authService.groupeActifAccess$.subscribe(acces => {
     this.setupRoles();             // recalcule isResponsable pour CE groupe
     if (this.isLoggedIn && this.isResponsable) {
       this.loadUserMenus();        // recharge les menus du nouveau groupe
     } else {
       this.menuCategories = [];    // FIX : vider les menus si plus responsable
     }
-    this.revalidateCurrentRoute();
+    // On ne revalide la route que si l'accès a réellement changé (changement de groupe, droits retirés...). Au chargement,
+    // le serveur renvoie un objet neuf mais identique à la copie en cache : ce n'est pas un changement. La toute première
+    // émission est vide alors que le navigateur a déjà la copie : c'est donc elle, et non « vide », la référence.
+    const signature = JSON.stringify(acces ?? null);
+    if (this.dernierAcces === null) {            // première émission : on mémorise la référence, il n'y a rien à revalider
+      this.dernierAcces = acces ? signature : (localStorage.getItem('groupeActifAccess') ?? signature);
+      return;
+    }
+    const aChange = this.dernierAcces !== signature;
+    this.dernierAcces = signature;
+    if (aChange) this.revalidateCurrentRoute();
   });
 }
 
