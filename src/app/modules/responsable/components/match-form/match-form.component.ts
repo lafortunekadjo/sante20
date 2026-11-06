@@ -1,4 +1,5 @@
 import { t } from '../../../../core/i18n/traduire';
+import { normaliserHeure } from '../../../../core/utils/heure';
 import { AfterViewInit, Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -415,6 +416,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
       id: 0,
       typeMatch: 'INTERNE',
       dateMatch: new Date().toISOString().split('T')[0],
+      heureMatch: normaliserHeure(this.groupes?.heureMatch),
       lieu: '',
       commentaire: '',
       mediaUrls: [],
@@ -585,6 +587,8 @@ openPosterDialog(match: Match) {
         this.dataSource.data = matches;
 
         this.groupes = groupes;
+        // Heure proposée pour un nouveau match : l'heure de jeu du groupe (modifiable, utile pour les amicaux)
+        if (!this.newMatch.heureMatch) this.newMatch.heureMatch = normaliserHeure(groupes?.heureMatch);
         this.membres = membres;
         this.equipes = equipes;
         this.allGroupes = allGroupes.filter(g => g.id !== groupes?.id);
@@ -911,6 +915,7 @@ openPosterDialog(match: Match) {
     const payload: any = {
       typeMatch: this.newMatch.typeMatch,
       dateMatch: this.newMatch.dateMatch,
+      heureMatch: this.newMatch.heureMatch || null,
       lieu: this.newMatch.lieu || null,
       commentaire: this.newMatch.commentaire || null,
       forfait: this.newMatch.forfait || false,

@@ -63,6 +63,8 @@ export interface Match {
 export interface CreateMatchDTO {
   typeMatch: TypeMatch;
   dateMatch: string;
+  /** Heure du match « HH:mm ». Facultative : par défaut l'heure de jeu du groupe. */
+  heureMatch?: string;
   lieu?: string;
   commentaire?: string;
   

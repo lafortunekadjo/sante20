@@ -1075,3 +1075,308 @@ $border-radius-xl: 24px;
     border-radius: 14px;
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// POLISH MOBILE — date et heure en avant, cibles tactiles, envoi toujours accessible
+// ════════════════════════════════════════════════════════════
+.invite-page {
+  // 16 px : iOS ne zoome plus sur le champ en le touchant
+  input { font-size: 16px; }
+
+  // Date et heure côte à côte, le stade en dessous sur toute la largeur
+  .match-info-card .match-details {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 16px 12px;
+
+    .detail-place { grid-column: 1 / -1; }
+
+    .detail-time .detail-content .value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #4f46e5;
+      font-variant-numeric: tabular-nums;
+      text-transform: none;
+    }
+  }
+
+  // Boutons du joueur : 44 px, couleurs lisibles quand ils sont inactifs
+  .player-item {
+    .player-badges button,
+    .btn-remove {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+    }
+    .player-badges button {
+      color: #64748b;
+      background: #f1f5f9;
+      &.active { color: #b45309; background: #fde68a; }
+    }
+    .btn-remove { color: #ef4444; background: #fee2e2; }
+  }
+
+  // Envoi : le bouton reste en bas de l'écran pendant qu'on remplit la liste
+  .validation-section .btn-submit {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 6;
+    min-height: 52px;
+    box-shadow: 0 12px 28px -10px rgba(16, 185, 129, .6);
+    &:disabled { box-shadow: none; }
+  }
+
+  .btn-add-player, .btn-import { min-height: 48px; }
+}
+
+@media (max-width: 360px) {
+  .invite-page .match-info-card .match-details { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-page * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+// ════════════════════════════════════════════════════════════
+// LIGNE JOUEUR — un seul champ « nom complet », capitaine / gardien sous forme de pastilles
+// ════════════════════════════════════════════════════════════
+.invite-page .player-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 12px 12px;
+
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .player-name {
+    flex: 1 1 0;
+    width: 0;          // sans cela le champ garde sa largeur par défaut (180 px) et repousse le bouton hors de la carte
+    min-width: 0;
+    ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+    ::ng-deep .mat-mdc-form-field-infix { width: auto; min-width: 0; }
+  }
+
+  .btn-remove {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px;
+    color: #ef4444; background: #fee2e2; cursor: pointer;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  }
+
+  .player-tags {
+    display: flex;
+    gap: 8px;
+    padding-left: 60px;   // aligné sous le champ (poignée + numéro)
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      min-height: 40px; padding: 0 14px;
+      border: 1px solid #e2e8f0; border-radius: 999px;
+      background: #f8fafc; color: #64748b;
+      font-size: 13.5px; font-weight: 500; cursor: pointer;
+      transition: background-color .15s, color .15s, border-color .15s;
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+      &.active { background: #fde68a; border-color: #f59e0b; color: #92400e; font-weight: 600; }
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .invite-page .player-item .player-tags { padding-left: 0; }
+}
+
+// ════════════════════════════════════════════════════════════
+// REFONTE LÉGÈRE — mobile d'abord : l'essentiel d'abord, le reste à la demande
+// ════════════════════════════════════════════════════════════
+.invite-page .inv {
+  width: 100%;       // sans cela, un parent flex centré réduit la page à la largeur de son contenu
+  min-width: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+// En-tête mince
+.inv-head { display: flex; align-items: center; gap: 12px; }
+.inv-logo {
+  width: 52px; height: 52px; flex-shrink: 0; border-radius: 16px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; background: #eef2ff;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  mat-icon { color: #4f46e5; }
+}
+.inv-head-text {
+  min-width: 0;
+  .inv-kicker { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #4f46e5; }
+  h1 { margin: 2px 0 0; font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .inv-city { font-size: 13px; color: #64748b; }
+}
+
+// Quand et où
+.inv-when {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+
+  .inv-when-main {
+    display: flex; align-items: center; gap: 8px;
+    mat-icon { color: #4f46e5; font-size: 20px; width: 20px; height: 20px; }
+    .d { font-size: 15px; font-weight: 600; text-transform: capitalize; }
+    .t { margin-left: auto; font-size: 22px; font-weight: 800; color: #4f46e5; font-variant-numeric: tabular-nums; }
+  }
+  .inv-where {
+    display: flex; align-items: center; gap: 8px; font-size: 14px; color: #475569;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; color: #94a3b8; }
+  }
+}
+.inv-note { margin: 0; padding: 10px 12px; border-radius: 12px; background: #f1f5f9; font-size: 13.5px; line-height: 1.45; color: #475569; }
+.inv-expire {
+  margin: 0; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #92400e;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+
+// Formulaire
+.inv-form {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px;
+  h2 { margin: 0; font-size: 16px; font-weight: 700; }
+}
+.inv-field {
+  display: flex; flex-direction: column; gap: 6px;
+  .inv-label { font-size: 13px; font-weight: 600; color: #475569; }
+  input {
+    height: 48px; padding: 0 14px; box-sizing: border-box; width: 100%;
+    border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #1e293b;
+    font-size: 16px; font-family: inherit;
+    &:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, .15); }
+  }
+}
+.inv-hint { margin: 0; font-size: 12.5px; line-height: 1.4; color: #64748b; }
+
+// Options repliées (logo, contact)
+.inv-more {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 0; border-radius: 12px; background: #f8fafc; color: #475569;
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; text-align: left;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; color: #64748b; }
+  span { flex: 1; }
+  .chev { transition: transform .2s; &.up { transform: rotate(180deg); } }
+}
+.inv-more-body { display: flex; flex-direction: column; gap: 12px; padding: 2px 2px 4px; }
+.inv-logo-pick {
+  display: flex; align-items: center; gap: 12px;
+  .logo-btn {
+    width: 64px; height: 64px; flex-shrink: 0; padding: 0; overflow: hidden;
+    border: 1.5px dashed #a5b4fc; border-radius: 16px; background: #eef2ff; color: #6366f1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+}
+
+// Joueurs
+.inv-players-head { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.inv-count {
+  padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: 700;
+  &.ok { background: #dcfce7; color: #166534; }
+}
+.inv-sub { margin: -6px 0 0; font-size: 13px; color: #64748b; }
+
+.inv-paste-toggle, .inv-add, .inv-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 16px; border-radius: 14px; font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer; transition: background-color .15s, transform .1s;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:active:not(:disabled) { transform: scale(.98); }
+  &:disabled { opacity: .45; cursor: default; }
+}
+.inv-paste-toggle { border: 0; background: #eef2ff; color: #4338ca; }
+.inv-add { border: 1.5px dashed #c7d2fe; background: transparent; color: #4f46e5; }
+.inv-btn { border: 0; background: #4f46e5; color: #fff; align-self: flex-start; }
+
+.inv-paste {
+  display: flex; flex-direction: column; gap: 8px;
+  textarea {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; resize: vertical; min-height: 120px;
+    border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #1e293b;
+    font-size: 16px; font-family: inherit; line-height: 1.45;
+    &:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, .15); }
+  }
+}
+
+.inv-players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.inv-player {
+  padding: 2px 4px 2px 2px; border: 1px solid transparent; border-radius: 14px;
+  &.actif { background: #f8fafc; border-color: #c7d2fe; }
+
+  .row { display: flex; align-items: center; gap: 8px; }
+  .num { width: 24px; flex-shrink: 0; text-align: center; font-size: 13px; font-weight: 700; color: #94a3b8; }
+  input {
+    flex: 1; min-width: 0; height: 46px; padding: 0 12px; box-sizing: border-box;
+    border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #1e293b;
+    font-size: 16px; font-family: inherit;
+    &:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, .15); }
+  }
+  .mini {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
+    &.cap { background: #fde68a; color: #92400e; }
+    &.gk { background: #dbeafe; color: #1d4ed8; }
+  }
+  .rm {
+    flex-shrink: 0; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: #94a3b8; cursor: pointer;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    &:active { background: #fee2e2; color: #ef4444; }
+  }
+  .tags {
+    display: flex; gap: 8px; padding: 6px 0 6px 32px;
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
+      border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; color: #64748b;
+      font-size: 13.5px; font-weight: 500; font-family: inherit; cursor: pointer;
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+      &.active { background: #fde68a; border-color: #f59e0b; color: #92400e; font-weight: 600; }
+    }
+  }
+}
+
+// Barre d'envoi fixe
+.inv-bar {
+  position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 8;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px 10px 14px; border-radius: 18px;
+  background: #0f172a; color: #fff; box-shadow: 0 14px 30px -10px rgba(15, 23, 42, .55);
+
+  .inv-bar-text {
+    flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35;
+    .k { margin-right: 4px; opacity: .7; }
+    .miss { font-weight: 600; &:not(:last-child)::after { content: ' ·'; opacity: .5; } }
+    .ok {
+      display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #86efac;
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    }
+  }
+  .inv-submit {
+    flex-shrink: 0; min-height: 46px; padding: 0 18px; border: 0; border-radius: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #10b981; color: #fff; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    mat-spinner ::ng-deep circle { stroke: #fff; }
+    &:disabled { background: #475569; color: #cbd5e1; cursor: default; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-more .chev, .inv-paste-toggle, .inv-add, .inv-btn { transition: none; }
+}

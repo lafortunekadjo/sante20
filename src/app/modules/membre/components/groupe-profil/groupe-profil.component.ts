@@ -9,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { GroupeProfil } from '../../../../core/models/groupe-explorer.model';
+import { partagerLien, urlPartageGroupe } from '../../../../core/utils/partage';
 
 /** Page de détail d'un groupe, ouverte depuis Explorer. Données publiques uniquement. */
 @Component({
@@ -65,14 +66,11 @@ export class GroupeProfilComponent implements OnInit {
 
   async partager(): Promise<void> {
     if (!this.profil) return;
-    const url = `${window.location.origin}/explorer/${this.profil.id}`;
+    const p = this.profil;
+    const texte = [p.nom, [p.discipline, p.ville].filter(Boolean).join(' · ')].filter(Boolean).join(' — ');
     try {
-      if (navigator.share) {
-        await navigator.share({ title: this.profil.nom, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      this.snackBar.open(t('invitation.linkCopied'), 'OK', { duration: 2000 });
+      const moyen = await partagerLien(p.nom, texte, urlPartageGroupe(p.id));
+      if (moyen === 'copie') this.snackBar.open(t('invitation.linkCopied'), 'OK', { duration: 2000 });
     } catch { /* partage annulé par l'utilisateur */ }
   }
 

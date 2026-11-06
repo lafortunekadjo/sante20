@@ -15,6 +15,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { Match, SourceAdversaire } from '../../../../core/models/match.model';
+import { normaliserHeure } from '../../../../core/utils/heure';
 import { Membre } from '../../../../core/models/membre.model';
 ;
 
@@ -70,6 +71,9 @@ export class MatchEditDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: MatchEditDialogData
   ) {
     this.editMatch = { ...data.match };
+    // Le serveur renvoie « 18:30:00 » ; un ancien match sans heure propre reprend celle du groupe
+    this.editMatch.heureMatch = normaliserHeure(this.editMatch.heureMatch)
+      || normaliserHeure(data.currentGroupe?.heureMatch);
   }
 
   ngOnInit() {
@@ -423,6 +427,7 @@ export class MatchEditDialogComponent implements OnInit {
       id: this.editMatch.id,
       typeMatch: this.editMatch.typeMatch,
       dateMatch: this.editMatch.dateMatch,
+      heureMatch: this.editMatch.heureMatch || null,
       lieu: this.editMatch.lieu || null,
       commentaire: this.editMatch.commentaire || null,
       forfait: this.editMatch.forfait || false,

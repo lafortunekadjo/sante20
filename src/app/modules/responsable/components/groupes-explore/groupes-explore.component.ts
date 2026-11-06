@@ -1,4 +1,5 @@
 import { memeDiscipline, normaliserDiscipline } from '../../../../core/utils/referentiel';
+import { partagerLien, urlPartageGroupe } from '../../../../core/utils/partage';
 // src/app/modules/responsable/components/groupes-explore/groupes-explore.component.ts
 
 import { t } from '../../../../core/i18n/traduire';
@@ -606,21 +607,14 @@ exportResults(): void {
   // Tu peux implémenter l'export plus tard
 }
 
-shareGroupe(groupe: any): void {
+async shareGroupe(groupe: any): Promise<void> {
   if (!groupe?.id) return;
-  
-  if (navigator.share) {
-    navigator.share({
-      title: groupe.nom || 'Groupe sportif',
-      text: `Découvre ce groupe: ${groupe.nom} - ${groupe.discipline}`,
-      url: `${window.location.origin}/groupe/${groupe.id}`
-    });
-  } else {
-    const url = `${window.location.origin}/groupe/${groupe.id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      this.snackBar.open(t('invitation.linkCopied'), 'Fermer', { duration: 2000 });
-    });
-  }
+
+  const texte = [groupe.nom, [groupe.discipline, groupe.ville].filter(Boolean).join(' · ')].filter(Boolean).join(' — ');
+  try {
+    const moyen = await partagerLien(groupe.nom || 'Groupe sportif', texte, urlPartageGroupe(groupe.id));
+    if (moyen === 'copie') this.snackBar.open(t('invitation.linkCopied'), 'OK', { duration: 2000 });
+  } catch { /* partage annulé par l'utilisateur */ }
 }
 
 // Filtres rapides (optionnel)

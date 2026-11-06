@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { separerNomComplet } from '../../../core/utils/nom';
+import { t } from '../../../core/i18n/traduire';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -18,6 +20,8 @@ import { TranslateModule } from '@ngx-translate/core';
 
 interface JoueurForm extends JoueurInviteRequest {
   id?: number;
+  /** Saisie en un seul champ ; séparée en prénom / nom à l'envoi. */
+  nomComplet?: string;
 }
 
 @Component({
@@ -68,6 +72,13 @@ export class PublicMatchInviteComponent implements OnInit {
   token: string = '';
   isLoading = true;
   isSubmitting = false;
+  /** Nom d'équipe proposé d'après l'invitation ; tant que le champ n'a pas été modifié, une note l'indique. */
+  nomPrevu = '';
+  /** Ligne du joueur en cours de saisie : c'est la seule qui affiche capitaine / gardien. */
+  actif = -1;
+  collerOuvert = false;
+  texteColle = '';
+  optionsOuvertes = false;
   isSubmitted = false;
 
   logoPreview: string | null = null;
@@ -113,9 +124,10 @@ export class PublicMatchInviteComponent implements OnInit {
         this.invitation = response;
         this.isLoading = false;
         console.log(response)
-        if (response.valide && response.nom) {
-        this.formData.nomEquipe = response.nom;
-      }
+        if (response.valide && !response.dejaSoumis && response.nomEquipePrevue?.trim()) {
+          this.nomPrevu = response.nomEquipePrevue.trim();
+          this.formData.nomEquipe = this.nomPrevu;      // modifiable : l'organisateur a pu se tromper de nom
+        }
         // Pré-remplir avec quelques joueurs vides si l'invitation est valide
         if (response.valide && !response.dejaSoumis) {
           this.initializeEmptyPlayers(response.minJoueurs || 7);
@@ -133,7 +145,7 @@ export class PublicMatchInviteComponent implements OnInit {
   }
 
   private initializeEmptyPlayers(count: number): void {
-    for (let i = 0; i < Math.min(count, 5); i++) {
+    for (let i = 0; i < Math.min(count, 4); i++) {
       this.joueurs.push(this.createEmptyPlayer());
     }
   }
@@ -143,6 +155,7 @@ export class PublicMatchInviteComponent implements OnInit {
       id: ++this.playerIdCounter,
       nom: '',
       prenom: '',
+      nomComplet: '',
       numeroMaillot: undefined,
       poste: '',
       estCapitaine: false,
@@ -158,9 +171,88 @@ export class PublicMatchInviteComponent implements OnInit {
       return;
     }
     this.joueurs.push(this.createEmptyPlayer());
+    this.actif = this.joueurs.length - 1;
+    this.focaliserDernierJoueur();
+  }
+
+  /**
+   * « Coller une liste » : une ligne = un joueur. Accepte les numéros et puces d'une liste WhatsApp
+   * (« 1. », « 2) », « - », « • ») et les marques « (C) » capitaine / « (G) » gardien.
+   */
+  ajouterDepuisTexte(): void {
+    const max = this.invitation?.maxJoueurs || 50;
+    const lus: { nomComplet: string; capitaine: boolean; gardien: boolean }[] = [];
+    for (const brut of this.texteColle.split(/\r?\n|;/)) {
+      let ligne = brut.trim().replace(/^(\d+\s*[.)\-:]|[-•*·▪✅⚽])\s*/u, '').trim();
+      const capitaine = /\((c|cap|capitaine|captain)\)/i.test(ligne);
+      const gardien = /\((g|gk|gardien|goalkeeper)\)/i.test(ligne);
+      ligne = ligne.replace(/\((c|cap|capitaine|captain|g|gk|gardien|goalkeeper)\)/gi, '').replace(/\s+/g, ' ').trim();
+      // une ligne qui se termine par « : » est un titre (« Liste du match : »), pas un joueur
+      if (ligne.length >= 2 && !/[:：]$/.test(ligne)) lus.push({ nomComplet: ligne, capitaine, gardien });
+    }
+    if (lus.length === 0) return;
+
+    // les lignes vides existantes sont remplies d'abord, le reste s'ajoute à la suite
+    let ajoutes = 0;
+    for (const l of lus) {
+      let cible = this.joueurs.find(j => !(j.nomComplet ?? '').trim());
+      if (!cible) {
+        if (this.joueurs.length >= max) break;
+        cible = this.createEmptyPlayer();
+        this.joueurs.push(cible);
+      }
+      cible.nomComplet = l.nomComplet;
+      cible.estGardien = l.gardien;
+      if (l.capitaine && !this.hasCapitaine()) cible.estCapitaine = true;
+      ajoutes++;
+    }
+    this.texteColle = '';
+    this.collerOuvert = false;
+    this.showSnackbar(t('invite.form.pasteDone', { count: ajoutes }), 'success');
+  }
+
+  /** Joueurs dont le nom est renseigné : les lignes vides ne comptent pas et ne sont pas envoyées. */
+  nbRemplis(): number {
+    return this.joueurs.filter(j => (j.nomComplet ?? '').trim().length >= 2).length;
+  }
+
+  manqueEquipe(): boolean {
+    return !this.formData.nomEquipe?.trim();
+  }
+
+  joueursEnPlus(): number {
+    return Math.max(0, (this.invitation?.minJoueurs || 7) - this.nbRemplis());
+  }
+
+  nomsIncomplets(): boolean {
+    return !this.allPlayersValid();
+  }
+
+  /** Touche « Suivant » du clavier : sur le dernier joueur rempli, ouvre directement la ligne suivante. */
+  onNomEnter(index: number): void {
+    const estDernier = index === this.joueurs.length - 1;
+    const rempli = !!this.joueurs[index]?.nomComplet?.trim();
+    const place = !this.invitation?.maxJoueurs || this.joueurs.length < this.invitation.maxJoueurs;
+    if (estDernier && rempli && place) {
+      this.addPlayer();
+    } else if (!estDernier) {
+      this.focaliserJoueur(index + 1);
+    }
+  }
+
+  private focaliserDernierJoueur(): void {
+    this.focaliserJoueur(this.joueurs.length - 1);
+  }
+
+  private focaliserJoueur(index: number): void {
+    setTimeout(() => {
+      const champs = document.querySelectorAll<HTMLInputElement>('.player-name-input');
+      champs[index]?.focus();
+    }, 60);
   }
 
   removePlayer(index: number): void {
+    this.actif = -1;
     if (this.joueurs.length <= 1) {
       this.showSnackbar('Vous devez avoir au moins un joueur', 'warning');
       return;
@@ -186,17 +278,21 @@ export class PublicMatchInviteComponent implements OnInit {
   // ===== VALIDATION =====
 
   hasCapitaine(): boolean {
-    return this.joueurs.some(j => j.estCapitaine);
+    return this.joueurs.some(j => j.estCapitaine && (j.nomComplet ?? '').trim().length >= 2);
   }
 
   allPlayersValid(): boolean {
-    return this.joueurs.every(j => j.nom?.trim() && j.prenom?.trim());
+    // une ligne vide est ignorée ; une ligne commencée (1 lettre) est à compléter
+    return this.joueurs.every(j => {
+      const n = (j.nomComplet ?? '').trim().length;
+      return n === 0 || n >= 2;
+    });
   }
 
   canSubmit(): boolean {
     return (
       !!this.formData.nomEquipe?.trim() &&
-      this.joueurs.length >= (this.invitation?.minJoueurs || 7) &&
+      this.nbRemplis() >= (this.invitation?.minJoueurs || 7) &&
       this.hasCapitaine() &&
       this.allPlayersValid()
     );
@@ -215,15 +311,18 @@ export class PublicMatchInviteComponent implements OnInit {
       telephoneContact: this.formData.telephoneContact?.trim() || undefined,
       logoAdversaire: this.logoPreview,
       joueurs: this.joueurs
-        .filter(j => j.nom?.trim() && j.prenom?.trim())
-        .map(j => ({
-          nom: j.nom.trim(),
-          prenom: j.prenom.trim(),
-          numeroMaillot: j.numeroMaillot,
-          poste: j.poste || undefined,
-          estCapitaine: j.estCapitaine || false,
-          estGardien: j.estGardien || false
-        }))
+        .filter(j => (j.nomComplet ?? '').trim().length >= 2)
+        .map(j => {
+          const { prenom, nom } = separerNomComplet(j.nomComplet);
+          return {
+            nom,
+            prenom,
+            numeroMaillot: j.numeroMaillot,
+            poste: j.poste || undefined,
+            estCapitaine: j.estCapitaine || false,
+            estGardien: j.estGardien || false
+          };
+        })
     };
 
     this.invitationService.submitPlayers(this.token, request).subscribe({

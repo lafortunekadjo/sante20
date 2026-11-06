@@ -44,6 +44,10 @@ export interface JoueurInviteRequest {
 
 export interface PublicInvitationResponse {
   valide: boolean;
+  /** Nom de l'équipe invitée prévu par l'organisateur : pré-remplit le formulaire. */
+  nomEquipePrevue?: string;
+  /** Nom de l'équipe, une fois la liste envoyée. */
+  nomEquipeSoumise?: string;
   messageErreur?: string;
   match?: MatchInfo;
   organisateur?: GroupeInfo;
