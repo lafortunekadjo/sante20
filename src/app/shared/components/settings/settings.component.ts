@@ -10,10 +10,11 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { SettingsService, Theme } from '../../../core/services/settings.service';
+import { SettingsService, Theme, Language } from '../../../core/services/settings.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -29,6 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatSelectModule,
     MatSlideToggleModule,
     MatButtonToggleModule,
+    MatTooltipModule,
     MatDividerModule,
     MatSnackBarModule,
     TranslateModule,
@@ -88,8 +90,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   onLanguageChange(lang: string): void {
     if (this.currentLanguage !== lang) {
-      this.settingsService.toggleLanguage();
-      this.showSaveFeedback();
+      this.settingsService.setLanguage(lang as Language);
+      // Message dans la NOUVELLE langue (une fois celle-ci chargée)
+      this.translate.get('settings.saved').subscribe(msg => this.snackBar.open(msg, t('settings.page.ok'), { duration: 2500 }));
     }
   }
 
@@ -103,13 +106,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const isPublic = event.checked;
     this.authService.updateUserProfile({ isPublic }).subscribe({
       next: () => this.snackBar.open(
-        isPublic ? 'Profil rendu public ✓' : 'Profil masqué ✓',
-        'OK', { duration: 2500 }
+        t(isPublic ? 'settings.page.profil_public_ok' : 'settings.page.profil_masque_ok'),
+        t('settings.page.ok'), { duration: 2500 }
       ),
       error: () => {
         // Rollback si erreur
         this.isPublic = !isPublic;
-        this.snackBar.open(t('common.messages.update_error'), 'Fermer', { duration: 3000 });
+        this.snackBar.open(t('common.messages.update_error'), t('settings.page.fermer'), { duration: 3000 });
       }
     });
   }
@@ -124,8 +127,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private showSaveFeedback(): void {
-    const message = this.translate.instant('settings.saved') || 'Paramètres mis à jour !';
-    this.snackBar.open(message, 'OK', {
+    const message = this.translate.instant('settings.saved');
+    this.snackBar.open(message, t('settings.page.ok'), {
       duration: 2500,
       panelClass: ['snackbar-success']
     });

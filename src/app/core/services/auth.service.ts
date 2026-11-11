@@ -301,13 +301,24 @@ setCurrentUser(user: any): void {
   login(username: string, password: string): Observable<any> {
     const loginPayload = { username, password };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    
+    return this.ouvrirSession(this.http.post<any>(this.apiUrl, loginPayload, {
+      headers,
+      withCredentials: true
+    }));
+  }
+
+  /** Connexion / création de compte avec Google : le serveur vérifie le jeton Firebase et renvoie notre JWT. */
+  loginGoogle(idToken: string, parrainCode?: string | null): Observable<any> {
+    const corps: any = { idToken };
+    if (parrainCode) corps.parrainCode = parrainCode;
+    return this.ouvrirSession(this.http.post<any>(`${this.apiAAuth}/google`, corps, { withCredentials: true }));
+  }
+
+  /** Stocke le jeton reçu puis charge le groupe et l'utilisateur (commun à toutes les méthodes de connexion). */
+  private ouvrirSession(reponse$: Observable<any>): Observable<any> {
     this.isUserReadySubject.next(false); // Blocage de l'UI pendant la connexion
 
-    return this.http.post<any>(this.apiUrl, loginPayload, {
-      headers,
-      withCredentials: true 
-    }).pipe(
+    return reponse$.pipe(
       tap(response => {
         if (response?.token) {
           this.token = response.token;

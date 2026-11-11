@@ -48,6 +48,12 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
 
+    // ── Connexion Google (Firebase Authentication) ────────
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['google.com'],
+    },
+
     // ── LocalNotifications ────────────────────────────────
     LocalNotifications: {
       smallIcon:    'ic_stat_icon_config_sample',

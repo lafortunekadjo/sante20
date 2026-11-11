@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { GoogleButtonComponent } from '../google-button/google-button.component';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { PasswordResetDialogComponent } from '../password-reset-dialog/password-reset-dialog.component';
@@ -18,6 +19,7 @@ import { PushNotificationService } from '../../../core/services/push-notificatio
   selector: 'app-login',
   standalone: true,
   imports: [
+    GoogleButtonComponent,
     ReactiveFormsModule, 
     MatFormFieldModule, 
     MatInputModule, 

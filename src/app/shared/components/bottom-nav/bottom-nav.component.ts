@@ -15,6 +15,8 @@ import { Menu, MenuCategorie } from '../../../core/models/menu.model';
 interface NavTab {
   id:     string;
   label:  string;
+  /** Clé de traduction : le libellé est traduit à l'affichage, donc toujours à jour quand la langue arrive ou change. */
+  cle?:   string;
   icon:   string;
   route:  string;
   badge?: number;
@@ -128,11 +130,11 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const tabs: NavTab[] = [];
 
     // Tab 1 : Accueil — toujours présent
-    tabs.push({ id: 'home', label: t('admin.home'), icon: 'home', route: '/home' });
+    tabs.push({ id: 'home', label: t('admin.home'), cle: 'admin.home', icon: 'home', route: '/home' });
 
     if (isAdmin) {
-      tabs.push({ id: 'groups', label: t('admin.groups'),       icon: 'group',  route: '/admin/groupes'       });
-      tabs.push({ id: 'users',  label: t('menu.items.USER'),  icon: 'person', route: '/admin/utilisateurs'  });
+      tabs.push({ id: 'groups', label: t('admin.groups'), cle: 'admin.groups',       icon: 'group',  route: '/admin/groupes'       });
+      tabs.push({ id: 'users',  label: t('menu.items.USER'), cle: 'menu.items.USER',  icon: 'person', route: '/admin/utilisateurs'  });
 
     } else if (isResponsable && hasGroup) {
       const hasMatchMenu   = this.hasMenuInCategories('MATCHS')  || this.hasMenuInCategories('SPORT');
@@ -140,10 +142,10 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       const hasFinanceMenu = this.hasMenuInCategories('FINANCES');
 
       if (hasMembresMenu) {
-        tabs.push({ id: 'membres',  label: t('menu.items.MEMBRES'),  icon: 'group',            route: '/responsable/membres'             });
+        tabs.push({ id: 'membres',  label: t('menu.items.MEMBRES'), cle: 'menu.items.MEMBRES',  icon: 'group',            route: '/responsable/membres'             });
       }
       if (hasMatchMenu) {
-        tabs.push({ id: 'matchs',   label: t('menu.items.MATCHS'),   icon: 'sports_soccer',    route: '/responsable/matchs',
+        tabs.push({ id: 'matchs',   label: t('menu.items.MATCHS'), cle: 'menu.items.MATCHS',   icon: 'sports_soccer',    route: '/responsable/matchs',
                     badge: this.upcomingMatchCount > 0 ? this.upcomingMatchCount : undefined });
       }
       if (hasFinanceMenu) {
@@ -152,7 +154,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       }
       if (hasFinanceMenu) {
        // Compétitions — toujours visible pour le responsable
-      tabs.push({ id: 'competitions', label: t('competition.nav.competitions'), icon: 'emoji_events', route: '/competitions' });
+      tabs.push({ id: 'competitions', label: t('competition.nav.competitions'), cle: 'competition.nav.competitions', icon: 'emoji_events', route: '/competitions' });
       }
 
     } else if (isMembre && hasGroup) {
@@ -161,10 +163,10 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
     } else if (isPartenaire) {
       tabs.push({ id: 'dashboard', label: 'Dashboard',  icon: 'dashboard', route: '/partenaire/dashboard' });
-      tabs.push({ id: 'pubs',      label: t('admin.publicites.publicites'), icon: 'campaign',  route: '/partenaire/publicite' });
+      tabs.push({ id: 'pubs',      label: t('admin.publicites.publicites'), cle: 'admin.publicites.publicites', icon: 'campaign',  route: '/partenaire/publicite' });
 
     } else {
-      tabs.push({ id: 'explorer', label: t('menu.items.EXPLORER'), icon: 'explore', route: '/explorer' });
+      tabs.push({ id: 'explorer', label: t('menu.items.EXPLORER'), cle: 'menu.items.EXPLORER', icon: 'explore', route: '/explorer' });
     }
 
     // Tab Chat
@@ -178,7 +180,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
     // Tab Plus — toujours en 5ème position
     const contentTabs = tabs.slice(0, 4);
-    contentTabs.push({ id: 'more', label: t('ui.ts_plus_32ba'), icon: 'more_horiz', route: '' });
+    contentTabs.push({ id: 'more', label: t('ui.ts_plus_32ba'), cle: 'ui.ts_plus_32ba', icon: 'more_horiz', route: '' });
     this.tabs = contentTabs;
     this.cdr.markForCheck();
   }

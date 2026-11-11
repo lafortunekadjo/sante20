@@ -2,7 +2,7 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime } from 'rxjs/operators';
 
@@ -77,6 +77,10 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
   mouvements: MouvementCaisse[] = [];
   activeTab: 'list'|'filter' = 'list';
 
+  /** Nombre de mouvements affichés : la liste s'allonge par paliers (« Afficher plus ») au lieu de tout dessiner d'un coup. */
+  readonly palier = 30;
+  limite = 30;
+
   // Table
   displayedColumns = ['date', 'type', 'libelle', 'caisse', 'membre', 'montant', 'statut', 'actions'];
   dataSource = new MatTableDataSource<MouvementCaisse>([]);
@@ -131,8 +135,37 @@ export class MouvementsHistoriqueComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(() => {
+        this.limite = this.palier;      // un nouveau filtre repart du début de la liste
         this.applyFilters();
       });
+  }
+
+  /** Champ de recherche de la barre du haut : même contrôle que celui du formulaire de filtres. */
+  get searchCtrl(): FormControl {
+    return this.filterForm.get('search') as FormControl;
+  }
+
+  /** Mouvements actuellement affichés (les `limite` premiers). */
+  get visibles(): MouvementCaisse[] {
+    return this.dataSource.data.slice(0, this.limite);
+  }
+
+  /** Libellé de l'exercice sélectionné, affiché dans le sélecteur compact. */
+  selectedLibelle(): string {
+    return this.exercices.find(e => e.id === this.selectedExerciceId)?.libelle ?? '';
+  }
+
+  afficherPlus(): void {
+    this.limite += this.palier;
+  }
+
+  /** Filtre rapide Tous / Entrées / Sorties. */
+  setType(type: 'ALL' | 'ENTREE' | 'SORTIE'): void {
+    this.filterForm.patchValue({ type });
+  }
+
+  get typeActif(): string {
+    return this.filterForm.get('type')?.value ?? 'ALL';
   }
 
 annulerMouvement(mouvement: MouvementCaisse): void {

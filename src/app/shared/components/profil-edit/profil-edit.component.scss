@@ -1,722 +1,240 @@
-// profil-edit.component.scss
-@use '../../../../variables' as *;
+// ════════════════════════════════════════════════════════════
+// MON PROFIL — plein écran sur téléphone, boîte centrée sur ordinateur
+// Basé sur les jetons du thème : le mode sombre suit sans réglage.
+// ════════════════════════════════════════════════════════════
 
-// ===================================================
-// VARIABLES LOCALES — couleurs spécifiques au dialog
-// ===================================================
-$dialog-primary:       #1976d2;    // bleu Material (≠ $primary-blue #2563eb)
-$dialog-primary-dark:  #1565c0;    // gradient header
-$dialog-primary-hover: #3a91e7;    // lighten(#1976d2, 20%) — hover form fields
-$dialog-success:       #4caf50;    // vert assurance
-$dialog-warning:       #ff9800;    // orange indicateur
-$dialog-warning-dark:  #e58800;    // darken(#ff9800, 10%) — texte hint assurance
-$dialog-danger:        #f44336;    // rouge erreurs required marker
-
-// Scrollbar — darken(#f5f5f5, 15%/25%)
-$scrollbar-thumb:      #d0d0d0;
-$scrollbar-thumb-hover:#b7b7b7;
-
-$transition-dialog: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-// ===================================================
-// THEMING — CSS Custom Properties
-// ===================================================
 :host {
-  --dialog-text-primary:   #{$light-text-primary};
-  --dialog-text-secondary: #{$light-text-secondary};
-  --dialog-bg:             #{$light-bg-primary};
-  --dialog-bg-light:       #{$light-bg-secondary};
-  --dialog-border:         #{$light-border};
-  --dialog-field-bg:       #{$light-bg-primary};
-}
-
-:host-context(.dark-theme),
-:host-context([data-theme="dark"]),
-:host-context(body.dark-theme),
-:host-context(.dark-mode) {
-  --dialog-text-primary:   #{$dark-text-primary};
-  --dialog-text-secondary: #{$dark-text-secondary};
-  --dialog-bg:             #{$dark-bg-secondary};
-  --dialog-bg-light:       #{$dark-bg-tertiary};
-  --dialog-border:         #{$dark-border};
-  --dialog-field-bg:       #{$dark-bg-tertiary};
-}
-
-// ===================================================
-// CONTAINER PRINCIPAL
-// ===================================================
-.dialog-container {
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
-  width: 100%;
-  background: var(--dialog-bg);
-  border-radius: $border-radius-2xl;
-  overflow: hidden;
-
-  @include mobile { max-height: 100vh; border-radius: 0; }
+  height: 100%;
+  min-height: 0;
+  max-height: inherit;
 }
 
-// ===================================================
-// LOADING
-// ===================================================
-.loading-container {
+.pf {
+  --pf-primary: var(--primary-color, #2563eb);
+  --pf-tint: rgba(37, 99, 235, .1);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 64px $spacing-xl;
-  gap: $spacing-lg;
+  height: 100%;
+  min-height: 0;
+  background: var(--background-secondary);
+  color: var(--text-primary);
 
-  .loading-text {
-    color: var(--dialog-text-secondary);
-    font-size: $font-size-sm;
-    margin: 0;
+  @supports (color: color-mix(in srgb, red 10%, transparent)) {
+    --pf-tint: color-mix(in srgb, var(--pf-primary) 11%, transparent);
+  }
+
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible { outline: 2px solid var(--pf-primary); outline-offset: 2px; }
+}
+
+// ── Barre du haut ─────────────────────────────────────────────
+.pf-bar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--border-color);
+
+  h2 { margin: 0; flex: 1; text-align: center; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .pf-bar-spacer { width: 44px; flex-shrink: 0; }
+}
+
+.pf-icon-btn {
+  width: 44px; height: 44px; flex-shrink: 0; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-secondary); cursor: pointer;
+  transition: background-color .15s;
+  &:active:not(:disabled) { background: var(--background-tertiary); }
+  &:disabled { opacity: .4; }
+}
+
+// ── Zone qui défile ───────────────────────────────────────────
+.pf-scroll {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  padding-bottom: 20px;
+}
+
+.pf-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 80px 20px; color: var(--text-secondary);
+  p { margin: 0; font-size: 14px; }
+}
+
+// ── En-tête : photo, nom ──────────────────────────────────────
+.pf-hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 22px 20px 6px;
+}
+
+.pf-avatar {
+  position: relative; width: 96px; height: 96px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: linear-gradient(145deg, var(--pf-primary), #7c3aed);
+  box-shadow: 0 8px 22px -8px rgba(37, 99, 235, .55);
+
+  img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+  .pf-initials {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 34px; font-weight: 700; color: #fff; letter-spacing: 1px;
+  }
+  .pf-cam {
+    position: absolute; right: -2px; bottom: -2px; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--background-primary); color: var(--pf-primary);
+    border: 2px solid var(--background-secondary); box-shadow: 0 2px 8px rgba(15, 23, 42, .2);
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
   }
 }
 
-// ===================================================
-// CONTENU SCROLLABLE
-// ===================================================
-.dialog-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: $spacing-2xl;
-  background: var(--dialog-bg);
-
-  @include mobile { padding: $spacing-lg; }
-
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-track { background: var(--dialog-bg-light); }
-  &::-webkit-scrollbar-thumb {
-    background: $scrollbar-thumb;
-    border-radius: $border-radius-sm;
-    &:hover { background: $scrollbar-thumb-hover; }
-  }
-}
-
-// ===================================================
-// SECTIONS DU FORMULAIRE
-// ===================================================
-.form-section {
-  margin-bottom: $spacing-3xl;
-
-  @include mobile { margin-bottom: $spacing-2xl; }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    margin-bottom: $spacing-xl;
-
-    .section-icon {
-      color: $dialog-primary;
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-      background: rgba($dialog-primary, .08);
-      border-radius: $border-radius-lg;
-      padding: 8px;
-      box-sizing: content-box;
-
-      @include mobile { font-size: 20px; width: 20px; height: 20px; padding: 6px; }
-    }
-
-    .section-title {
-      margin: 0;
-      font-size: $font-size-lg;
-      font-weight: $font-weight-semibold;
-      color: var(--dialog-text-primary);
-
-      @include mobile { font-size: $font-size-md; }
-    }
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $spacing-lg;
-
-    @include mobile { grid-template-columns: 1fr; }
-
-    .form-field {
-      width: 100%;
-      &.full-width { grid-column: 1 / -1; }
-    }
-  }
-}
-
-// form-field hors grille (poste)
-.form-field { width: 100%; }
-
-// ===================================================
-// DIVIDER
-// ===================================================
-mat-divider {
-  margin: $spacing-2xl 0;
-  border-color: var(--dialog-border) !important;
-}
-
-// ===================================================
-// SECTION ASSURANCE
-// ===================================================
-.assurance-container {
-  background-color: var(--dialog-bg-light);
-  border-radius: $border-radius-md;
-  padding: $spacing-xl;
-
-  @include mobile { padding: $spacing-lg; }
-
-  .assurance-checkbox {
-    ::ng-deep .mat-checkbox-label { font-size: $font-size-md; }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      font-weight: $font-weight-medium;
-      color: var(--dialog-text-primary);
-
-      .checkbox-icon {
-        color: $dialog-success;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-    }
-  }
-
-  .assurance-hint {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    margin: $spacing-md 0 0 $spacing-3xl;
-    padding: $spacing-md;
-    background-color: rgba($dialog-warning, 0.1);
-    border-left: 3px solid $dialog-warning;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-xs;
-    // darken($warning-color, 10%) = #e58800
-    color: $dialog-warning-dark;
-
-    @include mobile { margin-left: 0; }
-
-    .hint-icon {
-      color: $dialog-warning;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-  }
-}
-
-// ===================================================
-// ACTIONS (sticky footer)
-// ===================================================
-.dialog-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $spacing-lg $spacing-2xl;
-  border-top: 1px solid var(--dialog-border);
-  background-color: var(--dialog-bg-light);
-  box-shadow: 0 -4px 16px rgba(0,0,0,.04);
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  margin: 0 (-$spacing-2xl) (-$spacing-2xl);
-
-  @include mobile {
-    flex-direction: column-reverse;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-lg;
-    padding-bottom: max($spacing-md, env(safe-area-inset-bottom));
-    margin: 0 (-$spacing-lg) (-$spacing-lg);
-  }
-
-  .actions-left {
-    @include mobile { width: 100%; order: 2; }
-
-    button {
-      color: var(--dialog-text-secondary);
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-
-      &:hover:not(:disabled) { background-color: rgba(0, 0, 0, 0.04); }
-
-      @include mobile { width: 100%; }
-    }
-  }
-
-  .actions-right {
-    display: flex;
-    gap: $spacing-md;
-
-    @include mobile { width: 100%; order: 1; flex-direction: column-reverse; }
-
-    button {
-      height: 44px;
-      font-weight: $font-weight-medium;
-      transition: $transition-dialog;
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-
-      &:not(:disabled):hover {
-        transform: translateY(-2px);
-        box-shadow: $shadow-md;
-      }
-
-      @include mobile { width: 100%; justify-content: center; }
-    }
-
-    .cancel-button { min-width: 120px; }
-
-    .save-button {
-      min-width: 140px;
-      position: relative;
-      box-shadow: 0 4px 14px rgba(37,99,235,.25);
-
-      mat-spinner { position: absolute; left: $spacing-md; }
-      &:disabled { opacity: 0.45; box-shadow: none; }
-    }
-  }
-}
-
-// ===================================================
-// INDICATEUR DE MODIFICATIONS
-// ===================================================
-.changes-indicator {
-  position: fixed;
-  bottom: $spacing-xl;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: $dialog-warning;
-  color: white;
-  padding: $spacing-md $spacing-xl;
-  border-radius: $border-radius-full;
-  box-shadow: $shadow-lg;
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  z-index: 1000;
-  animation: slideUp 0.3s ease-out;
-  white-space: nowrap;
-
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
-}
-
-// ===================================================
-// ICÔNES OPTIONS SELECT
-// ===================================================
-.option-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  margin-right: $spacing-sm;
-  vertical-align: middle;
-}
-
-// ===================================================
-// FORM FIELDS MATERIAL — dark mode via ::ng-deep
-// ===================================================
-::ng-deep {
-  .mat-mdc-form-field {
-    .mat-mdc-text-field-wrapper { background-color: var(--dialog-field-bg); }
-
-    &.mat-focused .mat-mdc-notch-piece { border-color: $dialog-primary; }
-  }
-
-  // hover — lighten($primary-color, 20%) = #3a91e7
-  .mat-mdc-form-field:hover .mat-mdc-text-field-wrapper .mat-mdc-notch-piece {
-    border-color: $dialog-primary-hover;
-  }
-
-  .mat-mdc-form-field.mat-focused .mat-mdc-form-field-focus-overlay { opacity: 0.05; }
-
-  .mat-mdc-form-field-error {
-    font-size: $font-size-xs;
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    animation: shake 0.3s ease-in-out;
-  }
-
-  .mat-mdc-form-field-hint {
-    font-size: $font-size-xs;
-    color: var(--dialog-text-secondary);
-  }
-
-  .mat-mdc-form-field-hint-wrapper { padding: 0 $spacing-lg; }
-
-  // Required marker
-  .mat-mdc-form-field-required-marker { color: $dialog-danger; }
-
-  // Dark mode — labels & inputs
-  .mat-mdc-floating-label,
-  .mdc-floating-label   { color: var(--dialog-text-secondary) !important; }
-  .mat-mdc-input-element{ color: var(--dialog-text-primary) !important; }
-  .mat-mdc-select-value { color: var(--dialog-text-primary); }
-
-  // Select panel
-  .mat-mdc-select-panel {
-    border-radius: $border-radius-md;
-    box-shadow: $shadow-lg;
-  }
-
-  .mat-mdc-option {
-    color: var(--dialog-text-primary);
-    &:hover            { background-color: rgba($dialog-primary, 0.08); }
-    &.mat-mdc-option-active { background-color: rgba($dialog-primary, 0.12); }
-  }
-
-  // Datepicker
-  .mat-datepicker-content {
-    box-shadow: $shadow-lg;
-    border-radius: $border-radius-md;
-  }
-
-  // Checkbox
-  .mat-mdc-checkbox {
-    .mdc-checkbox__background { border-radius: $border-radius-sm; }
-    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
-      background-color: $dialog-primary;
-      border-color: $dialog-primary;
-    }
-  }
-}
-
-// ===================================================
-// BOUTONS DÉSACTIVÉS
-// ===================================================
-button:disabled { cursor: not-allowed; opacity: 0.4; }
-
-// ===================================================
-// ANIMATIONS
-// ===================================================
-@keyframes slideUp {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to   { opacity: 1; transform: translate(-50%, 0); }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25%       { transform: translateX(-4px); }
-  75%       { transform: translateX(4px); }
-}
-
-.dialog-header {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-  padding: $spacing-xl $spacing-xl;
-  color: white;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 2px 16px rgba(37,99,235,.15);
-
-  @include mobile { padding: $spacing-lg $spacing-lg $spacing-xl; }
-
-  .header-content-wrapper {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xl;
-    flex-wrap: wrap;
-
-    @media (max-width: 599px) {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: $spacing-sm;
-    }
-  }
-
-  // Zone Photo + Boutons — empilés proprement sur mobile
-  .profile-photo-zone {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    @media (max-width: 599px) {
-      width: 100%;
-      .upload-video-btn { width: 100%; justify-content: center; }
-    }
-  }
-
-  // Le petit rond de la photo (Taille fixe et optimisée)
-  .avatar-mini-container {
-    width: 64px;
-    height: 64px;
-    min-width: 64px;
-    min-height: 64px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.15);
-
-    .avatar-mini-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover; // Empêche la photo d'être déformée/écrasée
-    }
-
-    .avatar-mini-initials {
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
-      text-transform: uppercase;
-    }
-  }
-
-  // Bouton d'action à côté du rond
-  .edit-photo-action-btn {
-    border-color: rgba(255, 255, 255, 0.35) !important;
-    color: white !important;
-    height: 38px;
-    line-height: 36px;
-    border-radius: $border-radius-full;
-    padding: 0 $spacing-lg !important;
-    font-size: 13px;
-    font-weight: 500;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-    transition: $transition-dialog;
-
-    mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 6px;
-      color: #fbbf24;
-    }
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.18);
-      border-color: rgba(255,255,255,.6) !important;
-      transform: translateY(-1px);
-    }
-
-    @media (max-width: 400px) {
-      .btn-text {
-        display: none; // Sur les très petits écrans, on cache le texte pour ne laisser que l'icône appareil photo
-      }
-      padding: 0 10px !important;
-    }
-  }
-
-  // Textes du Header
-  .header-titles {
-    flex: 1;
-    
-    .main-title {
-      font-size: 20px;
-      margin: 0 0 4px 0;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .sub-title {
-      font-size: 13px;
-      margin: 0;
-      color: rgba(255, 255, 255, 0.7);
-    }
-  }
-}
-
-// Style pour la section de visibilité du profil
-.profile-visibility-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(var(--dialog-text-primary-rgb, 0, 0, 0), 0.02);
-  border: 1px solid rgba(var(--dialog-text-primary-rgb, 0, 0, 0), 0.08);
-  border-radius: 12px;
-  padding: 16px;
-  margin: 20px 0;
-  gap: 16px;
-  transition: all 0.2s ease-in-out;
-
-  .visibility-info {
-    flex: 1;
-
-    .visibility-title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-
-      .visibility-icon {
-        color: var(--dialog-primary, #1976d2);
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-
-      h3 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--dialog-text-primary);
-      }
-    }
-
-    .visibility-hint {
-      margin: 0;
-      font-size: 12px;
-      color: #64748b; // text-secondary fluide
-      line-height: 1.4;
-    }
-  }
-
-  mat-slide-toggle {
-    font-weight: 500;
-    font-size: 13px;
-  }
-}
-
-.form-divider {
-  margin: 16px 0;
-  opacity: 0.6;
-}
-// ===================================================
-// UPLOAD VIDEO BUTTON — manquant dans le SCSS original
-// ===================================================
-.upload-video-btn {
-  height: 38px;
-  border-radius: $border-radius-full;
-  padding: 0 $spacing-lg !important;
-  font-size: 13px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 10px rgba(16,185,129,.3) !important;
-  transition: $transition-dialog;
-
+.pf-name { margin: 14px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
+.pf-user { margin: 2px 0 0; font-size: 14px; color: var(--text-secondary); }
+
+.pf-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.pf-chip {
+  display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 999px;
+  background: var(--pf-tint); color: var(--pf-primary); font-size: 12.5px; font-weight: 600;
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &.alt { background: rgba(245, 158, 11, .15); color: #b45309; }
+}
 
-  &:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,.4) !important; }
+// ── Actions rapides ───────────────────────────────────────────
+.pf-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 16px 4px; }
+.pf-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 76px; padding: 8px 4px; border-radius: 16px; cursor: pointer;
+  background: var(--background-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+  font-size: 12.5px; font-weight: 600; transition: transform .1s, background-color .15s;
+  mat-icon { font-size: 24px; width: 24px; height: 24px; color: var(--pf-primary); }
+  span { line-height: 1.2; text-align: center; }
+  &:active { transform: scale(.97); background: var(--background-tertiary); }
+}
 
-  @media (max-width: 400px) {
-    .btn-text { display: none; }
-    padding: 0 10px !important;
+// ── Onglets collants ──────────────────────────────────────────
+.pf-tabs {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; gap: 8px; padding: 12px 16px 10px;
+  overflow-x: auto; scrollbar-width: none;
+  background: var(--background-secondary);
+  &::-webkit-scrollbar { display: none; }
+
+  @supports (backdrop-filter: blur(8px)) {
+    background: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  button {
+    flex-shrink: 0; height: 36px; padding: 0 15px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border-color); background: var(--background-primary); color: var(--text-secondary);
+    font-size: 13.5px; font-weight: 500; white-space: nowrap;
+    transition: background-color .15s, color .15s, border-color .15s;
+    &.on { background: var(--pf-primary); border-color: var(--pf-primary); color: #fff; font-weight: 600; }
   }
 }
 
-// ===================================================
-// SECTION ASSURANCE — style manquant pour .assurance-section
-// (présent dans le HTML mais pas stylé dans le SCSS original,
-// seul .assurance-container existait sans usage)
-// ===================================================
-.assurance-section {
-  background-color: var(--dialog-bg-light);
-  border: 1px solid var(--dialog-border);
-  border-radius: $border-radius-lg;
-  padding: $spacing-lg $spacing-xl;
-  transition: $transition-dialog;
+// ── Cartes de formulaire ──────────────────────────────────────
+.pf-form { display: flex; flex-direction: column; gap: 14px; padding: 4px 16px 8px; }
 
-  @include mobile { padding: $spacing-md $spacing-lg; }
+.pf-card {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px; scroll-margin-top: 64px;
+  background: var(--background-primary); border: 1px solid var(--border-color); border-radius: 20px;
 
-  &.insured {
-    border-color: rgba($dialog-success, .4);
-    background: linear-gradient(135deg, rgba($dialog-success,.04), var(--dialog-bg-light));
-  }
-
-  .section-header { margin-bottom: $spacing-md; }
-
-  .assurance-content {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-  }
-
-  .assurance-hint {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    margin: 0;
-    padding: $spacing-md;
-    background-color: rgba($dialog-warning, 0.1);
-    border-left: 3px solid $dialog-warning;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-xs;
-    color: $dialog-warning-dark;
-
+  h3 {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 2px;
+    font-size: 15px; font-weight: 700;
     mat-icon {
-      color: $dialog-warning;
-      font-size: 18px; width: 18px; height: 18px;
-      flex-shrink: 0; margin-top: 1px;
+      width: 32px; height: 32px; font-size: 18px; border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--pf-tint); color: var(--pf-primary);
     }
   }
 }
 
-// ===================================================
-// TOUCH TARGETS — formulaire mobile-friendly
-// ===================================================
-@include mobile {
-  // Champs de formulaire — hauteur tactile suffisante
-  ::ng-deep .mat-mdc-text-field-wrapper {
-    min-height: 52px;
-  }
+.pf-row { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
 
-  // Password action button — pleine largeur sur mobile
-  .password-action-zone {
-    .btn-password {
-      width: 100%;
-      justify-content: center;
-      min-height: 46px;
-    }
-  }
+// Champs Material : plus compacts, sans espace réservé vide, coins doux, 16 px (pas de zoom sur iPhone)
+.pf ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+  --mat-form-field-container-height: 52px;
+  --mat-form-field-container-vertical-padding: 14px;
 
-  // Visibility section — empilée sur très petit écran
-  .profile-visibility-section {
-    flex-direction: column;
-    align-items: flex-start;
-
-    mat-slide-toggle { align-self: flex-end; }
-  }
-
-  // Form sections — espacement réduit
-  mat-divider { margin: $spacing-lg 0; }
+  .mdc-notched-outline__leading  { border-radius: 14px 0 0 14px !important; }
+  .mdc-notched-outline__trailing { border-radius: 0 14px 14px 0 !important; }
+  input, textarea, .mat-mdc-select-value-text { font-size: 16px; }
+  .mat-mdc-form-field-hint-wrapper, .mat-mdc-form-field-error-wrapper { padding: 0 4px; }
 }
 
-// Très petit écran
-@media (max-width: 360px) {
-  .avatar-mini-container { width: 48px; height: 48px; min-width: 48px; min-height: 48px; }
-  .header-titles .main-title { font-size: 17px; }
-  .header-titles .sub-title  { font-size: 11px; }
+// ── Interrupteurs (assurance, visibilité) ─────────────────────
+.pf-switch {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 16px; background: var(--background-tertiary);
+
+  .pf-switch-icon {
+    flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; font-size: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(148, 163, 184, .22); color: var(--text-secondary);
+  }
+  .pf-switch-text {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+    strong { font-size: 14.5px; font-weight: 600; }
+    span { font-size: 12.5px; line-height: 1.35; color: var(--text-secondary); }
+    .warn { color: #b45309; }
+  }
+  &.ok .pf-switch-icon { background: var(--pf-tint); color: var(--pf-primary); }
 }
 
+// ── Ligne « bouton » (mot de passe) ───────────────────────────
+.pf-row-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 0 14px;
+  border: 0; border-radius: 14px; cursor: pointer; text-align: left;
+  background: var(--background-tertiary); color: var(--text-primary); font-size: 14.5px; font-weight: 500;
+  span { flex: 1; }
+  mat-icon { color: var(--pf-primary); }
+  .chev { color: var(--text-tertiary); }
+  &:active { background: var(--border-color); }
+}
 
-// ===================================================
-// FORM FIELDS — coins arrondis, look plus doux
-// ===================================================
-::ng-deep {
-  .mat-mdc-form-field {
-    .mdc-notched-outline__leading,
-    .mdc-notched-outline__notch,
-    .mdc-notched-outline__trailing {
-      border-radius: 0;
-    }
-    .mdc-notched-outline__leading  { border-radius: $border-radius-lg 0 0 $border-radius-lg; }
-    .mdc-notched-outline__trailing { border-radius: 0 $border-radius-lg $border-radius-lg 0; }
+// ── Barre d'enregistrement ────────────────────────────────────
+.pf-save {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--background-primary); border-top: 1px solid var(--border-color);
+  box-shadow: 0 -10px 24px -14px rgba(15, 23, 42, .3);
+  animation: pfSlideUp .22s ease;
+}
+@keyframes pfSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.pf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border: 0; border-radius: 14px; cursor: pointer;
+  font-size: 15px; font-weight: 600; transition: transform .1s, opacity .15s;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  &:active:not(:disabled) { transform: scale(.98); }
+  &:disabled { opacity: .45; cursor: default; }
+
+  &.ghost { background: transparent; color: var(--text-secondary); }
+  &.primary {
+    flex: 1; background: var(--pf-primary); color: #fff;
+    box-shadow: 0 8px 18px -8px var(--pf-primary);
+    ::ng-deep circle { stroke: #fff; }
   }
+}
 
-  // Select panel plus doux
-  .mat-mdc-select-panel { border-radius: $border-radius-lg !important; }
+// ── Tablette et ordinateur ────────────────────────────────────
+@media (min-width: 600px) {
+  .pf-bar { padding-top: 8px; }
+  .pf-tiles, .pf-form, .pf-tabs { padding-left: 24px; padding-right: 24px; }
+  .pf-row { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 420px) { .pf-row { grid-template-columns: 1fr 1fr; } }
 
-  // Boutons globaux plus arrondis
-  .mat-mdc-raised-button, .mat-mdc-stroked-button, .mat-mdc-unelevated-button {
-    border-radius: $border-radius-lg !important;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .pf-scroll { scroll-behavior: auto; }
+  .pf-save { animation: none; }
 }

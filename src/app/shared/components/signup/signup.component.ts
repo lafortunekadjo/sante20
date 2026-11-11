@@ -1,5 +1,6 @@
 import { t } from '../../../core/i18n/traduire';
 import { Component, OnInit } from '@angular/core';
+import { GoogleButtonComponent } from '../google-button/google-button.component';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -29,6 +30,7 @@ function confirmPasswordValidator(group: FormGroup) {
   selector: 'app-signup',
   standalone: true,
   imports: [
+    GoogleButtonComponent,
     CommonModule, ReactiveFormsModule, RouterModule,
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatSelectModule,
@@ -69,6 +71,14 @@ export class SignupComponent implements OnInit {
                      || sessionStorage.getItem('concours_returnUrl')
                      || null;
     this.clearError();
+
+    // Lien de parrainage « /signup?ref=CODE » : on mémorise le code (il survit à un détour par Google ou la connexion)
+    const ref = (this.route.snapshot.queryParams['ref'] || '').toString().trim();
+    try {
+      if (ref) localStorage.setItem('my20_ref_code', ref);
+      const code = ref || localStorage.getItem('my20_ref_code') || '';
+      if (code) this.accountForm.patchValue({ codeParrain: code });
+    } catch { /* stockage indisponible : le champ reste saisissable à la main */ }
   }
 
   private initializeAccountForm(): FormGroup {

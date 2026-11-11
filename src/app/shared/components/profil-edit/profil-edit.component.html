@@ -1,367 +1,248 @@
-<div class="dialog-container">
+<div class="pf">
 
-<div class="dialog-header">
-  <div class="header-content-wrapper">
-    
-    <div class="profile-photo-zone">
-      <div class="avatar-mini-container">
-        <img *ngIf="profilePhotoUrl" 
-             [src]="profilePhotoUrl" 
-             [alt]="'profil.avatar.alt' | translate:{ name: profileForm.get('username')?.value }" 
-             class="avatar-mini-image" />
-        
-        <div *ngIf="!profilePhotoUrl" class="avatar-mini-initials">
-          {{ getInitials() || '?' }}
-        </div>
-      </div>
+  <!-- ── Barre du haut : fermer + titre ── -->
+  <header class="pf-bar">
+    <button type="button" class="pf-icon-btn" (click)="cancelEdit()" [disabled]="isSaving"
+            [attr.aria-label]="'profil.ui.fermer' | translate">
+      <mat-icon>close</mat-icon>
+    </button>
+    <h2>{{ 'profil.titre' | translate }}</h2>
+    <span class="pf-bar-spacer"></span>
+  </header>
 
-      <button type="button" 
-              mat-stroked-button 
-              class="edit-photo-action-btn"
-              (click)="openPhotoEditionDialog()">
-        <mat-icon>photo_camera</mat-icon>
-        <span class="btn-text">{{ 'profil.avatar.edit_button' | translate }}</span>
-      </button>
+  <div class="pf-scroll" #scroller (scroll)="surDefilement()">
 
-     <button type="button" mat-stroked-button class="edit-photo-action-btn" (click)="openCarte()">
-        <mat-icon>badge</mat-icon>
-        <span class="btn-text">Ma carte My2-0</span>
-     </button>
-
-     <button type="button" 
-        mat-raised-button 
-        color="accent"
-        class="upload-video-btn"
-        (click)="openUploadDialog()">
-  <mat-icon>movie_filter</mat-icon>
-  <span class="btn-text">{{ 'profile.add_stadium_video' | translate }}</span>
-</button>
+    <div *ngIf="isLoading" class="pf-loading">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>{{ 'profil.loading' | translate }}</p>
     </div>
 
-    <div class="header-titles">
-      <h2 class="main-title">{{ 'profil.titre' | translate }}</h2>
-      <p class="sub-title">{{ 'profil.sous_titre' | translate }}</p>
-    </div>
+    <ng-container *ngIf="!isLoading">
 
-  </div>
-</div>
-
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p class="loading-text">{{ 'profil.loading' | translate }}</p>
-  </div>
-
-  <div *ngIf="!isLoading" class="dialog-content">
-    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-
-      <div class="form-section">
-        <div class="section-header">
-          <mat-icon class="section-icon">manage_accounts</mat-icon>
-          <h3 class="section-title">{{ 'profil.sections.compte' | translate }}</h3>
+      <!-- ── En-tête : photo, nom, pseudo ── -->
+      <section class="pf-hero">
+        <button type="button" class="pf-avatar" (click)="openPhotoEditionDialog()"
+                [attr.aria-label]="'profil.avatar.edit_button' | translate">
+          <img *ngIf="profilePhotoUrl" [src]="profilePhotoUrl"
+               [alt]="'profil.avatar.alt' | translate:{ name: profileForm.get('username')?.value }">
+          <span *ngIf="!profilePhotoUrl" class="pf-initials">{{ getInitials() || '?' }}</span>
+          <span class="pf-cam"><mat-icon>photo_camera</mat-icon></span>
+        </button>
+        <h3 class="pf-name">{{ nomComplet() || profileForm.get('username')?.value }}</h3>
+        <p class="pf-user" *ngIf="profileForm.get('username')?.value">&#64;{{ profileForm.get('username')?.value }}</p>
+        <div class="pf-chips" *ngIf="profileForm.get('poste')?.value || profileForm.get('roleCo')?.value">
+          <span class="pf-chip" *ngIf="profileForm.get('poste')?.value"><mat-icon>sports_soccer</mat-icon>{{ profileForm.get('poste')?.value }}</span>
+          <span class="pf-chip alt" *ngIf="profileForm.get('roleCo')?.value"><mat-icon>military_tech</mat-icon>{{ profileForm.get('roleCo')?.value }}</span>
         </div>
-        
-        <div class="form-grid">
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.fields.username' | translate }}</mat-label>
-            <input matInput formControlName="username" placeholder="johndoe">
-            <mat-icon matPrefix>account_circle</mat-icon>
-            <mat-error *ngIf="profileForm.get('username')?.invalid">
-              {{ getErrorMessage('username') }}
-            </mat-error>
-            <mat-spinner matSuffix *ngIf="profileForm.get('username')?.pending" diameter="20"></mat-spinner>
+      </section>
 
-            <mat-error *ngIf="profileForm.get('username')?.hasError('usernamePris')">
-              {{ 'profil.errors.username_taken' | translate }}
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="form-field field-disabled">
-            <mat-label>{{ 'profil.fields.email' | translate }}</mat-label>
-            <input matInput formControlName="email">
-            <mat-icon matPrefix>email</mat-icon>
-            <mat-spinner matSuffix *ngIf="profileForm.get('email')?.pending" diameter="20"></mat-spinner>
-            <mat-error *ngIf="profileForm.get('email')?.hasError('emailPris')">
-             {{ 'profil.errors.email_taken' | translate }}
-            </mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="password-action-zone">
-          <button mat-stroked-button 
-                  type="button" 
-                  color="accent" 
-                  class="btn-password"
-                  (click)="openPasswordReset()">
-            <mat-icon>lock_reset</mat-icon>
-            {{ 'profil.actions.change_password' | translate }}
-          </button>
-        </div>
+      <!-- ── Actions rapides ── -->
+      <div class="pf-tiles">
+        <button type="button" class="pf-tile" (click)="openCarte()">
+          <mat-icon>badge</mat-icon><span>{{ 'profil.ui.carte' | translate }}</span>
+        </button>
+        <button type="button" class="pf-tile" (click)="openUploadDialog()">
+          <mat-icon>movie_filter</mat-icon><span>{{ 'profil.ui.video' | translate }}</span>
+        </button>
+        <button type="button" class="pf-tile" (click)="openPasswordReset()">
+          <mat-icon>lock_reset</mat-icon><span>{{ 'profil.ui.motDePasse' | translate }}</span>
+        </button>
       </div>
 
-      <mat-divider></mat-divider>
+      <!-- ── Onglets collants ── -->
+      <nav class="pf-tabs" role="tablist">
+        <button type="button" role="tab" *ngFor="let s of sections"
+                [class.on]="sectionActive === s.id" [attr.aria-selected]="sectionActive === s.id"
+                (click)="allerA(s.id)">{{ s.cle | translate }}</button>
+      </nav>
 
-     <div class="form-section">
-  <div class="section-header">
-    <mat-icon class="section-icon">public</mat-icon>
-    <h3 class="section-title">{{ 'profil.origin_habitation' | translate }}</h3>
-  </div>
+      <form id="pf-form" [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="pf-form">
 
-  <div class="form-grid">
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'profile.city_residence' | translate }}</mat-label>
-      <mat-select formControlName="villeHabitationId" [placeholder]="'profile.select_city' | translate">
-        <mat-option *ngFor="let ville of villesList" [value]="ville.id">
-          <mat-icon class="option-icon">location_city</mat-icon> {{ ville.nom }}
-        </mat-option>
-      </mat-select>
-      <mat-icon matPrefix>location_on</mat-icon>
-      <mat-error *ngIf="profileForm.get('villeHabitationId')?.invalid">
-        {{ getErrorMessage('villeHabitationId') }}
-      </mat-error>
-    </mat-form-field>
+        <!-- Identité -->
+        <section class="pf-card" id="pf-identite">
+          <h3><mat-icon>person</mat-icon>{{ 'profil.sections.identite' | translate }}</h3>
 
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'profil.current_neighborhood' | translate }}</mat-label>
-      <input matInput formControlName="quartierHabitation" [placeholder]="'profil.neighborhood_placeholder' | translate">
-      <mat-icon matPrefix>maps_home_work</mat-icon>
-      <mat-error *ngIf="profileForm.get('quartierHabitation')?.invalid">
-        {{ getErrorMessage('quartierHabitation') }}
-      </mat-error>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'profil.origin_region' | translate }}</mat-label>
-      <mat-select formControlName="zoneOrigineId" [placeholder]="'profil.select_origin' | translate">
-        <mat-option *ngFor="let zone of zonesOrigineList" [value]="zone.id">
-          <mat-icon class="option-icon">explore</mat-icon> {{ zone.nom }}
-        </mat-option>
-      </mat-select>
-      <mat-icon matPrefix>explore</mat-icon>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="form-field">
-      <mat-label>{{ 'profil.ethnicity_community' | translate }}</mat-label>
-      <mat-select formControlName="ethnieId" [placeholder]="'profil.select_ethnicity' | translate">
-        <mat-option *ngFor="let ethnie of filteredEthniesList" [value]="ethnie.id">
-          {{ ethnie.nom }}
-        </mat-option>
-      </mat-select>
-      <mat-icon matPrefix>groups</mat-icon>
-    </mat-form-field>
-  </div>
-</div>
-
-      <mat-divider></mat-divider>
-
-      <div class="form-section">
-        <div class="section-header">
-          <mat-icon class="section-icon">badge</mat-icon>
-          <h3 class="section-title">{{ 'profil.sections.identite' | translate }}</h3>
-        </div>
-
-        <div class="form-grid">
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.nom' | translate }}</mat-label>
-            <input matInput formControlName="nom" uppercase>
-            <mat-icon matPrefix>person</mat-icon>
-            <mat-error *ngIf="profileForm.get('nom')?.invalid">
-              {{ getErrorMessage('nom') }}
-            </mat-error>
+            <input matInput formControlName="nom" uppercase autocomplete="family-name">
+            <mat-error *ngIf="profileForm.get('nom')?.invalid">{{ getErrorMessage('nom') }}</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.prenom' | translate }}</mat-label>
-            <input matInput formControlName="prenom">
-            <mat-icon matPrefix>person_outline</mat-icon>
-            <mat-error *ngIf="profileForm.get('prenom')?.invalid">
-              {{ getErrorMessage('prenom') }}
-            </mat-error>
+            <input matInput formControlName="prenom" autocomplete="given-name">
+            <mat-error *ngIf="profileForm.get('prenom')?.invalid">{{ getErrorMessage('prenom') }}</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.fields.sexe' | translate }}</mat-label>
-            <mat-select formControlName="sexe">
-              <mat-option value="masculin">{{ 'profil.sexe.m' | translate }}</mat-option>
-              <mat-option value="feminin">{{ 'profil.sexe.f' | translate }}</mat-option>
-            </mat-select>
-            <mat-icon matPrefix>wc</mat-icon>
-            <mat-error *ngIf="profileForm.get('sexe')?.invalid">
-              {{ getErrorMessage('sexe') }}
-            </mat-error>
-          </mat-form-field>
+          <div class="pf-row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ 'profil.fields.sexe' | translate }}</mat-label>
+              <mat-select formControlName="sexe">
+                <mat-option value="masculin">{{ 'profil.sexe.m' | translate }}</mat-option>
+                <mat-option value="feminin">{{ 'profil.sexe.f' | translate }}</mat-option>
+              </mat-select>
+              <mat-error *ngIf="profileForm.get('sexe')?.invalid">{{ getErrorMessage('sexe') }}</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>{{ 'profil.fields.date_naissance' | translate }}</mat-label>
-            <input matInput [matDatepicker]="picker" formControlName="date_naissance">
-            <mat-icon matPrefix>cake</mat-icon>
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-            <mat-hint *ngIf="calculateAge() !== null">
-              {{ calculateAge() }} {{ 'profil.fields.ans' | translate }}
-            </mat-hint>
-            <mat-error *ngIf="profileForm.get('date_naissance')?.invalid">
-              {{ getErrorMessage('date_naissance') }}
-            </mat-error>
-          </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ 'profil.fields.date_naissance' | translate }}</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="date_naissance">
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-hint *ngIf="calculateAge() !== null">{{ calculateAge() }} {{ 'profil.fields.ans' | translate }}</mat-hint>
+              <mat-error *ngIf="profileForm.get('date_naissance')?.invalid">{{ getErrorMessage('date_naissance') }}</mat-error>
+            </mat-form-field>
+          </div>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.cni' | translate }}</mat-label>
-            <input matInput formControlName="cni" placeholder="123456789">
-            <mat-icon matPrefix>fingerprint</mat-icon>
-            <mat-error *ngIf="profileForm.get('cni')?.invalid">
-              {{ getErrorMessage('cni') }}
-            </mat-error>
+            <input matInput formControlName="cni" inputmode="numeric" placeholder="123456789">
+            <mat-error *ngIf="profileForm.get('cni')?.invalid">{{ getErrorMessage('cni') }}</mat-error>
           </mat-form-field>
-        </div>
-      </div>
 
-      <mat-divider></mat-divider>
+          <!-- Assurance -->
+          <div class="pf-switch" [class.ok]="profileForm.get('assurance')?.value">
+            <mat-icon class="pf-switch-icon">shield</mat-icon>
+            <div class="pf-switch-text">
+              <strong>{{ 'profil.ui.assuranceTitre' | translate }}</strong>
+              <span *ngIf="profileForm.get('assurance')?.value">{{ 'profil.fields.assurance_label' | translate }}</span>
+              <span class="warn" *ngIf="!profileForm.get('assurance')?.value">{{ 'profil.fields.assurance_hint' | translate }}</span>
+            </div>
+            <mat-slide-toggle formControlName="assurance" color="primary"
+                              [attr.aria-label]="'profil.ui.assuranceTitre' | translate"></mat-slide-toggle>
+          </div>
+        </section>
 
-      <div class="form-section">
-        <div class="section-header">
-          <mat-icon class="section-icon">sports_soccer</mat-icon>
-          <h3 class="section-title">{{ 'profil.fields.profilterrain' | translate }}</h3>
-        </div>
+        <!-- Sport -->
+        <section class="pf-card" id="pf-sport">
+          <h3><mat-icon>sports_soccer</mat-icon>{{ 'profil.fields.profilterrain' | translate }}</h3>
 
-        <div class="form-grid">
-      
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.poste' | translate }}</mat-label>
             <mat-select formControlName="poste" [placeholder]="'ui.selectionnez_votre_poste_ef65' | translate">
-              <mat-option *ngFor="let poste of postesList" [value]="poste">
-                <mat-icon class="option-icon">sports_soccer</mat-icon> {{ poste }}
-              </mat-option>
+              <mat-option *ngFor="let poste of postesList" [value]="poste">{{ poste }}</mat-option>
             </mat-select>
-            <mat-icon matPrefix>directions_run</mat-icon>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.piedFort' | translate }}</mat-label>
             <mat-select formControlName="piedFort">
               <mat-option value="Droitier">Droitier</mat-option>
               <mat-option value="Gaucher">Gaucher</mat-option>
               <mat-option value="Ambidextre">Ambidextre</mat-option>
             </mat-select>
-            <mat-icon matSuffix class="field-icon-color">airline_seat_legroom_extra</mat-icon>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.roleCo' | translate }}</mat-label>
             <input matInput formControlName="roleCo" [placeholder]="'ui.ex_capitaine_tresorier_77ee' | translate">
-            <mat-icon matPrefix>military_tech</mat-icon>
           </mat-form-field>
-        </div>
-      </div>
+        </section>
 
-      <mat-divider></mat-divider>
+        <!-- Contact -->
+        <section class="pf-card" id="pf-contact">
+          <h3><mat-icon>contact_phone</mat-icon>{{ 'profil.sections.contact' | translate }}</h3>
 
-      <div class="form-section">
-        <div class="section-header">
-          <mat-icon class="section-icon">contact_phone</mat-icon>
-          <h3 class="section-title">{{ 'profil.sections.contact' | translate }}</h3>
-        </div>
-
-        <div class="form-grid">
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.tel' | translate }}</mat-label>
-            <input matInput formControlName="tel" placeholder="612345678">
+            <input matInput formControlName="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="612345678">
             <mat-icon matPrefix>phone</mat-icon>
-            <mat-error *ngIf="profileForm.get('tel')?.invalid">
-              {{ getErrorMessage('tel') }}
-            </mat-error>
+            <mat-error *ngIf="profileForm.get('tel')?.invalid">{{ getErrorMessage('tel') }}</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="form-field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ 'profil.fields.adresse' | translate }}</mat-label>
-            <input matInput formControlName="adresse" [placeholder]="'ui.adresse_complementaire_7fbe' | translate">
+            <input matInput formControlName="adresse" autocomplete="street-address" [placeholder]="'ui.adresse_complementaire_7fbe' | translate">
             <mat-icon matPrefix>home</mat-icon>
           </mat-form-field>
-        </div>
-      </div>
+        </section>
 
-      <mat-divider></mat-divider>
+        <!-- Origine & résidence -->
+        <section class="pf-card" id="pf-origine">
+          <h3><mat-icon>public</mat-icon>{{ 'profil.origin_habitation' | translate }}</h3>
 
-      <div class="form-section assurance-section" [class.insured]="profileForm.get('assurance')?.value">
-        <div class="section-header">
-          <mat-icon class="section-icon">shield</mat-icon>
-          <h3 class="section-title">{{ 'profil.sections.assurance' | translate }}</h3>
-        </div>
-        <div class="assurance-content">
-          <mat-checkbox formControlName="assurance" color="primary">
-            {{ 'profil.fields.assurance_label' | translate }}
-          </mat-checkbox>
-          <p class="assurance-hint" *ngIf="!profileForm.get('assurance')?.value">
-            <mat-icon>warning</mat-icon>
-            {{ 'profil.fields.assurance_hint' | translate }}
-          </p>
-        </div>
-      </div>
-      <mat-divider class="form-divider"></mat-divider>
-   <div class="profile-visibility-section">
-      <div class="visibility-info">
-        <div class="visibility-title-row">
-          <mat-icon class="visibility-icon">
-            {{ profileForm.get('isPublic')?.value ? 'visibility' : 'visibility_off' }}
-          </mat-icon>
-          <h3>{{ 'profile.visibility.setting_title' | translate }}</h3>
-        </div>
-        <p class="visibility-hint">
-          {{ (profileForm.get('isPublic')?.value ? 'profile.visibility.public_desc' : 'profile.visibility.private_desc') | translate }}
-        </p>
-      </div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'profile.city_residence' | translate }}</mat-label>
+            <mat-select formControlName="villeHabitationId" [placeholder]="'profile.select_city' | translate">
+              <mat-option *ngFor="let ville of villesList" [value]="ville.id">{{ ville.nom }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="profileForm.get('villeHabitationId')?.invalid">{{ getErrorMessage('villeHabitationId') }}</mat-error>
+          </mat-form-field>
 
-      <mat-slide-toggle 
-        formControlName="isPublic" 
-        color="primary">
-        {{ (profileForm.get('isPublic')?.value ? 'profile.visibility.public' : 'profile.visibility.private') | translate }}
-      </mat-slide-toggle>
-    </div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'profil.current_neighborhood' | translate }}</mat-label>
+            <input matInput formControlName="quartierHabitation" [placeholder]="'profil.neighborhood_placeholder' | translate">
+            <mat-error *ngIf="profileForm.get('quartierHabitation')?.invalid">{{ getErrorMessage('quartierHabitation') }}</mat-error>
+          </mat-form-field>
 
-    <mat-divider class="form-divider"></mat-divider>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'profil.origin_region' | translate }}</mat-label>
+            <mat-select formControlName="zoneOrigineId" [placeholder]="'profil.select_origin' | translate">
+              <mat-option *ngFor="let zone of zonesOrigineList" [value]="zone.id">{{ zone.nom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
 
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'profil.ethnicity_community' | translate }}</mat-label>
+            <mat-select formControlName="ethnieId" [placeholder]="'profil.select_ethnicity' | translate">
+              <mat-option *ngFor="let ethnie of filteredEthniesList" [value]="ethnie.id">{{ ethnie.nom }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </section>
 
+        <!-- Compte -->
+        <section class="pf-card" id="pf-compte">
+          <h3><mat-icon>manage_accounts</mat-icon>{{ 'profil.sections.compte' | translate }}</h3>
 
-      <div class="dialog-actions">
-        <div class="actions-left">
-          <button mat-button
-                  type="button"
-                  (click)="resetForm()"
-                  [disabled]="!hasChanges() || isSaving"
-                  [matTooltip]="'profil.actions.reset_tooltip' | translate">
-            <mat-icon>refresh</mat-icon>
-            {{ 'profil.actions.reset' | translate }}
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>{{ 'profil.fields.username' | translate }}</mat-label>
+            <input matInput formControlName="username" placeholder="johndoe" autocomplete="username" autocapitalize="none" autocorrect="off">
+            <mat-spinner matSuffix *ngIf="profileForm.get('username')?.pending" diameter="20"></mat-spinner>
+            <mat-error *ngIf="profileForm.get('username')?.hasError('usernamePris')">{{ 'profil.errors.username_taken' | translate }}</mat-error>
+            <mat-error *ngIf="profileForm.get('username')?.invalid && !profileForm.get('username')?.hasError('usernamePris')">{{ getErrorMessage('username') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pf-readonly">
+            <mat-label>{{ 'profil.fields.email' | translate }}</mat-label>
+            <input matInput formControlName="email" type="email" inputmode="email" autocomplete="email">
+            <mat-spinner matSuffix *ngIf="profileForm.get('email')?.pending" diameter="20"></mat-spinner>
+            <mat-hint>{{ 'profil.ui.emailNote' | translate }}</mat-hint>
+            <mat-error *ngIf="profileForm.get('email')?.hasError('emailPris')">{{ 'profil.errors.email_taken' | translate }}</mat-error>
+          </mat-form-field>
+
+          <!-- Visibilité -->
+          <div class="pf-switch" [class.ok]="profileForm.get('isPublic')?.value">
+            <mat-icon class="pf-switch-icon">{{ profileForm.get('isPublic')?.value ? 'visibility' : 'visibility_off' }}</mat-icon>
+            <div class="pf-switch-text">
+              <strong>{{ 'profil.ui.visibiliteTitre' | translate }}</strong>
+              <span>{{ (profileForm.get('isPublic')?.value ? 'profile.visibility.public_desc' : 'profile.visibility.private_desc') | translate }}</span>
+            </div>
+            <mat-slide-toggle formControlName="isPublic" color="primary"
+                              [attr.aria-label]="'profil.ui.visibiliteTitre' | translate"></mat-slide-toggle>
+          </div>
+
+          <button type="button" class="pf-row-btn" (click)="openPasswordReset()">
+            <mat-icon>lock_reset</mat-icon>
+            <span>{{ 'profil.actions.change_password' | translate }}</span>
+            <mat-icon class="chev">chevron_right</mat-icon>
           </button>
-        </div>
+        </section>
 
-        <div class="actions-right">
-          <button mat-stroked-button
-                  type="button"
-                  (click)="cancelEdit()"
-                  [disabled]="isSaving"
-                  class="cancel-button">
-            <mat-icon>close</mat-icon>
-            {{ 'COMMON.CANCEL' | translate }}
-          </button>
-         
-
-          <button mat-raised-button
-                  color="primary"
-                  type="submit"
-                  [disabled]="profileForm.invalid || !hasChanges() || profileForm.pending || isSaving"
-                  class="save-button">
-            <mat-spinner *ngIf="isSaving" diameter="20" class="btn-spinner"></mat-spinner>
-            <mat-icon *ngIf="!isSaving">save</mat-icon>
-            <span *ngIf="!isSaving">{{ 'COMMON.SAVE' | translate }}</span>
-            <span *ngIf="isSaving">{{ 'COMMON.SAVING' | translate }}</span>
-          </button>
-        </div>
-      </div>
-
-    </form>
+      </form>
+    </ng-container>
   </div>
 
-  <div class="changes-indicator" *ngIf="hasChanges() && !isLoading">
-    <mat-icon>edit</mat-icon>
-    <span>{{ 'profil.modifications_en_cours' | translate }}</span>
-  </div>
+  <!-- ── Barre d'enregistrement : n'apparaît que lorsqu'il y a des modifications ── -->
+  <footer class="pf-save" *ngIf="hasChanges() && !isLoading">
+    <button type="button" class="pf-btn ghost" (click)="resetForm()" [disabled]="isSaving"
+            [matTooltip]="'profil.actions.reset_tooltip' | translate">
+      {{ 'profil.actions.reset' | translate }}
+    </button>
+    <button type="submit" form="pf-form" class="pf-btn primary"
+            [disabled]="profileForm.invalid || profileForm.pending || isSaving">
+      <mat-spinner *ngIf="isSaving" diameter="20" class="btn-spinner"></mat-spinner>
+      <mat-icon *ngIf="!isSaving">check</mat-icon>
+      <span>{{ (isSaving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}</span>
+    </button>
+  </footer>
 </div>

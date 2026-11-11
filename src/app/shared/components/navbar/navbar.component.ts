@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
-import { ProfilEditComponent } from '../profil-edit/profil-edit.component';
+import { ProfilEditComponent, optionsDialogProfil } from '../profil-edit/profil-edit.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { SafeUrl } from '@angular/platform-browser';
@@ -187,10 +187,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   openProfileEdit(): void {
-    const dialogRef = this.dialog.open(ProfilEditComponent, {
-      width: '600px',
-      data: { user: this.user },
-    });
+    const dialogRef = this.dialog.open(ProfilEditComponent, optionsDialogProfil({ user: this.user }));
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {

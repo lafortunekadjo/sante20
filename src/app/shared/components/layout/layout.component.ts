@@ -13,6 +13,7 @@ import { MatSidenavModule }   from '@angular/material/sidenav';
 import { MatIconModule }      from '@angular/material/icon';
 import { MatButtonModule }    from '@angular/material/button';
 import { MatListModule }      from '@angular/material/list';
+import { LangSwitchComponent } from '../lang-switch/lang-switch.component';
 import { CommonModule }       from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { MatSelectModule }    from '@angular/material/select';
@@ -29,7 +30,7 @@ import { Subject, Subscription, distinctUntilChanged, skip, takeUntil } from 'rx
 import { AuthService }            from '../../../core/services/auth.service';
 import { RoleCustomService }      from '../../../core/services/role-custom.service';
 import { NavbarComponent }        from '../navbar/navbar.component';
-import { ProfilEditComponent }    from '../profil-edit/profil-edit.component';
+import { ProfilEditComponent, optionsDialogProfil } from '../profil-edit/profil-edit.component';
 import { Menu, MenuCategorie }    from '../../../core/models/menu.model';
 import { TranslateModule }        from '@ngx-translate/core';
 import { OnboardingService }      from '../../../core/services/onboarding.service';
@@ -52,6 +53,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   selector: 'app-layout',
   standalone: true,
   imports: [
+    LangSwitchComponent,
     CommonModule,
     MatToolbarModule,
     MatSidenavModule,
@@ -627,7 +629,7 @@ private ajouterCategorieCompetition(): void {
   // ──────────────────── Actions ───────────────────────────────
 
   openProfileEdit(): void {
-    this.dialog.open(ProfilEditComponent, { width:'400px', data:{ user: this.user } })
+    this.dialog.open(ProfilEditComponent, optionsDialogProfil({ user: this.user }))
       .afterClosed().subscribe(r => { if(r) this.loadUserData(); });
   }
 

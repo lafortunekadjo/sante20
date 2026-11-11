@@ -1,7 +1,7 @@
 import { normaliserSexe } from '../../../core/utils/referentiel';
 import { t } from '../../../core/i18n/traduire';
-import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { AuthService } from '../../../core/services/auth.service';
 import { MaCarteDialogComponent } from '../ma-carte-dialog/ma-carte-dialog.component';
 import { CommonModule } from '@angular/common';
@@ -33,6 +33,19 @@ import { VideoUploadDialogComponent } from '../../../modules/membre/components/v
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { UserProfileService } from '../../../core/services/user-profile.service';
 
+/**
+ * Réglages d'ouverture de la boîte « Mon profil » : plein écran sur téléphone, boîte centrée sur ordinateur.
+ * Les deux appels (barre de navigation et layout) passent par ici pour rester identiques.
+ */
+export function optionsDialogProfil(data: any): MatDialogConfig {
+  const telephone = typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches;
+  return telephone
+    ? { data, width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh', autoFocus: false,
+        panelClass: ['profil-edit-panel', 'plein-ecran'] }
+    : { data, width: '640px', maxWidth: '96vw', height: 'min(860px, 92dvh)', maxHeight: '92dvh', autoFocus: false,
+        panelClass: 'profil-edit-panel' };
+}
+
 @Component({
   selector: 'app-profil-edit',
   templateUrl: './profil-edit.component.html',
@@ -60,6 +73,19 @@ import { UserProfileService } from '../../../core/services/user-profile.service'
   ]
 })
 export class ProfilEditComponent implements OnInit {
+  /** Zone qui défile : sert à savoir quelle section est à l'écran pour surligner l'onglet correspondant. */
+  @ViewChild('scroller') scroller?: ElementRef<HTMLElement>;
+
+  /** Sections de la page, dans l'ordre : chacune a un onglet collant. */
+  readonly sections = [
+    { id: 'identite', cle: 'profil.ui.tabIdentite' },
+    { id: 'sport',    cle: 'profil.ui.tabSport' },
+    { id: 'contact',  cle: 'profil.ui.tabContact' },
+    { id: 'origine',  cle: 'profil.ui.tabOrigine' },
+    { id: 'compte',   cle: 'profil.ui.tabCompte' },
+  ];
+  sectionActive = 'identite';
+
  profileForm!: FormGroup;
   isLoading = true;
   isSaving = false;
@@ -88,6 +114,32 @@ profilePhotoUrl: string | null = null;
     private snackBar: MatSnackBar,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
+
+  /** Onglet touché : fait défiler jusqu'à la section. */
+  allerA(id: string): void {
+    this.sectionActive = id;
+    document.getElementById('pf-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Pendant le défilement : l'onglet actif est celui de la dernière section dont le haut a passé la barre collante. */
+  surDefilement(): void {
+    const zone = this.scroller?.nativeElement;
+    if (!zone) return;
+    const seuil = zone.getBoundingClientRect().top + 140;
+    let actif = this.sections[0].id;
+    for (const s of this.sections) {
+      const el = document.getElementById('pf-' + s.id);
+      if (el && el.getBoundingClientRect().top <= seuil) actif = s.id;
+    }
+    // tout en bas, la dernière section est trop courte pour atteindre le seuil
+    if (zone.scrollTop + zone.clientHeight >= zone.scrollHeight - 4) actif = this.sections[this.sections.length - 1].id;
+    if (actif !== this.sectionActive) this.sectionActive = actif;
+  }
+
+  nomComplet(): string {
+    const f = this.profileForm?.getRawValue?.() ?? {};
+    return [f.prenom, f.nom].map((x: any) => (x ?? '').toString().trim()).filter(Boolean).join(' ');
+  }
 
   /** Carte de joueur My2-0 à télécharger (tout le parcours, un 2-0 ou une sélection). */
   openCarte(): void {
