@@ -1,0 +1,137 @@
+<div class="config-container">
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'accesAdmin.admin.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'accesAdmin.admin.subtitle' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container"><mat-spinner diameter="50"></mat-spinner></div>
+
+  <div *ngIf="!loading()" class="content">
+
+    <!-- ── 1. Le groupe ── -->
+    <section class="carte">
+      <h2 class="carte__titre"><span class="num">1</span>{{ 'accesAdmin.admin.pickGroup' | translate }}</h2>
+      <select [(ngModel)]="groupeId" (ngModelChange)="choisirGroupe()" name="groupe" [attr.aria-label]="'accesAdmin.admin.pickGroup' | translate">
+        <option [ngValue]="null">—</option>
+        <option *ngFor="let g of listeGroupes()" [ngValue]="g.id">{{ g.nom }}</option>
+      </select>
+
+      <ng-container *ngIf="groupeId">
+        <!-- Pas d'accès ou ancien accès terminé : on peut demander -->
+        <ng-container *ngIf="!accesCourant() || (accesCourant()!.statut !== 'DEMANDE' && !accesCourant()!.actif)">
+          <p *ngIf="accesCourant()" class="etat etat--{{ accesCourant()!.statut }}">
+            <mat-icon>info</mat-icon>
+            {{ (accesCourant()!.statut === 'ACCORDE' ? 'accesAdmin.admin.expired' : 'accesAdmin.admin.last.' + accesCourant()!.statut) | translate }}
+          </p>
+          <p class="aide">{{ 'accesAdmin.admin.requestHelp' | translate }}</p>
+          <textarea [(ngModel)]="message" name="message" maxlength="500" rows="2"
+                    [placeholder]="'accesAdmin.admin.messagePlaceholder' | translate"></textarea>
+          <button type="button" class="btn-primary" (click)="demander()" [disabled]="working()">
+            <mat-icon>send</mat-icon>{{ 'accesAdmin.admin.requestAccess' | translate }}
+          </button>
+        </ng-container>
+
+        <!-- En attente du responsable -->
+        <ng-container *ngIf="accesCourant()?.statut === 'DEMANDE'">
+          <p class="etat etat--DEMANDE"><mat-icon>hourglass_top</mat-icon>{{ 'accesAdmin.admin.waiting' | translate }}</p>
+          <button type="button" class="btn-outline" (click)="rafraichir()"><mat-icon>refresh</mat-icon>{{ 'accesAdmin.admin.refresh' | translate }}</button>
+        </ng-container>
+
+        <!-- Accès accordé -->
+        <p *ngIf="peutConfigurer()" class="etat etat--ACCORDE">
+          <mat-icon>lock_open</mat-icon>
+          {{ 'accesAdmin.admin.granted' | translate }} <strong>{{ accesCourant()!.expireLe | date:'dd/MM/yyyy HH:mm' }}</strong>
+        </p>
+      </ng-container>
+    </section>
+
+    <!-- ── 2. Le fichier du formulaire ── -->
+    <section *ngIf="peutConfigurer()" class="carte">
+      <h2 class="carte__titre"><span class="num">2</span>{{ 'accesAdmin.admin.loadFile' | translate }}</h2>
+      <p class="aide">{{ 'accesAdmin.admin.fileHelp' | translate }}</p>
+      <input type="file" accept=".json,application/json" (change)="lireFichier($event)" [attr.aria-label]="'accesAdmin.admin.loadFile' | translate"/>
+      <p *ngIf="erreurFichier" class="erreur" role="alert">{{ erreurFichier }}</p>
+
+      <div *ngIf="apercu" class="apercu">
+        <strong>{{ apercu.groupe || nomFichier }}</strong>
+        <ul>
+          <li>{{ apercu.membres }} {{ 'accesAdmin.admin.members' | translate }}</li>
+          <li *ngIf="apercu.saison">{{ 'accesAdmin.admin.season' | translate }} : {{ apercu.saison }}</li>
+          <li>{{ apercu.cotisations }} {{ 'accesAdmin.admin.contributions' | translate }}</li>
+          <li>{{ apercu.sanctions }} {{ 'accesAdmin.admin.sanctions' | translate }}</li>
+          <li *ngIf="apercu.logo">{{ 'accesAdmin.admin.logoIncluded' | translate }}</li>
+          <li>{{ 'accesAdmin.admin.manager' | translate }} : {{ apercu.responsable || ('accesAdmin.admin.noManager' | translate) }}</li>
+        </ul>
+
+        <label class="case">
+          <input type="checkbox" [(ngModel)]="creerComptes" name="creerComptes"/>
+          <span><strong>{{ 'accesAdmin.admin.createAccounts' | translate }}</strong><small>{{ 'accesAdmin.admin.createAccountsHelp' | translate }}</small></span>
+        </label>
+        <label class="case" *ngIf="apercu.responsable">
+          <input type="checkbox" [(ngModel)]="creerResponsable" name="creerResponsable"/>
+          <span><strong>{{ 'accesAdmin.admin.designateManager' | translate:{ nom: apercu.responsable } }}</strong><small>{{ 'accesAdmin.admin.designateManagerHelp' | translate }}</small></span>
+        </label>
+        <p *ngIf="groupeDifferent" class="etat etat--REVOQUE"><mat-icon>warning</mat-icon>{{ 'accesAdmin.admin.otherGroup' | translate }}</p>
+
+        <div class="actions">
+          <button type="button" class="btn-outline" (click)="simuler()" [disabled]="working()">
+            <mat-icon>visibility</mat-icon>{{ 'accesAdmin.admin.simulate' | translate }}
+          </button>
+          <button type="button" class="btn-primary" (click)="importer()" [disabled]="working()">
+            <mat-icon>download</mat-icon>{{ 'accesAdmin.admin.import' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Compte rendu -->
+      <div *ngIf="rapport() as r" class="rapport" [class.rapport--simulation]="r.simulation">
+        <strong>{{ (r.simulation ? 'accesAdmin.admin.reportSimulation' : 'accesAdmin.admin.reportDone') | translate }}</strong>
+        <ul>
+          <li>{{ 'accesAdmin.admin.members' | translate }} : {{ r.membres.crees }} {{ 'accesAdmin.admin.created' | translate }}, {{ r.membres.dejaPresents }} {{ 'accesAdmin.admin.alreadyThere' | translate }}</li>
+          <li>{{ 'accesAdmin.admin.season' | translate }} : {{ r.saison }}</li>
+          <li>{{ 'accesAdmin.admin.contributions' | translate }} : {{ r.cotisations.creees }} {{ 'accesAdmin.admin.created' | translate }}, {{ r.cotisations.ignorees }} {{ 'accesAdmin.admin.skipped' | translate }}</li>
+          <li>{{ 'accesAdmin.admin.sanctions' | translate }} : {{ r.sanctions.creees }} {{ 'accesAdmin.admin.created' | translate }}, {{ r.sanctions.ignorees }} {{ 'accesAdmin.admin.skipped' | translate }}</li>
+        </ul>
+        <ul>
+          <li>{{ 'accesAdmin.admin.logo' | translate }} : {{ r.logo }}</li>
+          <li>{{ 'accesAdmin.admin.manager' | translate }} : {{ r.responsable }}</li>
+        </ul>
+        <p *ngFor="let w of r.avertissements" class="etat etat--REVOQUE"><mat-icon>warning</mat-icon>{{ w }}</p>
+
+        <!-- Comptes créés : à transmettre aux personnes -->
+        <div *ngIf="r.comptes.length" class="comptes">
+          <strong>{{ (r.simulation ? 'accesAdmin.admin.accountsToCreate' : 'accesAdmin.admin.accountsCreated') | translate }} ({{ r.comptes.length }})</strong>
+          <p *ngIf="!r.simulation && comptesATransmettre.length" class="etat etat--DEMANDE">
+            <mat-icon>key</mat-icon>{{ 'accesAdmin.admin.passwordsOnce' | translate }}
+          </p>
+          <p *ngIf="r.simulation" class="aide">{{ 'accesAdmin.admin.passwordsAfterImport' | translate }}</p>
+
+          <div class="actions" *ngIf="!r.simulation && comptesATransmettre.length">
+            <button type="button" class="btn-outline" (click)="telechargerIdentifiants()"><mat-icon>download</mat-icon>{{ 'accesAdmin.admin.downloadCsv' | translate }}</button>
+            <button type="button" class="btn-outline" (click)="copierIdentifiants()"><mat-icon>content_copy</mat-icon>{{ 'accesAdmin.admin.copy' | translate }}</button>
+          </div>
+
+          <article *ngFor="let c of r.comptes" class="compte">
+            <div class="compte__corps">
+              <strong>{{ c.prenom }} {{ c.nom }}</strong>
+              <span class="pastille" *ngIf="c.role === 'RESPONSABLE'">{{ 'accesAdmin.admin.managerRole' | translate }}</span>
+              <small>{{ 'accesAdmin.admin.username' | translate }} : <code>{{ c.username }}</code></small>
+              <small *ngIf="c.motDePasse">{{ 'accesAdmin.admin.tempPassword' | translate }} : <code>{{ c.motDePasse }}</code></small>
+              <small *ngIf="c.compteExistant">{{ 'accesAdmin.admin.existingAccount' | translate }}</small>
+            </div>
+            <a *ngIf="c.motDePasse && !r.simulation" class="btn-outline btn-sm" [href]="lienWhatsApp(c)" target="_blank" rel="noopener">
+              <mat-icon>chat</mat-icon>WhatsApp
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

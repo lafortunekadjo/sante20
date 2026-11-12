@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Configuration de mon groupe – My2-0</title>
+<style>
+  :root {
+    --fond: #f4f6fb; --carte: #ffffff; --texte: #0f172a; --discret: #64748b; --bord: #d5dbe8;
+    --accent: #2563eb; --accent-texte: #ffffff; --erreur: #b91c1c; --ok: #047857; --champ: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #0b1220; --carte: #121b2e; --texte: #e8edf7; --discret: #9aa7bf; --bord: #2a3752;
+      --accent: #5b8cff; --accent-texte: #0b1220; --erreur: #f87171; --ok: #34d399; --champ: #0e1627;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--fond); color: var(--texte); line-height: 1.5;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 96px; }
+  header { padding: 20px 0 8px; }
+  h1 { margin: 0 0 6px; font-size: 1.5rem; line-height: 1.25; }
+  header p { margin: 0; color: var(--discret); }
+  .marque { display: inline-block; font-weight: 800; letter-spacing: .02em; color: var(--accent); margin-bottom: 8px; }
+  section {
+    background: var(--carte); border: 1px solid var(--bord); border-radius: 16px;
+    padding: 16px; margin-top: 16px;
+  }
+  h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
+  .num {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent); color: var(--accent-texte); font-size: .85rem; font-weight: 700;
+  }
+  .aide { margin: 0 0 12px; color: var(--discret); font-size: .9rem; }
+  label { display: block; font-weight: 600; font-size: .92rem; margin-top: 12px; }
+  label small { font-weight: 400; color: var(--discret); }
+  input, select, textarea {
+    width: 100%; min-height: 46px; margin-top: 6px; padding: 10px 12px; font: inherit; font-size: 16px; /* 16px : pas de zoom iOS */
+    color: var(--texte); background: var(--champ); border: 1px solid var(--bord); border-radius: 10px;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  @media (max-width: 520px) { .grille { grid-template-columns: 1fr; } }
+  .requis::after { content: " *"; color: var(--erreur); }
+  .erreur { color: var(--erreur); font-size: .85rem; margin: 4px 0 0; min-height: 1.1em; }
+  input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--erreur); }
+
+  /* listes dynamiques */
+  .ligne {
+    display: grid; gap: 8px; align-items: end; padding: 10px; margin-top: 10px;
+    border: 1px dashed var(--bord); border-radius: 12px;
+  }
+  .ligne.membre { grid-template-columns: 1fr 1fr; }
+  .ligne.cotis { grid-template-columns: 2fr 1fr 1fr; }
+  .ligne.sanction { grid-template-columns: 2fr 1fr; }
+  .ligne .plein { grid-column: 1 / -1; }
+  @media (max-width: 520px) {
+    .ligne.cotis, .ligne.sanction { grid-template-columns: 1fr 1fr; }
+    .ligne.cotis > :first-child, .ligne.sanction > :first-child { grid-column: 1 / -1; }
+  }
+  .ligne label { margin-top: 0; font-size: .8rem; }
+  .ligne input, .ligne select { margin-top: 4px; }
+  .coche { display: flex; align-items: center; gap: 8px; font-weight: 500; min-height: 46px; margin: 0; }
+  .coche input { width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--accent); }
+
+  button {
+    font: inherit; font-weight: 600; min-height: 46px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--bord); background: var(--carte); color: var(--texte);
+  }
+  button.principal { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); }
+  button.discret { border: 0; background: transparent; color: var(--accent); padding: 0 6px; }
+  button.retirer { min-height: 40px; color: var(--erreur); }
+  .barre { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .puces { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .puce { min-height: 38px; padding: 0 12px; border-radius: 19px; font-weight: 500; font-size: .9rem; }
+
+  .accord { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--bord); border-radius: 12px; margin-top: 12px; }
+  .accord input { width: 24px; height: 24px; min-height: 0; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+  .accord span { font-weight: 500; font-size: .95rem; }
+
+  .envoi { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .envoi button { width: 100%; }
+  .resultat { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--fond); border: 1px solid var(--bord); font-size: .92rem; display: none; }
+  .resultat.visible { display: block; }
+  .resultat.ok { border-color: var(--ok); }
+  .resultat.ko { border-color: var(--erreur); }
+  .vie-privee { margin-top: 16px; color: var(--discret); font-size: .85rem; }
+  .logo-apercu { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .logo-apercu[hidden] { display: none; }
+  .logo-apercu img { width: 72px; height: 72px; object-fit: contain; border-radius: 12px; border: 1px solid var(--bord); background: #fff; }
+  .sr { position: absolute; left: -9999px; }
+  noscript { display: block; margin: 16px 0; padding: 12px; border: 1px solid var(--erreur); border-radius: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="marque">My2-0</span>
+    <h1>Configuration de mon groupe</h1>
+    <p>Remplissez ce formulaire (5 minutes) : nous configurons votre groupe pour vous. Vous gardez le contrôle : c'est vous qui validez notre accès dans l'application.</p>
+  </header>
+
+  <noscript>Ce formulaire a besoin de JavaScript. Vous pouvez aussi nous écrire directement les informations demandées.</noscript>
+
+  <form id="formulaire" novalidate autocomplete="off">
+
+    <section aria-labelledby="t1">
+      <h2 id="t1"><span class="num">1</span>Votre groupe</h2>
+      <label for="g_nom" class="requis">Nom du groupe</label>
+      <input id="g_nom" name="g_nom" required maxlength="120">
+      <p class="erreur" data-err="g_nom"></p>
+      <div class="grille">
+        <div>
+          <label for="g_discipline">Discipline</label>
+          <select id="g_discipline" name="g_discipline">
+            <option>Football</option><option>Futsal</option><option>Basketball</option>
+            <option>Volleyball</option><option>Handball</option><option>Autre</option>
+          </select>
+        </div>
+        <div>
+          <label for="g_ville">Ville / pays</label>
+          <input id="g_ville" name="g_ville" maxlength="120" placeholder="ex. Douala, Cameroun">
+        </div>
+      </div>
+      <label for="g_description">Présentation <small>(facultatif, 2 lignes)</small></label>
+      <textarea id="g_description" name="g_description" maxlength="400"></textarea>
+      <label for="g_logo">Logo <small>(facultatif)</small></label>
+      <input id="g_logo" name="g_logo" type="file" accept="image/*">
+      <div id="logo_apercu" class="logo-apercu" hidden>
+        <img id="logo_img" alt="Aperçu du logo">
+        <button type="button" class="retirer" id="logo_retirer">Retirer le logo</button>
+      </div>
+      <p class="erreur" id="logo_err" role="alert"></p>
+    </section>
+
+    <section aria-labelledby="t2">
+      <h2 id="t2"><span class="num">2</span>Le responsable du groupe <small style="font-weight:400;color:var(--discret)">(facultatif)</small></h2>
+      <p class="aide">S'il y en a un, c'est lui qui validera notre accès dans l'application et qui recevra son compte. Sans responsable, nous configurons directement le groupe.</p>
+      <label for="r_nom">Nom complet</label>
+      <input id="r_nom" name="r_nom" maxlength="120" autocomplete="name">
+      <div class="grille">
+        <div>
+          <label for="r_tel">Téléphone (WhatsApp)</label>
+          <input id="r_tel" name="r_tel" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" placeholder="+237 6…">
+          <p class="erreur" data-err="r_tel"></p>
+        </div>
+        <div>
+          <label for="r_email">E-mail <small>(celui de son compte My2-0, s'il en a un)</small></label>
+          <input id="r_email" name="r_email" type="email" inputmode="email" maxlength="160" autocomplete="email">
+          <p class="erreur" data-err="r_email"></p>
+        </div>
+      </div>
+      <label for="r_compte">A-t-il déjà un compte My2-0 ?</label>
+      <select id="r_compte" name="r_compte">
+        <option>Je ne sais pas</option><option>Oui</option><option>Non, créez-lui en un</option>
+      </select>
+    </section>
+
+    <section aria-labelledby="t3">
+      <h2 id="t3"><span class="num">3</span>La saison</h2>
+      <label for="s_libelle">Nom de la saison <small>(ex. 2026-2027)</small></label>
+      <input id="s_libelle" name="s_libelle" maxlength="60">
+      <div class="grille">
+        <div><label for="s_debut">Début</label><input id="s_debut" name="s_debut" type="date"></div>
+        <div><label for="s_fin">Fin</label><input id="s_fin" name="s_fin" type="date"></div>
+      </div>
+      <p class="erreur" data-err="s_fin"></p>
+    </section>
+
+    <section aria-labelledby="t4">
+      <h2 id="t4"><span class="num">4</span>Les membres</h2>
+      <p class="aide">Ajoutez-les un par un, ou collez votre liste (une personne par ligne : <em>Nom Prénom ; téléphone ; poste ; e-mail</em>). Un compte My2-0 est créé pour chaque membre : l'e-mail est facultatif.</p>
+      <div id="membres"></div>
+      <div class="barre">
+        <button type="button" id="ajout_membre">+ Ajouter un membre</button>
+        <button type="button" class="discret" id="coller_liste">Coller une liste</button>
+      </div>
+      <div id="zone_coller" hidden>
+        <label for="liste_collee">Collez votre liste ici</label>
+        <textarea id="liste_collee" placeholder="Mbarga Paul ; 677000000 ; Gardien&#10;Nana Joël ; 699000000 ; Attaquant"></textarea>
+        <div class="barre"><button type="button" class="principal" id="valider_liste">Ajouter ces membres</button></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="t5">
+      <h2 id="t5"><span class="num">5</span>Les cotisations</h2>
+      <p class="aide">Cotisation mensuelle, adhésion, fonds de caisse… (facultatif)</p>
+      <div id="cotisations"></div>
+      <div class="barre"><button type="button" id="ajout_cotis">+ Ajouter une cotisation</button></div>
+    </section>
+
+    <section aria-labelledby="t6">
+      <h2 id="t6"><span class="num">6</span>Les sanctions</h2>
+      <p class="aide">Les amendes de votre règlement intérieur (facultatif).</p>
+      <div id="sanctions"></div>
+      <div class="puces" aria-label="Ajouter une sanction courante">
+        <button type="button" class="puce" data-sanction="Retard">+ Retard</button>
+        <button type="button" class="puce" data-sanction="Absence non justifiée">+ Absence non justifiée</button>
+        <button type="button" class="puce" data-sanction="Carton jaune">+ Carton jaune</button>
+        <button type="button" class="puce" data-sanction="Carton rouge">+ Carton rouge</button>
+      </div>
+      <div class="barre"><button type="button" id="ajout_sanction">+ Autre sanction</button></div>
+    </section>
+
+    <section aria-labelledby="t7">
+      <h2 id="t7"><span class="num">7</span>Vos matchs</h2>
+      <div class="grille">
+        <div>
+          <label for="m_jour">Jour habituel</label>
+          <select id="m_jour" name="m_jour">
+            <option value="">—</option><option>Lundi</option><option>Mardi</option><option>Mercredi</option>
+            <option>Jeudi</option><option>Vendredi</option><option>Samedi</option><option>Dimanche</option>
+          </select>
+        </div>
+        <div><label for="m_heure">Heure</label><input id="m_heure" name="m_heure" type="time"></div>
+      </div>
+      <label for="m_lieu">Lieu habituel</label>
+      <input id="m_lieu" name="m_lieu" maxlength="160">
+      <label for="m_notes">Autre chose à savoir ? <small>(équipes, couleurs, règles particulières…)</small></label>
+      <textarea id="m_notes" name="m_notes" maxlength="800"></textarea>
+    </section>
+
+    <section aria-labelledby="t8">
+      <h2 id="t8"><span class="num">8</span>Votre accord</h2>
+      <label class="accord" for="accord">
+        <input type="checkbox" id="accord" name="accord">
+        <span>J'autorise l'équipe My2-0 à configurer ce groupe (informations de base, membres et leurs comptes, saison, cotisations et sanctions). Si un responsable est désigné, il validera lui-même cet accès dans l'application et pourra le retirer à tout moment.</span>
+      </label>
+      <p class="erreur" data-err="accord"></p>
+
+      <div class="envoi">
+        <button type="button" class="principal" id="btn_whatsapp">Envoyer par WhatsApp</button>
+        <button type="button" id="btn_email">Envoyer par e-mail</button>
+        <button type="button" id="btn_telecharger">Télécharger le fichier</button>
+        <button type="button" id="btn_copier">Copier le texte</button>
+      </div>
+      <div id="resultat" class="resultat" role="status" aria-live="polite"></div>
+    </section>
+
+    <p class="vie-privee">Vos informations restent sur votre téléphone tant que vous ne les envoyez pas : ce formulaire ne les enregistre sur aucun serveur. Les numéros de téléphone des membres ne sont utilisés que pour créer leur fiche.</p>
+  </form>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── À renseigner : où les réponses doivent arriver ──────────────────────────
+  var CONTACT_WHATSAPP = '';   // numéro au format international, sans + ni espaces (ex. '237600000000'). Vide : l'utilisateur choisit le contact.
+  var CONTACT_EMAIL = '';      // adresse e-mail qui reçoit les demandes (ex. 'contact@my2-0.cloud').
+  var BROUILLON = 'my2-0-formulaire-config';
+  var LONGUEUR_MAX_WHATSAPP = 1500; // au-delà, on propose le fichier plutôt qu'un très long message
+
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('formulaire');
+  var logo = '';                 // image réduite, en data URL (voyage dans le fichier, pas dans le texte)
+  var LOGO_MAX_PX = 256;
+  var LOGO_MAX_OCTETS = 300000;
+
+  // ── Lignes dynamiques ───────────────────────────────────────────────────────
+  function ligne(type, html) {
+    var d = document.createElement('div');
+    d.className = 'ligne ' + type;
+    d.innerHTML = html + '<button type="button" class="retirer plein" data-retirer>Retirer</button>';
+    return d;
+  }
+  var echapper = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+  function ajouterMembre(v) {
+    v = v || {};
+    $('membres').appendChild(ligne('membre',
+      '<div><label>Nom<input data-f="nom" maxlength="80" value="' + echapper(v.nom) + '"></label></div>' +
+      '<div><label>Prénom<input data-f="prenom" maxlength="80" value="' + echapper(v.prenom) + '"></label></div>' +
+      '<div><label>Téléphone<input data-f="tel" type="tel" inputmode="tel" maxlength="30" value="' + echapper(v.tel) + '"></label></div>' +
+      '<div><label>Poste<input data-f="poste" maxlength="60" value="' + echapper(v.poste) + '"></label></div>' +
+      '<div class="plein"><label>E-mail <small>(facultatif)</small><input data-f="email" type="email" inputmode="email" maxlength="160" value="' + echapper(v.email) + '"></label></div>'));
+  }
+  function ajouterCotisation(v) {
+    v = v || {};
+    var p = v.periodicite || 'Mensuelle';
+    $('cotisations').appendChild(ligne('cotis',
+      '<div><label>Nom<input data-f="nom" maxlength="80" placeholder="ex. Cotisation mensuelle" value="' + echapper(v.nom) + '"></label></div>' +
+      '<div><label>Montant<input data-f="montant" type="number" inputmode="decimal" min="0" step="any" value="' + echapper(v.montant) + '"></label></div>' +
+      '<div><label>Rythme<select data-f="periodicite">' +
+        ['Mensuelle', 'Annuelle', 'Ponctuelle'].map(function (o) { return '<option' + (o === p ? ' selected' : '') + '>' + o + '</option>'; }).join('') +
+      '</select></label></div>' +
+      '<label class="coche plein"><input type="checkbox" data-f="obligatoire"' + (v.obligatoire === false ? '' : ' checked') + '> Obligatoire pour tous</label>'));
+  }
+  function ajouterSanction(v) {
+    v = v || {};
+    $('sanctions').appendChild(ligne('sanction',
+      '<div><label>Motif<input data-f="motif" maxlength="80" value="' + echapper(v.motif) + '"></label></div>' +
+      '<div><label>Montant<input data-f="montant" type="number" inputmode="decimal" min="0" step="any" value="' + echapper(v.montant) + '"></label></div>'));
+  }
+
+  $('ajout_membre').onclick = function () { ajouterMembre(); };
+  $('ajout_cotis').onclick = function () { ajouterCotisation(); };
+  $('ajout_sanction').onclick = function () { ajouterSanction(); };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sanction]'), function (b) {
+    b.onclick = function () { ajouterSanction({ motif: b.getAttribute('data-sanction') }); };
+  });
+  form.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-retirer')) { t.parentNode.parentNode.removeChild(t.parentNode); sauver(); }
+  });
+
+  // Collage d'une liste : « Nom Prénom ; téléphone ; poste » (séparateurs ; , tabulation)
+  $('coller_liste').onclick = function () { $('zone_coller').hidden = !$('zone_coller').hidden; };
+  $('valider_liste').onclick = function () {
+    var ajoutes = 0;
+    $('liste_collee').value.split(/\r?\n/).forEach(function (l) {
+      l = l.trim();
+      if (!l) return;
+      var p = l.split(/[;\t,]/).map(function (x) { return x.trim(); });
+      var email = '';
+      p = p.filter(function (x) { if (!email && x.indexOf('@') >= 0) { email = x; return false; } return true; }); // l'e-mail peut être n'importe où
+      var mots = (p[0] || '').split(/\s+/);
+      ajouterMembre({ nom: mots.shift() || '', prenom: mots.join(' '), tel: p[1] || '', poste: p[2] || '', email: email });
+      ajoutes++;
+    });
+    $('liste_collee').value = '';
+    $('zone_coller').hidden = true;
+    montrer(ajoutes ? 'ok' : 'ko', ajoutes ? ajoutes + ' membre(s) ajouté(s). Vérifiez les noms et prénoms.' : 'Aucune ligne reconnue.');
+    sauver();
+  };
+
+  // ── Lecture du formulaire ───────────────────────────────────────────────────
+  function lignes(conteneur, champs) {
+    return Array.prototype.map.call($(conteneur).children, function (l) {
+      var o = {};
+      champs.forEach(function (c) {
+        var el = l.querySelector('[data-f="' + c + '"]');
+        o[c] = !el ? '' : (el.type === 'checkbox' ? el.checked : el.value.trim());
+      });
+      return o;
+    });
+  }
+  function lire() {
+    var v = function (id) { return $(id).value.trim(); };
+    return {
+      groupe: { nom: v('g_nom'), discipline: v('g_discipline'), ville: v('g_ville'), presentation: v('g_description'), logo: logo },
+      responsable: { nom: v('r_nom'), telephone: v('r_tel'), email: v('r_email'), compteExistant: v('r_compte') },
+      saison: { libelle: v('s_libelle'), debut: v('s_debut'), fin: v('s_fin') },
+      membres: lignes('membres', ['nom', 'prenom', 'tel', 'poste', 'email']).filter(function (m) { return m.nom || m.prenom; }),
+      cotisations: lignes('cotisations', ['nom', 'montant', 'periodicite', 'obligatoire']).filter(function (c) { return c.nom; }),
+      sanctions: lignes('sanctions', ['motif', 'montant']).filter(function (s) { return s.motif; }),
+      matchs: { jour: v('m_jour'), heure: v('m_heure'), lieu: v('m_lieu'), notes: v('m_notes') },
+      accord: $('accord').checked,
+      envoyeLe: new Date().toISOString()
+    };
+  }
+
+  // ── Validation ──────────────────────────────────────────────────────────────
+  function erreur(nom, message) {
+    var p = document.querySelector('[data-err="' + nom + '"]');
+    if (p) p.textContent = message || '';
+    var champ = $(nom);
+    if (champ) { if (message) champ.setAttribute('aria-invalid', 'true'); else champ.removeAttribute('aria-invalid'); }
+  }
+  function valider() {
+    var d = lire(), premier = null;
+    function exiger(nom, ok, msg) { erreur(nom, ok ? '' : msg); if (!ok && !premier) premier = nom; }
+    exiger('g_nom', !!d.groupe.nom, 'Indiquez le nom du groupe.');
+    // Responsable facultatif : on ne contrôle que ce qui est renseigné
+    exiger('r_tel', !d.responsable.telephone || d.responsable.telephone.replace(/\D/g, '').length >= 8, 'Ce numéro ne semble pas valide.');
+    exiger('r_email', !d.responsable.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.responsable.email), 'Cet e-mail ne semble pas valide.');
+    exiger('s_fin', !d.saison.debut || !d.saison.fin || d.saison.fin >= d.saison.debut, 'La fin doit être après le début.');
+    exiger('accord', d.accord, 'Cochez la case pour nous autoriser à configurer le groupe.');
+    if (premier) { var el = $(premier); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } return null; }
+    return d;
+  }
+
+  // ── Texte à envoyer ─────────────────────────────────────────────────────────
+  function resume(d) {
+    var t = [];
+    t.push('DEMANDE DE CONFIGURATION – My2-0');
+    t.push('');
+    t.push('GROUPE : ' + d.groupe.nom + ' (' + d.groupe.discipline + ')' + (d.groupe.ville ? ' – ' + d.groupe.ville : ''));
+    if (d.groupe.presentation) t.push(d.groupe.presentation);
+    if (d.responsable.nom) {
+      t.push('RESPONSABLE : ' + [d.responsable.nom, d.responsable.telephone, d.responsable.email].filter(Boolean).join(' – '));
+      t.push('Compte My2-0 : ' + d.responsable.compteExistant);
+    } else {
+      t.push('RESPONSABLE : aucun (configuration directe par My2-0)');
+    }
+    if (d.groupe.logo) t.push('LOGO : joint dans le fichier');
+    if (d.saison.libelle || d.saison.debut) t.push('SAISON : ' + (d.saison.libelle || '') + ' (' + (d.saison.debut || '?') + ' → ' + (d.saison.fin || '?') + ')');
+    t.push('');
+    t.push('MEMBRES (' + d.membres.length + ')');
+    d.membres.forEach(function (m, i) {
+      t.push((i + 1) + '. ' + (m.nom + ' ' + m.prenom).trim() + (m.tel ? ' – ' + m.tel : '') + (m.poste ? ' – ' + m.poste : '') + (m.email ? ' – ' + m.email : ''));
+    });
+    if (d.cotisations.length) {
+      t.push('');
+      t.push('COTISATIONS');
+      d.cotisations.forEach(function (c) { t.push('- ' + c.nom + ' : ' + (c.montant || '?') + ' (' + c.periodicite + (c.obligatoire ? ', obligatoire' : '') + ')'); });
+    }
+    if (d.sanctions.length) {
+      t.push('');
+      t.push('SANCTIONS');
+      d.sanctions.forEach(function (s) { t.push('- ' + s.motif + ' : ' + (s.montant || '?')); });
+    }
+    var m = d.matchs;
+    if (m.jour || m.heure || m.lieu) { t.push(''); t.push('MATCHS : ' + [m.jour, m.heure, m.lieu].filter(Boolean).join(' – ')); }
+    if (m.notes) t.push('Notes : ' + m.notes);
+    t.push('');
+    t.push('Accord : j\'autorise My2-0 à configurer ce groupe' + (d.responsable.nom ? ' (le responsable validera l\'accès dans l\'application).' : '.'));
+    return t.join('\n');
+  }
+
+  function montrer(etat, message) {
+    var r = $('resultat');
+    r.className = 'resultat visible ' + etat;
+    r.textContent = message;
+  }
+
+  function telecharger(d) {
+    var nom = 'configuration-' + (d.groupe.nom || 'groupe').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.json';
+    var contenu = JSON.stringify({ resume: resume(d), donnees: d }, null, 2);
+    var blob = new Blob([contenu], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = nom;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    return nom;
+  }
+
+  // ── Actions d'envoi ─────────────────────────────────────────────────────────
+  $('btn_whatsapp').onclick = function () {
+    var d = valider(); if (!d) return;
+    var texte = resume(d), base = 'https://wa.me/' + CONTACT_WHATSAPP + '?text=';
+    if (texte.length > LONGUEUR_MAX_WHATSAPP || d.groupe.logo) {
+      var nom = telecharger(d);
+      window.open(base + encodeURIComponent('Bonjour, voici la demande de configuration de mon groupe « ' + d.groupe.nom + ' ». Je vous envoie le fichier ' + nom + ' en pièce jointe.'), '_blank');
+      montrer('ok', (d.groupe.logo ? 'Le logo voyage dans le fichier' : 'Votre liste est longue') + ' : le fichier « ' + nom + ' » vient d\'être téléchargé. Joignez-le à votre message WhatsApp avant de l\'envoyer.');
+    } else {
+      window.open(base + encodeURIComponent(texte), '_blank');
+      montrer('ok', 'WhatsApp s\'ouvre avec votre demande : appuyez sur « Envoyer ».');
+    }
+  };
+  $('btn_email').onclick = function () {
+    var d = valider(); if (!d) return;
+    var texte = resume(d);
+    var nom = texte.length > 1800 || d.groupe.logo ? telecharger(d) : '';
+    var corps = nom ? 'Bonjour,\n\nVoici la demande de configuration de mon groupe « ' + d.groupe.nom + ' ». Le fichier ' + nom + ' est en pièce jointe.' : texte;
+    location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent('Configuration du groupe ' + d.groupe.nom) + '&body=' + encodeURIComponent(corps);
+    montrer('ok', nom ? 'Fichier « ' + nom + ' » téléchargé : joignez-le à votre e-mail.' : 'Votre application e-mail s\'ouvre avec la demande.');
+  };
+  $('btn_telecharger').onclick = function () {
+    var d = valider(); if (!d) return;
+    montrer('ok', 'Fichier « ' + telecharger(d) + ' » téléchargé. Envoyez-le-nous par WhatsApp ou par e-mail.');
+  };
+  $('btn_copier').onclick = function () {
+    var d = valider(); if (!d) return;
+    var texte = resume(d);
+    var ok = function () { montrer('ok', 'Texte copié : collez-le dans votre message.'); };
+    var ko = function () { montrer('ko', 'Copie impossible : utilisez « Télécharger le fichier ».'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(ok, ko); else ko();
+  };
+
+  // ── Logo facultatif : image réduite à 256 px pour rester légère ──────────────
+  function definirLogo(url) {
+    logo = url || '';
+    $('logo_img').src = logo;
+    $('logo_apercu').hidden = !logo;
+  }
+  function reduire(dataUrl, fini) {
+    var secours = function () { dataUrl.length <= LOGO_MAX_OCTETS ? fini(dataUrl) : fini(null); };
+    var img = new Image();
+    img.onerror = secours;
+    img.onload = function () {
+      try {
+        var r = Math.min(1, LOGO_MAX_PX / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * r));
+        c.height = Math.max(1, Math.round(img.height * r));
+        var ctx = c.getContext && c.getContext('2d');
+        if (!ctx) return secours();
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        var png = c.toDataURL('image/png');
+        fini(png.length <= LOGO_MAX_OCTETS ? png : c.toDataURL('image/jpeg', 0.85));
+      } catch (e) { secours(); }
+    };
+    img.src = dataUrl;
+  }
+  $('g_logo').addEventListener('change', function () {
+    var fichier = this.files && this.files[0];
+    $('logo_err').textContent = '';
+    if (!fichier) return;
+    if (!/^image\//.test(fichier.type)) { $('logo_err').textContent = 'Choisissez une image (PNG ou JPG).'; return; }
+    var lecteur = new FileReader();
+    lecteur.onload = function () {
+      reduire(String(lecteur.result), function (url) {
+        if (!url) { $('logo_err').textContent = 'Image trop lourde : choisissez-en une plus petite.'; return; }
+        definirLogo(url);
+        sauver();
+      });
+    };
+    lecteur.onerror = function () { $('logo_err').textContent = 'Impossible de lire cette image.'; };
+    lecteur.readAsDataURL(fichier);
+  });
+  $('logo_retirer').onclick = function () { definirLogo(''); $('g_logo').value = ''; sauver(); };
+
+  // ── Brouillon : on ne perd rien si la page se recharge (stockage local, jamais envoyé) ──
+  function sauver() {
+    try { localStorage.setItem(BROUILLON, JSON.stringify(lire())); } catch (e) { /* stockage indisponible : sans conséquence */ }
+  }
+  function restaurer() {
+    var d = null;
+    try { d = JSON.parse(localStorage.getItem(BROUILLON) || 'null'); } catch (e) { d = null; }
+    if (!d) { ajouterMembre(); ajouterCotisation(); return; }
+    var put = function (id, val) { if (val != null) $(id).value = val; };
+    put('g_nom', d.groupe.nom); put('g_discipline', d.groupe.discipline); put('g_ville', d.groupe.ville); put('g_description', d.groupe.presentation);
+    definirLogo(d.groupe.logo);
+    put('r_nom', d.responsable.nom); put('r_tel', d.responsable.telephone); put('r_email', d.responsable.email); put('r_compte', d.responsable.compteExistant);
+    put('s_libelle', d.saison.libelle); put('s_debut', d.saison.debut); put('s_fin', d.saison.fin);
+    put('m_jour', d.matchs.jour); put('m_heure', d.matchs.heure); put('m_lieu', d.matchs.lieu); put('m_notes', d.matchs.notes);
+    d.membres.forEach(ajouterMembre); d.cotisations.forEach(ajouterCotisation); d.sanctions.forEach(ajouterSanction);
+    if (!d.membres.length) ajouterMembre();
+  }
+  form.addEventListener('input', sauver);
+  form.addEventListener('change', sauver);
+  form.addEventListener('submit', function (e) { e.preventDefault(); });
+  restaurer();
+})();
+</script>
+</body>
+</html>

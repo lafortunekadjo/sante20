@@ -1,0 +1,69 @@
+<div class="acces-container">
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'accesAdmin.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'accesAdmin.subtitle' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container"><mat-spinner diameter="50"></mat-spinner></div>
+
+  <div *ngIf="!loading()" class="content">
+
+    <!-- ── Demande à valider : le plus simple possible ── -->
+    <section *ngFor="let a of enAttente()" class="carte carte--attente">
+      <div class="carte__tete">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <h2>{{ 'accesAdmin.requestTitle' | translate:{ nom: a.adminNom } }}</h2>
+      </div>
+      <p class="carte__texte">{{ 'accesAdmin.requestText' | translate }}</p>
+      <p *ngIf="a.message" class="message">« {{ a.message }} »</p>
+      <p class="rassurant"><mat-icon>verified_user</mat-icon>{{ 'accesAdmin.reassure' | translate }}</p>
+
+      <label class="champ">
+        <span>{{ 'accesAdmin.duration' | translate }}</span>
+        <select [(ngModel)]="jours[a.id]" [name]="'duree' + a.id">
+          <option *ngFor="let j of durees" [ngValue]="j">{{ 'accesAdmin.days.' + j | translate }}</option>
+        </select>
+      </label>
+
+      <div class="actions">
+        <button type="button" class="btn-primary btn-lg" (click)="accepter(a)" [disabled]="working()">
+          <mat-icon>check</mat-icon>{{ 'accesAdmin.accept' | translate }}
+        </button>
+        <button type="button" class="btn-outline" (click)="refuser(a)" [disabled]="working()">{{ 'accesAdmin.refuse' | translate }}</button>
+      </div>
+    </section>
+
+    <!-- ── Accès en cours ── -->
+    <section *ngFor="let a of actifs()" class="carte carte--actif">
+      <div class="carte__tete">
+        <mat-icon>lock_open</mat-icon>
+        <h2>{{ 'accesAdmin.activeTitle' | translate:{ nom: a.adminNom } }}</h2>
+      </div>
+      <p class="carte__texte">{{ 'accesAdmin.until' | translate }} <strong>{{ a.expireLe | date:'dd/MM/yyyy HH:mm' }}</strong></p>
+      <div class="actions">
+        <button type="button" class="btn-danger-outline" (click)="retirer(a)" [disabled]="working()">
+          <mat-icon>lock</mat-icon>{{ 'accesAdmin.revoke' | translate }}
+        </button>
+      </div>
+    </section>
+
+    <p *ngIf="!enAttente().length && !actifs().length" class="vide">{{ 'accesAdmin.none' | translate }}</p>
+
+    <!-- ── Historique ── -->
+    <ng-container *ngIf="historique().length">
+      <h2 class="liste-titre">{{ 'accesAdmin.history' | translate }}</h2>
+      <article *ngFor="let a of historique()" class="ligne">
+        <span class="ligne__nom">{{ a.adminNom }}</span>
+        <span class="pastille pastille--{{ a.statut }}">{{ 'accesAdmin.statuses.' + a.statut | translate }}</span>
+        <span class="ligne__date">{{ (a.decideLe || a.demandeLe) | date:'dd/MM/yyyy HH:mm' }}</span>
+      </article>
+    </ng-container>
+  </div>
+</div>

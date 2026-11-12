@@ -59,6 +59,8 @@ import { TypeContributionComponent } from "./modules/responsable/components/type
 import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
 import { RapportsComponent } from "./modules/responsable/components/rapports/rapports.component";
 import { VotesGestionComponent } from "./modules/responsable/components/votes-gestion/votes-gestion.component";
+import { AccesAdminComponent } from "./modules/responsable/components/acces-admin/acces-admin.component";
+import { ConfigurationGroupesComponent } from "./modules/admin/components/configuration-groupes/configuration-groupes.component";
 import { MatchDirectComponent } from "./modules/responsable/components/match-direct/match-direct.component";
 import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
 import { CaissesComponent } from "./modules/responsable/components/caisses/caisses.component";
@@ -504,6 +506,10 @@ export const routes: Routes = [
             path: 'merge',
             component: UserMergeComponent
           },
+          {
+            path: 'configuration-groupes',
+            component: ConfigurationGroupesComponent
+          },
            {
             path: 'tirage',
             component: ConcoursAdminComponent
@@ -695,6 +701,11 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: RDashboardComponent
+          },
+          // Réponse à une demande d'accès d'un administrateur (cible de la notification)
+          {
+            path: 'acces-admin',
+            component: AccesAdminComponent
           },
           // Voter (un responsable est aussi membre du groupe) : même écran que côté membre
           {
