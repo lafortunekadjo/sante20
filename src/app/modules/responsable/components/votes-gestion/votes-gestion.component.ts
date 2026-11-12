@@ -13,9 +13,10 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { MatchService } from '../../../../core/services/match.service';
 import { MembreService } from '../../../../core/services/membre.service';
 import {
-  ConfigScrutin, ModeDeclenchement, ModeEligibilite, ModeNomines, RegleScrutin, ScrutinDetail,
+  ConfigScrutin, ModeDeclenchement, ModifierConfigScrutin, RegleScrutin, ScrutinDetail,
   ScrutinResume, ScrutinService, TYPES_SCRUTIN, TypeScrutin
 } from '../../../../core/services/scrutin.service';
+import { RegleScrutinEditorComponent } from './regle-scrutin-editor/regle-scrutin-editor.component';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 type Vue = 'votes' | 'reglages';
@@ -28,7 +29,7 @@ type Vue = 'votes' | 'reglages';
 @Component({
   selector: 'app-votes-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule, RegleScrutinEditorComponent],
   templateUrl: './votes-gestion.component.html',
   styleUrl: './votes-gestion.component.scss'
 })
@@ -49,8 +50,6 @@ export class VotesGestionComponent implements OnInit {
     BALLON_OR_ANNEE: 'emoji_events',
     PERSONNALISE: 'tune'
   };
-  readonly modesEligibilite: ModeEligibilite[] = ['TOUS', 'PRESENCE_MIN', 'PRESENTS_AU_MATCH', 'JOUEURS_DU_MATCH'];
-  readonly modesNomines: ModeNomines[] = ['AUTO_TOP_N', 'TOUS_ELIGIBLES', 'MANUEL'];
 
   vue = signal<Vue>('votes');
   loading = signal(true);
@@ -180,22 +179,6 @@ export class VotesGestionComponent implements OnInit {
     else this.nominesManuels.add(id);
   }
 
-  /** Les deux poids font toujours 100. */
-  changerPoidsStats(valeur: number): void {
-    if (!this.regles) return;
-    const v = Math.min(100, Math.max(0, Math.round(Number(valeur) || 0)));
-    this.regles.poidsStats = v;
-    this.regles.poidsVotes = 100 - v;
-  }
-
-  get besoinPresenceVotants(): boolean { return this.regles?.votants === 'PRESENCE_MIN'; }
-  get besoinPresenceCandidats(): boolean { return this.regles?.candidats === 'PRESENCE_MIN'; }
-
-  /** Les modes liés à un match n'ont de sens que pour le MVP du match. */
-  modesDisponibles(): ModeEligibilite[] {
-    return this.type === 'MVP_MATCH' ? this.modesEligibilite : this.modesEligibilite.filter(m => m === 'TOUS' || m === 'PRESENCE_MIN');
-  }
-
   creer(): void {
     this.erreur.set('');
     const manque = this.verifierFormulaire();
@@ -307,10 +290,30 @@ export class VotesGestionComponent implements OnInit {
     this.modifierConfig(c, { dureeHeures: heures });
   }
 
-  private modifierConfig(c: ConfigScrutin, demande: { actif?: boolean; declenchement?: ModeDeclenchement; dureeHeures?: number }): void {
+  // ── Règles par défaut du groupe ─────────────────────────
+  /** Règles du groupe en cours de modification (un seul type à la fois). */
+  reglesGroupe: { type: TypeScrutin; regles: RegleScrutin } | null = null;
+
+  ouvrirReglesGroupe(c: ConfigScrutin): void {
+    this.reglesGroupe = { type: c.type, regles: JSON.parse(JSON.stringify(c.reglesParDefaut)) as RegleScrutin };
+  }
+
+  enregistrerReglesGroupe(): void {
+    if (!this.reglesGroupe) return;
+    const { type, regles } = this.reglesGroupe;
+    this.modifierConfig({ type } as ConfigScrutin, { reglesParDefaut: regles }, () => this.reglesGroupe = null);
+  }
+
+  reinitialiserReglesGroupe(c: ConfigScrutin): void {
+    this.confirmer('scrutins.groupRules.confirmReset', 'warning',
+      () => this.modifierConfig(c, { reinitialiserRegles: true }, () => this.reglesGroupe = null));
+  }
+
+  private modifierConfig(c: ConfigScrutin, demande: ModifierConfigScrutin, apres?: () => void): void {
     this.api.modifierConfig(c.type, demande).subscribe({
       next: maj => {
         this.configs.update(l => l.map(x => x.type === maj.type ? maj : x));
+        apres?.();
         this.snackBar.open(this.translate.instant('scrutins.settingsSaved'), this.translate.instant('scrutins.close'), { duration: 2500 });
       },
       error: err => {

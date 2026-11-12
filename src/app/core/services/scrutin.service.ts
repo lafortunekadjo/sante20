@@ -8,6 +8,16 @@ export type StatutScrutin = 'PROGRAMME' | 'OUVERT' | 'CLOS' | 'ANNULE';
 export type ModeEligibilite = 'PRESENTS_AU_MATCH' | 'JOUEURS_DU_MATCH' | 'PRESENCE_MIN' | 'TOUS';
 export type ModeNomines = 'AUTO_TOP_N' | 'MANUEL' | 'TOUS_ELIGIBLES';
 export type ModeDeclenchement = 'MANUEL' | 'AUTO_FIN_MATCH';
+/** HIERARCHIE : finances à jour, cartons, buts + passes, votes, ordre alphabétique (un seul gagnant). AUCUN : ex æquo. */
+export type Departage = 'HIERARCHIE' | 'AUCUN';
+
+/** Critères de départage, dans l'ordre choisi par le responsable (l'ordre alphabétique tranche en dernier). */
+export type CritereDepartage = 'FINANCES' | 'COTISATION' | 'ADHESION' | 'SANCTIONS' | 'DISCIPLINE' | 'EFFICACITE' | 'PRESENCES' | 'VOTES';
+export const CRITERES_DEPARTAGE: CritereDepartage[] =
+  ['FINANCES', 'COTISATION', 'ADHESION', 'SANCTIONS', 'DISCIPLINE', 'EFFICACITE', 'PRESENCES', 'VOTES'];
+/** Ordre historique du groupe. */
+export const CRITERES_HISTORIQUE: CritereDepartage[] =
+  ['FINANCES', 'COTISATION', 'ADHESION', 'SANCTIONS', 'DISCIPLINE', 'EFFICACITE', 'VOTES'];
 
 export const TYPES_SCRUTIN: TypeScrutin[] = ['MVP_MATCH', 'MVP_MOIS', 'FAIR_PLAY_MOIS', 'BALLON_OR_ANNEE', 'PERSONNALISE'];
 
@@ -24,7 +34,16 @@ export interface RegleScrutin {
   commentaire: boolean;
   poidsStats: number;
   poidsVotes: number;
+  /** Points de statistiques par action (7 / 4 / 4 / 3 / 2 par défaut). */
+  pointsHommeDuMatch: number;
+  pointsMvpEquipe: number;
+  pointsBut: number;
+  pointsPasse: number;
+  pointsPresence: number;
   minVotes: number;
+  departage: Departage;
+  /** Utilisés quand departage = HIERARCHIE, dans cet ordre. */
+  criteresDepartage: CritereDepartage[];
 }
 
 export interface ScrutinResume {
@@ -102,6 +121,8 @@ export interface ModifierConfigScrutin {
   declenchement?: ModeDeclenchement;
   dureeHeures?: number;
   reglesParDefaut?: RegleScrutin;
+  /** Vrai : efface les règles enregistrées du groupe pour ce type (retour aux règles standard). */
+  reinitialiserRegles?: boolean;
 }
 
 /** Scrutins du groupe actif : consultation et vote pour tous, gestion pour le responsable (menu « Votes »). */

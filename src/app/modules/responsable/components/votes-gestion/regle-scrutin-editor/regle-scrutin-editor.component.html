@@ -1,0 +1,125 @@
+<div class="regles">
+  <label class="champ">
+    <span>{{ 'scrutins.rulesVoters' | translate }}</span>
+    <select [(ngModel)]="regles.votants" [name]="prefixe + 'votants'">
+      <option *ngFor="let m of modesDisponibles()" [ngValue]="m">{{ 'scrutins.eligibility.' + m | translate }}</option>
+    </select>
+  </label>
+  <label class="champ" *ngIf="besoinPresenceVotants">
+    <span>{{ 'scrutins.rulesMinPresenceVoters' | translate }}</span>
+    <input type="number" [(ngModel)]="regles.votantsPresenceMinPercent" [name]="prefixe + 'pv'" min="0" max="100"/>
+  </label>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesCandidates' | translate }}</span>
+    <select [(ngModel)]="regles.candidats" [name]="prefixe + 'candidats'">
+      <option *ngFor="let m of modesDisponibles()" [ngValue]="m">{{ 'scrutins.eligibility.' + m | translate }}</option>
+    </select>
+  </label>
+  <label class="champ" *ngIf="besoinPresenceCandidats">
+    <span>{{ 'scrutins.rulesMinPresenceCandidates' | translate }}</span>
+    <input type="number" [(ngModel)]="regles.candidatsPresenceMinPercent" [name]="prefixe + 'pc'" min="0" max="100"/>
+  </label>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesNominees' | translate }}</span>
+    <select [(ngModel)]="regles.nomines" [name]="prefixe + 'nomines'">
+      <option *ngFor="let m of modesNomines" [ngValue]="m">{{ 'scrutins.nomineesMode.' + m | translate }}</option>
+    </select>
+  </label>
+  <label class="champ" *ngIf="regles.nomines === 'AUTO_TOP_N'">
+    <span>{{ 'scrutins.rulesNomineesCount' | translate }}</span>
+    <input type="number" [(ngModel)]="regles.nbNomines" [name]="prefixe + 'nb'" min="1" max="30"/>
+  </label>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesVotesPerVoter' | translate }}</span>
+    <input type="number" [(ngModel)]="regles.voixParVotant" [name]="prefixe + 'voix'" min="1" max="10"/>
+  </label>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesWeightStats' | translate }} : {{ regles.poidsStats }} % / {{ 'scrutins.rulesWeightVotes' | translate }} : {{ regles.poidsVotes }} %</span>
+    <input type="range" min="0" max="100" step="5" [ngModel]="regles.poidsStats" (ngModelChange)="changerPoidsStats($event)" [name]="prefixe + 'poids'"/>
+  </label>
+
+  <ng-container *ngIf="besoinPoints">
+    <p class="astuce"><mat-icon>scoreboard</mat-icon>{{ 'scrutins.rulesPointsHelp' | translate }}</p>
+    <div class="dates">
+      <label class="champ">
+        <span>{{ 'scrutins.pointsHommeDuMatch' | translate }}</span>
+        <input type="number" [(ngModel)]="regles.pointsHommeDuMatch" [name]="prefixe + 'ph'" min="0" max="100"/>
+      </label>
+      <label class="champ">
+        <span>{{ 'scrutins.pointsMvpEquipe' | translate }}</span>
+        <input type="number" [(ngModel)]="regles.pointsMvpEquipe" [name]="prefixe + 'pm'" min="0" max="100"/>
+      </label>
+      <label class="champ">
+        <span>{{ 'scrutins.pointsBut' | translate }}</span>
+        <input type="number" [(ngModel)]="regles.pointsBut" [name]="prefixe + 'pb'" min="0" max="100"/>
+      </label>
+      <label class="champ">
+        <span>{{ 'scrutins.pointsPasse' | translate }}</span>
+        <input type="number" [(ngModel)]="regles.pointsPasse" [name]="prefixe + 'pp'" min="0" max="100"/>
+      </label>
+      <label class="champ">
+        <span>{{ 'scrutins.pointsPresence' | translate }}</span>
+        <input type="number" [(ngModel)]="regles.pointsPresence" [name]="prefixe + 'pr'" min="0" max="100"/>
+      </label>
+    </div>
+  </ng-container>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesMinVotes' | translate }}</span>
+    <input type="number" [(ngModel)]="regles.minVotes" [name]="prefixe + 'minvotes'" min="0" max="100"/>
+    <small class="aide">{{ 'scrutins.rulesMinVotesHelp' | translate }}</small>
+  </label>
+
+  <label class="champ">
+    <span>{{ 'scrutins.rulesTieBreak' | translate }}</span>
+    <select [(ngModel)]="regles.departage" [name]="prefixe + 'departage'">
+      <option *ngFor="let d of modesDepartage" [ngValue]="d">{{ 'scrutins.tieBreak.' + d | translate }}</option>
+    </select>
+  </label>
+
+  <!-- Critères de départage : choisis et ordonnés par le responsable -->
+  <div *ngIf="regles.departage === 'HIERARCHIE'" class="criteres">
+    <p class="astuce"><mat-icon>low_priority</mat-icon>{{ 'scrutins.criteria.help' | translate }}</p>
+
+    <ol class="criteres__liste">
+      <li *ngFor="let c of criteresChoisis; let i = index" class="critere">
+        <span class="critere__rang">{{ i + 1 }}</span>
+        <span class="critere__texte">
+          <strong>{{ 'scrutins.criteria.' + c + '.label' | translate }}</strong>
+          <small>{{ 'scrutins.criteria.' + c + '.help' | translate }}</small>
+        </span>
+        <button type="button" class="critere__btn" (click)="deplacer(i, -1)" [disabled]="i === 0"
+                [attr.aria-label]="'scrutins.criteria.up' | translate"><mat-icon>arrow_upward</mat-icon></button>
+        <button type="button" class="critere__btn" (click)="deplacer(i, 1)" [disabled]="i === criteresChoisis.length - 1"
+                [attr.aria-label]="'scrutins.criteria.down' | translate"><mat-icon>arrow_downward</mat-icon></button>
+        <button type="button" class="critere__btn" (click)="retirerCritere(c)"
+                [attr.aria-label]="'scrutins.criteria.remove' | translate"><mat-icon>close</mat-icon></button>
+      </li>
+    </ol>
+    <p *ngIf="!criteresChoisis.length" class="vide">{{ 'scrutins.criteria.none' | translate }}</p>
+
+    <div *ngIf="criteresDisponibles.length" class="criteres__ajout">
+      <span class="criteres__ajout-titre">{{ 'scrutins.criteria.add' | translate }}</span>
+      <button type="button" class="chip" *ngFor="let c of criteresDisponibles" (click)="ajouterCritere(c)">
+        <mat-icon>add</mat-icon>{{ 'scrutins.criteria.' + c + '.label' | translate }}
+      </button>
+    </div>
+
+    <button type="button" class="lien" (click)="ordreHistorique()">
+      <mat-icon>restart_alt</mat-icon>{{ 'scrutins.criteria.reset' | translate }}
+    </button>
+  </div>
+
+  <label class="case">
+    <input type="checkbox" [(ngModel)]="regles.voteSoiMeme" [name]="prefixe + 'soi'"/>
+    <span><strong>{{ 'scrutins.rulesSelfVote' | translate }}</strong></span>
+  </label>
+  <label class="case">
+    <input type="checkbox" [(ngModel)]="regles.commentaire" [name]="prefixe + 'comm'"/>
+    <span><strong>{{ 'scrutins.rulesComments' | translate }}</strong></span>
+  </label>
+</div>
