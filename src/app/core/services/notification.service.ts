@@ -358,7 +358,11 @@ private initWebSocket(): void {
       'COTISATION_NEW': 'savings',
       'INSCRIPTION_COMPETITION': 'emoji_events',
       'LICENCE': 'badge',
-      'CONCOURS_GAGNANT': 'military_tech'
+      'CONCOURS_GAGNANT': 'military_tech',
+      'VOTE_OUVERT': 'how_to_vote',
+      'VOTE_RAPPEL': 'how_to_vote',
+      'VOTE_RESULTAT': 'emoji_events',
+      'RELANCE_INACTIVITE': 'waving_hand'
     };
     return icons[category] || 'notifications';
   }

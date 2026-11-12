@@ -1,129 +1,152 @@
 <div class="mvp-voting-lobby">
-  
+
   <div class="lobby-header">
     <div class="icon-circle">
-      <mat-icon>military_tech</mat-icon>
+      <mat-icon>how_to_vote</mat-icon>
     </div>
-    <h2>{{ 'mvpVote.title' | translate }}</h2>
-    <p>{{ 'mvpVote.subtitle' | translate }}</p>
+    <h2>{{ 'scrutins.member.title' | translate }}</h2>
+    <p>{{ 'scrutins.member.subtitle' | translate }}</p>
   </div>
 
   @if (isLoading()) {
     <div class="loader-box">
       <mat-spinner diameter="40"></mat-spinner>
     </div>
-  } 
-  @else { 
+  }
+  @else {
 
-    @if (nomines().length === 0) {
+    @if (ouverts().length === 0 && clos().length === 0) {
       <div class="closed-state-container animate-in">
         <div class="closed-card">
           <mat-icon class="lock-icon">lock_clock</mat-icon>
           <h3>{{ 'mvpVote.closedTitle' | translate }}</h3>
-          <p>{{ 'mvpVote.closedMsg' | translate }}</p>
-          
+          <p>{{ 'scrutins.member.none' | translate }}</p>
           <div class="info-box">
             <mat-icon>info</mat-icon>
-            <span>{{ 'mvpVote.closedTimeline' | translate }}</span>
+            <span>{{ 'scrutins.member.noneHint' | translate }}</span>
           </div>
         </div>
       </div>
-    } 
-    
-    @else {
+    }
 
-      @if (!isEligible() || hasVoted()) {
-        <div class="trends-container animate-in">
-          <div class="trends-header">
-            <mat-icon class="status-icon">{{ hasVoted() ? 'check_circle' : 'visibility' }}</mat-icon>
-            <h3>{{ 'mvpVote.trendsTitle' | translate }} - {{ currentMonthLabel() }}</h3>
-            <p class="status-subtitle">
-              {{ hasVoted() ? ('mvpVote.votedMsg' | translate) : ('mvpVote.notEligibleMsg' | translate) }}
-            </p>
-          </div>
-
-          <div class="trends-list">
-            @for (player of nominesTries(); track player.id; let i = $index) {
-              <div class="trend-item">
-                <div class="player-info">
-                  <span class="rank-badge">#{{ i + 1 }}</span>
-                  
-                  <div class="mini-avatar-wrapper">
-                    <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="mini-img">
-                    <div *ngIf="!player.photoUrl" class="initials-avatar mini" [style.background-color]="getAvatarColor(player.id)">
-                      {{ getInitials(player.prenom, player.nom) }}
-                    </div>
-                  </div>
-
-                  <span class="name">{{ player.prenom }} {{ player.nom }}</span>
-                  <span class="vote-count-label">{{ player.votesCount || 0 }} {{ 'mvpVote.votes' | translate }}</span>
-                </div>
-                <div class="progress-bar-container">
-                  <div class="progress-fill" [style.width.%]="calculatePercentage(player)"></div>
-                </div>
-              </div>
-            }
-          </div>
-
-          <button mat-flat-button color="primary" (click)="checkStatusAndLoad()" class="refresh-btn w-100">
-            <mat-icon>refresh</mat-icon> {{ 'common.refresh' | translate }}
+    <!-- ── Votes ouverts ── -->
+    @if (ouverts().length > 0) {
+      <h3 class="section-titre">{{ 'scrutins.member.open' | translate }}</h3>
+      <div class="scrutins-liste">
+        @for (s of ouverts(); track s.id) {
+          <button type="button" class="scrutin-ligne animate-in" [class.actif]="detail()?.scrutin?.id === s.id" (click)="ouvrir(s.id)">
+            <mat-icon class="scrutin-ligne__icone">{{ icones[s.type] }}</mat-icon>
+            <span class="scrutin-ligne__texte">
+              <strong>{{ s.titre }}</strong>
+              <small *ngIf="s.fermetureAt">{{ 'scrutins.closesOn' | translate }} {{ s.fermetureAt | date:'dd/MM/yyyy HH:mm' }}</small>
+            </span>
+            <span class="scrutin-ligne__etat" [class.fait]="s.aVote" [class.afaire]="!s.aVote && s.peutVoter">
+              @if (s.aVote) { <mat-icon>check_circle</mat-icon>{{ 'scrutins.member.voted' | translate }} }
+              @else if (s.peutVoter) { {{ 'mvpVote.voteAction' | translate }} }
+              @else { {{ 'scrutins.member.notEligible' | translate }} }
+            </span>
           </button>
-        </div>
-      }
+        }
+      </div>
+    }
 
-      @else {
+    <!-- ── Détail du vote déplié ── -->
+    @if (isLoadingDetail()) {
+      <div class="loader-box"><mat-spinner diameter="32"></mat-spinner></div>
+    }
+    @if (!isLoadingDetail() && detail(); as d) {
+
+      @if (d.scrutin.statut === 'OUVERT') {
+        <p class="instruction-detail">
+          @if (d.scrutin.peutVoter) {
+            {{ 'scrutins.member.pickHint' | translate }}
+            @if (d.regles.voixParVotant > 1) { ({{ voixRestantes() }} {{ 'scrutins.member.votesLeft' | translate }}) }
+          } @else if (d.scrutin.aVote) {
+            {{ 'mvpVote.votedMsg' | translate }}
+          } @else {
+            {{ 'mvpVote.notEligibleMsg' | translate }}
+          }
+        </p>
+
         <div class="candidates-grid">
-          @for (player of nominesTries(); track player.id; let i = $index) {
-            <div class="fifa-card animate-in" [style.animation-delay]="i * 0.1 + 's'" (click)="openVoteSheet(player)">
+          @for (n of d.nomines; track n.membreId; let i = $index) {
+            <div class="fifa-card animate-in" [style.animation-delay]="i * 0.1 + 's'"
+                 [class.choisi]="d.mesChoix.includes(n.membreId)"
+                 (click)="voter(n)">
               <div class="card-inner">
-                <div class="player-rank">#{{ i + 1 }}</div>
-                
                 <div class="player-visual">
                   <div class="avatar-ring">
-                    <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="player-img">
-                    <div *ngIf="!player.photoUrl" class="initials-avatar" [style.background-color]="getAvatarColor(player.id)">
-                      {{ getInitials(player.prenom, player.nom) }}
+                    <img *ngIf="n.photoUrl" [src]="n.photoUrl" class="player-img">
+                    <div *ngIf="!n.photoUrl" class="initials-avatar" [style.background-color]="getAvatarColor(n.membreId)">
+                      {{ getInitials(n.prenom, n.nom) }}
                     </div>
                   </div>
                 </div>
 
                 <div class="player-name">
-                  <strong>{{ player.prenom }}</strong>
-                  <span>{{ player.nom }}</span>
+                  <strong>{{ n.prenom }}</strong>
+                  <span>{{ n.nom }}</span>
                 </div>
 
-                <div class="player-stats-row">
-                  <div class="stat-item" [title]="'dashboard.goals' | translate">
-                    <span class="icon">⚽</span>
-                    <span class="val">{{ player.buts }}</span>
-                  </div>
-                  <div class="stat-item" [title]="'membres.assists' | translate">
-                    <span class="icon">👟</span>
-                    <span class="val">{{ player.passes }}</span>
-                  </div>
-                  <div class="stat-item mvp-equipe" [title]="'PRESENCE.FIELD.MVP_TEAM' | translate">
-                    <span class="icon">🛡️</span>
-                    <span class="val">{{ player.mvpEquipe }}</span>
-                  </div>
-                  <div class="stat-item" title="HDM">
-                    <span class="icon">⭐</span>
-                    <span class="val">{{ player.motm }}</span>
-                  </div>
-                  <div class="stat-item vote-count" title="Votes">
-                    <span class="icon">🗳️</span>
-                    <span class="val">{{ player.votesCount || 0 }}</span>
-                  </div>
-                
-                </div>
-
-                <button class="vote-btn-overlay">
-                  {{ 'mvpVote.voteAction' | translate }}
-                </button>
+                @if (d.mesChoix.includes(n.membreId)) {
+                  <div class="player-stats-row"><div class="stat-item"><span class="icon">✅</span><span class="val">{{ 'scrutins.member.yourVote' | translate }}</span></div></div>
+                } @else if (d.scrutin.peutVoter) {
+                  <button class="vote-btn-overlay">{{ 'mvpVote.voteAction' | translate }}</button>
+                }
               </div>
             </div>
           }
         </div>
+
+        <p class="secret-note"><mat-icon>visibility_off</mat-icon>{{ 'scrutins.member.secretNote' | translate }}</p>
       }
+
+      <!-- Vote clos : classement final -->
+      @else if (d.scrutin.statut === 'CLOS') {
+        <div class="trends-container animate-in">
+          <div class="trends-header">
+            <mat-icon class="status-icon">emoji_events</mat-icon>
+            <h3>{{ d.scrutin.titre }}</h3>
+          </div>
+          @if (d.resultats.length === 0) {
+            <p class="status-subtitle">{{ 'scrutins.noResults' | translate }}</p>
+          }
+          <div class="trends-list">
+            @for (r of d.resultats; track r.membreId) {
+              <div class="trend-item">
+                <div class="player-info">
+                  <span class="rank-badge">{{ r.gagnant ? '🏆' : '#' + r.rang }}</span>
+                  <div class="mini-avatar-wrapper">
+                    <img *ngIf="r.photoUrl" [src]="r.photoUrl" class="mini-img">
+                    <div *ngIf="!r.photoUrl" class="initials-avatar mini" [style.background-color]="getAvatarColor(r.membreId)">
+                      {{ getInitials(r.prenom, r.nom) }}
+                    </div>
+                  </div>
+                  <span class="name">{{ r.prenom }} {{ r.nom }}</span>
+                  <span class="vote-count-label">{{ r.nbVotes }} {{ 'mvpVote.votes' | translate }}</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-fill" [style.width.%]="r.scoreFinal > 100 ? 100 : r.scoreFinal"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ── Votes clos ── -->
+    @if (clos().length > 0) {
+      <h3 class="section-titre">{{ 'scrutins.member.closed' | translate }}</h3>
+      <div class="scrutins-liste">
+        @for (s of clos(); track s.id) {
+          <button type="button" class="scrutin-ligne" [class.actif]="detail()?.scrutin?.id === s.id" (click)="ouvrir(s.id)">
+            <mat-icon class="scrutin-ligne__icone">{{ icones[s.type] }}</mat-icon>
+            <span class="scrutin-ligne__texte"><strong>{{ s.titre }}</strong></span>
+            <span class="scrutin-ligne__etat">{{ 'scrutins.member.seeResults' | translate }}</span>
+          </button>
+        }
+      </div>
     }
   }
 </div>

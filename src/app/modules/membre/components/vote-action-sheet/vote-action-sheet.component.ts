@@ -6,8 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; // Import manquant pour mat-spinner
 import { TranslateModule } from '@ngx-translate/core';
-import { AuthService } from '../../../../core/services/auth.service';
-import { InvitationService } from '../../../../core/services/invitation.service';
+import { ScrutinService } from '../../../../core/services/scrutin.service';
 
 
 @Component({
@@ -24,7 +23,7 @@ import { InvitationService } from '../../../../core/services/invitation.service'
   template: `
     <div class="vote-sheet">
       <header>
-        <h3>{{ 'mvpVote.castYourVote' | translate }}</h3>
+        <h3>{{ data.titre || ('mvpVote.castYourVote' | translate) }}</h3>
         <p>{{ 'mvpVote.anonymousHint' | translate }}</p>
       </header>
 
@@ -36,7 +35,7 @@ import { InvitationService } from '../../../../core/services/invitation.service'
         <strong>{{ data.player.prenom }} {{ data.player.nom }}</strong>
       </div>
 
-      <div class="comment-section">
+      <div class="comment-section" *ngIf="data.commentaire">
         <label>{{ 'mvpVote.leaveComment' | translate }}</label>
         <textarea [(ngModel)]="comment" maxlength="140" [placeholder]="'mvpVote.placeholder' | translate"></textarea>
         <span class="char-count">{{ comment.length }}/140</span>
@@ -98,35 +97,22 @@ import { InvitationService } from '../../../../core/services/invitation.service'
 })
 export class VoteActionSheetComponent {
   // Injections modernes (hors constructeur)
-  public data = inject<{player: any, groupeId: number}>(MAT_BOTTOM_SHEET_DATA);
+  /** player : un nominé du scrutin (membreId, prenom, nom, photoUrl) ; commentaire : le scrutin autorise un mot de soutien. */
+  public data = inject<{ player: any; scrutinId: number; titre?: string; commentaire?: boolean }>(MAT_BOTTOM_SHEET_DATA);
   private sheetRef = inject(MatBottomSheetRef<VoteActionSheetComponent>);
-  private voteService = inject(InvitationService); // Assure-toi du nom du service
-  private auth = inject(AuthService);
+  private scrutins = inject(ScrutinService);
 
   comment = '';
   loading = false;
 
   confirm() {
-    const user = this.auth.getUser();
-    if (!user?.userId) return;
-    console.log(this.data)
     this.loading = true;
-    const payload = {
-      groupeId: this.data.groupeId,
-      votantId: user.userId,
-      candidatId: this.data.player.id,
-      commentaire: this.comment
-    };
-
-    this.voteService.soumettreVote(payload).subscribe({
-      next: () => {
-        console.log("vote soumis")
-        this.sheetRef.dismiss({ success: true });
-      },
+    this.scrutins.voter(this.data.scrutinId, this.data.player.membreId, this.data.commentaire ? this.comment : undefined).subscribe({
+      next: () => this.sheetRef.dismiss({ success: true, candidatId: this.data.player.membreId }),
       error: (err) => {
         this.loading = false;
-        // Gestion du message d'erreur renvoyé par le backend (ex: 50% de présence)
-        const errorMsg = err.error || "Erreur lors du vote";
+        // Message du serveur (ex : présence insuffisante, vote déjà donné, vote clos)
+        const errorMsg = err?.error?.message ?? (typeof err?.error === 'string' ? err.error : 'Erreur lors du vote');
         this.sheetRef.dismiss({ error: errorMsg });
       }
     });

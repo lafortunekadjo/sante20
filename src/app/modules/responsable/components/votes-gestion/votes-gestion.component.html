@@ -1,0 +1,278 @@
+<div class="votes-container">
+  <div class="page-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="header-main">
+        <div class="header-text">
+          <h1 class="page-title">{{ 'scrutins.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'scrutins.subtitle' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container"><mat-spinner diameter="50"></mat-spinner></div>
+
+  <div *ngIf="!loading()" class="content">
+
+    <div class="segment" role="tablist">
+      <button type="button" [class.actif]="vue() === 'votes'" (click)="vue.set('votes')">{{ 'scrutins.tabVotes' | translate }}</button>
+      <button type="button" [class.actif]="vue() === 'reglages'" (click)="vue.set('reglages')">{{ 'scrutins.tabSettings' | translate }}</button>
+    </div>
+
+    <!-- ══════════════ VOTES ══════════════ -->
+    <ng-container *ngIf="vue() === 'votes'">
+
+      <button *ngIf="!creation()" type="button" class="btn-primary btn-nouveau" (click)="ouvrirCreation()">
+        <mat-icon>add</mat-icon>{{ 'scrutins.newVote' | translate }}
+      </button>
+
+      <!-- ── Création ── -->
+      <section *ngIf="creation()" class="bloc card">
+        <h2 class="bloc__titre">{{ 'scrutins.newVote' | translate }}</h2>
+
+        <div class="types">
+          <label class="type" *ngFor="let t of types" [class.actif]="type === t">
+            <input type="radio" name="type" [ngModel]="type" (ngModelChange)="choisirType($event)" [value]="t"/>
+            <mat-icon>{{ icones[t] }}</mat-icon>
+            <strong>{{ 'scrutins.types.' + t + '.label' | translate }}</strong>
+            <small>{{ 'scrutins.types.' + t + '.help' | translate }}</small>
+          </label>
+        </div>
+
+        <!-- Période / match -->
+        <label class="champ" *ngIf="type === 'MVP_MATCH'">
+          <span>{{ 'scrutins.fieldMatch' | translate }}</span>
+          <select [(ngModel)]="matchId" name="match">
+            <option [ngValue]="null">{{ 'scrutins.pickMatch' | translate }}</option>
+            <option *ngFor="let m of matchsRecents()" [ngValue]="m.id">{{ m.libelle }}</option>
+          </select>
+        </label>
+
+        <label class="champ" *ngIf="type === 'MVP_MOIS' || type === 'FAIR_PLAY_MOIS'">
+          <span>{{ 'scrutins.fieldMonth' | translate }}</span>
+          <input type="month" [(ngModel)]="mois" name="mois"/>
+        </label>
+
+        <label class="champ" *ngIf="type === 'BALLON_OR_ANNEE'">
+          <span>{{ 'scrutins.fieldYear' | translate }}</span>
+          <input type="number" [(ngModel)]="annee" name="annee" min="2000" max="2100"/>
+        </label>
+
+        <ng-container *ngIf="type === 'PERSONNALISE'">
+          <label class="champ">
+            <span>{{ 'scrutins.fieldTitle' | translate }}</span>
+            <input type="text" [(ngModel)]="titre" name="titre" maxlength="120"/>
+          </label>
+          <div class="dates">
+            <label class="champ">
+              <span>{{ 'scrutins.fieldStatsFrom' | translate }}</span>
+              <input type="date" [(ngModel)]="periodeDebut" name="pdebut"/>
+            </label>
+            <label class="champ">
+              <span>{{ 'scrutins.fieldStatsTo' | translate }}</span>
+              <input type="date" [(ngModel)]="periodeFin" name="pfin"/>
+            </label>
+          </div>
+        </ng-container>
+
+        <!-- Dates du vote -->
+        <label class="case">
+          <input type="checkbox" [(ngModel)]="programmer" name="programmer"/>
+          <span><strong>{{ 'scrutins.scheduleLabel' | translate }}</strong><small>{{ 'scrutins.scheduleHelp' | translate }}</small></span>
+        </label>
+        <div class="dates">
+          <label class="champ" *ngIf="programmer">
+            <span>{{ 'scrutins.fieldOpening' | translate }}</span>
+            <input type="datetime-local" [(ngModel)]="ouvertureAt" name="ouverture"/>
+          </label>
+          <label class="champ">
+            <span>{{ 'scrutins.fieldClosing' | translate }}</span>
+            <input type="datetime-local" [(ngModel)]="fermetureAt" name="fermeture"/>
+            <small class="aide">{{ (type === 'MVP_MATCH' ? 'scrutins.closingHelpMatch' : 'scrutins.closingHelp') | translate }}</small>
+          </label>
+        </div>
+
+        <!-- Règles -->
+        <button type="button" class="lien" (click)="reglesOuvertes = !reglesOuvertes" [disabled]="!regles">
+          <mat-icon>{{ reglesOuvertes ? 'expand_less' : 'tune' }}</mat-icon>{{ 'scrutins.customizeRules' | translate }}
+        </button>
+
+        <div *ngIf="reglesOuvertes && regles" class="regles">
+          <label class="champ">
+            <span>{{ 'scrutins.rulesVoters' | translate }}</span>
+            <select [(ngModel)]="regles.votants" name="votants">
+              <option *ngFor="let m of modesDisponibles()" [ngValue]="m">{{ 'scrutins.eligibility.' + m | translate }}</option>
+            </select>
+          </label>
+          <label class="champ" *ngIf="besoinPresenceVotants">
+            <span>{{ 'scrutins.rulesMinPresenceVoters' | translate }}</span>
+            <input type="number" [(ngModel)]="regles.votantsPresenceMinPercent" name="pv" min="0" max="100"/>
+          </label>
+
+          <label class="champ">
+            <span>{{ 'scrutins.rulesCandidates' | translate }}</span>
+            <select [(ngModel)]="regles.candidats" name="candidats">
+              <option *ngFor="let m of modesDisponibles()" [ngValue]="m">{{ 'scrutins.eligibility.' + m | translate }}</option>
+            </select>
+          </label>
+          <label class="champ" *ngIf="besoinPresenceCandidats">
+            <span>{{ 'scrutins.rulesMinPresenceCandidates' | translate }}</span>
+            <input type="number" [(ngModel)]="regles.candidatsPresenceMinPercent" name="pc" min="0" max="100"/>
+          </label>
+
+          <label class="champ">
+            <span>{{ 'scrutins.rulesNominees' | translate }}</span>
+            <select [(ngModel)]="regles.nomines" name="nomines">
+              <option *ngFor="let m of modesNomines" [ngValue]="m">{{ 'scrutins.nomineesMode.' + m | translate }}</option>
+            </select>
+          </label>
+          <label class="champ" *ngIf="regles.nomines === 'AUTO_TOP_N'">
+            <span>{{ 'scrutins.rulesNomineesCount' | translate }}</span>
+            <input type="number" [(ngModel)]="regles.nbNomines" name="nb" min="1" max="30"/>
+          </label>
+
+          <label class="champ">
+            <span>{{ 'scrutins.rulesVotesPerVoter' | translate }}</span>
+            <input type="number" [(ngModel)]="regles.voixParVotant" name="voix" min="1" max="10"/>
+          </label>
+
+          <label class="champ">
+            <span>{{ 'scrutins.rulesWeightStats' | translate }} : {{ regles.poidsStats }} % / {{ 'scrutins.rulesWeightVotes' | translate }} : {{ regles.poidsVotes }} %</span>
+            <input type="range" min="0" max="100" step="5" [ngModel]="regles.poidsStats" (ngModelChange)="changerPoidsStats($event)" name="poids"/>
+          </label>
+
+          <label class="champ">
+            <span>{{ 'scrutins.rulesMinVotes' | translate }}</span>
+            <input type="number" [(ngModel)]="regles.minVotes" name="minvotes" min="0" max="100"/>
+          </label>
+
+          <label class="case">
+            <input type="checkbox" [(ngModel)]="regles.voteSoiMeme" name="soi"/>
+            <span><strong>{{ 'scrutins.rulesSelfVote' | translate }}</strong></span>
+          </label>
+          <label class="case">
+            <input type="checkbox" [(ngModel)]="regles.commentaire" name="comm"/>
+            <span><strong>{{ 'scrutins.rulesComments' | translate }}</strong></span>
+          </label>
+        </div>
+
+        <!-- Nominés choisis à la main -->
+        <div *ngIf="regles?.nomines === 'MANUEL' && type === 'PERSONNALISE'" class="nomines-manuels">
+          <p class="astuce"><mat-icon>how_to_vote</mat-icon>{{ 'scrutins.pickNomineesHelp' | translate }} ({{ nominesManuels.size }})</p>
+          <label class="case" *ngFor="let m of membresGroupe()">
+            <input type="checkbox" [checked]="nominesManuels.has(m.id)" (change)="basculerNomine(m.id)"/>
+            <span><strong>{{ m.nom }}</strong></span>
+          </label>
+        </div>
+
+        <p class="astuce"><mat-icon>visibility_off</mat-icon>{{ 'scrutins.anonymousNote' | translate }}</p>
+        <p *ngIf="erreur()" class="erreur" role="alert">{{ erreur() }}</p>
+
+        <div class="actions-form">
+          <button type="button" class="btn-outline" (click)="fermerCreation()" [disabled]="saving()">{{ 'scrutins.cancel' | translate }}</button>
+          <button type="button" class="btn-primary" (click)="creer()" [disabled]="saving() || !regles">
+            <mat-spinner *ngIf="saving()" diameter="18"></mat-spinner>
+            {{ (programmer ? 'scrutins.schedule' : 'scrutins.launchNow') | translate }}
+          </button>
+        </div>
+      </section>
+
+      <!-- ── En cours ── -->
+      <h2 class="liste-titre">{{ 'scrutins.inProgress' | translate }} <span class="badge">{{ enCours().length }}</span></h2>
+      <p *ngIf="!enCours().length" class="vide">{{ 'scrutins.noneInProgress' | translate }}</p>
+
+      <article *ngFor="let s of enCours()" class="scrutin card">
+        <div class="scrutin__icone scrutin__icone--{{ s.type }}"><mat-icon>{{ icones[s.type] }}</mat-icon></div>
+        <div class="scrutin__corps">
+          <strong class="scrutin__titre">{{ s.titre }}</strong>
+          <span class="scrutin__meta">{{ 'scrutins.types.' + s.type + '.label' | translate }}</span>
+          <div class="scrutin__pastilles">
+            <span class="pastille pastille--{{ s.statut }}">{{ 'scrutins.statuses.' + s.statut | translate }}</span>
+            <span class="pastille">{{ s.nbVotants }} {{ 'scrutins.voters' | translate }}</span>
+          </div>
+          <span class="scrutin__dates" *ngIf="s.statut === 'PROGRAMME'">{{ 'scrutins.opensOn' | translate }} {{ s.ouvertureAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          <span class="scrutin__dates" *ngIf="s.fermetureAt">{{ 'scrutins.closesOn' | translate }} {{ s.fermetureAt | date:'dd/MM/yyyy HH:mm' }}</span>
+
+          <div class="edition" *ngIf="edition?.id === s.id">
+            <input type="datetime-local" [(ngModel)]="edition!.valeur" name="edition"/>
+            <button type="button" class="btn-primary btn-sm" (click)="enregistrerEdition()" [disabled]="saving()">{{ 'scrutins.save' | translate }}</button>
+            <button type="button" class="btn-outline btn-sm" (click)="edition = null">{{ 'scrutins.cancel' | translate }}</button>
+          </div>
+        </div>
+        <div class="scrutin__actions">
+          <button *ngIf="s.statut === 'PROGRAMME'" type="button" class="btn-primary btn-sm" (click)="ouvrir(s)" [disabled]="saving()">{{ 'scrutins.openNow' | translate }}</button>
+          <button *ngIf="s.statut === 'OUVERT'" type="button" class="btn-primary btn-sm" (click)="cloturer(s)" [disabled]="saving()">{{ 'scrutins.closeNow' | translate }}</button>
+          <button type="button" class="btn-outline btn-sm" (click)="commencerEdition(s)" [disabled]="saving()">{{ 'scrutins.changeDeadline' | translate }}</button>
+          <button type="button" class="btn-danger-outline btn-sm" (click)="annuler(s)" [disabled]="saving()">{{ 'scrutins.cancelVote' | translate }}</button>
+        </div>
+      </article>
+
+      <!-- ── Historique ── -->
+      <h2 class="liste-titre">{{ 'scrutins.history' | translate }} <span class="badge">{{ historique().length }}</span></h2>
+      <p *ngIf="!historique().length" class="vide">{{ 'scrutins.noneHistory' | translate }}</p>
+
+      <ng-container *ngFor="let s of historique()">
+        <article class="scrutin card">
+          <div class="scrutin__icone scrutin__icone--{{ s.type }}"><mat-icon>{{ icones[s.type] }}</mat-icon></div>
+          <div class="scrutin__corps">
+            <strong class="scrutin__titre">{{ s.titre }}</strong>
+            <span class="scrutin__meta">{{ 'scrutins.types.' + s.type + '.label' | translate }}</span>
+            <div class="scrutin__pastilles">
+              <span class="pastille pastille--{{ s.statut }}">{{ 'scrutins.statuses.' + s.statut | translate }}</span>
+              <span class="pastille">{{ s.nbVotants }} {{ 'scrutins.voters' | translate }}</span>
+            </div>
+          </div>
+          <div class="scrutin__actions">
+            <button *ngIf="s.statut === 'CLOS'" type="button" class="btn-outline btn-sm" (click)="voirResultats(s)">
+              {{ (resultats()?.scrutin?.id === s.id ? 'scrutins.hideResults' : 'scrutins.showResults') | translate }}
+            </button>
+          </div>
+        </article>
+
+        <section *ngIf="resultats()?.scrutin?.id === s.id" class="resultats card">
+          <p *ngIf="!resultats()!.resultats.length" class="vide">{{ 'scrutins.noResults' | translate }}</p>
+          <div *ngFor="let r of resultats()!.resultats" class="resultat" [class.resultat--gagnant]="r.gagnant">
+            <span class="resultat__rang">{{ r.gagnant ? '🏆' : '#' + r.rang }}</span>
+            <span class="resultat__nom">{{ r.prenom }} {{ r.nom }}</span>
+            <span class="resultat__votes">{{ r.nbVotes }} {{ 'scrutins.votes' | translate }}</span>
+            <span class="resultat__score">{{ r.scoreFinal }} %</span>
+          </div>
+        </section>
+      </ng-container>
+    </ng-container>
+
+    <!-- ══════════════ RÉGLAGES ══════════════ -->
+    <ng-container *ngIf="vue() === 'reglages'">
+      <p class="astuce"><mat-icon>info</mat-icon>{{ 'scrutins.settingsHelp' | translate }}</p>
+
+      <section *ngFor="let c of configs()" class="reglage card">
+        <div class="reglage__tete">
+          <div class="scrutin__icone scrutin__icone--{{ c.type }}"><mat-icon>{{ icones[c.type] }}</mat-icon></div>
+          <div class="reglage__texte">
+            <strong>{{ 'scrutins.types.' + c.type + '.label' | translate }}</strong>
+            <small>{{ 'scrutins.types.' + c.type + '.help' | translate }}</small>
+          </div>
+          <label class="interrupteur">
+            <input type="checkbox" [checked]="c.actif" (change)="basculerActif(c)"/>
+            <span>{{ (c.actif ? 'scrutins.enabled' : 'scrutins.disabled') | translate }}</span>
+          </label>
+        </div>
+
+        <div *ngIf="c.type === 'MVP_MATCH' && c.actif" class="reglage__corps">
+          <label class="champ">
+            <span>{{ 'scrutins.trigger' | translate }}</span>
+            <select [ngModel]="c.declenchement" (ngModelChange)="changerDeclenchement(c, $event)" name="decl-{{ c.type }}">
+              <option value="MANUEL">{{ 'scrutins.triggerManual' | translate }}</option>
+              <option value="AUTO_FIN_MATCH">{{ 'scrutins.triggerAuto' | translate }}</option>
+            </select>
+          </label>
+          <label class="champ" *ngIf="c.declenchement === 'AUTO_FIN_MATCH'">
+            <span>{{ 'scrutins.duration' | translate }}</span>
+            <input type="number" min="1" max="720" [ngModel]="c.dureeHeures" (change)="changerDuree(c, $any($event.target).value)" name="duree-{{ c.type }}"/>
+          </label>
+        </div>
+      </section>
+    </ng-container>
+  </div>
+</div>

@@ -14,6 +14,9 @@ export function resolveNotificationUrl(url: string | null | undefined, isRespons
   // Pages personnelles : tableau de bord du rôle
   if (/^\/(mes-cotisations|mes-sanctions|cotisations|mon-profil|dashboard)$/.test(path)) return home;
 
+  // Votes : un responsable vote depuis son espace
+  if (path === '/membre/vote' && isResponsable) return url.replace('/membre/vote', '/responsable/vote');
+
   // Matchs
   if (/^\/(matches|matchs)(\/\d+)?$/.test(path)) return isResponsable ? '/responsable/matchs' : home;
 

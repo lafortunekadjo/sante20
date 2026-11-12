@@ -315,7 +315,8 @@ export class GroupeListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getMembresCount(groupe: any): number {
-    return groupe.membres?.filter((m: { isDelete: any; }) => !m.isDelete).length || 0;
+    // Le serveur envoie ce champ sous le nom « delete » (vrai = membre supprimé)
+    return groupe.membres?.filter((m: { delete: boolean; }) => !m.delete).length || 0;
   }
 
   getInitials(nom: string): string {

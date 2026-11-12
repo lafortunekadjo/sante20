@@ -58,6 +58,7 @@ import { SortieCaisseComponent } from "./modules/responsable/components/sortie-c
 import { TypeContributionComponent } from "./modules/responsable/components/type-contribution/type-contribution.component";
 import { BilanComponent } from "./modules/responsable/components/bilan/bilan.component";
 import { RapportsComponent } from "./modules/responsable/components/rapports/rapports.component";
+import { VotesGestionComponent } from "./modules/responsable/components/votes-gestion/votes-gestion.component";
 import { MatchDirectComponent } from "./modules/responsable/components/match-direct/match-direct.component";
 import { CaisseDetailComponent } from "./modules/responsable/components/caisse-detail/caisse-detail.component";
 import { CaissesComponent } from "./modules/responsable/components/caisses/caisses.component";
@@ -694,6 +695,18 @@ export const routes: Routes = [
           {
             path: 'dashboard',
             component: RDashboardComponent
+          },
+          // Voter (un responsable est aussi membre du groupe) : même écran que côté membre
+          {
+            path: 'vote',
+            component: MvpVoteComponent
+          },
+          // Votes du groupe (MVP match, joueur du mois, fair-play, Ballon d'or…) — réservé à ceux qui ont le menu « Votes »
+          {
+            path: 'votes',
+            component: VotesGestionComponent,
+            canActivate: [MenuGuard],
+            data: { title: 'Votes' }
           },
           // Rapports PDF (financier / sportif / global) — réservé à ceux qui ont le menu « Rapports »
           {
