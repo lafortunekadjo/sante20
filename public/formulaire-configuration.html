@@ -257,7 +257,8 @@
   var CONTACT_WHATSAPP = '+237641131954';   // numéro au format international, sans + ni espaces (ex. '237600000000'). Vide : l'utilisateur choisit le contact.
   var CONTACT_EMAIL = 'lafortunekadjov@gmail.com';      // adresse e-mail qui reçoit les demandes (ex. 'contact@my2-0.cloud').
   var BROUILLON = 'my2-0-formulaire-config';
-  var LONGUEUR_MAX_WHATSAPP = 1500; // au-delà, on propose le fichier plutôt qu'un très long message
+  var LONGUEUR_MAX_WHATSAPP = 1500; // résumé lisible : au-delà, on ne met qu'une ligne
+  var LONGUEUR_MAX_CODE = 6000;     // message complet (résumé + code) : au-delà, le fichier est indispensable
 
   var $ = function (id) { return document.getElementById(id); };
   var form = $('formulaire');
@@ -423,10 +424,14 @@
     r.textContent = message;
   }
 
+  function nomFichier(d) {
+    return 'configuration-' + (d.groupe.nom || 'groupe').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.json';
+  }
+  function contenuFichier(d) { return JSON.stringify({ resume: resume(d), donnees: d }, null, 2); }
+
   function telecharger(d) {
-    var nom = 'configuration-' + (d.groupe.nom || 'groupe').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.json';
-    var contenu = JSON.stringify({ resume: resume(d), donnees: d }, null, 2);
-    var blob = new Blob([contenu], { type: 'application/json' });
+    var nom = nomFichier(d);
+    var blob = new Blob([contenuFichier(d)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url; a.download = nom;
@@ -435,29 +440,78 @@
     return nom;
   }
 
+  // ── Code de secours ─────────────────────────────────────────────────────────
+  // Un lien WhatsApp ne peut pas joindre un fichier. En plus du partage natif, le message embarque donc un code
+  // (les données compressées, sans le logo) que l'équipe My2-0 colle dans l'écran d'import si le fichier n'est pas arrivé.
+  // Il se termine par « ~ » : du texte ajouté après lui (« Merci ») ne le perturbe pas.
+  function base64(octets) {
+    var s = '';
+    for (var k = 0; k < octets.length; k += 8192) s += String.fromCharCode.apply(null, octets.subarray(k, k + 8192));
+    return btoa(s);
+  }
+  function coder(d, fini) {
+    var copie = JSON.parse(JSON.stringify(d));
+    copie.groupe.logo = '';                                   // le logo est trop lourd : il ne voyage que dans le fichier
+    var octets = new TextEncoder().encode(JSON.stringify({ donnees: copie }));
+    var sansCompression = function () { fini('MY2-0-CODE:1:' + base64(octets) + '~'); };
+    if (typeof CompressionStream === 'undefined' || typeof Response === 'undefined') { sansCompression(); return; }
+    try {
+      var flux = new Blob([octets]).stream().pipeThrough(new CompressionStream('gzip'));
+      new Response(flux).arrayBuffer().then(function (buf) { fini('MY2-0-CODE:z:' + base64(new Uint8Array(buf)) + '~'); }, sansCompression);
+    } catch (e) { sansCompression(); }
+  }
+
   // ── Actions d'envoi ─────────────────────────────────────────────────────────
-  // Le fichier est TOUJOURS téléchargé : c'est lui, et lui seul, qui permet de charger les données automatiquement
-  // dans My2-0 (le texte du message ne sert qu'à être lu). Le message rappelle de le joindre.
-  var RAPPEL_FICHIER = 'Le fichier vient d\'être téléchargé : joignez-le à votre message avant d\'envoyer (c\'est lui qui permet de charger vos informations automatiquement).';
+  // Priorité au partage natif du téléphone : le fichier est joint automatiquement (WhatsApp, e-mail, Drive…).
+  // Sinon : fichier téléchargé + message WhatsApp qui contient le code de données.
+  function fichiersPartageables(d) {
+    var contenu = contenuFichier(d), nom = nomFichier(d);
+    var essais = [new File([contenu], nom, { type: 'application/json' }), new File([contenu], nom + '.txt', { type: 'text/plain' })];
+    return essais.filter(function (fi) { return navigator.canShare && navigator.canShare({ files: [fi] }); });
+  }
 
   $('btn_whatsapp').onclick = function () {
     var d = valider(); if (!d) return;
-    var nom = telecharger(d);
-    var texte = resume(d), base = 'https://wa.me/' + CONTACT_WHATSAPP + '?text=';
-    var message = texte.length <= LONGUEUR_MAX_WHATSAPP
-      ? texte + '\n\n📎 Fichier joint : ' + nom
-      : 'Bonjour, voici la demande de configuration de mon groupe « ' + d.groupe.nom + ' ». Le fichier ' + nom + ' est en pièce jointe.';
-    window.open(base + encodeURIComponent(message), '_blank');
-    montrer('ok', 'Fichier « ' + nom + ' » téléchargé. Dans WhatsApp, appuyez sur le trombone 📎 pour le joindre, puis sur « Envoyer » : c\'est lui qui permet de charger vos informations automatiquement.');
+    var texte = resume(d);
+    var partageables = typeof File !== 'undefined' ? fichiersPartageables(d) : [];
+
+    if (partageables.length && navigator.share) {
+      navigator.share({ files: [partageables[0]], title: 'Configuration ' + d.groupe.nom, text: texte.length <= LONGUEUR_MAX_WHATSAPP ? texte : 'Configuration du groupe ' + d.groupe.nom })
+        .then(function () { montrer('ok', 'Envoyé. Le fichier a été joint automatiquement : rien d\'autre à faire.'); })
+        .catch(function (e) {
+          if (e && e.name === 'AbortError') { montrer('ko', 'Envoi annulé : rien n\'a été envoyé.'); return; }
+          envoiParLien(d, texte);
+        });
+      return;
+    }
+    envoiParLien(d, texte);
   };
+
+  function envoiParLien(d, texte) {
+    var nom = telecharger(d);   // gardé sur le téléphone, au cas où
+    coder(d, function (code) {
+      var base = 'https://wa.me/' + CONTACT_WHATSAPP + '?text=';
+      var avecCode = (texte.length <= LONGUEUR_MAX_WHATSAPP ? texte : 'Configuration du groupe « ' + d.groupe.nom + ' ».') +
+        '\n\n📎 Si le fichier ' + nom + ' n\'est pas joint, voici le code à coller dans My2-0 :\n' + code;
+      var message = avecCode.length <= LONGUEUR_MAX_CODE ? avecCode
+        : 'Configuration du groupe « ' + d.groupe.nom + ' ». Le fichier ' + nom + ' est en pièce jointe.';
+      window.open(base + encodeURIComponent(message), '_blank');
+      montrer('ok', avecCode.length <= LONGUEUR_MAX_CODE
+        ? 'WhatsApp s\'ouvre avec votre demande et le code de vos données : appuyez sur « Envoyer ». (Le fichier « ' + nom + ' » est aussi téléchargé : joignez-le avec le trombone 📎 si vous le pouvez.)'
+        : 'Votre liste est très longue : le fichier « ' + nom + ' » est téléchargé. Dans WhatsApp, joignez-le avec le trombone 📎 avant d\'envoyer : sans lui, nous ne pouvons pas charger vos informations.');
+    });
+  }
+
   $('btn_email').onclick = function () {
     var d = valider(); if (!d) return;
-    var nom = telecharger(d);
     var texte = resume(d);
-    var corps = texte.length <= 1800 ? texte + '\n\n📎 Fichier joint : ' + nom
-      : 'Bonjour,\n\nVoici la demande de configuration de mon groupe « ' + d.groupe.nom + ' ». Le fichier ' + nom + ' est en pièce jointe.';
-    location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent('Configuration du groupe ' + d.groupe.nom) + '&body=' + encodeURIComponent(corps);
-    montrer('ok', 'Fichier « ' + nom + ' » téléchargé : joignez-le à votre e-mail avant de l\'envoyer.');
+    var nom = telecharger(d);
+    coder(d, function (code) {
+      var corps = (texte.length <= 1800 ? texte : 'Configuration du groupe « ' + d.groupe.nom + ' ».') +
+        '\n\n📎 Fichier : ' + nom + ' (à joindre). S\'il n\'est pas joint, voici le code à coller dans My2-0 :\n' + code;
+      location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent('Configuration du groupe ' + d.groupe.nom) + '&body=' + encodeURIComponent(corps);
+      montrer('ok', 'Fichier « ' + nom + ' » téléchargé : joignez-le à votre e-mail. Le code de vos données est déjà dans le message.');
+    });
   };
   $('btn_telecharger').onclick = function () {
     var d = valider(); if (!d) return;
@@ -466,7 +520,7 @@
   $('btn_copier').onclick = function () {
     var d = valider(); if (!d) return;
     var texte = resume(d);
-    var ok = function () { montrer('ok', 'Texte copié. Attention : pour que vos informations soient chargées automatiquement, envoyez aussi le fichier (bouton « Télécharger le fichier »).'); };
+    var ok = function () { montrer('ok', 'Texte copié. Attention : ce texte seul ne permet pas de charger vos informations. Utilisez plutôt « Envoyer par WhatsApp » ou joignez le fichier.'); };
     var ko = function () { montrer('ko', 'Copie impossible : utilisez « Télécharger le fichier ».'); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(ok, ko); else ko();
   };

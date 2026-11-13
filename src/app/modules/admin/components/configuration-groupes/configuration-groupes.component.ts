@@ -119,25 +119,61 @@ export class ConfigurationGroupesComponent implements OnInit {
     const lecteur = new FileReader();
     lecteur.onload = () => {
       try {
-        const contenu = JSON.parse(String(lecteur.result));
-        const donnees = contenu?.donnees ?? contenu;
-        if (!donnees || typeof donnees !== 'object') throw new Error('format');
-        this.fichier = contenu;
-        this.apercu = {
-          groupe: donnees.groupe?.nom ?? '',
-          membres: (donnees.membres ?? []).length,
-          cotisations: (donnees.cotisations ?? []).length,
-          sanctions: (donnees.sanctions ?? []).length,
-          saison: donnees.saison?.libelle || donnees.saison?.debut || '',
-          responsable: donnees.responsable?.nom ?? '',
-          logo: !!donnees.groupe?.logo
-        };
+        this.appliquerContenu(JSON.parse(String(lecteur.result)));
       } catch {
         this.erreurFichier = this.translate.instant('accesAdmin.admin.fileInvalid');
       }
     };
     lecteur.onerror = () => { this.erreurFichier = this.translate.instant('accesAdmin.admin.fileInvalid'); };
     lecteur.readAsText(fichier);
+  }
+
+  /** Prend le contenu d'un fichier ou d'un code ({ resume, donnees } ou directement les données) et prépare l'aperçu. */
+  private appliquerContenu(contenu: any): void {
+    const donnees = contenu?.donnees ?? contenu;
+    if (!donnees || typeof donnees !== 'object') throw new Error('format');
+    this.fichier = contenu;
+    this.apercu = {
+      groupe: donnees.groupe?.nom ?? '',
+      membres: (donnees.membres ?? []).length,
+      cotisations: (donnees.cotisations ?? []).length,
+      sanctions: (donnees.sanctions ?? []).length,
+      saison: donnees.saison?.libelle || donnees.saison?.debut || '',
+      responsable: donnees.responsable?.nom ?? '',
+      logo: !!donnees.groupe?.logo
+    };
+  }
+
+  // ── Code reçu dans un message ───────────────────────────
+  /** Texte collé : le message WhatsApp ou l'e-mail du groupe, qui contient « MY2-0-CODE:… ». */
+  codeColle = '';
+
+  async utiliserCode(): Promise<void> {
+    this.rapport.set(null);
+    this.fichier = null;
+    this.apercu = null;
+    this.erreurFichier = '';
+    this.nomFichier = '';
+    try {
+      this.appliquerContenu(await ConfigurationGroupesComponent.decoderCode(this.codeColle));
+      this.nomFichier = 'code';
+    } catch {
+      this.erreurFichier = this.translate.instant('accesAdmin.admin.codeInvalid');
+    }
+  }
+
+  /**
+   * Décode le code du formulaire : « MY2-0-CODE:z:… » (données compressées en gzip) ou « MY2-0-CODE:1:… » (non compressées),
+   * en base64, terminé par « ~ ». Tolère le message qui l'entoure (avant comme après) et les retours à la ligne ajoutés par la messagerie.
+   */
+  static async decoderCode(texte: string): Promise<unknown> {
+    const m = /MY2-0-CODE:(z|1):([A-Za-z0-9+/=\s]+)~/.exec(texte);
+    if (!m) throw new Error('code introuvable');
+    const binaire = atob(m[2].replace(/\s+/g, ''));
+    const octets = Uint8Array.from(binaire, c => c.charCodeAt(0));
+    if (m[1] === '1') return JSON.parse(new TextDecoder().decode(octets));
+    const flux = new Blob([octets]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return JSON.parse(await new Response(flux).text());
   }
 
   /** Le nom du groupe du fichier ne ressemble pas au groupe choisi : on prévient avant d'importer. */
