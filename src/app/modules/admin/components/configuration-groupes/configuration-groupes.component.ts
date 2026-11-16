@@ -18,7 +18,11 @@ interface ApercuFichier {
   sanctions: number;
   saison: string;
   responsable: string;
+  responsableTel: string;
   logo: boolean;
+  /** Le groupe a coché la case d'autorisation dans le formulaire. */
+  accord: boolean;
+  envoyeLe: string;
 }
 
 /**
@@ -56,6 +60,12 @@ export class ConfigurationGroupesComponent implements OnInit {
   /** Comptes à créer pour les nouveaux membres (identifiant + mot de passe temporaire), et désignation du responsable. */
   creerComptes = true;
   creerResponsable = true;
+  /** Responsable qui a perdu ses identifiants : nouveau mot de passe temporaire (son identifiant est rappelé dans tous les cas). */
+  reinitialiserResponsable = false;
+  /** « Ce formulaire m'a été envoyé par le groupe » : sans accord validé dans l'application, c'est lui qui vaut accord. */
+  confirmerFormulaire = false;
+  /** Le nom du groupe dans le formulaire est différent du groupe choisi : c'est bien le même. */
+  confirmerGroupe = false;
 
   /** Le plus récent des accès de l'administrateur pour le groupe choisi. */
   accesCourant = computed(() => this.acces().find(a => a.groupeId === this.groupeId) ?? null);
@@ -140,7 +150,10 @@ export class ConfigurationGroupesComponent implements OnInit {
       sanctions: (donnees.sanctions ?? []).length,
       saison: donnees.saison?.libelle || donnees.saison?.debut || '',
       responsable: donnees.responsable?.nom ?? '',
-      logo: !!donnees.groupe?.logo
+      responsableTel: donnees.responsable?.telephone ?? '',
+      logo: !!donnees.groupe?.logo,
+      accord: donnees.accord === true,
+      envoyeLe: donnees.envoyeLe ?? ''
     };
   }
 
@@ -176,6 +189,16 @@ export class ConfigurationGroupesComponent implements OnInit {
     return JSON.parse(await new Response(flux).text());
   }
 
+  /**
+   * Import possible : soit l'accès a été accepté dans l'application, soit le formulaire (avec la case d'autorisation cochée)
+   * tient lieu d'accord et l'administrateur atteste l'avoir reçu du groupe.
+   */
+  get peutImporter(): boolean {
+    if (!this.apercu || this.working()) return false;
+    if (this.peutConfigurer()) return true;
+    return this.apercu.accord && this.confirmerFormulaire && (!this.groupeDifferent || this.confirmerGroupe);
+  }
+
   /** Le nom du groupe du fichier ne ressemble pas au groupe choisi : on prévient avant d'importer. */
   get groupeDifferent(): boolean {
     const choisi = this.listeGroupes().find(g => g.id === this.groupeId)?.nom?.toLowerCase().trim();
@@ -189,10 +212,17 @@ export class ConfigurationGroupesComponent implements OnInit {
   private lancer(simuler: boolean): void {
     if (!this.groupeId || !this.fichier) return;
     this.working.set(true);
-    this.api.importer(this.groupeId, this.fichier, simuler, { creerComptes: this.creerComptes, creerResponsable: this.creerResponsable }).subscribe({
+    this.api.importer(this.groupeId, this.fichier, simuler, {
+      creerComptes: this.creerComptes,
+      creerResponsable: this.creerResponsable,
+      reinitialiserResponsable: this.reinitialiserResponsable,
+      confirmerFormulaire: !this.peutConfigurer() && this.confirmerFormulaire,
+      confirmerGroupe: this.confirmerGroupe
+    }).subscribe({
       next: r => {
         this.working.set(false);
         this.rapport.set(r);
+        if (!simuler) this.rafraichir(); // l'accord par formulaire apparaît dans la liste des accès
         if (!simuler) this.snackBar.open(this.translate.instant('accesAdmin.admin.importDone'), this.translate.instant('accesAdmin.close'), { duration: 4000 });
       },
       error: err => { this.working.set(false); this.afficherErreur(err); }

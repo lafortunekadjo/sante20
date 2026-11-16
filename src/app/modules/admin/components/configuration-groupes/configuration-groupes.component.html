@@ -53,8 +53,11 @@
     </section>
 
     <!-- ── 2. Le fichier du formulaire ── -->
-    <section *ngIf="peutConfigurer()" class="carte">
+    <section *ngIf="groupeId" class="carte">
       <h2 class="carte__titre"><span class="num">2</span>{{ 'accesAdmin.admin.loadFile' | translate }}</h2>
+      <p *ngIf="!peutConfigurer()" class="etat etat--DEMANDE">
+        <mat-icon>chat</mat-icon>{{ 'accesAdmin.admin.byFormHelp' | translate }}
+      </p>
       <p class="aide">{{ 'accesAdmin.admin.fileHelp' | translate }}</p>
       <input type="file" accept=".json,.txt,application/json,text/plain" (change)="lireFichier($event)" [attr.aria-label]="'accesAdmin.admin.loadFile' | translate"/>
 
@@ -84,13 +87,34 @@
           <input type="checkbox" [(ngModel)]="creerResponsable" name="creerResponsable"/>
           <span><strong>{{ 'accesAdmin.admin.designateManager' | translate:{ nom: apercu.responsable } }}</strong><small>{{ 'accesAdmin.admin.designateManagerHelp' | translate }}</small></span>
         </label>
+        <label class="case" *ngIf="apercu.responsable">
+          <input type="checkbox" [(ngModel)]="reinitialiserResponsable" name="reinitialiserResponsable"/>
+          <span><strong>{{ 'accesAdmin.admin.resetManager' | translate }}</strong><small>{{ 'accesAdmin.admin.resetManagerHelp' | translate }}</small></span>
+        </label>
         <p *ngIf="groupeDifferent" class="etat etat--REVOQUE"><mat-icon>warning</mat-icon>{{ 'accesAdmin.admin.otherGroup' | translate }}</p>
+        <label class="case" *ngIf="groupeDifferent">
+          <input type="checkbox" [(ngModel)]="confirmerGroupe" name="confirmerGroupe"/>
+          <span><strong>{{ 'accesAdmin.admin.sameGroup' | translate }}</strong></span>
+        </label>
+
+        <!-- Accord du groupe, lu dans le formulaire -->
+        <p *ngIf="apercu.accord" class="etat etat--ACCORDE">
+          <mat-icon>verified_user</mat-icon>
+          <span>{{ 'accesAdmin.admin.consentGiven' | translate }}
+            <strong *ngIf="apercu.responsable || apercu.responsableTel">({{ apercu.responsable }}{{ apercu.responsable && apercu.responsableTel ? ' – ' : '' }}{{ apercu.responsableTel }})</strong>
+            <small *ngIf="apercu.envoyeLe"> · {{ apercu.envoyeLe | date:'dd/MM/yyyy HH:mm' }}</small></span>
+        </p>
+        <p *ngIf="!apercu.accord" class="etat etat--REVOQUE"><mat-icon>warning</mat-icon>{{ 'accesAdmin.admin.noConsent' | translate }}</p>
+        <label class="case" *ngIf="!peutConfigurer() && apercu.accord">
+          <input type="checkbox" [(ngModel)]="confirmerFormulaire" name="confirmerFormulaire"/>
+          <span><strong>{{ 'accesAdmin.admin.attest' | translate }}</strong><small>{{ 'accesAdmin.admin.attestHelp' | translate }}</small></span>
+        </label>
 
         <div class="actions">
-          <button type="button" class="btn-outline" (click)="simuler()" [disabled]="working()">
+          <button type="button" class="btn-outline" (click)="simuler()" [disabled]="!peutImporter">
             <mat-icon>visibility</mat-icon>{{ 'accesAdmin.admin.simulate' | translate }}
           </button>
-          <button type="button" class="btn-primary" (click)="importer()" [disabled]="working()">
+          <button type="button" class="btn-primary" (click)="importer()" [disabled]="!peutImporter">
             <mat-icon>download</mat-icon>{{ 'accesAdmin.admin.import' | translate }}
           </button>
         </div>
@@ -130,7 +154,9 @@
               <span class="pastille" *ngIf="c.role === 'RESPONSABLE'">{{ 'accesAdmin.admin.managerRole' | translate }}</span>
               <small>{{ 'accesAdmin.admin.username' | translate }} : <code>{{ c.username }}</code></small>
               <small *ngIf="c.motDePasse">{{ 'accesAdmin.admin.tempPassword' | translate }} : <code>{{ c.motDePasse }}</code></small>
-              <small *ngIf="c.compteExistant">{{ 'accesAdmin.admin.existingAccount' | translate }}</small>
+              <small *ngIf="c.reinitialise && !r.simulation">{{ 'accesAdmin.admin.passwordReset' | translate }}</small>
+              <small *ngIf="c.reinitialise && r.simulation">{{ 'accesAdmin.admin.passwordWouldReset' | translate }}</small>
+              <small *ngIf="c.compteExistant && !c.reinitialise">{{ 'accesAdmin.admin.existingAccountFound' | translate }}</small>
             </div>
             <a *ngIf="c.motDePasse && !r.simulation" class="btn-outline btn-sm" [href]="lienWhatsApp(c)" target="_blank" rel="noopener">
               <mat-icon>chat</mat-icon>WhatsApp

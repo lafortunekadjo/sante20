@@ -18,6 +18,8 @@ export interface AccesAdmin {
   expireLe: string | null;
   /** Accordé et pas encore échu : l'administrateur peut configurer le groupe. */
   actif: boolean;
+  /** APPLICATION : accepté par le responsable dans l'application ; FORMULAIRE : accord reçu dans le formulaire du groupe. */
+  source: 'APPLICATION' | 'FORMULAIRE';
 }
 
 /** Un compte créé (ou relié) lors de l'import. Le mot de passe temporaire n'est présent qu'ici, une seule fois. */
@@ -31,11 +33,19 @@ export interface CompteCree {
   /** Mot de passe temporaire (à changer à la première connexion) ; null pour un compte existant ou en simulation. */
   motDePasse: string | null;
   compteExistant: boolean;
+  /** Un nouveau mot de passe temporaire a été donné à un compte existant du groupe (identifiants perdus). */
+  reinitialise?: boolean;
 }
 
 export interface OptionsImport {
   creerComptes: boolean;
   creerResponsable: boolean;
+  /** Nouveau mot de passe temporaire pour le responsable qui a déjà un compte dans ce groupe. */
+  reinitialiserResponsable: boolean;
+  /** Sans accord validé dans l'application : atteste que le formulaire a été envoyé par le groupe (il contient son accord). */
+  confirmerFormulaire: boolean;
+  /** Le nom du groupe du formulaire diffère de celui choisi : l'administrateur confirme que c'est le même groupe. */
+  confirmerGroupe: boolean;
 }
 
 /** Compte rendu d'un chargement de configuration. */
@@ -90,7 +100,10 @@ export class AccesAdminService {
     const params = new HttpParams()
       .set('simuler', simuler)
       .set('creerComptes', options.creerComptes)
-      .set('creerResponsable', options.creerResponsable);
+      .set('creerResponsable', options.creerResponsable)
+      .set('reinitialiserResponsable', options.reinitialiserResponsable)
+      .set('confirmerFormulaire', options.confirmerFormulaire)
+      .set('confirmerGroupe', options.confirmerGroupe);
     return this.http.post<RapportImport>(`${this.baseUrl}/groupes/${groupeId}/importer`, fichier, { params });
   }
 }
