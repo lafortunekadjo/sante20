@@ -314,6 +314,17 @@ setCurrentUser(user: any): void {
     return this.ouvrirSession(this.http.post<any>(`${this.apiAAuth}/google`, corps, { withCredentials: true }));
   }
 
+  /**
+   * Rejoindre un groupe avec Google : le serveur connecte (ou crée) le compte, dépose la demande d'adhésion et renvoie notre JWT.
+   * Le téléphone est facultatif.
+   */
+  rejoindreGroupeGoogle(idToken: string, codeInvitation: string, telephone?: string | null, parrainCode?: string | null): Observable<any> {
+    const corps: any = { idToken, codeInvitation };
+    if (telephone) corps.telephone = telephone;
+    if (parrainCode) corps.parrainCode = parrainCode;
+    return this.ouvrirSession(this.http.post<any>(`${this.apiAAuth}/google/rejoindre`, corps, { withCredentials: true }));
+  }
+
   /** Stocke le jeton reçu puis charge le groupe et l'utilisateur (commun à toutes les méthodes de connexion). */
   private ouvrirSession(reponse$: Observable<any>): Observable<any> {
     this.isUserReadySubject.next(false); // Blocage de l'UI pendant la connexion

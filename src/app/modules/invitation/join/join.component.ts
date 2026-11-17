@@ -18,6 +18,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InvitationPublic, InvitationService, CreateDemandeAdhesionRequest } from '../../../core/services/invitation.service';
 import { MatDivider } from '@angular/material/divider';
 import { TranslateModule } from '@ngx-translate/core';
+import { GoogleButtonComponent } from '../../../shared/components/google-button/google-button.component';
 
 
 @Component({
@@ -36,7 +37,8 @@ import { TranslateModule } from '@ngx-translate/core';
     MatStepperModule,
     MatSnackBarModule,
     MatDivider,
-    TranslateModule
+    TranslateModule,
+    GoogleButtonComponent
   ],
   templateUrl: './join.component.html',
   styleUrls: ['./join.component.scss']
@@ -86,7 +88,8 @@ export class JoinComponent implements OnInit {
       nom: ['', [Validators.required, Validators.minLength(2)]],
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
-      telephone: ['', [Validators.required, Validators.pattern(/^[0-9]{9,15}$/)]],
+      // facultatif : le membre pourra le compléter plus tard
+      telephone: ['', [Validators.pattern(/^[0-9]{9,15}$/)]],
       
       // Identifiants
       username: ['', [
@@ -151,7 +154,7 @@ export class JoinComponent implements OnInit {
       nom: this.form.value.nom.trim(),
       prenom: this.form.value.prenom.trim(),
       email: this.form.value.email.trim().toLowerCase(),
-      telephone: this.form.value.telephone.trim(),
+      telephone: (this.form.value.telephone ?? '').trim(),
       username: this.form.value.username.trim(),
       password: this.form.value.password
     };
@@ -179,6 +182,12 @@ export class JoinComponent implements OnInit {
         });
       }
     });
+  }
+
+  /** Demande déposée via Google : on affiche la confirmation (la session est déjà ouverte). */
+  onGoogleRejoint(resultat: { groupeNom: string }): void {
+    this.inscriptionReussie = true;
+    this.groupeNom = resultat.groupeNom || this.groupeNom;
   }
 
   goToLogin(): void {

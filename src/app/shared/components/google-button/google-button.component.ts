@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -19,6 +19,11 @@ import { ConnexionAnnulee, GoogleSigninService } from '../../../core/services/go
 export class GoogleButtonComponent {
   /** Place du séparateur « ou » : au-dessus du bouton (suite d'un formulaire) ou en dessous (début d'un formulaire). */
   @Input() separateur: 'avant' | 'apres' = 'avant';
+  /** Page d'invitation : avec un code, le bouton fait rejoindre le groupe (au lieu de simplement se connecter). */
+  @Input() codeInvitation: string | null = null;
+  /** Téléphone saisi dans le formulaire (facultatif) : transmis avec la demande. */
+  @Input() telephone: string | null = null;
+  @Output() demandeEnvoyee = new EventEmitter<{ groupeNom: string }>();
   enCours = false;
   erreur = '';
 
@@ -37,6 +42,17 @@ export class GoogleButtonComponent {
       const idToken = await this.google.obtenirIdToken();
       let ref: string | null = null;
       try { ref = localStorage.getItem('my20_ref_code'); } catch { /* sans parrainage */ }
+      if (this.codeInvitation) {
+        const tel = (this.telephone ?? '').trim();
+        this.auth.rejoindreGroupeGoogle(idToken, this.codeInvitation, /^[0-9]{9,15}$/.test(tel) ? tel : null, ref).subscribe({
+          next: (reponse) => {
+            this.enCours = false;
+            this.demandeEnvoyee.emit({ groupeNom: reponse?.groupeNom ?? '' });
+          },
+          error: (err) => this.echec(err?.status === 429 ? 'auth.google.trop_tentatives' : (err?.error?.message ?? 'auth.google.echec'))
+        });
+        return;
+      }
       this.auth.loginGoogle(idToken, ref).subscribe({
         next: () => this.auth.getMesGroupes().subscribe({
           next: () => this.rediriger(),
