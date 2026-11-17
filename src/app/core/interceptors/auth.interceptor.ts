@@ -2,7 +2,9 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpHandlerFn } from
 import { Injector, inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../environment';
+import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../services/auth.service';
+import { PasswordResetDialogComponent } from '../../shared/components/password-reset-dialog/password-reset-dialog.component';
 
 /** Pages consultables sans compte : une session expirée n'y renvoie pas vers la connexion. */
 const PAGES_PUBLIQUES = ['/home', '/login', '/signup', '/privacy', '/terms', '/security', '/delete-account-info', '/p/', '/ligue', '/explorer', '/concours'];
@@ -70,6 +72,15 @@ export const authInterceptor: HttpInterceptorFn = (
         try {
           injector.get(AuthService).logout(!publique);   // ferme la session ; renvoie à l'accueil sauf sur une page publique
         } catch { /* service pas encore prêt : le prochain démarrage repartira d'une session propre */ }
+      }
+      // Mot de passe à changer : le serveur refuse tout le reste tant que ce n'est pas fait (session déjà ouverte)
+      if (err instanceof HttpErrorResponse && err.status === 403 && err.error?.code === 'PASSWORD_CHANGE_REQUIRED') {
+        try {
+          const dialog = injector.get(MatDialog);
+          if (dialog.openDialogs.length === 0) {
+            dialog.open(PasswordResetDialogComponent, { width: '500px', disableClose: true, autoFocus: true });
+          }
+        } catch { /* le prochain écran réessaiera */ }
       }
       return throwError(() => err);
     })

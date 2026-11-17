@@ -46,7 +46,9 @@ export class MembreService {
       groupe: membre.groupe.id,
       user: membre.user?.id,
       active: membre.active,
-       customRole:membre.roleCustom?.id || null
+       customRole:membre.roleCustom?.id || null,
+       // compte à créer avec le membre : le serveur l'enregistre dans la même transaction (tout ou rien)
+       nouveauUser: membre.nouveauUser || undefined
     };
     console.log(payload)
     return this.http.post<Membre>(`${environment.apiUrl}/membres`, payload).pipe(

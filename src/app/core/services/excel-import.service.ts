@@ -525,9 +525,10 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
   member?: Membre;
   error?: string;
 }> {
-  // 1️⃣ ÉTAPE 1: Créer d'abord l'utilisateur
+  // Le compte utilisateur est envoyé avec le membre : le serveur crée les deux dans la même transaction.
+  // Si le membre échoue, aucun compte orphelin ne reste.
   const username = `${data.nom?.toLowerCase()}_${data.prenom?.toLowerCase()}`;
-  const newUser: User = {
+  const nouveauUser: User = {
     id: 0,
     username: username,
     email: data.email || `${username}@example.com`,
@@ -535,79 +536,38 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
     roles: 'MEMBRE',
     active: true,
     membre: 0,
-    groupe: groupe.id, // ✅ Correction: utiliser groupe.id
+    groupe: groupe.id,
     profilePhotoUrl: ''
   };
 
-  return this.userService.createUser(newUser).pipe(
-    mergeMap(createdUser => {
-      console.log('✅ Utilisateur créé:', createdUser.username);
-      
-      // 2️⃣ ÉTAPE 2: Récupérer les équipes disponibles
-      return this.getEquipesByGroupe().pipe(
-        mergeMap(equipes => {
-          console.log('📋 Équipes disponibles:', equipes.map(e => e.nom));
-          
-          // 3️⃣ ÉTAPE 3: Trouver l'équipe correspondante si spécifiée
-          let equipeToAssign: Equipe | null = null;;
-          
-          if (data.equipe && data.equipe.trim() !== '') {
-            const foundEquipe = equipes.find(e => 
-              e.nom.toLowerCase().trim() === data.equipe!.toLowerCase().trim()
-            );
-            
-            if (foundEquipe) {
-              equipeToAssign = { id: foundEquipe.id, nom: foundEquipe.nom, couleur: foundEquipe.couleu };
-              console.log(`🏆 Équipe "${data.equipe}" trouvée avec ID:`, foundEquipe.id);
-            } else {
-              console.warn(`⚠️ Équipe "${data.equipe}" non trouvée. Équipes disponibles: ${equipes.map(e => e.nom).join(', ')}`);
-              // Continue quand même la création sans équipe
-            }
-          } else {
-            console.log('ℹ️ Aucune équipe spécifiée pour ce membre');
-          }
-          
-          // 4️⃣ ÉTAPE 4: Créer le membre avec toutes les infos
-          const newMembre: Membre = this.buildMembreFromData(data, groupe, createdUser, equipeToAssign);
-          
-          return this.membreService.createMember(newMembre).pipe(
-            map(membre => {
-              console.log('✅ Membre créé:', `${membre.nom} ${membre.prenom}`, equipeToAssign ? `- Équipe: ${equipeToAssign.nom}` : '- Sans équipe');
-              return { success: true, member: membre };
-            }),
-            catchError(error => {
-              console.error('❌ Erreur création membre:', error);
-              return of({ 
-                success: false, 
-                error: error.error?.message || 'Erreur lors de la création du membre' 
-              });
-            })
-          );
-        }),
-        catchError(error => {
-          console.error('❌ Erreur récupération équipes:', error);
-          // En cas d'erreur équipes, créer le membre sans équipe
-          const newMembre: Membre = this.buildMembreFromData2(data, groupe, createdUser);
-          
-          return this.membreService.createMember(newMembre).pipe(
-            map(membre => {
-              console.log('⚠️ Membre créé sans équipe (erreur récupération équipes):', `${membre.nom} ${membre.prenom}`);
-              return { success: true, member: membre };
-            }),
-            catchError(memberError => of({ 
-              success: false, 
-              error: memberError.error?.message || 'Erreur lors de la création du membre' 
-            }))
-          );
-        })
+  return this.getEquipesByGroupe().pipe(
+    map(equipes => {
+      if (!data.equipe || data.equipe.trim() === '') return null;
+      const foundEquipe = equipes.find(e =>
+        e.nom.toLowerCase().trim() === data.equipe!.toLowerCase().trim()
       );
+      if (!foundEquipe) {
+        console.warn(`⚠️ Équipe "${data.equipe}" non trouvée. Équipes disponibles: ${equipes.map(e => e.nom).join(', ')}`);
+        return null;   // on crée quand même le membre, sans équipe
+      }
+      return { id: foundEquipe.id, nom: foundEquipe.nom, couleur: foundEquipe.couleu } as Equipe;
     }),
     catchError(error => {
-      console.error('❌ Erreur création utilisateur:', error);
-      return of({ 
-        success: false, 
-        error: error.error?.message || 'Erreur lors de la création de l\'utilisateur' 
-      });
+      console.error('❌ Erreur récupération équipes:', error);
+      return of(null);   // en cas d'erreur sur les équipes, le membre est créé sans équipe
+    }),
+    mergeMap(equipeToAssign => {
+      const newMembre = { ...this.buildMembreFromData(data, groupe, null, equipeToAssign), nouveauUser };
+      return this.membreService.createMember(newMembre).pipe(
+        map(membre => ({ success: true, member: membre })),
+        catchError(error => {
+          console.error('❌ Erreur création membre:', error);
+          return of({
+            success: false,
+            error: error.error?.message || 'Erreur lors de la création du membre'
+          });
+        })
+      );
     })
   );
 }
@@ -615,7 +575,7 @@ private createMemberFromData(data: ExcelRowData, groupe: any): Observable<{
   /**
    * Construire l'objet Membre à partir des données Excel
    */
-  private buildMembreFromData(data: ExcelRowData, groupe: any, user: User, equipe: Equipe | null ): any {
+  private buildMembreFromData(data: ExcelRowData, groupe: any, user: User | null, equipe: Equipe | null ): any {
     console.log(equipe)
     return {
       id: 0,

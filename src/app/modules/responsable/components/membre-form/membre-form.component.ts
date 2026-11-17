@@ -621,7 +621,7 @@ hasSanctionsEnabled(): boolean {
   }
 
   private createMembreWithUser(): Observable<any> {
-    const newUser: User = {
+    const nouveauUser: User = {
       id: 0,
       username: `${this.newMembre.nom.toLowerCase()}_${this.newMembre.prenom.toLowerCase()}`,
       email: this.newMembre.email || `${this.newMembre.nom.toLowerCase()}@example.com`,
@@ -633,12 +633,9 @@ hasSanctionsEnabled(): boolean {
       profilePhotoUrl: ''
     };
 
-    return this.userService.createUser2(newUser).pipe(
-      switchMap((createdUser) => {
-        this.newMembre.user = { id: createdUser.id } as User;
-        return this.adminService.createMember(this.newMembre);
-      })
-    );
+    // Un seul appel : le serveur crée le compte et le membre dans la même transaction.
+    // Si le membre échoue, le compte n'est pas créé.
+    return this.adminService.createMember({ ...this.newMembre, nouveauUser });
   }
 
   cancelCreate(): void {

@@ -11,6 +11,7 @@ export type FormatFeuille = 'full' | 'story';
 
 /** Fonds proposés pour l'image de la feuille de match (les codes sont ceux du serveur ; le CSS n'est qu'un aperçu de la vignette). */
 export const FONDS_FEUILLE: { code: string; css: string }[] = [
+  { code: 'DIFFUSION', css: 'radial-gradient(circle at 15% 0, rgba(255,255,255,.35), transparent 40%), linear-gradient(180deg, #1d4fc4, #050d30)' },
   { code: 'NUIT', css: 'radial-gradient(circle at 20% 25%, rgba(124,58,237,.65), transparent 45%), radial-gradient(circle at 80% 70%, rgba(6,182,212,.55), transparent 45%), #08080c' },
   { code: 'EQUIPES', css: 'linear-gradient(135deg, rgba(225,29,72,.85) 0%, #09090e 50%, rgba(37,99,235,.85) 100%)' },
   { code: 'TERRAIN', css: 'repeating-linear-gradient(0deg, #106432 0 14px, #0c5429 14px 28px)' },
@@ -23,7 +24,7 @@ export const FONDS_FEUILLE: { code: string; css: string }[] = [
   { code: 'GRAPHITE', css: 'repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 10px), linear-gradient(135deg, #0d0d10, #202126)' }
 ];
 
-const CLE_FOND = 'feuille-fond';
+const CLE_FOND = 'feuille-fond-v2';
 const CLE_FORMAT = 'feuille-format';
 
 /**
@@ -103,7 +104,7 @@ export class FeuilleImageDialogComponent implements OnInit, OnDestroy {
 
   readonly fonds = FONDS_FEUILLE;
   format = signal<FormatFeuille>(this.lire(CLE_FORMAT, 'full') === 'story' ? 'story' : 'full');
-  fond = signal<string>(this.lire(CLE_FOND, 'NUIT'));
+  fond = signal<string>(this.lire(CLE_FOND, 'DIFFUSION'));
   apercu = signal<SafeUrl | null>(null);
   chargement = signal(false);
   erreur = signal(false);
