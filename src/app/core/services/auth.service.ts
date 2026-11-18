@@ -7,6 +7,8 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { User } from '../models/user';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Membre } from '../models/membre.model';
 import { Route, Router } from '@angular/router';
 
@@ -162,11 +164,53 @@ public groupeActifAccess$ = this.groupeActifAccessSubject.asObservable();
 
 
 
+  // ===== SESSION GLISSANTE =====
+
+  /** Délai minimal entre deux renouvellements du jeton (en heures) : pas d'appel à chaque réveil de l'application. */
+  private static readonly RENOUVELLEMENT_APRES_HEURES = 6;
+  private sessionSurveillee = false;
+
+  /**
+   * Renouvelle le jeton quand on se sert de l'application (retour au premier plan, réouverture) : la durée de la
+   * session se compte alors depuis la dernière utilisation, et non depuis la connexion.
+   */
+  private surveillerSession(): void {
+    if (this.sessionSurveillee) return;
+    this.sessionSurveillee = true;
+    const verifier = () => this.renouvelerSessionSiNecessaire();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifier(); });
+    window.addEventListener('online', verifier);
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener('appStateChange', etat => { if (etat.isActive) verifier(); });
+    }
+    verifier();
+  }
+
+  /** Demande un nouveau jeton si l'actuel est encore valide et date de plus de quelques heures. */
+  renouvelerSessionSiNecessaire(): void {
+    const token = this.token ?? localStorage.getItem(this.TOKEN_KEY);
+    if (!token || this.jwtHelper.isTokenExpired(token)) return;
+    const emisLe = this.jwtHelper.decodeToken(token)?.iat;
+    if (!emisLe) return;
+    const ageHeures = (Date.now() / 1000 - emisLe) / 3600;
+    if (ageHeures < AuthService.RENOUVELLEMENT_APRES_HEURES) return;
+    this.http.post<{ token: string }>(`${this.apiAAuth}/refresh`, {}).subscribe({
+      next: r => {
+        if (r?.token) {
+          this.token = r.token;
+          localStorage.setItem(this.TOKEN_KEY, r.token);
+        }
+      },
+      error: () => { /* hors ligne ou jeton refusé : l'intercepteur décide d'une éventuelle déconnexion */ }
+    });
+  }
+
   /**
    * Initialise l'état du service à partir du localStorage au chargement.
    * Assure la persistance du token et des données utilisateur.
    */
   private initializeAuthState(): void {
+    this.surveillerSession();
     const storedToken = localStorage.getItem(this.TOKEN_KEY);
     
     // 1. Vérification du token et de son expiration

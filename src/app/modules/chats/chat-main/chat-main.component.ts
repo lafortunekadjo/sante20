@@ -34,6 +34,7 @@ import { ConversationDetailComponent } from '../conversation-detail/conversation
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
+import { nomComplet } from '../../../core/utils/nom';
 
 
 @Component({
@@ -226,7 +227,7 @@ export class ChatMainComponent implements OnInit, OnDestroy {
     const other = this.selectedConversation.participants?.find(
       p => p.user.id !== currentId
     );
-    return other ? `${other.user.nom} ${other.user.prenom}` : 'Conversation';
+    return other ? `${nomComplet(other.user, true)}` : 'Conversation';
   }
 
   onLastMessageUpdated(event: { conversationId: number; message: any }): void {

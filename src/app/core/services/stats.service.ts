@@ -43,8 +43,9 @@ export class StatsService {
     return this.http.get(`${this.adminStatsUrl}`, { params });
   }
 
-getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
+getResponsableStats(startDate?: Date, endDate?: Date, categorie?: string): Observable<any> {
   let params = new HttpParams();
+  if (categorie) params = params.set('categorie', categorie);
   const datePipe = new DatePipe('fr-FR');
 
   if (startDate && endDate) {

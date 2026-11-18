@@ -56,6 +56,7 @@ import { Groupe } from '../../../../core/models/groupe.model';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { symboleDevise } from '../../../../core/devise';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { nomComplet } from '../../../../core/utils/nom';
 
 
 applyPlugin(jsPDF);
@@ -1063,10 +1064,10 @@ onTypeSanctionChange(sanction: any): void {
   getMembreName(membre: number | Membre | undefined): string {
     if (!membre) return 'Inconnu';
     if (typeof membre === 'object' && 'nom' in membre) {
-      return `${membre.nom} ${membre.prenom}`;
+      return `${nomComplet(membre, true)}`;
     }
     const found = this.membres.find(m => m.id === membre);
-    return found ? `${found.nom} ${found.prenom}` : 'Inconnu';
+    return found ? `${nomComplet(found, true)}` : 'Inconnu';
   }
 
   getTypeSanctionName(type: number | TypeSanction | undefined): string {
@@ -1357,7 +1358,7 @@ formatMontant(montant: number | undefined | null): string {
       doc.setTextColor(50, 50, 50);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      const membreName = `${group.membre.nom} ${group.membre.prenom}`;
+      const membreName = `${nomComplet(group.membre, true)}`;
       doc.text(membreName, 18, yPos + 8);
 
       const statsText = `${sanctions.length} sanction(s) | Dû: ${this.formatMontant(group.totalRestant)}`;

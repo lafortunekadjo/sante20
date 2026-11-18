@@ -43,6 +43,8 @@ import { Announcement, AnnouncementService } from '../../../../core/services/ann
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 import { ExportClassementComponent } from '../../../../shared/components/export-classement/export-classement.component';
 import { LigneExportClassement } from '../../../../core/models/stats.model';
+import { nomComplet } from '../../../../core/utils/nom';
+import { CATEGORIES_MATCH } from '../../../../core/models/match.model';
 
 // // Interface Exercice
 // interface Exercice {
@@ -100,6 +102,68 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exportPasseurs: LigneExportClassement[] = [];
   exportEquipes: LigneExportClassement[] = [];
   readonly colonnesEquipes = ['J', 'V', 'N', 'D', '+/-', 'Pts'];
+
+  // ── Période des classements : la saison en cours (par défaut), une année civile ou tout l'historique
+  periodeClassement: 'saison' | 'annee' | 'tout' = 'saison';
+  anneeClassement = new Date().getFullYear();
+  /** Catégorie de match retenue pour les classements de joueurs ('' = toutes). */
+  categorieClassement = '';
+  readonly categoriesClassement = CATEGORIES_MATCH;
+
+  /** Années proposées : celles où il y a eu des matchs, plus l'année en cours. */
+  get anneesClassement(): number[] {
+    const annees = new Set<number>([new Date().getFullYear()]);
+    for (const p of this.allPresences$.value) {
+      if (p.match?.dateMatch) annees.add(new Date(p.match.dateMatch).getFullYear());
+    }
+    return Array.from(annees).sort((a, b) => b - a);
+  }
+
+  get libellePeriodeClassement(): string {
+    const categorie = this.categorieClassement ? ` · ${t('MATCH.CATEGORIES.' + this.categorieClassement)}` : '';
+    if (this.periodeClassement === 'annee') return `Année ${this.anneeClassement}${categorie}`;
+    if (this.periodeClassement === 'tout') return `Toutes les saisons${categorie}`;
+    return this.exerciceNom + categorie;
+  }
+
+  changerPeriodeClassement(periode: 'saison' | 'annee' | 'tout'): void {
+    this.periodeClassement = periode;
+    this.recalculerClassements();
+  }
+
+  changerAnneeClassement(annee: number | string): void {
+    this.anneeClassement = Number(annee);
+    this.recalculerClassements();
+  }
+
+  changerCategorieClassement(categorie: string): void {
+    this.categorieClassement = categorie;
+    this.recalculerClassements();
+  }
+
+  /**
+   * Présences prises en compte : matchs de la période, comptés comme « joués » (avec un rapporteur) et de la catégorie
+   * choisie — les mêmes règles que le tableau de bord du responsable.
+   */
+  private presencesDuClassement(): Presence[] {
+    return this.allPresences$.value.filter(p => {
+      const match: any = p.match;
+      const date = match?.dateMatch;
+      if (!date) return false;
+      if (!match.rapporteur && !(match.rapporteurNomOccasionnel ?? '').toString().trim()) return false;
+      if (this.categorieClassement && match.categorie !== this.categorieClassement) return false;
+      if (this.periodeClassement === 'tout') return true;
+      if (this.periodeClassement === 'annee') return new Date(date).getFullYear() === this.anneeClassement;
+      return this.isDateInCurrentExercice(date);
+    });
+  }
+
+  private recalculerClassements(): void {
+    this.calculateStats(this.presencesDuClassement(), this.allMembresValue);
+    this.classementEquipes = null;
+    this.exportEquipes = [];
+    if (this.classementVue === 'equipes') this.chargerClassementEquipes();
+  }
   allMembres$: Observable<Membre[]>;
   allPresences$: BehaviorSubject<Presence[]> = new BehaviorSubject<Presence[]>([]);
   apiBaseUrl = environment.apiUrl;
@@ -142,10 +206,16 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     this.classementChargement = true;
     this.classementErreur = false;
-    this.statsService.getClassementEquipes(
-      this.exerciceDateDebut ? iso(this.exerciceDateDebut) : undefined,
-      this.exerciceDateFin ? iso(this.exerciceDateFin) : undefined
-    ).pipe(takeUntil(this.destroy$)).subscribe({
+    let debut: string | undefined = this.exerciceDateDebut ? iso(this.exerciceDateDebut) : undefined;
+    let fin: string | undefined = this.exerciceDateFin ? iso(this.exerciceDateFin) : undefined;
+    if (this.periodeClassement === 'annee') {
+      debut = `${this.anneeClassement}-01-01`;
+      fin = `${this.anneeClassement}-12-31`;
+    } else if (this.periodeClassement === 'tout') {
+      debut = '2000-01-01';
+      fin = undefined;   // jusqu'à aujourd'hui
+    }
+    this.statsService.getClassementEquipes(debut, fin).pipe(takeUntil(this.destroy$)).subscribe({
       next: c => {
         this.classementEquipes = c;
         this.exportEquipes = c.interne.map((t, i) => ({
@@ -612,7 +682,7 @@ get matchesToDisplay(): Match[] {
 
       // --- TOP SCORERS & PASSERS ---
       const presencesExercice = presences.filter(p => p.match?.dateMatch && this.isDateInCurrentExercice(p.match.dateMatch));
-      this.calculateStats(presencesExercice, membres);
+      this.calculateStats(this.presencesDuClassement(), membres);
 
       // --- GESTION DES CONTRIBUTIONS (Flux réactif propre) ---
       const activeContribs = contributions.filter(c => c.actif === true);
@@ -719,6 +789,13 @@ pourcentCollecte(c: CollecteFeed): number {
 
 // --- MÉTHODES UTILITAIRES ---
 
+/** Les n premiers, plus ceux qui ont le même chiffre que le n-ième : une égalité n'est jamais coupée au hasard. */
+private avecEgalites<T>(liste: T[], n: number, valeur: (x: T) => number): T[] {
+  if (liste.length <= n) return liste;
+  const seuil = valeur(liste[n - 1]);
+  return liste.filter((x, i) => i < n || valeur(x) === seuil);
+}
+
 private calculateStats(presences: any[], membres: any[]): void {
   // On change le type de scorerMap pour stocker un objet avec le détail
   const scorerMap = new Map<number, { buts: number, penalti: number }>();
@@ -750,8 +827,8 @@ private calculateStats(presences: any[], membres: any[]): void {
       };
     })
     .filter(s => s.membre && s.total > 0)
-    .sort((a, b) => b.total - a.total); // On trie par le total (buts + pen)
-  this.topScorers = tousButeurs.slice(0, 5);
+    .sort((a, b) => b.total - a.total || nomComplet(a.membre, true).localeCompare(nomComplet(b.membre, true), 'fr')); // total (buts + pen), puis nom
+  this.topScorers = this.avecEgalites(tousButeurs, 5, s => s.total);
   this.exportButeurs = tousButeurs.slice(0, 30)
     .map((s, i) => ({ rang: i + 1, nom: `${s.membre.prenom ?? ''} ${s.membre.nom ?? ''}`.trim(), valeur: String(s.buts) }));
 
@@ -759,8 +836,8 @@ private calculateStats(presences: any[], membres: any[]): void {
   const tousPasseurs = Array.from(passerMap.entries())
     .map(([id, passes]) => ({ membre: membres.find(m => m.id === id)!, passes }))
     .filter(p => p.membre && p.passes > 0)
-    .sort((a, b) => b.passes - a.passes);
-  this.topPassers = tousPasseurs.slice(0, 5);
+    .sort((a, b) => b.passes - a.passes || nomComplet(a.membre, true).localeCompare(nomComplet(b.membre, true), 'fr'));
+  this.topPassers = this.avecEgalites(tousPasseurs, 5, p => p.passes);
   this.exportPasseurs = tousPasseurs.slice(0, 30)
     .map((p, i) => ({ rang: i + 1, nom: `${p.membre.prenom ?? ''} ${p.membre.nom ?? ''}`.trim(), valeur: String(p.passes) }));
 }
@@ -785,7 +862,7 @@ private preloadMedia(url: string, token: string): Observable<any> {
 getStaticMembreName(membreObj: any): string {
   const id = membreObj?.id || membreObj;
   const m = this.allMembresValue?.find((member: any) => member.id === id);
-  return m ? `${m.prenom} ${m.nom}` : 'Membre inconnu';
+  return m ? `${nomComplet(m)}` : 'Membre inconnu';
 }
 
   // ===== MÉTHODE: Calcul du score =====
@@ -808,7 +885,7 @@ getButeurs(match: Match): string {
     // 1. Détermination du nom (Occasionnel prioritaire, puis Membre, sinon Inconnu)
     const displayName = p.nomOccasionnel 
       ? p.nomOccasionnel 
-      : (p.membre ? `${p.membre.prenom} ${p.membre.nom}` : 'Joueur inconnu');
+      : (p.membre ? `${nomComplet(p.membre)}` : 'Joueur inconnu');
 
     const totalButs = (p.buts || 0) + (p.penalti || 0);
 
@@ -842,7 +919,7 @@ getPasseurs(match: Match): string {
       // Priorité au nom occasionnel, sinon prénom + nom du membre
       const displayName = p.nomOccasionnel 
         ? p.nomOccasionnel 
-        : (p.membre ? `${p.membre.prenom} ${p.membre.nom}` : 'Joueur inconnu');
+        : (p.membre ? `${nomComplet(p.membre)}` : 'Joueur inconnu');
         
       return `${displayName} (${p.passes}) - ${p.equipeMatch}`;
     });
@@ -860,7 +937,7 @@ getHommeDuMatch(match: Match): string {
 
   return found.nomOccasionnel 
     ? found.nomOccasionnel 
-    : (found.membre ? `${found.membre.prenom} ${found.membre.nom}` : 'Inconnu');
+    : (found.membre ? `${nomComplet(found.membre)}` : 'Inconnu');
 }
 
 

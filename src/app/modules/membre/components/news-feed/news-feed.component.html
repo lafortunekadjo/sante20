@@ -515,6 +515,22 @@
         <!-- Pub stats -->
         <app-publicite-feed [ville]="userVille" pageSource="news-feed-stats"></app-publicite-feed>
 
+        <!-- Période et catégorie des classements -->
+        <div class="rk-period" role="group" aria-label="Période">
+          <button type="button" [class.active]="periodeClassement === 'saison'" (click)="changerPeriodeClassement('saison')">Saison</button>
+          <button type="button" [class.active]="periodeClassement === 'annee'" (click)="changerPeriodeClassement('annee')">Année</button>
+          <button type="button" [class.active]="periodeClassement === 'tout'" (click)="changerPeriodeClassement('tout')">Tout</button>
+          <select *ngIf="periodeClassement === 'annee'" class="rk-year" aria-label="Année"
+                  (change)="changerAnneeClassement($any($event.target).value)">
+            <option *ngFor="let a of anneesClassement" [value]="a" [selected]="a === anneeClassement">{{ a }}</option>
+          </select>
+          <select *ngIf="classementVue === 'joueurs'" class="rk-year" aria-label="Catégorie"
+                  (change)="changerCategorieClassement($any($event.target).value)">
+            <option value="" [selected]="!categorieClassement">{{ 'MATCH.CATEGORIES.ALL' | translate }}</option>
+            <option *ngFor="let c of categoriesClassement" [value]="c" [selected]="c === categorieClassement">{{ 'MATCH.CATEGORIES.' + c | translate }}</option>
+          </select>
+        </div>
+
         <!-- Bascule joueurs / équipes -->
         <div class="rk-switch" role="tablist">
           <button type="button" role="tab" [class.active]="classementVue === 'joueurs'" (click)="choisirClassement('joueurs')">
@@ -532,7 +548,7 @@
             </div>
             <div class="block-title">
               <h2>{{ 'feed.sections.stats.title' | translate }}</h2>
-              <span class="block-badge season" *ngIf="exerciceEnCours">{{ exerciceNom }}</span>
+              <span class="block-badge season" *ngIf="exerciceEnCours || periodeClassement !== 'saison'">{{ libellePeriodeClassement }}</span>
             </div>
           </div>
 
@@ -543,7 +559,7 @@
               <div class="stats-card-header">
                 <mat-icon>sports_soccer</mat-icon>
                 <h3>{{ 'feed.sections.stats.top_scorers' | translate }}</h3>
-                <app-export-classement type="BUTEURS" [periode]="exerciceNom" [lignes]="exportButeurs"></app-export-classement>
+                <app-export-classement type="BUTEURS" [periode]="libellePeriodeClassement" [lignes]="exportButeurs"></app-export-classement>
               </div>
               <div class="leaderboard">
                 <div class="lb-item" *ngFor="let scorer of topScorers; let i = index">
@@ -565,7 +581,7 @@
               <div class="stats-card-header">
                 <mat-icon>swap_horiz</mat-icon>
                 <h3>{{ 'feed.sections.stats.top_passers' | translate }}</h3>
-                <app-export-classement type="PASSEURS" [periode]="exerciceNom" [lignes]="exportPasseurs"></app-export-classement>
+                <app-export-classement type="PASSEURS" [periode]="libellePeriodeClassement" [lignes]="exportPasseurs"></app-export-classement>
               </div>
               <div class="leaderboard">
                 <div class="lb-item" *ngFor="let passer of topPassers; let i = index">
@@ -604,12 +620,12 @@
                 <div class="block-icon stats"><mat-icon>leaderboard</mat-icon></div>
                 <div class="block-title">
                   <h2>{{ 'feed.ranking.internal' | translate }}</h2>
-                  <span class="block-badge season" *ngIf="exerciceEnCours">{{ exerciceNom }}</span>
+                  <span class="block-badge season" *ngIf="exerciceEnCours || periodeClassement !== 'saison'">{{ libellePeriodeClassement }}</span>
                 </div>
               </div>
 
               <div class="rk-export" *ngIf="c.interne.length">
-                <app-export-classement type="EQUIPES" [periode]="exerciceNom" [colonnes]="colonnesEquipes" [lignes]="exportEquipes"></app-export-classement>
+                <app-export-classement type="EQUIPES" [periode]="libellePeriodeClassement" [colonnes]="colonnesEquipes" [lignes]="exportEquipes"></app-export-classement>
               </div>
               <div class="rk-table" *ngIf="c.interne.length">
                 <div class="rk-head">

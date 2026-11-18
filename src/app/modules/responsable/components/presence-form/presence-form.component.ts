@@ -44,6 +44,7 @@ import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { nomComplet } from '../../../../core/utils/nom';
 
 @Component({
   selector: 'app-presence-form',
@@ -519,7 +520,7 @@ get equipe2Players(): Presence[] {
     if (!this.membreSearch) return this.membresNonPresents;
     const search = this.membreSearch.toLowerCase();
     return this.membresNonPresents.filter(m => 
-      (m.nom + ' ' + m.prenom).toLowerCase().includes(search)
+      nomComplet(m, true).toLowerCase().includes(search)
     );
   }
 
@@ -862,7 +863,7 @@ get equipe2Players(): Presence[] {
     this.membreSearch = '';
     this.refreshView();
 
-    this.showSnackbar(`${membre.nom} ${membre.prenom} ajouté à ${newPresence.equipeMatch}`, 'success');
+    this.showSnackbar(`${nomComplet(membre, true)} ajouté à ${newPresence.equipeMatch}`, 'success');
   }
 
   addMembreAdverseToPresenceList(): void {
@@ -915,7 +916,7 @@ get equipe2Players(): Presence[] {
     this.membreAdverseSearch = '';
     this.refreshView();
 
-    this.showSnackbar(`${membre.nom} ${membre.prenom} ajouté à ${newPresence.equipeMatch}`, 'success');
+    this.showSnackbar(`${nomComplet(membre, true)} ajouté à ${newPresence.equipeMatch}`, 'success');
   }
 
   addOccasionalPlayer(): void {
@@ -1272,7 +1273,7 @@ getCSCForEquipe(position: number): number {
 
   getMembreName(presence: Presence): string {
     if (presence.membre?.nom) {
-      return `${presence.membre.nom} ${presence.membre.prenom}`;
+      return `${nomComplet(presence.membre, true)}`;
     }
     if (presence.nomOccasionnel) {
       return presence.nomOccasionnel;
@@ -1323,21 +1324,21 @@ getCSCForEquipe(position: number): number {
 
   getArbitrePrincipal(): string {
     if (this.match?.arbitrePrincipal) {
-      return `${this.match.arbitrePrincipal.nom} ${this.match.arbitrePrincipal.prenom}`;
+      return `${nomComplet(this.match.arbitrePrincipal, true)}`;
     }
     return this.match?.arbitrePrincipalNomOccasionnel || '';
   }
 
   getArbitreAssistant(): string {
     if (this.match?.arbitreAssistant) {
-      return `${this.match.arbitreAssistant.nom} ${this.match.arbitreAssistant.prenom}`;
+      return `${nomComplet(this.match.arbitreAssistant, true)}`;
     }
     return this.match?.arbitreAssistantNomOccasionnel || '';
   }
 
   getRapporteur(): string {
     if (this.match?.rapporteur) {
-      return `${this.match.rapporteur.nom} ${this.match.rapporteur.prenom}`;
+      return `${nomComplet(this.match.rapporteur, true)}`;
     }
     return this.match?.rapporteurNomOccasionnel || '';
   }

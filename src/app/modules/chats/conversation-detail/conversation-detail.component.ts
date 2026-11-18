@@ -27,6 +27,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { TranslateModule } from '@ngx-translate/core';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { MessageInputComponent } from '../message-input/message-input.component';
+import { nomComplet } from '../../../core/utils/nom';
 
 
 @Component({
@@ -235,7 +236,7 @@ async loadMessages(): Promise<void> {
         p => p.user.id !== this.getCurrentUserId()
       );
       return otherParticipant 
-        ? `${otherParticipant.user.nom} ${otherParticipant.user.prenom}`
+        ? `${nomComplet(otherParticipant.user, true)}`
         : 'Conversation privée';
     }
     

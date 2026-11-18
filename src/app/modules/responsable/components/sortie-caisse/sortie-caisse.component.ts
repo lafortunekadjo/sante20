@@ -39,6 +39,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { EvenementCollecte } from '../../../../core/models/collecte.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { nomComplet } from '../../../../core/utils/nom';
+import { NomCompletPipe } from '../../../../core/pipes/nom-complet.pipe';
 
 interface TypeDepense {
   id: number;
@@ -56,7 +58,7 @@ interface TypeDepense {
 @Component({
   selector: 'app-sortie-caisse',
   standalone: true,
-  imports: [
+  imports: [NomCompletPipe, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -232,7 +234,7 @@ onBeneficiaireSelected(membre: Membre): void {
 }
 
 displayMembre = (membre: Membre): string => {
-  return membre ? `${membre.prenom} ${membre.nom}` : '';
+  return membre ? `${nomComplet(membre)}` : '';
 };
 
   onCaisseChange(): void {

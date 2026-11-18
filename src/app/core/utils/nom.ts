@@ -31,3 +31,10 @@ export function separerNomComplet(saisie: string | null | undefined): { prenom: 
 function borner(texte: string): string {
   return texte.length > 50 ? texte.slice(0, 50) : texte;
 }
+
+/** Nom d'une personne : « Prénom Nom », sans « null » ni espace en trop quand une des deux parties manque. */
+export function nomComplet(p: { prenom?: string | null; nom?: string | null } | null | undefined, nomEnPremier = false): string {
+  const prenom = (p?.prenom ?? '').toString().trim();
+  const nom = (p?.nom ?? '').toString().trim();
+  return (nomEnPremier ? [nom, prenom] : [prenom, nom]).filter(Boolean).join(' ');
+}

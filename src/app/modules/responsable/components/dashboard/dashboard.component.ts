@@ -46,6 +46,8 @@ import { map, Observable } from 'rxjs';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 import { ExportClassementComponent } from '../../../../shared/components/export-classement/export-classement.component';
 import { LigneExportClassement } from '../../../../core/models/stats.model';
+import { CATEGORIES_MATCH } from '../../../../core/models/match.model';
+import { t } from '../../../../core/i18n/traduire';
 
 // Register Chart.js components
 Chart.register(
@@ -70,7 +72,7 @@ Chart.register(
 //   cloture: boolean;
 // }
 
-type FilterMode = 'season' | 'dateRange';
+type FilterMode = 'season' | 'dateRange' | 'year';
 
 @Component({
   selector: 'app-dashboard',
@@ -132,6 +134,18 @@ export class RDashboardComponent implements OnInit, OnDestroy {
 
   // Mode de filtrage
   filterMode: FilterMode = 'season';
+
+  // Filtre par année civile (1er janvier – 31 décembre)
+  selectedAnnee = new Date().getFullYear();
+  readonly annees: number[] = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
+
+  // Catégorie de match retenue pour les classements de joueurs ('' = toutes) ; le classement des équipes ne compte que le championnat
+  categorieFiltre = '';
+  readonly categories = CATEGORIES_MATCH;
+
+  // Période actuellement affichée (pour recharger sans perdre le filtre)
+  private periodeDebut?: Date;
+  private periodeFin?: Date;
 
   // Exercices (Saisons)
   exercices: Exercice[] = [];
@@ -288,10 +302,32 @@ export class RDashboardComponent implements OnInit, OnDestroy {
    */
   onFilterModeChange(mode: FilterMode): void {
     this.filterMode = mode;
-    
+
     if (mode === 'season' && this.selectedExerciceId) {
       this.loadStatsForSelectedExercice();
+    } else if (mode === 'year') {
+      this.loadStatsForYear();
     }
+  }
+
+  /** Changement de l'année choisie. */
+  onAnneeChange(annee: number): void {
+    this.selectedAnnee = annee;
+    if (this.filterMode === 'year') this.loadStatsForYear();
+  }
+
+  private loadStatsForYear(): void {
+    this.loadStats(new Date(this.selectedAnnee, 0, 1), new Date(this.selectedAnnee, 11, 31));
+  }
+
+  /** Changement de catégorie : on recharge la même période. */
+  onCategorieChange(): void {
+    this.loadStats(this.periodeDebut, this.periodeFin);
+  }
+
+  /** Bouton « actualiser » : même période, même catégorie. */
+  recharger(): void {
+    this.loadStats(this.periodeDebut, this.periodeFin);
   }
 
   /**
@@ -396,6 +432,12 @@ export class RDashboardComponent implements OnInit, OnDestroy {
    * Retourne le libellé de la période actuelle
    */
   getCurrentPeriodLabel(): string {
+    const categorie = this.categorieFiltre ? ` · ${t('MATCH.CATEGORIES.' + this.categorieFiltre)}` : '';
+    return this.libellePeriode() + categorie;
+  }
+
+  private libellePeriode(): string {
+    if (this.filterMode === 'year') return `Année ${this.selectedAnnee}`;
     if (this.filterMode === 'dateRange' && this.hasDateFilter()) {
       const { start, end } = this.dateRangeForm.value;
       const startStr = start.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
@@ -418,8 +460,10 @@ export class RDashboardComponent implements OnInit, OnDestroy {
    */
   public loadStats(startDate?: Date, endDate?: Date): void {
     this.isLoading = true;
+    this.periodeDebut = startDate;
+    this.periodeFin = endDate;
 
-    this.statService.getResponsableStats(startDate, endDate)
+    this.statService.getResponsableStats(startDate, endDate, this.categorieFiltre || undefined)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
@@ -478,11 +522,16 @@ export class RDashboardComponent implements OnInit, OnDestroy {
     this.exportAssidus = (this.stats.topAttendance || []).map((p: any, i: number) => ({ rang: i + 1, nom: p.name, valeur: n(p.appearances) }));
 
     // L'écran n'affiche que les 10 premiers ; l'export garde jusqu'à 30 lignes
+    const garder = (liste: any[], cle: string) => {
+      if (liste.length <= 10) return liste;
+      const seuil = liste[9][cle];
+      return liste.filter((p, i) => i < 10 || p[cle] === seuil);   // les ex æquo du 10e ne sont pas coupés
+    };
     this.stats = {
       ...this.stats,
-      topScorers: (this.stats.topScorers || []).slice(0, 10),
-      topAssists: (this.stats.topAssists || []).slice(0, 10),
-      topAttendance: (this.stats.topAttendance || []).slice(0, 10)
+      topScorers: garder(this.stats.topScorers || [], 'goals'),
+      topAssists: garder(this.stats.topAssists || [], 'assists'),
+      topAttendance: garder(this.stats.topAttendance || [], 'appearances')
     };
   }
 

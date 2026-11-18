@@ -9,11 +9,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { CampagneService, ClassementPublicDTO } from '../../../core/services/gamification/campagne.service';
+import { NomCompletPipe } from '../../../core/pipes/nom-complet.pipe';
 
 @Component({
   selector: 'app-classement-public',
   standalone: true,
-  imports: [TranslateModule, 
+  imports: [NomCompletPipe, TranslateModule, 
     CommonModule, RouterModule, MatTabsModule, MatIconModule,
     MatButtonModule, MatProgressSpinnerModule
   ],

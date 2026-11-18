@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../environment';
@@ -69,9 +69,18 @@ export const authInterceptor: HttpInterceptorFn = (
       if (err instanceof HttpErrorResponse && err.status === 401 && token) {
         const chemin = window.location.pathname;
         const publique = chemin === '/' || PAGES_PUBLIQUES.some(p => chemin.startsWith(p));
-        try {
-          injector.get(AuthService).logout(!publique);   // ferme la session ; renvoie à l'accueil sauf sur une page publique
-        } catch { /* service pas encore prêt : le prochain démarrage repartira d'une session propre */ }
+        const fermer = () => {
+          try {
+            injector.get(AuthService).logout(!publique);   // ferme la session ; renvoie à l'accueil sauf sur une page publique
+          } catch { /* service pas encore prêt : le prochain démarrage repartira d'une session propre */ }
+        };
+        if (req.url.includes('/auth/me') || injector.get(AuthService).isTokenExpired()) {
+          fermer();   // jeton expiré ou profil refusé : la session est bien terminée
+        } else {
+          // Un 401 isolé sur un jeton encore valide (route particulière, coupure réseau intermédiaire…) ne doit pas
+          // déconnecter : on vérifie auprès du serveur, et on ne ferme la session que si lui aussi la refuse.
+          injector.get(HttpClient).get(`${environment.apiUrl}/auth/me`).subscribe({ error: e => { if (e?.status === 401) fermer(); } });
+        }
       }
       // Mot de passe à changer : le serveur refuse tout le reste tant que ce n'est pas fait (session déjà ouverte)
       if (err instanceof HttpErrorResponse && err.status === 403 && err.error?.code === 'PASSWORD_CHANGE_REQUIRED') {

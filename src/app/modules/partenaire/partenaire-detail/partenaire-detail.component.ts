@@ -29,6 +29,7 @@ import { AjouterUtilisateurDialogComponent } from '../ajouter-utilisateur-dialog
 import { ModifierLimitesDialogComponent } from '../modifier-limites-dialog/modifier-limites-dialog.component';
 import { RenouvelerContratDialogComponent } from '../renouveler-contrat-dialog/renouveler-contrat-dialog.component';
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { nomComplet } from '../../../core/utils/nom';
 
 
 @Component({
@@ -348,7 +349,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       width: '400px',
       data: {
         title: t('partenaire.users.confirmDelete.title'),
-        message: `Voulez-vous supprimer l'accès de ${user.prenom} ${user.nom} ?`,
+        message: `Voulez-vous supprimer l'accès de ${nomComplet(user)} ?`,
         confirmText: t('type_depense.actions.supprimer'),
         cancelText: t('common.CANCEL'),
         confirmColor: 'warn'
@@ -375,7 +376,7 @@ export class PartenaireDetailComponent implements OnInit, OnDestroy {
       width: '400px',
       data: {
         title: t('utilisateurs.actions.reinit_mdp'),
-        message: `Un nouveau mot de passe temporaire sera généré pour ${user.prenom} ${user.nom}.`,
+        message: `Un nouveau mot de passe temporaire sera généré pour ${nomComplet(user)}.`,
         confirmText: t('dashboard.filters.reset'),
         cancelText: t('common.CANCEL'),
         confirmColor: 'primary',

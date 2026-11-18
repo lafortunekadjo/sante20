@@ -13,6 +13,7 @@ import { of } from 'rxjs';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { map, catchError, finalize } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { nomComplet } from '../../../../core/utils/nom';
 
 interface CalendarDay {
   date: Date;
@@ -465,7 +466,7 @@ loadMatchDetails(match: any): void {
   private getPlayerName(presence: any): string {
     if (presence.membre) {
       if (presence.membre.nom && presence.membre.prenom) {
-        return `${presence.membre.nom} ${presence.membre.prenom}`;
+        return `${nomComplet(presence.membre, true)}`;
       }
       return presence.membre.nom || presence.membre.prenom || 'Inconnu';
     }

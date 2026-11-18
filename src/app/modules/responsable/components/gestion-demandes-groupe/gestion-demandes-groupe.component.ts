@@ -27,6 +27,7 @@ import { GroupeDetailsDialogComponent } from '../../../membre/components/groupe-
 import { DiscussionMatchDialogComponent } from '../discussion-match-dialog/discussion-match-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ValidationMatchDialogComponent } from '../../dialog/validation-match-dialog/validation-match-dialog.component';
+import { nomComplet } from '../../../../core/utils/nom';
 
 interface DemandeAvecCandidat extends DemandeAdhesion {
   candidat?: {
@@ -198,7 +199,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
 
   accepterDemandeAdhesion(demande: DemandeAvecCandidat): void {
     const candidatNom = demande.candidat ? 
-      `${demande.candidat.prenom} ${demande.candidat.nom}` : 'ce candidat';
+      `${nomComplet(demande.candidat)}` : 'ce candidat';
     
     if (confirm(`Êtes-vous sûr de vouloir accepter la demande de ${candidatNom} ?`)) {
       if (!demande.id) return;
@@ -226,7 +227,7 @@ export class GestionDemandesGroupeComponent implements OnInit {
 
   refuserDemandeAdhesion(demande: DemandeAvecCandidat): void {
     const candidatNom = demande.candidat ? 
-      `${demande.candidat.prenom} ${demande.candidat.nom}` : 'ce candidat';
+      `${nomComplet(demande.candidat)}` : 'ce candidat';
       
     const motif = prompt(`Pourquoi refusez-vous la demande de ${candidatNom} ? (optionnel)`);
     

@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
 import { AuthService } from '../../../core/services/auth.service';
+import { nomComplet } from '../../../core/utils/nom';
 
 @Component({
   selector: 'app-conversation-list',
@@ -66,7 +67,7 @@ export class ConversationListComponent {
     if (conversation.type === 'PRIVATE') {
       const other = this.getOtherParticipant(conversation);
       if (other?.user) {
-        return `${other.user.nom} ${other.user.prenom}`;
+        return `${nomComplet(other.user, true)}`;
       }
       return 'Conversation privée';
     }

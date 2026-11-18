@@ -28,10 +28,11 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { TranslateModule } from '@ngx-translate/core';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { NomCompletPipe } from '../../../../core/pipes/nom-complet.pipe';
 
 @Component({
   selector: 'app-type-sortie',
-  imports: [DevisePipe,  CommonModule,
+  imports: [NomCompletPipe, DevisePipe,  CommonModule,
     FormsModule,
     MatButtonModule,
     MatCardModule,

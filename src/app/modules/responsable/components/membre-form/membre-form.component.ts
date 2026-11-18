@@ -45,12 +45,14 @@ import { GroupeContextService } from '../../../../core/services/groupe-context.s
 import { TirageExportDialogComponent } from '../tirage-export-dialog/tirage-export-dialog.component';
 import { HistoriqueEquipeComponent } from '../historique-equipe/historique-equipe.component';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { nomComplet } from '../../../../core/utils/nom';
+import { NomCompletPipe } from '../../../../core/pipes/nom-complet.pipe';
 
 @Component({
   selector: 'app-membre-form',
   encapsulation: ViewEncapsulation.None,
   standalone: true,
-  imports: [DevisePipe, 
+  imports: [NomCompletPipe, DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,
@@ -479,7 +481,7 @@ hasSanctionsEnabled(): boolean {
     const searchFilter = this.dataSource.filter;
     if (searchFilter) {
       filtered = filtered.filter(m => {
-        const searchStr = `${m.nom} ${m.prenom} ${m.email} ${m.poste}`.toLowerCase();
+        const searchStr = `${nomComplet(m, true)} ${m.email} ${m.poste}`.toLowerCase();
         return searchStr.includes(searchFilter);
       });
     }
@@ -717,7 +719,7 @@ resetNewMembre(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         message: this.translate.instant('membres.deleteConfirmation', {
-          name: `${membre.prenom} ${membre.nom}`
+          name: `${nomComplet(membre)}`
         })
       }
     });
@@ -765,7 +767,7 @@ resetNewMembre(): void {
       data: {
         message: this.translate.instant('membres.toggleActiveConfirmation', {
           action,
-          name: `${membre.prenom} ${membre.nom}`
+          name: `${nomComplet(membre)}`
         })
       }
     });

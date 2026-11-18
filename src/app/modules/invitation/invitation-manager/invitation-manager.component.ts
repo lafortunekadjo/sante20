@@ -24,6 +24,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { InvitationGroupe, InvitationStats, InvitationService, DemandeAdhesion } from '../../../core/services/invitation.service';
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { nomComplet } from '../../../core/utils/nom';
 
 @Component({
   selector: 'app-invitation-manager',
@@ -244,7 +245,7 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
         this.loadStats();
         
         this.snackBar.open(
-          `${demande.prenom} ${demande.nom} a été accepté ! 🎉`, 
+          `${nomComplet(demande)} a été accepté ! 🎉`, 
           'OK', 
           { duration: 3000 }
         );
@@ -261,7 +262,7 @@ export class InvitationManagerComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: t('ui.ts_refuser_la_demande_0caf'),
-        message: `Voulez-vous vraiment refuser la demande de ${demande.prenom} ${demande.nom} ?`,
+        message: `Voulez-vous vraiment refuser la demande de ${nomComplet(demande)} ?`,
         confirmText: t('demands.reject'),
         cancelText: t('common.CANCEL'),
         color: 'warn',

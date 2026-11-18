@@ -21,6 +21,7 @@ import { GeneralService } from '../../../../core/services/general.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { MatMenuModule } from '@angular/material/menu';
+import { nomComplet } from '../../../../core/utils/nom';
 
 interface TeamColor {
   name: string;
@@ -451,7 +452,7 @@ export class PaiementSanctionFormComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: { 
         message: this.translate.instant('equipe.removeMemberConfirmation', { 
-          memberName: `${membre.prenom} ${membre.nom}`,
+          memberName: `${nomComplet(membre)}`,
           teamName: equipe.nom 
         })
       }

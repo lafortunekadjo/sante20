@@ -9,6 +9,7 @@ import { forkJoin } from 'rxjs';
 
 import { AccesAdmin, AccesAdminService, CompteCree, RapportImport } from '../../../../core/services/acces-admin.service';
 import { GroupeService } from '../../../../core/services/groupe.service';
+import { nomComplet } from '../../../../core/utils/nom';
 
 /** Ce que contient le fichier du formulaire, avant import (lecture locale, rien n'est envoyé). */
 interface ApercuFichier {
@@ -263,7 +264,7 @@ export class ConfigurationGroupesComponent implements OnInit {
   }
 
   copierIdentifiants(): void {
-    const texte = this.comptesATransmettre.map(c => `${c.prenom} ${c.nom} : ${c.username} / ${c.motDePasse}`).join('\n');
+    const texte = this.comptesATransmettre.map(c => `${nomComplet(c)} : ${c.username} / ${c.motDePasse}`).join('\n');
     navigator.clipboard?.writeText(texte).then(
       () => this.snackBar.open(this.translate.instant('accesAdmin.admin.copied'), this.translate.instant('accesAdmin.close'), { duration: 3000 }),
       () => this.snackBar.open(this.translate.instant('accesAdmin.errorGeneric'), this.translate.instant('accesAdmin.close'), { duration: 3000 }));

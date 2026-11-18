@@ -13,7 +13,7 @@ import { Router, RouterModule } from '@angular/router';
 import { forkJoin, Subject, of } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { Groupe } from '../../../../core/models/groupe.model';
-import { Match, TypeMatch, SourceAdversaire } from '../../../../core/models/match.model';
+import { Match, TypeMatch, SourceAdversaire, CATEGORIES_MATCH } from '../../../../core/models/match.model';
 import { Presence } from '../../../../core/models/presence.model';
 import { Sanction } from '../../../../core/models/sanction.model';
 import { MatchService } from '../../../../core/services/match.service';
@@ -51,6 +51,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { Equipe } from '../../../../core/models/groupe.model copy';
 import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
 import { PosterModalComponent } from '../../../competition/components/poster-modal/poster-modal.component';
+import { nomComplet } from '../../../../core/utils/nom';
 
 // Interface Exercice
 // interface Exercice {
@@ -161,6 +162,7 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   isAmical: boolean = false;
   
   // Modèle de match pour création
+  readonly categories = CATEGORIES_MATCH;
   newMatch: Partial<Match> = this.getEmptyMatch();
   
   // Pour le formulaire de création
@@ -556,7 +558,7 @@ openPosterDialog(match: Match) {
 // }
 
   getMembreName(membre: Membre | null): string {
-    return membre ? `${membre.prenom} ${membre.nom}` : '-';
+    return membre ? `${nomComplet(membre)}` : '-';
   }
 
   // ============ CHARGEMENT DES DONNÉES ============
@@ -914,6 +916,7 @@ openPosterDialog(match: Match) {
     
     const payload: any = {
       typeMatch: this.newMatch.typeMatch,
+      categorie: this.newMatch.categorie || null,
       dateMatch: this.newMatch.dateMatch,
       heureMatch: this.newMatch.heureMatch || null,
       lieu: this.newMatch.lieu || null,
@@ -1180,6 +1183,7 @@ openPosterDialog(match: Match) {
 
   onTypeChange() {
     const type = this.newMatch.typeMatch;
+    this.newMatch.categorie = '';   // la catégorie par défaut suit le nouveau type
     
     this.newMatch.equipe1 = undefined;
     this.newMatch.equipe2 = undefined;
@@ -1242,7 +1246,7 @@ openPosterDialog(match: Match) {
     return this.membres
       .filter(m => 
         !this.membresAnniversaireSelected.some(s => s.id === m.id) &&
-        (`${m.nom} ${m.prenom}`.toLowerCase().includes(search))
+        (`${nomComplet(m, true)}`.toLowerCase().includes(search))
       )
       .slice(0, 10);
   }
@@ -1308,9 +1312,9 @@ openPosterDialog(match: Match) {
   //   if (membre === null) return '-';
   //   if (typeof membre === 'number') {
   //     const foundMembre = this.membres.find(m => m.id === membre);
-  //     return foundMembre ? `${foundMembre.nom} ${foundMembre.prenom}` : '-';
+  //     return foundMembre ? `${nomComplet(foundMembre, true)}` : '-';
   //   }
-  //   return `${membre?.nom} ${membre?.prenom}`;
+  //   return `${nomComplet(membre, true)}`;
   // }
 
   isDateValid(date: string | undefined): boolean {

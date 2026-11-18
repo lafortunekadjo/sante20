@@ -8,10 +8,16 @@ export type TypeMatch = 'INTERNE' | 'DUEL' | 'AMICAL' | 'ANNIVERSAIRE';
 
 export type SourceAdversaire = 'GROUPE_EXISTANT' | 'INVITATION' | 'MANUEL';
 
+/** Catégorie d'un match : elle décide dans quels classements il compte. */
+export type CategorieMatch = 'CHAMPIONNAT' | 'SEANCE' | 'DUEL_GALA' | 'AMICAL' | 'AUTRE';
+export const CATEGORIES_MATCH: CategorieMatch[] = ['CHAMPIONNAT', 'SEANCE', 'DUEL_GALA', 'AMICAL', 'AUTRE'];
+
 export interface Match {
   id: number;
   groupe: Groupe;
   typeMatch: TypeMatch;
+  /** Catégorie du match (celle choisie, sinon celle par défaut calculée par le serveur) ; '' = par défaut. */
+  categorie?: CategorieMatch | '';
   dateMatch: string;
   lieu?: string;
   heureMatch?: string;
@@ -62,6 +68,8 @@ export interface Match {
 
 export interface CreateMatchDTO {
   typeMatch: TypeMatch;
+  /** Catégorie du match (celle choisie, sinon celle par défaut calculée par le serveur) ; '' = par défaut. */
+  categorie?: CategorieMatch | '';
   dateMatch: string;
   /** Heure du match « HH:mm ». Facultative : par défaut l'heure de jeu du groupe. */
   heureMatch?: string;

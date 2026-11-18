@@ -32,6 +32,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { TranslateModule } from '@ngx-translate/core';
 import { symboleDevise } from '../../../../core/devise';
+import { nomComplet } from '../../../../core/utils/nom';
 
 // Interfaces
 interface Echeance {
@@ -223,7 +224,7 @@ export class EcheancierComponent implements OnInit, OnDestroy {
     if (filters.search) {
       const search = filters.search.toLowerCase();
       filtered = filtered.filter(e => 
-        `${e.membre.prenom} ${e.membre.nom}`.toLowerCase().includes(search) ||
+        `${nomComplet(e.membre)}`.toLowerCase().includes(search) ||
         e.periodeConcernee.toLowerCase().includes(search)
       );
     }
@@ -280,7 +281,7 @@ export class EcheancierComponent implements OnInit, OnDestroy {
 
   // Helpers
   getMembreNom(echeance: Echeance): string {
-    return `${echeance.membre.prenom} ${echeance.membre.nom}`;
+    return `${nomComplet(echeance.membre)}`;
   }
 
   getStatutClass(statut: string): string {

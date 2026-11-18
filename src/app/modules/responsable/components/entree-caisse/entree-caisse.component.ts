@@ -36,6 +36,7 @@ import { MembreService } from '../../../../core/services/membre.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { EvenementCollecte, modeDe } from '../../../../core/models/collecte.model';
+import { nomComplet } from '../../../../core/utils/nom';
 
 @Component({
   selector: 'app-entree-caisse',
@@ -200,7 +201,7 @@ export class EntreeCaisseComponent implements OnInit {
   }
 
 displayMembre = (membre: Membre): string => {
-  return membre ? `${membre.prenom} ${membre.nom}` : '';
+  return membre ? `${nomComplet(membre)}` : '';
 };
 
 onMembreSelected(membre: Membre): void {

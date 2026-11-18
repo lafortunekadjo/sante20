@@ -25,6 +25,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { symboleDevise } from '../../../../core/devise';
+import { nomComplet } from '../../../../core/utils/nom';
 
 
 
@@ -258,7 +259,7 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
 
   getMembreNom(mouvement: MouvementCaisse): string {
     if (mouvement.membre) {
-      return `${mouvement.membre.prenom} ${mouvement.membre.nom}`;
+      return `${nomComplet(mouvement.membre)}`;
     }
     if (mouvement.beneficiaire) {
       return mouvement.beneficiaire;

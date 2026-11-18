@@ -24,6 +24,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { routes } from '../../../app.routes';
 import { MatBadgeModule } from '@angular/material/badge';
+import { nomComplet } from '../../../core/utils/nom';
 
 @Component({
   selector: 'app-message-item',
@@ -95,7 +96,7 @@ export class MessageItemComponent {
     if (!this.message.sender) {
       return this.translate.instant('chat.message.system');
     }
-    return `${this.message.sender.nom} ${this.message.sender.prenom}`;
+    return `${nomComplet(this.message.sender, true)}`;
   }
 
   getSenderInitials(): string {

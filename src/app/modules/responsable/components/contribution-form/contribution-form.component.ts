@@ -28,11 +28,12 @@ import { GeneralService } from '../../../../core/services/general.service';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { TranslateModule } from '@ngx-translate/core';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { NomCompletPipe } from '../../../../core/pipes/nom-complet.pipe';
 
 @Component({
   selector: 'app-contribution-form',
   standalone: true,
-  imports: [DevisePipe, 
+  imports: [NomCompletPipe, DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,

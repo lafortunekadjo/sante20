@@ -14,9 +14,10 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatDividerModule } from '@angular/material/divider';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { Equipe } from '../../../../core/models/groupe.model copy';
-import { Match, SourceAdversaire } from '../../../../core/models/match.model';
+import { Match, SourceAdversaire, CATEGORIES_MATCH } from '../../../../core/models/match.model';
 import { normaliserHeure } from '../../../../core/utils/heure';
 import { Membre } from '../../../../core/models/membre.model';
+import { nomComplet } from '../../../../core/utils/nom';
 ;
 
 export interface MatchEditDialogData {
@@ -50,6 +51,9 @@ export interface MatchEditDialogData {
 export class MatchEditDialogComponent implements OnInit {
   activeTab = 0;
   editMatch: Partial<Match>;
+  readonly categories = CATEGORIES_MATCH;
+  /** La catégorie n'est envoyée que si l'utilisateur l'a changée (ou si le type change) : sinon elle reste « par défaut ». */
+  categorieModifiee = false;
   
   // IDs sélectionnés pour les relations
   selectedEquipe1Id: number | undefined = undefined;
@@ -240,7 +244,7 @@ export class MatchEditDialogComponent implements OnInit {
       }
       if (typeof membre === 'number') {
         const found = this.data.membres.find(m => m.id === membre);
-        if (found) return `${found.nom} ${found.prenom}`;
+        if (found) return `${nomComplet(found, true)}`;
       }
     }
     
@@ -260,6 +264,8 @@ export class MatchEditDialogComponent implements OnInit {
   }
 
   onTypeChange() {
+    this.editMatch.categorie = '';          // la catégorie par défaut suit le nouveau type
+    this.categorieModifiee = true;
     this.updateEquipesForForfait();
   }
 
@@ -426,6 +432,7 @@ export class MatchEditDialogComponent implements OnInit {
     const payload: any = {
       id: this.editMatch.id,
       typeMatch: this.editMatch.typeMatch,
+      ...(this.categorieModifiee ? { categorie: this.editMatch.categorie || '' } : {}),
       dateMatch: this.editMatch.dateMatch,
       heureMatch: this.editMatch.heureMatch || null,
       lieu: this.editMatch.lieu || null,

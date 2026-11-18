@@ -176,6 +176,7 @@
               <span class="mc-type" [class]="match.typeMatch?.toLowerCase()">
                 {{ (match.typeMatch ? 'MATCH.TYPES.' + match.typeMatch : 'MATCH.TYPES.DEFAULT') | translate }}
               </span>
+              <span class="mc-cat" *ngIf="match.categorie">{{ 'MATCH.CATEGORIES.' + match.categorie | translate }}</span>
               <span class="mc-status" [class]="getMatchStatusClass(match)">
                 <mat-icon>{{ getMatchStatusIcon(match) }}</mat-icon>
                 {{ getMatchStatusLabel(match) | translate }}
@@ -205,37 +206,49 @@
 
             <!-- Actions -->
             <div class="mc-actions">
-              <button mat-icon-button color="primary"
+              <button mat-icon-button color="primary" class="with-label-touch"
                       *ngIf="isMatchTodayOrPast(match)"
                       [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
+                      [attr.aria-label]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
                       (click)="viewMatchDetails(match)">
                 <mat-icon>groups</mat-icon>
+                <span class="act-label">{{ 'MATCH.ACTIONS.SHORT_ATTENDANCE' | translate }}</span>
               </button>
-              <button mat-icon-button class="btn-poster"
+              <button mat-icon-button class="btn-poster with-label-touch"
                       [matTooltip]="'MATCH.ACTIONS.GENERATE_POSTER' | translate"
+                      [attr.aria-label]="'MATCH.ACTIONS.GENERATE_POSTER' | translate"
                       (click)="openPosterDialog(match)">
                 <mat-icon>image</mat-icon>
+                <span class="act-label">{{ 'MATCH.ACTIONS.SHORT_POSTER' | translate }}</span>
               </button>
-              <button *ngIf="match.typeMatch === 'AMICAL'" mat-icon-button
+              <button *ngIf="match.typeMatch === 'AMICAL'" mat-icon-button class="with-label-touch"
                       [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate"
+                      [attr.aria-label]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate"
                       (click)="openInvitationDialog(match)">
                 <mat-icon>link</mat-icon>
+                <span class="act-label">{{ 'MATCH.ACTIONS.SHORT_INVITE' | translate }}</span>
               </button>
-              <button mat-icon-button
+              <button mat-icon-button class="with-label-touch"
                       [matTooltip]="'MATCH.ACTIONS.UPLOAD_MEDIA' | translate"
+                      [attr.aria-label]="'MATCH.ACTIONS.UPLOAD_MEDIA' | translate"
                       (click)="openMediaDialog(match)"
                       [disabled]="!canAccessMatchData(match)">
                 <mat-icon>perm_media</mat-icon>
+                <span class="act-label">{{ 'MATCH.ACTIONS.SHORT_MEDIA' | translate }}</span>
               </button>
-              <button mat-icon-button
+              <button mat-icon-button class="with-label-touch"
                       [matTooltip]="'COMMON.EDIT' | translate"
+                      [attr.aria-label]="'COMMON.EDIT' | translate"
                       (click)="editMatchTab(match)">
                 <mat-icon>edit</mat-icon>
+                <span class="act-label">{{ 'COMMON.EDIT' | translate }}</span>
               </button>
-              <button *ngIf="!match.rapporteur" mat-icon-button color="warn"
+              <button *ngIf="!match.rapporteur" mat-icon-button color="warn" class="with-label-touch"
                       [matTooltip]="'COMMON.DELETE' | translate"
+                      [attr.aria-label]="'COMMON.DELETE' | translate"
                       (click)="deleteMatch(match)">
                 <mat-icon>delete</mat-icon>
+                <span class="act-label">{{ 'COMMON.DELETE' | translate }}</span>
               </button>
             </div>
           </div>
@@ -286,10 +299,12 @@
                         [matTooltip]="'MATCH.ACTIONS.MANAGE_ATTENDANCE' | translate"
                         (click)="viewMatchDetails(match)"><mat-icon>groups</mat-icon></button>
                 <button mat-icon-button *ngIf="match.typeMatch === 'AMICAL'"
+                        [matTooltip]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate" [attr.aria-label]="'MATCH.ACTIONS.INVITE_ADVERSARY' | translate"
                         (click)="openInvitationDialog(match)"><mat-icon>link</mat-icon></button>
                 <button mat-icon-button [matTooltip]="'COMMON.EDIT' | translate"
                         (click)="editMatchTab(match)"><mat-icon>edit</mat-icon></button>
                 <button mat-icon-button color="warn" *ngIf="!isMatchJoue(match)"
+                        [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate"
                         (click)="deleteMatch(match)"><mat-icon>delete</mat-icon></button>
               </td>
             </ng-container>
@@ -323,6 +338,16 @@
                   <mat-option value="ANNIVERSAIRE"><mat-icon class="option-icon">cake</mat-icon> Anniversaire</mat-option>
                 </mat-select>
                 <mat-icon matPrefix>category</mat-icon>
+              </mat-form-field>
+              <!-- Catégorie : décide dans quels classements le match compte -->
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'MATCH.FORM.CATEGORY_LABEL' | translate }}</mat-label>
+                <mat-select [(ngModel)]="newMatch.categorie">
+                  <mat-option value="">{{ 'MATCH.CATEGORIES.DEFAULT' | translate }}</mat-option>
+                  <mat-option *ngFor="let c of categories" [value]="c">{{ 'MATCH.CATEGORIES.' + c | translate }}</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>emoji_events</mat-icon>
+                <mat-hint>{{ 'MATCH.CATEGORIES.HINT' | translate }}</mat-hint>
               </mat-form-field>
               <!-- Date -->
               <mat-form-field appearance="outline">

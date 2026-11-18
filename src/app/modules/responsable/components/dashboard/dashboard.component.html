@@ -5,9 +5,9 @@
     <div class="db-header-top">
       <div>
         <h1>{{ 'dashboard.title' | translate }}</h1>
-        <p>{{ getSelectedExercice()?.libelle || ('dashboard.subtitle' | translate) }}</p>
+        <p>{{ filterMode === 'year' ? ('Année ' + selectedAnnee) : (getSelectedExercice()?.libelle || ('dashboard.subtitle' | translate)) }}</p>
       </div>
-      <button mat-icon-button class="db-refresh-btn" (click)="loadStats()"
+      <button mat-icon-button class="db-refresh-btn" (click)="recharger()"
               [matTooltip]="'dashboard.refresh' | translate">
         <mat-icon>refresh</mat-icon>
       </button>
@@ -52,7 +52,19 @@
           <mat-icon>date_range</mat-icon>
           {{ 'dashboard.filters.byDateRange' | translate }}
         </button>
+        <button [class.active]="filterMode === 'year'" (click)="onFilterModeChange('year')">
+          <mat-icon>calendar_month</mat-icon>
+          {{ 'dashboard.filters.byYear' | translate }}
+        </button>
       </div>
+
+      <!-- Sélecteur d'année -->
+      <mat-form-field appearance="outline" class="db-season-field" *ngIf="filterMode === 'year'">
+        <mat-icon matPrefix>calendar_month</mat-icon>
+        <mat-select [(ngModel)]="selectedAnnee" (selectionChange)="onAnneeChange($event.value)">
+          <mat-option *ngFor="let a of annees" [value]="a">{{ a }}</mat-option>
+        </mat-select>
+      </mat-form-field>
 
       <!-- Sélecteur exercice -->
       <mat-form-field appearance="outline" class="db-season-field" *ngIf="filterMode === 'season'">
@@ -85,6 +97,22 @@
           <mat-icon>search</mat-icon>
         </button>
       </ng-container>
+    </div>
+
+    <!-- Catégorie de match (classements de joueurs) -->
+    <div class="db-filter-bar db-filter-bar--cat">
+      <mat-form-field appearance="outline" class="db-season-field">
+        <mat-icon matPrefix>emoji_events</mat-icon>
+        <mat-select [(ngModel)]="categorieFiltre" (selectionChange)="onCategorieChange()">
+          <mat-option value="">{{ 'MATCH.CATEGORIES.ALL' | translate }}</mat-option>
+          <mat-option *ngFor="let c of categories" [value]="c">{{ 'MATCH.CATEGORIES.' + c | translate }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="db-warning" *ngIf="stats.matchesSansRapporteur > 0">
+      <mat-icon>warning_amber</mat-icon>
+      <span>{{ stats.matchesSansRapporteur }} match(s) saisi(s) sans rapporteur ne sont pas comptés. Renseignez le rapporteur dans le match pour les inclure.</span>
     </div>
 
     <!-- ── TABS STICKY ──────────────────────────────────── -->

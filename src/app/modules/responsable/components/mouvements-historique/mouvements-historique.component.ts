@@ -26,6 +26,7 @@ import { Caisse, Exercice, FinancesService, MouvementCaisse } from '../../../../
 import { AuthService } from '../../../../core/services/auth.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { symboleDevise } from '../../../../core/devise';
+import { nomComplet } from '../../../../core/utils/nom';
 
 // Services
 
@@ -271,7 +272,7 @@ annulerMouvement(mouvement: MouvementCaisse): void {
       filtered = filtered.filter(m => 
         m.libelle.toLowerCase().includes(search) ||
         m.reference?.toLowerCase().includes(search) ||
-        (m.membre && `${m.membre.prenom} ${m.membre.nom}`.toLowerCase().includes(search))
+        (m.membre && `${nomComplet(m.membre)}`.toLowerCase().includes(search))
       );
     }
 
@@ -355,7 +356,7 @@ annulerMouvement(mouvement: MouvementCaisse): void {
 
   getMembreNom(mouvement: MouvementCaisse): string {
     if (mouvement.membre) {
-      return `${mouvement.membre.prenom} ${mouvement.membre.nom}`;
+      return `${nomComplet(mouvement.membre)}`;
     }
     if (mouvement.beneficiaire) {
       return mouvement.beneficiaire;
