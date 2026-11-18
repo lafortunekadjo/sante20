@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { EvenementBilan } from '../../../../core/models/collecte.model';
+import { symboleDevise } from '../../../../core/devise';
 
 /**
  * Bilan d'un événement : combien a été collecté pour lui, dépensé, remis, et ce qu'il reste.
@@ -179,6 +180,6 @@ export class EvenementBilanDialogComponent implements OnInit {
 
   triees<T extends { montant: number }>(l: T[]): T[] { return [...l].sort((a, b) => b.montant - a.montant); }
   pourcent(v: number, total: number): number { return total > 0 ? Math.min(100, Math.round((v / total) * 100)) : 0; }
-  fcfa(n: number | null | undefined): string { return (n ?? 0).toLocaleString('fr-FR') + ' FCFA'; }
+  fcfa(n: number | null | undefined): string { return (n ?? 0).toLocaleString('fr-FR') + ' ' + symboleDevise(); }
   fermer(): void { this.ref.close(this.modifie); }
 }

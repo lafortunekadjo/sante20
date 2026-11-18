@@ -26,6 +26,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { symboleDevise } from '../../../../core/devise';
 
 export interface TypeDepense {
   id?: number;
@@ -365,7 +366,7 @@ export class TypeDepenseComponent implements OnInit {
 
   formatMontant(montant: number | undefined): string {
     if (!montant) return '-';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   markFormGroupTouched(): void {

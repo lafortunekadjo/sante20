@@ -28,6 +28,7 @@ import { MatDialog }          from '@angular/material/dialog';
 import { Subject, Subscription, distinctUntilChanged, skip, takeUntil } from 'rxjs';
 
 import { AuthService }            from '../../../core/services/auth.service';
+import { DeviseService }          from '../../../core/services/devise.service';
 import { RoleCustomService }      from '../../../core/services/role-custom.service';
 import { NavbarComponent }        from '../navbar/navbar.component';
 import { ProfilEditComponent, optionsDialogProfil } from '../profil-edit/profil-edit.component';
@@ -145,7 +146,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private equipeService:     GeneralService,
     private pushService: PushNotificationService,
      private snackBar: MatSnackBar,
-     private zone: NgZone
+     private zone: NgZone,
+     private deviseService: DeviseService
   ) {
     this.isMobile     = window.innerWidth < 768;
     this.isMobileSize = window.innerWidth < 1024;
@@ -168,6 +170,7 @@ this.authStatusSubscription = this.authService.isUserReady$.subscribe(isReady =>
     this.setupGroupeSubscription();
     this.setupPublicites();
     this.pushService.init();
+    this.deviseService.demarrer();   // devise du groupe actif (montants affichés partout)
  
     // FIX : charger mes-groupes pour peupler groupeActifAccess
     // AVANT de calculer isResponsable() — sinon setupRoles()

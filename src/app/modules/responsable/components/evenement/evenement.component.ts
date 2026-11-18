@@ -28,6 +28,7 @@ import {
 } from '../../../../core/models/collecte.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { EvenementBilanDialogComponent } from '../evenement-bilan-dialog/evenement-bilan-dialog.component';
+import { symboleDevise } from '../../../../core/devise';
 
 /** Catégories d'événement : famille (heureux / malheureux) et collecte proposée par défaut. Libellés : collecte.types.<CODE>. */
 const TYPES: Record<string, { famille: 'heureux' | 'malheureux' | 'neutre'; collecteParDefaut: boolean }> = {
@@ -137,7 +138,7 @@ export class EvenementComponent implements OnInit, OnDestroy {
   label(type: string): string { return TYPES[type] ? this.t('types.' + type) : type; }
   famille(type: string): string { return TYPES[type]?.famille ?? 'neutre'; }
   mode(e: EvenementCollecte): ModeCollecte { return modeDe(e); }
-  fcfa(n: number | null | undefined): string { return (n ?? 0).toLocaleString('fr-FR') + ' FCFA'; }
+  fcfa(n: number | null | undefined): string { return (n ?? 0).toLocaleString('fr-FR') + ' ' + symboleDevise(); }
   pourcent(v: number, total: number): number { return total > 0 ? Math.min(100, Math.round((v / total) * 100)) : 0; }
   nomMembre(id: number | null | undefined): string {
     const m = this.membres.find(x => x.id === id);

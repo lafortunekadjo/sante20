@@ -4,7 +4,8 @@ import localeFr from '@angular/common/locales/fr';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, HttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { TranslateModule, TranslateLoader, TranslateParser } from '@ngx-translate/core';
+import { DeviseTranslateParser } from './core/devise-translate.parser';
 import { Observable } from 'rxjs';
 
 import { routes } from './app.routes';
@@ -56,6 +57,7 @@ export const appConfig: ApplicationConfig = {
     importProvidersFrom(
       TranslateModule.forRoot({
         defaultLanguage: 'fr',
+        parser: { provide: TranslateParser, useClass: DeviseTranslateParser },
         loader: {
           provide: TranslateLoader,
           useFactory: HttpLoaderFactory,

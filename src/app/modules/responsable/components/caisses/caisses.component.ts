@@ -22,6 +22,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { Caisse, Exercice, FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { symboleDevise } from '../../../../core/devise';
 
 // Interfaces
 
@@ -163,8 +164,8 @@ export class CaissesComponent implements OnInit, OnDestroy {
 
   // Formatage
   formatMontant(montant: number | undefined): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (montant === undefined || montant === null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   // Actions

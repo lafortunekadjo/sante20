@@ -25,6 +25,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Caisse, Exercice, FinancesService, MouvementCaisse } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { symboleDevise } from '../../../../core/devise';
 
 // Services
 
@@ -363,8 +364,8 @@ annulerMouvement(mouvement: MouvementCaisse): void {
   }
 
   formatMontant(montant: number | undefined): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (montant === undefined || montant === null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   formatDate(date: string): string {

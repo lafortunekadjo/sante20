@@ -29,6 +29,9 @@ import { environment } from '../../../../environment';
 import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin, Subject } from 'rxjs';
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+import { DEVISES, DEVISE_PAR_DEFAUT } from '../../../../core/devise';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { DeviseService } from '../../../../core/services/devise.service';
 
 
 @Component({
@@ -53,7 +56,8 @@ import { GroupeContextService } from '../../../../core/services/groupe-context.s
     MatProgressSpinnerModule,
     MatDividerModule,
     DragDropModule,
-    TranslateModule
+    TranslateModule,
+    DevisePipe
   ],
   templateUrl: './groupe-config.component.html',
   styleUrl: './groupe-config.component.scss'
@@ -107,7 +111,8 @@ export class GroupeConfigComponent implements OnInit {
     private questionService: QuestionCandidatureService,
     private authService: AuthService,
     private snackBar: MatSnackBar,
-    private groupeContext: GroupeContextService
+    private groupeContext: GroupeContextService,
+    private deviseService: DeviseService
   ) {
     this.groupeForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(3)]],
@@ -119,6 +124,7 @@ export class GroupeConfigComponent implements OnInit {
       typeEquipe: [''],
       modeEquipes: ['STATIQUE'],
       fraisAdhesion: [0, [Validators.required, Validators.min(0)]],
+      devise: [DEVISE_PAR_DEFAUT, Validators.required],
       heureMatch: [null, Validators.required],
       abreviation: [''],
       // Nouveaux champs
@@ -147,6 +153,9 @@ export class GroupeConfigComponent implements OnInit {
       }
     });
   }
+
+  /** Devises proposées au groupe. */
+  readonly devises = DEVISES;
 
   isSubmitting = signal(false);
   errorMessage = signal<string | null>(null); 
@@ -512,6 +521,7 @@ loadVillesEtStades(callback: () => void): void {
         next: () => {
           this.snackBar.open(t('ui.ts_groupe_mis_a_jour_avec_succes_a47b'), 'Fermer', { duration: 3000 });
           this.isSaving = false;
+          this.deviseService.charger();   // la nouvelle devise s'applique tout de suite aux montants affichés
           this.loadData();
         },
         error: (err) => {

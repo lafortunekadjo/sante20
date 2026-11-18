@@ -6,11 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { TranslateModule } from '@ngx-translate/core';
 import { GroupePublic } from '../../../../core/models/groupe-explorer.model';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-login-prompt-dialog',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     MatDialogModule,
     MatButtonModule,

@@ -15,10 +15,11 @@ import { MatchRequestService } from '../../../../core/services/match-request.ser
 import { MatchRequestDialogComponent } from '../../../responsable/components/match-request-dialog/match-request-dialog.component';
 import { AuthService } from '../../../../core/services/auth.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-groupe-details-dialog',
-  imports: [CommonModule,
+  imports: [DevisePipe, CommonModule,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,

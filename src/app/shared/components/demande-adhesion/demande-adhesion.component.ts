@@ -22,11 +22,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { GroupePublic, DemandeAdhesion } from '../../../core/models/groupe-explorer.model';
 import { GroupeService } from '../../../core/services/groupe.service';
 import { QuestionCandidatureService } from '../../../core/services/question-candidature.service';
+import { DevisePipe } from '../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-demande-adhesion',
   standalone: true,
-  imports: [TranslateModule, 
+  imports: [DevisePipe, TranslateModule, 
     CommonModule,
     ReactiveFormsModule,
     MatCardModule,

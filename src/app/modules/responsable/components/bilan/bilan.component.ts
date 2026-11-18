@@ -17,6 +17,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { symboleDevise } from '../../../../core/devise';
 
 // ── Interfaces alignées sur BilanCompletDTO backend ───────────
 
@@ -231,8 +232,8 @@ export class BilanComponent implements OnInit, OnDestroy {
   // ── Formatage ─────────────────────────────────────────────────
 
   formatMontant(v: number | undefined | null): string {
-    if (v == null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(v) + ' FCFA';
+    if (v == null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(v) + ' ' + symboleDevise();
   }
 
   formatPct(v: number | undefined | null): string {

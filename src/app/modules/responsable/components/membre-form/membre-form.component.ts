@@ -44,12 +44,13 @@ import { Exercice, FinancesService } from '../../../../core/services/finances.se
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
 import { TirageExportDialogComponent } from '../tirage-export-dialog/tirage-export-dialog.component';
 import { HistoriqueEquipeComponent } from '../historique-equipe/historique-equipe.component';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-membre-form',
   encapsulation: ViewEncapsulation.None,
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,

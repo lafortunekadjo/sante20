@@ -27,10 +27,11 @@ import { User } from '../../../../core/models/user';
 import { MembreService } from '../../../../core/services/membre.service';
 import { Membre } from '../../../../core/models/membre.model';
 import { TranslateModule } from '@ngx-translate/core';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-type-sortie',
-  imports: [ CommonModule,
+  imports: [DevisePipe,  CommonModule,
     FormsModule,
     MatButtonModule,
     MatCardModule,

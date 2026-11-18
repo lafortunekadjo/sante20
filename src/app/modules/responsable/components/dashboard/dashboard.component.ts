@@ -43,6 +43,9 @@ import { Stats } from '../../../../core/models/stats.model';
 // i18n
 import { TranslateModule } from '@ngx-translate/core';
 import { map, Observable } from 'rxjs';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { ExportClassementComponent } from '../../../../shared/components/export-classement/export-classement.component';
+import { LigneExportClassement } from '../../../../core/models/stats.model';
 
 // Register Chart.js components
 Chart.register(
@@ -72,7 +75,7 @@ type FilterMode = 'season' | 'dateRange';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
+  imports: [ExportClassementComponent, DevisePipe, 
     CommonModule,
     RouterModule,
     FormsModule,
@@ -111,6 +114,13 @@ export class RDashboardComponent implements OnInit, OnDestroy {
   isLoadingExercices = false;
   activeTab        = 0;
   showAllTeams     = false;
+
+  // Lignes exportables en image (celles affichées, sur la période choisie)
+  exportEquipes: LigneExportClassement[] = [];
+  exportButeurs: LigneExportClassement[] = [];
+  exportPasseurs: LigneExportClassement[] = [];
+  exportAssidus: LigneExportClassement[] = [];
+  readonly colonnesEquipes = ['J', 'V', 'N', 'D', 'B', 'Pts'];
   showAllScorers   = false;
   showAllAssists   = false;
   showAllAttendance = false;
@@ -162,7 +172,7 @@ export class RDashboardComponent implements OnInit, OnDestroy {
   
   barChartData: ChartData<'bar'> = {
     labels: [],
-    datasets: [{ data: [], label: 'Contributions (FCFA)', backgroundColor: '#667eea' }],
+    datasets: [{ data: [], label: 'Contributions', backgroundColor: '#667eea' }],
   };
   
   donutChartOptions: ChartConfiguration['options'] = {
@@ -440,6 +450,8 @@ export class RDashboardComponent implements OnInit, OnDestroy {
             totalSanction: data.unpaidSanctions
           };
 
+          this.preparerExports();
+
           console.log('Stats chargées:', this.stats);
 
           // Mise à jour des graphiques
@@ -452,6 +464,26 @@ export class RDashboardComponent implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  /** Prépare les lignes que les boutons « Partager en image » enverront au serveur. */
+  private preparerExports(): void {
+    const n = (v: unknown) => String(v ?? 0);
+    this.exportEquipes = (this.stats.teamComparison || []).map((t: any, i: number) => ({
+      rang: i + 1, nom: t.teamName,
+      cellules: [n(t.played), n(t.wins), n(t.draws), n(t.losses), n(t.totalGoals), n(t.points)]
+    }));
+    this.exportButeurs = (this.stats.topScorers || []).map((p: any, i: number) => ({ rang: i + 1, nom: p.name, valeur: n(p.goals) }));
+    this.exportPasseurs = (this.stats.topAssists || []).map((p: any, i: number) => ({ rang: i + 1, nom: p.name, valeur: n(p.assists) }));
+    this.exportAssidus = (this.stats.topAttendance || []).map((p: any, i: number) => ({ rang: i + 1, nom: p.name, valeur: n(p.appearances) }));
+
+    // L'écran n'affiche que les 10 premiers ; l'export garde jusqu'à 30 lignes
+    this.stats = {
+      ...this.stats,
+      topScorers: (this.stats.topScorers || []).slice(0, 10),
+      topAssists: (this.stats.topAssists || []).slice(0, 10),
+      topAttendance: (this.stats.topAttendance || []).slice(0, 10)
+    };
   }
 
   /**

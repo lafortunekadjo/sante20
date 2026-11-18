@@ -26,6 +26,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { TypeSanction } from '../../../../core/models/sanction.model';
 import { GroupeContextService } from '../../../../core/services/groupe-context.service';
+import { symboleDevise } from '../../../../core/devise';
 
 // Icônes disponibles
 const ICONS_DISPONIBLES = [
@@ -349,8 +350,8 @@ ngOnDestroy(): void {
   }
 
   formatMontant(montant: number | undefined): string {
-    if (!montant) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (!montant) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   clearMessagesAfterDelay(): void {

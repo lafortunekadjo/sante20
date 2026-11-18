@@ -6,6 +6,7 @@ import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environment';
 import { EvenementCollecte, EvenementBilan, CollecteEnCours } from '../models/collecte.model';
+import { symboleDevise } from '../devise';
 
 
 // ==================== INTERFACES ====================
@@ -741,8 +742,8 @@ deleteTypeDepense(id: number): Observable<void> {
   // ==================== FORMATEURS ====================
 
   formatMontant(montant: number | undefined | null): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (montant === undefined || montant === null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   getIconByCaisseType(type: TypeCaisse): string {

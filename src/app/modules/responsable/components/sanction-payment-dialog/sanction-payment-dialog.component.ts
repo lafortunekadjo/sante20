@@ -17,6 +17,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SanctionFinanceService } from '../../../../core/services/sanction-finance.service';
 import { FinancesService, Caisse } from '../../../../core/services/finances.service';
 import { Sanction } from '../../../../core/models/sanction.model';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { symboleDevise } from '../../../../core/devise';
 
 export interface PaymentDialogData {
   sanction: Sanction;
@@ -26,7 +28,7 @@ export interface PaymentDialogData {
 @Component({
   selector: 'app-sanction-payment-dialog',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -84,11 +86,11 @@ export interface PaymentDialogData {
       <form [formGroup]="paymentForm" class="payment-form">
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Montant du paiement (FCFA)</mat-label>
+            <mat-label>Montant du paiement ({{ '' | devise }})</mat-label>
             <input matInput type="number" formControlName="montant" [max]="resteAPayer" min="1">
             <mat-icon matPrefix>attach_money</mat-icon>
             <mat-error *ngIf="paymentForm.get('montant')?.hasError('required')">Montant requis</mat-error>
-            <mat-error *ngIf="paymentForm.get('montant')?.hasError('min')">Minimum 1 FCFA</mat-error>
+            <mat-error *ngIf="paymentForm.get('montant')?.hasError('min')">Minimum 1 {{ '' | devise }}</mat-error>
             <mat-error *ngIf="paymentForm.get('montant')?.hasError('max')">Maximum {{ formatMontant(resteAPayer) }}</mat-error>
             <mat-hint>Reste à payer: {{ formatMontant(resteAPayer) }}</mat-hint>
           </mat-form-field>
@@ -462,8 +464,8 @@ export class SanctionPaymentDialogComponent implements OnInit {
   }
 
   formatMontant(montant: number | undefined): string {
-    if (!montant) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (!montant) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   onCancel(): void {

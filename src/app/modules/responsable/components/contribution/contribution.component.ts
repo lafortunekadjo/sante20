@@ -25,11 +25,12 @@ import { GeneralService } from '../../../../core/services/general.service';
 import { ContributionDialogComponent } from '../contribution-dialog/contribution-dialog.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-contribution',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,

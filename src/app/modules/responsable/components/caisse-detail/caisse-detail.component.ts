@@ -24,6 +24,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { FinancesService } from '../../../../core/services/finances.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { symboleDevise } from '../../../../core/devise';
 
 
 
@@ -266,8 +267,8 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
   }
 
   formatMontant(montant: number | undefined): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (montant === undefined || montant === null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   formatDate(date: string): string {

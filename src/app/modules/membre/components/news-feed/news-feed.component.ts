@@ -40,6 +40,9 @@ import { PubliciteAffichageComponent } from '../../../publicite/publicite-affich
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 import { MvpVoteCardComponent } from '../mvp-vote-card/mvp-vote-card.component';
 import { Announcement, AnnouncementService } from '../../../../core/services/announcement.service';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { ExportClassementComponent } from '../../../../shared/components/export-classement/export-classement.component';
+import { LigneExportClassement } from '../../../../core/models/stats.model';
 
 // // Interface Exercice
 // interface Exercice {
@@ -54,7 +57,7 @@ import { Announcement, AnnouncementService } from '../../../../core/services/ann
 @Component({
   selector: 'app-news-feed',
   standalone: true,
-  imports: [
+  imports: [ExportClassementComponent, DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,
@@ -91,6 +94,12 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   groupAnnouncements: Announcement[] = [];
   topScorers: { membre: Membre; buts: number }[] = [];
   topPassers: { membre: Membre; passes: number }[] = [];
+
+  // Lignes exportables en image : plus longues que les 5 affichées, pour choisir combien en partager
+  exportButeurs: LigneExportClassement[] = [];
+  exportPasseurs: LigneExportClassement[] = [];
+  exportEquipes: LigneExportClassement[] = [];
+  readonly colonnesEquipes = ['J', 'V', 'N', 'D', '+/-', 'Pts'];
   allMembres$: Observable<Membre[]>;
   allPresences$: BehaviorSubject<Presence[]> = new BehaviorSubject<Presence[]>([]);
   apiBaseUrl = environment.apiUrl;
@@ -137,7 +146,14 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       this.exerciceDateDebut ? iso(this.exerciceDateDebut) : undefined,
       this.exerciceDateFin ? iso(this.exerciceDateFin) : undefined
     ).pipe(takeUntil(this.destroy$)).subscribe({
-      next: c => { this.classementEquipes = c; this.classementChargement = false; },
+      next: c => {
+        this.classementEquipes = c;
+        this.exportEquipes = c.interne.map((t, i) => ({
+          rang: i + 1, nom: t.equipe,
+          cellules: [String(t.joues), String(t.victoires), String(t.nuls), String(t.defaites), this.differenceDe(t.butsPour, t.butsContre), String(t.points)]
+        }));
+        this.classementChargement = false;
+      },
       error: () => { this.classementErreur = true; this.classementChargement = false; }
     });
   }
@@ -723,7 +739,7 @@ private calculateStats(presences: any[], membres: any[]): void {
   });
 
   // Transformation et Tri des Buteurs
-  this.topScorers = Array.from(scorerMap.entries())
+  const tousButeurs = Array.from(scorerMap.entries())
     .map(([id, stats]) => {
       const membre = membres.find(m => m.id === id);
       return {
@@ -734,15 +750,19 @@ private calculateStats(presences: any[], membres: any[]): void {
       };
     })
     .filter(s => s.membre && s.total > 0)
-    .sort((a, b) => b.total - a.total) // On trie par le total (buts + pen)
-    .slice(0, 5);
+    .sort((a, b) => b.total - a.total); // On trie par le total (buts + pen)
+  this.topScorers = tousButeurs.slice(0, 5);
+  this.exportButeurs = tousButeurs.slice(0, 30)
+    .map((s, i) => ({ rang: i + 1, nom: `${s.membre.prenom ?? ''} ${s.membre.nom ?? ''}`.trim(), valeur: String(s.buts) }));
 
   // Top Passeurs (inchangé)
-  this.topPassers = Array.from(passerMap.entries())
+  const tousPasseurs = Array.from(passerMap.entries())
     .map(([id, passes]) => ({ membre: membres.find(m => m.id === id)!, passes }))
     .filter(p => p.membre && p.passes > 0)
-    .sort((a, b) => b.passes - a.passes)
-    .slice(0, 5);
+    .sort((a, b) => b.passes - a.passes);
+  this.topPassers = tousPasseurs.slice(0, 5);
+  this.exportPasseurs = tousPasseurs.slice(0, 30)
+    .map((p, i) => ({ rang: i + 1, nom: `${p.membre.prenom ?? ''} ${p.membre.nom ?? ''}`.trim(), valeur: String(p.passes) }));
 }
 
 private preloadMedia(url: string, token: string): Observable<any> {

@@ -32,11 +32,13 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatMenuModule } from '@angular/material/menu';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { symboleDevise } from '../../../../core/devise';
 
 @Component({
   selector: 'app-groupes-explore',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -502,7 +504,7 @@ getCompareMetrics(): { label: string; field: string; format: (g: any) => string 
     { label: t('explorer.filtres.niveau'), field: 'niveauRequis',   format: g => g.niveauRequis || 'Tous niveaux' },
     { label: t('menu.items.MEMBRES'),       field: 'nombreMembres',  format: g => g.nombreMembres != null ? `${g.nombreMembres}${g.capaciteMax ? ' / ' + g.capaciteMax : ''}` : '—' },
     { label: 'Remplissage',   field: 'tauxRemplissage',format: g => g.capaciteMax ? this.getCapacityPercentage(g) + '%' : '—' },
-    { label: t('ui.ts_frais_adhesion_938d'),'field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' FCFA' },
+    { label: t('ui.ts_frais_adhesion_938d'),'field': 'fraisAdhesion', format: g => (g.fraisAdhesion ?? 0).toLocaleString('fr-FR') + ' ' + symboleDevise(g.devise) },
     { label: 'Recrutement',   field: 'accepte',        format: g => g.accepteNouveauxMembres ? '✅ Ouvert' : '🔒 Fermé' },
   ];
 }

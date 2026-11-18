@@ -164,3 +164,21 @@ export interface ClassementEquipes {
     adversaire: string; joues: number; victoires: number; nuls: number; defaites: number; butsPour: number; butsContre: number;
   }[];
 }
+
+/** Une ligne de classement à exporter en image : joueur (valeur) ou équipe (cellules dans l'ordre des colonnes). */
+export interface LigneExportClassement {
+  rang?: number;
+  nom: string;
+  valeur?: string;
+  cellules?: string[];
+}
+
+export type TypeClassementExport = 'EQUIPES' | 'BUTEURS' | 'PASSEURS' | 'ASSIDUITE';
+
+export interface DemandeClassementImage {
+  type: TypeClassementExport;
+  periode: string;
+  colonnes?: string[];
+  lignes: LigneExportClassement[];
+  limite?: number;
+}

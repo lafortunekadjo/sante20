@@ -49,6 +49,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 // Register Chart.js components
 Chart.register(
@@ -84,7 +85,7 @@ type FilterMode = 'season' | 'dateRange';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     RouterModule,
     FormsModule,

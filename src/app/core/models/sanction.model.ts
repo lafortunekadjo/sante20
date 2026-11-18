@@ -1,5 +1,6 @@
 import { Membre } from './membre.model';
 import { Match } from './match.model';
+import { symboleDevise } from '../devise';
 
 export interface TypeSanction {
   id: number;
@@ -176,8 +177,8 @@ export class SanctionHelpers {
   }
 
   static formatMontant(montant: number | undefined): string {
-    if (!montant) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (!montant) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   // Grouper les sanctions par membre

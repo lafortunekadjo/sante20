@@ -17,6 +17,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { Ville } from '../../../../core/models/ville';
 import { Stade } from '../../../../core/models/stade';
+import { DEVISES, DEVISE_PAR_DEFAUT } from '../../../../core/devise';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 interface DialogData {
   groupe: Groupe | null;
@@ -37,7 +39,8 @@ interface DialogData {
     MatSelectModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    DevisePipe
   ],
   template: `
     <div class="dialog-container">
@@ -132,9 +135,18 @@ interface DialogData {
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Frais d'adhésion (XAF)</mat-label>
+            <mat-label>Frais d'adhésion</mat-label>
             <input matInput type="number" formControlName="fraisAdhesion" placeholder="0">
-            <span matSuffix>XAF</span>
+            <span matSuffix>{{ form.get('devise')?.value | devise }}</span>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Devise du groupe</mat-label>
+            <mat-select formControlName="devise">
+              <mat-option *ngFor="let d of devises" [value]="d.code">{{ d.code }} — {{ d.nom }} ({{ d.symbole }})</mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
 
@@ -241,6 +253,7 @@ interface DialogData {
 })
 export class GroupeFormDialogComponent implements OnInit {
   form!: FormGroup;
+  devises = DEVISES;
 
   constructor(
     private fb: FormBuilder,
@@ -267,6 +280,7 @@ export class GroupeFormDialogComponent implements OnInit {
       typeEquipe: [groupe?.typeEquipe || ''],
       modeEquipe: [groupe?.modeEquipes || 'STATIQUE'],
       fraisAdhesion: [groupe?.fraisAdhesion || 0],
+      devise: [groupe?.devise || DEVISE_PAR_DEFAUT],
       isActive: [groupe?.isActive ?? true],
       isPublic: [groupe?.isPublic ?? true]
     });

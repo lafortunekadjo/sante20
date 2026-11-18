@@ -32,6 +32,7 @@ import { Ville } from '../../../../core/models/ville';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { GroupeFormDialogComponent } from '../groupe-form-dialog/groupe-form-dialog.component';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 interface GroupeStats {
   total: number;
@@ -43,7 +44,7 @@ interface GroupeStats {
 @Component({
   selector: 'app-groupe-list',
   standalone: true,
-  imports: [TranslateModule, 
+  imports: [DevisePipe, TranslateModule, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

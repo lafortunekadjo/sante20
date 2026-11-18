@@ -31,6 +31,7 @@ import { FinancesService } from '../../../../core/services/finances.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { TranslateModule } from '@ngx-translate/core';
+import { symboleDevise } from '../../../../core/devise';
 
 // Interfaces
 interface Echeance {
@@ -324,8 +325,8 @@ export class EcheancierComponent implements OnInit, OnDestroy {
   }
 
   formatMontant(montant: number | undefined): string {
-    if (montant === undefined || montant === null) return '0 FCFA';
-    return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
+    if (montant === undefined || montant === null) return '0 ' + symboleDevise();
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + symboleDevise();
   }
 
   formatDate(date: string): string {

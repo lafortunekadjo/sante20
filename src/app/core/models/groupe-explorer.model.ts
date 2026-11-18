@@ -14,6 +14,7 @@ export interface GroupePublic {
   typeEquipe: string;
   modeEquipe: 'STATIQUE' | 'DYNAMIQUE';
   fraisAdhesion: number;
+  devise?: string;
   description?: string;
   nombreMembres?: number;
   capaciteMax?: number;
@@ -99,6 +100,7 @@ export interface GroupeProfil {
   jourMatch?: string;
   heureMatch?: string;
   fraisAdhesion?: number;
+  devise?: string;
   nombreMembres: number;
   capaciteMax?: number;
   imageUrl?: string;

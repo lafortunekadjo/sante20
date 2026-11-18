@@ -5,10 +5,11 @@ import { Contribution, ContributionIndividuelle } from '../../../../core/models/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-contribution-dialog',
-  imports: [TranslateModule, FormsModule,CommonModule, MatIconModule],
+  imports: [DevisePipe, TranslateModule, FormsModule,CommonModule, MatIconModule],
   templateUrl: './contribution-dialog.component.html',
   styleUrl: './contribution-dialog.component.scss'
 })

@@ -10,12 +10,13 @@ import { TranslateModule } from '@ngx-translate/core';
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { GroupeProfil } from '../../../../core/models/groupe-explorer.model';
 import { partagerLien, urlPartageGroupe } from '../../../../core/utils/partage';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 /** Page de détail d'un groupe, ouverte depuis Explorer. Données publiques uniquement. */
 @Component({
   selector: 'app-groupe-profil',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [DevisePipe, CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, TranslateModule],
   templateUrl: './groupe-profil.component.html',
   styleUrl: './groupe-profil.component.scss'
 })

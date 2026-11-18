@@ -54,6 +54,8 @@ import { ConfirmationDialogComponent } from '../../../../shared/components/confi
 import { SanctionPaymentDialogComponent, PaymentDialogData } from '../sanction-payment-dialog/sanction-payment-dialog.component';
 import { Groupe } from '../../../../core/models/groupe.model';
 import { GroupeService } from '../../../../core/services/groupe.service';
+import { symboleDevise } from '../../../../core/devise';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 
 applyPlugin(jsPDF);
@@ -107,7 +109,7 @@ interface ExportOptions {
 @Component({
   selector: 'app-sanction-form',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -1095,7 +1097,7 @@ onTypeSanctionChange(sanction: any): void {
   }
 
 formatMontant(montant: number | undefined | null): string {
-  if (montant === undefined || montant === null) return '0 FCFA';
+  if (montant === undefined || montant === null) return '0 ' + symboleDevise();
   
   // On arrondit pour éviter les virgules si nécessaire
   const valeur = Math.round(montant);
@@ -1103,7 +1105,7 @@ formatMontant(montant: number | undefined | null): string {
   // Formate avec l'espace des milliers (fr-FR)
   // const montantFormate = new Intl.NumberFormat('fr-FR').format(valeur);
   
-  return `${valeur} FCFA`;
+  return `${valeur} ${symboleDevise()}`;
 }
 
   formatDate(date: string | Date): string {

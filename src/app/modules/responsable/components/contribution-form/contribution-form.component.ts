@@ -27,11 +27,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { GeneralService } from '../../../../core/services/general.service';
 import { Evenement } from '../../../../core/models/evenement.model';
 import { TranslateModule } from '@ngx-translate/core';
+import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 
 @Component({
   selector: 'app-contribution-form',
   standalone: true,
-  imports: [
+  imports: [DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,

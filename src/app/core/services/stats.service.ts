@@ -3,7 +3,7 @@ import { Injectable, ModelOptions } from '@angular/core';
 import { Observable, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../environment';
 import { AuthService } from './auth.service';
-import { ClassementEquipes, MemberStats, MonthlyStats } from '../models/stats.model';
+import { ClassementEquipes, DemandeClassementImage, MemberStats, MonthlyStats } from '../models/stats.model';
 import { DatePipe } from '@angular/common';
 
 
@@ -78,6 +78,11 @@ getResponsableStats(startDate?: Date, endDate?: Date): Observable<any> {
 
   return this.http.get(`${environment.apiUrl}/membre/stats`, { params });
 }
+  /** Image partageable (JPEG) d'un classement : les lignes sont celles affichées à l'écran. */
+  exporterClassementImage(demande: DemandeClassementImage): Observable<Blob> {
+    return this.http.post(`${environment.apiUrl}/stats/classement/image`, demande, { responseType: 'blob' });
+  }
+
   /** Classement des équipes du groupe actif (interne + bilan externe). Dates au format yyyy-MM-dd. */
   getClassementEquipes(debut?: string, fin?: string): Observable<ClassementEquipes> {
     let params = new HttpParams();

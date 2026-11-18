@@ -14,6 +14,8 @@ export interface Groupe {
   typeEquipe: string;
   modeEquipes: 'STATIQUE' | 'DYNAMIQUE';
   fraisAdhesion: number;
+  /** Devise du groupe (code ISO : XAF, XOF, EUR…). */
+  devise?: string;
   profilePhotoUrl: string;
   heureMatch:string;
   isPublic:boolean;
