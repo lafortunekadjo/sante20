@@ -47,6 +47,7 @@ import { HistoriqueEquipeComponent } from '../historique-equipe/historique-equip
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
 import { nomComplet } from '../../../../core/utils/nom';
 import { NomCompletPipe } from '../../../../core/pipes/nom-complet.pipe';
+import { OccasionnelsDialogComponent } from '../occasionnels-dialog/occasionnels-dialog.component';
 
 @Component({
   selector: 'app-membre-form',
@@ -903,6 +904,12 @@ resetNewMembre(): void {
     data,
     `membres_${this.groupe?.nom || 'groupe'}_${new Date().toISOString().slice(0, 10)}`
   );
+}
+
+/** Joueurs occasionnels du groupe : en faire des membres sans perdre leurs statistiques. */
+openOccasionnelsDialog(): void {
+  const ref = this.dialog.open(OccasionnelsDialogComponent, { width: '640px', maxWidth: '95vw', maxHeight: '90vh' });
+  ref.afterClosed().subscribe(modifie => { if (modifie) this.loadData(); });
 }
 
 openTirageExportDialog(): void {

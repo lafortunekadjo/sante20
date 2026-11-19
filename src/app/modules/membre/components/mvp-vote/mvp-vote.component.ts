@@ -9,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ScrutinDetail, ScrutinResume, ScrutinService, TypeScrutin } from '../../../../core/services/scrutin.service';
 import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet.component';
+import { AccordPipe } from '../../../../core/pipes/accord.pipe';
 
 /**
  * Votes du groupe côté membre : liste des votes ouverts (on y vote) et des votes clos (on y voit le classement).
@@ -17,7 +18,7 @@ import { VoteActionSheetComponent } from '../vote-action-sheet/vote-action-sheet
 @Component({
   selector: 'app-mvp-vote',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatBottomSheetModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [AccordPipe, CommonModule, MatButtonModule, MatIconModule, MatBottomSheetModule, MatProgressSpinnerModule, TranslateModule],
   templateUrl: './mvp-vote.component.html',
   styleUrls: ['./mvp-vote.component.scss']
 })

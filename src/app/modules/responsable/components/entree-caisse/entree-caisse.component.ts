@@ -2,7 +2,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -102,7 +102,8 @@ export class EntreeCaisseComponent implements OnInit {
     private authService: AuthService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.initForm();
   }
@@ -121,6 +122,29 @@ export class EntreeCaisseComponent implements OnInit {
   }
 
 
+
+  /**
+   * Ouvre le formulaire déjà rempli quand on arrive depuis une caisse ou une échéance :
+   * ?caisseId=…&membreId=…&montant=…&typeContributionId=…&libelle=…
+   */
+  private preremplirDepuisLAdresse(): void {
+    const q = this.route.snapshot.queryParamMap;
+    const nombre = (cle: string): number | null => { const v = Number(q.get(cle)); return q.get(cle) && v > 0 ? v : null; };
+    const valeurs: any = {};
+    const caisseId = nombre('caisseId');
+    if (caisseId && this.caisses.some(c => c.id === caisseId)) valeurs.caisseId = caisseId;
+    const typeId = nombre('typeContributionId');
+    if (typeId && this.typesContributions.some(t => t.id === typeId)) valeurs.typeContributionId = typeId;
+    const montant = nombre('montant');
+    if (montant) valeurs.montant = montant;
+    if (q.get('libelle')) valeurs.libelle = q.get('libelle');
+    const membre = this.membres.find(m => m.id === nombre('membreId'));
+    if (membre) { valeurs.membreId = membre.id; valeurs.membreSearch = membre; }
+    if (Object.keys(valeurs).length) {
+      this.entreeForm.patchValue(valeurs);
+      this.showForm = true;
+    }
+  }
 
   initForm(): void {
     this.entreeForm = this.fb.group({
@@ -178,6 +202,7 @@ export class EntreeCaisseComponent implements OnInit {
         this.dataSource.paginator = this.paginator;
         this.dataSource.sort = this.sort;
         this.isLoading = false;
+        this.preremplirDepuisLAdresse();
       },
       error: (err) => {
         console.error('Erreur chargement données:', err);

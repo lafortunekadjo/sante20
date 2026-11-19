@@ -18,6 +18,7 @@ import {
 } from '../../../../core/services/scrutin.service';
 import { RegleScrutinEditorComponent } from './regle-scrutin-editor/regle-scrutin-editor.component';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { AccordPipe } from '../../../../core/pipes/accord.pipe';
 
 type Vue = 'votes' | 'reglages';
 
@@ -29,7 +30,7 @@ type Vue = 'votes' | 'reglages';
 @Component({
   selector: 'app-votes-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule, RegleScrutinEditorComponent],
+  imports: [AccordPipe, CommonModule, FormsModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule, RegleScrutinEditorComponent],
   templateUrl: './votes-gestion.component.html',
   styleUrl: './votes-gestion.component.scss'
 })

@@ -52,6 +52,7 @@ import { Equipe } from '../../../../core/models/groupe.model copy';
 import { CreateInvitationDialogComponent } from '../../../users/create-invitation-dialog/create-invitation-dialog.component';
 import { PosterModalComponent } from '../../../competition/components/poster-modal/poster-modal.component';
 import { nomComplet } from '../../../../core/utils/nom';
+import { ScribesDialogComponent } from '../scribes-dialog/scribes-dialog.component';
 
 // Interface Exercice
 // interface Exercice {
@@ -477,6 +478,12 @@ export class MatchFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
    // Dans votre composant parent
+/** Désigne les membres qui saisiront la feuille de ce match (le responsable valide ensuite). */
+openScribes(match: Match) {
+  const ref = this.dialog.open(ScribesDialogComponent, { width: '560px', maxWidth: '95vw', maxHeight: '90vh', data: { matchId: match.id } });
+  ref.afterClosed().subscribe(modifie => { if (modifie) this.loadDataForSelectedExercice(); });
+}
+
 openPosterDialog(match: Match) {
   const dialogRef = this.dialog.open(PosterModalComponent, {
     width: '90vw',

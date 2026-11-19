@@ -38,6 +38,7 @@ import { PresenceService } from '../../../../core/services/presence.service';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
 import { PubliciteAffichageComponent } from '../../../publicite/publicite-affichage/publicite-affichage.component';
 import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/publicite-feed.component';
+import { DirectCardComponent } from '../../../../shared/components/direct-card/direct-card.component';
 import { MvpVoteCardComponent } from '../mvp-vote-card/mvp-vote-card.component';
 import { Announcement, AnnouncementService } from '../../../../core/services/announcement.service';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
@@ -45,6 +46,8 @@ import { ExportClassementComponent } from '../../../../shared/components/export-
 import { LigneExportClassement } from '../../../../core/models/stats.model';
 import { nomComplet } from '../../../../core/utils/nom';
 import { CATEGORIES_MATCH } from '../../../../core/models/match.model';
+import { FicheMatchService, ResumeFiche } from '../../../../core/services/fiche-match.service';
+import { RouterModule } from '@angular/router';
 
 // // Interface Exercice
 // interface Exercice {
@@ -59,7 +62,7 @@ import { CATEGORIES_MATCH } from '../../../../core/models/match.model';
 @Component({
   selector: 'app-news-feed',
   standalone: true,
-  imports: [ExportClassementComponent, DevisePipe, 
+  imports: [DirectCardComponent, RouterModule, ExportClassementComponent, DevisePipe, 
     CommonModule,
     MatCardModule,
     MatButtonModule,
@@ -102,6 +105,9 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   exportPasseurs: LigneExportClassement[] = [];
   exportEquipes: LigneExportClassement[] = [];
   readonly colonnesEquipes = ['J', 'V', 'N', 'D', '+/-', 'Pts'];
+
+  /** Feuilles que ce membre peut saisir (scribe désigné ou saisie ouverte à tous). */
+  mesSaisies: ResumeFiche[] = [];
 
   // ── Période des classements : la saison en cours (par défaut), une année civile ou tout l'historique
   periodeClassement: 'saison' | 'annee' | 'tout' = 'saison';
@@ -151,6 +157,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
       const date = match?.dateMatch;
       if (!date) return false;
       if (!match.rapporteur && !(match.rapporteurNomOccasionnel ?? '').toString().trim()) return false;
+      if ((match.statutFiche ?? 'VALIDEE') !== 'VALIDEE') return false;   // feuille encore en saisie ou à valider
       if (this.categorieClassement && match.categorie !== this.categorieClassement) return false;
       if (this.periodeClassement === 'tout') return true;
       if (this.periodeClassement === 'annee') return new Date(date).getFullYear() === this.anneeClassement;
@@ -249,6 +256,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
     private groupeService: GroupeService,
     private financesService: FinancesService,
     private authService: AuthService,
+    private ficheMatchService: FicheMatchService,
     private statsService: StatsService,
     private presenceService: PresenceService,
     private dialog: MatDialog,
@@ -261,6 +269,7 @@ export class NewsFeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.ficheMatchService.mesSaisies().pipe(takeUntil(this.destroy$)).subscribe({ next: l => this.mesSaisies = l, error: () => this.mesSaisies = [] });
     this.groupeId = this.authService.getGroupe();
     this.loadGroupeAndExercice();
     this.loadAnnouncements();

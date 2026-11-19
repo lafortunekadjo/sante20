@@ -2,7 +2,7 @@
 import { t } from '../../../../core/i18n/traduire';
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime } from 'rxjs/operators';
@@ -130,7 +130,8 @@ export class EcheancierComponent implements OnInit, OnDestroy {
     private groupeService: GroupeService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {
     this.filterForm = this.fb.group({
       search: [''],
@@ -335,9 +336,16 @@ export class EcheancierComponent implements OnInit, OnDestroy {
   }
 
   // Actions
+  /** Ouvre le formulaire d'entrée déjà rempli : membre, type de contribution et reste à payer. */
   enregistrerPaiement(echeance: Echeance): void {
-    // Navigation vers la page d'entrée avec les paramètres
-    // TODO: Ouvrir dialog de paiement ou naviguer
+    this.router.navigate(['/responsable/finances/entree'], {
+      queryParams: {
+        membreId: echeance.membre.id,
+        typeContributionId: echeance.typeContribution.id,
+        montant: echeance.resteAPayer > 0 ? echeance.resteAPayer : echeance.montantAttendu,
+        libelle: `${echeance.typeContribution.nom} ${echeance.periodeConcernee ?? ''}`.trim()
+      }
+    });
   }
 
   exportData(): void {

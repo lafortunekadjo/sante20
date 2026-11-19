@@ -15,6 +15,8 @@ import { AjoutEvenement, EvenementMatch, EvenementMatchService, LiveMatch, TypeE
 import { Match } from '../../../../core/models/match.model';
 import { Presence } from '../../../../core/models/presence.model';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
+import { FicheMatchService } from '../../../../core/services/fiche-match.service';
+import { FicheStatutComponent } from '../../../../shared/components/fiche-statut/fiche-statut.component';
 
 interface Joueur {
   cle: string;
@@ -50,7 +52,7 @@ const TYPES_AUTRES: TypeEvenementMatch[] = ['PENALTI_RATE', 'CARTON_JAUNE', 'CAR
 @Component({
   selector: 'app-match-direct',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule],
+  imports: [CommonModule, FormsModule, RouterModule, MatIconModule, MatDialogModule, MatProgressSpinnerModule, TranslateModule, FicheStatutComponent],
   templateUrl: './match-direct.component.html',
   styleUrl: './match-direct.component.scss'
 })
@@ -63,6 +65,10 @@ export class MatchDirectComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private translate = inject(TranslateService);
+  private fiches = inject(FicheMatchService);
+
+  /** Mode scribe : un membre saisit la feuille ; à la fin il l'envoie au responsable (au lieu de la terminer). */
+  readonly scribe = signal(false);
 
   readonly typesBut = TYPES_BUT;
   readonly typesAutres = TYPES_AUTRES;
@@ -95,6 +101,7 @@ export class MatchDirectComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.matchId = Number(this.route.snapshot.paramMap.get('matchId'));
+    this.scribe.set(this.route.snapshot.data['scribe'] === true);
     this.chargerChrono();
     this.horloge = setInterval(() => this.maintenant.set(Date.now()), 15000);
     forkJoin({
@@ -297,6 +304,17 @@ export class MatchDirectComponent implements OnInit, OnDestroy {
   }
 
   // ── Fin ───────────────────────────────────────────────────
+  /** Mode scribe : envoie la feuille au responsable pour validation. */
+  envoyerAuResponsable(): void {
+    this.fiches.soumettre(this.matchId).subscribe({
+      next: () => {
+        this.snackBar.open('Feuille envoyée au responsable pour validation. Merci !', 'OK', { duration: 5000 });
+        this.router.navigate(['/membre/saisies']);
+      },
+      error: err => this.alerter(err?.error?.message || 'Envoi impossible.')
+    });
+  }
+
   terminer(): void {
     this.api.terminer(this.matchId).subscribe({
       next: () => {

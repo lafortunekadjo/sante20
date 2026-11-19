@@ -7,7 +7,7 @@
     <!-- ── Tableau de score (reste en haut pendant le défilement) ── -->
     <header class="score">
       <div class="score__ligne">
-        <a class="score__retour" [routerLink]="['/responsable/presences', matchId]" [attr.aria-label]="'direct.back' | translate">
+        <a class="score__retour" [routerLink]="scribe() ? ['/membre/saisies'] : ['/responsable/presences', matchId]" [attr.aria-label]="'direct.back' | translate">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <div class="score__equipe score__equipe--g">{{ noms()[0] }}</div>
@@ -20,11 +20,14 @@
       </div>
     </header>
 
+    <app-fiche-statut *ngIf="scribe()" [matchId]="matchId"></app-fiche-statut>
+    <a class="btn-secondaire" *ngIf="scribe() && aDesJoueurs()" [routerLink]="['/membre/saisie', matchId, 'presents']" style="display:block;text-align:center;margin:6px 0;font-size:13px">Modifier les joueurs présents</a>
+
     <!-- ── Aucun joueur : il faut d'abord pointer les présences ── -->
     <section class="vide" *ngIf="!aDesJoueurs()">
       <mat-icon>how_to_reg</mat-icon>
       <p>{{ 'direct.needPresences' | translate }}</p>
-      <a class="btn-primary" [routerLink]="['/responsable/presences', matchId]">{{ 'direct.goPresences' | translate }}</a>
+      <a class="btn-primary" [routerLink]="scribe() ? ['/membre/saisie', matchId, 'presents'] : ['/responsable/presences', matchId]">{{ 'direct.goPresences' | translate }}</a>
     </section>
 
     <ng-container *ngIf="aDesJoueurs() || sansFiche(1) || sansFiche(2)">
@@ -91,7 +94,8 @@
       </section>
 
       <div class="terminer">
-        <button class="btn-primary terminer__btn" (click)="terminer()"><mat-icon>flag</mat-icon>{{ 'direct.finish' | translate }}</button>
+        <button class="btn-primary terminer__btn" *ngIf="!scribe()" (click)="terminer()"><mat-icon>flag</mat-icon>{{ 'direct.finish' | translate }}</button>
+        <button class="btn-primary terminer__btn" *ngIf="scribe()" (click)="envoyerAuResponsable()"><mat-icon>send</mat-icon>Envoyer au responsable</button>
         <p>{{ 'direct.finishHelp' | translate }}</p>
       </div>
     </ng-container>

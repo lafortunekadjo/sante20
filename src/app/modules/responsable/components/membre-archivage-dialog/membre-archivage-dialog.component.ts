@@ -16,7 +16,7 @@ export interface ArchivageDialogData {
 }
 
 export interface EvenementMembre {
-  type: 'ARRIVEE' | 'DEPART' | 'RETOUR';
+  type: 'ARRIVEE' | 'DEPART' | 'RETOUR' | 'OCCASIONNEL' | 'ADHESION';
   date: string;
   motif?: string | null;
   commentaire?: string | null;
@@ -71,7 +71,7 @@ export class MembreArchivageDialogComponent implements OnInit {
   }
 
   icone(type: string): string {
-    return type === 'DEPART' ? 'logout' : type === 'RETOUR' ? 'login' : 'person_add';
+    return type === 'DEPART' ? 'logout' : type === 'RETOUR' ? 'login' : type === 'OCCASIONNEL' ? 'person_outline' : type === 'ADHESION' ? 'how_to_reg' : 'person_add';
   }
 
   valider(): void {

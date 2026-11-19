@@ -54,6 +54,11 @@ export class FinancialDashboardComponent implements OnInit {
   exerciceActif: Exercice | null = null;
   exercices: Exercice[] = [];
   selectedExerciceId: number | null = null;
+
+  /** Texte affiché dans le sélecteur fermé (sans le badge « Actif » collé au libellé). */
+  get libelleExerciceSelectionne(): string {
+    return this.exercices.find(e => e.id === this.selectedExerciceId)?.libelle ?? '';
+  }
   soldeGlobal: SoldeGlobal | null = null;
   derniersMouvements: MouvementCaisse[] = [];
   groupeId: number | null = null;

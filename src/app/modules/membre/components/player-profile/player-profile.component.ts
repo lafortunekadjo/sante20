@@ -19,11 +19,12 @@ import { TranslateModule } from '@ngx-translate/core';
 import { NiveauJoueurComponent } from '../../../../shared/components/niveau-joueur/niveau-joueur.component';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { AccordPipe } from '../../../../core/pipes/accord.pipe';
 
 @Component({
   selector: 'app-player-profile',
   standalone: true,
-  imports: [
+  imports: [AccordPipe, 
     CommonModule,
     RouterModule,
     MatCardModule,

@@ -683,6 +683,20 @@ export const routes: Routes = [
             path: 'vote/winner',
             component: MvpWinnerComponent
           },
+          // Saisie de la feuille de match par un scribe (membre désigné par le responsable)
+          {
+            path: 'saisies',
+            loadComponent: () => import('./modules/membre/components/mes-saisies/mes-saisies.component').then(m => m.MesSaisiesComponent)
+          },
+          {
+            path: 'saisie/:matchId',
+            component: MatchDirectComponent,
+            data: { scribe: true }
+          },
+          {
+            path: 'saisie/:matchId/presents',
+            loadComponent: () => import('./modules/membre/components/saisie-presents/saisie-presents.component').then(m => m.SaisiePresentsComponent)
+          },
           {
             path: '',
             redirectTo: 'dashboard',
@@ -778,6 +792,10 @@ export const routes: Routes = [
           {
             path: 'direct/:matchId',
             component: MatchDirectComponent
+          },
+          {
+            path: 'feuilles-a-valider',
+            loadComponent: () => import('./modules/responsable/components/feuilles-a-valider/feuilles-a-valider.component').then(m => m.FeuillesAValiderComponent)
           },
            {
                 path: 'finances/caisses/:id',

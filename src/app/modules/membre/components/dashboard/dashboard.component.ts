@@ -50,6 +50,7 @@ import { PubliciteFeedComponent } from '../../../publicite/publicite-feed/public
 import { GroupeService } from '../../../../core/services/groupe.service';
 import { PubliciteBannerComponent } from '../../../publicite/publicite-banner/publicite-banner.component';
 import { DevisePipe } from '../../../../core/pipes/devise.pipe';
+import { AccordPipe } from '../../../../core/pipes/accord.pipe';
 
 // Register Chart.js components
 Chart.register(
@@ -85,7 +86,7 @@ type FilterMode = 'season' | 'dateRange';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [DevisePipe, 
+  imports: [AccordPipe, DevisePipe, 
     CommonModule,
     RouterModule,
     FormsModule,
@@ -595,8 +596,9 @@ private loadMouvements(): void {
    * Charge les stats pour l'exercice sélectionné
    */
   private loadStatsForSelectedExercice(): void {
+    // Pas encore d'exercice : on montre les statistiques sur toute la période (comme « Ma carrière »), pas des zéros
     if (!this.selectedExerciceId) {
-      this.isLoading = false;
+      this.loadStats();
       return;
     }
 
@@ -605,7 +607,7 @@ private loadMouvements(): void {
 
     const exercice = this.exercices.find(e => e.id === this.selectedExerciceId);
     if (!exercice) {
-      this.isLoading = false;
+      this.loadStats();
       return;
     }
 

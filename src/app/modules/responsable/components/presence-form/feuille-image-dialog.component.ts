@@ -76,9 +76,9 @@ const CLE_FORMAT = 'feuille-format';
     .fi { display: flex; flex-direction: column; max-height: 92vh; width: min(760px, 100vw); }
     .fi__tete { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; h2 { margin: 0; font-size: 18px; } }
     .fi__fermer { width: 44px; height: 44px; border: 0; background: none; cursor: pointer; border-radius: 12px; }
-    .fi__corps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 8px 16px; overflow-y: auto; }
-    .fi__apercu { display: flex; align-items: center; justify-content: center; min-height: 260px; border-radius: 14px; background: var(--background-secondary);
-      img { max-width: 100%; max-height: 56vh; border-radius: 10px; box-shadow: 0 6px 22px rgba(0,0,0,.35); } }
+    .fi__corps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 8px 16px; overflow-y: auto; min-height: 0; align-items: start; }
+    .fi__apercu { display: flex; align-items: center; justify-content: center; min-height: 260px; align-self: start; overflow: hidden; border-radius: 14px; background: var(--background-secondary);
+      img { display: block; max-width: 100%; width: auto; height: auto; max-height: 56vh; object-fit: contain; border-radius: 10px; box-shadow: 0 6px 22px rgba(0,0,0,.35); } }
     .fi__apercu--story img { max-height: 62vh; }
     .fi__erreur { margin: 0; padding: 16px; text-align: center; color: #b91c1c; font-size: 13px; }
     .fi__reglages h3 { margin: 4px 0 8px; font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .4px; }
@@ -94,6 +94,7 @@ const CLE_FORMAT = 'feuille-format';
     @media (max-width: 640px) {
       .fi__corps { grid-template-columns: 1fr; }
       .fi__apercu { min-height: 200px; }
+      .fi__apercu img, .fi__apercu--story img { max-height: 42vh; }
       .fi__pied button { flex: 1; }
     }
   `]

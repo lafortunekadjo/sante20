@@ -45,6 +45,7 @@ import { Capacitor } from '@capacitor/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { nomComplet } from '../../../../core/utils/nom';
+import { FicheStatutComponent } from '../../../../shared/components/fiche-statut/fiche-statut.component';
 
 @Component({
   selector: 'app-presence-form',
@@ -64,6 +65,7 @@ import { nomComplet } from '../../../../core/utils/nom';
     MatSnackBarModule,
     MatTabsModule,
     RouterModule,
+    FicheStatutComponent,
     MatMenuTrigger,
     MatMenuModule,
     MatDividerModule,

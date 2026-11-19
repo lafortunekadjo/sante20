@@ -18,7 +18,17 @@ export class MembreService {
     return this.http.get<Membre>(`${environment.apiUrl}/membres/${membreId}/stats`);
   }
 
-   getMembres(): Observable<Membre[]> {
+   /** Joueurs occasionnels du groupe actif (invités saisis par leur nom sur les fiches de match). */
+  getOccasionnels(): Observable<OccasionnelResume[]> {
+    return this.http.get<OccasionnelResume[]>(`${environment.apiUrl}/membres/occasionnels`);
+  }
+
+  /** Fait d'un occasionnel un membre : ses présences passées lui sont rattachées, statistiques conservées. */
+  convertirOccasionnel(demande: DemandeConversionOccasionnel): Observable<ConversionOccasionnel> {
+    return this.http.post<ConversionOccasionnel>(`${environment.apiUrl}/membres/occasionnels/convertir`, demande);
+  }
+
+  getMembres(): Observable<Membre[]> {
     return this.http.get<Membre[]>(`${environment.apiUrl}/membres/all`);
   }
 
@@ -201,3 +211,35 @@ getHistoriqueEquipes(membreId: number) {
 }
 }
 
+
+export interface OccasionnelResume {
+  nom: string;
+  matchs: number;
+  premierMatch: string | null;
+  dernierMatch: string | null;
+  buts: number;
+  passes: number;
+  cartonsJaunes: number;
+  cartonsRouges: number;
+  variantes: string[];
+}
+
+export interface DemandeConversionOccasionnel {
+  nom: string;
+  /** Lier à un membre existant du groupe… */
+  membreId?: number | null;
+  /** …ou créer un nouveau membre (mêmes champs que la création d'un membre, sans le groupe). */
+  nouveauMembre?: { nom: string; prenom?: string; sexe?: string; email?: string | null } | null;
+  /** Date à laquelle il devient membre (aujourd'hui par défaut). */
+  dateAdhesion?: string | null;
+}
+
+export interface ConversionOccasionnel {
+  membreId: number;
+  nomMembre: string;
+  presencesTransferees: number;
+  presencesEnConflit: number;
+  occasionnelDepuis: string | null;
+  occasionnelJusquau: string | null;
+  devenuMembreLe: string;
+}
