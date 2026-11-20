@@ -51,6 +51,7 @@ export class TabParticipantsComponent implements OnInit {
   participants          = signal<CompetitionParticipantDTO[]>([]);
   showForm              = signal(false);
   saving                = signal(false);
+  erreurInscription     = signal('');
   filtreStatut          = signal<StatutInscription | null>(null);
   participantSelectionne = signal<CompetitionParticipantDTO | null>(null);
 
@@ -206,6 +207,7 @@ export class TabParticipantsComponent implements OnInit {
   inscrire(): void {
     if (this.form.invalid) return;
     this.saving.set(true);
+    this.erreurInscription.set('');
     const v = this.form.value;
 
 
@@ -239,7 +241,14 @@ export class TabParticipantsComponent implements OnInit {
         this.saving.set(false);
         this.updated.emit();
       },
-      error: () => this.saving.set(false)
+      error: err => {
+        this.saving.set(false);
+        // le serveur dit pourquoi (inscriptions fermées, équipe déjà inscrite, tournoi complet…) : on l'affiche
+        const message = err?.error?.message as string | undefined;
+        this.erreurInscription.set(this.competition.statut === 'BROUILLON'
+          ? "La compétition est en brouillon : ouvrez d'abord les inscriptions (menu du statut) pour ajouter des équipes."
+          : (message || 'Inscription impossible.'));
+      }
     });
   }
 

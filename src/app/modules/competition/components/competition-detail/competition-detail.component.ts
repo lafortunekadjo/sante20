@@ -1,7 +1,8 @@
 // pages/competition-detail/competition-detail.component.ts
 import { t as tr } from '../../../../core/i18n/traduire';
+import { AccordPipe } from '../../../../core/pipes/accord.pipe';
 import {
-  Component, OnInit, inject, signal, computed
+  Component, HostListener, OnInit, inject, signal, computed
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
@@ -42,7 +43,7 @@ interface MonAccesDTO {
   selector: 'app-competition-detail',
   standalone: true,
   imports: [
-    CommonModule, RouterModule, ReactiveFormsModule,
+    AccordPipe, CommonModule, RouterModule, ReactiveFormsModule,
     TabResumeComponent, TabParticipantsComponent,
     TabPhasesComponent, TabStatistiquesComponent,
     TabTirageComponent, TabAwardsComponent,
@@ -392,6 +393,13 @@ export class CompetitionDetailComponent implements OnInit {
   }
 
   // ── Statut ────────────────────────────────────────────────
+  /** Le menu de statut se ferme avec Échap ou en cliquant ailleurs (les clics sur le badge et le menu s'arrêtent avant). */
+  @HostListener('document:click')
+  @HostListener('document:keydown.escape')
+  fermerMenuStatut(): void {
+    if (this.showStatutMenu()) this.showStatutMenu.set(false);
+  }
+
   toggleStatutMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.showStatutMenu.update(v => !v);

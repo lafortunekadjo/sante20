@@ -90,14 +90,14 @@ import { ClassementDTO, StatutClassement } from '../../../../core/models/competi
       </div>
 
       <!-- Légende -->
-      <div class="classement__legend" *ngIf="showLegend">
-        <span class="legend-item legend-item--qualifie">
+      <div class="classement__legend" *ngIf="showLegend && (legendeQualifie || legendeBarrage || legendeRelegue)">
+        <span class="legend-item legend-item--qualifie" *ngIf="legendeQualifie">
           <span class="dot"></span> Qualifié
         </span>
-        <span class="legend-item legend-item--barrage">
+        <span class="legend-item legend-item--barrage" *ngIf="legendeBarrage">
           <span class="dot"></span> Barrage
         </span>
-        <span class="legend-item legend-item--relegate">
+        <span class="legend-item legend-item--relegate" *ngIf="legendeRelegue">
           <span class="dot"></span> Relégué
         </span>
       </div>
@@ -114,6 +114,17 @@ export class ClassementTableComponent implements OnChanges {
   @Input() nombreBarrages = 0;
 
   ngOnChanges(): void {}
+
+  // La légende ne montre que ce qui existe : pas de « Relégué » dans un tournoi à 4 équipes
+  get legendeQualifie(): boolean {
+    return this.nombreQualifies > 0 || (this.classement ?? []).some(l => l.statutSpecial === StatutClassement.QUALIFIE || l.statutSpecial === StatutClassement.CHAMPION);
+  }
+  get legendeBarrage(): boolean {
+    return this.nombreBarrages > 0 || (this.classement ?? []).some(l => l.statutSpecial === StatutClassement.BARRAGE);
+  }
+  get legendeRelegue(): boolean {
+    return (this.classement ?? []).some(l => l.statutSpecial === StatutClassement.RELEGATE);
+  }
 
   getRowClass(ligne: ClassementDTO): string {
     if (ligne.statutSpecial === StatutClassement.CHAMPION) return 'row-champion';

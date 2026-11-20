@@ -181,7 +181,8 @@ export class FeuilleMatchComponent implements OnInit {
       VALIDEE:   t('ui.ts_validee_2a11'),
       CLOTUREE:  t('ui.ts_cloturee_5b71'),
     };
-    return m[this.feuille()?.statut ?? ''] ?? '';
+    // le badge a déjà son icône : on retire l'emoji des libellés (« Validée ✅ »)
+    return (m[this.feuille()?.statut ?? ''] ?? '').replace(/\s*[✅🔒📝]\s*/gu, '').trim();
   }
 
   // ── Valider ───────────────────────────────────────────────

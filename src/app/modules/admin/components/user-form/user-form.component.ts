@@ -19,8 +19,8 @@ import { MatInputModule } from '@angular/material/input';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSort, MatSortModule } from '@angular/material/sort';
-import { Subject, forkJoin } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -200,7 +200,11 @@ export class UserFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading = true;
     forkJoin([
       this.adminService.getAllUsers(),
-      this.groupService.getAllGroupes()
+      // la liste des groupes sert aux filtres : si elle échoue, les utilisateurs s'affichent quand même
+      this.groupService.getAllGroupes().pipe(catchError(err => {
+        console.error('Liste des groupes indisponible:', err);
+        return of([] as any[]);
+      }))
     ]).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ([users, groupes]) => {

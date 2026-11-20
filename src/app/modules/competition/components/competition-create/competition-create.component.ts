@@ -669,6 +669,11 @@ export class CompetitionCreateComponent implements OnInit {
         tabActif:                       [true],
       })
     });
+    // « Aller simple » choisi à l'étape 1 : l'interrupteur « Aller-retour » de l'étape 2 doit suivre (et inversement)
+    this.configForm.get('format')?.valueChanges.subscribe(f => {
+      if (f === FormatCompetition.ALLER_SIMPLE) this.configForm.get('allerRetour')?.setValue(false);
+      else if (f === FormatCompetition.ALLER_RETOUR) this.configForm.get('allerRetour')?.setValue(true);
+    });
   }
 
   formatOptions() {
